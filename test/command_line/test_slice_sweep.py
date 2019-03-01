@@ -39,7 +39,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_
 
 def test_slice_sweep_with_first_images_missing(dials_regression, run_in_tmpdir):
     """Test slicing where scan image range does not start at 1, exercising
-  a case that exposed a bug"""
+    a case that exposed a bug"""
 
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")

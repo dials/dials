@@ -60,8 +60,8 @@ class CentroidOutlier(object):
 
     def set_block_width(self, block_width):
         """Set the block width for outlier detection in degrees. This can be either
-    a single value or a list with one value per experiment. None is accepted
-    to mean that the dataset will not be split into blocks."""
+        a single value or a list with one value per experiment. None is accepted
+        to mean that the dataset will not be split into blocks."""
         self._block_width = block_width
 
     def set_verbosity(self, verbosity):
@@ -69,15 +69,15 @@ class CentroidOutlier(object):
 
     def _detect_outliers(cols):
         """Perform outlier detection using the input cols and return a flex.bool
-    indicating which rows in the cols are considered outlying. cols should be
-    a list of flex arrays of equal lengths"""
+        indicating which rows in the cols are considered outlying. cols should be
+        a list of flex arrays of equal lengths"""
 
         # to be implemented by derived classes
         raise NotImplementedError()
 
     def __call__(self, reflections):
         """Identify outliers in the input and set the centroid_outlier flag.
-    Return True if any outliers were detected, otherwise False"""
+        Return True if any outliers were detected, otherwise False"""
 
         logger.info(
             "Detecting centroid outliers using the {0} algorithm".format(

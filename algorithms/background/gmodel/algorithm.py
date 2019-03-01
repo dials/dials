@@ -15,22 +15,22 @@ from __future__ import print_function
 
 class ModelCache(object):
     """
-  A class to cache the model
+    A class to cache the model
 
-  """
+    """
 
     def __init__(self):
         """
-    Create a model dictionary
+        Create a model dictionary
 
-    """
+        """
         self.model = dict()
 
     def get(self, name):
         """
-    Get the model
+        Get the model
 
-    """
+        """
         if name is None:
             raise RuntimeError("Model is not specified")
         try:
@@ -60,14 +60,14 @@ class BackgroundAlgorithm(object):
         min_pixels=10,
     ):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param model: The background model
-    :param robust: Use the robust background algorithm
-    :param tuning_constant: The robust tuning constant
+        :param experiments: The list of experiments
+        :param model: The background model
+        :param robust: Use the robust background algorithm
+        :param tuning_constant: The robust tuning constant
 
-    """
+        """
         from dials.algorithms.background.gmodel import Creator
 
         # Get the model
@@ -84,11 +84,11 @@ class BackgroundAlgorithm(object):
 
     def compute_background(self, reflections, image_volume=None):
         """
-    Compute the backgrond.
+        Compute the backgrond.
 
-    :param reflections: The list of reflections
+        :param reflections: The list of reflections
 
-    """
+        """
         from dials.array_family import flex
 
         # Do the background subtraction
@@ -111,14 +111,14 @@ class GModelBackgroundCalculatorFactory(object):
         cls, experiments, model=None, robust=False, tuning_constant=1.345, min_pixels=10
     ):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param model: The background model
-    :param robust: Use the robust background algorithm
-    :param tuning_constant: The robust tuning constant
+        :param experiments: The list of experiments
+        :param model: The background model
+        :param robust: Use the robust background algorithm
+        :param tuning_constant: The robust tuning constant
 
-    """
+        """
         from dials.algorithms.integration.parallel_integrator import (
             GModelBackgroundCalculator,
         )

@@ -72,8 +72,8 @@ class Model(object):
 
     def generate_reflections(self):
         """Use reeke_model to generate indices of reflections near to the Ewald
-    sphere that might be observed on a still image. Build a reflection_table
-    of these."""
+        sphere that might be observed on a still image. Build a reflection_table
+        of these."""
         from cctbx.sgtbx import space_group_info
 
         space_group_type = space_group_info("P 1").group().type()

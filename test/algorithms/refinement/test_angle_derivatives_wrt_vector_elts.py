@@ -12,8 +12,8 @@ from scitbx.math import angle_derivative_wrt_vectors
 
 class FDAngleDerivativeWrtVectorElts(object):
     """Given two vectors, u and v, calculate the derivative of the angle theta
-  between them with respect to any of the elements u_1, u_2, u_3, v_1, v_2
-  and v_3 using a finite difference approximation"""
+    between them with respect to any of the elements u_1, u_2, u_3, v_1, v_2
+    and v_3 using a finite difference approximation"""
 
     def __init__(self, u, v, delta=1.0e-7):
         self._vec_u = u

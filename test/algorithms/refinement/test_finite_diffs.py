@@ -231,11 +231,11 @@ def test(args=[]):
     # function for calculating finite difference gradients of the target function
     def get_fd_gradients(target, pred_param, deltas):
         """Calculate centered finite difference gradients for each of the
-    parameters of the target function.
+        parameters of the target function.
 
-    "deltas" must be a sequence of the same length as the parameter list, and
-    contains the step size for the difference calculations for each parameter.
-    """
+        "deltas" must be a sequence of the same length as the parameter list, and
+        contains the step size for the difference calculations for each parameter.
+        """
 
         p_vals = pred_param.get_param_vals()
         assert len(deltas) == len(p_vals)

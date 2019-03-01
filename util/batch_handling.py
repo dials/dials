@@ -44,7 +44,7 @@ def get_image_ranges(experiments):
 
 def calculate_batch_offsets(experiment_list):
     """Take a list of experiments and resolve and return the batch offsets.
-  First adds an image_range property as not all experiments have scans."""
+    First adds an image_range property as not all experiments have scans."""
     image_ranges = get_image_ranges(experiment_list)
     offsets = _calculate_batch_offsets(image_ranges)
     return offsets
@@ -52,7 +52,7 @@ def calculate_batch_offsets(experiment_list):
 
 def set_batch_offsets(experiment_list, batch_offsets):
     """Set batch offsets in scan objects. Don't need to set anything for
-  scanless experiments, as these are not used with the batch system."""
+    scanless experiments, as these are not used with the batch system."""
     for exp, offset in zip(experiment_list, batch_offsets):
         if exp.scan:
             exp.scan.set_batch_offset(offset)
@@ -60,14 +60,14 @@ def set_batch_offsets(experiment_list, batch_offsets):
 
 def _calculate_batch_offsets(image_ranges):
     """Take a list of (modified) experiments and resolve and return the batch
-  offsets.
+    offsets.
 
-  This is the number added to the image number to give the
-  batch number, such that:
-  - Each experiment has a unique, nonoverlapping, nonconsecutive range
-  - None are zero
-  - Image number ranges are kept if at all possible
-  """
+    This is the number added to the image number to give the
+    batch number, such that:
+    - Each experiment has a unique, nonoverlapping, nonconsecutive range
+    - None are zero
+    - Image number ranges are kept if at all possible
+    """
 
     experiments_to_shift = []
     existing_ranges = set()
@@ -102,7 +102,7 @@ def _calculate_batch_offsets(image_ranges):
 
 def _next_epoch(val):
     """Find the next number above the existing value that ends in 1, that is
-  not consecutive with the current value."""
+    not consecutive with the current value."""
     if val % 100 == 99:
         return val + 2
     elif val % 100 == 0:

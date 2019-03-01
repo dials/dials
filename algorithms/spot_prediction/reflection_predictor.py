@@ -51,24 +51,24 @@ phil_scope = parse(
 
 class ReflectionPredictor(object):
     """
-  A reflection predictor that takes a number of experiments and does the proper
-  prediction for each type of experiment.
+    A reflection predictor that takes a number of experiments and does the proper
+    prediction for each type of experiment.
 
-  """
+    """
 
     def __init__(
         self, experiment, dmin=None, dmax=None, margin=1, force_static=False, padding=0
     ):
         """
-    Initialise a predictor for each experiment.
+        Initialise a predictor for each experiment.
 
-    :param experiment: The experiment to predict for
-    :param dmin: The maximum resolution
-    :param dmax: The minimum resolution
-    :param margin: The margin of hkl to predict
-    :param force_static: force scan varying prediction to be static
+        :param experiment: The experiment to predict for
+        :param dmin: The maximum resolution
+        :param dmax: The minimum resolution
+        :param margin: The margin of hkl to predict
+        :param force_static: force scan varying prediction to be static
 
-    """
+        """
         from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
         from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
         from dials.algorithms.spot_prediction import StillsReflectionPredictor
@@ -184,11 +184,11 @@ class ReflectionPredictor(object):
 
     def __call__(self):
         """
-    Predict all the observable reflections.
+        Predict all the observable reflections.
 
-    :return: A reflection table
+        :return: A reflection table
 
-    """
+        """
         logger.info("Prediction type: %s" % self._predict.name)
         table = self._predict()
         logger.info("Predicted %d reflections" % len(table))
@@ -196,10 +196,10 @@ class ReflectionPredictor(object):
 
     def predictor(self, index):
         """
-    Get the predictor for the given experiment index.
+        Get the predictor for the given experiment index.
 
-    :param index: The experiment index
-    :return: The predictor
+        :param index: The experiment index
+        :return: The predictor
 
-    """
+        """
         return self._predict[index]

@@ -17,9 +17,9 @@ from dials.util.report import Array, Report, Table
 
 def flex_ios(val, var):
     """
-  Compute I/sigma or return zero for each element.
+    Compute I/sigma or return zero for each element.
 
-  """
+    """
     assert len(val) == len(var)
     result = flex.double(len(val), 0)
     indices = flex.size_t(range(len(val))).select(var > 0)
@@ -32,9 +32,9 @@ def flex_ios(val, var):
 
 def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     """
-  Generate the integration report
+    Generate the integration report
 
-  """
+    """
     from collections import OrderedDict
     from dials.algorithms.statistics import pearson_correlation_coefficient
     from dials.algorithms.statistics import spearman_correlation_coefficient
@@ -305,18 +305,18 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 
 class IntegrationReport(Report):
     """
-  A class to store the integration report
+    A class to store the integration report
 
-  """
+    """
 
     def __init__(self, experiments, reflections):
         """
-    Create the integration report
+        Create the integration report
 
-    :param experiments: The experiment list
-    :param reflections: The reflection table
+        :param experiments: The experiment list
+        :param reflections: The reflection table
 
-    """
+        """
         from collections import OrderedDict
 
         # Initialise the report class
@@ -455,19 +455,19 @@ class IntegrationReport(Report):
 
 class ProfileModelReport(Report):
     """
-  A class to store the profile model report
+    A class to store the profile model report
 
-  """
+    """
 
     def __init__(self, experiments, fitter, reflections):
         """
-    Create the integration report
+        Create the integration report
 
-    :param experiments: The experiment list
-    :param profile_model: The profile model
-    :param reflections: The reflection table
+        :param experiments: The experiment list
+        :param profile_model: The profile model
+        :param reflections: The reflection table
 
-    """
+        """
         from collections import OrderedDict
 
         # Initialise the report class
@@ -522,19 +522,19 @@ class ProfileModelReport(Report):
 
 class ProfileModelReport2(Report):
     """
-  A class to store the profile model report
+    A class to store the profile model report
 
-  """
+    """
 
     def __init__(self, experiments, reference, reflections):
         """
-    Create the integration report
+        Create the integration report
 
-    :param experiments: The experiment list
-    :param reference: The reference profiles
-    :param reflections: The reflection table
+        :param experiments: The experiment list
+        :param reference: The reference profiles
+        :param reflections: The reflection table
 
-    """
+        """
         from collections import OrderedDict
 
         # Initialise the report class
@@ -589,19 +589,19 @@ class ProfileModelReport2(Report):
 
 class ProfileValidationReport(Report):
     """
-  A class to store the profile validation report
+    A class to store the profile validation report
 
-  """
+    """
 
     def __init__(self, experiments, profile_fitter, reflections, num_folds):
         """
-    Create the integration report
+        Create the integration report
 
-    :param experiments: The experiment list
-    :param profile_model: The profile model
-    :param reflections: The reflection table
+        :param experiments: The experiment list
+        :param profile_model: The profile model
+        :param reflections: The reflection table
 
-    """
+        """
         from collections import OrderedDict
 
         # Initialise the report class

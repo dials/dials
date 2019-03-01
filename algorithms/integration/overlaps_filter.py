@@ -82,12 +82,12 @@ class OverlapsFilter(object):
 
     def filter_using_simple_mask(self, mask_lambda, shoebox_lambda=lambda x: True):
         """At each pixel, examine the simple mask to determine if contributing
-    observations should be excluded. When this condition mask_lambda is met,
-    for each contributing observation, use optional condition shoebox_lambda
-    to determine if the observation should be excluded (e.g. to exclude only
-    those reflections contributing foreground). Return the mask reflecting
-    this filter.
-    """
+        observations should be excluded. When this condition mask_lambda is met,
+        for each contributing observation, use optional condition shoebox_lambda
+        to determine if the observation should be excluded (e.g. to exclude only
+        those reflections contributing foreground). Return the mask reflecting
+        this filter.
+        """
         keep_refl_bool = flex.bool(len(self.refl), True)
         for idx in xrange(len(self.refl)):
             obs = self.refl[idx]
@@ -113,8 +113,8 @@ class OverlapsFilter(object):
 
     def filter_all_using_referenced_mask(self, mask_name):
         """Return the mask reflecting the exclusion of any reflections for which the
-    mask condition is true (e.g. untrusted pixels).
-    """
+        mask condition is true (e.g. untrusted pixels).
+        """
         keep_refl_bool = flex.bool(len(self.refl), True)
         for i in self.masks[mask_name]:
             if len(i) > 0:
@@ -124,9 +124,9 @@ class OverlapsFilter(object):
 
     def filter_overlaps_using_referenced_mask(self, mask_name):
         """At each pixel, define an overlap to be more than one reference (to an
-    observation) indicated in the mask. Return the mask reflecting the exclusion
-    of any overlaps (e.g. foreground with foreground).
-    """
+        observation) indicated in the mask. Return the mask reflecting the exclusion
+        of any overlaps (e.g. foreground with foreground).
+        """
         keep_refl_bool = flex.bool(len(self.refl), True)
         for i in self.masks[mask_name]:
             if len(i) > 1:

@@ -158,8 +158,8 @@ class PlotData(object):
 
 def plot_grid_of_panels(panel_data, nrow, ncol, direction="fast", tag=""):
     """Plot data for each panel in a stack of subplots, with the first panel
-  at the top. This is appropriate for e.g. the 24 panel model for the I23
-  P12M detector, as it is simply unrolling the barrel to make a flat plot"""
+    at the top. This is appropriate for e.g. the 24 panel model for the I23
+    P12M detector, as it is simply unrolling the barrel to make a flat plot"""
 
     fig, axarr = plt.subplots(nrow, ncol, sharex=True)
     # kludge just in case nrow=ncol=1 and axarr is not actually an array
@@ -213,11 +213,11 @@ def plot_grid_of_panels(panel_data, nrow, ncol, direction="fast", tag=""):
 
 def plot_spherical_polar(panel_data, beam, direction="fast", tag=""):
     """Plot data for all panels in a single plot by mapping pixel positions to
-  the surface of the Ewald sphere, then plotting in 2D using azimuth and
-  elevation angles. This distorts the image from a flat panel detector, but
-  will work for any detector geometry. The equatorial plane for the spherical
-  coordinate system is defined by a beam direction and the lab X direction.
-  The azimuth and elevation angles are zero along the beam direction."""
+    the surface of the Ewald sphere, then plotting in 2D using azimuth and
+    elevation angles. This distorts the image from a flat panel detector, but
+    will work for any detector geometry. The equatorial plane for the spherical
+    coordinate system is defined by a beam direction and the lab X direction.
+    The azimuth and elevation angles are zero along the beam direction."""
 
     # lists for the plot axes
     azimuth = flex.double()
@@ -285,7 +285,7 @@ def plot_spherical_polar(panel_data, beam, direction="fast", tag=""):
 
 def guess_grid_size(detector):
     """Guess the right grid size for the detector based on comparison with
-  known types"""
+    known types"""
 
     n_panels = len(detector)
     pxl_sizes = [p.get_pixel_size() for p in detector]

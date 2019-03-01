@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 def dials_u_to_mosflm(dials_U, uc):
     """Compute the mosflm U matrix i.e. the U matrix from same UB definition
-  as DIALS, but with Busing & Levy B matrix definition."""
+    as DIALS, but with Busing & Levy B matrix definition."""
 
     parameters = uc.parameters()
     dials_B = matrix.sqr(uc.fractionalization_matrix()).transpose()
@@ -67,8 +67,8 @@ def dials_u_to_mosflm(dials_U, uc):
 def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
     """Add a single image's metadata to an mtz file.
 
-  Returns the batch object.
-  """
+    Returns the batch object.
+    """
     assert batch_number > 0
 
     # Recalculate useful numbers and references here
@@ -340,7 +340,7 @@ def _write_columns(mtz_file, dataset, integrated_data):
 
 def export_mtz(integrated_data, experiment_list, params):
     """Export data from integrated_data corresponding to experiment_list to an
-  MTZ file hklout."""
+    MTZ file hklout."""
 
     # First get the experiment identifier information out of the data
     expids_in_table = integrated_data.experiment_identifiers()

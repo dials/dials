@@ -137,17 +137,17 @@ phil_scope = generate_phil_scope()
 
 class FilterRunner(object):
     """
-  A class to run multiple filters in succession.
+    A class to run multiple filters in succession.
 
-  """
+    """
 
     def __init__(self, filters=None):
         """
-    Initialise with a list of filters.
+        Initialise with a list of filters.
 
-    :param filters: The list of filters
+        :param filters: The list of filters
 
-    """
+        """
         if filters is None:
             self.filters = []
         else:
@@ -155,12 +155,12 @@ class FilterRunner(object):
 
     def __call__(self, flags, **kwargs):
         """
-    Call the filters one by one.
+        Call the filters one by one.
 
-    :param flags: The input flags
-    :returns: The filtered flags
+        :param flags: The input flags
+        :returns: The filtered flags
 
-    """
+        """
         flags = self.check_flags(flags, **kwargs)
         for f in self.filters:
             flags = f(flags, **kwargs)
@@ -170,16 +170,16 @@ class FilterRunner(object):
         self, flags, predictions=None, observations=None, shoeboxes=None, **kwargs
     ):
         """
-    Check the flags are set, if they're not then create a list
-    of Trues equal to the number of items given.
+        Check the flags are set, if they're not then create a list
+        of Trues equal to the number of items given.
 
-    :param flags: The input flags
-    :param predictions: The predictions
-    :param observations: The observations
-    :param shoeboxes: The shoeboxes
-    :return: The filtered flags
+        :param flags: The input flags
+        :param predictions: The predictions
+        :param observations: The observations
+        :param shoeboxes: The shoeboxes
+        :return: The filtered flags
 
-    """
+        """
         from scitbx.array_family import flex
 
         # If flags are not set then create a list of Trues
@@ -208,18 +208,18 @@ class FilterRunner(object):
 class PeakCentroidDistanceFilter(object):
     def __init__(self, maxd):
         """
-    Initialise
+        Initialise
 
-    :param maxd: The maximum distance allowed
+        :param maxd: The maximum distance allowed
 
-    """
+        """
         self.maxd = maxd
 
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
         """
-    Run the filtering.
+        Run the filtering.
 
-    """
+        """
 
         # Get the peak locations and the centroids and return the flags of
         # those closer than the min distance
@@ -483,19 +483,19 @@ class SpotDensityFilter(object):
 
 class SpotFinderFactory(object):
     """
-  Factory class to create spot finders
+    Factory class to create spot finders
 
-  """
+    """
 
     @staticmethod
     def from_parameters(params=None, datablock=None):
         """
-    Given a set of parameters, construct the spot finder
+        Given a set of parameters, construct the spot finder
 
-    :param params: The input parameters
-    :returns: The spot finder instance
+        :param params: The input parameters
+        :returns: The spot finder instance
 
-    """
+        """
         from dials.util.masking import MaskGenerator
         from dials.algorithms.spot_finding.finder import SpotFinder
         from libtbx.phil import parse
@@ -560,12 +560,12 @@ class SpotFinderFactory(object):
     @staticmethod
     def configure_threshold(params, datablock):
         """
-    Get the threshold strategy
+        Get the threshold strategy
 
-    :param params: The input parameters
-    :return: The threshold algorithm
+        :param params: The input parameters
+        :return: The threshold algorithm
 
-    """
+        """
         import dials.extensions
 
         # Configure the algotihm
@@ -577,12 +577,12 @@ class SpotFinderFactory(object):
     @staticmethod
     def configure_filter(params):
         """
-    Get the filter strategy.
+        Get the filter strategy.
 
-    :param params: The input parameters
-    :return: The filter algorithm
+        :param params: The input parameters
+        :return: The filter algorithm
 
-    """
+        """
         from dials.algorithms import shoebox
 
         # Initialise an empty list of filters
@@ -612,12 +612,12 @@ class SpotFinderFactory(object):
     @staticmethod
     def load_image(filename_or_data):
         """
-    Given a filename, load an image. If the data is already loaded, return it.
+        Given a filename, load an image. If the data is already loaded, return it.
 
-    :param filename_or_data: The input filename (or data)
-    :return: The image or None
+        :param filename_or_data: The input filename (or data)
+        :return: The image or None
 
-    """
+        """
         import six.moves.cPickle as pickle
 
         # If no filename is set then return None

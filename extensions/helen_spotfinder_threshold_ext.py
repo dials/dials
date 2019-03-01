@@ -45,22 +45,22 @@ class HelenSpotFinderThresholdExt(object):
 
     def __init__(self, params):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param params: The input parameters
+        :param params: The input parameters
 
-    """
+        """
         self.params = params
 
     def compute_threshold(self, image, mask):
         """
-    Compute the threshold.
+        Compute the threshold.
 
-    :param image: The image to process
-    :param mask: The pixel mask on the image
-    :returns: A boolean mask showing foreground/background pixels
+        :param image: The image to process
+        :param mask: The pixel mask on the image
+        :returns: A boolean mask showing foreground/background pixels
 
-    """
+        """
         from dials.algorithms.spot_finding.helen import BlobThresholdAlgorithm
 
         params = self.params.spotfinder.threshold.helen

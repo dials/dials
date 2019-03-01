@@ -149,9 +149,9 @@ def sph_harm_table(reflection_table, experiments, lmax):
 
 def quasi_normalisation(reflection_table, experiment):
     """Calculate normalised intensity (Esq) values for reflections, for the purpose
-  of selecting subsets based on Esq for scaling. If more involved analyses of
-  normalised intensities are needed, then it may be necessary to split this
-  procedure to handle acentric and centric reflections separately."""
+    of selecting subsets based on Esq for scaling. If more involved analyses of
+    normalised intensities are needed, then it may be necessary to split this
+    procedure to handle acentric and centric reflections separately."""
 
     logger.info(
         "Calculating normalised intensity values to select a reflection \n"
@@ -226,7 +226,7 @@ def quasi_normalisation(reflection_table, experiment):
 
 def set_wilson_outliers(reflection_table):
     """Function that takes in a reflection table with 'Esq' and 'centric_flag'
-  values and sets an outlier flag depending on a cutoff for p < 1e-6."""
+    values and sets an outlier flag depending on a cutoff for p < 1e-6."""
 
     centric_cutoff = 23.91
     sel1 = reflection_table["centric_flag"]

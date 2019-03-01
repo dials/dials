@@ -115,23 +115,23 @@ nproc = 1
 class analyse_datasets(symmetry_base):
     """Peform cosym analysis.
 
-  Peform cosym analysis on the input intensities using the methods of
-  `Gildea, R. J. & Winter, G. (2018). Acta Cryst. D74, 405-410
-  <https://doi.org/10.1107/S2059798318002978>`_ for
-  determination of Patterson group symmetry from sparse multi-crystal data sets in
-  the presence of an indexing ambiguity.
+    Peform cosym analysis on the input intensities using the methods of
+    `Gildea, R. J. & Winter, G. (2018). Acta Cryst. D74, 405-410
+    <https://doi.org/10.1107/S2059798318002978>`_ for
+    determination of Patterson group symmetry from sparse multi-crystal data sets in
+    the presence of an indexing ambiguity.
 
-  """
+    """
 
     def __init__(self, intensities, params):
         """Initialise an analyse_datasets object.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities on which to perform
-        cosym anaylsis.
-      params (libtbx.phil.scope_extract): Parameters for the analysis.
+        Args:
+          intensities (cctbx.miller.array): The intensities on which to perform
+            cosym anaylsis.
+          params (libtbx.phil.scope_extract): Parameters for the analysis.
 
-    """
+        """
         self.input_space_group = intensities[0].space_group()
         super(analyse_datasets, self).__init__(
             intensities,
@@ -752,18 +752,18 @@ def plot_matrix(
 ):
     """Plot correlation and linkage matrices.
 
-  Args:
-    correlation_matrix (numpy.ndarray): The distance matrix used to generate
-      the ``linkage_matrix``.
-    linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
-      the initial clustering as produced by
-      :func:`scipy.cluster.hierarchy.linkage`.
-    file_name (str): The output file name.
-    labels (list): Optional labels for the leaves of the dendrogram.
-    color_threshold (float): The color threshold passed to the
-      :func:scipy.cluster.hierarchy.dendrogram` function.
+    Args:
+      correlation_matrix (numpy.ndarray): The distance matrix used to generate
+        the ``linkage_matrix``.
+      linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
+        the initial clustering as produced by
+        :func:`scipy.cluster.hierarchy.linkage`.
+      file_name (str): The output file name.
+      labels (list): Optional labels for the leaves of the dendrogram.
+      color_threshold (float): The color threshold passed to the
+        :func:scipy.cluster.hierarchy.dendrogram` function.
 
-  """
+    """
     if correlation_matrix.shape[0] > 2000:
         return
     from matplotlib import pyplot as plt
@@ -803,16 +803,16 @@ def plot_matrix(
 def plot_dendrogram(linkage_matrix, file_name, labels=None, color_threshold=0.05):
     """Plot dendrogram from a linkage matrix.
 
-  Args:
-    linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
-      the initial clustering as produced by
-      :func:`scipy.cluster.hierarchy.linkage`.
-    file_name (str): The output file name.
-    labels (list): Optional labels for the leaves of the dendrogram.
-    color_threshold (float): The color threshold passed to the
-      :func:scipy.cluster.hierarchy.dendrogram` function.
+    Args:
+      linkage_matrix (numpy.ndarray): The hierarchical clustering of centroids of
+        the initial clustering as produced by
+        :func:`scipy.cluster.hierarchy.linkage`.
+      file_name (str): The output file name.
+      labels (list): Optional labels for the leaves of the dendrogram.
+      color_threshold (float): The color threshold passed to the
+        :func:scipy.cluster.hierarchy.dendrogram` function.
 
-  """
+    """
     from matplotlib import pyplot as plt
 
     fig = plt.figure(dpi=200, figsize=(16, 12))

@@ -29,7 +29,7 @@ def generated_param():
 
 def test_crossvalidator():
     """Use the dials.scale cross validator to test the general methods of the
-  parent class."""
+    parent class."""
     experiments = []
     reflections = []
 

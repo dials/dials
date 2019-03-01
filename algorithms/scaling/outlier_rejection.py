@@ -21,33 +21,33 @@ logger = logging.getLogger("dials")
 
 def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
     """
-  Run an outlier algorithm on symmetry-equivalent intensities.
+    Run an outlier algorithm on symmetry-equivalent intensities.
 
-  This method runs an intensity-based outlier rejection algorithm, comparing
-  the deviations from the weighted mean in groups of symmetry equivalent
-  reflections. The outliers are determined and the outlier_in_scaling flag
-  is set in the reflection table.
+    This method runs an intensity-based outlier rejection algorithm, comparing
+    the deviations from the weighted mean in groups of symmetry equivalent
+    reflections. The outliers are determined and the outlier_in_scaling flag
+    is set in the reflection table.
 
-  The values intensity and variance must be set in the reflection table;
-  these should be corrected but unscaled values, as an inverse_scale_factor
-  will be applied during outlier rejection if this is present in the reflection
-  table. The reflection table should also be prefiltered (e.g. not-integrated
-  reflections should not be present) as no further filtering is done on the
-  input table.
+    The values intensity and variance must be set in the reflection table;
+    these should be corrected but unscaled values, as an inverse_scale_factor
+    will be applied during outlier rejection if this is present in the reflection
+    table. The reflection table should also be prefiltered (e.g. not-integrated
+    reflections should not be present) as no further filtering is done on the
+    input table.
 
-  Args:
-      reflection_table: A reflection table.
-      experiment: A single experiment object.
-      method (str): Name (alias) of outlier rejection algorithm to use.
-      zmax (float): Normalised deviation threshold for classifying an outlier.
+    Args:
+        reflection_table: A reflection table.
+        experiment: A single experiment object.
+        method (str): Name (alias) of outlier rejection algorithm to use.
+        zmax (float): Normalised deviation threshold for classifying an outlier.
 
-  Returns:
-      reflection_table: The input table with the outlier_in_scaling flag set.
+    Returns:
+        reflection_table: The input table with the outlier_in_scaling flag set.
 
-  Raises:
-      Sorry: if the reflection table does not contain intensity and variance.
+    Raises:
+        Sorry: if the reflection table does not contain intensity and variance.
 
-  """
+    """
     if not "intensity" in reflection_table or not "variance" in reflection_table:
         raise Sorry(
             """The reflection table does not contain columns with the names
@@ -80,28 +80,28 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
 
 def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target=None):
     """
-  Run an outlier algorithm and return the outlier indices.
+    Run an outlier algorithm and return the outlier indices.
 
-  Args:
-      Ih_table: A dials.algorithms.scaling.Ih_table.IhTable.
-      method (str): Name (alias) of outlier rejection algorithm to use. If
-          method=target, then the optional argument target must also
-          be specified. Implemented methods; standard, simple, target.
-      zmax (float): Normalised deviation threshold for classifying an outlier.
-      target (Optional[IhTable]): An IhTable to use to obtain target Ih for
-          outlier rejectiob, if method=target.
+    Args:
+        Ih_table: A dials.algorithms.scaling.Ih_table.IhTable.
+        method (str): Name (alias) of outlier rejection algorithm to use. If
+            method=target, then the optional argument target must also
+            be specified. Implemented methods; standard, simple, target.
+        zmax (float): Normalised deviation threshold for classifying an outlier.
+        target (Optional[IhTable]): An IhTable to use to obtain target Ih for
+            outlier rejectiob, if method=target.
 
-  Returns:
-      outlier_index_arrays (list): A list of flex.size_t arrays, with one
-          array per dataset that was used to create the Ih_table. Importantly,
-          the indices are the indices of the reflections in the initial
-          reflection table used to create the Ih_table, not the indices of the
-          data in the Ih_table.
+    Returns:
+        outlier_index_arrays (list): A list of flex.size_t arrays, with one
+            array per dataset that was used to create the Ih_table. Importantly,
+            the indices are the indices of the reflections in the initial
+            reflection table used to create the Ih_table, not the indices of the
+            data in the Ih_table.
 
-  Raises:
-      Sorry: if an invalid choice is made for the method.
+    Raises:
+        Sorry: if an invalid choice is made for the method.
 
-  """
+    """
     if method == "standard":
         outlier_index_arrays = NormDevOutlierRejection(
             Ih_table, zmax
@@ -133,18 +133,18 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
 
 class OutlierRejectionBase(object):
     """
-  Base class for outlier rejection algorithms using an IhTable datastructure.
+    Base class for outlier rejection algorithms using an IhTable datastructure.
 
-  Subclasses must implement the _do_outlier_rejection method, which must
-  add the indices of outliers to the _outlier_indices attribute. The algorithms
-  are run upon initialisation and result in the population of the
-  :obj:`final_outlier_arrays`.
+    Subclasses must implement the _do_outlier_rejection method, which must
+    add the indices of outliers to the _outlier_indices attribute. The algorithms
+    are run upon initialisation and result in the population of the
+    :obj:`final_outlier_arrays`.
 
-  Attributes:
-      final_outlier_arrays (:obj:`list`): A list of flex.size_t arrays of outlier
-          indices w.r.t. the order of the initial reflection tables used to
-          create the Ih_table.
-  """
+    Attributes:
+        final_outlier_arrays (:obj:`list`): A list of flex.size_t arrays of outlier
+            indices w.r.t. the order of the initial reflection tables used to
+            create the Ih_table.
+    """
 
     __metaclass__ = abc.ABCMeta
 
@@ -166,18 +166,18 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
 
     def _determine_outlier_indices(self):
         """
-    Determine outlier indices with respect to the input reflection tables.
+        Determine outlier indices with respect to the input reflection tables.
 
-    Transform the outlier indices w.r.t the Ih_table, determined during the
-    algorithm, to outlier indices w.r.t the initial reflection tables used
-    to create the Ih_table, separated by reflection table.
+        Transform the outlier indices w.r.t the Ih_table, determined during the
+        algorithm, to outlier indices w.r.t the initial reflection tables used
+        to create the Ih_table, separated by reflection table.
 
-    Returns:
-        final_outlier_arrays (:obj:`list`): A list of flex.size_t arrays of
-            outlier indices w.r.t. the order of the data in the initial
-            reflection tables used to create the Ih_table.
+        Returns:
+            final_outlier_arrays (:obj:`list`): A list of flex.size_t arrays of
+                outlier indices w.r.t. the order of the data in the initial
+                reflection tables used to create the Ih_table.
 
-    """
+        """
         if self._n_datasets == 1:
             return [self._block_selections[0].select(self._outlier_indices)]
         final_outlier_arrays = []
@@ -199,10 +199,10 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
 class TargetedOutlierRejection(OutlierRejectionBase):
     """Implementation of an outlier rejection algorithm against a target.
 
-  This algorithm requires a target Ih_table in addition to an Ih_table
-  for the dataset under investigation. Normalised deviations are
-  calculated from the intensity values in the target table.
-  """
+    This algorithm requires a target Ih_table in addition to an Ih_table
+    for the dataset under investigation. Normalised deviations are
+    calculated from the intensity values in the target table.
+    """
 
     def __init__(self, Ih_table, zmax, target):
         """Set a target Ih_table and run the outlier rejection."""
@@ -255,9 +255,9 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
 class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     """Algorithm using normalised deviations from the weighted intensity means.
 
-  In this case, the weighted mean is calculated from all reflections in
-  the symmetry group excluding the test reflection.
-  """
+    In this case, the weighted mean is calculated from all reflections in
+    the symmetry group excluding the test reflection.
+    """
 
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
@@ -288,9 +288,9 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
 class NormDevOutlierRejection(OutlierRejectionBase):
     """Algorithm using normalised deviations from the weighted intensity means.
 
-  In this case, the weighted mean is calculated from all reflections in
-  the symmetry group excluding the test reflection.
-  """
+    In this case, the weighted mean is calculated from all reflections in
+    the symmetry group excluding the test reflection.
+    """
 
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
@@ -304,17 +304,17 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
     def _check_for_more_outliers(self, other_potential_outliers):
         """
-    Recursive check for further outliers.
+        Recursive check for further outliers.
 
-    Each iteration creates a new reduced-size Ih_table_block, which retains
-    only symmetry groups that need further testing. Outlier indices must be
-    transformed to give indices with respect to the initial Ih_table_block.
+        Each iteration creates a new reduced-size Ih_table_block, which retains
+        only symmetry groups that need further testing. Outlier indices must be
+        transformed to give indices with respect to the initial Ih_table_block.
 
-    Args:
-        other_potential_outliers: A flex.size_t array of indices with respect
-            to the initial Ih_table data
+        Args:
+            other_potential_outliers: A flex.size_t array of indices with respect
+                to the initial Ih_table data
 
-    """
+        """
         # Find outlier indices with respect to reduced Ih_table block
         internal_outlier_indices, internal_other_potential_outliers = (
             self._round_of_outlier_rejection()
@@ -335,18 +335,18 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
     def _round_of_outlier_rejection(self):
         """
-    Calculate normal deviations from the data in the Ih_table.
+        Calculate normal deviations from the data in the Ih_table.
 
-    Returns:
-        (tuple): tuple containing:
-            outlier_indices: A flex.size_t array of outlier indices w.r.t
-                the current Ih_table
-            other_potential_outliers: A flex.size_t array of indices from
-                the symmetry groups where outliers were found, excluding the
-                indices of the outliers themselves (indices w.r.t current
-                Ih_table).
+        Returns:
+            (tuple): tuple containing:
+                outlier_indices: A flex.size_t array of outlier indices w.r.t
+                    the current Ih_table
+                other_potential_outliers: A flex.size_t array of indices from
+                    the symmetry groups where outliers were found, excluding the
+                    indices of the outliers themselves (indices w.r.t current
+                    Ih_table).
 
-    """
+        """
         Ih_table = self._Ih_table_block
         I = Ih_table.intensities
         g = Ih_table.inverse_scale_factors

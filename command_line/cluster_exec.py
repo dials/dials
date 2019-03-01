@@ -16,9 +16,9 @@ from __future__ import absolute_import, division, print_function
 
 def get_cwd():
     """
-  Get the current working directory
+    Get the current working directory
 
-  """
+    """
     import sys
 
     return sys.argv[1]
@@ -26,9 +26,9 @@ def get_cwd():
 
 def get_tid():
     """
-  Get the task id
+    Get the task id
 
-  """
+    """
     import os
 
     # FIXME At the moment, there is no portable way to know the task id through

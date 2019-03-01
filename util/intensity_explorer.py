@@ -43,38 +43,38 @@ class IntensityDist(object):
         outfile=None,
     ):
         """
-    Generate z-scores and a normal probability plot from a DIALS
-    reflection_table and a dxtbx ExperimentList, containing the observations
-    and the corresponding experiments, respectively.
+        Generate z-scores and a normal probability plot from a DIALS
+        reflection_table and a dxtbx ExperimentList, containing the observations
+        and the corresponding experiments, respectively.
 
-    :param rtable: A reflection table object, containing at least the columns
-      * ``miller_index``
-      * ``intensity.sum.value``
-      * ``intensity.sum.variance``
-      * ``xyzobs.px.value``
-    :type rtable: dials.array_family_flex_ext.reflection_table
-    :param elist: A corresponding experiment list.
-    :type elist: dxtbx_model_ext.ExperimentList
-    :param calculate_variances: Choose whether to calculate weighted
-    aggregate variances.  Doing so incurs a performance penalty.
-    Defaullts to False.
-    :type calculate_variances: bool
-    :param keep_singles: Choose whether to keep multiplicity-1 reflections.
-    Defaults to False.
-    :type keep_singles: bool
-    :param uncertainty: Measure of spread to use in normalising the
-    z-scores, i.e. z = (I - <I>) / uncertainty.
-    Possible values for uncertainty:
-    * 'sigma':    Use measured sigma values;
-    * 'stddev':   Use sample standard deviations calculated as
-                  square-root of unbiased weighted sample variances
-                  of symmetry-equivalent reflection intensities;
-    Defaults to 'sigma'.
-    :type uncertainty: str
-    :param outfile: Filename root for output PNG plots.
-    Defaults to None.
-    :type: outfile: str
-    """
+        :param rtable: A reflection table object, containing at least the columns
+          * ``miller_index``
+          * ``intensity.sum.value``
+          * ``intensity.sum.variance``
+          * ``xyzobs.px.value``
+        :type rtable: dials.array_family_flex_ext.reflection_table
+        :param elist: A corresponding experiment list.
+        :type elist: dxtbx_model_ext.ExperimentList
+        :param calculate_variances: Choose whether to calculate weighted
+        aggregate variances.  Doing so incurs a performance penalty.
+        Defaullts to False.
+        :type calculate_variances: bool
+        :param keep_singles: Choose whether to keep multiplicity-1 reflections.
+        Defaults to False.
+        :type keep_singles: bool
+        :param uncertainty: Measure of spread to use in normalising the
+        z-scores, i.e. z = (I - <I>) / uncertainty.
+        Possible values for uncertainty:
+        * 'sigma':    Use measured sigma values;
+        * 'stddev':   Use sample standard deviations calculated as
+                      square-root of unbiased weighted sample variances
+                      of symmetry-equivalent reflection intensities;
+        Defaults to 'sigma'.
+        :type uncertainty: str
+        :param outfile: Filename root for output PNG plots.
+        Defaults to None.
+        :type: outfile: str
+        """
 
         from dxtbx.model import ExperimentList
         from cctbx import miller
@@ -124,30 +124,30 @@ class IntensityDist(object):
     def _multiplicity_mean_error_stddev(
         self, calculate_variances=False, keep_singles=False
     ):
-        u"""
-    Calculate aggregate properties of grouped symmetry-equivalent reflections.
+        """"
+        Calculate aggregate properties of grouped symmetry-equivalent reflections.
 
-    Populate the reflection table of observations with the following
-    properties:
-      * ``multiplicity`` — Multiplicity of observations of a given reflection
-      in the asymmetric unit;
-      :type: `dials.array_family_flex_ext.int` array
-      * ``intensity.mean.value`` — Mean of symmetry-equivalent reflections,
-      weighted by measurement error;
-      :type: `dials.array_family_flex_ext.double` array
-      * ``intensity.mean.std_error`` — Standard error on the weighted mean;
-      :type: `dials.array_family_flex_ext.double` array
-      * (optional) ``intensity.mean.variance`` — variance of
-      symmetry-equivalent reflections, weighted by measurement error;
-      :type: `dials.array_family_flex_ext.double` array
+        Populate the reflection table of observations with the following
+        properties:
+          * ``multiplicity`` — Multiplicity of observations of a given reflection
+          in the asymmetric unit;
+          :type: `dials.array_family_flex_ext.int` array
+          * ``intensity.mean.value`` — Mean of symmetry-equivalent reflections,
+          weighted by measurement error;
+          :type: `dials.array_family_flex_ext.double` array
+          * ``intensity.mean.std_error`` — Standard error on the weighted mean;
+          :type: `dials.array_family_flex_ext.double` array
+          * (optional) ``intensity.mean.variance`` — variance of
+          symmetry-equivalent reflections, weighted by measurement error;
+          :type: `dials.array_family_flex_ext.double` array
 
-    :param calculate_variances: Elect whether to calculate the weighted
-    variances.  Defaults to False, to spare an expensive computation.
-    :type calculate_variances: bool
-    :param keep_singles: Choose whether to keep single-multiplicity
-    reflections.
-    :type keep_singles: bool
-    """
+        :param calculate_variances: Elect whether to calculate the weighted
+        variances.  Defaults to False, to spare an expensive computation.
+        :type calculate_variances: bool
+        :param keep_singles: Choose whether to keep single-multiplicity
+        reflections.
+        :type keep_singles: bool
+        """
 
         for key, rtable in self.rtables.items():
             # Sort the reflection table for speedier iteration.
@@ -288,19 +288,19 @@ class IntensityDist(object):
             self.rtables[key] = rtable
 
     def _make_z(self, uncertainty="sigma"):
-        u"""
-    Generate reflection z-scores.
+        """"
+        Generate reflection z-scores.
 
-    Calculate z-scores from reflection intensities, weighted mean
-    intensities and a chosen measure of uncertainty in the intensity
-    measurement.
+        Calculate z-scores from reflection intensities, weighted mean
+        intensities and a chosen measure of uncertainty in the intensity
+        measurement.
 
-    :param uncertainty: Chosen measure of uncertainty.  Options are
-      * ``stddev`` — standard deviation, as calculated from the unbiased
-      weighted variance aggregated amongst all symmetry-equivalent reflections;
-      * ``sigma`` — measurement error for individual reflections.
-    :type uncertainty: str
-    """
+        :param uncertainty: Chosen measure of uncertainty.  Options are
+          * ``stddev`` — standard deviation, as calculated from the unbiased
+          weighted variance aggregated amongst all symmetry-equivalent reflections;
+          * ``sigma`` — measurement error for individual reflections.
+        :type uncertainty: str
+        """
 
         uncertainty_name = {
             "sigma": "intensity.sum.variance",
@@ -342,21 +342,21 @@ class IntensityDist(object):
 
 def data_from_unmerged_mtz(filename):
     """
-  Produce a minimal reflection table from an MTZ file.
+    Produce a minimal reflection table from an MTZ file.
 
-  The returned reflection table will not contain all the standard
-  columns, only those that are necessary for the IntensityDist class.
+    The returned reflection table will not contain all the standard
+    columns, only those that are necessary for the IntensityDist class.
 
-  :param filename: Name of an unmerged MTZ input file.
-  :type filename: str
-  :return: A reflection table object, containing only the columns
-    * ``miller_index``
-    * ``intensity.sum.value``
-    * ``intensity.sum.variance``
-    * ``xyzobs.px.value``
-    * ``id``
-  :rtype: dials.array_family_flex_ext.reflection_table
-  """
+    :param filename: Name of an unmerged MTZ input file.
+    :type filename: str
+    :return: A reflection table object, containing only the columns
+      * ``miller_index``
+      * ``intensity.sum.value``
+      * ``intensity.sum.variance``
+      * ``xyzobs.px.value``
+      * ``id``
+    :rtype: dials.array_family_flex_ext.reflection_table
+    """
 
     from iotbx import mtz
     from dxtbx.model import Crystal, Experiment, ExperimentList

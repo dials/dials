@@ -47,20 +47,20 @@ class ImageCollectionWithSelection(OrderedSet):
 class LegacyChooserAdapter(object):
     """Fake wx.Choice replacement for legacy upstream code.
 
-  The design relies on a wx.Choice object being created by a subclass and
-  stored on a frame.image_chooser attribute. This wx.Choice object is then
-  used to control the current selected image and storing information about
-  all the 'loaded' images. This class replaces the API minimally so that
-  the upstream code still works, while letting us transition to something
-  a little saner in our implementation.
-  """
+    The design relies on a wx.Choice object being created by a subclass and
+    stored on a frame.image_chooser attribute. This wx.Choice object is then
+    used to control the current selected image and storing information about
+    all the 'loaded' images. This class replaces the API minimally so that
+    the upstream code still works, while letting us transition to something
+    a little saner in our implementation.
+    """
 
     def __init__(self, images, loader):
         """
-    Create the fake wx.Choice object.
-    :param images: The list-like object containing the image data
-    :param loader: A function to call to load a specific entry as current
-    """
+        Create the fake wx.Choice object.
+        :param images: The list-like object containing the image data
+        :param loader: A function to call to load a specific entry as current
+        """
         super(LegacyChooserAdapter, self).__init__()
         self._images = images
         self._loader = loader
@@ -84,8 +84,8 @@ class LegacyChooserAdapter(object):
 
 class ImageChooserControl(wx.Control):
     """
-  Convenience control to display a slider and accompanying label
-  """
+    Convenience control to display a slider and accompanying label
+    """
 
     def __init__(self, *args, **kwargs):
         kwargs["style"] = kwargs.get("style", 0) | wx.BORDER_NONE

@@ -75,7 +75,7 @@ class ScalerFactory(object):
     @classmethod
     def ensure_experiment_identifier(cls, params, experiment, reflection_table):
         """Check for consistent experiment identifier, and if not set then set it
-    using scaled_id."""
+        using scaled_id."""
         id_vals = reflection_table.experiment_identifiers().values()
         assert experiment.identifier in id_vals, (experiment.identifier, list(id_vals))
         assert len(id_vals) == 1, list(id_vals)

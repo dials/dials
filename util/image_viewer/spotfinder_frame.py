@@ -355,16 +355,16 @@ class SpotFrame(XrayFrame):
     def GetBoxCorners(self, layer, p1, p2):
         """Get list of points inside box.
 
-    layer  reference to layer object we are working on
-    p1     one corner point of selection box
-    p2     opposite corner point of selection box
+        layer  reference to layer object we are working on
+        p1     one corner point of selection box
+        p2     opposite corner point of selection box
 
-    We have to figure out which corner is which.
+        We have to figure out which corner is which.
 
-    Return a list of (lon, lat) of points inside box.
-    Return None (no selection) or list [((lon, lat), data), ...]
-    of points inside the selection box.
-    """
+        Return a list of (lon, lat) of points inside box.
+        Return None (no selection) or list [((lon, lat), data), ...]
+        of points inside the selection box.
+        """
 
         # TODO: speed this up?  Do we need to??
         # get canonical box limits
@@ -542,20 +542,20 @@ class SpotFrame(XrayFrame):
 
     def add_file_name_or_data(self, image_data):
         """
-      Adds an image to the viewer's list of images.
+        Adds an image to the viewer's list of images.
 
-      This just adds the image to the virtual list, and updates the UI
-      where necessary e.g. image chooser maximums. If the image already
-      exists, will not add a duplicate.
+        This just adds the image to the virtual list, and updates the UI
+        where necessary e.g. image chooser maximums. If the image already
+        exists, will not add a duplicate.
 
-      AKA and better named something like 'add_image' but we can't rename
-      whilst tied to rstbx.
+        AKA and better named something like 'add_image' but we can't rename
+        whilst tied to rstbx.
 
-      :param image_data: The image metadata object
-      :type  image_data: chooser_wrapper
-      :returns: The index of the image in the list of images
-      :rtype:   int
-      """
+        :param image_data: The image metadata object
+        :type  image_data: chooser_wrapper
+        :returns: The index of the image in the list of images
+        :rtype:   int
+        """
 
         assert isinstance(image_data, chooser_wrapper)
 
@@ -579,15 +579,15 @@ class SpotFrame(XrayFrame):
 
     def load_image(self, file_name_or_data, refresh=False):
         """
-    Load and display an image.
+        Load and display an image.
 
-    Given either a filename or a pre-existing image data object, loads the
-    image from disk, displays it, and updates the UI to reflect the new image.
+        Given either a filename or a pre-existing image data object, loads the
+        image from disk, displays it, and updates the UI to reflect the new image.
 
-    :param file_name_or_data: The image item to load
-    :param refresh: Should the image be reloaded if currently selected?
-    :type file_name_or_data: str or chooser_wrapper
-    """
+        :param file_name_or_data: The image item to load
+        :param refresh: Should the image be reloaded if currently selected?
+        :type file_name_or_data: str or chooser_wrapper
+        """
 
         # If this image is already loaded, then don't reload it
         if not refresh and file_name_or_data == self.images.selected:
@@ -655,12 +655,12 @@ class SpotFrame(XrayFrame):
     def _draw_rings_layer(self, dc, data, map_rel):
         """Draw a points layer.
 
-    dc       the device context to draw on
-    data     an iterable of point tuples:
-             (x, y, place, radius, colour, x_off, y_off, pdata)
-    map_rel  points relative to map if True, MUST BE TRUE for lightweight
-    Assumes all points are the same colour, saving 100's of ms.
-    """
+        dc       the device context to draw on
+        data     an iterable of point tuples:
+                 (x, y, place, radius, colour, x_off, y_off, pdata)
+        map_rel  points relative to map if True, MUST BE TRUE for lightweight
+        Assumes all points are the same colour, saving 100's of ms.
+        """
 
         assert map_rel is True
         if len(data) == 0:
@@ -1302,22 +1302,22 @@ class SpotFrame(XrayFrame):
     def __get_imageset_filter(self, reflections, imageset):
         """Get a filter to ensure only reflections from an imageset.
 
-    This is not a well-defined problem because of unindexed reflections
-    - any unindexed reflections never get assigned an experiment. Using the
-    imageset_id column you can disentangle this, but but at integration this
-    data is currently not copied. This means that you can separate, but only if
-    there is a single imageset.
+        This is not a well-defined problem because of unindexed reflections
+        - any unindexed reflections never get assigned an experiment. Using the
+        imageset_id column you can disentangle this, but but at integration this
+        data is currently not copied. This means that you can separate, but only if
+        there is a single imageset.
 
-    Args:
-        reflections (dials.array_family.flex.reflection_table):
-            The reflections table to filter
-        imageset (dxtbx.imageset.ImageSet):
-            The imageset to filter reflections to
+        Args:
+            reflections (dials.array_family.flex.reflection_table):
+                The reflections table to filter
+            imageset (dxtbx.imageset.ImageSet):
+                The imageset to filter reflections to
 
-    Returns:
-        (scitbx.array_family.flex.bool or None):
-            The selection, or None if there is nothing to select
-    """
+        Returns:
+            (scitbx.array_family.flex.bool or None):
+                The selection, or None if there is nothing to select
+        """
         reflections_id = self.reflections.index(reflections)
         experimentlist = self.experiments[reflections_id]
 

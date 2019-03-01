@@ -24,7 +24,7 @@ class ScanVaryingGoniometerParameterisation(
     ScanVaryingModelParameterisation, GoniometerMixin
 ):
     """A scan-varying parameterisation for the setting rotation of a goniometer
-  with angles expressed in mrad."""
+    with angles expressed in mrad."""
 
     def __init__(
         self, goniometer, t_range, num_intervals, beam=None, experiment_ids=None

@@ -156,7 +156,7 @@ class Script(object):
 
 def extract_experiment_data(exp, scale=1):
     """Extract lists of the image number, beam direction and zone axis from an
-  experiment"""
+    experiment"""
     crystal = exp.crystal
     beam = exp.beam
     scan = exp.scan

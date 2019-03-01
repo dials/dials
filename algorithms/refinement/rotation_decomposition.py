@@ -20,30 +20,30 @@ def solve_r3_rotation_for_angles_given_axes(
     R, e1, e2, e3, smaller_phi2_solution=True, return_both_solutions=False, deg=False
 ):
     """decompose 3*3 rotation matrix R into three rotations about the axes
-  e1, e2 and e3
+    e1, e2 and e3
 
-  return angles given axes; return None if no solution
-  smaller_phi2_solution = True or False for the two solutions
+    return angles given axes; return None if no solution
+    smaller_phi2_solution = True or False for the two solutions
 
-  Similar to scitbx.math.euler_angles, except the axes here are arbitrary.
+    Similar to scitbx.math.euler_angles, except the axes here are arbitrary.
 
-  If the angle between e1 & e2 or e2 & e3 are < 90 degrees, then
-  there are matrices which have no solution
+    If the angle between e1 & e2 or e2 & e3 are < 90 degrees, then
+    there are matrices which have no solution
 
-  The algorithm for decomposing a rotation into three arbitrary rotations was
-  described by David Thomas (Thomas, D.J.(1990) Acta Cryst. A46, 321-343)
-  and detailed by Gerard Bricogne (Proceedings of the CCP4 Study Weekend 23-24
-  January 1987).
+    The algorithm for decomposing a rotation into three arbitrary rotations was
+    described by David Thomas (Thomas, D.J.(1990) Acta Cryst. A46, 321-343)
+    and detailed by Gerard Bricogne (Proceedings of the CCP4 Study Weekend 23-24
+    January 1987).
 
-  This implementation is a translation of the C++ code Rotation::euler_explicit
-  from Pointless and Aimless by Phil Evans.
+    This implementation is a translation of the C++ code Rotation::euler_explicit
+    from Pointless and Aimless by Phil Evans.
 
-  The notation used follows Bricogne
+    The notation used follows Bricogne
 
-  R =  R(e1, phi1) R(e2, phi2) R(e3, phi3)
+    R =  R(e1, phi1) R(e2, phi2) R(e3, phi3)
 
-  where R(e, phi) is the rotation matrix for a rotation by angle phi around
-  axis e"""
+    where R(e, phi) is the rotation matrix for a rotation by angle phi around
+    axis e"""
 
     assert R.is_r3_rotation_matrix()
     e1 = matrix.col(e1).normalize()

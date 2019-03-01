@@ -53,8 +53,8 @@ output {
 
 def get_raw_data_from_file(imageset, i):
     """Use cbflib_adaptbx directly to access the raw data array rather than
-  through the imageset, in order to work for multi-panel detectors and other
-  situations where the format class modifies the raw array"""
+    through the imageset, in order to work for multi-panel detectors and other
+    situations where the format class modifies the raw array"""
     from cbflib_adaptbx import uncompress
     import binascii
 

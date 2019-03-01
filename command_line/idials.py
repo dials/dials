@@ -94,9 +94,9 @@ Examples::
 
 def print_error(exception):
     """
-  Print out the error message
+    Print out the error message
 
-  """
+    """
     print("")
     print("*" * 80)
     print("USER ERROR: PLEASE REPLACE USER")
@@ -108,18 +108,18 @@ def print_error(exception):
 
 class Console(Cmd):
     """
-  A class to implement an interactive dials console
+    A class to implement an interactive dials console
 
-  """
+    """
 
     # The default prompt
     prompt = ">> "
 
     def __init__(self):
         """
-    Initialise the console
+        Initialise the console
 
-    """
+        """
         from dials.util.idials import Controller
 
         # Initialise the console base
@@ -136,9 +136,9 @@ class Console(Cmd):
 
     def precmd(self, line):
         """
-    Process command before
+        Process command before
 
-    """
+        """
         # Add command history to file
         self.command_history.write("%s\n" % line)
         self.command_history.flush()
@@ -321,16 +321,16 @@ class Console(Cmd):
 
     def run_import_as_imperative(self, line):
         """
-    Helper for import imperative mode. Change mode, set parameters and run the job
+        Helper for import imperative mode. Change mode, set parameters and run the job
 
-    """
+        """
         self.run_as_imperative("import", self.parse_import_line(line))
 
     def run_as_imperative(self, mode, parameters):
         """
-    Helper for imperative mode. Change mode, set parameters and run the job
+        Helper for imperative mode. Change mode, set parameters and run the job
 
-    """
+        """
         try:
             self.controller.set_mode(mode)
             self.prompt = "%s >> " % self.controller.get_mode()
@@ -342,15 +342,15 @@ class Console(Cmd):
             print_error(e)
 
     def parse_import_line(self, line):
-        """ Given a line after the import command. Figure out phil and filenames
+        """Given a line after the import command. Figure out phil and filenames
 
-    Split line like a shell command line. Then check each argument. If an
-    argument is a directory, then find templates in that directory. Otherwise,
-    Find files matching the argument using the glob module and generate
-    templates from the matches. If there are no matches then input as a phil
-    parameter.
+        Split line like a shell command line. Then check each argument. If an
+        argument is a directory, then find templates in that directory. Otherwise,
+        Find files matching the argument using the glob module and generate
+        templates from the matches. If there are no matches then input as a phil
+        parameter.
 
-    """
+        """
         from os import listdir
         from os.path import isdir, isfile, join
         from glob import glob
@@ -392,102 +392,102 @@ class Console(Cmd):
 
     def print_history(self):
         """
-    Print the history
+        Print the history
 
-    """
+        """
         print("")
         print("History")
         print(self.controller.get_history())
 
     def complete_mode(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for changing mode.
+        Offer tab completion options for changing mode.
 
-    """
+        """
         return [i for i in self.controller.mode_list if i.startswith(text)]
 
     def complete_set(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for setting parameters
+        Offer tab completion options for setting parameters
 
-    """
+        """
         return self.get_phil_completions(text)
 
     def complete_load(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for loading phil files
+        Offer tab completion options for loading phil files
 
-    """
+        """
         return get_path_completions(text, line, begidx, endidx)
 
     def complete_import(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for import
+        Offer tab completion options for import
 
-    """
+        """
         return self.get_phil_completions(text, mode="import")
 
     def complete_find_spots(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for find_spots
+        Offer tab completion options for find_spots
 
-    """
+        """
         return self.get_phil_completions(text, mode="find_spots")
 
     def complete_search_beam_position(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for search_beam_position
+        Offer tab completion options for search_beam_position
 
-    """
+        """
         return self.get_phil_completions(text, mode="search_beam_position")
 
     def complete_index(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for index
+        Offer tab completion options for index
 
-    """
+        """
         return self.get_phil_completions(text, mode="index")
 
     def complete_refine_bravais_settings(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for refine_bravais_settings
+        Offer tab completion options for refine_bravais_settings
 
-    """
+        """
         return self.get_phil_completions(text, mode="refine_bravais_settings")
 
     def complete_reindex(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for reindex
+        Offer tab completion options for reindex
 
-    """
+        """
         return self.get_phil_completions(text, mode="reindex")
 
     def complete_refine(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for refine
+        Offer tab completion options for refine
 
-    """
+        """
         return self.get_phil_completions(text, mode="refine")
 
     def complete_integrate(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for integrate
+        Offer tab completion options for integrate
 
-    """
+        """
         return self.get_phil_completions(text, mode="integrate")
 
     def complete_export(self, text, line, begidx, endidx):
         """
-    Offer tab completion options for export
+        Offer tab completion options for export
 
-    """
+        """
         return self.get_phil_completions(text, mode="export")
 
     def get_phil_completions(self, text, mode=None):
         """
-    Get completions for phil parameters
+        Get completions for phil parameters
 
-    """
+        """
         phil_scope = self.controller.get_parameters(diff=False, mode=mode)
         definitions = phil_scope.all_definitions()
         full_names = [d.path for d in definitions]
@@ -495,9 +495,9 @@ class Console(Cmd):
 
     def get_path_completions(self, text, line, begidx, endidx):
         """
-    Get completions for paths
+        Get completions for paths
 
-    """
+        """
         import os
         from os.path import isdir
         import glob

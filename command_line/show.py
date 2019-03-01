@@ -286,9 +286,9 @@ def show_datablocks(datablocks):
 def _create_flag_count_table(table):
     """Generate a summary table of flag values in a reflection table.
 
-  :param table: A reflection table
-  :returns:     A string of the formatted flags table
-  """
+    :param table: A reflection table
+    :returns:     A string of the formatted flags table
+    """
 
     # Calculate the counts of entries that match each flag
     numpy_flags = table["flags"].as_numpy_array()

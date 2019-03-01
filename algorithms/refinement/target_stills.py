@@ -22,9 +22,9 @@ TWO_PI = 2.0 * pi
 
 class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     """An implementation of the target class providing a least squares residual
-  in terms of detector impact position X, Y and minimum rotation to the Ewald
-  sphere, DeltaPsi. Terminates refinement on achieved rmsd (or on intrisic
-  convergence of the chosen minimiser)"""
+    in terms of detector impact position X, Y and minimum rotation to the Ewald
+    sphere, DeltaPsi. Terminates refinement on achieved rmsd (or on intrisic
+    convergence of the chosen minimiser)"""
 
     _grad_names = ["dX_dp", "dY_dp", "dDeltaPsi_dp"]
     rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_DeltaPsi"]
@@ -144,7 +144,7 @@ class LeastSquaresStillsResidualWithRmsdCutoffSparse(
     SparseGradientsMixin, LeastSquaresStillsResidualWithRmsdCutoff
 ):
     """A version of the LeastSquaresStillsResidualWithRmsdCutoff Target that
-  uses a sparse matrix data structure for memory efficiency when there are a
-  large number of Experiments"""
+    uses a sparse matrix data structure for memory efficiency when there are a
+    large number of Experiments"""
 
     pass

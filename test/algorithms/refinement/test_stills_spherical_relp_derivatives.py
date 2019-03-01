@@ -52,8 +52,8 @@ class Predictor(object):
 
     def predict(self, reflections):
         """
-    Predict for all reflections
-    """
+        Predict for all reflections
+        """
 
         self._predictor.for_reflection_table(reflections, self._UB)
         return reflections

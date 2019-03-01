@@ -34,13 +34,13 @@ else:
 
 def strategy(cls, params=None):
     """
-  Wrap a class that takes params and experiments as a strategy.
+    Wrap a class that takes params and experiments as a strategy.
 
-  :param cls: The class to wrap
-  :param params: The input parameters
-  :return: A function to instantiate the strategy
+    :param cls: The class to wrap
+    :param params: The input parameters
+    :return: A function to instantiate the strategy
 
-  """
+    """
 
     class Strategy(cls):
         algorithm = cls
@@ -54,11 +54,11 @@ def strategy(cls, params=None):
 
 def default_background_algorithm():
     """
-  Get the default background algorithm.
+    Get the default background algorithm.
 
-  :return: The default background algorithm
+    :return: The default background algorithm
 
-  """
+    """
     from dials.extensions.glm_background_ext import GLMBackgroundExt
 
     return strategy(GLMBackgroundExt)
@@ -66,11 +66,11 @@ def default_background_algorithm():
 
 def default_centroid_algorithm():
     """
-  Get the default centroid algorithm.
+    Get the default centroid algorithm.
 
-  :return: The default centroid algorithm
+    :return: The default centroid algorithm
 
-  """
+    """
     from dials.extensions.simple_centroid_ext import SimpleCentroidExt
 
     return strategy(SimpleCentroidExt)
@@ -78,9 +78,9 @@ def default_centroid_algorithm():
 
 class reflection_table_aux(boost.python.injector, reflection_table):
     """
-  An injector class to add additional methods to the reflection table.
+    An injector class to add additional methods to the reflection table.
 
-  """
+    """
 
     # Set the default algorithms. These are set as class variables so that if they
     # are changed in the class, all new instances of reflection table will have
@@ -95,17 +95,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         experiment, dmin=None, dmax=None, margin=1, force_static=False, padding=0
     ):
         """
-    Construct a reflection table from predictions.
+        Construct a reflection table from predictions.
 
-    :param experiment: The experiment to predict from
-    :param dmin: The maximum resolution
-    :param dmax: The minimum resolution
-    :param margin: The margin to predict around
-    :param force_static: Do static prediction with a scan varying model
-    :param padding: Padding in degrees
-    :return: The reflection table of predictions
+        :param experiment: The experiment to predict from
+        :param dmin: The maximum resolution
+        :param dmax: The minimum resolution
+        :param margin: The margin to predict around
+        :param force_static: Do static prediction with a scan varying model
+        :param padding: Padding in degrees
+        :return: The reflection table of predictions
 
-    """
+        """
         if experiment.profile is not None:
             return experiment.profile.predict_reflections(
                 experiment.imageset,
@@ -139,17 +139,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         experiments, dmin=None, dmax=None, margin=1, force_static=False, padding=0
     ):
         """
-    Construct a reflection table from predictions.
+        Construct a reflection table from predictions.
 
-    :param experiments: The experiment list to predict from
-    :param dmin: The maximum resolution
-    :param dmax: The minimum resolution
-    :param margin: The margin to predict around
-    :param force_static: Do static prediction with a scan varying model
-    :param padding: Padding in degrees
-    :return: The reflection table of predictions
+        :param experiments: The experiment list to predict from
+        :param dmin: The maximum resolution
+        :param dmax: The minimum resolution
+        :param margin: The margin to predict around
+        :param force_static: Do static prediction with a scan varying model
+        :param padding: Padding in degrees
+        :return: The reflection table of predictions
 
-    """
+        """
         from scitbx.array_family import flex
 
         result = reflection_table()
@@ -169,13 +169,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def from_observations(datablock, params=None):
         """
-    Construct a reflection table from observations.
+        Construct a reflection table from observations.
 
-    :param datablock: The datablock
-    :param params: The input parameters
-    :return: The reflection table of observations
+        :param datablock: The datablock
+        :param params: The input parameters
+        :return: The reflection table of observations
 
-    """
+        """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory
         from libtbx import Auto
 
@@ -209,12 +209,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def from_pickle(filename):
         """
-    Read the reflection table from pickle file.
+        Read the reflection table from pickle file.
 
-    :param filename: The pickle filename
-    :return: The reflection table
+        :param filename: The pickle filename
+        :return: The reflection table
 
-    """
+        """
         import six.moves.cPickle as pickle
         from libtbx import smart_open
 
@@ -225,9 +225,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def as_msgpack_file(self, filename):
         """
-    Write the reflection table to file in msgpack format
+        Write the reflection table to file in msgpack format
 
-    """
+        """
         from libtbx import smart_open
         import blosc
 
@@ -237,9 +237,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def from_msgpack_file(filename):
         """
-    Read the reflection table from file in msgpack format
+        Read the reflection table from file in msgpack format
 
-    """
+        """
         from libtbx import smart_open
         import blosc
 
@@ -249,12 +249,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def from_h5(filename):
         """
-    Read the reflections table from a HDF5 file.
+        Read the reflections table from a HDF5 file.
 
-    :param filename: The hdf5 filename
-    :return: The reflection table
+        :param filename: The hdf5 filename
+        :return: The reflection table
 
-    """
+        """
         from dials.util.nexus_old import NexusFile
 
         handle = NexusFile(filename, "r")
@@ -265,13 +265,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def empty_standard(nrows):
         """
-    Create an empty table of specified number of rows with most of the standard
-    keys
+        Create an empty table of specified number of rows with most of the standard
+        keys
 
-    :param nrows: The number of rows to create
-    :return: The reflection table
+        :param nrows: The number of rows to create
+        :return: The reflection table
 
-    """
+        """
 
         assert nrows > 0
         table = reflection_table(nrows)
@@ -307,13 +307,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     @staticmethod
     def plot(table, detector, key):
         """
-    Plot a reflection table using matplotlib
+        Plot a reflection table using matplotlib
 
-    :param table: The reflection table
-    :param detector: The detector model
-    :param key: The key to plot
+        :param table: The reflection table
+        :param detector: The detector model
+        :param key: The key to plot
 
-    """
+        """
         from matplotlib import pyplot as plt
         from matplotlib.patches import Polygon
 
@@ -366,11 +366,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def as_pickle(self, filename):
         """
-    Write the reflection table as a pickle file.
+        Write the reflection table as a pickle file.
 
-    :param filename: The output filename
+        :param filename: The output filename
 
-    """
+        """
         import six.moves.cPickle as pickle
         from libtbx import smart_open
 
@@ -382,11 +382,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def as_h5(self, filename):
         """
-    Write the reflection table as a HDF5 file.
+        Write the reflection table as a HDF5 file.
 
-    :param filename: The output filename
+        :param filename: The output filename
 
-    """
+        """
         from dials.util.nexus_old import NexusFile
 
         handle = NexusFile(filename, "w")
@@ -398,21 +398,21 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     def as_miller_array(self, experiment, intensity="sum"):
         """Return a miller array with the chosen intensities.
 
-    Use the provided experiment object and intensity choice to make a miller
-    intensity array with sigmas (no scaling applied).
+        Use the provided experiment object and intensity choice to make a miller
+        intensity array with sigmas (no scaling applied).
 
-    Args:
-        experiment (dxtbx.model.Experiment): An experiment object.
-        intensity (str): The intensity type that will be used to make the
-            miller array e.g 'prf', 'sum'.
+        Args:
+            experiment (dxtbx.model.Experiment): An experiment object.
+            intensity (str): The intensity type that will be used to make the
+                miller array e.g 'prf', 'sum'.
 
-    Returns:
-        cctbx.miller.array: A miller array with intensities and sigmas.
+        Returns:
+            cctbx.miller.array: A miller array with intensities and sigmas.
 
-    Raises:
-        Sorry: If chosen intensity values cannot be found in the table.
+        Raises:
+            Sorry: If chosen intensity values cannot be found in the table.
 
-    """
+        """
 
         try:
             intensities, variances = (
@@ -444,24 +444,24 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def copy(self):
         """
-    Copy everything.
+        Copy everything.
 
-    :return: A copy of the reflection table
+        :return: A copy of the reflection table
 
-    """
+        """
         from scitbx.array_family import flex
 
         return self.select(flex.bool(len(self), True))
 
     def sort(self, name, reverse=False, order=None):
         """
-    Sort the reflection table by a key.
+        Sort the reflection table by a key.
 
-    :param name: The name of the column
-    :param reverse: Reverse the sort order
-    :param order: For multi element items specify order
+        :param name: The name of the column
+        :param reverse: Reverse the sort order
+        :param order: For multi element items specify order
 
-    """
+        """
         import __builtin__
 
         if type(self[name]) in [
@@ -504,12 +504,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def subsort(self, key0, key1, reverse=False):
         """
-    Sort the reflection based on key1 within a constant key0.
+        Sort the reflection based on key1 within a constant key0.
 
-    :param key0: The name of the column values to sort within
-    :param key1: The sorting key name within the selected column
+        :param key0: The name of the column values to sort within
+        :param key1: The sorting key name within the selected column
 
-    """
+        """
         import copy
 
         uniq_values = self[key0]
@@ -521,13 +521,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def match(self, other):
         """
-    Match reflections with another set of reflections.
+        Match reflections with another set of reflections.
 
-    :param other: The reflection table to match against
-    :return: A tuple containing the matches in the reflection table and the
-             other reflection table
+        :param other: The reflection table to match against
+        :return: A tuple containing the matches in the reflection table and the
+                 other reflection table
 
-    """
+        """
         from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
 
         match = SpotMatcher(max_separation=2)
@@ -536,12 +536,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def match_with_reference_without_copying_columns(self, other):
         """
-    Match reflections with another set of reflections.
+        Match reflections with another set of reflections.
 
-    :param other: The reflection table to match against
-    :return: The matches
+        :param other: The reflection table to match against
+        :return: The matches
 
-    """
+        """
         from collections import defaultdict
         import __builtin__
 
@@ -654,12 +654,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def match_with_reference(self, other):
         """
-    Match reflections with another set of reflections.
+        Match reflections with another set of reflections.
 
-    :param other: The reflection table to match against
-    :return: The matches
+        :param other: The reflection table to match against
+        :return: The matches
 
-    """
+        """
         from collections import defaultdict
         import __builtin__
 
@@ -783,12 +783,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_zeta(self, experiment):
         """
-    Compute zeta for each reflection.
+        Compute zeta for each reflection.
 
-    :param experiment: The experimental models
-    :return: Zeta for each reflection
+        :param experiment: The experimental models
+        :return: Zeta for each reflection
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs import zeta_factor
 
         m2 = experiment.goniometer.get_rotation_axis()
@@ -798,12 +798,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_zeta_multi(self, experiments):
         """
-    Compute zeta for each reflection.
+        Compute zeta for each reflection.
 
-    :param experiments: The list of experiments
-    :return: Zeta for each reflection
+        :param experiments: The list of experiments
+        :return: Zeta for each reflection
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs import zeta_factor
 
         m2 = flex.vec3_double(len(experiments))
@@ -816,12 +816,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_d_single(self, experiment):
         """
-    Compute the resolution for each reflection.
+        Compute the resolution for each reflection.
 
-    :param experiment: The experimental models
-    :return: The resolution for each reflection
+        :param experiment: The experimental models
+        :return: The resolution for each reflection
 
-    """
+        """
         from dials.array_family import flex
 
         uc = flex.unit_cell(1)
@@ -831,12 +831,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_d(self, experiments):
         """
-    Compute the resolution for each reflection.
+        Compute the resolution for each reflection.
 
-    :param experiments: The experiment list
-    :return: The resolution for each reflection
+        :param experiments: The experiment list
+        :return: The resolution for each reflection
 
-    """
+        """
         from dials.array_family import flex
 
         uc = flex.unit_cell(len(experiments))
@@ -848,14 +848,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_bbox(self, experiments, sigma_b_multiplier=2.0):
         """
-    Compute the bounding boxes.
+        Compute the bounding boxes.
 
-    :param experiments: The list of experiments
-    :param profile_model: The profile models
-    :param sigma_b_multiplier: Multiplier to cover extra background
-    :return: The bounding box for each reflection
+        :param experiments: The list of experiments
+        :param profile_model: The profile models
+        :param sigma_b_multiplier: Multiplier to cover extra background
+        :return: The bounding box for each reflection
 
-    """
+        """
         self["bbox"] = int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(
@@ -874,13 +874,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_partiality(self, experiments):
         """
-    Compute the reflection partiality.
+        Compute the reflection partiality.
 
-    :param experiments: The experiment list
-    :param profile_model: The profile models
-    :return: The partiality for each reflection
+        :param experiments: The experiment list
+        :param profile_model: The profile models
+        :return: The partiality for each reflection
 
-    """
+        """
         self["partiality"] = flex.double(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["partiality"].set_selected(
@@ -898,12 +898,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_mask(self, experiments, image_volume=None, overlaps=None):
         """
-    Apply a mask to the shoeboxes.
+        Apply a mask to the shoeboxes.
 
-    :param experiments: The list of experiments
-    :param profile_model: The profile model
+        :param experiments: The list of experiments
+        :param profile_model: The profile model
 
-    """
+        """
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             result = expr.profile.compute_mask(
                 self.select(indices),
@@ -921,10 +921,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def iterate_experiments_and_indices(self, experiments):
         """
-    A helper function to interate through experiments and indices of reflections
-    for each experiment
+        A helper function to interate through experiments and indices of reflections
+        for each experiment
 
-    """
+        """
         assert len(experiments) > 0
         index_list = self.split_indices_by_experiment_id(len(experiments))
         assert len(experiments) == len(index_list)
@@ -937,11 +937,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_background(self, experiments, image_volume=None):
         """
-    Helper function to compute the background.
+        Helper function to compute the background.
 
-    :param experiments: The list of experiments
+        :param experiments: The list of experiments
 
-    """
+        """
         success = self._background_algorithm(experiments).compute_background(
             self, image_volume
         )
@@ -949,20 +949,20 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_centroid(self, experiments, image_volume=None):
         """
-    Helper function to compute the centroid.
+        Helper function to compute the centroid.
 
-    :param experiments: The list of experiments
+        :param experiments: The list of experiments
 
-    """
+        """
         self._centroid_algorithm(experiments).compute_centroid(
             self, image_volume=image_volume
         )
 
     def compute_summed_intensity(self, image_volume=None):
         """
-    Compute intensity via summation integration.
+        Compute intensity via summation integration.
 
-    """
+        """
         from dials.algorithms.integration.sum import IntegrationAlgorithm
 
         algorithm = IntegrationAlgorithm()
@@ -971,23 +971,23 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_fitted_intensity(self, fitter):
         """
-    Helper function to compute the intensity.
+        Helper function to compute the intensity.
 
-    :param experiments: The list of experiments
-    :param profile_model: The profile model
+        :param experiments: The list of experiments
+        :param profile_model: The profile model
 
-    """
+        """
         success = fitter.fit(self)
         self.set_flags(~success, self.flags.failed_during_profile_fitting)
 
     def compute_corrections(self, experiments):
         """
-    Helper function to correct the intensity.
+        Helper function to correct the intensity.
 
-    :param experiments: The list of experiments
-    :return: The LP correction for each reflection
+        :param experiments: The list of experiments
+        :return: The LP correction for each reflection
 
-    """
+        """
         from dials.algorithms.integration import Corrections, CorrectionsMulti
 
         compute = CorrectionsMulti()
@@ -1009,13 +1009,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def integrate(self, experiments, profile_model, reference_selector=None):
         """
-    Helper function to integrate reflections.
+        Helper function to integrate reflections.
 
-    :param experiments: The list of experiments
-    :param profile_model: The profile model
-    :param reference_selector: The algorithm to choose reference spots
+        :param experiments: The list of experiments
+        :param profile_model: The profile model
+        :param reference_selector: The algorithm to choose reference spots
 
-    """
+        """
         self.compute_background(experiments)
         self.compute_centroid(experiments)
         self.compute_summed_intensity()
@@ -1025,15 +1025,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def extract_shoeboxes(self, imageset, mask=None, nthreads=1, verbose=False):
         """
-    Helper function to read a load of shoebox data.
+        Helper function to read a load of shoebox data.
 
-    :param imageset: The imageset
-    :param mask: The mask to apply
-    :param nthreads: The number of threads to use
-    :param verbose: The verbosity
-    :return: A tuple containing read time and extract time
+        :param imageset: The imageset
+        :param mask: The mask to apply
+        :param nthreads: The number of threads to use
+        :param verbose: The verbosity
+        :return: A tuple containing read time and extract time
 
-    """
+        """
         from dials.model.data import make_image
         from time import time
 
@@ -1069,12 +1069,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def is_overloaded(self, experiments_or_datablock):
         """
-    Check if the shoebox contains overloaded pixels.
+        Check if the shoebox contains overloaded pixels.
 
-    :param experiments: The experiment list
-    :return: True/False overloaded for each reflection
+        :param experiments: The experiment list
+        :return: True/False overloaded for each reflection
 
-    """
+        """
         from dxtbx.model.experiment_list import ExperimentList
         from dials.algorithms.shoebox import OverloadChecker
 
@@ -1094,11 +1094,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def contains_invalid_pixels(self):
         """
-    Check if the shoebox contains invalid pixels.
+        Check if the shoebox contains invalid pixels.
 
-    :return: True/False invalid for each reflection
+        :return: True/False invalid for each reflection
 
-    """
+        """
         from dials.algorithms.shoebox import MaskCode
 
         assert "shoebox" in self
@@ -1121,13 +1121,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def find_overlaps(self, experiments=None, border=0):
         """
-    Check for overlapping reflections.
+        Check for overlapping reflections.
 
-    :param experiments: The experiment list
-    :param tolerance: A positive integer specifying border around shoebox
-    :return: The overlap list
+        :param experiments: The experiment list
+        :param tolerance: A positive integer specifying border around shoebox
+        :return: The overlap list
 
-    """
+        """
         from dials.algorithms.shoebox import OverlapFinder
         from itertools import groupby
 
@@ -1177,12 +1177,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_shoebox_overlap_fraction(self, overlaps):
         """
-    Compute the fraction of shoebox overlapping.
+        Compute the fraction of shoebox overlapping.
 
-    :param overlaps: The list of overlaps
-    :return: The fraction of shoebox overlapped with other reflections
+        :param overlaps: The list of overlaps
+        :return: The fraction of shoebox overlapped with other reflections
 
-    """
+        """
         from dials.array_family import flex
 
         result = flex.double(len(self))
@@ -1226,9 +1226,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def assert_experiment_identifiers_are_consistent(self, experiments=None):
         """
-    Check the experiment identifiers
+        Check the experiment identifiers
 
-    """
+        """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
             values = identifiers.values()
@@ -1251,9 +1251,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def are_experiment_identifiers_consistent(self, experiments=None):
         """
-    Check the experiment identifiers
+        Check the experiment identifiers
 
-    """
+        """
         try:
             self.assert_experiment_identifiers_are_consistent(experiments)
         except AssertionError:
@@ -1262,9 +1262,9 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def compute_miller_indices_in_asu(self, experiments):
         """
-    Compute miller indices in the asu
+        Compute miller indices in the asu
 
-    """
+        """
         self["miller_index_asu"] = miller_index(len(self))
         for idx, experiment in enumerate(experiments):
 
@@ -1287,10 +1287,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     def select_on_experiment_identifiers(self, list_of_identifiers):
         """
-    Given a list of experiment identifiers (strings), perform a selection
-    and return a reflection table with properly configured experiment_identifiers
-    map.
-    """
+        Given a list of experiment identifiers (strings), perform a selection
+        and return a reflection table with properly configured experiment_identifiers
+        map.
+        """
         # First get the reverse of the map i.e. ids for a given exp_identifier
         id_values = []
         for exp_id in list_of_identifiers:
@@ -1320,9 +1320,9 @@ Found %s"""
 
     def remove_on_experiment_identifiers(self, list_of_identifiers):
         """
-    Remove datasets from the table, given a list of experiment
-    identifiers (strings).
-    """
+        Remove datasets from the table, given a list of experiment
+        identifiers (strings).
+        """
         # First get the reverse of the map i.e. ids for a given exp_identifier
         assert "id" in self
         id_values = []
@@ -1348,10 +1348,10 @@ Found %s"""
 
     def clean_experiment_identifiers_map(self):
         """
-    Remove any entries from the identifier map that do not have any
-    data in the table. Primarily to call as saving data to give a
-    consistent table and map.
-    """
+        Remove any entries from the identifier map that do not have any
+        data in the table. Primarily to call as saving data to give a
+        consistent table and map.
+        """
         dataset_ids_in_table = set(self["id"]).difference(set([-1]))
         dataset_ids_in_map = set(self.experiment_identifiers().keys())
         ids_to_remove = dataset_ids_in_map.difference(dataset_ids_in_table)
@@ -1360,9 +1360,9 @@ Found %s"""
 
     def reset_ids(self):
         """
-    Reset the 'id' column such that the experiment identifiers are
-    numbered 0 .. n-1.
-    """
+        Reset the 'id' column such that the experiment identifiers are
+        numbered 0 .. n-1.
+        """
         reverse_map = OrderedDict((v, k) for k, v in self.experiment_identifiers())
         orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
@@ -1375,21 +1375,21 @@ Found %s"""
 
 class reflection_table_selector(object):
     """
-  A class to select columns from reflection table.
+    A class to select columns from reflection table.
 
-  This is mainly useful for specifying selections from phil parameters
+    This is mainly useful for specifying selections from phil parameters
 
-  """
+    """
 
     def __init__(self, column, op, value):
         """
-    Initialise the selector
+        Initialise the selector
 
-    :param col: The column name
-    :param op: The operator
-    :param value: The value
+        :param col: The column name
+        :param op: The operator
+        :param value: The value
 
-    """
+        """
         import operator
 
         # Set the column and value
@@ -1420,9 +1420,9 @@ class reflection_table_selector(object):
     @property
     def op_string(self):
         """
-    Return the operator as a string
+        Return the operator as a string
 
-    """
+        """
         import operator
 
         if self.op == operator.lt:
@@ -1445,13 +1445,13 @@ class reflection_table_selector(object):
 
     def __call__(self, reflections):
         """
-    Select the reflections
+        Select the reflections
 
-    :param reflections: The reflections
+        :param reflections: The reflections
 
-    :return: The selection as a mask
+        :return: The selection as a mask
 
-    """
+        """
         import __builtin__
 
         if self.column == "intensity.sum.i_over_sigma":

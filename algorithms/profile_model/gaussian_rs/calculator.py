@@ -28,13 +28,13 @@ class ComputeEsdBeamDivergence(object):
     """Calculate the E.s.d of the beam divergence."""
 
     def __init__(self, detector, reflections):
-        """ Calculate the E.s.d of the beam divergence.
+        """Calculate the E.s.d of the beam divergence.
 
-    Params:
-        detector The detector class
-        reflections The reflections
+        Params:
+            detector The detector class
+            reflections The reflections
 
-    """
+        """
         from scitbx.array_family import flex
         from math import sqrt
 
@@ -51,13 +51,13 @@ class ComputeEsdBeamDivergence(object):
     def _beam_direction_variance_list(self, detector, reflections):
         """Calculate the variance in beam direction for each spot.
 
-    Params:
-        reflections The list of reflections
+        Params:
+            reflections The list of reflections
 
-    Returns:
-        The list of variances
+        Returns:
+            The list of variances
 
-    """
+        """
         from scitbx.array_family import flex
 
         # Get the reflection columns
@@ -93,11 +93,11 @@ class FractionOfObservedIntensity(object):
     def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
         """Initialise the algorithm. Calculate the list of tau and zetas.
 
-    Params:
-        reflections The list of reflections
-        experiment The experiment object
+        Params:
+            reflections The list of reflections
+            experiment The experiment object
 
-    """
+        """
         from dials.array_family import flex
         from math import sqrt
 
@@ -118,14 +118,14 @@ class FractionOfObservedIntensity(object):
     ):
         """Calculate the list of tau and zeta needed for the calculation.
 
-    Params:
-        reflections The list of reflections
-        experiment The experiment object.
+        Params:
+            reflections The list of reflections
+            experiment The experiment object.
 
-    Returns:
-        (list of tau, list of zeta)
+        Returns:
+            (list of tau, list of zeta)
 
-    """
+        """
         from scitbx.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
@@ -158,13 +158,13 @@ class FractionOfObservedIntensity(object):
     def __call__(self, sigma_m):
         """Calculate the fraction of observed intensity for each observation.
 
-    Params:
-        sigma_m The mosaicity
+        Params:
+            sigma_m The mosaicity
 
-    Returns:
-        A list of log intensity fractions
+        Returns:
+            A list of log intensity fractions
 
-    """
+        """
         from math import sqrt
         from scitbx.array_family import flex
         import scitbx.math
@@ -268,14 +268,14 @@ class ComputeEsdReflectingRange(object):
         ):
             """Calculate the list of tau and zeta needed for the calculation.
 
-      Params:
-          reflections The list of reflections
-          experiment The experiment object.
+            Params:
+                reflections The list of reflections
+                experiment The experiment object.
 
-      Returns:
-          (list of tau, list of zeta)
+            Returns:
+                (list of tau, list of zeta)
 
-      """
+            """
             from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
 
@@ -429,14 +429,14 @@ class ComputeEsdReflectingRange(object):
         ):
             """Calculate the list of tau and zeta needed for the calculation.
 
-      Params:
-          reflections The list of reflections
-          experiment The experiment object.
+            Params:
+                reflections The list of reflections
+                experiment The experiment object.
 
-      Returns:
-          (list of tau, list of zeta)
+            Returns:
+                (list of tau, list of zeta)
 
-      """
+            """
             from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
 
@@ -483,10 +483,10 @@ class ComputeEsdReflectingRange(object):
     ):
         """initialise the algorithm with the scan.
 
-    params:
-        scan the scan object
+        params:
+            scan the scan object
 
-    """
+        """
 
         if algorithm == "basic":
 

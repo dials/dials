@@ -25,11 +25,11 @@ import random
 
 def ordinal_number(array_index=None, cardinal_number=None):
     """Return a string representing the ordinal number for the input integer. One
-  of array_index or cardinal_number must be set, depending on whether the
-  input is from a 0-based or 1-based sequence.
+    of array_index or cardinal_number must be set, depending on whether the
+    input is from a 0-based or 1-based sequence.
 
-  Based on Thad Guidry's post at
-  https://groups.google.com/forum/#!topic/openrefine/G7_PSdUeno0"""
+    Based on Thad Guidry's post at
+    https://groups.google.com/forum/#!topic/openrefine/G7_PSdUeno0"""
     if [array_index, cardinal_number].count(None) != 1:
         raise ValueError("One of array_index or cardinal_number should be set")
     if array_index is not None:
@@ -43,7 +43,7 @@ def ordinal_number(array_index=None, cardinal_number=None):
 
 class PanelGroupCompose(pgc_cpp):
     """Wrapper for the C++ PanelGroupCompose class with accessors that
-  return scitbx matrix values."""
+    return scitbx matrix values."""
 
     def d1(self):
         return matrix.col(super(PanelGroupCompose, self).d1())
@@ -63,7 +63,7 @@ class PanelGroupCompose(pgc_cpp):
 
 class CrystalOrientationCompose(xloc_cpp):
     """Wrapper for the C++ CrystalOrientationCompose class with accessors that
-  return matrix.sqr values."""
+    return matrix.sqr values."""
 
     def U(self):
         return matrix.sqr(super(CrystalOrientationCompose, self).U())
@@ -85,7 +85,7 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
 
 def dR_from_axis_and_angle_py(axis, angle, deg=False):
     """return the first derivative of a rotation matrix specified by its
-  axis and angle"""
+    axis and angle"""
 
     # NB it is inefficient to do this separately from the calculation of
     # the rotation matrix itself, but it seems the Python interface to
@@ -125,9 +125,9 @@ def dR_from_axis_and_angle_py(axis, angle, deg=False):
 
 def skew_symm(v):
     """Make matrix [v]_x from v. Essentially multiply vector by SO(3) basis
-  set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.
+    set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.
 
-  NB a C++ version exists in gallego_yezzi.h."""
+    NB a C++ version exists in gallego_yezzi.h."""
     import scitbx.matrix
 
     L1 = scitbx.matrix.sqr((0, 0, 0, 0, 0, -1, 0, 1, 0))
@@ -141,11 +141,11 @@ def skew_symm(v):
 
 def dRq_de(theta, e, q):
     """Calculate derivative of rotated vector r = R*q with respect to the elements
-  of the rotation axis e, where the angle of rotation is theta.
+    of the rotation axis e, where the angle of rotation is theta.
 
-  Implementation of Equation (8) from Gallego & Yezzi.
+    Implementation of Equation (8) from Gallego & Yezzi.
 
-  NB a C++ version exists in gallego_yezzi.h."""
+    NB a C++ version exists in gallego_yezzi.h."""
 
     from scitbx import matrix
 
@@ -179,14 +179,14 @@ def random_param_shift(vals, sigmas):
 
 def get_fd_gradients(mp, deltas, multi_state_elt=None):
     """Calculate centered finite difference gradients for each of the
-  parameters of the model parameterisation mp.
+    parameters of the model parameterisation mp.
 
-  "deltas" must be a sequence of the same length as the parameter list, and
-  contains the step size for the difference calculations for each parameter.
+    "deltas" must be a sequence of the same length as the parameter list, and
+    contains the step size for the difference calculations for each parameter.
 
-  "multi_state_elt" selects a particular state for use when mp is a multi-
-  state parameterisation.
-  """
+    "multi_state_elt" selects a particular state for use when mp is a multi-
+    state parameterisation.
+    """
 
     p_vals = mp.get_param_vals()
     assert len(deltas) == len(p_vals)
@@ -246,8 +246,8 @@ def get_panel_ids_at_root(panel_list, group):
 
 def corrgram(corrmat, labels):
     """Create a correlation matrix plot or 'corrgram' for the provided
-  correlation matrix and row/column labels. Inspired by R's corrplot and
-  https://github.com/louridas/corrplot/blob/master/corrplot.py"""
+    correlation matrix and row/column labels. Inspired by R's corrplot and
+    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
 
     try:  # is corrmat a scitbx matrix?
         corrmat = corrmat.as_flex_double_matrix()
@@ -316,14 +316,14 @@ def corrgram(corrmat, labels):
 
 def string_sel(l, full_names, prefix=""):
     """Provide flexible matching between a list of input strings, l,
-  consisting either of indices or partial names, and a list of full names,
-  with an optional shared prefix. The input list l may arrive from PHIL
-  conversion of the strings type. In that case, comma-separated values will
-  require splitting, and bracket characters will be removed. The values in
-  the processed list l should consist of integers or partial names. Integers
-  will be treated as 0-based indices and partial names will be matched to
-  as many full names as possible. The created selection is returned as a
-  boolean list."""
+    consisting either of indices or partial names, and a list of full names,
+    with an optional shared prefix. The input list l may arrive from PHIL
+    conversion of the strings type. In that case, comma-separated values will
+    require splitting, and bracket characters will be removed. The values in
+    the processed list l should consist of integers or partial names. Integers
+    will be treated as 0-based indices and partial names will be matched to
+    as many full names as possible. The created selection is returned as a
+    boolean list."""
 
     sel = [False] * len(full_names)
     full_names = [prefix + s for s in full_names]
@@ -348,7 +348,7 @@ def string_sel(l, full_names, prefix=""):
 
 def calculate_frame_numbers(reflections, experiments):
     """calculate observed frame numbers for all reflections, if not already
-  set"""
+    set"""
 
     # Only do this if we have to
     if "xyzobs.px.value" in reflections:
@@ -374,7 +374,7 @@ def calculate_frame_numbers(reflections, experiments):
 
 def set_obs_s1(reflections, experiments):
     """Set observed s1 vectors for reflections if required, return the number
-  of reflections that have been set."""
+    of reflections that have been set."""
 
     refs_wo_s1_sel = reflections["s1"].norms() < 1.0e-6
     nrefs_wo_s1 = refs_wo_s1_sel.count(True)

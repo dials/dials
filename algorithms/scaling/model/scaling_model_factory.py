@@ -13,8 +13,8 @@ import dials.algorithms.scaling.model.model as Model
 
 class KBSMFactory(object):
     """
-  Factory for creating a KB scaling model.
-  """
+    Factory for creating a KB scaling model.
+    """
 
     @classmethod
     def create(cls, params, _, __):
@@ -40,8 +40,8 @@ class KBSMFactory(object):
 
 class PhysicalSMFactory(object):
     """
-  Factory for creating a physical scaling model.
-  """
+    Factory for creating a physical scaling model.
+    """
 
     @classmethod
     def create(cls, params, experiments, _):
@@ -97,7 +97,7 @@ class PhysicalSMFactory(object):
 
 def calc_n_param_from_bins(value_min, value_max, n_bins):
     """Return the correct number of bins for initialising the gaussian
-  smoothers."""
+    smoothers."""
     assert n_bins > 0
     assert isinstance(n_bins, int)
     bin_width = (value_max - value_min) / n_bins
@@ -112,8 +112,8 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
 
 class ArraySMFactory(object):
     """
-  Factory for creating an array-based scaling model.
-  """
+    Factory for creating an array-based scaling model.
+    """
 
     @classmethod
     def create(cls, params, experiments, reflections):

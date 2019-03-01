@@ -106,8 +106,8 @@ class SparseLevenbergMarquardtIterations(
 
     def set_cholesky_factor(self):
         """Override that disables this method of the base AdaptLstbx. For
-    sparse, large matrices this is numberically unstable; not to mention it
-    is not implemented for the Eigen wrapper"""
+        sparse, large matrices this is numberically unstable; not to mention it
+        is not implemented for the Eigen wrapper"""
         pass
 
     def setup_mu(self):
@@ -121,7 +121,7 @@ class SparseLevenbergMarquardtIterations(
 
     def report_progress(self, objective):
         """Override for the Eigen wrapper to provide live feedback of progress
-    of the refinement"""
+        of the refinement"""
         if self._verbosity > 2:
             logger.info(
                 "Iteration: %5d Objective: %18.4f Mu: %12.7f"

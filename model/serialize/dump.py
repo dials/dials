@@ -12,11 +12,11 @@ import six.moves.cPickle as pickle
 
 def reflections(obj, outfile):
     """
-  Dump the given object to file
+    Dump the given object to file
 
-  :param obj: The reflection list to dump
-  :param outfile: The output file name or file object
-  """
+    :param obj: The reflection list to dump
+    :param outfile: The output file name or file object
+    """
     if isinstance(outfile, str):
         with open(outfile, "wb") as outfile:
             pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
@@ -28,12 +28,12 @@ def reflections(obj, outfile):
 
 def reference(obj, outfile):
     """
-  Dump the given object to file
+    Dump the given object to file
 
-  :param obj: The reference list to dump
-  :param outfile: The output file name or file object
+    :param obj: The reference list to dump
+    :param outfile: The output file name or file object
 
-  """
+    """
 
     if isinstance(outfile, str):
         with open(outfile, "wb") as outfile:

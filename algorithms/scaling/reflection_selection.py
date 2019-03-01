@@ -84,20 +84,20 @@ magic_theta = 70.53
 def determine_reflection_selection_parameters(params, experiments, reflections):
     """Algorithm to determine suitable parameters for the quasi-random algorithm.
 
-  Only triggered when reflection_selection.method == auto
-  Rules:
-    if < 20000 total reflections, just use them all.
-    for single dataset minimisation:
-      - want at least the greater of 100 * n_params / 2% of reflections, as long
-        as this is between 10000 and 50000 reflections.
-      - use 20 resolution bins
-    for multi-dataset minimisation:
-      - try to get at least 100-200 reflections per parameter
-      - try to get a split of 20% inter-dataset, 80% intra-dataset reflections
-      - try to use at least 50000 reflections (no upper limit)
-      - if trying to use <= 360 reflections per dataset, use 10 resolution bins,
-        else use 20 resolution bins (to get at least 2 refl per area).
-  """
+    Only triggered when reflection_selection.method == auto
+    Rules:
+      if < 20000 total reflections, just use them all.
+      for single dataset minimisation:
+        - want at least the greater of 100 * n_params / 2% of reflections, as long
+          as this is between 10000 and 50000 reflections.
+        - use 20 resolution bins
+      for multi-dataset minimisation:
+        - try to get at least 100-200 reflections per parameter
+        - try to get a split of 20% inter-dataset, 80% intra-dataset reflections
+        - try to use at least 50000 reflections (no upper limit)
+        - if trying to use <= 360 reflections per dataset, use 10 resolution bins,
+          else use 20 resolution bins (to get at least 2 refl per area).
+    """
     if params.reflection_selection.method in (None, libtbx.Auto, "auto"):
         if sum([r.size() for r in reflections]) < 20000:
             params.reflection_selection.method = "use_all"

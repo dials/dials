@@ -20,28 +20,28 @@ logger = logging.getLogger(__name__)
 
 class Result(object):
     """
-  A class to hold the result from spot finding on an image.
+    A class to hold the result from spot finding on an image.
 
-  When doing multi processing, we can process the result of
-  each thread as it comes in instead of waiting for all results.
-  The purpose of this class is to allow us to set the pixel list
-  to None after each image to lower memory usage.
+    When doing multi processing, we can process the result of
+    each thread as it comes in instead of waiting for all results.
+    The purpose of this class is to allow us to set the pixel list
+    to None after each image to lower memory usage.
 
-  """
+    """
 
     def __init__(self, pixel_list):
         """
-    Set the pixel list
+        Set the pixel list
 
-    """
+        """
         self.pixel_list = pixel_list
 
 
 class ExtractPixelsFromImage(object):
     """
-  A class to extract pixels from a single image
+    A class to extract pixels from a single image
 
-  """
+    """
 
     def __init__(
         self,
@@ -53,15 +53,15 @@ class ExtractPixelsFromImage(object):
         compute_mean_background,
     ):
         """
-    Initialise the class
+        Initialise the class
 
-    :param imageset: The imageset to extract from
-    :param threshold_function: The function to threshold with
-    :param mask: The image mask
-    :param region_of_interest: A region of interest to process
-    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
+        :param imageset: The imageset to extract from
+        :param threshold_function: The function to threshold with
+        :param mask: The image mask
+        :param region_of_interest: A region of interest to process
+        :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
 
-    """
+        """
         self.threshold_function = threshold_function
         self.imageset = imageset
         self.mask = mask
@@ -75,11 +75,11 @@ class ExtractPixelsFromImage(object):
 
     def __call__(self, index):
         """
-    Extract strong pixels from an image
+        Extract strong pixels from an image
 
-    :param index: The index of the image
+        :param index: The index of the image
 
-    """
+        """
         from dials.model.data import PixelList
         from dxtbx.imageset import ImageSweep
         from dials.array_family import flex
@@ -185,9 +185,9 @@ class ExtractPixelsFromImage(object):
 
 class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
     """
-  A class to extract pixels from a single image
+    A class to extract pixels from a single image
 
-  """
+    """
 
     def __init__(
         self,
@@ -202,15 +202,15 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         filter_spots,
     ):
         """
-    Initialise the class
+        Initialise the class
 
-    :param imageset: The imageset to extract from
-    :param threshold_function: The function to threshold with
-    :param mask: The image mask
-    :param region_of_interest: A region of interest to process
-    :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
+        :param imageset: The imageset to extract from
+        :param threshold_function: The function to threshold with
+        :param mask: The image mask
+        :param region_of_interest: A region of interest to process
+        :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
 
-    """
+        """
         super(ExtractPixelsFromImage2DNoShoeboxes, self).__init__(
             imageset,
             threshold_function,
@@ -227,11 +227,11 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
 
     def __call__(self, index):
         """
-    Extract strong pixels from an image
+        Extract strong pixels from an image
 
-    :param index: The index of the image
+        :param index: The index of the image
 
-    """
+        """
         from dials.model.data import PixelListLabeller
 
         # Initialise the pixel labeller
@@ -261,24 +261,24 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
 
 class ExtractSpotsParallelTask(object):
     """
-  Execute the spot finder task in parallel
+    Execute the spot finder task in parallel
 
-  We need this external class so that we can pickle it for cluster jobs
+    We need this external class so that we can pickle it for cluster jobs
 
-  """
+    """
 
     def __init__(self, function):
         """
-    Initialise with the function to call
+        Initialise with the function to call
 
-    """
+        """
         self.function = function
 
     def __call__(self, task):
         """
-    Call the function with th task and save the IO
+        Call the function with th task and save the IO
 
-    """
+        """
         from dials.util import log
         import logging
 
@@ -291,24 +291,24 @@ class ExtractSpotsParallelTask(object):
 
 class PixelListToShoeboxes(object):
     """
-  A helper class to convert pixel list to shoeboxes
+    A helper class to convert pixel list to shoeboxes
 
-  """
+    """
 
     def __init__(self, min_spot_size, max_spot_size, write_hot_pixel_mask):
         """
-    Initialize
+        Initialize
 
-    """
+        """
         self.min_spot_size = min_spot_size
         self.max_spot_size = max_spot_size
         self.write_hot_pixel_mask = write_hot_pixel_mask
 
     def __call__(self, imageset, pixel_labeller):
         """
-    Convert the pixel list to shoeboxes
+        Convert the pixel list to shoeboxes
 
-    """
+        """
         from dxtbx.imageset import ImageSweep
         from dials.array_family import flex
 
@@ -356,22 +356,22 @@ class PixelListToShoeboxes(object):
 
 class ShoeboxesToReflectionTable(object):
     """
-  A class to filter shoeboxes and create reflection table
+    A class to filter shoeboxes and create reflection table
 
-  """
+    """
 
     def __init__(self, filter_spots):
         """
-    Initialise the reflection table creator
+        Initialise the reflection table creator
 
-    """
+        """
         self.filter_spots = filter_spots
 
     def __call__(self, imageset, shoeboxes):
         """
-    Filter shoeboxes and create reflection table
+        Filter shoeboxes and create reflection table
 
-    """
+        """
         from dials.array_family import flex
 
         # Calculate the spot centroids
@@ -398,17 +398,17 @@ class ShoeboxesToReflectionTable(object):
 
 class PixelListToReflectionTable(object):
     """
-  Helper class to convert the pixel list to reflection table
+    Helper class to convert the pixel list to reflection table
 
-  """
+    """
 
     def __init__(
         self, min_spot_size, max_spot_size, filter_spots, write_hot_pixel_mask
     ):
         """
-    Initialise the converter
+        Initialise the converter
 
-    """
+        """
 
         # Setup the pixel list to shoebox converter
         self.pixel_list_to_shoeboxes = PixelListToShoeboxes(
@@ -420,9 +420,9 @@ class PixelListToReflectionTable(object):
 
     def __call__(self, imageset, pixel_labeller):
         """
-    Convert to reflection table
+        Convert to reflection table
 
-    """
+        """
         shoeboxes, hot_pixels = self.pixel_list_to_shoeboxes(imageset, pixel_labeller)
 
         return self.shoeboxes_to_reflection_table(imageset, shoeboxes), hot_pixels
@@ -430,9 +430,9 @@ class PixelListToReflectionTable(object):
 
 class ExtractSpots(object):
     """
-  Class to find spots in an image and extract them into shoeboxes.
+    Class to find spots in an image and extract them into shoeboxes.
 
-  """
+    """
 
     def __init__(
         self,
@@ -453,15 +453,15 @@ class ExtractSpots(object):
         write_hot_pixel_mask=False,
     ):
         """
-    Initialise the class with the strategy
+        Initialise the class with the strategy
 
-    :param threshold_function: The image thresholding strategy
-    :param mask: The mask to use
-    :param mp_method: The multi processing method
-    :param nproc: The number of processors
-    :param max_strong_pixel_fraction: The maximum number of strong pixels
+        :param threshold_function: The image thresholding strategy
+        :param mask: The mask to use
+        :param mp_method: The multi processing method
+        :param nproc: The number of processors
+        :param max_strong_pixel_fraction: The maximum number of strong pixels
 
-    """
+        """
         # Set the required strategies
         self.threshold_function = threshold_function
         self.mask = mask
@@ -481,12 +481,12 @@ class ExtractSpots(object):
 
     def __call__(self, imageset):
         """
-    Find the spots in the imageset
+        Find the spots in the imageset
 
-    :param imageset: The imageset to process
-    :return: The list of spot shoeboxes
+        :param imageset: The imageset to process
+        :return: The list of spot shoeboxes
 
-    """
+        """
         if not self.no_shoeboxes_2d:
             return self._find_spots(imageset)
         else:
@@ -494,9 +494,9 @@ class ExtractSpots(object):
 
     def _compute_chunksize(self, nimg, nproc, min_chunksize):
         """
-    Compute the chunk size for a given number of images and processes
+        Compute the chunk size for a given number of images and processes
 
-    """
+        """
         from math import ceil
 
         chunksize = int(ceil(nimg / nproc))
@@ -512,12 +512,12 @@ class ExtractSpots(object):
 
     def _find_spots(self, imageset):
         """
-    Find the spots in the imageset
+        Find the spots in the imageset
 
-    :param imageset: The imageset to process
-    :return: The list of spot shoeboxes
+        :param imageset: The imageset to process
+        :return: The list of spot shoeboxes
 
-    """
+        """
         from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
         from dials.model.data import PixelListLabeller
@@ -633,12 +633,12 @@ class ExtractSpots(object):
 
     def _find_spots_2d_no_shoeboxes(self, imageset):
         """
-    Find the spots in the imageset
+        Find the spots in the imageset
 
-    :param imageset: The imageset to process
-    :return: The list of spot shoeboxes
+        :param imageset: The imageset to process
+        :return: The list of spot shoeboxes
 
-    """
+        """
         from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
         from dials.model.data import PixelListLabeller
@@ -739,9 +739,9 @@ class ExtractSpots(object):
 
 class SpotFinder(object):
     """
-  A class to do spot finding and filtering.
+    A class to do spot finding and filtering.
 
-  """
+    """
 
     def __init__(
         self,
@@ -765,13 +765,13 @@ class SpotFinder(object):
         min_chunksize=50,
     ):
         """
-    Initialise the class.
+        Initialise the class.
 
-    :param find_spots: The spot finding algorithm
-    :param filter_spots: The spot filtering algorithm
-    :param scan_range: The scan range to find spots over
+        :param find_spots: The spot finding algorithm
+        :param filter_spots: The spot filtering algorithm
+        :param scan_range: The scan range to find spots over
 
-    """
+        """
 
         # Set the filter and some other stuff
         self.threshold_function = threshold_function
@@ -795,12 +795,12 @@ class SpotFinder(object):
 
     def __call__(self, datablock):
         """
-    Do the spot finding.
+        Do the spot finding.
 
-    :param datablock: The datablock to process
-    :return: The observed spots
+        :param datablock: The datablock to process
+        :return: The observed spots
 
-    """
+        """
         from dials.array_family import flex
         import six.moves.cPickle as pickle
         from dxtbx.format.image import ImageBool
@@ -848,12 +848,12 @@ class SpotFinder(object):
 
     def _find_spots_in_imageset(self, imageset):
         """
-    Do the spot finding.
+        Do the spot finding.
 
-    :param imageset: The imageset to process
-    :return: The observed spots
+        :param imageset: The imageset to process
+        :return: The observed spots
 
-    """
+        """
         from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
 
@@ -927,9 +927,9 @@ class SpotFinder(object):
 
     def _create_hot_mask(self, imageset, hot_pixels):
         """
-    Find hot pixels in images
+        Find hot pixels in images
 
-    """
+        """
         from dials.array_family import flex
 
         # Write the hot mask

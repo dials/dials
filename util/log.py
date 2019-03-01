@@ -16,22 +16,22 @@ import logging
 
 def config(verbosity=1, name="dials", info=None, debug=None):
     """
-  Configure the logging.
+    Configure the logging.
 
-  :param verbosity: Verbosity level of stdout log output.  Possible values:
-                      * 0: No log output to stdout;
-                      * 1: Info log output to stdout;
-                      * 2: Info & debug log output to stdout.
-  :type verbosity: int
-  :param name: Logger name.
-  :type name: str
-  :param info: Filename for info log output.  If False, no info log file is
-               written.
-  :type info: str
-  :param debug: Filename for debug log output.  If False, no debug log file is
-                written.
-  :type debug: str
-  """
+    :param verbosity: Verbosity level of stdout log output.  Possible values:
+                        * 0: No log output to stdout;
+                        * 1: Info log output to stdout;
+                        * 2: Info & debug log output to stdout.
+    :type verbosity: int
+    :param name: Logger name.
+    :type name: str
+    :param info: Filename for info log output.  If False, no info log file is
+                 written.
+    :type info: str
+    :param debug: Filename for debug log output.  If False, no debug log file is
+                  written.
+    :type debug: str
+    """
 
     import logging.config
 
@@ -104,9 +104,9 @@ def config(verbosity=1, name="dials", info=None, debug=None):
 
 def config_simple_stdout(name="dials"):
     """
-  Configure the logging to just go to stdout
+    Configure the logging to just go to stdout
 
-  """
+    """
     import logging.config
 
     # Configure the logging
@@ -137,19 +137,19 @@ class CacheHandler(logging.Handler):
 
     def __init__(self):
         """
-    Initialise the handler
+        Initialise the handler
 
-    """
+        """
         super(CacheHandler, self).__init__()
         self._messages = []
 
     def emit(self, record):
         """
-    Emit the message to a list
+        Emit the message to a list
 
-    :param record: The log record
+        :param record: The log record
 
-    """
+        """
         self._messages.append(record)
 
     def messages(self):
@@ -158,9 +158,9 @@ class CacheHandler(logging.Handler):
 
 def config_simple_cached():
     """
-  Configure the logging to use a cache.
+    Configure the logging to use a cache.
 
-  """
+    """
     import logging.config
 
     # Configure the logging
@@ -183,42 +183,42 @@ class LoggerIO(object):
 
     def __init__(self, logger, level):
         """
-    Initialise the logger io
+        Initialise the logger io
 
-    :param level: The logging level
+        :param level: The logging level
 
-    """
+        """
         self.logger = logger
         self.level = level
 
     def write(self, buf):
         """
-    Write to the logger
+        Write to the logger
 
-    :param buf: The buffer
+        :param buf: The buffer
 
-    """
+        """
         self.logger.log(self.level, buf)
 
     def flush(self):
         """
-    Flush (don't do anything)
+        Flush (don't do anything)
 
-    """
+        """
         pass
 
 
 def info_handle(logger):
     """
-  :return: A handle to an INFO logger file object
+    :return: A handle to an INFO logger file object
 
-  """
+    """
     return LoggerIO(logger, logging.INFO)
 
 
 def debug_handle(logger):
     """
-  :return: A handle to an DEBUG logger file object
+    :return: A handle to an DEBUG logger file object
 
-  """
+    """
     return LoggerIO(logger, logging.DEBUG)

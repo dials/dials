@@ -26,7 +26,7 @@ class ScanVaryingCrystalOrientationParameterisation(
     ScanVaryingModelParameterisation, CrystalOrientationMixin
 ):
     """Scan-varying parameterisation for crystal orientation, with angles
-  expressed in mrad"""
+    expressed in mrad"""
 
     def __init__(self, crystal, t_range, num_intervals, experiment_ids=None):
         if experiment_ids is None:
@@ -208,8 +208,8 @@ class ScanVaryingCrystalUnitCellParameterisation(
 
     def set_state_uncertainties(self, var_cov_list):
         """Send the calculated variance-covariance of the elements of the B matrix
-    for all scan points back to the crystal model, if required
-    """
+        for all scan points back to the crystal model, if required
+        """
         if not self._set_state_uncertainties:
             return
 

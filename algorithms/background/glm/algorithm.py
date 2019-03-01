@@ -20,13 +20,13 @@ class BackgroundAlgorithm(object):
         self, experiments, model="constant3d", tuning_constant=1.345, min_pixels=10
     ):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param model: The background model
-    :param tuning_constant: The robust tuning constant
+        :param experiments: The list of experiments
+        :param model: The background model
+        :param tuning_constant: The robust tuning constant
 
-    """
+        """
         from dials.algorithms.background.glm import Creator
 
         if model == "constant2d":
@@ -48,11 +48,11 @@ class BackgroundAlgorithm(object):
 
     def compute_background(self, reflections, image_volume=None):
         """
-    Compute the backgrond.
+        Compute the backgrond.
 
-    :param reflections: The list of reflections
+        :param reflections: The list of reflections
 
-    """
+        """
         from dials.array_family import flex
 
         # Do the background subtraction
@@ -75,13 +75,13 @@ class GLMBackgroundCalculatorFactory(object):
         cls, experiments, model="constant3d", tuning_constant=1.345, min_pixels=10
     ):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param model: The background model
-    :param tuning_constant: The robust tuning constant
+        :param experiments: The list of experiments
+        :param model: The background model
+        :param tuning_constant: The robust tuning constant
 
-    """
+        """
         from dials.algorithms.integration.parallel_integrator import (
             GLMBackgroundCalculator,
         )

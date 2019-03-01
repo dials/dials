@@ -60,8 +60,8 @@ def test1(dials_regression, run_in_tmpdir):
 
 def test2(dials_regression, run_in_tmpdir):
     """Run scan-varying refinement, comparing RMSD table with expected values.
-  This test automates what was manually done periodically and recorded in
-  dials_regression/refinement_test_data/centroid/README.txt"""
+    This test automates what was manually done periodically and recorded in
+    dials_regression/refinement_test_data/centroid/README.txt"""
 
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")
@@ -122,7 +122,7 @@ def test2(dials_regression, run_in_tmpdir):
 
 def test3(dials_regression, run_in_tmpdir):
     """Strict check for scan-varying refinement using automated outlier rejection
-  block width and interval width setting"""
+    block width and interval width setting"""
 
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "centroid")

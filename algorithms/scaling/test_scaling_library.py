@@ -240,7 +240,7 @@ def mock_intensity_array_from_cif_file(cif):
 )
 def test_get_intensities_from_cif(_, test_reflections, test_experiments, mock_cif):
     """Test the conversion of a cif file to reflections and experiments suitable
-  for scaling."""
+    for scaling."""
     exp, refl = create_datastructures_for_structural_model(
         [test_reflections], test_experiments, mock_cif
     )
@@ -256,8 +256,8 @@ def return_len_refl_side_effect(*args):
 
 def test_calculate_merging_statistics():
     """Test the calculate_merging_statistics function, which splits a reflection
-  table based on id and runs iotbx.merging stats on each reflection, returning
-  a list of results and ids."""
+    table based on id and runs iotbx.merging stats on each reflection, returning
+    a list of results and ids."""
     reflection_table = flex.reflection_table()
     reflection_table["id"] = flex.int([0, 0, 1, 1, 1, 2])
     experiments = [0, 0, 0]

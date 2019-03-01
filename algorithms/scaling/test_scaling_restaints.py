@@ -46,7 +46,7 @@ def mock_unrestrained_component():
 @pytest.fixture
 def mock_parameter_manager(mock_restrained_component, mock_unrestrained_component):
     """Mock a parameter manager to handle the components required for the
-  ScalingRestraints class."""
+    ScalingRestraints class."""
     apm = Mock()
     apm.components = OrderedDict(
         {
@@ -115,7 +115,7 @@ def test_unrestrained_ScalingRestraints(
     mock_unrestrained_apm, mock_multi_unrestrained_apm
 ):
     """Test the case of unrestrained components. None should be returned in each
-  case."""
+    case."""
 
     assert ScalingRestraints().calculate_restraints(mock_unrestrained_apm) is None
     assert (

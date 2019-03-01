@@ -13,11 +13,11 @@ from __future__ import print_function
 
 def generate_phil_scope():
     """
-  Generate the phil scope for profile model
+    Generate the phil scope for profile model
 
-  :return: The phil scope
+    :return: The phil scope
 
-  """
+    """
     import dials.extensions
 
     phil_scope = dials.extensions.ProfileModel.phil_scope()
@@ -29,21 +29,21 @@ phil_scope = generate_phil_scope()
 
 class ProfileModelFactory(object):
     """
-  Factory for creating profile models
+    Factory for creating profile models
 
-  """
+    """
 
     @classmethod
     def create(cls, params, experiments, reflections=None):
         """
-    Compute or load the profile model.
+        Compute or load the profile model.
 
-    :param params: The input phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection table
-    :return: The profile model
+        :param params: The input phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection table
+        :return: The profile model
 
-    """
+        """
         import dials.extensions
 
         Extension = dials.extensions.ProfileModel.load(params.profile.algorithm)

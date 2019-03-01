@@ -21,8 +21,8 @@ def dehash(hash_value):
 
 def add_hash(integrated_data):
     """Add hash = 2^30 * entering + 2^20 * (h+512) + 2^10 * (k+512) + (l+512)
-  as new column to reflection table - should be P1 unique for 360 degree
-  scans"""
+    as new column to reflection table - should be P1 unique for 360 degree
+    scans"""
 
     from dials.array_family import flex
 

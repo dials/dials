@@ -20,16 +20,16 @@ logger = logging.getLogger(__name__)
 
 class MaskCalculatorFactory(object):
     """
-  A factory function to return a mask calculator object
+    A factory function to return a mask calculator object
 
-  """
+    """
 
     @classmethod
     def create(cls, experiments, params=None):
         """
-    Select the mask calculator
+        Select the mask calculator
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs.algorithm import (
             GaussianRSMaskCalculatorFactory,
         )
@@ -53,16 +53,16 @@ class MaskCalculatorFactory(object):
 
 class BackgroundCalculatorFactory(object):
     """
-  A factory function to return a background calculator object
+    A factory function to return a background calculator object
 
-  """
+    """
 
     @classmethod
     def create(cls, experiments, params=None):
         """
-    Select the background calculator
+        Select the background calculator
 
-    """
+        """
         from dials.algorithms.background.simple.algorithm import (
             SimpleBackgroundCalculatorFactory,
         )
@@ -150,16 +150,16 @@ class BackgroundCalculatorFactory(object):
 
 class IntensityCalculatorFactory(object):
     """
-  A factory function to return an intensity calculator object
+    A factory function to return an intensity calculator object
 
-  """
+    """
 
     @classmethod
     def create(cls, experiments, reference_profiles, params=None):
         """
-    Select the intensity calculator
+        Select the intensity calculator
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs.algorithm import (
             GaussianRSIntensityCalculatorFactory,
         )
@@ -201,16 +201,16 @@ class IntensityCalculatorFactory(object):
 
 class ReferenceCalculatorFactory(object):
     """
-  A factory function to return an reference calculator object
+    A factory function to return an reference calculator object
 
-  """
+    """
 
     @classmethod
     def create(cls, experiments, params=None):
         """
-    Select the reference calculator
+        Select the reference calculator
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs.algorithm import (
             GaussianRSReferenceCalculatorFactory,
         )
@@ -245,12 +245,12 @@ class ReferenceCalculatorFactory(object):
 
 def assert_enough_memory(required_memory, max_memory_usage):
     """
-  Check there is enough memory available or fail
+    Check there is enough memory available or fail
 
-  :param required_memory: The required number of bytes
-  :param max_memory_usage: The maximum memory usage allowed
+    :param required_memory: The required number of bytes
+    :param max_memory_usage: The maximum memory usage allowed
 
-  """
+    """
     from libtbx.introspection import machine_memory_info
 
     # Compute percentage of max available. The function is not portable to
@@ -288,18 +288,18 @@ def assert_enough_memory(required_memory, max_memory_usage):
 
 class Result(object):
     """
-  A class representing a processing result.
+    A class representing a processing result.
 
-  """
+    """
 
     def __init__(self, index, reflections, reference=None):
         """
-    Initialise the data.
+        Initialise the data.
 
-    :param index: The processing job index
-    :param reflections: The processed reflections
+        :param index: The processing job index
+        :param reflections: The processed reflections
 
-    """
+        """
         self.index = index
         self.reflections = reflections
         self.reference = reference
@@ -307,24 +307,24 @@ class Result(object):
 
 class IntegrationJob(object):
     """
-  A class to represent an integration job
+    A class to represent an integration job
 
-  """
+    """
 
     def __init__(self, index, job, experiments, reflections, reference, params=None):
         """
-    Initialise the task.
+        Initialise the task.
 
-    :param index: The index of the processing job
-    :param experiments: The list of experiments
-    :param reflections: The list of reflections
-    :param params: The processing parameters
-    :param job: The frames to integrate
-    :param flatten: Flatten the shoeboxes
-    :param save_shoeboxes: Save the shoeboxes to file
-    :param executor: The executor class
+        :param index: The index of the processing job
+        :param experiments: The list of experiments
+        :param reflections: The list of reflections
+        :param params: The processing parameters
+        :param job: The frames to integrate
+        :param flatten: Flatten the shoeboxes
+        :param save_shoeboxes: Save the shoeboxes to file
+        :param executor: The executor class
 
-    """
+        """
 
         # Get the parameters
         if params is None:
@@ -348,11 +348,11 @@ class IntegrationJob(object):
 
     def __call__(self):
         """
-    Do the processing.
+        Do the processing.
 
-    :return: The processed data
+        :return: The processed data
 
-    """
+        """
         from dials.array_family import flex
         from time import time
         from dials.algorithms.integration.processor import job
@@ -405,18 +405,18 @@ class IntegrationJob(object):
 
     def compute_required_memory(self, imageset):
         """
-    Compute the required memory
+        Compute the required memory
 
-    """
+        """
         return MultiThreadedIntegrator.compute_required_memory(
             imageset, self.params.integration.block.size
         )
 
     def integrate(self, imageset):
         """
-    Integrate the reflections
+        Integrate the reflections
 
-    """
+        """
         from dials.algorithms.integration.integrator import frame_hist
 
         # Compute the partiality
@@ -494,9 +494,9 @@ class IntegrationJob(object):
 
     def write_debug_files(self):
         """
-    Write some debug output
+        Write some debug output
 
-    """
+        """
 
         # Optionally save the shoeboxes
         debug = self.params.integration.debug
@@ -519,20 +519,20 @@ class IntegrationJob(object):
 
 class IntegrationManager(object):
     """
-  A class to manage processing book-keeping
+    A class to manage processing book-keeping
 
-  """
+    """
 
     def __init__(self, experiments, reflections, reference, params):
         """
-    Initialise the manager.
+        Initialise the manager.
 
-    :param experiments: The list of experiments
-    :param reflections: The list of reflections
-    :param reference: The reference profiles
-    :param params: The phil parameters
+        :param experiments: The list of experiments
+        :param reflections: The list of reflections
+        :param reference: The reference profiles
+        :param params: The phil parameters
 
-    """
+        """
 
         # Save some data
         self.experiments = experiments
@@ -552,9 +552,9 @@ class IntegrationManager(object):
 
     def initialize(self):
         """
-    Initialise the processing
+        Initialise the processing
 
-    """
+        """
         from time import time
 
         # Get the start time
@@ -582,9 +582,9 @@ class IntegrationManager(object):
 
     def task(self, index):
         """
-    Get a task.
+        Get a task.
 
-    """
+        """
         frames = self.manager.job(index)
         experiments = self.experiments
         reference = self.reference
@@ -605,9 +605,9 @@ class IntegrationManager(object):
 
     def tasks(self):
         """
-    Iterate through the tasks.
+        Iterate through the tasks.
 
-    """
+        """
         for i in range(len(self)):
             yield self.task(i)
 
@@ -621,9 +621,9 @@ class IntegrationManager(object):
 
     def finalize(self):
         """
-    Finalize the processing and finish.
+        Finalize the processing and finish.
 
-    """
+        """
         from time import time
 
         # Get the start time
@@ -638,37 +638,37 @@ class IntegrationManager(object):
 
     def result(self):
         """
-    Return the result.
+        Return the result.
 
-    :return: The result
+        :return: The result
 
-    """
+        """
         assert self.finalized, "Manager is not finalized"
         return self.manager.data()
 
     def finished(self):
         """
-    Return if all tasks have finished.
+        Return if all tasks have finished.
 
-    :return: True/False all tasks have finished
+        :return: True/False all tasks have finished
 
-    """
+        """
         return self.finalized and self.manager.finished()
 
     def __len__(self):
         """
-    Return the number of tasks.
+        Return the number of tasks.
 
-    :return: the number of tasks
+        :return: the number of tasks
 
-    """
+        """
         return len(self.manager)
 
     def compute_max_block_size(self):
         """
-    Compute the required memory
+        Compute the required memory
 
-    """
+        """
         from libtbx.introspection import machine_memory_info
         from math import floor
 
@@ -687,9 +687,9 @@ class IntegrationManager(object):
 
     def compute_blocks(self):
         """
-    Compute the processing block size.
+        Compute the processing block size.
 
-    """
+        """
         import libtbx
         from math import ceil
 
@@ -733,9 +733,9 @@ class IntegrationManager(object):
 
     def compute_jobs(self):
         """
-    Compute the jobs
+        Compute the jobs
 
-    """
+        """
         from math import ceil
 
         imageset = self.experiments[0].imageset
@@ -748,9 +748,9 @@ class IntegrationManager(object):
 
     def summary(self):
         """
-    Get a summary of the processing
+        Get a summary of the processing
 
-    """
+        """
         from libtbx.table_utils import format as table
 
         # Compute the task table
@@ -803,24 +803,24 @@ class IntegrationManager(object):
 
 class ReferenceCalculatorJob(object):
     """
-  A class to represent an integration job
+    A class to represent an integration job
 
-  """
+    """
 
     def __init__(self, index, job, experiments, reflections, params=None):
         """
-    Initialise the task.
+        Initialise the task.
 
-    :param index: The index of the processing job
-    :param experiments: The list of experiments
-    :param reflections: The list of reflections
-    :param params: The processing parameters
-    :param job: The frames to integrate
-    :param flatten: Flatten the shoeboxes
-    :param save_shoeboxes: Save the shoeboxes to file
-    :param executor: The executor class
+        :param index: The index of the processing job
+        :param experiments: The list of experiments
+        :param reflections: The list of reflections
+        :param params: The processing parameters
+        :param job: The frames to integrate
+        :param flatten: Flatten the shoeboxes
+        :param save_shoeboxes: Save the shoeboxes to file
+        :param executor: The executor class
 
-    """
+        """
 
         # Get the parameters
         if params is None:
@@ -843,11 +843,11 @@ class ReferenceCalculatorJob(object):
 
     def __call__(self):
         """
-    Do the processing.
+        Do the processing.
 
-    :return: The processed data
+        :return: The processed data
 
-    """
+        """
         from dials.array_family import flex
         from time import time
         from dials.algorithms.integration.processor import job
@@ -900,18 +900,18 @@ class ReferenceCalculatorJob(object):
 
     def compute_required_memory(self, imageset):
         """
-    Compute the required memory
+        Compute the required memory
 
-    """
+        """
         return MultiThreadedIntegrator.compute_required_memory(
             imageset, self.params.integration.block.size
         )
 
     def compute_reference_profiles(self, imageset):
         """
-    Integrate the reflections
+        Integrate the reflections
 
-    """
+        """
         from dials.algorithms.integration.integrator import frame_hist
 
         # Compute the partiality
@@ -1005,9 +1005,9 @@ class ReferenceCalculatorJob(object):
 
     def write_debug_files(self):
         """
-    Write some debug output
+        Write some debug output
 
-    """
+        """
 
         # Optionally save the shoeboxes
         debug = self.params.integration.debug
@@ -1030,19 +1030,19 @@ class ReferenceCalculatorJob(object):
 
 class ReferenceCalculatorManager(object):
     """
-  A class to manage processing book-keeping
+    A class to manage processing book-keeping
 
-  """
+    """
 
     def __init__(self, experiments, reflections, params):
         """
-    Initialise the manager.
+        Initialise the manager.
 
-    :param experiments: The list of experiments
-    :param reflections: The list of reflections
-    :param params: The phil parameters
+        :param experiments: The list of experiments
+        :param reflections: The list of reflections
+        :param params: The phil parameters
 
-    """
+        """
 
         # Save some data
         self.experiments = experiments
@@ -1062,9 +1062,9 @@ class ReferenceCalculatorManager(object):
 
     def initialize(self):
         """
-    Initialise the processing
+        Initialise the processing
 
-    """
+        """
         from time import time
 
         # Get the start time
@@ -1098,9 +1098,9 @@ class ReferenceCalculatorManager(object):
 
     def task(self, index):
         """
-    Get a task.
+        Get a task.
 
-    """
+        """
         frames = self.manager.job(index)
         experiments = self.experiments
         reference = self.reference
@@ -1120,9 +1120,9 @@ class ReferenceCalculatorManager(object):
 
     def tasks(self):
         """
-    Iterate through the tasks.
+        Iterate through the tasks.
 
-    """
+        """
         for i in range(len(self)):
             yield self.task(i)
 
@@ -1142,9 +1142,9 @@ class ReferenceCalculatorManager(object):
 
     def finalize(self):
         """
-    Finalize the processing and finish.
+        Finalize the processing and finish.
 
-    """
+        """
         from time import time
 
         # Get the start time
@@ -1162,37 +1162,37 @@ class ReferenceCalculatorManager(object):
 
     def result(self):
         """
-    Return the result.
+        Return the result.
 
-    :return: The result
+        :return: The result
 
-    """
+        """
         assert self.finalized, "Manager is not finalized"
         return self.manager.data()
 
     def finished(self):
         """
-    Return if all tasks have finished.
+        Return if all tasks have finished.
 
-    :return: True/False all tasks have finished
+        :return: True/False all tasks have finished
 
-    """
+        """
         return self.finalized and self.manager.finished()
 
     def __len__(self):
         """
-    Return the number of tasks.
+        Return the number of tasks.
 
-    :return: the number of tasks
+        :return: the number of tasks
 
-    """
+        """
         return len(self.manager)
 
     def compute_max_block_size(self):
         """
-    Compute the required memory
+        Compute the required memory
 
-    """
+        """
         from libtbx.introspection import machine_memory_info
         from math import floor
 
@@ -1211,9 +1211,9 @@ class ReferenceCalculatorManager(object):
 
     def compute_blocks(self):
         """
-    Compute the processing block size.
+        Compute the processing block size.
 
-    """
+        """
         import libtbx
         from math import ceil
 
@@ -1257,9 +1257,9 @@ class ReferenceCalculatorManager(object):
 
     def compute_jobs(self):
         """
-    Compute the jobs
+        Compute the jobs
 
-    """
+        """
         from math import ceil
 
         imageset = self.experiments[0].imageset
@@ -1272,9 +1272,9 @@ class ReferenceCalculatorManager(object):
 
     def summary(self):
         """
-    Get a summary of the processing
+        Get a summary of the processing
 
-    """
+        """
         from libtbx.table_utils import format as table
 
         # Compute the task table

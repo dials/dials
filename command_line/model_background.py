@@ -111,15 +111,15 @@ phil_scope = parse(
 
 class ImageGenerator(object):
     """
-  Generate diagnostic images
+    Generate diagnostic images
 
-  """
+    """
 
     def __init__(self, model):
         """
-    Init the model
+        Init the model
 
-    """
+        """
         import matplotlib
 
         matplotlib.use("Agg")
@@ -127,9 +127,9 @@ class ImageGenerator(object):
 
     def save_min(self, filename):
         """
-    Save the mean image
+        Save the mean image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -149,9 +149,9 @@ class ImageGenerator(object):
 
     def save_max(self, filename):
         """
-    Save the mean image
+        Save the mean image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -171,9 +171,9 @@ class ImageGenerator(object):
 
     def save_mean(self, filename):
         """
-    Save the mean image
+        Save the mean image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -193,9 +193,9 @@ class ImageGenerator(object):
 
     def save_variance(self, filename):
         """
-    Save the variance image
+        Save the variance image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -217,9 +217,9 @@ class ImageGenerator(object):
 
     def save_dispersion(self, filename):
         """
-    Save the dispersion image
+        Save the dispersion image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -240,9 +240,9 @@ class ImageGenerator(object):
 
     def save_mask(self, filename):
         """
-    Save the dispersion image
+        Save the dispersion image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -259,9 +259,9 @@ class ImageGenerator(object):
 
     def save_model(self, filename):
         """
-    Save the model image
+        Save the model image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):
@@ -283,9 +283,9 @@ class ImageGenerator(object):
 
     def save_polar_model(self, filename):
         """
-    Save the polar model image
+        Save the polar model image
 
-    """
+        """
         from matplotlib import pylab
 
         for i in range(len(self.model)):

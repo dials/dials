@@ -14,7 +14,7 @@ from libtbx.table_utils import simple_table
 class CrossValidator(object):
 
     """Abstract class defining common methods for cross validation and methods
-  that must be implemented for concrete implementations"""
+    that must be implemented for concrete implementations"""
 
     __metaclass__ = abc.ABCMeta
 
@@ -35,8 +35,8 @@ class CrossValidator(object):
     @abc.abstractmethod
     def run_script(self, params, config_no):
         """Run the appropriate command line script with the params, get the
-    free/work set results and add to the results dict. Indicate the
-    configuration number being run."""
+        free/work set results and add to the results dict. Indicate the
+        configuration number being run."""
 
     @abc.abstractmethod
     def get_results_from_script(self, script):
@@ -95,7 +95,7 @@ class CrossValidator(object):
 
     def interpret_results(self):
         """Inspect the data in results_dict, make a nice table with the mean and
-    average over many attempts and indicate the 'best' option"""
+        average over many attempts and indicate the 'best' option"""
         rows = []
         headers = ["option", ""] + self.results_metadata["names"]
         monitored_values = []
@@ -225,7 +225,7 @@ class DialsScaleCrossValidator(CrossValidator):
 
     def run_script(self, params, config_no):
         """Run the scaling script with the params, get the free/work set results
-    and add to the results dict"""
+        and add to the results dict"""
         from dials.command_line.scale import Script
 
         params.scaling_options.__setattr__("use_free_set", True)

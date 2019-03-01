@@ -21,7 +21,7 @@ from dials.algorithms.refinement.parameterisation.detector_parameters import (
 
 def random_panel(lim=(0, 50)):
     """For testing, return a square panel with a randomised position
-  and orientation"""
+    and orientation"""
 
     # start with a randomised origin vector
     o = matrix.col(
@@ -62,7 +62,7 @@ def random_panel(lim=(0, 50)):
 # local function required to make a 3x3 multi-panel detector
 def make_multi_panel(single_panel_detector):
     """Create a 3x3 multi-panel detector filling the same space as
-  a supplied single panel detector"""
+    a supplied single panel detector"""
 
     from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
         make_panel_in_array,

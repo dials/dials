@@ -10,16 +10,16 @@ import numpy
 def print_info(cbf_path):
     """Print out a load of data held in the CBF file.
 
-  This is by no means a full list of the data contained in the file, it's
-  mainly for debugging and development purposes. The data that will be
-  printed is the following:
-  - The number of categories and the name of each category
-  - The number of rows and columns and the name of each column
-  - The type of each element in each row/column element.
+    This is by no means a full list of the data contained in the file, it's
+    mainly for debugging and development purposes. The data that will be
+    printed is the following:
+    - The number of categories and the name of each category
+    - The number of rows and columns and the name of each column
+    - The type of each element in each row/column element.
 
-  :param cbf_path: The path to the cbf file
+    :param cbf_path: The path to the cbf file
 
-  """
+    """
     # Read the CBF file
     cbf_handle = pycbf.cbf_handle_struct()
     cbf_handle.read_file(cbf_path, pycbf.MSG_DIGEST)
@@ -77,10 +77,10 @@ def print_info(cbf_path):
 def get_beam_direction(cbf_handle):
     """Find the beam direction (why is this not simpler in pycbf?)
 
-  :param cbf_handle: The cbf file handle
-  :returns: The beam vector
+    :param cbf_handle: The cbf file handle
+    :returns: The beam vector
 
-  """
+    """
     cbf_handle.find_category("axis")
     cbf_handle.find_column("equipment")
     cbf_handle.find_row("source")
@@ -96,10 +96,10 @@ def get_beam_direction(cbf_handle):
 def compute_central_rotation_matrix(gonio):
     """Compute the central rotation matrix
 
-  :param gonio: The goniometer struct
-  :returns: The central rotation matrix
+    :param gonio: The goniometer struct
+    :returns: The central rotation matrix
 
-  """
+    """
     x = gonio.rotate_vector(0.5, 1, 0, 0)
     y = gonio.rotate_vector(0.5, 0, 1, 0)
     z = gonio.rotate_vector(0.5, 0, 0, 1)
@@ -110,18 +110,18 @@ def compute_central_rotation_matrix(gonio):
 def get_image(cbf_handle, category="array_data", column="data", row=0, element=0):
     """Read an image from a CBF file
 
-  This function is a bit of a hack - I'm not sure what the general structure
-  of a CBF file is like but for the data I have, it works. Reads an image
-  from the location specified in the CBF file, otherwise raises an exception.
+    This function is a bit of a hack - I'm not sure what the general structure
+    of a CBF file is like but for the data I have, it works. Reads an image
+    from the location specified in the CBF file, otherwise raises an exception.
 
-  :param cbf_handle: The handle to the CBF file
-  :param category: Category in which the image is contained
-  :param column: Column in which the image is contained
-  :param row: Row in which image is contained
-  :param element: Element in which image is contained
-  :returns: An array of image data
+    :param cbf_handle: The handle to the CBF file
+    :param category: Category in which the image is contained
+    :param column: Column in which the image is contained
+    :param row: Row in which image is contained
+    :param element: Element in which image is contained
+    :returns: An array of image data
 
-  """
+    """
     # Find the given category, column and row
     cbf_handle.find_category(category)
     cbf_handle.find_column(column)
@@ -153,14 +153,14 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
 
 def get_image_volume(cbf_paths):
     """Load the image volume from the list of cbf_paths. The list of paths is
-  assumed to be is order from 1->n.
+    assumed to be is order from 1->n.
 
-  :param cbf_paths: The list of cbf files
-  :param width The width (xsize) of the volume
-  :param height The height (ysize) of the volume
-  :returns: The 3D volume array
+    :param cbf_paths: The list of cbf files
+    :param width The width (xsize) of the volume
+    :param height The height (ysize) of the volume
+    :returns: The 3D volume array
 
-  """
+    """
     # Read the first image and get the size
     cbf_handle = pycbf.cbf_handle_struct()
     cbf_handle.read_file(cbf_paths[0], pycbf.MSG_DIGEST)
@@ -185,13 +185,13 @@ def get_image_volume(cbf_paths):
 def search_for_image_volume(search_path):
     """Load the CBF image volume
 
-  Args:
-      search_path: The CBF file search path
+    Args:
+        search_path: The CBF file search path
 
-  Returns:
-      The image volume
+    Returns:
+        The image volume
 
-  """
+    """
     from glob import glob
 
     # Load the CBF image volume

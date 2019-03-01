@@ -14,10 +14,10 @@ def expand_and_do_outlier_rejection(scaler, calc_cov=False):
 
 def do_intensity_combination(scaler, reselect=True):
     """
-  Do prf/sum intensity combination.
+    Do prf/sum intensity combination.
 
-  Optionally reselect reflections to prepare for another minimisation round.
-  """
+    Optionally reselect reflections to prepare for another minimisation round.
+    """
     if scaler.params.reflection_selection.intensity_choice == "combine":
         scaler.combine_intensities()
         if scaler.params.scaling_options.outlier_rejection:
@@ -28,10 +28,10 @@ def do_intensity_combination(scaler, reselect=True):
 
 def do_error_analysis(scaler, reselect=True, apply_to_reflection_table=False):
     """
-  Do error model analysis.
+    Do error model analysis.
 
-  Optionally reselect reflections to prepare for another minimisation round.
-  """
+    Optionally reselect reflections to prepare for another minimisation round.
+    """
     if scaler.params.weighting.optimise_errors:
         _ = scaler.perform_error_optimisation(
             apply_to_reflection_table=apply_to_reflection_table

@@ -15,16 +15,16 @@ logger = logging.getLogger("dials")
 
 class active_parameter_manager(object):
     """
-  Class to manage the current active parameters during minimisation.
+    Class to manage the current active parameters during minimisation.
 
-  The parameter manager is initialised with components - a dict of ('name' : obj)
-  pairs, and a selection list, which is a list of 'name' values to be minimised
-  in this cycle. obj is the component of a model, and this code requires that
-  obj has the attribute 'parameters'.
-  This class stores a reference to the components to be minimised, alongside
-  some bookkeeping to allow selection of the parameters for an individual
-  component.
-  """
+    The parameter manager is initialised with components - a dict of ('name' : obj)
+    pairs, and a selection list, which is a list of 'name' values to be minimised
+    in this cycle. obj is the component of a model, and this code requires that
+    obj has the attribute 'parameters'.
+    This class stores a reference to the components to be minimised, alongside
+    some bookkeeping to allow selection of the parameters for an individual
+    component.
+    """
 
     def __init__(self, components, selection_list):
         self.x = flex.double([])
@@ -78,7 +78,7 @@ class active_parameter_manager(object):
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Set var_cov matrices for each component to allow later calculation
-    of errors."""
+        of errors."""
         i = 0
         for component in self.components.itervalues():
             n = component["n_params"]
@@ -97,12 +97,12 @@ class active_parameter_manager(object):
 
 class multi_active_parameter_manager(object):
     """
-  Parameter manager to manage the current active parameters during minimisation
-  for multiple datasets that are being minimised simultaneously.
+    Parameter manager to manage the current active parameters during minimisation
+    for multiple datasets that are being minimised simultaneously.
 
-  Initialise with two lists of components and selections, each item of which
-  is used to initialise an active parameter manager of type apm_class.
-  """
+    Initialise with two lists of components and selections, each item of which
+    is used to initialise an active parameter manager of type apm_class.
+    """
 
     def __init__(self, components_list, selection_lists, apm_class):
         self.x = flex.double([])
@@ -171,7 +171,7 @@ class multi_active_parameter_manager(object):
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Set var_cov matrices for each component, to allow later calculation
-    of errors."""
+        of errors."""
         i = 0
         for apm in self.apm_list:
             n = apm.n_active_params
@@ -182,15 +182,15 @@ class multi_active_parameter_manager(object):
 
 class ConcurrentAPMFactory(object):
     """
-  Factory to correctly set up a single/multi active parameter manager for
-  concurrent scaling of all model components of a general data_manager
-  (or multiple data managers). This extracts the name of the components from
-  each data_manager and creates a list to pass on to the apm_type specified
-  (e.g a subclass of active_parameter_manager). mode=single/multi returns a
-  single/multi active parameter manager.
+    Factory to correctly set up a single/multi active parameter manager for
+    concurrent scaling of all model components of a general data_manager
+    (or multiple data managers). This extracts the name of the components from
+    each data_manager and creates a list to pass on to the apm_type specified
+    (e.g a subclass of active_parameter_manager). mode=single/multi returns a
+    single/multi active parameter manager.
 
-  Data managers is a list of objects which have a components attribute.
-  """
+    Data managers is a list of objects which have a components attribute.
+    """
 
     def __init__(self, data_managers, apm_type, multi_mode=True):
         # One can optionally set multi_mode=False to force a single_apm to be created
@@ -239,16 +239,16 @@ class ConcurrentAPMFactory(object):
 
 class ConsecutiveAPMFactory(object):
     """
-  Factory to correctly set up a nested list structure to pass to
-  single/multi active parameter managers for consecutive scaling of the
-  model components of a general data_manager (or multiple data managers).
+    Factory to correctly set up a nested list structure to pass to
+    single/multi active parameter managers for consecutive scaling of the
+    model components of a general data_manager (or multiple data managers).
 
-  Upon calling make_next_apm, the first list element for each dataset is used to
-  initialise the apm_type specified (e.g a subclass of active_parameter_manager)
-  and then removed from the list structure.
-  make_next_apm can be called n_cycles times.
-  mode=single/multi returns a single/mutli active parameter manager.
-  """
+    Upon calling make_next_apm, the first list element for each dataset is used to
+    initialise the apm_type specified (e.g a subclass of active_parameter_manager)
+    and then removed from the list structure.
+    make_next_apm can be called n_cycles times.
+    mode=single/multi returns a single/mutli active parameter manager.
+    """
 
     def __init__(self, data_managers, apm_type, multi_mode=True):
         # One can optionally set multi_mode=False to force a single_apm to be created
@@ -300,7 +300,7 @@ class ConsecutiveAPMFactory(object):
 
     def make_next_apm(self):
         """Generate a valid apm for minimisation (contains some active parameters,
-    but not necessarily for all datasets)."""
+        but not necessarily for all datasets)."""
 
         if not self.multi_mode:
             apm = self.apm_type(self.data_managers[0].components, self.param_lists[0])

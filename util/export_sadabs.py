@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 def export_sadabs(integrated_data, experiment_list, params):
     """Export data from integrated_data corresponding to experiment_list to a
-  file for input to SADABS. FIXME probably need to make a .p4p file as
-  well..."""
+    file for input to SADABS. FIXME probably need to make a .p4p file as
+    well..."""
 
     from dials.array_family import flex
     from scitbx import matrix

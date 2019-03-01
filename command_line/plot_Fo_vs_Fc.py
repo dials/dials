@@ -28,7 +28,7 @@ from math import sqrt
 
 class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
     """Fit the function y = sqrt(x^2 + a^2) by non-linear regression. There is
-  just one parameter, a^2."""
+    just one parameter, a^2."""
 
     # Initial guess for the value of a^2
     a_sq0 = flex.double([1000])
@@ -72,7 +72,7 @@ class HyperbolaFit(normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_mixin):
 
     def goodness_of_fit(self):
         """Calculate various goodness of fit metrics (assumes fit has been
-    performed already)"""
+        performed already)"""
         a_sq = self.param[0]
         model_y = flex.sqrt(flex.pow2(self.x) + a_sq)
         resid = model_y - self.y

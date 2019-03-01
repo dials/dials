@@ -13,11 +13,11 @@ from scitbx import sparse
 
 class basis_function(object):
     """Class that takes in a scaling_apm and calcuates the scale factors,
-  derivatives and optionally curvatures for minimisation."""
+    derivatives and optionally curvatures for minimisation."""
 
     def calc_component_scales_derivatives(self, apm, block_id):
         """Calculate the scales and derivatives for all components for a given
-    block, returning each as a list of values from the components."""
+        block, returning each as a list of values from the components."""
         scales = []
         derivatives = []
         for component in apm.components.itervalues():
@@ -29,7 +29,7 @@ class basis_function(object):
     @staticmethod
     def calculate_scale_factors(apm, block_id, scales):
         """Calculate the overall scale factor for each reflection from individual
-    components."""
+        components."""
         if not scales:
             return None
         multiplied_scale_factors = flex.double(scales[0].size(), 1.0)
@@ -64,7 +64,7 @@ class basis_function(object):
 
     def calculate_scales_and_derivatives(self, apm, block_id):
         """Calculate and return scale factors, derivatives and optionally
-    curvatures to be used in minimisation."""
+        curvatures to be used in minimisation."""
         scales, derivatives = self.calc_component_scales_derivatives(apm, block_id)
         return (
             self.calculate_scale_factors(apm, block_id, scales),

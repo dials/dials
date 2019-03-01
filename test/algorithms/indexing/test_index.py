@@ -689,8 +689,8 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
 
 def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir):
     """Problem: Sometimes there is enough data to index, but not enough to
-  refine. If this happens in the (N>1)th crystal of max_lattices, then
-  all existing solutions are also dropped."""
+    refine. If this happens in the (N>1)th crystal of max_lattices, then
+    all existing solutions are also dropped."""
     data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
 
     cmd = [

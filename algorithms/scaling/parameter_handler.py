@@ -13,9 +13,9 @@ from dials.algorithms.scaling.active_parameter_managers import (
 
 class scaling_active_parameter_manager(active_parameter_manager):
     """
-  Adds an extra property to the apm to avoid a repetitive calculation during
-  mimimisation cycles for scaling.
-  """
+    Adds an extra property to the apm to avoid a repetitive calculation during
+    mimimisation cycles for scaling.
+    """
 
     def __init__(self, components, selection_list):
         self.constant_g_values = None
@@ -48,9 +48,9 @@ class scaling_active_parameter_manager(active_parameter_manager):
 def create_apm_factory(scaler):
     """Create and return the appropriate apm factory for the scaler.
 
-  Supported cases - single dataset and multi/target datasets - concurrent or
-  consecutive scaling, where the consecutive order is defined by
-  scaler.consecutive_refinement_order."""
+    Supported cases - single dataset and multi/target datasets - concurrent or
+    consecutive scaling, where the consecutive order is defined by
+    scaler.consecutive_refinement_order."""
     if scaler.id_ == "single":
         data_managers = [scaler]
     elif scaler.id_ == "target" or scaler.id_ == "multi":

@@ -136,7 +136,7 @@ def test_assign_batches_to_reflections():
 
 def test_calculate_batch_offsets():
     """Test offset calculation. Offset is next number ending in 01 bigger than
-  previous batch numbers which is not consecutive"""
+    previous batch numbers which is not consecutive"""
     scan = Scan(image_range=[1, 200], oscillation=[0.0, 1.0])
     exp1 = Experiment(scan=scan)
     exp2 = Experiment()

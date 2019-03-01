@@ -162,7 +162,7 @@ class TwoThetaTarget(Target):
 
     def predict(self):
         """perform reflection prediction for the working reflections and update the
-    reflection manager"""
+        reflection manager"""
 
         # get the matches
         reflections = self._reflection_manager.get_obs()
@@ -194,7 +194,7 @@ class TwoThetaTarget(Target):
     @staticmethod
     def _build_jacobian(d2theta_dp, nelem=None, nparam=None):
         """construct Jacobian from lists of gradient vectors. This method may be
-    overridden for the case where these vectors use sparse storage"""
+        overridden for the case where these vectors use sparse storage"""
 
         jacobian = flex.double(flex.grid(nelem, nparam))
         # loop over parameters
@@ -299,7 +299,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
 
     def _grads_xl_unit_cell_loop(self, reflections, results, callback=None):
         """Loop over all crystal unit cell parameterisations, calculate gradients
-    and extend the results"""
+        and extend the results"""
 
         # loop over the crystal unit cell parameterisations
         for xlucp in self._xl_unit_cell_parameterisations:

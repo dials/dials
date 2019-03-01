@@ -67,19 +67,19 @@ phil_scope = parse(phil_str)
 class AutoReduce(object):
     """Checks for over-parameterisation of models and acts in that case.
 
-  Tests each provided model parameterisation to ensure there are enough
-  reflections in refinement to support that parameterisation. If there are
-  not then some action is taken. More details are given in documentation
-  within the phil_str alongside this class definition.
+    Tests each provided model parameterisation to ensure there are enough
+    reflections in refinement to support that parameterisation. If there are
+    not then some action is taken. More details are given in documentation
+    within the phil_str alongside this class definition.
 
-  Attributes:
-      det_params (list): A list of DetectorParameterisation objects
-      beam_params (list): A list of BeamParameterisation objects
-      xl_ori_params (list): A list of CrystalOrientationParameterisation objects
-      xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
-      gon_params (list): A list of GoniometerParameterisation objects
-      reflections: A reflection table
-  """
+    Attributes:
+        det_params (list): A list of DetectorParameterisation objects
+        beam_params (list): A list of BeamParameterisation objects
+        xl_ori_params (list): A list of CrystalOrientationParameterisation objects
+        xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+        gon_params (list): A list of GoniometerParameterisation objects
+        reflections: A reflection table
+    """
 
     def __init__(
         self,
@@ -94,20 +94,20 @@ class AutoReduce(object):
     ):
         """Initialise the AutoReduce object
 
-    Args:
-        options: A PHIL scope containing the auto reduction options
-        det_params (list): A list of DetectorParameterisation objects
-        beam_params (list): A list of BeamParameterisation objects
-        xl_ori_params (list): A list of CrystalOrientationParameterisation
-            objects
-        xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
-        gon_params (list): A list of GoniometerParameterisation objects
-        reflection_manager: The ReflectionManager object handling reflection
-            data for refinement
-        scan_varying (bool): Whether preparing for scan-varying refinement or
-            scan static refinement
+        Args:
+            options: A PHIL scope containing the auto reduction options
+            det_params (list): A list of DetectorParameterisation objects
+            beam_params (list): A list of BeamParameterisation objects
+            xl_ori_params (list): A list of CrystalOrientationParameterisation
+                objects
+            xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+            gon_params (list): A list of GoniometerParameterisation objects
+            reflection_manager: The ReflectionManager object handling reflection
+                data for refinement
+            scan_varying (bool): Whether preparing for scan-varying refinement or
+                scan static refinement
 
-    """
+        """
 
         self.det_params = det_params
         self.beam_params = beam_params
@@ -239,7 +239,7 @@ class AutoReduce(object):
     def detector_reduce(self):
         """Reduce detector parameters.
 
-    Special case intended for metrology refinement of multi-panel detectors."""
+        Special case intended for metrology refinement of multi-panel detectors."""
         reduce_list = self._options.detector_reduce_list
         for i, dp in enumerate(self.det_params):
             to_fix = flex.bool(dp.get_fixed())
@@ -275,14 +275,14 @@ class AutoReduce(object):
     def check_and_fail(self):
         """Check for too few reflections to support the model parameterisation.
 
-    Test each parameterisation of each type against the reflections it affects.
+        Test each parameterisation of each type against the reflections it affects.
 
-    Returns:
-        None
+        Returns:
+            None
 
-    Raises:
-        Sorry: If there are too few reflections to support a parameterisation.
-    """
+        Raises:
+            Sorry: If there are too few reflections to support a parameterisation.
+        """
 
         for i, bp in enumerate(self.beam_params):
             if self._surplus_reflections(bp) < 0:
@@ -326,13 +326,13 @@ class AutoReduce(object):
     def check_and_fix(self):
         """Fix parameters when there are too few reflections.
 
-    Test each parameterisation of each type against the reflections it affects.
-    If there are too few reflections to support that parameterisation, fix the
-    parameters.
+        Test each parameterisation of each type against the reflections it affects.
+        If there are too few reflections to support that parameterisation, fix the
+        parameters.
 
-    Returns:
-        None
-    """
+        Returns:
+            None
+        """
         warnmsg = "Too few reflections to parameterise {0}"
         tmp = []
         for i, bp in enumerate(self.beam_params):
@@ -406,17 +406,17 @@ class AutoReduce(object):
     def check_and_remove(self):
         """Fix parameters and remove reflections when there are too few reflections.
 
-    Test each parameterisation of each type against the reflections it affects.
-    If there are too few reflections to support that parameterisation, fix the
-    parameters and remove those reflections so that they will not be included
-    in refinement.
+        Test each parameterisation of each type against the reflections it affects.
+        If there are too few reflections to support that parameterisation, fix the
+        parameters and remove those reflections so that they will not be included
+        in refinement.
 
-    Returns:
-        None
+        Returns:
+            None
 
-    Raises:
-        Sorry: error if only one single panel detector is present.
-    """
+        Raises:
+            Sorry: error if only one single panel detector is present.
+        """
 
         # If there is only one detector in a single experiment, the detector should
         # be multi-panel for remove to make sense
@@ -482,9 +482,9 @@ class AutoReduce(object):
     def __call__(self):
         """Perform checks and parameter reduction according to the selected option.
 
-    Returns:
-        None
-    """
+        Returns:
+            None
+        """
 
         # In the scan-varying case we can't calculate dB_dp before composing the
         # model, so revert to the original function

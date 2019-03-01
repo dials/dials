@@ -37,28 +37,28 @@ class symmetry_base(object):
     ):
         """Initialise a symmetry_base object.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities on which to perform
-        symmetry anaylsis.
-      normalisation (str): The normalisation method to use. Possible choices are
-        'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
-        normalisation altogether.
-      lattice_symmetry_max_delta (float): The maximum value of delta for
-        determining the lattice symmetry using the algorithm of Le Page (1982).
-      d_min (float): Optional resolution cutoff to be applied to the input
-        intensities. If set to :data:`libtbx.Auto` then d_min will be
-        automatically determined according to the parameters
-        ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
-      min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
-        automatic determination of resolution cutoff.
-      min_cc_half (float): minimum value of CC1/2 for automatic determination of
-        resolution cutoff.
-      relative_length_tolerance (float): Relative length tolerance in checking
-        consistency of input unit cells against the median unit cell.
-      absolute_angle_tolerance (float): Absolute angle tolerance in checking
-        consistency of input unit cells against the median unit cell.
+        Args:
+          intensities (cctbx.miller.array): The intensities on which to perform
+            symmetry anaylsis.
+          normalisation (str): The normalisation method to use. Possible choices are
+            'kernel', 'quasi', 'ml_iso' and 'ml_aniso'. Set to None to switch off
+            normalisation altogether.
+          lattice_symmetry_max_delta (float): The maximum value of delta for
+            determining the lattice symmetry using the algorithm of Le Page (1982).
+          d_min (float): Optional resolution cutoff to be applied to the input
+            intensities. If set to :data:`libtbx.Auto` then d_min will be
+            automatically determined according to the parameters
+            ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
+          min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
+            automatic determination of resolution cutoff.
+          min_cc_half (float): minimum value of CC1/2 for automatic determination of
+            resolution cutoff.
+          relative_length_tolerance (float): Relative length tolerance in checking
+            consistency of input unit cells against the median unit cell.
+          absolute_angle_tolerance (float): Absolute angle tolerance in checking
+            consistency of input unit cells against the median unit cell.
 
-    """
+        """
         self.input_intensities = intensities
 
         uc_params = [flex.double() for i in range(6)]
@@ -185,13 +185,13 @@ class symmetry_base(object):
     def kernel_normalisation(intensities):
         """Kernel normalisation of the input intensities.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities to be normalised.
+        Args:
+          intensities (cctbx.miller.array): The intensities to be normalised.
 
-    Returns:
-      cctbx.miller.array: The normalised intensities.
+        Returns:
+          cctbx.miller.array: The normalised intensities.
 
-    """
+        """
         normalisation = absolute_scaling.kernel_normalisation(
             intensities, auto_kernel=True
         )
@@ -201,13 +201,13 @@ class symmetry_base(object):
     def quasi_normalisation(intensities):
         """Quasi-normalisation of the input intensities.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities to be normalised.
+        Args:
+          intensities (cctbx.miller.array): The intensities to be normalised.
 
-    Returns:
-      cctbx.miller.array: The normalised intensities.
+        Returns:
+          cctbx.miller.array: The normalised intensities.
 
-    """
+        """
         # handle negative reflections to minimise effect on mean I values.
         intensities.data().set_selected(intensities.data() < 0.0, 0.0)
 
@@ -232,26 +232,26 @@ class symmetry_base(object):
     def ml_aniso_normalisation(intensities):
         """Anisotropic maximum-likelihood normalisation of the input intensities.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities to be normalised.
+        Args:
+          intensities (cctbx.miller.array): The intensities to be normalised.
 
-    Returns:
-      cctbx.miller.array: The normalised intensities.
+        Returns:
+          cctbx.miller.array: The normalised intensities.
 
-    """
+        """
         return symmetry_base._ml_normalisation(intensities, aniso=True)
 
     @staticmethod
     def ml_iso_normalisation(intensities):
         """Isotropic maximum-likelihood normalisation of the input intensities.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities to be normalised.
+        Args:
+          intensities (cctbx.miller.array): The intensities to be normalised.
 
-    Returns:
-      cctbx.miller.array: The normalised intensities.
+        Returns:
+          cctbx.miller.array: The normalised intensities.
 
-    """
+        """
         return symmetry_base._ml_normalisation(intensities, aniso=False)
 
     @staticmethod

@@ -14,11 +14,11 @@ def parallel_map(
     job_category="low",
 ):
     """
-  A wrapper function to call either drmaa or easy_mp to do a parallel map
-  calculation. This function is setup so that in each case we can select
-  the number of cores on a machine
+    A wrapper function to call either drmaa or easy_mp to do a parallel map
+    calculation. This function is setup so that in each case we can select
+    the number of cores on a machine
 
-  """
+    """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
     from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
 
@@ -48,10 +48,10 @@ def parallel_map(
 
 class MultiNodeClusterFunction(object):
     """
-  A function called by the multi node parallel map. On each cluster node, a
-  nested parallel map using the multi processing method will be used.
+    A function called by the multi node parallel map. On each cluster node, a
+    nested parallel map using the multi processing method will be used.
 
-  """
+    """
 
     def __init__(
         self,
@@ -62,9 +62,9 @@ class MultiNodeClusterFunction(object):
         preserve_exception_message=True,
     ):
         """
-    Init the function
+        Init the function
 
-    """
+        """
         self.func = func
         self.nproc = nproc
         self.asynchronous = asynchronous
@@ -73,9 +73,9 @@ class MultiNodeClusterFunction(object):
 
     def __call__(self, iterable):
         """
-    Call the function
+        Call the function
 
-    """
+        """
         from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
 
         return easy_mp_parallel_map(
@@ -91,9 +91,9 @@ class MultiNodeClusterFunction(object):
 
 def iterable_grouper(iterable, n):
     """
-  Group the iterables
+    Group the iterables
 
-  """
+    """
     from itertools import izip_longest
 
     args = [iter(iterable)] * n
@@ -104,22 +104,22 @@ def iterable_grouper(iterable, n):
 
 class MultiNodeClusterCallback(object):
     """
-  A callback function used with the multi node parallel map
+    A callback function used with the multi node parallel map
 
-  """
+    """
 
     def __init__(self, callback):
         """
-    Init the callback
+        Init the callback
 
-    """
+        """
         self.callback = callback
 
     def __call__(self, x):
         """
-    Call the callback
+        Call the callback
 
-    """
+        """
         for item in x:
             self.callback(item)
 
@@ -136,10 +136,10 @@ def multi_node_parallel_map(
     preserve_exception_message=True,
 ):
     """
-  A wrapper function to call a function using multiple cluster nodes and with
-  multiple processors on each node
+    A wrapper function to call a function using multiple cluster nodes and with
+    multiple processors on each node
 
-  """
+    """
 
     # The function to all on the cluster
     cluster_func = MultiNodeClusterFunction(
@@ -178,9 +178,9 @@ def multi_node_parallel_map(
 
 class BatchFunc(object):
     """
-  Process the batch iterables
+    Process the batch iterables
 
-  """
+    """
 
     def __init__(self, func):
         self.func = func
@@ -194,9 +194,9 @@ class BatchFunc(object):
 
 class BatchIterable(object):
     """
-  Split the iterables into batches
+    Split the iterables into batches
 
-  """
+    """
 
     def __init__(self, iterable, chunksize):
         self.iterable = iterable
@@ -212,9 +212,9 @@ class BatchIterable(object):
 
 class BatchCallback(object):
     """
-  Process the batch callback
+    Process the batch callback
 
-  """
+    """
 
     def __init__(self, callback):
         self.callback = callback
@@ -228,9 +228,9 @@ def batch_parallel_map(
     func=None, iterable=None, processes=None, callback=None, method=None, chunksize=1
 ):
     """
-  A function to run jobs in batches in each process
+    A function to run jobs in batches in each process
 
-  """
+    """
     from libtbx import easy_mp
 
     # Call the batches in parallel
@@ -255,9 +255,9 @@ def batch_multi_node_parallel_map(
     chunksize=1,
 ):
     """
-  A function to run jobs in batches in each process
+    A function to run jobs in batches in each process
 
-  """
+    """
     from libtbx import easy_mp
 
     # Call the batches in parallel

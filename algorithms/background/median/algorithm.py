@@ -18,20 +18,20 @@ class BackgroundAlgorithm(object):
 
     def __init__(self, experiments):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
+        :param experiments: The list of experiments
 
-    """
+        """
         pass
 
     def compute_background(self, reflections, image_volume=None):
         """
-    Compute the backgrond.
+        Compute the backgrond.
 
-    :param reflections: The list of reflections
+        :param reflections: The list of reflections
 
-    """
+        """
         from dials.algorithms.background.median import create
         from dials.array_family import flex
 

@@ -5,9 +5,9 @@ from dials.util.ext import scale_down_array
 
 def scale_down_array_py(image, scale_factor):
     """Scale the data in image in a manner which retains the statistical structure
-  of the input data. Input data type must be integers; negative values assumed
-  to be flags of some kind (i.e. similar to Pilatus data) and hence preserved
-  as input."""
+    of the input data. Input data type must be integers; negative values assumed
+    to be flags of some kind (i.e. similar to Pilatus data) and hence preserved
+    as input."""
 
     from scitbx.random import variate, uniform_distribution
     from scitbx.array_family import flex
@@ -32,7 +32,7 @@ def scale_down_array_py(image, scale_factor):
 
 def read_image_to_flex_array(in_image):
     """Looks like this works *only* for CBF images from a Pilatus detector;
-  oh well - should still do something useful."""
+    oh well - should still do something useful."""
     from scitbx.array_family import flex
     import binascii
     import os
@@ -52,8 +52,8 @@ def read_image_to_flex_array(in_image):
 
 def write_image_from_flex_array(out_image, pixel_values, header):
     """Write a scaled CBF image from an array of pixel values and a header to
-  add at the top. N.B. clobbers the binary size of the compressed data &
-  the MD5 hash of the data."""
+    add at the top. N.B. clobbers the binary size of the compressed data &
+    the MD5 hash of the data."""
     from cbflib_adaptbx import compress
     import binascii
     import os
@@ -80,7 +80,7 @@ def write_image_from_flex_array(out_image, pixel_values, header):
 
 def scale_down_image(in_image, out_image, scale_factor):
     """Read in the data from in_image, apply the statistically valid scale factor
-  to the data & write this out as out_image; retain the header as we go."""
+    to the data & write this out as out_image; retain the header as we go."""
 
     image, header = read_image_to_flex_array(in_image)
     scaled_image = scale_down_array(image.as_1d(), scale_factor)

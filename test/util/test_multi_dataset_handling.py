@@ -237,7 +237,7 @@ def test_assign_unique_identifiers():
 
 def test_parse_multiple_datasets():
     """Test the namesake function. This expects a list of reflection tables, and
-  selects on the column named 'id'."""
+    selects on the column named 'id'."""
     rt1 = flex.reflection_table()
     rt1["id"] = flex.int([0, 0, 0])
     rt1.experiment_identifiers()[0] = "0"

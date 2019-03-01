@@ -10,10 +10,10 @@ import procrunner
 
 def test1(dials_regression, run_in_tmpdir):
     """
-  Refinement test of 300 CSPAD images, testing auto_reduction, parameter
-  fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
-  README in the regression folder for more details.
-  """
+    Refinement test of 300 CSPAD images, testing auto_reduction, parameter
+    fixing, constraints, SparseLevMar, and sauter_poon outlier rejection. See
+    README in the regression folder for more details.
+    """
     from scitbx import matrix
 
     data_dir = os.path.join(

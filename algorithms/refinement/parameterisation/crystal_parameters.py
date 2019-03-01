@@ -27,12 +27,12 @@ from dials.algorithms.refinement.refinement_helpers import CrystalOrientationCom
 
 class CrystalOrientationMixin(object):
     """Mix-in class defining some functionality unique to crystal orientation
-  parameterisations that can be shared by static and scan-varying versions"""
+    parameterisations that can be shared by static and scan-varying versions"""
 
     @staticmethod
     def _build_p_list(parameter_type=Parameter):
         """Build the list of parameters, using the parameter_type callback to
-    select between versions of the Parameter class"""
+        select between versions of the Parameter class"""
 
         # set up the parameters
         phi1 = parameter_type(0.0, matrix.col((1, 0, 0)), "angle (mrad)", "Phi1")
@@ -50,17 +50,17 @@ class CrystalOrientationParameterisation(
 ):
     """A parameterisation of the orientation of a Crystal model.
 
-  The Crystal orientation matrix U is parameterised by three Tait-Bryan angles
-  expressed in mrad"""
+    The Crystal orientation matrix U is parameterised by three Tait-Bryan angles
+    expressed in mrad"""
 
     def __init__(self, crystal, experiment_ids=None):
         """Initialise the CrystalOrientationParameterisation object
 
-    Args:
-        crystal: A dxtbx Crystal object to be parameterised.
-        experiment_ids (list): The experiment IDs affected by this
-            parameterisation. Defaults to None, which is replaced by [0].
-    """
+        Args:
+            crystal: A dxtbx Crystal object to be parameterised.
+            experiment_ids (list): The experiment IDs affected by this
+                parameterisation. Defaults to None, which is replaced by [0].
+        """
 
         # The state of a crystal orientation parameterisation is an orientation
         # matrix '[U]'. The initial state is a snapshot of the crystal
@@ -118,11 +118,11 @@ class CrystalOrientationParameterisation(
 
 class CrystalUnitCellMixin(object):
     """Mix-in class defining some functionality unique to crystal unit cell
-  parameterisations that can be shared by static and scan-varying versions"""
+    parameterisations that can be shared by static and scan-varying versions"""
 
     def _build_p_list(self, crystal, parameter_type=Parameter):
         """Build the list of parameters, using the parameter_type callback to
-    select between versions of the Parameter class"""
+        select between versions of the Parameter class"""
 
         # Set up symmetrizing object
         S = symmetrize_reduce_enlarge(crystal.get_space_group())
@@ -175,18 +175,18 @@ class CrystalUnitCellMixin(object):
 class CrystalUnitCellParameterisation(ModelParameterisation, CrystalUnitCellMixin):
     """A parameterisation for the unit cell of a Crystal model.
 
-  The Crystal reciprocal space orthogonalisation matrix B is parameterised
-  using up to 6 metrical matrix elements, rescaled by a multiplicative factor.
-  """
+    The Crystal reciprocal space orthogonalisation matrix B is parameterised
+    using up to 6 metrical matrix elements, rescaled by a multiplicative factor.
+    """
 
     def __init__(self, crystal, experiment_ids=None):
         """Initialise the CrystalUnitCellParameterisation object
 
-    Args:
-        crystal: A dxtbx Crystal object to be parameterised.
-        experiment_ids (list): The experiment IDs affected by this
-            parameterisation. Defaults to None, which is replaced by [0].
-    """
+        Args:
+            crystal: A dxtbx Crystal object to be parameterised.
+            experiment_ids (list): The experiment IDs affected by this
+                parameterisation. Defaults to None, which is replaced by [0].
+        """
 
         # The state of the unit cell parameterisation is the reciprocal space
         # orthogonalisation matrix 'B'. The initial state is irrelevant for

@@ -116,9 +116,9 @@ def test_contraints_manager_simple_test():
 
 def test_constrained_refinement(dials_regression, run_in_tmpdir):
     """Test joint refinement where two detectors are constrained to enforce a
-  differential distance (along the shared initial normal vector) of 1 mm.
-  This test can be constructed on the fly from data already in
-  dials_regression"""
+    differential distance (along the shared initial normal vector) of 1 mm.
+    This test can be constructed on the fly from data already in
+    dials_regression"""
 
     # use the 'centroid' data for this test. The 'regularized' experiments are
     # useful because the detector has fast and slow exactly aligned with X, -Y

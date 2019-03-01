@@ -252,7 +252,7 @@ def test_ScanVaryingCrystalOrientationParameterisation_intervals(
     nintervals, plots=False
 ):
     """Test a ScanVaryingCrystalOrientationParameterisation with
-     a range of different numbers of intervals"""
+    a range of different numbers of intervals"""
 
     vmp = _TestScanVaryingModelParameterisation()
 
@@ -344,7 +344,7 @@ def test_ScanVaryingCrystalOrientationParameterisation_intervals(
 
 def test_ScanVaryingCrystalOrientationParameterisation_random(plots=False):
     """Test a ScanVaryingCrystalOrientationParameterisation with
-     random initial orientations, random parameter shifts and random times"""
+    random initial orientations, random parameter shifts and random times"""
 
     vmp = _TestScanVaryingModelParameterisation()
 
@@ -412,7 +412,7 @@ def test_ScanVaryingCrystalOrientationParameterisation_random(plots=False):
 @pytest.mark.parametrize("nintervals", (1, 2, 3, 4, 5, 6, 7))
 def test_ScanVaryingCrystalUnitCellParameterisation_intervals(nintervals, plots=False):
     """Basic test of a ScanVaryingCrystalUnitCellParameterisation
-     with a range of different numbers of intervals"""
+    with a range of different numbers of intervals"""
 
     vmp = _TestScanVaryingModelParameterisation()
 
@@ -447,7 +447,7 @@ def test_ScanVaryingCrystalUnitCellParameterisation_intervals(nintervals, plots=
 @pytest.mark.parametrize("nintervals", (1, 2, 3, 4, 5, 6, 7))
 def test_ScanVaryingBeamParameterisation(nintervals, plots=False):
     """Basic test of a ScanVaryingBeamParameterisation
-     with a range of different numbers of intervals"""
+    with a range of different numbers of intervals"""
 
     vmp = _TestScanVaryingModelParameterisation()
 
@@ -482,7 +482,7 @@ def test_ScanVaryingBeamParameterisation(nintervals, plots=False):
 @pytest.mark.parametrize("nintervals", (1, 2, 3, 4, 5, 6, 7))
 def test_ScanVaryingDetectorParameterisation(nintervals, plots=False):
     """Basic test of a ScanVaryingDetectorParameterisationSinglePanel
-     with a range of different numbers of intervals"""
+    with a range of different numbers of intervals"""
 
     vmp = _TestScanVaryingModelParameterisation()
 

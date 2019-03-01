@@ -14,36 +14,36 @@ from __future__ import print_function
 
 class ThresholdStrategy(object):
     """
-  Base class for spot finder threshold strategies.
+    Base class for spot finder threshold strategies.
 
-  """
+    """
 
     def __init__(self, **kwargs):
         """
-    Initialise with key word arguments.
+        Initialise with key word arguments.
 
-    """
+        """
         pass
 
     def __call__(self, image):
         """
-    Threshold the image.
+        Threshold the image.
 
-    """
+        """
         raise RuntimeError("Overload Me!")
 
 
 class UnimodalThresholdStrategy(ThresholdStrategy):
     """
-  Unimodal histogram thresholding strategy.
+    Unimodal histogram thresholding strategy.
 
-  """
+    """
 
     def __init__(self, **kwargs):
         """
-    Initialise the threshold.
+        Initialise the threshold.
 
-    """
+        """
 
         # Initialise the base class
         ThresholdStrategy.__init__(self, **kwargs)
@@ -56,12 +56,12 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
 
     def __call__(self, image):
         """
-    Calculate the threshold for this image.
+        Calculate the threshold for this image.
 
-    :param image: The image to process
-    :return: The thresholded image
+        :param image: The image to process
+        :return: The thresholded image
 
-    """
+        """
         from dials.algorithms.image.threshold import maximum_deviation
         from dials.algorithms.image.threshold import probability_distribution
 
@@ -77,15 +77,15 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
 
 class DispersionThresholdStrategy(ThresholdStrategy):
     """
-  A class implementing a 'gain' threshold.
+    A class implementing a 'gain' threshold.
 
-  """
+    """
 
     def __init__(self, **kwargs):
         """
-    Set the threshold algorithm up
+        Set the threshold algorithm up
 
-    """
+        """
 
         # Initialise the base class
         ThresholdStrategy.__init__(self, **kwargs)
@@ -106,13 +106,13 @@ class DispersionThresholdStrategy(ThresholdStrategy):
 
     def __call__(self, image, mask):
         """
-    Call the thresholding function
+        Call the thresholding function
 
-    :param image: The image to process
-    :param mask: The mask to use
-    :return: The thresholded image
+        :param image: The image to process
+        :param mask: The mask to use
+        :return: The thresholded image
 
-    """
+        """
         from dials.algorithms.image import threshold
         from dials.array_family import flex
 

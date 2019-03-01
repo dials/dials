@@ -55,8 +55,8 @@ logger = logging.getLogger("dials")
 
 class ScalerBase(object):
     """
-  Abstract base class for all scalers (single and multiple).
-  """
+    Abstract base class for all scalers (single and multiple).
+    """
 
     __metaclass__ = abc.ABCMeta
 
@@ -95,12 +95,12 @@ class ScalerBase(object):
     @property
     def global_Ih_table(self):
         """
-    An Ih_table datastructure containing all suitable reflections.
+        An Ih_table datastructure containing all suitable reflections.
 
-    This includes reflections across all datasets being minimised, and there
-    should only be one instance, maintained by the highest level scaler, e.g.
-    a multiscaler in a multi-dataset case.
-    """
+        This includes reflections across all datasets being minimised, and there
+        should only be one instance, maintained by the highest level scaler, e.g.
+        a multiscaler in a multi-dataset case.
+        """
         return self._global_Ih_table
 
     @property
@@ -239,12 +239,12 @@ class SingleScaler(ScalerBase):
 
     def __init__(self, params, experiment, reflection_table, for_multi=False):
         """
-    Initialise a single-dataset scaler.
+        Initialise a single-dataset scaler.
 
-    The reflection table needs the columns 'inverse_scale_factor', 'Esq',
-    'intensity', 'variance', 'id', which are guaranteed if the scaler is
-    created using the SingleScalerFactory.
-    """
+        The reflection table needs the columns 'inverse_scale_factor', 'Esq',
+        'intensity', 'variance', 'id', which are guaranteed if the scaler is
+        created using the SingleScalerFactory.
+        """
         assert all(
             reflection_table.has_key(i)
             for i in ["inverse_scale_factor", "intensity", "variance", "id"]
@@ -322,13 +322,13 @@ class SingleScaler(ScalerBase):
 
     def update_var_cov(self, apm):
         """
-    Update the full parameter variance covariance matrix after a refinement.
+        Update the full parameter variance covariance matrix after a refinement.
 
-    If all parameters have been refined, then the full var_cov matrix can be set.
-    Else one must select subblocks for pairs of parameters and assign these into
-    the full var_cov matrix, taking care to out these in the correct position.
-    This is applicable if only some parameters have been refined in this cycle.
-    """
+        If all parameters have been refined, then the full var_cov matrix can be set.
+        Else one must select subblocks for pairs of parameters and assign these into
+        the full var_cov matrix, taking care to out these in the correct position.
+        This is applicable if only some parameters have been refined in this cycle.
+        """
         var_cov_list = apm.var_cov_matrix  # values are passed as a list from refinery
         if int(var_cov_list.size() ** 0.5) == self.var_cov_matrix.n_rows:
             self._var_cov.assign_block(
@@ -408,13 +408,13 @@ class SingleScaler(ScalerBase):
 
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
         """
-    Calculate scale factors for all suitable reflections.
+        Calculate scale factors for all suitable reflections.
 
-    Use the current model to calculate scale factors for all suitable
-    reflections, and set these in the reflection table. If caller=None,
-    the global_Ih_table is updated. If calc_cov, an error estimate on the
-    inverse scales is calculated.
-    """
+        Use the current model to calculate scale factors for all suitable
+        reflections, and set these in the reflection table. If caller=None,
+        the global_Ih_table is updated. If calc_cov, an error estimate on the
+        inverse scales is calculated.
+        """
         self._reflection_table["inverse_scale_factor_variance"] = flex.double(
             self.reflection_table.size(), 0.0
         )
@@ -575,14 +575,14 @@ class SingleScaler(ScalerBase):
 
     def _configure_model_and_datastructures(self):
         """
-    Store the relevant data in the scaling model components.
+        Store the relevant data in the scaling model components.
 
-    This takes the columns from the 'suitable' part of the reflection table (
-    which will include outliers). Then a global_Ih_table is created, which can
-    be used for outlier rejection. When calculations are done with the model
-    components, the correct reflections should first be selected out of the
-    stored data.
-    """
+        This takes the columns from the 'suitable' part of the reflection table (
+        which will include outliers). Then a global_Ih_table is created, which can
+        be used for outlier rejection. When calculations are done with the model
+        components, the correct reflections should first be selected out of the
+        stored data.
+        """
         sel_reflections = self._reflection_table.select(
             self.suitable_refl_for_scaling_sel
         )
@@ -611,11 +611,11 @@ class SingleScaler(ScalerBase):
 
     def make_ready_for_scaling(self, outlier=True):
         """
-    Prepare the datastructures for a round of scaling.
+        Prepare the datastructures for a round of scaling.
 
-    Update the scaling selection, create a new Ih_table and update the model
-    data ready for minimisation.
-    """
+        Update the scaling selection, create a new Ih_table and update the model
+        data ready for minimisation.
+        """
         if outlier:
             self.scaling_selection = self.scaling_subset_sel & ~self.outliers
         else:
@@ -670,13 +670,13 @@ class MultiScalerBase(ScalerBase):
 
     def remove_datasets(self, scalers, n_list):
         """
-    Delete a scaler from the dataset.
+        Delete a scaler from the dataset.
 
-    Code in this module does not necessarily have access to all references of
-    experiments and reflections, so log the position in the list so that they
-    can be deleted later. Scaling algorithm code should only depends on the
-    scalers.
-    """
+        Code in this module does not necessarily have access to all references of
+        experiments and reflections, so log the position in the list so that they
+        can be deleted later. Scaling algorithm code should only depends on the
+        scalers.
+        """
         initial_number = len(scalers)
         for n in n_list[::-1]:
             self._removed_datasets.append(scalers[n].experiments.identifier)
@@ -688,10 +688,10 @@ class MultiScalerBase(ScalerBase):
 
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
         """
-    Calculate scale factors for all suitable reflections in the datasets.
+        Calculate scale factors for all suitable reflections in the datasets.
 
-    After the scale factors are updated, the global_Ih_table is updated also.
-    """
+        After the scale factors are updated, the global_Ih_table is updated also.
+        """
         if self.verbosity <= 1 and calc_cov:
             logger.info("Calculating error estimates of inverse scale factors. \n")
         for i, scaler in enumerate(self.active_scalers):
@@ -837,12 +837,12 @@ class MultiScalerBase(ScalerBase):
 
     def make_ready_for_scaling(self, outlier=True):
         """
-    Prepare the datastructures for a round of scaling.
+        Prepare the datastructures for a round of scaling.
 
-    Update the scaling selection, create a new Ih_table and update the model
-    data ready for minimisation. Also check to see if any datasets should be
-    removed.
-    """
+        Update the scaling selection, create a new Ih_table and update the model
+        data ready for minimisation. Also check to see if any datasets should be
+        removed.
+        """
         datasets_to_remove = []
         for i, scaler in enumerate(self.active_scalers):
             if outlier:
@@ -858,10 +858,10 @@ class MultiScalerBase(ScalerBase):
 
     def round_of_outlier_rejection(self, target=None):
         """
-    Perform a round of outlier rejection across all datasets.
+        Perform a round of outlier rejection across all datasets.
 
-    After identifying outliers, set the outliers property in individual scalers.
-    """
+        After identifying outliers, set the outliers property in individual scalers.
+        """
         assert self.active_scalers is not None
         if not self.global_Ih_table:
             self._create_global_Ih_table()
@@ -952,11 +952,11 @@ class MultiScaler(MultiScalerBase):
 
     def __init__(self, params, experiments, single_scalers):
         """
-    Initialise a multiscaler from a list of single scalers.
+        Initialise a multiscaler from a list of single scalers.
 
-    Create a global_Ih_table, an Ih_table to use for minimisation and update
-    the data in the model components.
-    """
+        Create a global_Ih_table, an Ih_table to use for minimisation and update
+        the data in the model components.
+        """
         logger.info("Configuring a MultiScaler to handle the individual Scalers. \n")
         super(MultiScaler, self).__init__(params, experiments, single_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")
@@ -1016,14 +1016,14 @@ class TargetScaler(MultiScalerBase):
 
     def __init__(self, params, scaled_experiments, scaled_scalers, unscaled_scalers):
         """
-    Initialise a multiscaler from a list of single and unscaled scalers.
+        Initialise a multiscaler from a list of single and unscaled scalers.
 
-    First, set the active scalers (the unscaled scalers) and use these to
-    create a global_Ih_table. Then, use the scaled_scalers to create a
-    target_Ih_table. Create an Ih_table to use for minimisation and use
-    the target_Ih_table to set the Ih_values. Finally, update the data in
-    the model components.
-    """
+        First, set the active scalers (the unscaled scalers) and use these to
+        create a global_Ih_table. Then, use the scaled_scalers to create a
+        target_Ih_table. Create an Ih_table to use for minimisation and use
+        the target_Ih_table to set the Ih_values. Finally, update the data in
+        the model components.
+        """
         logger.info("\nInitialising a TargetScaler instance. \n")
         super(TargetScaler, self).__init__(params, scaled_experiments, scaled_scalers)
         logger.info("Determining symmetry equivalent reflections across datasets.\n")

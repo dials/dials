@@ -9,17 +9,17 @@ from dials.array_family import flex
 
 class MultiScalingRestraints(object):
     """A class to calculate restraints for scaling for one or more datasets,
-  by composition of the restraints of the individual datasets. The methods
-  require a multi active_parameter_manager."""
+    by composition of the restraints of the individual datasets. The methods
+    require a multi active_parameter_manager."""
 
     def __init__(self):
         self.single_restraints_calculator = ScalingRestraints()
 
     def calculate_restraints(self, apm):
         """Calculate restraints for multi-dataset scaling, using a
-    multi active_parameter_manager. Return None if no restraints, else return
-    a restraints vector of length n_restrained_parameters and a gradient vector
-    of length n_total_parameters."""
+        multi active_parameter_manager. Return None if no restraints, else return
+        a restraints vector of length n_restrained_parameters and a gradient vector
+        of length n_total_parameters."""
         R = flex.double([])
         G = flex.double([])
         for single_apm in apm.apm_list:
@@ -35,12 +35,12 @@ class MultiScalingRestraints(object):
 
     def calculate_jacobian_restraints(self, apm):
         """Calculate jacobian restraints for multi-dataset scaling, using a
-    multi active_parameter_manager. First, the restraints are calculated - if
-    not None is returned, then one restraints vector, jacobian matrix and
-    weights vector is composed for the multiple datasets, else None is returned.
-    The jacobian restraints matrix is of size n_restrained_parameters x
-    n_parameters (across all datasets), while the residuals and weights vector
-    are of length n_restrainted_parameters."""
+        multi active_parameter_manager. First, the restraints are calculated - if
+        not None is returned, then one restraints vector, jacobian matrix and
+        weights vector is composed for the multiple datasets, else None is returned.
+        The jacobian restraints matrix is of size n_restrained_parameters x
+        n_parameters (across all datasets), while the residuals and weights vector
+        are of length n_restrainted_parameters."""
         residual_restraints = self.calculate_restraints(apm)
         if residual_restraints:
             n_restraints = residual_restraints[0].size()
@@ -65,13 +65,13 @@ class MultiScalingRestraints(object):
 
 class ScalingRestraints(object):
     """A class to calculate restraints for scaling for an individual dataset, by
-  using a single active_parameter_manager."""
+    using a single active_parameter_manager."""
 
     def calculate_jacobian_restraints(self, apm):
         """Calculate jacobian restraints for a single dataset from the scaling model
-    components, using a single active_parameter_manager. Return None if no
-    restraints, else return a residuals vector and a matrix of size
-    n_restrained_parameters x n_parameters, and a weights vector."""
+        components, using a single active_parameter_manager. Return None if no
+        restraints, else return a residuals vector and a matrix of size
+        n_restrained_parameters x n_parameters, and a weights vector."""
         residual_restraints = self.calculate_restraints(apm)
         if residual_restraints:
             n_restraints = residual_restraints[0].size()
@@ -96,9 +96,9 @@ class ScalingRestraints(object):
     @staticmethod
     def calculate_restraints(apm):
         """Calculate restraints for a single dataset from the scaling model
-    components. Return None if no restraints, else return a residuals vector
-    length n_restrained_parameters and a gradient vector of length n_parameters
-    (of the scaling model for the individual dataset)."""
+        components. Return None if no restraints, else return a residuals vector
+        length n_restrained_parameters and a gradient vector of length n_parameters
+        (of the scaling model for the individual dataset)."""
         residuals = flex.double([])
         gradient_vector = flex.double([])
         for comp in apm.components.itervalues():

@@ -68,14 +68,14 @@ class TargetFactory(object):
     ):
 
         """Given a set of parameters, configure a factory to build a
-    target function
+        target function
 
-    Params:
-        params The input parameters
+        Params:
+            params The input parameters
 
-    Returns:
-        The target factory instance
-    """
+        Returns:
+            The target factory instance
+        """
 
         if params.rmsd_cutoff == "fraction_of_bin_size":
             absolute_cutoffs = None
@@ -123,22 +123,22 @@ class TargetFactory(object):
 class Target(object):
     """Abstract interface for a target function class
 
-  A Target object will be used by a Refinery. It will refer to a Reflection
-  Manager to get a list of observations. It will perform reflection prediction
-  on those observations and update the reflection manager with those
-  predictions. It will then query the reflection manager to get a list of
-  accepted reflections with observed and calculated positions. These are the
-  reflections for use in refinement. It obtains the gradients of reflection
-  positions from a relevant prediction parameterisation object. With all of
-  this information in place, it calculates the value of the target function,
-  the gradients of the target function and auxiliary information (e.g. RMSDs).
+    A Target object will be used by a Refinery. It will refer to a Reflection
+    Manager to get a list of observations. It will perform reflection prediction
+    on those observations and update the reflection manager with those
+    predictions. It will then query the reflection manager to get a list of
+    accepted reflections with observed and calculated positions. These are the
+    reflections for use in refinement. It obtains the gradients of reflection
+    positions from a relevant prediction parameterisation object. With all of
+    this information in place, it calculates the value of the target function,
+    the gradients of the target function and auxiliary information (e.g. RMSDs).
 
-  Concrete instances of this class implement the actual target function
-  calculation. The base class should not determine what type of target
-  function is used (e.g. least squares target), or limit whether the object
-  is used for a detector space & phi residual, or a reciprocal space residual.
-  This should all be set by a derived class.
-  """
+    Concrete instances of this class implement the actual target function
+    calculation. The base class should not determine what type of target
+    function is used (e.g. least squares target), or limit whether the object
+    is used for a detector space & phi residual, or a reciprocal space residual.
+    This should all be set by a derived class.
+    """
 
     __metaclass__ = abc.ABCMeta
     _grad_names = ["dX_dp", "dY_dp", "dphi_dp"]
@@ -200,7 +200,7 @@ class Target(object):
 
     def predict(self):
         """perform reflection prediction for the working reflections and update the
-    reflection manager"""
+        reflection manager"""
 
         # get the matches
         reflections = self._reflection_manager.get_obs()
@@ -273,7 +273,7 @@ class Target(object):
 
     def calculate_gradients(self, reflections=None, callback=None):
         """delegate to the prediction_parameterisation object to calculate
-    gradients for all the matched reflections, or just for those specified"""
+        gradients for all the matched reflections, or just for those specified"""
 
         self.update_matches()
 
@@ -318,7 +318,7 @@ class Target(object):
 
     def compute_functional_gradients_and_curvatures(self, block=None):
         """calculate the value of the target function and its gradients. Set
-    approximate curvatures as a side-effect"""
+        approximate curvatures as a side-effect"""
 
         self.update_matches()
         if block is not None:
@@ -365,8 +365,8 @@ class Target(object):
 
     def compute_restraints_functional_gradients_and_curvatures(self):
         """use the restraints_parameterisation object, if present, to
-    calculate the least squares restraints objective plus gradients and
-    approximate curvatures"""
+        calculate the least squares restraints objective plus gradients and
+        approximate curvatures"""
 
         if not self._restraints_parameterisation:
             return None
@@ -409,9 +409,9 @@ class Target(object):
 
     def split_matches_into_blocks(self, nproc=1):
         """Return a list of the matches, split into blocks according to the
-    gradient_calculation_blocksize parameter and the number of processes (if relevant).
-    The number of blocks will be set such that the total number of reflections
-    being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
+        gradient_calculation_blocksize parameter and the number of processes (if relevant).
+        The number of blocks will be set such that the total number of reflections
+        being processed by concurrent processes does not exceed gradient_calculation_blocksize"""
 
         self.update_matches()
 
@@ -442,7 +442,7 @@ class Target(object):
 
     def compute_residuals_and_gradients(self, block=None):
         """return the vector of residuals plus their gradients and weights for
-    non-linear least squares methods"""
+        non-linear least squares methods"""
 
         self.update_matches()
         if block is not None:
@@ -470,8 +470,8 @@ class Target(object):
 
     def compute_restraints_residuals_and_gradients(self):
         """delegate to the restraints_parameterisation object, if present, to
-    calculate the vector of restraints residuals plus their gradients and
-    weights for non-linear least squares methods"""
+        calculate the vector of restraints residuals plus their gradients and
+        weights for non-linear least squares methods"""
 
         if self._restraints_parameterisation:
             residuals, jacobian, weights = (
@@ -485,7 +485,7 @@ class Target(object):
     @staticmethod
     def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
         """construct Jacobian from lists of gradient vectors. This method may be
-    overridden for the case where these vectors use sparse storage"""
+        overridden for the case where these vectors use sparse storage"""
 
         jacobian = flex.double(flex.grid(nelem, nparam))
         # loop over parameters
@@ -500,7 +500,7 @@ class Target(object):
     @staticmethod
     def _concatenate_gradients(dX, dY, dZ):
         """concatenate three gradient vectors and return a flex.double. This method
-    may be overriden for the case where these vectors use sparse storage"""
+        may be overriden for the case where these vectors use sparse storage"""
 
         grads = flex.double.concatenate(dX, dY)
         grads.extend(dZ)
@@ -509,16 +509,16 @@ class Target(object):
     @abc.abstractmethod
     def _extract_residuals_and_weights(matches):
         """extract vector of residuals and corresponding weights. The space the
-    residuals are measured in (e.g. X, Y and Phi) and the order they are
-    returned is determined by a concrete implementation of a staticmethod"""
+        residuals are measured in (e.g. X, Y and Phi) and the order they are
+        returned is determined by a concrete implementation of a staticmethod"""
 
         pass
 
     @abc.abstractmethod
     def _extract_squared_residuals(matches):
         """extract vector of squared residuals. The space the residuals are measured
-    in (e.g. X, Y and Phi) and the order they are returned is determined by a
-    concrete implementation of a staticmethod"""
+        in (e.g. X, Y and Phi) and the order they are returned is determined by a
+        concrete implementation of a staticmethod"""
 
         pass
 
@@ -534,7 +534,7 @@ class Target(object):
 
     def rmsds_for_reflection_table(self, reflections):
         """calculate unweighted RMSDs for the specified reflections. Caution: this
-    assumes that the table reflections has the keys expected by _rmsds_core"""
+        assumes that the table reflections has the keys expected by _rmsds_core"""
 
         n = len(reflections)
         if n == 0:
@@ -574,8 +574,8 @@ class Target(object):
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     """An implementation of the target class providing a least squares residual
-  in terms of detector impact position X, Y and phi, terminating on achieved
-  rmsd (or on intrisic convergence of the chosen minimiser)"""
+    in terms of detector impact position X, Y and phi, terminating on achieved
+    rmsd (or on intrisic convergence of the chosen minimiser)"""
 
     def __init__(
         self,
@@ -673,8 +673,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
 class SparseGradientsMixin:
     """Mixin class to build a sparse Jacobian from gradients of the prediction
-  formula stored as sparse vectors, and allow concatenation of gradient vectors
-  that employed sparse storage."""
+    formula stored as sparse vectors, and allow concatenation of gradient vectors
+    that employed sparse storage."""
 
     @staticmethod
     def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
@@ -715,7 +715,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
     SparseGradientsMixin, LeastSquaresPositionalResidualWithRmsdCutoff
 ):
     """A version of the LeastSquaresPositionalResidualWithRmsdCutoff Target that
-  uses a sparse matrix data structure for memory efficiency when there are a
-  large number of Experiments"""
+    uses a sparse matrix data structure for memory efficiency when there are a
+    large number of Experiments"""
 
     pass

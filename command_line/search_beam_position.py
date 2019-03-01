@@ -109,7 +109,7 @@ class better_experimental_model_discovery(object):
 
     def optimize_origin_offset_local_scope(self):
         """Local scope: find the optimal origin-offset closest to the current overall detector position
-       (local minimum, simple minimization)"""
+        (local minimum, simple minimization)"""
 
         from libtbx.test_utils import approx_equal
         from rstbx.indexing_api import dps_extended
@@ -313,10 +313,10 @@ class better_experimental_model_discovery(object):
         self, reciprocal_space_vectors, solutions, granularity=None, amax=None
     ):
         """Evaluates the probability that the trial value of (S0_vector | origin_offset) is correct,
-       given the current estimate and the observations.  The trial value comes through the
-       reciprocal space vectors, and the current estimate comes through the short list of
-       DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
-       from -1.0 to 1.0"""
+        given the current estimate and the observations.  The trial value comes through the
+        reciprocal space vectors, and the current estimate comes through the short list of
+        DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
+        from -1.0 to 1.0"""
         import cmath
         from rstbx.dps_core import Direction, Directional_FFT
 

@@ -182,9 +182,9 @@ class Script(object):
 
     def write_datablocks(self, datablocks, params):
         """
-    Output the datablock to file.
+        Output the datablock to file.
 
-    """
+        """
         if params.output.datablock:
             logger.info("-" * 80)
             logger.info("Writing datablocks to %s" % params.output.datablock)

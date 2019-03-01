@@ -67,7 +67,7 @@ def model_background(shoebox, mean_bg):
 
 def random_vector_2D(vector, sd):
     """Form random orthonormal basis including vector, rotate vector by random
-  amount sd in both normal directions."""
+    amount sd in both normal directions."""
     import random
 
     o0 = vector.ortho()
@@ -77,7 +77,7 @@ def random_vector_2D(vector, sd):
 
 def random_vector_cone(vector, sd):
     """Pick orthogonal axis to vector, rotate by random angle about vector,
-  rotate vector about this by sd in radians."""
+    rotate vector about this by sd in radians."""
     import random
     import math
 
@@ -101,8 +101,8 @@ def model_reflection_example(reflection, experiment, params):
 
 def trace_path(x0, y0, v, f, s, t0, p):
     """x0, y0 impact position in mm, v, f, s are vectors of the ray and fast
-  and slow directions in lab frame, t0 is thickness in mm and p pixel size in
-  mm"""
+    and slow directions in lab frame, t0 is thickness in mm and p pixel size in
+    mm"""
 
     import math
 
@@ -192,7 +192,7 @@ def trace_path(x0, y0, v, f, s, t0, p):
 
 def model_path_through_sensor(detector, reflection, s1, patch, scale):
     """Model the passage of the ray s1 through the detector, depositing
-  fractional counts in patch as we go."""
+    fractional counts in patch as we go."""
 
     import math
     from scitbx import matrix
@@ -268,7 +268,7 @@ def model_reflection_predict(reflection, experiment, params):
 
 def predict_angles(p0_star, experiment, s0=None):
     """Predict Ewald sphere crossing angle for RLP x, returned in order
-  (entering, exiting)."""
+    (entering, exiting)."""
 
     from scitbx import matrix
     import math

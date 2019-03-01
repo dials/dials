@@ -36,35 +36,35 @@ def get_sorted_asu_indices(asu_indices, space_group):
 
 class IhTable(object):
     """
-  A class to manage access to Ih_table blocks.
+    A class to manage access to Ih_table blocks.
 
-  The idea here is to split the data into blocks to allow parallelized
-  computations, but within the blocks the data are sorted by dataset.
-  In each block, there exists a block_selection_list which contains the indices
-  for each dataset from the input reflection table.
+    The idea here is to split the data into blocks to allow parallelized
+    computations, but within the blocks the data are sorted by dataset.
+    In each block, there exists a block_selection_list which contains the indices
+    for each dataset from the input reflection table.
 
-  This class acts as a 'master' to setup the block structure and control access
-  to the underlying blocks - only metadata is kept in this class after
-  initialisation, the reflections etc are all contained in the blocks.
-  To set data in the blocks, methods are provided by the master, e.g
-  set_intensities(intensities, block_id) which are delegated down to the
-  appropriate block.
+    This class acts as a 'master' to setup the block structure and control access
+    to the underlying blocks - only metadata is kept in this class after
+    initialisation, the reflections etc are all contained in the blocks.
+    To set data in the blocks, methods are provided by the master, e.g
+    set_intensities(intensities, block_id) which are delegated down to the
+    appropriate block.
 
-  Attributes:
-      space_group: The space group for the dataset.
-      Ih_table_blocks (list): A list of IhTableBlock instances. All symmetry
-          equivalent reflections are recorded in the same block, to allow
-          splitting of the dataset for parallelized computations.
-      nblocks (int): The number of blocks in the Ih_table_blocks list.
-      blocked_selection_list (list): A list of lists. bsl[i][j] is the selection
-          list for block i, dataset j.
-      n_datasets: The number of input reflection tables used to make the Ih_table.
-      size: The number of reflections across all blocks
-      asu_index_dict (dict): A dictionary, key: asu_miller_index, value tuple
-          containing group_id and block_id (where group id is the group index
-          within its block).
+    Attributes:
+        space_group: The space group for the dataset.
+        Ih_table_blocks (list): A list of IhTableBlock instances. All symmetry
+            equivalent reflections are recorded in the same block, to allow
+            splitting of the dataset for parallelized computations.
+        nblocks (int): The number of blocks in the Ih_table_blocks list.
+        blocked_selection_list (list): A list of lists. bsl[i][j] is the selection
+            list for block i, dataset j.
+        n_datasets: The number of input reflection tables used to make the Ih_table.
+        size: The number of reflections across all blocks
+        asu_index_dict (dict): A dictionary, key: asu_miller_index, value tuple
+            containing group_id and block_id (where group id is the group index
+            within its block).
 
-  """
+    """
 
     id_ = "IhTable"
 
@@ -78,20 +78,20 @@ class IhTable(object):
         free_set_offset=0,
     ):
         """
-    Distribute the input data into the required structure.
+        Distribute the input data into the required structure.
 
-    The reflection data can be split into blocks, while the relevant
-    metadata is also generated.
+        The reflection data can be split into blocks, while the relevant
+        metadata is also generated.
 
-    A list of flex.size_t indices can be provided - this allows the
-    reflection table data to maintain a reference to a dataset from which
-    it was selecte; these will be used when making the block selections.
-    e.g selection = flex.bool([True, False, True])
-        r_1 = r_master.select(selection)
-        indices_list = selection.iselection() = flex.size_t([0, 2])
-        then the block selection will contain 0 and 2 to refer back
-        to the location of the data in r_master.
-    """
+        A list of flex.size_t indices can be provided - this allows the
+        reflection table data to maintain a reference to a dataset from which
+        it was selecte; these will be used when making the block selections.
+        e.g selection = flex.bool([True, False, True])
+            r_1 = r_master.select(selection)
+            indices_list = selection.iselection() = flex.size_t([0, 2])
+            then the block selection will contain 0 and 2 to refer back
+            to the location of the data in r_master.
+        """
         if indices_lists:
             assert len(indices_lists) == len(reflection_tables)
         self.asu_index_dict = {}
@@ -121,12 +121,12 @@ class IhTable(object):
 
     def update_data_in_blocks(self, data, dataset_id, column="intensity"):
         """
-    Update a given column across all blocks for a given dataset.
+        Update a given column across all blocks for a given dataset.
 
-    Given an array of data (of the same size as the input reflection
-    table) and the name of the column, use the internal data to split
-    this up and set in individual blocks.
-    """
+        Given an array of data (of the same size as the input reflection
+        table) and the name of the column, use the internal data to split
+        this up and set in individual blocks.
+        """
         assert column in ["intensity", "variance", "inverse_scale_factor"]
         assert dataset_id in range(0, self.n_datasets)
         # split up data for blocks
@@ -208,11 +208,11 @@ class IhTable(object):
 
     def _determine_required_block_structures(self, reflection_tables, nblocks=1):
         """
-    Inspect the input to determine how to split into blocks.
+        Inspect the input to determine how to split into blocks.
 
-    Extract the asu miller indices from the reflection table and
-    add data to the asu_index_dict and properties dict.
-    """
+        Extract the asu miller indices from the reflection table and
+        add data to the asu_index_dict and properties dict.
+        """
         joint_asu_indices = flex.miller_index()
         for table in reflection_tables:
             if not "asu_miller_index" in table:
@@ -360,30 +360,30 @@ class IhTable(object):
 
 class IhTableBlock(object):
     """
-  A datastructure for efficient summations over symmetry equivalent reflections.
+    A datastructure for efficient summations over symmetry equivalent reflections.
 
-  This contains a reflection table, sorted by dataset, called the Ih_table,
-  a h_index_matrix (sparse) for efficiently calculating sums over symmetry
-  equivalent reflections as well as 'block_selections' which relate the order
-  of the data to the initial reflection tables used to initialise the (master)
-  IhTable.
+    This contains a reflection table, sorted by dataset, called the Ih_table,
+    a h_index_matrix (sparse) for efficiently calculating sums over symmetry
+    equivalent reflections as well as 'block_selections' which relate the order
+    of the data to the initial reflection tables used to initialise the (master)
+    IhTable.
 
-  Attributes:
-      Ih_table: A reflection table, containing I, g, w, var, Ih,
-          asu_miller_index, loc_indices and dataset_id.
-      block_selections: A list of flex.size_t arrays of indices, that can be
-          used to select and reorder data from the input reflection tables to
-          match the order in the Ih_table.
-      h_index_matrix: A sparse matrix used to sum over groups of equivalent
-          reflections by multiplication. Sum_h I = I * h_index_matrix. The
-          dimension is n_refl by n_groups; each row has a single nonzero
-          entry with a value of 1.
-      h_expand_matrix: The transpose of the h_index_matrix, used to expand an
-          array of values for symmetry groups into an array of size n_refl.
-      derivatives: A matrix of derivatives of the reflections wrt the model
-          parameters.
+    Attributes:
+        Ih_table: A reflection table, containing I, g, w, var, Ih,
+            asu_miller_index, loc_indices and dataset_id.
+        block_selections: A list of flex.size_t arrays of indices, that can be
+            used to select and reorder data from the input reflection tables to
+            match the order in the Ih_table.
+        h_index_matrix: A sparse matrix used to sum over groups of equivalent
+            reflections by multiplication. Sum_h I = I * h_index_matrix. The
+            dimension is n_refl by n_groups; each row has a single nonzero
+            entry with a value of 1.
+        h_expand_matrix: The transpose of the h_index_matrix, used to expand an
+            array of values for symmetry groups into an array of size n_refl.
+        derivatives: A matrix of derivatives of the reflections wrt the model
+            parameters.
 
-  """
+    """
 
     def __init__(self, n_groups, n_refl, n_datasets=1):
         """Create empty datastructures to which data can later be added."""
@@ -398,11 +398,11 @@ class IhTableBlock(object):
 
     def add_data(self, dataset_id, group_ids, reflections):
         """
-    Add data to all blocks for a given dataset.
+        Add data to all blocks for a given dataset.
 
-    Add data to the Ih_table, write data to the h_index_matrix and
-    add the loc indices to the block_selections list.
-    """
+        Add data to the Ih_table, write data to the h_index_matrix and
+        add the loc indices to the block_selections list.
+        """
         assert not self._setup_info[
             "setup_complete"
         ], """
@@ -506,19 +506,19 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def calc_nh(self):
         """Calculate the number of refls in the group to which the reflection belongs.
 
-    This is a vector of length n_refl."""
+        This is a vector of length n_refl."""
         return (
             flex.double(self.size, 1.0) * self.h_index_matrix
         ) * self.h_expand_matrix
 
     def match_Ih_values_to_target(self, target_Ih_table):
         """
-    Use an Ih_table as a target to set Ih values in this table.
+        Use an Ih_table as a target to set Ih values in this table.
 
-    Given an Ih table as a target, the common reflections across the tables
-    are determined and the Ih_values are set to those of the target. If no
-    matching reflection is found, then the values are removed from the table.
-    """
+        Given an Ih table as a target, the common reflections across the tables
+        are determined and the Ih_values are set to those of the target. If no
+        matching reflection is found, then the values are removed from the table.
+        """
         assert target_Ih_table.n_work_blocks == 1
         target_asu_Ih_dict = dict(
             zip(

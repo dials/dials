@@ -7,12 +7,12 @@ from dxtbx.model import Crystal
 
 def dump(experiments, directory):
     """
-  Dump the experiments in mosflm format
+    Dump the experiments in mosflm format
 
-  :param experiments: The experiments to dump
-  :param directory: The directory to write to
+    :param experiments: The experiments to dump
+    :param directory: The directory to write to
 
-  """
+    """
     from scitbx import matrix
 
     for i, experiment in enumerate(experiments):

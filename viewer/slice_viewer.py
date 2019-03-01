@@ -22,61 +22,61 @@ class show_3d(object):
 
     """
 
-  This is a useful class for developers to view 3D flex array(s) at low level code
+    This is a useful class for developers to view 3D flex array(s) at low level code
 
-  It opens a WxPython `Frame` with sliced layers of the array(s).
+    It opens a WxPython `Frame` with sliced layers of the array(s).
 
-  Depending on the data entered it should show different amount of information
+    Depending on the data entered it should show different amount of information
 
-  There are 4 ways to use show_3d():
+    There are 4 ways to use show_3d():
 
-  1) show_3d(3D_flex_array)
-  2) show_3d(3D_flex_array, 3D_flex_array_with_mask)
-  3) show_3d(python_list_of_3D_flex_arrays)
-  3) show_3d(python_list_of_3D_flex_arrays, python_list_of_3D_flex_arrays_with_mask)
+    1) show_3d(3D_flex_array)
+    2) show_3d(3D_flex_array, 3D_flex_array_with_mask)
+    3) show_3d(python_list_of_3D_flex_arrays)
+    3) show_3d(python_list_of_3D_flex_arrays, python_list_of_3D_flex_arrays_with_mask)
 
-  Basically the idea is:
+    Basically the idea is:
 
-  Given one single argument it should show shoebox(es)
+    Given one single argument it should show shoebox(es)
 
-  or
+    or
 
-  Given two arguments it should show shoebox(es) with the mask superimposed, assuming
-  the first argument is `shoebox.data` and second argument is shoebox.mask
+    Given two arguments it should show shoebox(es) with the mask superimposed, assuming
+    the first argument is `shoebox.data` and second argument is shoebox.mask
 
-  Following there is an example of how to see a set of shoebox(es) from a pickle file,
-  this is taken from  a test piece of code:
+    Following there is an example of how to see a set of shoebox(es) from a pickle file,
+    this is taken from  a test piece of code:
 
-  import six.moves.cPickle as pickle
-  from dials.array_family import flex
-  from dials.viewer.slice_viewer import show_3d
+    import six.moves.cPickle as pickle
+    from dials.array_family import flex
+    from dials.viewer.slice_viewer import show_3d
 
 
-  table = flex.reflection_table.from_pickle("PATH/TO/MY/PICKLE/FILE")
+    table = flex.reflection_table.from_pickle("PATH/TO/MY/PICKLE/FILE")
 
-  from dials.viewer.slice_viewer import show_3d
+    from dials.viewer.slice_viewer import show_3d
 
-  flex_dat_frst_lst = []
-  flex_dat_seg_lst = []
+    flex_dat_frst_lst = []
+    flex_dat_seg_lst = []
 
-  for nm in range(Beginning_from_row , ending_at_row):
+    for nm in range(Beginning_from_row , ending_at_row):
 
-    flex_dat_frst_lst.append(table[nm]['shoebox'].data)
-    flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
+      flex_dat_frst_lst.append(table[nm]['shoebox'].data)
+      flex_dat_seg_lst.append(table[nm]['shoebox'].mask)
 
-  #to see data from a single shoebox
-  show_3d(flex_dat_frst_lst[row])
+    #to see data from a single shoebox
+    show_3d(flex_dat_frst_lst[row])
 
-  #to see data and mask from a single shoebox
-  show_3d(flex_dat_frst_lst[row], flex_dat_seg_lst[0])
+    #to see data and mask from a single shoebox
+    show_3d(flex_dat_frst_lst[row], flex_dat_seg_lst[0])
 
-  #to see data from a set shoeboxes
-  show_3d(flex_dat_frst_lst)
+    #to see data from a set shoeboxes
+    show_3d(flex_dat_frst_lst)
 
-  #to see data and mask from a set shoeboxes
-  show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
+    #to see data and mask from a set shoeboxes
+    show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
 
-  """
+    """
 
     def __init__(self, flex_arr_one, flex_arr_two=None):
         app = show_3d_wx_app(redirect=False)

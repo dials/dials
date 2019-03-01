@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0)):
     """Export data from integrated_data corresponding to experiment_list to
-  an XDS_ASCII.HKL formatted text file."""
+    an XDS_ASCII.HKL formatted text file."""
 
     from dials.array_family import flex
 

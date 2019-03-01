@@ -167,12 +167,12 @@ phil_scope = parse(
 def find_experiment_in(experiment, all_experiments):
     """Search the phil experiment list and find where an experiment came from.
 
-  :param Experiment experiment: The experiment to search for
-  :param all_experiments:       The list of all experiments from phil
-  :type  all_experiments:       list[dials.util.phil.FilenameDataWrapper[ExperimentList]]
-  :returns:                     The filename and experiment ID
-  :rtype:                       (str, int)
-  """
+    :param Experiment experiment: The experiment to search for
+    :param all_experiments:       The list of all experiments from phil
+    :type  all_experiments:       list[dials.util.phil.FilenameDataWrapper[ExperimentList]]
+    :returns:                     The filename and experiment ID
+    :rtype:                       (str, int)
+    """
     for source in all_experiments:
         try:
             experiment_list = list(source.data)

@@ -10,19 +10,19 @@ logger = logging.getLogger(__name__)
 
 class FinalizeModel(object):
     """
-  A class to finalize the background model
+    A class to finalize the background model
 
-  """
+    """
 
     def __init__(self, experiments, filter_type="median", kernel_size=10, niter=100):
         """
-    Initialize the finalizer
+        Initialize the finalizer
 
-    :param experiments: The experiment list
-    :param kernel_size: The median filter kernel size
-    :param niter: The number of iterations for filling holes
+        :param experiments: The experiment list
+        :param kernel_size: The median filter kernel size
+        :param niter: The number of iterations for filling holes
 
-    """
+        """
         from dials.algorithms.background.gmodel import PolarTransform
 
         # Set some parameters
@@ -45,12 +45,12 @@ class FinalizeModel(object):
 
     def finalize(self, data, mask):
         """
-    Finalize the model
+        Finalize the model
 
-    :param data: The data array
-    :param mask: The mask array
+        :param data: The data array
+        :param mask: The mask array
 
-    """
+        """
         from dials.algorithms.image.filter import median_filter, mean_filter
         from dials.algorithms.image.fill_holes import diffusion_fill
         from dials.algorithms.image.fill_holes import simple_fill
@@ -142,9 +142,9 @@ class FinalizeModel(object):
 
 class BackgroundModellerResult(object):
     """
-  A class to contain the modelling result
+    A class to contain the modelling result
 
-  """
+    """
 
     def __init__(
         self,
@@ -158,9 +158,9 @@ class BackgroundModellerResult(object):
         polar_model=None,
     ):
         """
-    Init the result
+        Init the result
 
-    """
+        """
         self.mean = mean
         self.variance = variance
         self.dispersion = dispersion
@@ -257,19 +257,19 @@ class BackgroundModellerExecutor(object):
 
 class BackgroundModeller(object):
     """
-  A class to help with background modelling
+    A class to help with background modelling
 
-  """
+    """
 
     def __init__(self, experiments, reflections, params):
         """
-    Initialize the modeller
+        Initialize the modeller
 
-    :param experiments: The experiment list
-    :param reflections: The reflections to process
-    :param params: The parameters to use
+        :param experiments: The experiment list
+        :param reflections: The reflections to process
+        :param params: The parameters to use
 
-    """
+        """
         # Check all reflections have same imageset and get it
         imageset = experiments[0].imageset
         for expr in experiments:
@@ -283,9 +283,9 @@ class BackgroundModeller(object):
 
     def compute(self):
         """
-    Integrate the data
+        Integrate the data
 
-    """
+        """
         from dials.algorithms.integration.image_integrator import ProcessorImage
         from dials.util.command_line import heading
 

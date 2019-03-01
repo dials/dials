@@ -267,7 +267,7 @@ def mock_unrestrained_component():
 @pytest.fixture
 def mock_parameter_manager_withrestraints(mock_restrained_component):
     """Mock a parameter manager to handle the components required for the
-  ScalingRestraints class."""
+    ScalingRestraints class."""
     apm = Mock()
     apm.components = OrderedDict(
         {
@@ -285,7 +285,7 @@ def mock_parameter_manager_withrestraints(mock_restrained_component):
 @pytest.fixture
 def mock_parameter_manager_withoutrestraints(mock_unrestrained_component):
     """Mock a parameter manager to handle the components required for the
-  ScalingRestraints class."""
+    ScalingRestraints class."""
     apm = Mock()
     apm.components = OrderedDict(
         {
@@ -382,8 +382,8 @@ def test_target_rmsd_calculation(
     mock_multi_apm_withoutrestraints,
 ):
     """Test the RMSD calculation for various scenarios - including an Ih
-  table split into a work and free set and components with/without restraints.
-  """
+    table split into a work and free set and components with/without restraints.
+    """
     target = ScalingTarget()
     assert len(target.rmsd_names) == 1
     assert len(target.rmsd_units) == 1

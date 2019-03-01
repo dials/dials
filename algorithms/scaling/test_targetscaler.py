@@ -99,7 +99,7 @@ def KB_test_param():
 
 def test_scale_against_target(KB_test_param):
     """Integration testing of the scale_against_target library function/targeted
-  scaling."""
+    scaling."""
     # Based on input - have Target Ih of 1.0, 10.0 and d of 1.0, 2.0. Then refl to
     # target have I's of 2 and 5, (with the same ds). Therefore for a KB model the
     # problem can be minimised exactly by solving the equations:

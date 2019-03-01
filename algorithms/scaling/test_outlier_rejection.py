@@ -251,8 +251,8 @@ def test_standard_outlier_rejection(generated_Ih_table):
 
 def test_targeted_outlier_rejection(generated_Ih_table, outlier_target_table):
     """Test the targeted outlier rejection algorithm - only reflections
-  that exist in both the target and the reflecton table should be tested
-  based on their normalised deviation."""
+    that exist in both the target and the reflecton table should be tested
+    based on their normalised deviation."""
     zmax = 6.0
     outliers = TargetedOutlierRejection(
         generated_Ih_table, zmax, outlier_target_table

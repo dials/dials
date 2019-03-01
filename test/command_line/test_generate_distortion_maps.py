@@ -17,7 +17,7 @@ import os
 
 def make_detector():
     """Make a dummy 4 panel detector with not many pixels to ensure test runs
-  quickly"""
+    quickly"""
     pixel_size_x = 0.1
     pixel_size_y = 0.1
     npixels_per_panel_x = 50
@@ -55,7 +55,7 @@ def make_detector():
 @pytest.mark.xfail(reason="dx,dy maps not loaded from json")
 def test_translate(dials_regression, run_in_tmpdir):
     """Test as written in https://github.com/dials/dials/issues/471. This
-  is pretty slow!"""
+    is pretty slow!"""
 
     dials_regression = "~/sw/cctbx/modules/dials_regression"
 
@@ -90,7 +90,7 @@ def test_translate(dials_regression, run_in_tmpdir):
 
 def test_elliptical_distortion(run_in_tmpdir):
     """Create distortion maps for elliptical distortion using a dummy datablock
-  with a small detector, for speed. Check those maps seem sensible"""
+    with a small detector, for speed. Check those maps seem sensible"""
 
     # Make a detector model
     d = make_detector()

@@ -16,25 +16,25 @@ import sys
 
 class ActionError(RuntimeError):
     """
-  Class to represent exception for when an action can't be performed
+    Class to represent exception for when an action can't be performed
 
-  """
+    """
 
     def __init__(self, action, parent_action):
         """
-    :param action: The action we want to do
-    :param parent_action: The parent's action
+        :param action: The action we want to do
+        :param parent_action: The parent's action
 
-    """
+        """
         text = 'Unable to perform "%s" after "%s"' % (action, parent_action)
         super(ActionError, self).__init__(text)
 
 
 class ExternalCommand(object):
     """
-  Class to run an external command
+    Class to run an external command
 
-  """
+    """
 
     def __init__(self):
         pass
@@ -48,15 +48,15 @@ class ExternalCommand(object):
         stderr_filename=None,
     ):
         """
-    Run the command
+        Run the command
 
-    :param command: The command to run
-    :param stdout: File object to write stdout
-    :param stderr: File object to write stderr
-    :param stdout_filename The filename to log stdout
-    :param stderr_filename The filename to log stderr
+        :param command: The command to run
+        :param stdout: File object to write stdout
+        :param stderr: File object to write stderr
+        :param stdout_filename The filename to log stdout
+        :param stderr_filename The filename to log stderr
 
-    """
+        """
         import subprocess
         import threading
 
@@ -146,76 +146,76 @@ class RunExternalCommand(object):
 
 class UndoStack(object):
     """
-  A class to implement an undo stack
+    A class to implement an undo stack
 
-  """
+    """
 
     def __init__(self, initial):
         """
-    Set the initial state
+        Set the initial state
 
-    """
+        """
         self._stack = [initial]
         self._index = 0
 
     def push(self, obj):
         """
-    Add a new state
+        Add a new state
 
-    """
+        """
         self._stack = self._stack[0 : self._index + 1] + [obj]
         self._index = len(self._stack) - 1
 
     def peek(self):
         """
-    Get the current state
+        Get the current state
 
-    """
+        """
         return self._stack[self._index]
 
     def undo(self):
         """
-    Undo to the last state
+        Undo to the last state
 
-    """
+        """
         if self._index > 0:
             self._index -= 1
 
     def redo(self):
         """
-    Redo to the next state
+        Redo to the next state
 
-    """
+        """
         if self._index < len(self._stack) - 1:
             self._index += 1
 
     def reset(self):
         """
-    Reset to the initial state
+        Reset to the initial state
 
-    """
+        """
         self._stack = self._stack[0:1]
         self._index = 0
 
     def __len__(self):
         """
-    Get the number of states
+        Get the number of states
 
-    """
+        """
         return len(self._stack)
 
 
 class ParameterManager(object):
     """
-  A class to manage the current set of parameters.
+    A class to manage the current set of parameters.
 
-  """
+    """
 
     def __init__(self, phil_scope):
         """
-    Create the master phil and set working phil to default parameters
+        Create the master phil and set working phil to default parameters
 
-    """
+        """
         from libtbx.phil import parse
 
         self.master_phil = phil_scope
@@ -223,34 +223,34 @@ class ParameterManager(object):
 
     def undo(self):
         """
-    Undo the last parameter changes
+        Undo the last parameter changes
 
-    """
+        """
         self.working_phil.undo()
 
     def redo(self):
         """
-    Redo the last parameter changes
+        Redo the last parameter changes
 
-    """
+        """
         self.working_phil.redo()
 
     def reset(self):
         """
-    Reset the working phil to the default parameters
+        Reset the working phil to the default parameters
 
-    """
+        """
         from libtbx.phil import parse
 
         self.working_phil.push(self.master_phil.fetch(source=parse("")))
 
     def set(self, parameters, short_syntax=False):
         """
-    Set a parameter and update the working phil
-    :param parameter: The text string of parameters
-    :param short_syntax: True/False treat as command line parameter
+        Set a parameter and update the working phil
+        :param parameter: The text string of parameters
+        :param short_syntax: True/False treat as command line parameter
 
-    """
+        """
         from libtbx.phil import parse
         from dials.util import Sorry
         import shlex
@@ -272,11 +272,11 @@ class ParameterManager(object):
 
     def get(self, diff=True):
         """
-    Get the phil parameters
+        Get the phil parameters
 
-    :param diff: Get the diff phil
+        :param diff: Get the diff phil
 
-    """
+        """
         working_phil = self.working_phil.peek()
         if diff:
             result = self.master_phil.fetch_diff(source=working_phil)
@@ -287,15 +287,15 @@ class ParameterManager(object):
 
 class ImportParameterManager(ParameterManager):
     """
-  Specialization for import parameters
+    Specialization for import parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -311,15 +311,15 @@ class ImportParameterManager(ParameterManager):
 
 class FindSpotsParameterManager(ParameterManager):
     """
-  Specialization for find spots parameters
+    Specialization for find spots parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -339,15 +339,15 @@ class FindSpotsParameterManager(ParameterManager):
 
 class DiscoverBetterModelParameterManager(ParameterManager):
     """
-  Specialization for search_beam_position parameters
+    Specialization for search_beam_position parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -369,15 +369,15 @@ class DiscoverBetterModelParameterManager(ParameterManager):
 
 class IndexParameterManager(ParameterManager):
     """
-  Specialization for index parameters
+    Specialization for index parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -401,15 +401,15 @@ class IndexParameterManager(ParameterManager):
 
 class RefineBSParameterManager(ParameterManager):
     """
-  Specialization for refine_bravais_settings parameters
+    Specialization for refine_bravais_settings parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -431,15 +431,15 @@ class RefineBSParameterManager(ParameterManager):
 
 class ReIndexParameterManager(ParameterManager):
     """
-  Specialization for reindex parameters
+    Specialization for reindex parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -461,15 +461,15 @@ class ReIndexParameterManager(ParameterManager):
 
 class RefineParameterManager(ParameterManager):
     """
-  Specialization for refine parameters
+    Specialization for refine parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -491,15 +491,15 @@ class RefineParameterManager(ParameterManager):
 
 class IntegrateParameterManager(ParameterManager):
     """
-  Specialization for integrate parameters
+    Specialization for integrate parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -521,15 +521,15 @@ class IntegrateParameterManager(ParameterManager):
 
 class ExportParameterManager(ParameterManager):
     """
-  Specialization for export parameters
+    Specialization for export parameters
 
-  """
+    """
 
     def __init__(self):
         """
-    Import phil scope and set up
+        Import phil scope and set up
 
-    """
+        """
         from libtbx.phil import parse
 
         phil_scope = parse(
@@ -552,15 +552,15 @@ class ExportParameterManager(ParameterManager):
 
 class GlobalParameterManager(dict):
     """
-  Class to hold all parameter managers
+    Class to hold all parameter managers
 
-  """
+    """
 
     def __init__(self):
         """
-    Init everything
+        Init everything
 
-    """
+        """
         super(GlobalParameterManager, self).__init__()
         self.update(
             {
@@ -579,43 +579,43 @@ class GlobalParameterManager(dict):
 
 class Counter(object):
     """
-  A counter class to update command indices
+    A counter class to update command indices
 
-  """
+    """
 
     def __init__(self, count=1):
         """
-    Counter begins at zero
+        Counter begins at zero
 
-    """
+        """
         self.count = count
 
     def current(self):
         """
-    :return: The current counter
+        :return: The current counter
 
-    """
+        """
         return self.count
 
     def incr(self):
         """
-    Update the counter value
+        Update the counter value
 
-    """
+        """
         self.count += 1
 
 
 class CommandState(object):
     """
-  A class to represent the command state
+    A class to represent the command state
 
-  """
+    """
 
     def __init__(self, **kwargs):
         """
-    Initialise the command state
+        Initialise the command state
 
-    """
+        """
         self.applied = False
         self.success = False
         self.parent = None
@@ -624,9 +624,9 @@ class CommandState(object):
 
     def __iter__(self):
         """
-    Iterate through the children and their children
+        Iterate through the children and their children
 
-    """
+        """
         yield self, 0
         for child in self.children:
             for node, depth in child:
@@ -634,9 +634,9 @@ class CommandState(object):
 
     def as_dict(self):
         """
-    Return the command state as a dictionary
+        Return the command state as a dictionary
 
-    """
+        """
         from os.path import join
 
         if self.workspace is None:
@@ -663,9 +663,9 @@ class CommandState(object):
     @classmethod
     def from_dict(cls, dictionary, workspace=None):
         """
-    Convert the dictionary to the state
+        Convert the dictionary to the state
 
-    """
+        """
         from os.path import join
 
         state = cls()
@@ -686,17 +686,17 @@ class CommandState(object):
 
 class Command(object):
     """
-  A class to represent the commands
+    A class to represent the commands
 
-  """
+    """
 
     name = None
 
     def __init__(self, parent=None, index=None, phil_scope=None, workspace=None):
         """
-    Initialise the action
+        Initialise the action
 
-    """
+        """
         from os.path import join
         import copy
 
@@ -756,9 +756,9 @@ class Command(object):
 
     def apply(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Apply the command
+        Apply the command
 
-    """
+        """
         from os.path import exists, join
         from os import makedirs
 
@@ -787,20 +787,20 @@ class Command(object):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the command
+        Run the command
 
-    """
+        """
         pass
 
     def generate_report(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Helper function to run dials.report
+        Helper function to run dials.report
 
-    :param experiments: path to experiments.json
-    :param reflections: path to reflections.json
-    :param html: path to output html file
+        :param experiments: path to experiments.json
+        :param reflections: path to reflections.json
+        :param html: path to output html file
 
-    """
+        """
         command = ["dials.report"]
         if not hasattr(self.state, "reflections") or self.state.reflections is None:
             raise RuntimeError("No reflections file set")
@@ -816,9 +816,9 @@ class Command(object):
 
     def check_files_exist(self, filenames=None):
         """
-    Helper function to check filenames exist
+        Helper function to check filenames exist
 
-    """
+        """
         from os.path import exists
 
         def assert_exists(name):
@@ -845,26 +845,26 @@ class Command(object):
 
 class CommandTree(object):
     """
-  A class to provide to helpful tree functions
+    A class to provide to helpful tree functions
 
-  """
+    """
 
     def __init__(self, root, counter):
         """
-    :param root: The tree root
+        :param root: The tree root
 
-    """
+        """
         self.root = root
         self.counter = counter
 
     def goto(self, index):
         """
-    Go to the desired node in the tree
+        Go to the desired node in the tree
 
-    :param index: the index of the node to go to
-    :return: The node at index
+        :param index: the index of the node to go to
+        :return: The node at index
 
-    """
+        """
         for node, level in self.iternodes():
             if node.index == index:
                 return node
@@ -872,17 +872,17 @@ class CommandTree(object):
 
     def iternodes(self):
         """
-    Iterate through the tree nodes depth first
+        Iterate through the tree nodes depth first
 
-    """
+        """
         for node, depth in self.root:
             yield node, depth
 
     def string(self, current=None):
         """
-    :return: The tree as a string
+        :return: The tree as a string
 
-    """
+        """
         size = len(str(self.counter.current()))
 
         def draw_tree(node, prefix):
@@ -913,15 +913,15 @@ class CommandTree(object):
 
 class InitialState(CommandState):
     """
-  The initial state
+    The initial state
 
-  """
+    """
 
     def __init__(self):
         """
-    Initialise the state
+        Initialise the state
 
-    """
+        """
         super(InitialState, self).__init__(
             name="clean",
             index=0,
@@ -934,9 +934,9 @@ class InitialState(CommandState):
 
 class Import(Command):
     """
-  A command to perform an import operation
+    A command to perform an import operation
 
-  """
+    """
 
     name = "import"
 
@@ -944,9 +944,9 @@ class Import(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the import command
+        Run the import command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -982,9 +982,9 @@ class Import(Command):
 
 class FindSpots(Command):
     """
-  A command to perform an find_spots operation
+    A command to perform an find_spots operation
 
-  """
+    """
 
     name = "find_spots"
 
@@ -992,9 +992,9 @@ class FindSpots(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the find_spots command
+        Run the find_spots command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -1037,9 +1037,9 @@ class FindSpots(Command):
 
 class DiscoverBetterExperimentalModel(Command):
     """
-  A command to perform a search_beam_position operation
+    A command to perform a search_beam_position operation
 
-  """
+    """
 
     name = "search_beam_position"
 
@@ -1047,9 +1047,9 @@ class DiscoverBetterExperimentalModel(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the index command
+        Run the index command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -1092,9 +1092,9 @@ class DiscoverBetterExperimentalModel(Command):
 
 class Index(Command):
     """
-  A command to perform an index operation
+    A command to perform an index operation
 
-  """
+    """
 
     name = "index"
 
@@ -1102,9 +1102,9 @@ class Index(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the index command
+        Run the index command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -1153,9 +1153,9 @@ class Index(Command):
 
 class RefineBravaisSettings(Command):
     """
-  A command to perform an refine_bravais_settings operation
+    A command to perform an refine_bravais_settings operation
 
-  """
+    """
 
     name = "refine_bravais_settings"
 
@@ -1163,9 +1163,9 @@ class RefineBravaisSettings(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the refine_bravais_settings command
+        Run the refine_bravais_settings command
 
-    """
+        """
         from os.path import exists
         from os.path import join
 
@@ -1210,9 +1210,9 @@ class RefineBravaisSettings(Command):
     @classmethod
     def bravais_summary(cls, state):
         """
-    Get the bravais summary
+        Get the bravais summary
 
-    """
+        """
         import json
 
         with open(state.summary) as summary_file:
@@ -1221,9 +1221,9 @@ class RefineBravaisSettings(Command):
     @classmethod
     def bravais_setting_filenames(cls, state):
         """
-    Get the bravais setting filenames
+        Get the bravais setting filenames
 
-    """
+        """
         from os.path import join
 
         bs_summary = cls.bravais_summary(state)
@@ -1235,9 +1235,9 @@ class RefineBravaisSettings(Command):
 
 class Reindex(Command):
     """
-  A command to perform an reindex operation
+    A command to perform an reindex operation
 
-  """
+    """
 
     name = "reindex"
 
@@ -1245,9 +1245,9 @@ class Reindex(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the index command
+        Run the index command
 
-    """
+        """
         from os.path import join
 
         # Get the solution we want and convert to the change_of_basis_op
@@ -1301,9 +1301,9 @@ class Reindex(Command):
 
 class Refine(Command):
     """
-  A command to perform an refine operation
+    A command to perform an refine operation
 
-  """
+    """
 
     name = "refine"
 
@@ -1311,9 +1311,9 @@ class Refine(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the refine command
+        Run the refine command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -1360,9 +1360,9 @@ class Refine(Command):
 
 class Integrate(Command):
     """
-  A command to perform an integrate operation
+    A command to perform an integrate operation
 
-  """
+    """
 
     name = "integrate"
 
@@ -1370,9 +1370,9 @@ class Integrate(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the integrate command
+        Run the integrate command
 
-    """
+        """
         from os.path import join
 
         # set the results
@@ -1418,9 +1418,9 @@ class Integrate(Command):
 
 class Export(Command):
     """
-  A command to perform an export operation
+    A command to perform an export operation
 
-  """
+    """
 
     name = "export"
 
@@ -1428,9 +1428,9 @@ class Export(Command):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the export command
+        Run the export command
 
-    """
+        """
         from os.path import exists
         from os.path import join
         import shutil
@@ -1476,9 +1476,9 @@ class Export(Command):
 
 class ApplicationState(object):
     """
-  A class to hold all the application state
+    A class to hold all the application state
 
-  """
+    """
 
     # The command classes
     CommandClass = {
@@ -1495,9 +1495,9 @@ class ApplicationState(object):
 
     class Memento(object):
         """
-    Class to init from state
+        Class to init from state
 
-    """
+        """
 
         def __init__(
             self, workspace=None, current=None, commands=None, counter=None, mode=None
@@ -1510,11 +1510,11 @@ class ApplicationState(object):
 
     def __init__(self, workspace=None, memento=None):
         """
-    Initialise the state
+        Initialise the state
 
-    :param workspace: The output workspace
+        :param workspace: The output workspace
 
-    """
+        """
 
         # Get the global parameters
         self.parameters = GlobalParameterManager()
@@ -1535,9 +1535,9 @@ class ApplicationState(object):
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run the command for the given mode
+        Run the command for the given mode
 
-    """
+        """
         # Create the command
         self.command = self.CommandClass[self.mode](
             parent=self.current,
@@ -1554,18 +1554,18 @@ class ApplicationState(object):
 
     def goto(self, index):
         """
-    Goto a specific command
+        Goto a specific command
 
-    :param index: The command index
+        :param index: The command index
 
-    """
+        """
         self.current = self.command_tree.goto(index)
 
     def as_dict(self):
         """
-    Return the application state as a dictionary
+        Return the application state as a dictionary
 
-    """
+        """
 
         # The application state as a dictionary
         obj = {
@@ -1582,9 +1582,9 @@ class ApplicationState(object):
     @classmethod
     def from_dict(cls, dictionary):
         """
-    Load the class from a dictionary
+        Load the class from a dictionary
 
-    """
+        """
         memento = cls.Memento(
             counter=dictionary["counter"],
             current=dictionary["current"],
@@ -1598,11 +1598,11 @@ class ApplicationState(object):
 
     def dump(self, filename):
         """
-    Dump the state to file
+        Dump the state to file
 
-    :param filename: The filename
+        :param filename: The filename
 
-    """
+        """
         import json
 
         with open(filename, "w") as outfile:
@@ -1611,12 +1611,12 @@ class ApplicationState(object):
     @classmethod
     def load(cls, filename):
         """
-    Load the state from file
+        Load the state from file
 
-    :param filename: The filename
-    :return: The state object
+        :param filename: The filename
+        :return: The state object
 
-    """
+        """
         import json
 
         def _decode_list(data):
@@ -1651,12 +1651,12 @@ class ApplicationState(object):
 
 class Controller(object):
     """
-  The controller class.
+    The controller class.
 
-  This defines the interface the DIALS GUI and CLI programs can use to interact
-  with the DIALS programs in a standard way.
+    This defines the interface the DIALS GUI and CLI programs can use to interact
+    with the DIALS programs in a standard way.
 
-  """
+    """
 
     # The list of program modes
     mode_list = [
@@ -1673,13 +1673,13 @@ class Controller(object):
 
     def __init__(self, directory=".", state_filename="dials.state", recover=True):
         """
-    Initialise the controller
+        Initialise the controller
 
-    :param directory: The output directory
-    :param state_filename: The filename to save the state to
-    :param recover: Recover the state if available
+        :param directory: The output directory
+        :param state_filename: The filename to save the state to
+        :param recover: Recover the state if available
 
-    """
+        """
         from multiprocessing import Lock
         from os.path import exists, abspath, join
 
@@ -1708,11 +1708,11 @@ class Controller(object):
 
     def set_mode(self, mode):
         """
-    Set the current mode.
+        Set the current mode.
 
-    :param mode: The mode to set
+        :param mode: The mode to set
 
-    """
+        """
         with self.lock:
 
             # Is mode available?
@@ -1725,21 +1725,21 @@ class Controller(object):
 
     def get_mode(self):
         """
-    Get the current mode
+        Get the current mode
 
-    :return: The current mode
+        :return: The current mode
 
-    """
+        """
         return self.state.mode
 
     def set_parameters(self, parameters, short_syntax=False):
         """
-    Set the parameters.
+        Set the parameters.
 
-    :param parameters: The parameters as a string
-    :param show_syntax: Use command line string
+        :param parameters: The parameters as a string
+        :param show_syntax: Use command line string
 
-    """
+        """
         with self.lock:
             self.state.parameters[self.get_mode()].set(
                 parameters, short_syntax=short_syntax
@@ -1748,125 +1748,125 @@ class Controller(object):
 
     def reset_parameters(self):
         """
-    Reset the parameters to the default values
+        Reset the parameters to the default values
 
-    """
+        """
         with self.lock:
             self.state.parameters[self.get_mode()].reset()
             self.state.dump(self.state_filename)
 
     def get_parameters(self, diff=True, mode=None):
         """
-    Get the current parameters
+        Get the current parameters
 
-    :param diff: Show only the modified parameters
+        :param diff: Show only the modified parameters
 
-    """
+        """
         if mode is None:
             mode = self.get_mode()
         return self.state.parameters[mode].get(diff=diff)
 
     def undo_parameters(self):
         """
-    Undo the last parameter changes
+        Undo the last parameter changes
 
-    """
+        """
         with self.lock:
             self.state.parameters[self.get_mode()].undo()
             self.state.dump(self.state_filename)
 
     def redo_parameters(self):
         """
-    Redo the last parameter changes
+        Redo the last parameter changes
 
-    """
+        """
         with self.lock:
             self.state.parameters[self.get_mode()].redo()
             self.state.dump(self.state_filename)
 
     def get_command_tree(self):
         """
-    Get the tree of nodes
+        Get the tree of nodes
 
-    :return The tree of nodes
+        :return The tree of nodes
 
-    """
+        """
         return self.state.command_tree
 
     def get_current(self):
         """
-    Get the current node
+        Get the current node
 
-    :return The current node
+        :return The current node
 
-    """
+        """
         return self.state.current
 
     def get_history(self):
         """
-    Get the history as a string
+        Get the history as a string
 
-    :return: The history string
+        :return: The history string
 
-    """
+        """
         return self.get_command_tree().string(current=self.get_current().index)
 
     def get_models(self):
         """
-    Get the models filename
+        Get the models filename
 
-    :return: The models filename
+        :return: The models filename
 
-    """
+        """
         return self.state.current.models
 
     def get_report(self):
         """
-    Get the results filename
+        Get the results filename
 
-    :return: The results filename
+        :return: The results filename
 
-    """
+        """
         return self.state.current.report
 
     def get_summary(self):
         """
-    Get the report filename
+        Get the report filename
 
-    :return: The report filename
+        :return: The report filename
 
-    """
+        """
         return self.state.current.summary
 
     def goto(self, index):
         """
-    Change state to a different index
+        Change state to a different index
 
-    :param index: The index to go to
+        :param index: The index to go to
 
-    """
+        """
         with self.lock:
             self.state.goto(index)
             self.state.dump(self.state_filename)
 
     def run(self, stdout=sys.stdout, stderr=sys.stderr):
         """
-    Run a program
+        Run a program
 
-    """
+        """
         import threading
 
         class AsyncCommand(threading.Thread):
             """
-      Run the command asynchronously
+            Run the command asynchronously
 
-      """
+            """
 
             def __init__(self, controller, stdout=sys.stdout, stderr=sys.stderr):
                 """
-        Init the command
+                Init the command
 
-        """
+                """
                 from Queue import Queue
 
                 super(AsyncCommand, self).__init__()
@@ -1879,9 +1879,9 @@ class Controller(object):
 
             def run(self):
                 """
-        Run the command
+                Run the command
 
-        """
+                """
                 try:
                     self.controller.state.run(stdout=self.stdout, stderr=self.stderr)
                     self.status.put(None)
@@ -1893,9 +1893,9 @@ class Controller(object):
 
             def wait(self):
                 """
-        Wait for the command
+                Wait for the command
 
-        """
+                """
                 ex_info = self.status.get()
                 if ex_info is not None:
                     raise ex_info[1]
@@ -1903,9 +1903,9 @@ class Controller(object):
 
             def ready(self):
                 """
-        Check if the command is finished
+                Check if the command is finished
 
-        """
+                """
                 return self.finished
 
         # Create the command and return

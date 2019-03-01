@@ -35,19 +35,19 @@ phil_scope = iotbx.phil.parse(
 
 def parse_multiple_datasets(reflections):
     """
-  Split a list of multi-dataset reflection tables, selecting on id
+    Split a list of multi-dataset reflection tables, selecting on id
 
-  If duplicate id values are found, the id columns are renumbered from 0..n-1,
-  taking care of experiment identifiers if these are set.
+    If duplicate id values are found, the id columns are renumbered from 0..n-1,
+    taking care of experiment identifiers if these are set.
 
-  Args:
-      reflections (list): a list of reflection tables, each of which may contain
-          multiple datasets
+    Args:
+        reflections (list): a list of reflection tables, each of which may contain
+            multiple datasets
 
-  Returns:
-      (list): a list of reflection tables corresponding to single datasets
+    Returns:
+        (list): a list of reflection tables corresponding to single datasets
 
-  """
+    """
     single_reflection_tables = []
     dataset_id_list = []
     for refl_table in reflections:
@@ -87,16 +87,16 @@ def parse_multiple_datasets(reflections):
 
 def get_next_unique_id(unique_id, used_ids):
     """
-  Test a list of used id strings to see if it contains str(unique_id)
+    Test a list of used id strings to see if it contains str(unique_id)
 
-  Args:
-      unique_id (int): Integer value to be converted to str
-      used_ids (list): A list of strings
+    Args:
+        unique_id (int): Integer value to be converted to str
+        used_ids (list): A list of strings
 
-  Returns:
-      (int): The lowest int >= unique_id for which str(int) is not in used_ids
+    Returns:
+        (int): The lowest int >= unique_id for which str(int) is not in used_ids
 
-  """
+    """
     while str(unique_id) in used_ids:
         unique_id += 1
     return unique_id
@@ -104,25 +104,25 @@ def get_next_unique_id(unique_id, used_ids):
 
 def assign_unique_identifiers(experiments, reflections, identifiers=None):
     """
-  Assign unique experiment identifiers to experiments and reflections lists.
+    Assign unique experiment identifiers to experiments and reflections lists.
 
-  If experiment identifiers are not set for some datasets, then new unique
-  identifiers are given to those, and the 'id' column for all reflection tables
-  are set sequentially from 0..n-1.
+    If experiment identifiers are not set for some datasets, then new unique
+    identifiers are given to those, and the 'id' column for all reflection tables
+    are set sequentially from 0..n-1.
 
-  Args:
-      experiments: An ExperimentList
-      reflections (list): A list of reflection tables
+    Args:
+        experiments: An ExperimentList
+        reflections (list): A list of reflection tables
 
-  Returns:
-      (tuple): tuple containing:
-          experiments: The updated ExperimentList
-          reflections (list): A list of the updated reflection tables
+    Returns:
+        (tuple): tuple containing:
+            experiments: The updated ExperimentList
+            reflections (list): A list of the updated reflection tables
 
-  Raises:
-      Sorry: If the number of reflection tables and experiments are unequal,
-          after attempted parsing of multi-dataset reflection tables.
-  """
+    Raises:
+        Sorry: If the number of reflection tables and experiments are unequal,
+            after attempted parsing of multi-dataset reflection tables.
+    """
     if len(experiments) != len(reflections):
         reflections = parse_multiple_datasets(reflections)
         if len(reflections) != len(experiments):
@@ -176,28 +176,28 @@ def select_datasets_on_ids(
     experiments, reflection_table_list, exclude_datasets=None, use_datasets=None
 ):
     """
-  Select a subset of experiments and reflection tables based on identifiers.
+    Select a subset of experiments and reflection tables based on identifiers.
 
-  This performs a similar function to the select/remove_on_experiment_identifiers
-  methods of ExperimentList and reflection_table, with additional logic to handle
-  the case of a list of reflection tables, rather than a single one.
+    This performs a similar function to the select/remove_on_experiment_identifiers
+    methods of ExperimentList and reflection_table, with additional logic to handle
+    the case of a list of reflection tables, rather than a single one.
 
-  Args:
-      experiments: An ExperimentList
-      reflection_table_list (list): a list of reflection tables
-      exclude_datasets (list): a list of experiment_identifiers to exclude
-      use_datasets (list): a list of experiment_identifiers to use
+    Args:
+        experiments: An ExperimentList
+        reflection_table_list (list): a list of reflection tables
+        exclude_datasets (list): a list of experiment_identifiers to exclude
+        use_datasets (list): a list of experiment_identifiers to use
 
-  Returns:
-      (tuple): tuple containing:
-          experiments: The updated ExperimentList
-          list_of_reflections (list): A list of the updated reflection tables
+    Returns:
+        (tuple): tuple containing:
+            experiments: The updated ExperimentList
+            list_of_reflections (list): A list of the updated reflection tables
 
-  Raises:
-      Sorry: If both use_datasets and exclude datasets are used, if not all
-          experiment identifiers are set, if an identifier in exclude_datasets
-          or use_datasets is not in the list.
-  """
+    Raises:
+        Sorry: If both use_datasets and exclude datasets are used, if not all
+            experiment identifiers are set, if an identifier in exclude_datasets
+            or use_datasets is not in the list.
+    """
     if not use_datasets and not exclude_datasets:
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:

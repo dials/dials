@@ -21,12 +21,12 @@ from dials.algorithms.refinement.refinement_helpers import dR_from_axis_and_angl
 
 class GoniometerMixin(object):
     """Mix-in class defining some functionality unique to goniometer
-   parameterisations that can be shared by static and scan-varying versions"""
+    parameterisations that can be shared by static and scan-varying versions"""
 
     @staticmethod
     def _build_p_list(axis, beam, parameter_type=Parameter):
         """Build the list of parameters, using the parameter_type callback to
-    select between versions of the Parameter class"""
+        select between versions of the Parameter class"""
 
         # Set up the parameters
         if beam:
@@ -84,20 +84,20 @@ class GoniometerMixin(object):
 class GoniometerParameterisation(ModelParameterisation, GoniometerMixin):
     """A parameterisation of a Goniometer model's setting rotation.
 
-  The setting rotation matrix is parameterised using two orientation angles
-  expressed in mrad. A beam can be provided (if present in the experiment) to
-  ensure a consistent definition of the orientation angles with respect to the
-  initial spindle-beam plane in the laboratory frame"""
+    The setting rotation matrix is parameterised using two orientation angles
+    expressed in mrad. A beam can be provided (if present in the experiment) to
+    ensure a consistent definition of the orientation angles with respect to the
+    initial spindle-beam plane in the laboratory frame"""
 
     def __init__(self, goniometer, beam=None, experiment_ids=None):
         """Initialise the GoniometerParameterisation object
 
-    Args:
-        goniometer: A dxtbx Beam object to be parameterised.
-        beam: An optional dxtbx Beam object. Defaults to None.
-        experiment_ids (list): The experiment IDs affected by this
-            parameterisation. Defaults to None, which is replaced by [0].
-    """
+        Args:
+            goniometer: A dxtbx Beam object to be parameterised.
+            beam: An optional dxtbx Beam object. Defaults to None.
+            experiment_ids (list): The experiment IDs affected by this
+                parameterisation. Defaults to None, which is replaced by [0].
+        """
         # The state of the goniometer model consists of the setting matrix [S] that
         # determines the orientation of the rotation axis in the laboratory frame
         # e_lab = [S] e_datum.

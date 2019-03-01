@@ -82,8 +82,8 @@ class installer(install_distribution.installer):
 
     def product_specific_prepackage_hook(self, directory):
         """
-    Remove irrelevant files from installer.
-    """
+        Remove irrelevant files from installer.
+        """
         self.print_header("Deflating installer")
 
         suffixes = ["B", "KB", "MB", "GB", "TB", "PB"]

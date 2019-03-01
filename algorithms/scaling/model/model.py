@@ -59,10 +59,10 @@ class ScalingModelBase(object):
     def limit_image_range(self, new_image_range):
         """Modify the model if necessary due to reducing the image range.
 
-    Args:
-        new_image_range (tuple): The (start, end) of the new image range.
+        Args:
+            new_image_range (tuple): The (start, end) of the new image range.
 
-    """
+        """
         pass
 
     def set_scaling_model_as_scaled(self):
@@ -108,19 +108,19 @@ class ScalingModelBase(object):
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names.
 
-    This list indicates to the scaler the order to perform scaling in
-    consecutive scaling mode (command line option concurrent=0).
-    e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
-    refine scale and decay, and then absorption in a subsequent cycle.
-    """
+        This list indicates to the scaler the order to perform scaling in
+        consecutive scaling mode (command line option concurrent=0).
+        e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
+        refine scale and decay, and then absorption in a subsequent cycle.
+        """
 
     def to_dict(self):
         """Serialize the model to a dictionary.
 
-    Returns:
-        dict: A dictionary representation of the model.
+        Returns:
+            dict: A dictionary representation of the model.
 
-    """
+        """
         dictionary = OrderedDict({"__id__": self.id_})
         dictionary.update({"is_scaled": self._is_scaled})
         for key in self.components:
@@ -296,14 +296,14 @@ class PhysicalScalingModel(ScalingModelBase):
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
 
-    For this model, this involves determining whether the number of parameters
-    should be reduced and may reduce the number of parameters in the scale and
-    decay components.
+        For this model, this involves determining whether the number of parameters
+        should be reduced and may reduce the number of parameters in the scale and
+        decay components.
 
-    Args:
-        new_image_range (tuple): The (start, end) of the new image range.
+        Args:
+            new_image_range (tuple): The (start, end) of the new image range.
 
-    """
+        """
         conf = self.configdict
         current_image_range = conf["valid_image_range"]
         current_osc_range = conf["valid_osc_range"]
@@ -512,14 +512,14 @@ class ArrayScalingModel(ScalingModelBase):
     def limit_image_range(self, new_image_range):
         """Modify the model to be suitable for a reduced image range.
 
-    For this model, this involves determining whether the number of parameters
-    should be reduced and may reduce the number of parameters in the absorption
-    and decay components.
+        For this model, this involves determining whether the number of parameters
+        should be reduced and may reduce the number of parameters in the absorption
+        and decay components.
 
-    Args:
-        new_image_range (tuple): The (start, end) of the new image range.
+        Args:
+            new_image_range (tuple): The (start, end) of the new image range.
 
-    """
+        """
         conf = self.configdict
         current_image_range = conf["valid_image_range"]
         current_osc_range = conf["valid_osc_range"]
@@ -686,11 +686,11 @@ def calculate_new_offset(
 ):
     """Calculate the parameter offset for the new image range.
 
-  Returns:
-      int: An offset to apply when selecting the new parameters from the
-        existing parameters.
+    Returns:
+        int: An offset to apply when selecting the new parameters from the
+          existing parameters.
 
-  """
+    """
     if n_old_param == 2:
         return 0  # cant have less than two params
     batch_difference = (new_image_0 - current_image_0) * new_norm_fac
@@ -704,22 +704,22 @@ def calculate_new_offset(
 def initialise_smooth_input(osc_range, one_osc_width, interval):
     """Calculate the required smoother parameters.
 
-  Using information about the sweep and the chosen parameterisation
-  interval, the required parameters for the smoother are determined.
+    Using information about the sweep and the chosen parameterisation
+    interval, the required parameters for the smoother are determined.
 
-  Args:
-      osc_range (tuple): The (start, stop) of an oscillation in degrees.
-      one_osc_width (float): The oscillation width of a single image in degrees.
-      interval (float): The required maximum separation between parameters
-          in degrees.
+    Args:
+        osc_range (tuple): The (start, stop) of an oscillation in degrees.
+        one_osc_width (float): The oscillation width of a single image in degrees.
+        interval (float): The required maximum separation between parameters
+            in degrees.
 
-  Returns:
-      tuple: 3-element tuple containing;
-          n_params (:obj:`int`): The number of parameters to use.
-          norm_fac (:obj:`float`): The degrees to parameters space normalisation factor.
-          interval (:obj:`float`): The actual interval in degrees between the parameters.
+    Returns:
+        tuple: 3-element tuple containing;
+            n_params (:obj:`int`): The number of parameters to use.
+            norm_fac (:obj:`float`): The degrees to parameters space normalisation factor.
+            interval (:obj:`float`): The actual interval in degrees between the parameters.
 
-  """
+    """
     interval += 0.00001
     if (osc_range[1] - osc_range[0]) < (2.0 * interval):
         if (osc_range[1] - osc_range[0]) <= interval:

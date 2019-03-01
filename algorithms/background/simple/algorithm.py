@@ -18,13 +18,13 @@ class BackgroundAlgorithm(object):
 
     def __init__(self, experiments, outlier="nsigma", model="constant3d", **kwargs):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param outlier: The outlier rejection algorithm
-    :param model: The background model algorithm
+        :param experiments: The list of experiments
+        :param outlier: The outlier rejection algorithm
+        :param model: The background model algorithm
 
-    """
+        """
         from dials.algorithms.background.simple import Creator
         from dials.algorithms.background.simple import TruncatedOutlierRejector
         from dials.algorithms.background.simple import NSigmaOutlierRejector
@@ -79,11 +79,11 @@ class BackgroundAlgorithm(object):
 
     def compute_background(self, reflections, image_volume=None):
         """
-    Compute the backgrond.
+        Compute the backgrond.
 
-    :param reflections: The list of reflections
+        :param reflections: The list of reflections
 
-    """
+        """
         from dials.array_family import flex
 
         # Do the background subtraction
@@ -108,13 +108,13 @@ class SimpleBackgroundCalculatorFactory(object):
     @classmethod
     def create(cls, experiments, outlier="nsigma", model="constant3d", **kwargs):
         """
-    Initialise the algorithm.
+        Initialise the algorithm.
 
-    :param experiments: The list of experiments
-    :param outlier: The outlier rejection algorithm
-    :param model: The background model algorithm
+        :param experiments: The list of experiments
+        :param outlier: The outlier rejection algorithm
+        :param model: The background model algorithm
 
-    """
+        """
         from dials.algorithms.integration.parallel_integrator import (
             SimpleBackgroundCalculator,
         )

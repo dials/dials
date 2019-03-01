@@ -15,9 +15,9 @@ from dials_scaling_ext import row_multiply, calc_dIh_by_dpi, calc_jacobian
 
 class ScalingTarget(object):
     """
-  A class to be used by a Scaling Refinery to calculate gradients,
-  residuals etc required by the Refinery for minimisation.
-  '"""
+    A class to be used by a Scaling Refinery to calculate gradients,
+    residuals etc required by the Refinery for minimisation.
+    '"""
 
     _grad_names = ["dI_dp"]
     rmsd_names = ["RMSD_I"]
@@ -185,8 +185,8 @@ class ScalingTarget(object):
 
 class ScalingTargetFixedIH(ScalingTarget):
     """An implementation of scaling target for when the scaling is to be
-  done against a fixed reference Ih set (i.e scaler is a TargetScaler)
-  """
+    done against a fixed reference Ih set (i.e scaler is a TargetScaler)
+    """
 
     @staticmethod
     def calculate_gradients(Ih_table):

@@ -89,7 +89,7 @@ def generated_param():
 
 def test_ScalingModelfactories(default_params, mock_exp, test_reflections):
     """Test the factory creation of the three standard scaling models with the
-  default params."""
+    default params."""
 
     KBmodel = KBSMFactory.create(default_params, [], [])
     assert isinstance(KBmodel, KBScalingModel)

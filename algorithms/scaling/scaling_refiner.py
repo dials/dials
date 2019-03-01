@@ -134,10 +134,10 @@ def scaling_refinery(
 def error_model_refinery(engine, target, max_iterations):
     """Return the correct engine based on phil parameters.
 
-  Note that here the target also takes the role of the predication
-  parameterisation by implementing the set_param_vals and get_param_vals
-  methods (the code is organised in this way to allow the use of the
-  dials.refinement engines)."""
+    Note that here the target also takes the role of the predication
+    parameterisation by implementing the set_param_vals and get_param_vals
+    methods (the code is organised in this way to allow the use of the
+    dials.refinement engines)."""
     if engine == "SimpleLBFGS":
         return ErrorModelSimpleLBFGS(
             target=target,
@@ -222,8 +222,8 @@ class ScalingRefinery(object):
 
     def prepare_for_step(self):
         """Update the parameterisation and prepare the target function. Overwrites
-    the prepare_for_step method from refinery to direct the updating away from
-    the target function to the update_for_minimisation method."""
+        the prepare_for_step method from refinery to direct the updating away from
+        the target function to the update_for_minimisation method."""
 
         x = self.x
 
@@ -525,7 +525,7 @@ class ScalingLevenbergMarquardtIterations(
     ScalingLstbxBuildUpMixin, LevenbergMarquardtIterations
 ):
     """Refinery implementation, employing lstbx Levenberg Marquadt
-  iterations"""
+    iterations"""
 
     def __init__(
         self,

@@ -14,37 +14,37 @@ from __future__ import print_function
 
 class ValidatedMultiExpProfileModeller(object):
     """
-  A class to wrap profile modeller for validation
+    A class to wrap profile modeller for validation
 
-  """
+    """
 
     def __init__(self):
         """
-    Init the list of modellers
+        Init the list of modellers
 
-    """
+        """
         self.modellers = []
         self.finalized_modeller = None
 
     def add(self, modeller):
         """
-    Add a MultiExpProfileModeller
+        Add a MultiExpProfileModeller
 
-    """
+        """
         self.modellers.append(modeller)
 
     def __getitem__(self, index):
         """
-    Get a modeller
+        Get a modeller
 
-    """
+        """
         return self.modellers[index]
 
     def model(self, reflections):
         """
-    Do the modelling for all modellers
+        Do the modelling for all modellers
 
-    """
+        """
         from dials.array_family import flex
 
         if "profile.index" not in reflections:
@@ -61,9 +61,9 @@ class ValidatedMultiExpProfileModeller(object):
 
     def validate(self, reflections):
         """
-    Do the validation.
+        Do the validation.
 
-    """
+        """
         from dials.array_family import flex
 
         results = []
@@ -83,18 +83,18 @@ class ValidatedMultiExpProfileModeller(object):
 
     def accumulate(self, other):
         """
-    Accumulate the modellers
+        Accumulate the modellers
 
-    """
+        """
         assert len(self) == len(other)
         for ms, mo in zip(self, other):
             ms.accumulate(mo)
 
     def finalize(self):
         """
-    Finalize the model
+        Finalize the model
 
-    """
+        """
         assert not self.finalized()
         for m in self:
             if self.finalized_modeller is None:
@@ -106,30 +106,30 @@ class ValidatedMultiExpProfileModeller(object):
 
     def finalized(self):
         """
-    Check if the model has been finalized.
+        Check if the model has been finalized.
 
-    """
+        """
         return self.finalized_modeller is not None
 
     def finalized_model(self):
         """
-    Get the finalized model
+        Get the finalized model
 
-    """
+        """
         assert self.finalized
         return self.finalized_modeller
 
     def __iter__(self):
         """
-    Iterate through the modellers
+        Iterate through the modellers
 
-    """
+        """
         for m in self.modellers:
             yield m
 
     def __len__(self):
         """
-    Return the number of modellers
+        Return the number of modellers
 
-    """
+        """
         return len(self.modellers)

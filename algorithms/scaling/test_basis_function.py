@@ -27,7 +27,7 @@ def small_reflection_table():
 
 def test_basis_function(small_reflection_table):
     """Test for the basis function class. This calculates scale factors and
-  derivatives for reflections based on the model components."""
+    derivatives for reflections based on the model components."""
 
     # To test the basis function, need a scaling active parameter manager - to set
     # this up we need a components dictionary with some reflection data.

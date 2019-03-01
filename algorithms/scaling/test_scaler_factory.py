@@ -134,7 +134,7 @@ def mock_exp(mock_scaling_component, idval=0):
 
     def side_effect_config_table(*args):
         """Side effect to mock configure reflection table
-    call during initialisation."""
+        call during initialisation."""
         return args[0]
 
     exp = Mock()

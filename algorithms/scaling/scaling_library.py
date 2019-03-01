@@ -41,8 +41,8 @@ def prepare_multiple_datasets_for_scaling(
     experiments, reflections, exclude_datasets=None, include_datasets=None
 ):
     """Prepare an ExperimentList and list of reflection tables for scaling, by
-  splitting the data into individual datasets, assigning identifiers and
-  including/excluding on experiment identifier if already set."""
+    splitting the data into individual datasets, assigning identifiers and
+    including/excluding on experiment identifier if already set."""
     if include_datasets or exclude_datasets:
         experiments, reflections = select_datasets_on_ids(
             experiments, reflections, exclude_datasets, include_datasets
@@ -95,9 +95,9 @@ def set_image_ranges_in_scaling_models(experiments):
 
 def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
     """Choose which intensities to use for scaling. The LP, QE and
-  partiality corrections are also applied. Two new columns are
-  added to the reflection table 'intensity' and 'variance', which have
-  all corrections applied except an inverse scale factor."""
+    partiality corrections are also applied. Two new columns are
+    added to the reflection table 'intensity' and 'variance', which have
+    all corrections applied except an inverse scale factor."""
     if intensity_choice == "profile":
         intensity_choice = "prf"  # rename to allow string matching with refl table
     if intensity_choice == "prf":
@@ -164,13 +164,13 @@ def scale_against_target(
     model="KB",
 ):
     """Determine scale factors for a single dataset, by scaling against a target
-  reflection table. Requires a single reflection table for the reflections to
-  scale and the target dataset, and an ExperimentList for both datasets. The
-  params option can also be specified, if None then the default scaling
-  configuration is used. The scaling model can be specified individually.
+    reflection table. Requires a single reflection table for the reflections to
+    scale and the target dataset, and an ExperimentList for both datasets. The
+    params option can also be specified, if None then the default scaling
+    configuration is used. The scaling model can be specified individually.
 
-  Returns the reflection table, with added columns 'inverse_scale_factor' and
-  'inverse_scale_factor_variance'."""
+    Returns the reflection table, with added columns 'inverse_scale_factor' and
+    'inverse_scale_factor_variance'."""
 
     assert model in ["physical", "array", "KB"]
     if not params:
@@ -200,12 +200,12 @@ def scale_against_target(
 
 def scale_single_dataset(reflection_table, experiment, params=None, model="physical"):
     """Determine scale factors for a single dataset. Requires a reflection table
-  and an ExperimentList with a single experiment. A custom params option can be
-  specified, if not the default scaling params option will be used, with default
-  configuration options. The model can be individually specified.
+    and an ExperimentList with a single experiment. A custom params option can be
+    specified, if not the default scaling params option will be used, with default
+    configuration options. The model can be individually specified.
 
-  Returns the reflection table, with added columns 'inverse_scale_factor' and
-  'inverse_scale_factor_variance'."""
+    Returns the reflection table, with added columns 'inverse_scale_factor' and
+    'inverse_scale_factor_variance'."""
 
     assert model in ["physical", "array"]
     if not params:
@@ -295,9 +295,9 @@ def create_scaling_model(params, experiments, reflections):
 
 def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
     """Create an Ih table from a list of experiments and reflections. Optionally,
-  a selection list can also be given, to select data from each reflection table.
-  Allow an unequal number of experiments and reflections, as only need to
-  extract one space group value (can optionally check all same if many)."""
+    a selection list can also be given, to select data from each reflection table.
+    Allow an unequal number of experiments and reflections, as only need to
+    extract one space group value (can optionally check all same if many)."""
     if selections:
         assert len(selections) == len(
             reflections
@@ -326,8 +326,8 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
 
 def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
     """Calculate merging statistics for scaled datasets. Datasets are selected
-  from the reflection table based on their id, and a list of dataset statistics
-  objects and dataset ids are returned."""
+    from the reflection table based on their id, and a list of dataset statistics
+    objects and dataset ids are returned."""
     results = []
     ids = []
     dataset_ids = list(set(reflection_table["id"]))
@@ -393,7 +393,7 @@ def intensity_array_from_cif_file(cif_file):
 
 def create_datastructures_for_target_mtz(experiments, mtz_file):
     """Read a merged mtz file and extract miller indices, intensities and
-  variances."""
+    variances."""
     m = mtz.object(mtz_file)
     ind = m.extract_miller_indices()
     cols = m.columns()
@@ -476,8 +476,8 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
 def create_datastructures_for_structural_model(reflections, experiments, cif_file):
     """Read a cif file, calculate intensities and scale them to the average
-  intensity of the reflections. Return an experiment and reflection table to
-  be used for the structural model in scaling."""
+    intensity of the reflections. Return an experiment and reflection table to
+    be used for the structural model in scaling."""
 
     # read model, compute Fc, square to F^2
     ic = intensity_array_from_cif_file(cif_file)

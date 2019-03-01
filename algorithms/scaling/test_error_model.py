@@ -31,8 +31,8 @@ def test_sg():
 
 def generate_refl_1():
     """Generate a test reflection table. Note tha the variance values are chosen
-  as the 'True' Ih_values, which would be found if unity weights were chosen
-  in this example."""
+    as the 'True' Ih_values, which would be found if unity weights were chosen
+    in this example."""
     reflections = flex.reflection_table()
     reflections["intensity"] = flex.double(
         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]

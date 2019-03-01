@@ -124,9 +124,9 @@ phil_scope = parse(
 
 def combine(datablock_list, reflections_list, params):
     """
-  Combine the found spots.
+    Combine the found spots.
 
-  """
+    """
     from dxtbx.datablock import BeamComparison
     from dxtbx.datablock import DetectorComparison
     from dxtbx.datablock import GoniometerComparison

@@ -22,8 +22,8 @@ def get_error_model(error_model_type):
 
 class BasicErrorModel(object):
     """
-  Object to manage calculation of deviations for an error model.
-  """
+    Object to manage calculation of deviations for an error model.
+    """
 
     def __init__(self, Ih_table, n_bins=10):
         logger.info("Initialising an error model for refinement.")
@@ -70,8 +70,8 @@ class BasicErrorModel(object):
 
     def filter_large_deviants(self, cutoff=6.0):
         """Do a first pass to calculate delta_hl and filter out the largest
-    deviants, so that the error model is not misled by these and instead
-    operates on the central ~90% of the data."""
+        deviants, so that the error model is not misled by these and instead
+        operates on the central ~90% of the data."""
         self.n_h = self.Ih_table.calc_nh()
         self.Ih_table.calc_Ih()
         self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])

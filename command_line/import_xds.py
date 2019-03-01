@@ -150,7 +150,7 @@ class IntegrateHKLImporter(object):
 
     def derive_reindex_matrix(self, handle):
         """Derive a reindexing matrix to go from the orientation matrix used
-    for XDS integration to the one used for DIALS integration."""
+        for XDS integration to the one used for DIALS integration."""
         from scitbx import matrix
 
         dA = matrix.sqr(self._experiment.crystal.get_A())
@@ -294,9 +294,9 @@ class XDSFileImporter(object):
     @staticmethod
     def extract_varying_crystal(integrate_lp, experiments):
         """Extract a varying crystal model from an INTEGRATE.LP file (static
-    in blocks with step changes) and write it to the provided
-    experiments
-    """
+        in blocks with step changes) and write it to the provided
+        experiments
+        """
 
         if len(experiments) > 1:
             print(

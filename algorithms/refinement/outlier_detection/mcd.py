@@ -21,8 +21,8 @@ from dials_refinement_helpers_ext import qchisq
 
 class MCD(CentroidOutlier):
     """Implementation of the CentroidOutlier class using Mahalanobis distance
-  calculated using the robust location and scatter estimate from the Minimum
-  Covariance Determinant estimate."""
+    calculated using the robust location and scatter estimate from the Minimum
+    Covariance Determinant estimate."""
 
     def __init__(
         self,

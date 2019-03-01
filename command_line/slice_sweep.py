@@ -87,10 +87,10 @@ phil_scope = parse(
 def calculate_block_ranges(scan, block_size):
     """
 
-  :param scans
-  :type a scan object
-  :param block_size:
-  :type block_size: target block size in degrees"""
+    :param scans
+    :type a scan object
+    :param block_size:
+    :type block_size: target block size in degrees"""
 
     image_ranges = []
     nimages = scan.get_num_images()
@@ -114,10 +114,10 @@ def calculate_block_ranges(scan, block_size):
 def slice_experiments(experiments, image_ranges):
     """
 
-  :param experiments
-  :type experiments: dxtbx.model.experiment_list.ExperimentList
-  :param image_range:
-  :type image_range: list of 2-tuples defining scan range for each experiment"""
+    :param experiments
+    :type experiments: dxtbx.model.experiment_list.ExperimentList
+    :param image_range:
+    :type image_range: list of 2-tuples defining scan range for each experiment"""
 
     # copy the experiments
     import copy
@@ -146,11 +146,11 @@ def slice_experiments(experiments, image_ranges):
 def slice_reflections(reflections, image_ranges):
     """
 
-  :param reflections: reflection table of input reflections
-  :type reflections: dials.array_family.flex.reflection_table
-  :param image_range: list of 2-tuples defining scan range for each experiment
-                     id contained within the reflections
-  :type image_range: list of 2-tuples defining scan range for each experiment"""
+    :param reflections: reflection table of input reflections
+    :type reflections: dials.array_family.flex.reflection_table
+    :param image_range: list of 2-tuples defining scan range for each experiment
+                       id contained within the reflections
+    :type image_range: list of 2-tuples defining scan range for each experiment"""
 
     # copy the reflections
     import copy
@@ -181,10 +181,10 @@ def slice_reflections(reflections, image_ranges):
 def slice_datablocks(datablocks, image_ranges):
     """
 
-  :param datablocks:
-  :type datablocks: list of dxtbx.datablock.DataBlocks
-  :param image_range:
-  :type image_range: list of 2-tuples defining scan range for each unique scan"""
+    :param datablocks:
+    :type datablocks: list of dxtbx.datablock.DataBlocks
+    :param image_range:
+    :type image_range: list of 2-tuples defining scan range for each unique scan"""
 
     # copy the experiments
     import copy

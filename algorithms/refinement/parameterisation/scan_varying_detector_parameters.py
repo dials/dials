@@ -28,7 +28,7 @@ class ScanVaryingDetectorParameterisationSinglePanel(
     ScanVaryingModelParameterisation, DetectorMixin
 ):
     """A scan-varying parameterisation for a single abstract panel plane, with
-  angles expressed in mrad"""
+    angles expressed in mrad"""
 
     def __init__(self, detector, t_range, num_intervals, experiment_ids=None):
 

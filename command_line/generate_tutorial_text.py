@@ -24,11 +24,11 @@ class Job(object):
     def __call__(self):
         """Run the command this job represents.
 
-    Standard output is saved onto self.result, and then optionally filtered
-    by the mangle_result function.
+        Standard output is saved onto self.result, and then optionally filtered
+        by the mangle_result function.
 
-    :returns: Dictionary with keys 'cmd' and 'result'
-    """
+        :returns: Dictionary with keys 'cmd' and 'result'
+        """
         print(self.cmd)
         self.result = Job.run_process(self.cmd)
         self.mangle_result()
@@ -60,12 +60,12 @@ class JobWriter(object):
 
     def __call__(self, cmd_filename, result_filename, job):
         """
-    Save command and output to named files.
+        Save command and output to named files.
 
-    :param cmd_filename:    Where to save a copy of the run command
-    :param result_filenam:  Where to save the result output
-    :param job:             The result dictionary from calling a Job
-    """
+        :param cmd_filename:    Where to save a copy of the run command
+        :param result_filenam:  Where to save the result output
+        :param job:             The result dictionary from calling a Job
+        """
         with open(os.path.join(self.directory, cmd_filename), "w") as f:
             f.write(job["cmd"])
         with open(os.path.join(self.directory, result_filename), "w") as f:
@@ -291,9 +291,9 @@ def find_in_line(string, lines, start=0):
 def write_extract(filename, start, end, lines):
     """Write lines to a file, in the correct line position, with markers.
 
-  This can be used to provide sphinx with an easily extractable literalinclude
-  block, that preserves the correct line numbers from the original file.
-  """
+    This can be used to provide sphinx with an easily extractable literalinclude
+    block, that preserves the correct line numbers from the original file.
+    """
     assert start > 0
     out_lines = []
     for n, line in enumerate(lines):

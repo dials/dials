@@ -13,19 +13,19 @@ from __future__ import print_function
 
 class ParameterReporter(object):
     """
-  Keeps a record of all the ModelParameterisations and
-  ScanVaryingModelParameterisations present and provides access to their
-  Parameters and ScanVaryingParameterSets for reporting purposes.
+    Keeps a record of all the ModelParameterisations and
+    ScanVaryingModelParameterisations present and provides access to their
+    Parameters and ScanVaryingParameterSets for reporting purposes.
 
-  It is assumed that the provided model parameterisations will be one of five
-  types:
+    It is assumed that the provided model parameterisations will be one of five
+    types:
 
-  * Detector parameterisation
-  * Beam parameterisation
-  * Crystal orientation parameterisation
-  * Crystal unit cell parameterisation
-  * Goniometer setting parameterisation
-  """
+    * Detector parameterisation
+    * Beam parameterisation
+    * Crystal orientation parameterisation
+    * Crystal unit cell parameterisation
+    * Goniometer setting parameterisation
+    """
 
     def __init__(
         self,
@@ -127,8 +127,8 @@ class ParameterReporter(object):
 
     def varying_params_vs_image_number(self, image_range):
         """Returns a string which is a table of scan-varying parameter values vs
-    image number, if scan-varying parameters are present. Otherwise returns
-    None"""
+        image number, if scan-varying parameters are present. Otherwise returns
+        None"""
 
         image_numbers = range(image_range[0], image_range[1] + 1)
         columns = [TableColumn("Image", image_numbers)]
@@ -163,7 +163,7 @@ class ParameterReporter(object):
 
     def get_params(self, only_free=True):
         """return a concatenated list of parameters from each of the components
-    in the global model"""
+        in the global model"""
 
         global_p_list = []
         for parameterisation in (
@@ -179,7 +179,7 @@ class ParameterReporter(object):
 
     def get_param_names(self, only_free=True):
         """Return a list of the names of parameters in the order they are
-    concatenated. Useful for output to log files and debugging."""
+        concatenated. Useful for output to log files and debugging."""
         param_names = []
         if self._detector_parameterisations:
             det_param_name_lists = [

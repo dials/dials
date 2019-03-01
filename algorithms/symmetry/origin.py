@@ -48,19 +48,19 @@ def compute_miller_set_correlation(
 ):
     """Compute correlation between two miller arrays.
 
-  Args:
-    ms_a (cctbx.miller.array): Input miller.array `a`.
-    ms_b (cctbx.miller.array): Input miller.array `b`.
-    map_to_asu (bool): If ``True``, then map miller indices to the asymmetric
-      unit before matching miller indices between input miller arrays.
-    merge_equivalents (bool): If ``True`` then merge symmetry equivalent
-      reflections before matching miller indices between input miller arrays.
+    Args:
+      ms_a (cctbx.miller.array): Input miller.array `a`.
+      ms_b (cctbx.miller.array): Input miller.array `b`.
+      map_to_asu (bool): If ``True``, then map miller indices to the asymmetric
+        unit before matching miller indices between input miller arrays.
+      merge_equivalents (bool): If ``True`` then merge symmetry equivalent
+        reflections before matching miller indices between input miller arrays.
 
-  Returns:
-    tuple[int, float]: A tuple of the number of observations and the correlation
-    coefficient.
+    Returns:
+      tuple[int, float]: A tuple of the number of observations and the correlation
+      coefficient.
 
-  """
+    """
     if map_to_asu:
         # not obvious that this will help for the reasons stated below
         ms_a = ms_a.map_to_asu()

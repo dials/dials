@@ -42,22 +42,22 @@ def debug_console():
 
 def debug_context_manager(original_context_manager, name="", log_func=None):
     """A wrapper to help debugging arbitrary context managers. For example
-     instead of
-       lock = threading.RLock():
-     use
-       lock = debug_context_manager(threading.RLock())
-     and all calls
-       with lock:
-         ...
-     will produce (hopefully) helpful debug output.
+    instead of
+      lock = threading.RLock():
+    use
+      lock = debug_context_manager(threading.RLock())
+    and all calls
+      with lock:
+        ...
+    will produce (hopefully) helpful debug output.
 
-     :param original_context_manager: Some context manager to be wrapped.
-     :param name: A name for the context manager, that will be printed in the
-                  debug output.
-     :param log_func: optional log function. If not specified debug output
-                      will be printed to sys.stderr.
-     :return: A context manager wrapping the original context manager.
-  """
+    :param original_context_manager: Some context manager to be wrapped.
+    :param name: A name for the context manager, that will be printed in the
+                 debug output.
+    :param log_func: optional log function. If not specified debug output
+                     will be printed to sys.stderr.
+    :return: A context manager wrapping the original context manager.
+    """
     if not log_func:
 
         def log_func(output):
@@ -145,14 +145,14 @@ def show_mail_on_error():
 @contextlib.contextmanager
 def locked(file_handle):
     """
-  Cross-platform file locking. Open a file for writing or appending. Then a
-  file lock can be obtained with:
+    Cross-platform file locking. Open a file for writing or appending. Then a
+    file lock can be obtained with:
 
-  import dials.util
-  with open(filename, 'w') as fh:
-    with dials.util.locked(fh):
-      (..)
-  """
+    import dials.util
+    with open(filename, 'w') as fh:
+      with dials.util.locked(fh):
+        (..)
+    """
     if not fcntl and not msvcrt:
         raise NotImplementedError("File locking not supported on this platform")
     lock = False

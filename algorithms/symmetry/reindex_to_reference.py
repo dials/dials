@@ -9,22 +9,22 @@ from mmtbx.scaling.twin_analyses import twin_laws
 def determine_reindex_operator_against_reference(test_miller_set, reference_miller_set):
     """Reindex a miller set to match a reference miller set.
 
-  This function takes two miller arrays, a reference and a test array. The
-  space group is checked to see if any reindexing may be required to give
-  consistent indexing between both datasets. If possible twin operators exist,
-  the different indexing options are tested against the reference set, using
-  the correlation between datasets as the test.
+    This function takes two miller arrays, a reference and a test array. The
+    space group is checked to see if any reindexing may be required to give
+    consistent indexing between both datasets. If possible twin operators exist,
+    the different indexing options are tested against the reference set, using
+    the correlation between datasets as the test.
 
 
-  Args:
-    test_miller_set (cctbx.miller.array): The input miller set to be reindexed.
-    reference_miller_set (cctbx.miller.array): The reference miller set.
+    Args:
+      test_miller_set (cctbx.miller.array): The input miller set to be reindexed.
+      reference_miller_set (cctbx.miller.array): The reference miller set.
 
-  Returns:
-    cctbx.sgtbx.change_of_basis_op: The change of basis operator which should be
-    applied to the test dataset to give consistent indexing with the reference.
+    Returns:
+      cctbx.sgtbx.change_of_basis_op: The change of basis operator which should be
+      applied to the test dataset to give consistent indexing with the reference.
 
-  """
+    """
     if (
         reference_miller_set.space_group().type().number()
         != test_miller_set.space_group().type().number()

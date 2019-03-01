@@ -18,10 +18,10 @@ def fast_merging_stats(
     array, anomalous=False, sigma_filtering="scala", use_internal_variance=True
 ):
     """
-  Quickly calculate required merging stats for intensity combination.
+    Quickly calculate required merging stats for intensity combination.
 
-  This is a cut-down version of iobtx.merging_statistics.merging_stats.
-  """
+    This is a cut-down version of iobtx.merging_statistics.merging_stats.
+    """
     assert array.sigmas() is not None
     positive_sel = array.sigmas() > 0
     array = array.select(positive_sel)
@@ -71,8 +71,8 @@ def _make_reflection_table_from_scaler(scaler):
 class SingleDatasetIntensityCombiner(object):
 
     """
-  Class to combine profile and summation intensities for a single datset.
-  """
+    Class to combine profile and summation intensities for a single datset.
+    """
 
     def __init__(self, scaler, use_Imid=None):
         if "intensity.prf.value" not in scaler.reflection_table:
@@ -215,8 +215,8 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
 class MultiDatasetIntensityCombiner(object):
 
     """
-  Class to combine profile and summation intensities for multiple datasets.
-  """
+    Class to combine profile and summation intensities for multiple datasets.
+    """
 
     def __init__(self, multiscaler):
         self.active_scalers = multiscaler.active_scalers
@@ -395,7 +395,7 @@ def _determine_inverse_partiality(reflections):
 
 def _calculate_combined_raw_intensities(Iprf, Isum, Vprf, Vsum, Imid):
     """Use partiality-corrected Isum, alongside Iprf to calculate
-  combined raw intensities."""
+    combined raw intensities."""
     w = 1.0 / (1.0 + (Isum / Imid) ** 3)
     w.set_selected(Isum <= 0, 1.0)
     Icomb = (w * Iprf) + ((1.0 - w) * Isum)

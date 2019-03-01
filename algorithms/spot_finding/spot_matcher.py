@@ -17,24 +17,24 @@ class SpotMatcher(object):
 
     def __init__(self, max_separation=2):
         """
-    Setup the algorithm
+        Setup the algorithm
 
-    :param max_separation: Max pixel dist between predicted and observed spot
+        :param max_separation: Max pixel dist between predicted and observed spot
 
-    """
+        """
         # Set the algorithm parameters
         self._max_separation = max_separation
 
     def __call__(self, observed, predicted):
         """i
-    Match the observed reflections with the predicted.
+        Match the observed reflections with the predicted.
 
-    :param observed: The list of observed reflections.
-    :param predicted: The list of predicted reflections.
+        :param observed: The list of observed reflections.
+        :param predicted: The list of predicted reflections.
 
-    :returns: The list of matched reflections
+        :returns: The list of matched reflections
 
-    """
+        """
         from dials.array_family import flex
 
         # Find the nearest neighbours and distances
@@ -59,14 +59,14 @@ class SpotMatcher(object):
 
     def _find_nearest_neighbours(self, observed, predicted):
         """
-    Find the nearest predicted spot to the observed spot.
+        Find the nearest predicted spot to the observed spot.
 
-    :param observed: The observed reflections
-    :param predicted: The predicted reflections
+        :param observed: The observed reflections
+        :param predicted: The predicted reflections
 
-    :returns: (nearest neighbours, distance)
+        :returns: (nearest neighbours, distance)
 
-    """
+        """
         from scitbx.array_family import flex
 
         # Get the predicted coordinates
@@ -99,14 +99,14 @@ class SpotMatcher(object):
 
     def _find_nearest_neighbours_single(self, oxyz, pxyz):
         """
-    Find the nearest predicted spot to the observed spot.
+        Find the nearest predicted spot to the observed spot.
 
-    :param observed: The observed reflections
-    :param predicted: The predicted reflections
+        :param observed: The observed reflections
+        :param predicted: The predicted reflections
 
-    :returns: (nearest neighbours, distance)
+        :returns: (nearest neighbours, distance)
 
-    """
+        """
         from annlib_ext import AnnAdaptor
         from scitbx.array_family import flex
 
@@ -121,14 +121,14 @@ class SpotMatcher(object):
 
     def _filter_by_distance(self, nn, dist):
         """
-    Filter the matches by distance.
+        Filter the matches by distance.
 
-    :param nn: The nearest neighbour list
-    :param dist: The distances
+        :param nn: The nearest neighbour list
+        :param dist: The distances
 
-    :returns: A reduced list of nearest neighbours
+        :returns: A reduced list of nearest neighbours
 
-    """
+        """
         from scitbx.array_family import flex
 
         index = range(len(nn))
@@ -136,15 +136,15 @@ class SpotMatcher(object):
 
     def _filter_duplicates(self, index, nn, dist):
         """
-    Filter the matches to remove duplicates
+        Filter the matches to remove duplicates
 
-    :param index: The indices of valid spots
-    :param nn: The nearest neighbour indices
-    :param dist: The distances
+        :param index: The indices of valid spots
+        :param nn: The nearest neighbour indices
+        :param dist: The distances
 
-    :returns: A reduced list of nearest neighbours
+        :returns: A reduced list of nearest neighbours
 
-    """
+        """
         seen = {}
         for i in index:
             p = nn[i]

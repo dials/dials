@@ -220,8 +220,8 @@ class Script(object):
     @staticmethod
     def check_input(reflections):
         """Check the input is suitable for refinement. So far just check keys in
-    the reflection table. Maybe later check experiments have overlapping models
-    etc."""
+        the reflection table. Maybe later check experiments have overlapping models
+        etc."""
 
         msg = (
             "The supplied reflection table does not have the required data "

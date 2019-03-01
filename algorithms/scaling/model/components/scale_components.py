@@ -30,18 +30,18 @@ from dials_scaling_ext import calculate_harmonic_tables_from_selections
 
 class ScaleComponentBase(object):
     """
-  Base scale component class.
+    Base scale component class.
 
-  This defines an interface to access the parameters, the component
-  of the inverse scale factor and it's derivatives with respect to
-  the parameters. Scale components derived from the base class are
-  designed to be instantiated by a ScalingModel class, by supplying
-  an initial array of parameters and optionally the current estimated
-  standard deviations. The relevant data from a reflection table is
-  added later by a Scaler using the update_reflection_data method.
-  This behaviour allows data to easily be added/changed after selecting
-  subsets of the data.
-  """
+    This defines an interface to access the parameters, the component
+    of the inverse scale factor and it's derivatives with respect to
+    the parameters. Scale components derived from the base class are
+    designed to be instantiated by a ScalingModel class, by supplying
+    an initial array of parameters and optionally the current estimated
+    standard deviations. The relevant data from a reflection table is
+    added later by a Scaler using the update_reflection_data method.
+    This behaviour allows data to easily be added/changed after selecting
+    subsets of the data.
+    """
 
     __metaclass__ = abc.ABCMeta
 
@@ -58,11 +58,11 @@ class ScaleComponentBase(object):
     @property
     def data(self):
         """
-    Return a dictionary of reflection data relevant to the particular component.
+        Return a dictionary of reflection data relevant to the particular component.
 
-    This is designed to be a dict of arrays which can be selected from when
-    updating the component (i.e. selecting subsets).
-    """
+        This is designed to be a dict of arrays which can be selected from when
+        updating the component (i.e. selecting subsets).
+        """
         return self._data
 
     @data.setter
@@ -136,21 +136,21 @@ assignment: was %s, attempting %s""" % (
     @abc.abstractmethod
     def update_reflection_data(self, selection=None, block_selections=None):
         """
-    Update the internal data arrays.
+        Update the internal data arrays.
 
-    Use the data stored in self.data, optionally with a selection array
-    or list of selections, to populate a list of internal arrays e.g n_refl,
-    normalised_values etc. to allow scale and derivative calculations. If no
-    selection arrays are provided, the internal arrays will be lists
-    containing one array/value, depending on the data type needed for
-    derivative and scale calculation.
+        Use the data stored in self.data, optionally with a selection array
+        or list of selections, to populate a list of internal arrays e.g n_refl,
+        normalised_values etc. to allow scale and derivative calculations. If no
+        selection arrays are provided, the internal arrays will be lists
+        containing one array/value, depending on the data type needed for
+        derivative and scale calculation.
 
-    Args:
-        selection: A flex.bool selection array to select a subset of the
-            internal data.
-        block_selections (list): A list of flex.size_t arrays to select
-            subsets of the internal data.
-    """
+        Args:
+            selection: A flex.bool selection array to select a subset of the
+                internal data.
+            block_selections (list): A list of flex.size_t arrays to select
+                subsets of the internal data.
+        """
 
     @abc.abstractmethod
     def calculate_scales_and_derivatives(self, block_id=0):
@@ -163,11 +163,11 @@ assignment: was %s, attempting %s""" % (
 
 class SingleScaleFactor(ScaleComponentBase):
     """
-  A model component consisting of a single global scale parameter.
+    A model component consisting of a single global scale parameter.
 
-  The inverse scale factor for every reflection is the parameter
-  value itself and the derivatives are therefore all 1.0.
-  """
+    The inverse scale factor for every reflection is the parameter
+    value itself and the derivatives are therefore all 1.0.
+    """
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
@@ -185,19 +185,19 @@ This model component can only hold a single parameter."""
 
     def update_reflection_data(self, selection=None, block_selections=None):
         """
-    Update the internal n_refl list.
+        Update the internal n_refl list.
 
-    Use the data stored in self.data, optionally with a boolean selection array
-    or list of flex.size_t index selections, to make a list of n_refl (of length
-    1 or len(block_selections)) by inspecting the size of the selection result,
-    in order to allow scale and derivative calculations.
+        Use the data stored in self.data, optionally with a boolean selection array
+        or list of flex.size_t index selections, to make a list of n_refl (of length
+        1 or len(block_selections)) by inspecting the size of the selection result,
+        in order to allow scale and derivative calculations.
 
-    Args:
-        selection: Optional, a flex.bool selection array to select a subset of
-            the internal data.
-        block_selections (list): Optional, a list of flex.size_t arrays to
-            select subsets of the internal data.
-    """
+        Args:
+            selection: Optional, a flex.bool selection array to select a subset of
+                the internal data.
+            block_selections (list): Optional, a list of flex.size_t arrays to
+                select subsets of the internal data.
+        """
         data = self.data["id"]
         if selection:
             self._n_refl = [data.select(selection).size()]
@@ -221,11 +221,11 @@ This model component can only hold a single parameter."""
 
 class SingleBScaleFactor(ScaleComponentBase):
     """
-  A model component for a single global B-factor parameter.
+    A model component for a single global B-factor parameter.
 
-  The inverse scale factor for each reflection is given by
-  S = exp(B/(2 * d^2)), the derivatives are S/(2 * d^2).
-  """
+    The inverse scale factor for each reflection is given by
+    S = exp(B/(2 * d^2)), the derivatives are S/(2 * d^2).
+    """
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
@@ -245,19 +245,19 @@ class SingleBScaleFactor(ScaleComponentBase):
 
     def update_reflection_data(self, selection=None, block_selections=None):
         """
-    Update the internal n_refl and d_values lists.
+        Update the internal n_refl and d_values lists.
 
-    Use the data stored in self.data, optionally with a boolean selection array
-    or list of flex.size_t index selections, to make a lists of n_refl and
-    d_value arrays (of length 1 or len(block_selections)), in order to allow
-    scale and derivative calculations.
+        Use the data stored in self.data, optionally with a boolean selection array
+        or list of flex.size_t index selections, to make a lists of n_refl and
+        d_value arrays (of length 1 or len(block_selections)), in order to allow
+        scale and derivative calculations.
 
-    Args:
-        selection: Optional, a flex.bool selection array to select a subset of
-            the internal data.
-        block_selections (list): Optional, a list of flex.size_t arrays to
-            select subsets of the internal data.
-    """
+        Args:
+            selection: Optional, a flex.bool selection array to select a subset of
+                the internal data.
+            block_selections (list): Optional, a list of flex.size_t arrays to
+                select subsets of the internal data.
+        """
         data = self.data["d"]
         if selection:
             self._d_values = [data.select(selection)]
@@ -289,16 +289,16 @@ class SingleBScaleFactor(ScaleComponentBase):
 
 class SHScaleComponent(ScaleComponentBase):
     """
-  A model component for a spherical harmonic absorption correction.
+    A model component for a spherical harmonic absorption correction.
 
-  This component uses a set of spherical harmonic functions to define
-  an absorption surface for the crystal. A matrix of spherical harmonic
-  coefficients for the data is stored in self._harmonic_values and is
-  used to calculate the scales and derivatives.
-  The scale is given by S = 1 + (sum_l sum_m Clm * Ylm) where Clm are
-  the model parameters and Ylm are the spherical harmonic coefficients,
-  the derivatives are then simply the coefficients Ylm.
-  """
+    This component uses a set of spherical harmonic functions to define
+    an absorption surface for the crystal. A matrix of spherical harmonic
+    coefficients for the data is stored in self._harmonic_values and is
+    used to calculate the scales and derivatives.
+    The scale is given by S = 1 + (sum_l sum_m Clm * Ylm) where Clm are
+    the model parameters and Ylm are the spherical harmonic coefficients,
+    the derivatives are then simply the coefficients Ylm.
+    """
 
     coefficients_list = None  # shared class variable to reduce memory load
 
@@ -348,19 +348,19 @@ class SHScaleComponent(ScaleComponentBase):
 
     def update_reflection_data(self, selection=None, block_selections=None):
         """
-    Update the internal n_refl and harmonic_values lists.
+        Update the internal n_refl and harmonic_values lists.
 
-    Use the harmonic values matrix stored in self.data, optionally with a
-    boolean selection array or list of flex.size_t index selections, to make
-    lists of n_refl and harmonic_value arrays (of length 1 or
-    len(block_selections)), in order to allow scale and derivative calculations.
+        Use the harmonic values matrix stored in self.data, optionally with a
+        boolean selection array or list of flex.size_t index selections, to make
+        lists of n_refl and harmonic_value arrays (of length 1 or
+        len(block_selections)), in order to allow scale and derivative calculations.
 
-    Args:
-        selection: Optional, a flex.bool selection array to select a subset of
-            the internal data.
-        block_selections (list): Optional, a list of flex.size_t arrays to
-            select subsets of the internal data.
-    """
+        Args:
+            selection: Optional, a flex.bool selection array to select a subset of
+                the internal data.
+            block_selections (list): Optional, a list of flex.size_t arrays to
+                select subsets of the internal data.
+        """
         if self._mode == "speed":
             self._update_reflection_data_speedmode(selection, block_selections)
         elif self._mode == "memory":

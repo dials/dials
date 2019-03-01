@@ -17,12 +17,12 @@ from dials.viewer.bitmap_from_array import wxbmp_from_np_array
 
 class wxbitmap_convert(object):
     """
-  The main duty of this class is to convert
-  from
-  a 3D flex array or a list of flex arrays
-  to
-  a list of WxBitmaps
-  """
+    The main duty of this class is to convert
+    from
+    a 3D flex array or a list of flex arrays
+    to
+    a list of WxBitmaps
+    """
 
     def __init__(self, data_in_n1, data_in_n2=None):
 

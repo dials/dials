@@ -32,12 +32,12 @@ TWO_PI = 2.0 * pi
 
 class ScansRayPredictor(object):
     """
-  Predict for a relp based on the current states of models of the
-  experimental geometry. This is a wrapper for DIALS' C++
-  RayPredictor class, which does the real work. This class keeps track
-  of the experimental geometry, and instantiates a RayPredictor when
-  required.
-  """
+    Predict for a relp based on the current states of models of the
+    experimental geometry. This is a wrapper for DIALS' C++
+    RayPredictor class, which does the real work. This class keeps track
+    of the experimental geometry, and instantiates a RayPredictor when
+    required.
+    """
 
     def __init__(self, experiments, sweep_range=(0, 2.0 * pi)):
         """Construct by linking to instances of experimental model classes"""
@@ -47,11 +47,11 @@ class ScansRayPredictor(object):
 
     def __call__(self, hkl, experiment_id=0, UB=None):
         """
-    Solve the prediction formula for the reflecting angle phi.
+        Solve the prediction formula for the reflecting angle phi.
 
-    If UB is given, override the contained crystal model. This is
-    for use in refinement with time-varying crystal parameters
-    """
+        If UB is given, override the contained crystal model. This is
+        for use in refinement with time-varying crystal parameters
+        """
 
         e = self._experiments[experiment_id]
         ray_predictor = ScanStaticRayPredictor(
@@ -71,10 +71,10 @@ class ScansRayPredictor(object):
 
 class ExperimentsPredictor(object):
     """
-  Predict for relps based on the current states of models of the experimental
-  geometry. This version manages multiple experiments, selecting the correct
-  predictor in each case.
-  """
+    Predict for relps based on the current states of models of the experimental
+    geometry. This version manages multiple experiments, selecting the correct
+    predictor in each case.
+    """
 
     def __init__(self, experiments):
         """Construct by linking to instances of experimental model classes"""
@@ -105,7 +105,7 @@ class ExperimentsPredictor(object):
 
     def _post_prediction(self, reflections):
         """Perform tasks on the whole reflection list after prediction before
-    returning."""
+        returning."""
 
         return reflections
 
@@ -136,7 +136,7 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
 
     def _match_full_turns(self, reflections):
         """Modify the calculated phi values so that they match the full rotation
-    from zero taken from the the observations, rather than being modulo 2*pi."""
+        from zero taken from the the observations, rather than being modulo 2*pi."""
 
         x_obs, y_obs, phi_obs = reflections["xyzobs.mm.value"].parts()
         x_calc, y_calc, phi_calc = reflections["xyzcal.mm"].parts()

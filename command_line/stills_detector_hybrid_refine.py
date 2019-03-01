@@ -147,8 +147,8 @@ def detector_parallel_refiners(params, experiments, reflections):
 
     # now construct sub-detectors
     def recursive_add_child(d, parent, child):
-        """ Creates either a panel group or a panel on the parent,
-        and sets it up to match the child """
+        """Creates either a panel group or a panel on the parent,
+        and sets it up to match the child"""
         if child.is_group():
             newchild = parent.add_group()
         else:

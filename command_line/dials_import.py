@@ -165,22 +165,22 @@ phil_scope = parse(
 
 class DataBlockImporter(object):
     """
-  A class to manage the import of the datablocks
+    A class to manage the import of the datablocks
 
-  """
+    """
 
     def __init__(self, params):
         """
-    Init the class
+        Init the class
 
-    """
+        """
         self.params = params
 
     def __call__(self):
         """
-    Import the datablocks
+        Import the datablocks
 
-    """
+        """
         from dxtbx.datablock import DataBlockTemplateImporter
         from dxtbx.datablock import DataBlockFactory
         from dials.util.options import flatten_datablocks
@@ -237,22 +237,22 @@ class DataBlockImporter(object):
 
 class ReferenceGeometryUpdater(object):
     """
-  A class to replace beam + detector with a reference
+    A class to replace beam + detector with a reference
 
-  """
+    """
 
     def __init__(self, params):
         """
-    Load the reference geometry
+        Load the reference geometry
 
-    """
+        """
         self.reference = self.load_reference_geometry(params)
 
     def __call__(self, imageset):
         """
-    Replace with the reference geometry
+        Replace with the reference geometry
 
-    """
+        """
         # Check static detector items are the same
         assert self.reference.detector.is_similar_to(
             imageset.get_detector(), static_only=True
@@ -266,9 +266,9 @@ class ReferenceGeometryUpdater(object):
 
     def load_reference_geometry(self, params):
         """
-    Load a reference geometry file
+        Load a reference geometry file
 
-    """
+        """
         from collections import namedtuple
 
         # Load reference geometry
@@ -317,22 +317,22 @@ class ReferenceGeometryUpdater(object):
 
 class ManualGeometryUpdater(object):
     """
-  A class to update the geometry manually
+    A class to update the geometry manually
 
-  """
+    """
 
     def __init__(self, params):
         """
-    Save the params
+        Save the params
 
-    """
+        """
         self.params = params
 
     def __call__(self, imageset):
         """
-    Override the parameters
+        Override the parameters
 
-    """
+        """
         from dxtbx.imageset import ImageSweep, ImageSetFactory
         from dxtbx.model import BeamFactory
         from dxtbx.model import DetectorFactory
@@ -461,15 +461,15 @@ class ManualGeometryUpdater(object):
 
 class MetaDataUpdater(object):
     """
-  A class to manage updating the datablock metadata
+    A class to manage updating the datablock metadata
 
-  """
+    """
 
     def __init__(self, params):
         """
-    Init the class
+        Init the class
 
-    """
+        """
         from dials.util.options import geometry_phil_scope
 
         self.params = params
@@ -499,9 +499,9 @@ class MetaDataUpdater(object):
 
     def __call__(self, datablock):
         """
-    Transform the metadata
+        Transform the metadata
 
-    """
+        """
         from dxtbx.datablock import DataBlock
 
         # Import the lookup data
@@ -588,9 +588,9 @@ class MetaDataUpdater(object):
 
     def import_lookup_data(self, params):
         """
-    Get the lookup data
+        Get the lookup data
 
-    """
+        """
         from collections import namedtuple
         import six.moves.cPickle as pickle
 
@@ -674,9 +674,9 @@ class MetaDataUpdater(object):
 
     def convert_to_grid_scan(self, datablock, params):
         """
-    Convert the imagesets to grid scans
+        Convert the imagesets to grid scans
 
-    """
+        """
         from dxtbx.datablock import DataBlock
         from dxtbx.imageset import ImageGrid
 
@@ -812,9 +812,9 @@ class Script(object):
 
     def write_datablocks(self, datablocks, params):
         """
-    Output the datablock to file.
+        Output the datablock to file.
 
-    """
+        """
         if params.output.datablock:
             logger.info("-" * 80)
             logger.info("Writing datablocks to %s" % params.output.datablock)
@@ -823,8 +823,8 @@ class Script(object):
 
     def assert_single_sweep(self, sweeps, params):
         """
-    Print an error message if more than 1 sweep
-    """
+        Print an error message if more than 1 sweep
+        """
         if len(sweeps) > 1:
 
             # Print some info about multiple sweeps
@@ -849,9 +849,9 @@ class Script(object):
 
     def diagnose_multiple_sweeps(self, sweeps, params):
         """
-    Print a diff between sweeps.
+        Print a diff between sweeps.
 
-    """
+        """
         logger.info("")
         for i in range(1, len(sweeps)):
             logger.info("=" * 80)
@@ -863,9 +863,9 @@ class Script(object):
 
     def print_sweep_diff(self, sweep1, sweep2, params):
         """
-    Print a diff between sweeps.
+        Print a diff between sweeps.
 
-    """
+        """
         from dxtbx.datablock import SweepDiff
 
         diff = SweepDiff(params.input.tolerance)

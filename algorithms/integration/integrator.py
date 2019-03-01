@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 def generate_phil_scope():
     """
-  Generate the integration phil scope.
+    Generate the integration phil scope.
 
-  :return: The phil scope
+    :return: The phil scope
 
-  """
+    """
     import dials.extensions
 
     phil_scope = phil.parse(
@@ -210,15 +210,15 @@ phil_scope = generate_phil_scope()
 
 def hist(data, width=80, symbol="#", prefix=""):
     """
-  A utility function to print a histogram of reflections on frames.
+    A utility function to print a histogram of reflections on frames.
 
-  :param data: The data to histogram
-  :param width: The number of characters in each line
-  :param symbol: The plot symbol
-  :param prefix: String to prefix to each line
-  :return: The histogram string
+    :param data: The data to histogram
+    :param width: The number of characters in each line
+    :param symbol: The plot symbol
+    :param prefix: String to prefix to each line
+    :return: The histogram string
 
-  """
+    """
     from collections import Counter
     from math import log10, floor
 
@@ -254,15 +254,15 @@ def hist(data, width=80, symbol="#", prefix=""):
 
 def frame_hist(bbox, width=80, symbol="#", prefix=""):
     """
-  A utility function to print a histogram of reflections on frames.
+    A utility function to print a histogram of reflections on frames.
 
-  :param bbox: The bounding boxes
-  :param width: The width of each line
-  :param symbol: The histogram symbol
-  :param prefix: A string to prefix to each line
-  :return: The histogram string
+    :param bbox: The bounding boxes
+    :param width: The width of each line
+    :param symbol: The histogram symbol
+    :param prefix: A string to prefix to each line
+    :return: The histogram string
 
-  """
+    """
     return hist(
         [z for b in bbox for z in range(b[4], b[5])],
         width=width,
@@ -273,29 +273,29 @@ def frame_hist(bbox, width=80, symbol="#", prefix=""):
 
 def nframes_hist(bbox, width=80, symbol="#", prefix=""):
     """
-  A utility function to print a histogram of number of frames.
+    A utility function to print a histogram of number of frames.
 
-  :param bbox: The bounding boxes
-  :param width: The width of each line
-  :param symbol: The histogram symbol
-  :param prefix: A string to prefix to each line
-  :return: The histogram string
+    :param bbox: The bounding boxes
+    :param width: The width of each line
+    :param symbol: The histogram symbol
+    :param prefix: A string to prefix to each line
+    :return: The histogram string
 
-  """
+    """
     return hist([b[5] - b[4] for b in bbox], width=width, symbol=symbol, prefix=prefix)
 
 
 class Parameters(object):
     """
-  A class to represent the integration parameters
+    A class to represent the integration parameters
 
-  """
+    """
 
     class Filter(object):
         """
-    Filter parameters
+        Filter parameters
 
-    """
+        """
 
         def __init__(self):
             self.min_zeta = 0.05
@@ -303,9 +303,9 @@ class Parameters(object):
 
     class Profile(object):
         """
-    Profile parameters
+        Profile parameters
 
-    """
+        """
 
         class Validation(object):
             def __init__(self):
@@ -318,9 +318,9 @@ class Parameters(object):
 
     def __init__(self):
         """
-    Initialize
+        Initialize
 
-    """
+        """
         from dials.algorithms.integration import processor
 
         self.modelling = processor.Parameters()
@@ -333,9 +333,9 @@ class Parameters(object):
     @staticmethod
     def from_phil(params):
         """
-    Convert the phil parameters
+        Convert the phil parameters
 
-    """
+        """
         from dials.algorithms.integration import processor
         from dials.algorithms.integration.filtering import IceRingFilter
 
@@ -405,23 +405,23 @@ class Parameters(object):
 
 class InitializerRot(object):
     """
-  A pre-processing class for oscillation data.
+    A pre-processing class for oscillation data.
 
-  """
+    """
 
     def __init__(self, experiments, params):
         """
-    Initialise the pre-processor.
+        Initialise the pre-processor.
 
-    """
+        """
         self.experiments = experiments
         self.params = params
 
     def __call__(self, reflections):
         """
-    Do some pre-processing.
+        Do some pre-processing.
 
-    """
+        """
         from dials.array_family import flex
 
         # Compute some reflection properties
@@ -442,23 +442,23 @@ class InitializerRot(object):
 
 class InitializerStills(object):
     """
-  A pre-processing class for stills data.
+    A pre-processing class for stills data.
 
-  """
+    """
 
     def __init__(self, experiments, params):
         """
-    Initialise the pre-processor.
+        Initialise the pre-processor.
 
-    """
+        """
         self.experiments = experiments
         self.params = params
 
     def __call__(self, reflections):
         """
-    Do some pre-processing.
+        Do some pre-processing.
 
-    """
+        """
         from dials.array_family import flex
 
         # Compute some reflection properties
@@ -478,9 +478,9 @@ class InitializerStills(object):
 class FinalizerBase(object):
     def __init__(self, reflections, experiments, params):
         """
-    Initialise the post processor.
+        Initialise the post processor.
 
-    """
+        """
         self.reflections = reflections
         self.experiments = experiments
         self.params = params
@@ -507,15 +507,15 @@ class FinalizerBase(object):
 
 class FinalizerRot(FinalizerBase):
     """
-  A post-processing class for oscillation data.
+    A post-processing class for oscillation data.
 
-  """
+    """
 
     def __call__(self):
         """
-    Do some post processing.
+        Do some post processing.
 
-    """
+        """
         super(FinalizerRot, self).__call__()
 
         # Compute the corrections
@@ -524,15 +524,15 @@ class FinalizerRot(FinalizerBase):
 
 class FinalizerStills(FinalizerBase):
     """
-  A post-processing class for stills data.
+    A post-processing class for stills data.
 
-  """
+    """
 
     def __call__(self):
         """
-    Do some post processing.
+        Do some post processing.
 
-    """
+        """
         super(FinalizerStills, self).__call__()
 
         integrated = self.reflections
@@ -609,30 +609,30 @@ class FinalizerStills(FinalizerBase):
 
 class ProfileModellerExecutor(Executor):
     """
-  The class to do profile modelling calculations
+    The class to do profile modelling calculations
 
-  """
+    """
 
     def __init__(self, experiments, profile_fitter):
         """
-    Initialise the executor
+        Initialise the executor
 
-    :param experiments: The experiment list
+        :param experiments: The experiment list
 
-    """
+        """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
         super(ProfileModellerExecutor, self).__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
-    Initialise the processing for a job
+        Initialise the processing for a job
 
-    :param frame0: The first frame in the job
-    :param frame1: The last frame in the job
-    :param reflections: The reflections that will be processed
+        :param frame0: The first frame in the job
+        :param frame1: The last frame in the job
+        :param reflections: The reflections that will be processed
 
-    """
+        """
 
         # Get some info
         EPS = 1e-7
@@ -667,12 +667,12 @@ class ProfileModellerExecutor(Executor):
 
     def process(self, frame, reflections):
         """
-    Process the data
+        Process the data
 
-    :param frame: The frame being processed
-    :param reflections: The reflections to process
+        :param frame: The frame being processed
+        :param reflections: The reflections to process
 
-    """
+        """
         from dials.array_family import flex
 
         # Check if pixels are overloaded
@@ -697,52 +697,52 @@ class ProfileModellerExecutor(Executor):
 
     def finalize(self):
         """
-    Finalize the processing
+        Finalize the processing
 
-    """
+        """
         pass
 
     def data(self):
         """
-    :return: the modeller
+        :return: the modeller
 
-    """
+        """
         return self.profile_fitter
 
     def __getinitargs__(self):
         """
-    Support for pickling
+        Support for pickling
 
-    """
+        """
         return (self.experiments, self.profile_fitter)
 
 
 class ProfileValidatorExecutor(Executor):
     """
-  The class to do profile validation calculations
+    The class to do profile validation calculations
 
-  """
+    """
 
     def __init__(self, experiments, profile_fitter):
         """
-    Initialise the executor
+        Initialise the executor
 
-    :param experiments: The experiment list
+        :param experiments: The experiment list
 
-    """
+        """
         self.experiments = experiments
         self.profile_fitter = profile_fitter
         super(ProfileValidatorExecutor, self).__init__()
 
     def initialize(self, frame0, frame1, reflections):
         """
-    Initialise the processing for a job
+        Initialise the processing for a job
 
-    :param frame0: The first frame in the job
-    :param frame1: The last frame in the job
-    :param reflections: The reflections that will be processed
+        :param frame0: The first frame in the job
+        :param frame1: The last frame in the job
+        :param reflections: The reflections that will be processed
 
-    """
+        """
 
         # Get some info
         EPS = 1e-7
@@ -779,12 +779,12 @@ class ProfileValidatorExecutor(Executor):
 
     def process(self, frame, reflections):
         """
-    Process the data
+        Process the data
 
-    :param frame: The frame being processed
-    :param reflections: The reflections to process
+        :param frame: The frame being processed
+        :param reflections: The reflections to process
 
-    """
+        """
         from dials.array_family import flex
 
         # Check if pixels are overloaded
@@ -809,39 +809,39 @@ class ProfileValidatorExecutor(Executor):
 
     def finalize(self):
         """
-    Finalize the processing
+        Finalize the processing
 
-    """
+        """
         pass
 
     def data(self):
         """
-    :return: the modeller
+        :return: the modeller
 
-    """
+        """
         return self.results
 
     def __getinitargs__(self):
         """
-    Support for pickling
+        Support for pickling
 
-    """
+        """
         return (self.experiments, self.profile_fitter)
 
 
 class IntegratorExecutor(Executor):
     """
-  The class to process the integration data
+    The class to process the integration data
 
-  """
+    """
 
     def __init__(self, experiments, profile_fitter=None):
         """
-    Initialize the executor
+        Initialize the executor
 
-    :param experiments: The experiment list
+        :param experiments: The experiment list
 
-    """
+        """
         self.experiments = experiments
         self.overlaps = None
         self.profile_fitter = profile_fitter
@@ -849,13 +849,13 @@ class IntegratorExecutor(Executor):
 
     def initialize(self, frame0, frame1, reflections):
         """
-    Initialize the processing for the job
+        Initialize the processing for the job
 
-    :param frame0: The first frame to process
-    :param frame1: The last frame to process
-    :param reflections: The reflections to process
+        :param frame0: The first frame to process
+        :param frame1: The last frame to process
+        :param reflections: The reflections to process
 
-    """
+        """
 
         # Get some info
         EPS = 1e-7
@@ -895,12 +895,12 @@ class IntegratorExecutor(Executor):
 
     def process(self, frame, reflections):
         """
-    Process the reflections on a frame
+        Process the reflections on a frame
 
-    :param frame: The frame to process
-    :param reflections: The reflections to process
+        :param frame: The frame to process
+        :param reflections: The reflections to process
 
-    """
+        """
         from dials.algorithms.shoebox import MaskCode
 
         # Check if pixels are overloaded
@@ -962,41 +962,41 @@ class IntegratorExecutor(Executor):
 
     def finalize(self):
         """
-    Finalize the processing
+        Finalize the processing
 
-    """
+        """
         pass
 
     def data(self):
         """
-    Return data
+        Return data
 
-    """
+        """
         return None
 
     def __getinitargs__(self):
         """
-    Support for pickling
+        Support for pickling
 
-    """
+        """
         return (self.experiments, self.profile_fitter)
 
 
 class Integrator(object):
     """
-  The integrator class
+    The integrator class
 
-  """
+    """
 
     def __init__(self, experiments, reflections, params):
         """
-    Initialize the integrator
+        Initialize the integrator
 
-    :param experiments: The experiment list
-    :param reflections: The reflections to process
-    :param params: The parameters to use
+        :param experiments: The experiment list
+        :param reflections: The reflections to process
+        :param params: The parameters to use
 
-    """
+        """
 
         # Save some stuff
         self.experiments = experiments
@@ -1007,9 +1007,9 @@ class Integrator(object):
 
     def integrate(self):
         """
-    Integrate the data
+        Integrate the data
 
-    """
+        """
         from dials.algorithms.integration.report import IntegrationReport
         from dials.algorithms.integration.report import ProfileModelReport
         from dials.algorithms.integration.report import ProfileValidationReport
@@ -1274,9 +1274,9 @@ class Integrator(object):
 
     def report(self):
         """
-    Return the report of the processing
+        Return the report of the processing
 
-    """
+        """
         from dials.util.report import Report
 
         result = Report()
@@ -1316,9 +1316,9 @@ class Integrator(object):
 
 class Integrator3D(Integrator):
     """
-  Integrator for 3D algorithms
+    Integrator for 3D algorithms
 
-  """
+    """
 
     InitializerClass = InitializerRot
     ProcessorClass = Processor3D
@@ -1327,9 +1327,9 @@ class Integrator3D(Integrator):
 
 class IntegratorFlat3D(Integrator):
     """
-  Integrator for flattened 3D algorithms
+    Integrator for flattened 3D algorithms
 
-  """
+    """
 
     InitializerClass = InitializerRot
     ProcessorClass = ProcessorFlat3D
@@ -1338,9 +1338,9 @@ class IntegratorFlat3D(Integrator):
 
 class Integrator2D(Integrator):
     """
-  Integrator for 2D algorithms
+    Integrator for 2D algorithms
 
-  """
+    """
 
     InitializerClass = InitializerRot
     ProcessorClass = Processor2D
@@ -1349,9 +1349,9 @@ class Integrator2D(Integrator):
 
 class IntegratorSingle2D(Integrator):
     """
-  Integrator for 2D algorithms on a single image
+    Integrator for 2D algorithms on a single image
 
-  """
+    """
 
     InitializerClass = InitializerRot
     ProcessorClass = ProcessorSingle2D
@@ -1360,9 +1360,9 @@ class IntegratorSingle2D(Integrator):
 
 class IntegratorStills(Integrator):
     """
-  Integrator for still algorithms
+    Integrator for still algorithms
 
-  """
+    """
 
     InitializerClass = InitializerStills
     ProcessorClass = ProcessorStills
@@ -1371,29 +1371,29 @@ class IntegratorStills(Integrator):
 
 class IntegratorVolume(ImageIntegrator):
     """
-  Volume integrator
+    Volume integrator
 
-  """
+    """
 
     pass
 
 
 class Integrator3DThreaded(object):
     """
-  Integrator for 3D algorithms
+    Integrator for 3D algorithms
 
-  """
+    """
 
     def __init__(self, experiments, reflections, params):
 
         """
-    Initialize the integrator
+        Initialize the integrator
 
-    :param experiments: The experiment list
-    :param reflections: The reflections to process
-    :param params: The parameters to use
+        :param experiments: The experiment list
+        :param reflections: The reflections to process
+        :param params: The parameters to use
 
-    """
+        """
 
         # Save some stuff
         self.experiments = experiments
@@ -1404,9 +1404,9 @@ class Integrator3DThreaded(object):
 
     def initialise(self):
         """
-    Initialise the integrator
+        Initialise the integrator
 
-    """
+        """
         from dials.array_family import flex
 
         # Compute some reflection properties
@@ -1428,18 +1428,18 @@ class Integrator3DThreaded(object):
 
     def finalise(self):
         """
-    Finalise the integrator
+        Finalise the integrator
 
-    """
+        """
 
         # Compute the corrections
         self.reflections.compute_corrections(self.experiments)
 
     def integrate(self):
         """
-    Integrate the data
+        Integrate the data
 
-    """
+        """
         from dials.algorithms.integration.parallel_integrator import (
             ReferenceCalculatorProcessor,
         )
@@ -1562,9 +1562,9 @@ class Integrator3DThreaded(object):
 
     def report(self):
         """
-    Return the report of the processing
+        Return the report of the processing
 
-    """
+        """
         from dials.util.report import Report
 
         result = Report()
@@ -1604,21 +1604,21 @@ class Integrator3DThreaded(object):
 
 class IntegratorFactory(object):
     """
-  A factory for creating integrators.
+    A factory for creating integrators.
 
-  """
+    """
 
     @staticmethod
     def create(params, experiments, reflections):
         """
-    Create the integrator from the input configuration.
+        Create the integrator from the input configuration.
 
-    :param params: The input phil parameters
-    :param experiments: The list of experiments
-    :param reflections: The reflections to integrate
-    :return: The integrator class
+        :param params: The input phil parameters
+        :param experiments: The list of experiments
+        :param reflections: The reflections to integrate
+        :return: The integrator class
 
-    """
+        """
         from dials.algorithms.integration.filtering import IceRingFilter
         import dials.extensions
         from dials.array_family import flex

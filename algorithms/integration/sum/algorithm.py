@@ -17,18 +17,18 @@ class IntegrationAlgorithm(object):
 
     def __init__(self, **kwargs):
         """
-    Initialise algorithm.
+        Initialise algorithm.
 
-    """
+        """
         pass
 
     def __call__(self, reflections, image_volume=None):
         """Process the reflections.
 
-    :param reflections: The reflections to integrate
-    :return: The list of integrated reflections
+        :param reflections: The reflections to integrate
+        :return: The list of integrated reflections
 
-    """
+        """
         from dials.algorithms.integration.sum import sum_image_volume
         from dials.array_family import flex
 

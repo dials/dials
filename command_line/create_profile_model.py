@@ -220,9 +220,9 @@ class Script(object):
 
     def filter_reference_pixels(self, reference, experiments):
         """
-    Set any pixel closer to other reflections to background
+        Set any pixel closer to other reflections to background
 
-    """
+        """
         modified_count = 0
         for experiment, indices in reference.iterate_experiments_and_indices(
             experiments

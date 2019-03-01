@@ -5,9 +5,9 @@ from __future__ import absolute_import, division, print_function
 
 def pull_reference(integrate_hkl, d_min=0.0):
     """Generate reference data set from integrate.hkl, check out the calculated
-  x, y and z centroids as well as the Miller indices as coordinates in some
-  high dimensional space. Only consider measurements with meaningful
-  centroids..."""
+    x, y and z centroids as well as the Miller indices as coordinates in some
+    high dimensional space. Only consider measurements with meaningful
+    centroids..."""
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
@@ -318,7 +318,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min=0.0):
 
 def derive_reindex_matrix(experiments_json, integrate_hkl):
     """Derive a reindexing matrix to go from the orientation matrix used
-  for XDS integration to the one used for DIALS integration."""
+    for XDS integration to the one used for DIALS integration."""
 
     dA = get_dials_matrix(experiments_json)
     dbeam, daxis = get_dials_coordinate_frame(experiments_json)

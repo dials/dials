@@ -262,7 +262,7 @@ class Script(object):
 
     def determine_best_unit_cell(self):
         """Set the median unit cell as the best cell, for consistent d-values across
-    experiments."""
+        experiments."""
         uc_params = [flex.double() for i in range(6)]
         for exp in self.experiments:
             for i, p in enumerate(exp.crystal.get_unit_cell().parameters()):
@@ -295,7 +295,7 @@ class Script(object):
 
     def remove_unwanted_datasets(self):
         """Remove any target model/mtz data and any datasets which were removed
-    from the scaler during scaling."""
+        from the scaler during scaling."""
         # first remove target refl/exps
         if (
             self.params.scaling_options.target_model
@@ -420,7 +420,7 @@ will not be used for calculating merging statistics"""
 
     def delete_datastructures(self):
         """Delete the data in the scaling datastructures to save RAM before
-    combinining datasets for output."""
+        combinining datasets for output."""
         del self.scaler
         for experiment in self.experiments:
             for component in experiment.scaling_model.components.iterkeys():

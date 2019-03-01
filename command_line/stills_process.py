@@ -1078,15 +1078,15 @@ class Processor(object):
 
     def write_integration_pickles(self, integrated, experiments, callback=None):
         """
-    Write a serialized python dictionary with integrated intensities and other information
-    suitible for use by cxi.merge or prime.postrefine.
-    @param integrated Reflection table with integrated intensities
-    @param experiments Experiment list. One integration pickle for each experiment will be created.
-    @param callback Deriving classes can use callback to make further modifications to the dictionary
-    before it is serialized. Callback should be a function with this signature:
-    def functionname(params, outfile, frame), where params is the phil scope, outfile is the path
-    to the pickle that will be saved, and frame is the python dictionary to be serialized.
-    """
+        Write a serialized python dictionary with integrated intensities and other information
+        suitible for use by cxi.merge or prime.postrefine.
+        @param integrated Reflection table with integrated intensities
+        @param experiments Experiment list. One integration pickle for each experiment will be created.
+        @param callback Deriving classes can use callback to make further modifications to the dictionary
+        before it is serialized. Callback should be a function with this signature:
+        def functionname(params, outfile, frame), where params is the phil scope, outfile is the path
+        to the pickle that will be saved, and frame is the python dictionary to be serialized.
+        """
         try:
             picklefilename = self.params.output.integration_pickle
         except AttributeError:

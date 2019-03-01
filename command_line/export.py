@@ -236,9 +236,9 @@ phil_scope = parse(
 
 class BaseExporter(object):
     """
-  A base class for export reflections - though do we need a class here
-  - could just have entry points registered?
-  """
+    A base class for export reflections - though do we need a class here
+    - could just have entry points registered?
+    """
 
     def __init__(self, params, experiments, reflections):
         self.params = params
@@ -256,19 +256,19 @@ class BaseExporter(object):
 
 class MTZExporter(object):
     """
-  A class to export reflections in MTZ format
+    A class to export reflections in MTZ format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -283,9 +283,9 @@ class MTZExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util.export_mtz import export_mtz
 
         m = export_mtz(self.reflections, self.experiments, self.params)
@@ -299,19 +299,19 @@ class MTZExporter(object):
 
 class SadabsExporter(object):
     """
-  A class to export data in HKL format
+    A class to export data in HKL format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -332,19 +332,19 @@ class SadabsExporter(object):
 
 class XDSASCIIExporter(object):
     """
-  A class to export data in XDS_ASCII format
+    A class to export data in XDS_ASCII format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -365,19 +365,19 @@ class XDSASCIIExporter(object):
 
 class NexusExporter(object):
     """
-  A class to export data in Nexus format
+    A class to export data in Nexus format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -392,9 +392,9 @@ class NexusExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util.nexus import dump
 
         dump(self.experiments, self.reflections, self.params.nxs.hklout)
@@ -402,19 +402,19 @@ class NexusExporter(object):
 
 class MMCIFExporter(object):
     """
-  A class to export data in CIF format
+    A class to export data in CIF format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -429,9 +429,9 @@ class MMCIFExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util.export_mmcif import MMCIFOutputFile
 
         outfile = MMCIFOutputFile(self.params)
@@ -440,19 +440,19 @@ class MMCIFExporter(object):
 
 class MosflmExporter(object):
     """
-  A class to export stuff in mosflm format
+    A class to export stuff in mosflm format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -466,9 +466,9 @@ class MosflmExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util.mosflm import dump
 
         dump(self.experiments, self.params.mosflm.directory)
@@ -476,19 +476,19 @@ class MosflmExporter(object):
 
 class XDSExporter(object):
     """
-  A class to export stuff in xds format
+    A class to export stuff in xds format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(reflections) > 1:
@@ -504,9 +504,9 @@ class XDSExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util.xds import dump
 
         dump(self.experiments, self.reflections, self.params.xds.directory)
@@ -514,19 +514,19 @@ class XDSExporter(object):
 
 class BestExporter(object):
     """
-  A class to export stuff in BEST format
+    A class to export stuff in BEST format
 
-  """
+    """
 
     def __init__(self, params, experiments, reflections):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if len(experiments) == 0:
@@ -541,9 +541,9 @@ class BestExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util import best
 
         experiment = self.experiments[0]
@@ -573,19 +573,19 @@ class BestExporter(object):
 
 class JsonExporter(object):
     """
-  A class to export reflections in json format
+    A class to export reflections in json format
 
-  """
+    """
 
     def __init__(self, params, reflections, datablocks=None, experiments=None):
         """
-    Initialise the exporter
+        Initialise the exporter
 
-    :param params: The phil parameters
-    :param experiments: The experiment list
-    :param reflections: The reflection tables
+        :param params: The phil parameters
+        :param experiments: The experiment list
+        :param reflections: The reflection tables
 
-    """
+        """
 
         # Check the input
         if datablocks is None and experiments is None:
@@ -601,9 +601,9 @@ class JsonExporter(object):
 
     def export(self):
         """
-    Export the files
+        Export the files
 
-    """
+        """
         from dials.util import export_json
         from scitbx.array_family import flex
 

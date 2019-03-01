@@ -103,24 +103,24 @@ refinement
 
 def _copy_experiments_for_refining(experiments):
     """
-  Make a partial copy of experiments, copying properties used in refinement.
+    Make a partial copy of experiments, copying properties used in refinement.
 
-  Any experiment property that can be altered by refinement e.g. Beam,
-  Detector and Goniometer will be deep-copied, whereas anything that the
-  refiner doesn't touch (e.g. Scan, ImageSet) will be left as original
-  references.
+    Any experiment property that can be altered by refinement e.g. Beam,
+    Detector and Goniometer will be deep-copied, whereas anything that the
+    refiner doesn't touch (e.g. Scan, ImageSet) will be left as original
+    references.
 
-  This makes it safe to pass an object into the refiner or get an object
-  out of the refiner without having to worry about your copy being
-  unexpectedly altered, but saves time by avoiding the copying of potentially
-  expensive experiment properties (e.g. ImageSet and its attributes).
+    This makes it safe to pass an object into the refiner or get an object
+    out of the refiner without having to worry about your copy being
+    unexpectedly altered, but saves time by avoiding the copying of potentially
+    expensive experiment properties (e.g. ImageSet and its attributes).
 
-  Args
-    experiments (Experiment or ExperimentList or Iterable[Experiment]):
+    Args
+      experiments (Experiment or ExperimentList or Iterable[Experiment]):
 
-  Returns:
-    ExperimentList: The copied experiments in new ExperimentList
-  """
+    Returns:
+      ExperimentList: The copied experiments in new ExperimentList
+    """
     # Look for a non-list e.g. a single experiment and convert to a list
     if not hasattr(experiments, "__iter__"):
         experiments = [experiments]
@@ -153,7 +153,7 @@ class RefinerFactory(object):
     @classmethod
     def _filter_reflections(cls, reflections):
         """Return a copy of the input reflections filtered to keep only
-    those columns that are required by refinement"""
+        those columns that are required by refinement"""
 
         cols = [
             "id",
@@ -428,15 +428,15 @@ class RefinerFactory(object):
     @staticmethod
     def config_restraints(params, pred_param):
         """Given a set of user parameters plus a model parameterisation, create
-    restraints plus a parameterisation of these restraints
+        restraints plus a parameterisation of these restraints
 
-    Params:
-        params: The input PHIL parameters
-        pred_param: A PredictionParameters object
+        Params:
+            params: The input PHIL parameters
+            pred_param: A PredictionParameters object
 
-    Returns:
-        A restraints parameterisation or None
-    """
+        Returns:
+            A restraints parameterisation or None
+        """
 
         if not any(
             [
@@ -503,15 +503,15 @@ class RefinerFactory(object):
     @staticmethod
     def config_refinery(params, target, pred_param, constraints_manager, verbosity):
         """Given a set of parameters, a target class, a prediction
-    parameterisation class and a constraints_manager (which could be None),
-    build a refinery
+        parameterisation class and a constraints_manager (which could be None),
+        build a refinery
 
-    Params:
-        params The input parameters
+        Params:
+            params The input parameters
 
-    Returns:
-        The refinery instance
-    """
+        Returns:
+            The refinery instance
+        """
 
         # Shorten parameter path
         options = params.refinement.refinery
@@ -594,26 +594,26 @@ class RefinerFactory(object):
 class Refiner(object):
     """Public interface for performing DIALS refinement.
 
-  Public methods:
-    run
-    rmsds
-    get_experiments
-    get_matches
-    get_param_reporter
-    parameter_correlation_plot
-    selection_used_for_refinement
-    predict_for_reflection_table
-    predict_for_indexed
+    Public methods:
+      run
+      rmsds
+      get_experiments
+      get_matches
+      get_param_reporter
+      parameter_correlation_plot
+      selection_used_for_refinement
+      predict_for_reflection_table
+      predict_for_indexed
 
-  Notes:
-    * The return value of run is a recorded history of the refinement
-    * The experiments accessor provides a copy of the experiments used by
-      refinement
-    * The model accessors provide copies of those models that might be modified
-      by refinement (beam, crystal and detector) TO BE DEPRECATED
-    * get_matches exposes the function of the same name from the privately
-      stored reflection manager
-    * The return value of selection_used_for_refinement is a flex.bool
+    Notes:
+      * The return value of run is a recorded history of the refinement
+      * The experiments accessor provides a copy of the experiments used by
+        refinement
+      * The model accessors provide copies of those models that might be modified
+        by refinement (beam, crystal and detector) TO BE DEPRECATED
+      * get_matches exposes the function of the same name from the privately
+        stored reflection manager
+      * The return value of selection_used_for_refinement is a flex.bool
 
     """
 
@@ -629,19 +629,19 @@ class Refiner(object):
         verbosity=0,
     ):
         """
-    Mandatory arguments:
-      reflections - Input ReflectionList data
-      experiments - a dxtbx ExperimentList object
-      pred_param - An object derived from the PredictionParameterisation class
-      param_reporter -A ParameterReporter object
-      refman - A ReflectionManager object
-      target - An object derived from the Target class
-      refinery - An object derived from the Refinery class
+        Mandatory arguments:
+          reflections - Input ReflectionList data
+          experiments - a dxtbx ExperimentList object
+          pred_param - An object derived from the PredictionParameterisation class
+          param_reporter -A ParameterReporter object
+          refman - A ReflectionManager object
+          target - An object derived from the Target class
+          refinery - An object derived from the Refinery class
 
-    Optional arguments:
-      verbosity - An integer verbosity level
+        Optional arguments:
+          verbosity - An integer verbosity level
 
-    """
+        """
 
         # the experimental models
         self._experiments = experiments
@@ -698,9 +698,9 @@ class Refiner(object):
 
     def get_parameter_correlation_matrix(self, step, col_select=None):
         """Return the correlation matrix between columns of the Jacobian at
-    the specified refinement step. The parameter col_select can be used
-    to select subsets of the full number of columns. The column labels
-    are also returned as a list of strings"""
+        the specified refinement step. The parameter col_select can be used
+        to select subsets of the full number of columns. The column labels
+        are also returned as a list of strings"""
 
         corrmats = self._refinery.get_correlation_matrix_for_step(step)
         if corrmats is None:
@@ -1032,13 +1032,13 @@ class Refiner(object):
 
     def _update_models(self):
         """Perform any extra tasks required to update the models after refinement.
-    Does nothing here, but used by subclasses"""
+        Does nothing here, but used by subclasses"""
         pass
 
     def selection_used_for_refinement(self):
         """Return a selection as a flex.bool in terms of the input reflection
-    data of those reflections that were used in the final step of
-    refinement."""
+        data of those reflections that were used in the final step of
+        refinement."""
 
         from scitbx.array_family import flex
 
@@ -1056,9 +1056,9 @@ class Refiner(object):
 
     def predict_for_indexed(self):
         """perform prediction for all the indexed reflections passed into
-    refinement and additionally set the used_in_refinement flag. Do not
-    compose the derivatives of states of the model as this is expensive and
-    they are not needed outside of a refinement run"""
+        refinement and additionally set the used_in_refinement flag. Do not
+        compose the derivatives of states of the model as this is expensive and
+        they are not needed outside of a refinement run"""
 
         reflections = self.predict_for_reflection_table(
             self._refman.get_indexed(), skip_derivatives=True
@@ -1077,7 +1077,7 @@ class Refiner(object):
 
 class ScanVaryingRefiner(Refiner):
     """Includes functionality to update the models with their states at
-  scan-points after scan-varying refinement"""
+    scan-points after scan-varying refinement"""
 
     def _update_models(self):
         for iexp, exp in enumerate(self._experiments):

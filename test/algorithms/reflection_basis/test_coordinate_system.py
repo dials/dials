@@ -55,10 +55,10 @@ def test_axis_length(xdscoordinates):
 def test_axis_orthogonal(xdscoordinates):
     """Ensure that the following are true:
 
-  e1.s0 = 0, e1.s1 = 0
-  e2.s1 = 0, e2.e1 = 0
-  e3.e1 = 0, e3.p* = 0
-  """
+    e1.s0 = 0, e1.s1 = 0
+    e2.s1 = 0, e2.e1 = 0
+    e3.e1 = 0, e3.p* = 0
+    """
     from scitbx import matrix
 
     # Get as matrices
@@ -84,10 +84,10 @@ def test_axis_orthogonal(xdscoordinates):
 
 
 def test_limits(xdscoordinates):
-    """ Test the coordinate system limits
+    """Test the coordinate system limits
 
-  Ensure limits e1/e2 == |s1| and limit e3 == |s0 - s1|
-  """
+    Ensure limits e1/e2 == |s1| and limit e3 == |s0 - s1|
+    """
     from scitbx import matrix
 
     # Get the incident and diffracted beam vectors
@@ -134,10 +134,10 @@ def test_beamvector_coordinate_of_s1(beamvector):
 
 
 def test_beamvector_limit(beamvector):
-    """ Calculate the coordinate at the limits.
+    """Calculate the coordinate at the limits.
 
-  Ensure that coordinate where s1' is orthogonal to s1 is at limit.
-  """
+    Ensure that coordinate where s1' is orthogonal to s1 is at limit.
+    """
     from scitbx import matrix
 
     # Get the limit of s1'
@@ -215,7 +215,7 @@ def test_to_beamvector_xds_origin(beamvector):
 
 def test_to_beamvector_far_out_coordinates(beamvector):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
-  a coordinate that cannot be mapped onto the ewald sphere)."""
+    a coordinate that cannot be mapped onto the ewald sphere)."""
     eps = 1e-7
 
     # Setting c2 and c3 to zero
@@ -246,8 +246,8 @@ def test_to_beamvector_far_out_coordinates(beamvector):
 
 def test_to_beamvector_forward_and_reverse_transform(beamvector):
     """Test the forward and reverse Beam Vector -> XDS transforms Create
-  a beam vector, transform it to XDS and then transform back. The new
-  value should be equal to the original value."""
+    a beam vector, transform it to XDS and then transform back. The new
+    value should be equal to the original value."""
 
     from scitbx import matrix
 
@@ -316,7 +316,7 @@ def test_origin(rotationangle):
 
 def test_far_out_coordinates(rotationangle):
     """Test some large coordinates, 1 valid and the other invalid. (i.e.
-  a coordinate that cannot be mapped onto the ewald sphere)."""
+    a coordinate that cannot be mapped onto the ewald sphere)."""
 
     eps = 1e-7
 

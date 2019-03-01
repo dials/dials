@@ -28,7 +28,7 @@ def sample_covariance(a, b):
 
 def cov(*args):
     """Calculate covariance matrix between the arguments (should be flex.double
-  arrays of equal length)"""
+    arrays of equal length)"""
 
     lens = [len(e) for e in args]
     assert all(e == lens[0] for e in lens)
@@ -45,8 +45,8 @@ def cov(*args):
 
 def maha_dist_sq(cols, center, cov):
     """Calculate squared Mahalanobis distance of all observations (rows in the
-  vectors contained in the list cols) from the center vector with respect to
-  the covariance matrix cov"""
+    vectors contained in the list cols) from the center vector with respect to
+    the covariance matrix cov"""
 
     n = len(cols[0])
     p = len(cols)
@@ -63,9 +63,9 @@ def maha_dist_sq(cols, center, cov):
 
 def mcd_finite_sample(p, n, alpha):
     """Finite sample correction factor for the MCD estimate. Described in
-  Pison et al. Metrika (2002). doi.org/10.1007/s001840200191. Implementation
-  based on 'rawcorfactor' in fastmcd.m from Continuous Sound and Vibration
-  Analysis by Edward Zechmann"""
+    Pison et al. Metrika (2002). doi.org/10.1007/s001840200191. Implementation
+    based on 'rawcorfactor' in fastmcd.m from Continuous Sound and Vibration
+    Analysis by Edward Zechmann"""
 
     from math import log, exp
     from scitbx.lstbx import normal_eqns
@@ -141,7 +141,7 @@ def mcd_finite_sample(p, n, alpha):
 
 class FastMCD(object):
     """Experimental implementation of the FAST-MCD algorithm of Rousseeuw and
-  van Driessen"""
+    van Driessen"""
 
     def __init__(
         self,
@@ -155,7 +155,7 @@ class FastMCD(object):
         k3=100,
     ):
         """data expected to be a list of flex.double arrays of the same length,
-    representing the vectors of observations in each dimension"""
+        representing the vectors of observations in each dimension"""
 
         # the full dataset as separate vectors
         self._data = data
@@ -226,7 +226,7 @@ class FastMCD(object):
 
     def get_corrected_T_and_S(self):
         """Get the MCD location (T) and covariance matrix (S) estimates corrected
-    for normal model consistency and finite-sample size"""
+        for normal model consistency and finite-sample size"""
 
         fac = self._consistency_fac * self._finite_samp_fac
         return self._T_raw, self._S_raw * fac
@@ -234,9 +234,9 @@ class FastMCD(object):
     @staticmethod
     def means_and_covariance(vecs):
         """Prepare a dataset of equal length vectors for Mahalanobis distance
-    squared calculation. The maha_dist_sq function requires the vectors,
-    the vector of their means and their covariance matrix. Given the vectors,
-    return the latter pair as a tuple"""
+        squared calculation. The maha_dist_sq function requires the vectors,
+        the vector of their means and their covariance matrix. Given the vectors,
+        return the latter pair as a tuple"""
 
         center = flex.double([flex.mean(e) for e in vecs])
         covmat = cov(*vecs)
@@ -245,7 +245,7 @@ class FastMCD(object):
     @staticmethod
     def sample_data(data, sample_size):
         """sample (without replacement) the data vectors to select the same
-    sample_size rows from each."""
+        sample_size rows from each."""
 
         n = len(data[0])
         rows = flex.random_selection(n, sample_size)
@@ -254,7 +254,7 @@ class FastMCD(object):
 
     def split_into_groups(self, sample, ngroups):
         """Split each vector in the data sample into groups of approximately equal
-    size."""
+        size."""
 
         # number of obs in the sample
         sample_size = len(sample[0])
@@ -313,7 +313,7 @@ class FastMCD(object):
 
     def small_dataset_estimate(self):
         """When a dataset is small, perform the initial trials directly on the
-    whole dataset"""
+        whole dataset"""
 
         trials = []
         for i in xrange(self._n_trials):
@@ -360,7 +360,7 @@ class FastMCD(object):
 
     def large_dataset_estimate(self):
         """When a dataset is large, construct disjoint subsets of the full data
-    and perform initial trials within each of these, then merge"""
+        and perform initial trials within each of these, then merge"""
 
         ngroups = int(self._n / self._min_group_size)
         if ngroups < self._max_n_groups:

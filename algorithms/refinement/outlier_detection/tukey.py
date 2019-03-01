@@ -19,8 +19,8 @@ from dials.array_family import flex
 
 class Tukey(CentroidOutlier):
     """Implementation of the CentroidOutlier class using Tukey's rule of thumb.
-  That is values more than iqr_multiplier times the interquartile range from
-  the quartiles are designed outliers. When x=1.5, this is Tukey's rule."""
+    That is values more than iqr_multiplier times the interquartile range from
+    the quartiles are designed outliers. When x=1.5, this is Tukey's rule."""
 
     def __init__(
         self,

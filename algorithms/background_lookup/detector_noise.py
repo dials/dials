@@ -15,7 +15,7 @@ from __future__ import print_function
 
 class ComputeDetectorNoise(object):
     """Calculate the detector noise. Estimate this by calculating the mean
-  of the corner pixels in a series of images and return a constant."""
+    of the corner pixels in a series of images and return a constant."""
 
     def __init__(self):
         """Initialise the algorithm."""
@@ -26,10 +26,10 @@ class ComputeDetectorNoise(object):
     def add(self, image):
         """Add another image to the calculation.
 
-    Params:
-        image The image to use
+        Params:
+            image The image to use
 
-    """
+        """
         # Get size of the image
         height, width = image.all()
 
@@ -42,19 +42,19 @@ class ComputeDetectorNoise(object):
     def pixels(self):
         """Get the pixels used in the calculation.
 
-    Returns:
-        The array of pixel intensities
+        Returns:
+            The array of pixel intensities
 
-    """
+        """
         return self._pixels
 
     def compute(self):
         """Compute the noise.
 
-    Returns:
-        The calculated detector noise
+        Returns:
+            The calculated detector noise
 
-    """
+        """
         from scitbx.array_family import flex
 
         return flex.mean(self._pixels.as_double())

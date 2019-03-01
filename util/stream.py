@@ -7,15 +7,15 @@ logger = logging.getLogger(__name__)
 
 class ZMQStream:
     """
-  A class to listen to a zeromq stream
+    A class to listen to a zeromq stream
 
-  """
+    """
 
     def __init__(self, host, port=9999):
         """
-    create stream listener object
+        create stream listener object
 
-    """
+        """
         self.host = host
         self.port = port
 
@@ -24,11 +24,11 @@ class ZMQStream:
 
     def connect(self):
         """
-    Enable stream, connect to zmq host
+        Enable stream, connect to zmq host
 
-    :return: receiver object
+        :return: receiver object
 
-    """
+        """
         import zmq
 
         # Set the URL
@@ -45,64 +45,64 @@ class ZMQStream:
 
     def receive(self):
         """
-    Receive and return zmq frames
+        Receive and return zmq frames
 
-    """
+        """
         logger.info("Waiting for frame")
         frames = self.receiver.recv_multipart(copy=False)
         return frames
 
     def close(self):
         """
-    Close and disable stream
+        Close and disable stream
 
-    """
+        """
         logger.info("Closing stream")
         return self.receiver.close()
 
 
 class Result(object):
     """
-  A class to represent a result
+    A class to represent a result
 
-  """
+    """
 
     def __init__(self):
         pass
 
     def is_header(self):
         """
-    Return not a header
+        Return not a header
 
-    """
+        """
         return False
 
     def is_image(self):
         """
-    Return not an image
+        Return not an image
 
-    """
+        """
         return False
 
     def is_endofseries(self):
         """
-    Return not an endofseries
+        Return not an endofseries
 
-    """
+        """
         return False
 
 
 class Header(Result):
     """
-  A class representing a header
+    A class representing a header
 
-  """
+    """
 
     def __init__(self, frames, directory, image_template):
         """
-    Create a header object
+        Create a header object
 
-    """
+        """
         import json
 
         super(Header, self).__init__()
@@ -136,16 +136,16 @@ class Header(Result):
 
     def is_header(self):
         """
-    This is a header object
+        This is a header object
 
-    """
+        """
         return True
 
     def as_imageset(self, filename):
         """
-    Return as an imageset
+        Return as an imageset
 
-    """
+        """
         from dxtbx.format.FormatEigerStream import FormatEigerStream
         from dxtbx.imageset import MultiFileReader, ImageSweep
 
@@ -158,15 +158,15 @@ class Header(Result):
 
 class Image(Result):
     """
-  A class to represent an image
+    A class to represent an image
 
-  """
+    """
 
     def __init__(self, frames, header):
         """
-    Create the image object
+        Create the image object
 
-    """
+        """
         import json
 
         super(Image, self).__init__()
@@ -208,46 +208,46 @@ class Image(Result):
 
     def is_image(self):
         """
-    Return that the object is an image
+        Return that the object is an image
 
-    """
+        """
         return True
 
 
 class EndOfSeries(Result):
     """
-  Class to represent the end of a series
+    Class to represent the end of a series
 
-  """
+    """
 
     def is_endofseries(self):
         """
-    Get the end of series
+        Get the end of series
 
-    """
+        """
         return True
 
 
 class Decoder(object):
     """
-  Decodes zmq frames from EIGER ZMQ stream into dxtbx format object
+    Decodes zmq frames from EIGER ZMQ stream into dxtbx format object
 
-  """
+    """
 
     def __init__(self, directory, image_template):
         """
-    Initialize the processor
+        Initialize the processor
 
-    """
+        """
         self.header = None
         self.directory = directory
         self.image_template = image_template
 
     def decode(self, frames):
         """
-    Decode and process EIGER ZMQ stream frames
+        Decode and process EIGER ZMQ stream frames
 
-    """
+        """
         import json
 
         header = json.loads(frames[0].bytes)
@@ -262,24 +262,24 @@ class Decoder(object):
 
     def decode_header(self, frames):
         """
-    Decode a header message
+        Decode a header message
 
-    """
+        """
         self.header = Header(frames, self.directory, self.image_template)
         return self.header
 
     def decode_image(self, frames):
         """
-    Decode an image object
+        Decode an image object
 
-    """
+        """
         if self.header is None:
             raise RuntimeError("Need header information before reading images")
         return Image(frames, self.header)
 
     def decode_endofseries(self, frames):
         """
-    Decode an endofseries object
+        Decode an endofseries object
 
-    """
+        """
         return EndOfSeries()

@@ -127,7 +127,7 @@ class CentroidAnalyser(object):
         self, calc_average_residuals=True, calc_periodograms=True, spans=(4, 4)
     ):
         """Perform analysis and return the results as a list of dictionaries (one
-    for each experiment)"""
+        for each experiment)"""
 
         # if not doing further analysis, return the basic data
         if not calc_average_residuals and not calc_periodograms:
@@ -222,7 +222,7 @@ class CentroidAnalyser(object):
 
     def _analyse_periodogram(self, pgram):
         """Use the periodogram pgram to suggest a suitable interval width for
-    scan-varying refinement to account for the major variation in residuals"""
+        scan-varying refinement to account for the major variation in residuals"""
 
         if pgram is None:
             return None

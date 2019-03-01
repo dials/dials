@@ -18,7 +18,7 @@ from math import sqrt, sin, asin, fabs
 
 def solve_quad(a, b, c):
     """Robust solution, for real roots only, of a quadratic in the form
-  (ax^2 + bx + c)."""
+    (ax^2 + bx + c)."""
 
     discriminant = b ** 2 - 4 * a * c
 
@@ -193,7 +193,7 @@ class reeke_model:
 
     def get_all_p_limits(self):
         """Get both the Ewald and limiting sphere limits for planes of p.
-    This is useful for plotting the planes, for example."""
+        This is useful for plotting the planes, for example."""
 
         return (
             self._ewald_p_lim_beg,
@@ -204,9 +204,9 @@ class reeke_model:
 
     def _permute_axes(self, ub):
         """Find permutation of the columns of an orientation matrix so that
-    column p is closest to the source direction, column r is
-    closest of q and r to the spindle axis and column q is the remaining
-    direction."""
+        column p is closest to the source direction, column r is
+        closest of q and r to the spindle axis and column q is the remaining
+        direction."""
 
         # Extract the reciprocal lattice directions from the columns of UB
         rl_dirs = [matrix.col(v).normalize() for v in ub.transpose().as_list_of_lists()]
@@ -243,15 +243,15 @@ class reeke_model:
 
     def _p_limits(self):
         """
-    Calculate the values of p at which planes of constant p are tangential
-    to the Ewald sphere, and values of p at which planes of constant p touch
-    the circle of intersection between the Ewald and resolution limiting
-    sphere.
+        Calculate the values of p at which planes of constant p are tangential
+        to the Ewald sphere, and values of p at which planes of constant p touch
+        the circle of intersection between the Ewald and resolution limiting
+        sphere.
 
-    Note p is the reciprocal cell axis given by the first column of the
-    permuted orientation matrix. Set the limits as attributes and return a
-    single set of overall limits.
-    """
+        Note p is the reciprocal cell axis given by the first column of the
+        permuted orientation matrix. Set the limits as attributes and return a
+        single set of overall limits.
+        """
 
         # Calculate unit vectors normal to planes of constant p, ensuring
         # they point in the direction of increasing p.
@@ -351,10 +351,10 @@ class reeke_model:
 
     def _q_limits(self, p):
         """Calculate the values of q at which lines of constant p, q are
-    tangential to the circle intersecting the Ewald sphere at plane p,
-    and values of q at which lines of constant p, q are tangential to
-    the circle intersecting the resolution limiting sphere at plane p.i
-    Return the appropriate overall limits."""
+        tangential to the circle intersecting the Ewald sphere at plane p,
+        and values of q at which lines of constant p, q are tangential to
+        the circle intersecting the resolution limiting sphere at plane p.i
+        Return the appropriate overall limits."""
 
         # First the resolution limits. Set up the quadratic to solve
         a = self._cp_beg[6]
@@ -407,8 +407,8 @@ class reeke_model:
 
     def _r_limits(self, p, q, cq_beg, cq_end):
         """Calculate the values of r at which lines of constant p, q intersect
-    the resolution limiting and the Ewald spheres, and return the
-    appropriate overall limits"""
+        the resolution limiting and the Ewald spheres, and return the
+        appropriate overall limits"""
 
         # First the resolution limits. Set up the quadratic to solve
         a = self._cp_beg[0]
@@ -505,9 +505,9 @@ class reeke_model:
 
     def generate_indices(self):
         """Determine looping limits for indices h, k and l using the Reeke
-    algorithm. This is the top level method for this module. All other
-    methods are (probably) called by this, and therefore may as well be
-    private."""
+        algorithm. This is the top level method for this module. All other
+        methods are (probably) called by this, and therefore may as well be
+        private."""
 
         # The outer loop is between limits for the axis most closely parallel,
         # or antiparallel, to the X-ray beam, which is called 'p'.

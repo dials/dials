@@ -10,14 +10,14 @@ _ScanStaticReflectionPredictor = ScanStaticReflectionPredictor
 
 def ScanStaticReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **kwargs):
     """
-  A constructor for the reflection predictor.
+    A constructor for the reflection predictor.
 
-  :param experiment: The experiment to predict for
-  :param dmin: The maximum resolution to predict to
-  :param margin: The margin for prediction
-  :return: The spot predictor
+    :param experiment: The experiment to predict for
+    :param dmin: The maximum resolution to predict to
+    :param margin: The margin for prediction
+    :return: The spot predictor
 
-  """
+    """
 
     # Get dmin if it is not set
     if dmin is None:
@@ -49,14 +49,14 @@ def ScanVaryingReflectionPredictor(
     experiment, dmin=None, margin=1, padding=0, **kwargs
 ):
     """
-  A constructor for the reflection predictor.
+    A constructor for the reflection predictor.
 
-  :param experiment: The experiment to predict for
-  :param dmin: The maximum resolution to predict to
-  :param margin: The margin for prediction
-  :return: The spot predictor
+    :param experiment: The experiment to predict for
+    :param dmin: The maximum resolution to predict to
+    :param margin: The margin for prediction
+    :return: The spot predictor
 
-  """
+    """
 
     # Get dmin if it is not set
     if dmin is None:
@@ -81,14 +81,14 @@ def ScanVaryingReflectionPredictor(
 
 def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False, **kwargs):
     """
-  A factory function for the reflection predictor.
+    A factory function for the reflection predictor.
 
-  :param experiment: The experiment to predict for
-  :param dmin: The maximum resolution to predict to
-  :param spherical_relp: Whether to use the spherical relp prediction model
-  :return: The spot predictor
+    :param experiment: The experiment to predict for
+    :param dmin: The maximum resolution to predict to
+    :param spherical_relp: Whether to use the spherical relp prediction model
+    :return: The spot predictor
 
-  """
+    """
 
     # FIXME Selection of reflection predictor type is ugly. What is a better
     # way here? Should it be based entirely on the existence of certain types

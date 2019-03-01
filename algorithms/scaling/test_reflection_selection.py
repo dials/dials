@@ -40,17 +40,17 @@ def test_select_highly_connected_reflections_in_bin():
 def test_select_connected_reflections_across_datasets():
     """Test the basic cross-dataset reflection selection algorithm.
 
-  Make three reflection tables with the following reflections:
-             symmetry groups
-             0  1  2  3  4  5  6
-          0  3  3  2  0  1  1  1
-  classes 1  0  2  0  0  3  2  1
-          2  2  1  1  5  0  4  0
+    Make three reflection tables with the following reflections:
+               symmetry groups
+               0  1  2  3  4  5  6
+            0  3  3  2  0  1  1  1
+    classes 1  0  2  0  0  3  2  1
+            2  2  1  1  5  0  4  0
 
-  With target=5, expect:
-  number of chosen reflections per class: [8, 7, 7]
-  symmetry groups used:                   [1, 5, 0, 4]
-  """
+    With target=5, expect:
+    number of chosen reflections per class: [8, 7, 7]
+    symmetry groups used:                   [1, 5, 0, 4]
+    """
 
     n1 = [3, 3, 2, 0, 1, 1, 1]
     n2 = [0, 2, 0, 0, 3, 2, 1]

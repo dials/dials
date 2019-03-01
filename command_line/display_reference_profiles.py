@@ -20,7 +20,7 @@ def display_reference_profiles(
     reference_pickle_file, profile_number, printing=True, plot_name=None
 ):
     """Display the reference profiles found in the reference_pickle_file generated
-  by dials integration using intensity.algorithm=fitrs"""
+    by dials integration using intensity.algorithm=fitrs"""
 
     import six.moves.cPickle as pickle
     from dials.array_family import flex

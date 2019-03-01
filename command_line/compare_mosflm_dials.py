@@ -5,9 +5,9 @@ from __future__ import absolute_import, division, print_function
 
 def pull_reference(integrate_mtz):
     """Generate reference data set from integrate.hkl, check out the calculated
-  x, y and z centroids as well as the Miller indices as coordinates in some
-  high dimensional space. Only consider measurements with meaningful
-  centroids..."""
+    x, y and z centroids as well as the Miller indices as coordinates in some
+    high dimensional space. Only consider measurements with meaningful
+    centroids..."""
 
     # prepare input data as
     # sortmtz hklin thau_2_001.mtz hklout sorted.mtz << eof
@@ -311,7 +311,7 @@ def integrate_mtz_to_A_matrix(integrate_mtz):
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_mtz):
     """Derive a reindexing matrix to go from the orientation matrix used
-  for MOSFLM integration to the one used for DIALS integration."""
+    for MOSFLM integration to the one used for DIALS integration."""
 
     dA = get_dials_matrix(crystal_json)
     dbeam, daxis = get_dials_coordinate_frame(sweep_json)

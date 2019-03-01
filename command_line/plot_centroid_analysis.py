@@ -51,7 +51,7 @@ Examples::
 
 def save_plots(params, raw, smoothed, suffix=""):
     """Create plots for the centroid analysis results for a single experiment.
-  Overlay raw and smoothed periodograms"""
+    Overlay raw and smoothed periodograms"""
 
     # draw vertical lines at frequencies corresponding to periods of 54, 36 and 18
     # degrees

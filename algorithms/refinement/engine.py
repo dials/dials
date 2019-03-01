@@ -93,11 +93,11 @@ refinery_phil_scope = parse(refinery_phil_str)
 class Journal(dict):
     """Container in which to store information about refinement history.
 
-  This is simply a dict but provides some extra methods for access that
-  maintain values as columns in a table. Refinery classes will use these methods
-  while entering data to ensure the table remains consistent. Methods inherited
-  from dict are not hidden for ease of use of this object when returned to the
-  user."""
+    This is simply a dict but provides some extra methods for access that
+    maintain values as columns in a table. Refinery classes will use these methods
+    while entering data to ensure the table remains consistent. Methods inherited
+    from dict are not hidden for ease of use of this object when returned to the
+    user."""
 
     reason_for_termination = None
     _nrows = 0
@@ -113,7 +113,7 @@ class Journal(dict):
 
     def add_row(self):
         """Add an element to the end of each of the columns. Fail if any columns
-    are the wrong length"""
+        are the wrong length"""
 
         for k in self.keys():
             assert len(self[k]) == self._nrows
@@ -124,7 +124,7 @@ class Journal(dict):
 
     def del_last_row(self):
         """Delete the last element from the each of the columns. Fail if any columns
-    are the wrong length"""
+        are the wrong length"""
 
         if self._nrows == 0:
             return None
@@ -137,7 +137,7 @@ class Journal(dict):
 
     def set_last_cell(self, key, value):
         """Set last cell in column given by key to value. Fail if the column is the
-    wrong length"""
+        wrong length"""
 
         assert len(self[key]) == self._nrows
         self[key][-1] = value
@@ -147,7 +147,7 @@ class Journal(dict):
 
 class Refinery(object):
     """Interface for Refinery objects. This should be subclassed and the run
-  method implemented."""
+    method implemented."""
 
     # NOTES. A Refinery is initialised with a Target function. The target
     # function already contains a ReflectionManager (which holds the data) so
@@ -283,7 +283,7 @@ class Refinery(object):
 
     def split_jacobian_into_blocks(self):
         """Split the Jacobian into blocks each corresponding to a separate
-    residual"""
+        residual"""
 
         nblocks = len(self._target.rmsd_names)
 
@@ -303,7 +303,7 @@ class Refinery(object):
     @staticmethod
     def _packed_corr_mat(m):
         """Return a 1D flex array containing the upper diagonal values of the
-    correlation matrix calculated between columns of 2D matrix m"""
+        correlation matrix calculated between columns of 2D matrix m"""
 
         nr, nc = m.all()
 
@@ -340,9 +340,9 @@ class Refinery(object):
 
     def get_correlation_matrix_for_step(self, step):
         """For each type of residual (e.g. X, Y, Phi), decompress and return the
-    full 2D correlation matrix between columns of the Jacobian that was
-    stored in the journal at the given step number. If not available, return
-    None"""
+        full 2D correlation matrix between columns of the Jacobian that was
+        stored in the journal at the given step number. If not available, return
+        None"""
 
         if "parameter_correlation" not in self.history:
             return None
@@ -372,32 +372,32 @@ class Refinery(object):
 
     def jacobian_condition_number(self):
         """Calculate the condition number of the Jacobian, for tracking in the
-    refinement journal, if requested. The condition number of a matrix A is
-    defined as cond(A) = ||A|| ||inv(A)||. For a rectangular matrix the inverse
-    operation refers to the Moore-Penrose pseudoinverse. Various matrix norms
-    can be used, resulting in numerically different condition numbers, however
-    the 2-norm is commonly used. In that case, the definition is equivalent
-    to the ratio of the largest to smallest singular values of the matrix:
-    cond(A) = sig_(A) / sig_min(A). That is the calculation that is performed
-    here.
+        refinement journal, if requested. The condition number of a matrix A is
+        defined as cond(A) = ||A|| ||inv(A)||. For a rectangular matrix the inverse
+        operation refers to the Moore-Penrose pseudoinverse. Various matrix norms
+        can be used, resulting in numerically different condition numbers, however
+        the 2-norm is commonly used. In that case, the definition is equivalent
+        to the ratio of the largest to smallest singular values of the matrix:
+        cond(A) = sig_(A) / sig_min(A). That is the calculation that is performed
+        here.
 
-    The condition number is a measure of how accurate the solution x to the
-    equation Ax = b will be. Essentially it measures how errors are amplified
-    through the linear equation. The condition number is large in the case that
-    the columns of A are nearly linearly-dependent (and infinite for a singular
-    matrix). We use it here then to detect situations where the correlation
-    between effects of different parameter shifts becomes large and therefore
-    refinement is problematic.
+        The condition number is a measure of how accurate the solution x to the
+        equation Ax = b will be. Essentially it measures how errors are amplified
+        through the linear equation. The condition number is large in the case that
+        the columns of A are nearly linearly-dependent (and infinite for a singular
+        matrix). We use it here then to detect situations where the correlation
+        between effects of different parameter shifts becomes large and therefore
+        refinement is problematic.
 
-    Note, the Jacobian used here does not include any additional rows due to
-    restraints terms that might be applied, or any parameter reduction due to
-    constraints. Therefore this condition number relates to the pure linearised
-    (Gauss-Newton) step, which might not actually be what the refinement engine
-    uses. It can be indicative of issues in the fundamental set up of the least
-    squares problem, even if these issues are avoided in practice (e.g. by
-    use of an algorithm like Levenberg-Marquardt, inclusion of restraints or
-    parameter reduction).
-    """
+        Note, the Jacobian used here does not include any additional rows due to
+        restraints terms that might be applied, or any parameter reduction due to
+        constraints. Therefore this condition number relates to the pure linearised
+        (Gauss-Newton) step, which might not actually be what the refinement engine
+        uses. It can be indicative of issues in the fundamental set up of the least
+        squares problem, even if these issues are avoided in practice (e.g. by
+        use of an algorithm like Levenberg-Marquardt, inclusion of restraints or
+        parameter reduction).
+        """
         try:
             # The Jacobian might be a sparse matrix
             j = self._jacobian.as_dense_matrix().deep_copy()
@@ -441,9 +441,9 @@ class Refinery(object):
 
     def test_objective_increasing_but_not_nref(self):
         """Test for an increase in the objective value between steps. This
-    could be caused simply by the number of matches between observations
-    and predictions increasing. However, if the number of matches stayed
-    the same or reduced then this is a bad sign."""
+        could be caused simply by the number of matches between observations
+        and predictions increasing. However, if the number of matches stayed
+        the same or reduced then this is a bad sign."""
 
         try:
             l1 = self.history["objective"][-1]
@@ -457,16 +457,16 @@ class Refinery(object):
 
     def set_nproc(self, nproc):
         """Set number of processors for multiprocessing. Override in derived classes
-    if a policy dictates that this must not be user-controlled"""
+        if a policy dictates that this must not be user-controlled"""
         self._nproc = nproc
         return
 
     def run(self):
         """
-    To be implemented by derived class. It is expected that each step of
-    refinement be preceeded by a call to prepare_for_step and followed by
-    calls to update_journal and test_for_termination (in that order).
-    """
+        To be implemented by derived class. It is expected that each step of
+        refinement be preceeded by a call to prepare_for_step and followed by
+        calls to update_journal and test_for_termination (in that order).
+        """
 
         # Specify a minimizer and its parameters, and run
         raise NotImplementedError()
@@ -552,9 +552,9 @@ class AdaptLbfgs(Refinery):
 
     def callback_after_step(self, minimizer):
         """
-    Do journalling, evaluate rmsds and return True if the target is
-    reached to terminate the refinement.
-    """
+        Do journalling, evaluate rmsds and return True if the target is
+        reached to terminate the refinement.
+        """
 
         self.update_journal()
         logger.debug("Step %d", self.history.get_nrows() - 1)
@@ -571,8 +571,8 @@ class AdaptLbfgs(Refinery):
 
     def run_lbfgs(self, curvatures=False):
         """
-    Run the minimiser, keeping track of its log.
-    """
+        Run the minimiser, keeping track of its log.
+        """
 
         ref_log = self._log_string()
         if curvatures:
@@ -766,7 +766,7 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
 
     def set_cholesky_factor(self):
         """Set the Cholesky factor required for ESD calculation. This method is
-    valid only for the LSTBX dense matrix interface"""
+        valid only for the LSTBX dense matrix interface"""
 
         self.cf = self.step_equations().cholesky_factor_packed_u().deep_copy()
 
@@ -936,7 +936,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
 class LevenbergMarquardtIterations(GaussNewtonIterations):
     """Refinery implementation, employing lstbx Levenberg Marquadt
-  iterations"""
+    iterations"""
 
     tau = 1e-3
 
@@ -961,8 +961,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
     def report_progress(self, objective):
         """Callback within the refinement main loop that can be overridden to
-    report the value of the objective function (and possibly) other details for
-    long-running methods"""
+        report the value of the objective function (and possibly) other details for
+        long-running methods"""
         pass
 
     def _run_core(self):

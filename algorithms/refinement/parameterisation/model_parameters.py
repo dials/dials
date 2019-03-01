@@ -17,29 +17,29 @@ import abc
 class Parameter(object):
     """A class to help formalise what a parameter is.
 
-  A Parameter must have a numerical value (either a length or an angle). It may
-  also have a vector axis which provides context for what that number means.
+    A Parameter must have a numerical value (either a length or an angle). It may
+    also have a vector axis which provides context for what that number means.
 
-  Together the values and axes of a set of parameters can be used to compose
-  the state of a model. For example, the value might be a rotation angle, with
-  the axis of rotation providing the context.
+    Together the values and axes of a set of parameters can be used to compose
+    the state of a model. For example, the value might be a rotation angle, with
+    the axis of rotation providing the context.
 
-  A slot is also provided for storage of the estimated standard deviation of
-  the value, which may be of use in future. Whenever the parameter
-  value is set, the esd is reset to None. So this must be set separately, and
-  after the parameter value if it is required.
-  """
+    A slot is also provided for storage of the estimated standard deviation of
+    the value, which may be of use in future. Whenever the parameter
+    value is set, the esd is reset to None. So this must be set separately, and
+    after the parameter value if it is required.
+    """
 
     def __init__(self, value, axis=None, ptype=None, name="Parameter"):
         """Initialisation for the Parameter class.
 
-    Args:
-        value (float): The initial parameter value.
-        axis: A 3-element vector giving the axis of action of the parameter.
-            Defaults to None.
-        ptype (str): A string defining the parameter type.
-        name (str): A string defining the parameter name.
-    """
+        Args:
+            value (float): The initial parameter value.
+            axis: A 3-element vector giving the axis of action of the parameter.
+                Defaults to None.
+            ptype (str): A string defining the parameter type.
+            name (str): A string defining the parameter name.
+        """
         self._value = value
         self._esd = None
         self._axis = axis
@@ -119,17 +119,17 @@ class Parameter(object):
 class ModelParameterisation(object):
     """An abstract interface for the parameterisation of a model.
 
-  Parameterisation of experimental objects, such as the detector, the beam,
-  etc. should adhere to this interface in order to compose their state from
-  their parameters, access their parameters, and derivatives of their state wrt
-  their parameters, taking into account whether particular parameters are fixed
-  or free.
+    Parameterisation of experimental objects, such as the detector, the beam,
+    etc. should adhere to this interface in order to compose their state from
+    their parameters, access their parameters, and derivatives of their state wrt
+    their parameters, taking into account whether particular parameters are fixed
+    or free.
 
-  It is possible to parameterise a model with multiple states. The first such
-  example is a detector with multiple panels. Each panel has its own matrix
-  describing its geometrical 'state'. One set of parameters is used to compose
-  all states and calculate all derivatives of these states.
-  """
+    It is possible to parameterise a model with multiple states. The first such
+    example is a detector with multiple panels. Each panel has its own matrix
+    describing its geometrical 'state'. One set of parameters is used to compose
+    all states and calculate all derivatives of these states.
+    """
 
     __metaclass__ = abc.ABCMeta
 
@@ -138,15 +138,15 @@ class ModelParameterisation(object):
     ):
         """Initialisation for the ModelParameterisation abstract base class.
 
-    Args:
-        model: The experimental model to be parameterised.
-        initial_state: The initial value of the state of interest of the model.
-        param_list (list): A list of Parameter objects.
-        experiment_ids (list): A list of integer experiment IDs that this
-            parameterisation affects.
-        is_multi_state (bool): A flag to indicate whether the parameterisation
-            is for a multi-state model.
-    """
+        Args:
+            model: The experimental model to be parameterised.
+            initial_state: The initial value of the state of interest of the model.
+            param_list (list): A list of Parameter objects.
+            experiment_ids (list): A list of integer experiment IDs that this
+                parameterisation affects.
+            is_multi_state (bool): A flag to indicate whether the parameterisation
+                is for a multi-state model.
+        """
         assert isinstance(param_list, list)
         self._initial_state = initial_state
         self._model = model
@@ -163,7 +163,7 @@ class ModelParameterisation(object):
 
     def is_multi_state(self):
         """Query whether this is a multi-state parameterisation or not (e.g. True
-    for a multi-panel detector parameterisation)"""
+        for a multi-panel detector parameterisation)"""
 
         return self._is_multi_state
 
@@ -190,23 +190,23 @@ class ModelParameterisation(object):
     def compose(self):
         """Compose the current model state.
 
-    Using the initial state and the current parameter list, compose the current
-    state of the model. Also calculate the derivatives of the state wrt each
-    parameter in the list. Intended to be called automatically once parameters
-    are updated, e.g. at the end of each refinement cycle.
-    """
+        Using the initial state and the current parameter list, compose the current
+        state of the model. Also calculate the derivatives of the state wrt each
+        parameter in the list. Intended to be called automatically once parameters
+        are updated, e.g. at the end of each refinement cycle.
+        """
 
         # Specific methods for each model are defined by derived classes.
         pass
 
     def get_params(self, only_free=True):
         """Get the internal list of parameters. It is intended that this function
-    be used for reporting parameter attributes, not for modifying them.
+        be used for reporting parameter attributes, not for modifying them.
 
-    Args:
-        only_free (bool): Whether fixed parameters should be filtered from the
-            returned list, or all parameters returned.
-    """
+        Args:
+            only_free (bool): Whether fixed parameters should be filtered from the
+                returned list, or all parameters returned.
+        """
 
         if only_free:
 
@@ -217,12 +217,12 @@ class ModelParameterisation(object):
 
     def get_param_vals(self, only_free=True):
         """Get the values of the internal list of parameters as a sequence of
-    floats.
+        floats.
 
-    Args:
-        only_free (bool): Whether fixed parameters should have their values
-        filtered from the returned list, or all parameter values returned.
-    """
+        Args:
+            only_free (bool): Whether fixed parameters should have their values
+            filtered from the returned list, or all parameter values returned.
+        """
 
         if only_free:
 
@@ -234,10 +234,10 @@ class ModelParameterisation(object):
     def get_param_names(self, only_free=True):
         """Get the list of names of the parameters.
 
-    Args:
-        only_free (bool): Whether fixed parameters should have their names
-        filtered from the returned list, or all parameter names returned.
-    """
+        Args:
+            only_free (bool): Whether fixed parameters should have their names
+            filtered from the returned list, or all parameter names returned.
+        """
 
         if only_free:
             return [x.name for x in self._param if not x.get_fixed()]
@@ -247,12 +247,12 @@ class ModelParameterisation(object):
 
     def set_param_vals(self, vals):
         """Set the values of the internal list of parameters from a sequence of
-    floats.
+        floats.
 
-    Args:
-        vals (list): A list of floating point parameter values, equal in length
-            to the number of free parameters.
-    """
+        Args:
+            vals (list): A list of floating point parameter values, equal in length
+                to the number of free parameters.
+        """
 
         assert len(vals) == self.num_free()
 
@@ -269,12 +269,12 @@ class ModelParameterisation(object):
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of the internal list of parameters
-    from a sequence of floats.
+        from a sequence of floats.
 
-    Args:
-        esds (list): A list of floating point parameter esd values, equal in
-            length to the number of free parameters.
-    """
+        Args:
+            esds (list): A list of floating point parameter esd values, equal in
+                length to the number of free parameters.
+        """
 
         assert len(esds) == self.num_free()
 
@@ -293,10 +293,10 @@ class ModelParameterisation(object):
     def set_fixed(self, fix):
         """Set parameters to be fixed or free.
 
-    Args:
-        fix (list): A list of bools, determining whether each parameter is
-            fixed or free.
-    """
+        Args:
+            fix (list): A list of bools, determining whether each parameter is
+                fixed or free.
+        """
 
         assert len(fix) == len(self._param)
 
@@ -315,14 +315,14 @@ class ModelParameterisation(object):
     def get_state(self, multi_state_elt=None):
         """Get the current state of the model under parameterisation.
 
-    This is required, for example, by the calculation of finite
-    difference gradients.
+        This is required, for example, by the calculation of finite
+        difference gradients.
 
-    Args:
-        multi_state_elt (bool): For a multi-state parameterisation, the
-            requested state is selected by an integer array index. Defaults to
-            None.
-    """
+        Args:
+            multi_state_elt (bool): For a multi-state parameterisation, the
+                requested state is selected by an integer array index. Defaults to
+                None.
+        """
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state. The
@@ -333,23 +333,23 @@ class ModelParameterisation(object):
     def get_ds_dp(self, only_free=True, multi_state_elt=None, use_none_as_null=False):
         """Get a list of derivatives of the state wrt each parameter.
 
-    This is returned as a list in the same order as the internal list of
-    parameters.
+        This is returned as a list in the same order as the internal list of
+        parameters.
 
-    The internal list of derivatives may use None for null elements. By default
-    these are converted to the null state, but optionally these may remain None
-    to detect them easier and avoid doing calculations on null elements.
+        The internal list of derivatives may use None for null elements. By default
+        these are converted to the null state, but optionally these may remain None
+        to detect them easier and avoid doing calculations on null elements.
 
-    Args:
-        only_free (bool): whether the derivatives with respect to fixed
-            parameters are omitted from the returned list. Otherwise a list for
-            all parameters is returned, with null values for the fixed
-            parameters.
-        multi_state_elt (bool): For a multi-state parameterisation, the
-            requested derivative of the state is selected by an integer array
-            index. Defaults to None.
-        use_none_as_null (bool): See method description. Defaults to False.
-    """
+        Args:
+            only_free (bool): whether the derivatives with respect to fixed
+                parameters are omitted from the returned list. Otherwise a list for
+                all parameters is returned, with null values for the fixed
+                parameters.
+            multi_state_elt (bool): For a multi-state parameterisation, the
+                requested derivative of the state is selected by an integer array
+                index. Defaults to None.
+            use_none_as_null (bool): See method description. Defaults to False.
+        """
 
         if use_none_as_null:
             null = None
@@ -378,11 +378,11 @@ class ModelParameterisation(object):
 
     def calculate_state_uncertainties(self, var_cov):
         """Given a variance-covariance array for the parameters of this model,
-    propagate those estimated errors into the uncertainties of the model state
+        propagate those estimated errors into the uncertainties of the model state
 
-    Args:
-        var_cov: A variance-covariance matrix for the parameters of this model.
-    """
+        Args:
+            var_cov: A variance-covariance matrix for the parameters of this model.
+        """
 
         grads = []
         if self._is_multi_state:
@@ -421,15 +421,15 @@ class ModelParameterisation(object):
 
     def set_state_uncertainties(self, var_cov, multi_state_elt=None):
         """Send the calculated variance-covariance matrix for model state elements
-    back to the model for storage alongside the model state, and potentially
-    use in further propagation of error calculations.
+        back to the model for storage alongside the model state, and potentially
+        use in further propagation of error calculations.
 
-    Args:
-        var_cov: A variance-covariance matrix for the parameters of this model.
-        multi_state_elt (bool): If the parameterisation is multi-state, a
-            integer index is required to select which state this variance-
-            covariance matrix refers to.
-    """
+        Args:
+            var_cov: A variance-covariance matrix for the parameters of this model.
+            multi_state_elt (bool): If the parameterisation is multi-state, a
+                integer index is required to select which state this variance-
+                covariance matrix refers to.
+        """
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state.

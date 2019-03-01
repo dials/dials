@@ -323,7 +323,7 @@ def test_scaling_active_parameter_manager():
 
 def test_create_apm_factory():
     """Test that the create_apm_factory function correctly interprets the scaler.id
-  and concurrent/consecutive option to give the correct APMFactory class."""
+    and concurrent/consecutive option to give the correct APMFactory class."""
 
     # Concurrent single apm
     components_2 = {"1": mock_scaling_component(2), "2": mock_scaling_component(2)}

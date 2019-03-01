@@ -40,16 +40,16 @@ class StillsDetectorRefinerFactory(RefinerFactory):
     @staticmethod
     def config_parameterisation(params, experiments, refman, do_stills):
         """Given a set of parameters, create a parameterisation from a set of
-    experimental models.
+        experimental models.
 
-    Params:
-        params The input parameters
-        experiments An ExperimentList object
+        Params:
+            params The input parameters
+            experiments An ExperimentList object
 
-    Returns:
-        A tuple of the prediction equation parameterisation and the
-        parameter reporter.
-    """
+        Returns:
+            A tuple of the prediction equation parameterisation and the
+            parameter reporter.
+        """
 
         # Shorten parameter paths
         beam_options = params.beam
@@ -164,14 +164,14 @@ class StillsDetectorRefinerFactory(RefinerFactory):
         do_sparse,
     ):
         """Given a set of parameters, configure a factory to build a
-    target function
+        target function
 
-    Params:
-        params The input parameters
+        Params:
+            params The input parameters
 
-    Returns:
-        The target factory instance
-    """
+        Returns:
+            The target factory instance
+        """
 
         if params.rmsd_cutoff == "fraction_of_bin_size":
             absolute_cutoffs = None
@@ -223,10 +223,10 @@ class StillsDetectorRefinerFactory(RefinerFactory):
 class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation):
     def get_gradients(self, reflections, callback=None):
         """
-    Calculate gradients of the prediction formula with respect to each
-    of the parameters of the detector, for all of the reflections.
+        Calculate gradients of the prediction formula with respect to each
+        of the parameters of the detector, for all of the reflections.
 
-    """
+        """
 
         ### Calculate various quantities of interest for the reflections
 
@@ -264,10 +264,10 @@ class StillsDetectorPredictionParameterisation(StillsPredictionParameterisation)
 
     def _get_gradients_core(self, reflections, D, callback=None):
         """Calculate gradients of the prediction formula with respect to
-    each of the parameters of the contained models, for reflection h
-    with scattering vector s that intersects panel panel_id. That is,
-    calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis because these
-    are stills"""
+        each of the parameters of the contained models, for reflection h
+        with scattering vector s that intersects panel panel_id. That is,
+        calculate dX/dp, dY/dp and dDeltaPsi/dp. Ignore axis because these
+        are stills"""
 
         # pv is the 'projection vector' for the ray along s1.
         self._D = D

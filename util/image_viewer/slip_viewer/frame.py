@@ -243,14 +243,14 @@ class XrayFrame(AppFrame, XFBaseClass):
 
     def add_file_name_or_data(self, file_name_or_data):
         """The add_file_name_or_data() function appends @p
-      file_name_or_data to the image chooser, unless it is already
-      present.  For file-backed images, the base name is displayed in
-      the chooser.  If necessary, the number of entries in the chooser
-      is pruned.  The function returns the index of the recently added
-      entry.  XXX This is probably the place for heuristics to determine
-      if the viewer was given a pattern, or a plain list of files.  XXX
-      Rename this function, because it only deals with the chooser?
-      """
+        file_name_or_data to the image chooser, unless it is already
+        present.  For file-backed images, the base name is displayed in
+        the chooser.  If necessary, the number of entries in the chooser
+        is pruned.  The function returns the index of the recently added
+        entry.  XXX This is probably the place for heuristics to determine
+        if the viewer was given a pattern, or a plain list of files.  XXX
+        Rename this function, because it only deals with the chooser?
+        """
 
         key = self.get_key(file_name_or_data)
         for i in range(self.image_chooser.GetCount()):
@@ -269,10 +269,10 @@ class XrayFrame(AppFrame, XFBaseClass):
 
     def get_beam_center_px(self):
         """
-    Get the beam center in pixel coordinates relative to the tile closest to it.
-    @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
-    returned coordinates are relative to.
-    """
+        Get the beam center in pixel coordinates relative to the tile closest to it.
+        @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
+        returned coordinates are relative to.
+        """
         detector = self.get_detector()
         beam = self.get_beam()
         if abs(detector[0].get_distance()) == 0:
@@ -320,8 +320,8 @@ class XrayFrame(AppFrame, XFBaseClass):
 
     def load_image(self, file_name_or_data, get_raw_data=None, show_untrusted=False):
         """The load_image() function displays the image from @p
-    file_name_or_data.  The chooser is updated appropriately.
-    """
+        file_name_or_data.  The chooser is updated appropriately.
+        """
 
         # Due to a bug in wxPython 3.0.2 for Linux
         # http://trac.wxwidgets.org/ticket/16034
@@ -446,9 +446,9 @@ class XrayFrame(AppFrame, XFBaseClass):
 
     def get_key(self, file_name_or_data):
         """This overridden get_key() function returns the key of @p file_name_or_data
-      if it's an DetectorImageBase object.  Otherwise it returns the super class's
-      key
-      """
+        if it's an DetectorImageBase object.  Otherwise it returns the super class's
+        key
+        """
         from iotbx.detectors.detectorbase import DetectorImageBase
 
         if isinstance(file_name_or_data, DetectorImageBase):

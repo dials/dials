@@ -92,9 +92,9 @@ class GaussianSmoother3D(GS3D):
 class SmoothMixin(object):
     """Mixin class for smooth scale factor components.
 
-  This uses a Gaussian smoother to calculate scales and derivatives
-  based on the parameters and a have a set of normalised_values
-  associated with the data."""
+    This uses a Gaussian smoother to calculate scales and derivatives
+    based on the parameters and a have a set of normalised_values
+    associated with the data."""
 
     def __init__(self):
         self._Vr = 1.0
@@ -113,7 +113,7 @@ class SmoothMixin(object):
     @staticmethod
     def nparam_to_val(n_params):
         """Convert the number of parameters to the required input value
-    for the smoother."""
+        for the smoother."""
         assert (
             n_params >= 2
         ), """cannot initialise a smooth scale factor
@@ -139,10 +139,10 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     @property
     def normalised_values(self):
         """This is a list of the relevant data needed to calculate the
-    inverse scale factors, normalised to give 'normalised coordinate
-    values' that fit in the range of the smoother parameters, which
-    are defined as a 1D array at normalised coordinates separated by
-    a spacing of 1."""
+        inverse scale factors, normalised to give 'normalised coordinate
+        values' that fit in the range of the smoother parameters, which
+        are defined as a 1D array at normalised coordinates separated by
+        a spacing of 1."""
         return self._normalised_values
 
     @ScaleComponentBase.data.setter
@@ -213,7 +213,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
 
 class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """Subclass of SmoothScaleComponent1D to implement a smoothly
-  varying B-factor correction."""
+    varying B-factor correction."""
 
     def __init__(self, initial_values, parameter_esds=None):
         super(SmoothBScaleComponent1D, self).__init__(initial_values, parameter_esds)
@@ -273,11 +273,11 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     """Implementation of a 2D array-based smoothly varying scale factor.
 
-  A 2d array of parameters is defined, and the scale factor at fractional
-  coordinates is calculated as smoothly varying based on the distance to
-  the nearby parameters as calculated in the GaussianSmoother2D. The
-  initial values are passed as a 1D array, and shape is a 2-tuple
-  indicating the number of parameters in each dimension."""
+    A 2d array of parameters is defined, and the scale factor at fractional
+    coordinates is calculated as smoothly varying based on the distance to
+    the nearby parameters as calculated in the GaussianSmoother2D. The
+    initial values are passed as a 1D array, and shape is a 2-tuple
+    indicating the number of parameters in each dimension."""
 
     def __init__(self, initial_values, shape, parameter_esds=None):
         assert len(initial_values) == (
@@ -409,11 +409,11 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
 class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     """Implementation of a 3D array-based smoothly varying scale factor.
 
-  A 3d array of parameters is defined, and the scale factor at fractional
-  coordinates is calculated as smoothly varying based on the distance to
-  the nearby parameters as calculated in the GaussianSmoother3D. The
-  initial values are passed as a 1D array, and shape is a 3-tuple
-  indicating the number of parameters in each dimension."""
+    A 3d array of parameters is defined, and the scale factor at fractional
+    coordinates is calculated as smoothly varying based on the distance to
+    the nearby parameters as calculated in the GaussianSmoother3D. The
+    initial values are passed as a 1D array, and shape is a 3-tuple
+    indicating the number of parameters in each dimension."""
 
     def __init__(self, initial_values, shape, parameter_esds=None):
         assert len(initial_values) == (

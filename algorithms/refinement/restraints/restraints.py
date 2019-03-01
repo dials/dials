@@ -26,7 +26,7 @@ RAD2DEG = 180.0 / pi
 
 class DerivedParameterTie(object):
     """Calculate the restraint and gradients for a single derived parameter
-  of the model"""
+    of the model"""
 
     def __init__(self, target, weight):
 
@@ -56,19 +56,19 @@ class DerivedParameterTie(object):
 
 class SingleUnitCellTie(object):
     """Tie the parameters of a single unit cell model parameterisation to
-  target values via least-squares restraints. The restraints will be expressed
-  in terms of real space unit cell constants, whilst the underlying parameters
-  are encapsulated in the model parameterisation object"""
+    target values via least-squares restraints. The restraints will be expressed
+    in terms of real space unit cell constants, whilst the underlying parameters
+    are encapsulated in the model parameterisation object"""
 
     def __init__(self, model_parameterisation, target, sigma):
         """model_parameterisation is a CrystalUnitCellParameterisation
 
-    target is a sequence of 6 elements describing the target cell parameters
+        target is a sequence of 6 elements describing the target cell parameters
 
-    sigma is a sequence of 6 elements giving the 'sigma' for each of the
-    terms in target, from which weights for the residuals will be calculated.
-    Values of zero  will remove the restraint for the cell parameter at
-    that position"""
+        sigma is a sequence of 6 elements giving the 'sigma' for each of the
+        terms in target, from which weights for the residuals will be calculated.
+        Values of zero  will remove the restraint for the cell parameter at
+        that position"""
 
         self._xlucp = model_parameterisation
         self._target = target
@@ -154,7 +154,7 @@ class SingleUnitCellTie(object):
 
     def _calculate_uc_gradients(self, sel=[True] * 6):
         """Calculate gradients of the unit cell parameters with respect to
-    each of the parameters of the crystal unit cell model parameterisation"""
+        each of the parameters of the crystal unit cell model parameterisation"""
 
         B = self._xlucp.get_state()
         dB_dp = flex.mat3_double(self._xlucp.get_ds_dp())
@@ -190,7 +190,7 @@ class SingleUnitCellTie(object):
 
     def gradients(self):
         """For each residual, return the gradients dR/dp. Requires residuals to be
-    called first"""
+        called first"""
 
         dRdp = []
         for t in self._ties:
@@ -216,17 +216,17 @@ class SingleUnitCellTie(object):
 
 class MeanUnitCellTie(object):
     """Tie the parameters of multiple unit cell model parameterisations to
-  central values via least-squares restraints. The restraints will be expressed
-  in terms of real space unit cell constants, whilst the underlying parameters
-  are encapsulated in the model parameterisation objects"""
+    central values via least-squares restraints. The restraints will be expressed
+    in terms of real space unit cell constants, whilst the underlying parameters
+    are encapsulated in the model parameterisation objects"""
 
     def __init__(self, model_parameterisations, sigma):
         """model_parameterisations is a list of CrystalUnitCellParameterisations
 
-    sigma is a sequence of 6 elements giving the 'sigma' for each of the
-    unit cell parameters, from which weights for the residuals will be
-    calculated. Values of zero in sigma will remove the restraint for the
-    cell parameter at that position"""
+        sigma is a sequence of 6 elements giving the 'sigma' for each of the
+        unit cell parameters, from which weights for the residuals will be
+        calculated. Values of zero in sigma will remove the restraint for the
+        cell parameter at that position"""
 
         self._xlucp = model_parameterisations
         self._nxls = len(model_parameterisations)
@@ -366,9 +366,9 @@ class MeanUnitCellTie(object):
 
     def _construct_grad_block(self, param_grads, i):
         """helper function to construct a block of gradients. The length of
-    param_grads is the number of columns of the block. i selects a row of
-    interest from the block corresponding to the residual for a particular
-    unit cell"""
+        param_grads is the number of columns of the block. i selects a row of
+        interest from the block corresponding to the residual for a particular
+        unit cell"""
         mean_grads = param_grads * self._meangradfac
         param_grads *= self._gradfac
         block = sparse.matrix(self._nxls, len(param_grads))
@@ -382,12 +382,12 @@ class MeanUnitCellTie(object):
 
     def gradients(self):
         """A generator function to return the gradients dR/dp for all the restraints
-    referring to a particular crystal's cell parameters. The return value is
-    a list of sparse matrices, one for each of the 6 cell parameters being
-    restrained. Each sparse matrix has as many columns as the crystal unit
-    cell parameterisation has parameters, and as many rows as there are crystals
-    being restrained. Gradients of zero are detected and not set in the sparse
-    matrices to save memory."""
+        referring to a particular crystal's cell parameters. The return value is
+        a list of sparse matrices, one for each of the 6 cell parameters being
+        restrained. Each sparse matrix has as many columns as the crystal unit
+        cell parameterisation has parameters, and as many rows as there are crystals
+        being restrained. Gradients of zero are detected and not set in the sparse
+        matrices to save memory."""
 
         for i, xlucp in enumerate(self._xlucp):
             B = xlucp.get_state()
@@ -419,9 +419,9 @@ class MeanUnitCellTie(object):
 class LowMemoryMeanUnitCellTie(MeanUnitCellTie):
     def _construct_grad_block(self, param_grads, i):
         """helper function to construct a block of gradients. The length of
-    param_grads is the number of columns of the block. i selects a row of
-    interest from the block corresponding to the residual for a particular
-    unit cell"""
+        param_grads is the number of columns of the block. i selects a row of
+        interest from the block corresponding to the residual for a particular
+        unit cell"""
         param_grads *= self._gradfac
         block = sparse.matrix(self._nxls, len(param_grads))
         for j, g in enumerate(param_grads):
@@ -461,9 +461,9 @@ class MedianUnitCellTie(MeanUnitCellTie):
 
     def _construct_grad_block(self, param_grads, i):
         """helper function to construct a block of gradients. The length of
-    param_grads is the number of columns of the block. i selects a row of
-    interest from the block corresponding to the residual for a particular
-    unit cell"""
+        param_grads is the number of columns of the block. i selects a row of
+        interest from the block corresponding to the residual for a particular
+        unit cell"""
         # this override removes the product with self._gradfac, which is only
         # relevant for the 'mean' versions of this class.
         # param_grads *= self._gradfac

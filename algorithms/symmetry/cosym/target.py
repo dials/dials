@@ -22,10 +22,10 @@ import cctbx.sgtbx.cosets
 class Target(object):
     """Target function for cosym analysis.
 
-  Attributes:
-    dim (int): The number of dimensions used in the analysis.
+    Attributes:
+      dim (int): The number of dimensions used in the analysis.
 
-  """
+    """
 
     def __init__(
         self,
@@ -37,31 +37,31 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        r"""Intialise a Target object.
+        """"Intialise a Target object.
 
-    Args:
-      intensities (cctbx.miller.array): The intensities on which to perform
-        cosym anaylsis.
-      lattice_ids (scitbx.array_family.flex.int): An array of equal size to
-        `intensities` which maps each reflection to a given lattice (dataset).
-      weights (str): Optionally include weights in the target function.
-        Allowed values are `None`, "count" and "standard_error". The default
-        is to use no weights. If "count" is set, then weights are equal to the
-        number of pairs of reflections used in calculating each value of the
-        rij matrix. If "standard_error" is used, then weights are defined as
-        :math:`w_{ij} = 1/s`, where :math:`s = \sqrt{(1-r_{ij}^2)/(n-2)}`.
-        See also http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf.
-      min_pairs (int): Only calculate the correlation coefficient between two
-        datasets if they have more than `min_pairs` of common reflections.
-      lattice_group (cctbx.sgtbx.space_group): Optionally set the lattice
-        group to be used in the analysis.
-      dimensions (int): Optionally override the number of dimensions to be used
-        in the analysis. If not set, then the number of dimensions used is
-        equal to the greater of 2 or the number of symmetry operations in the
-        lattice group.
-      nproc (int): number of processors to use for computing the rij matrix.
+        Args:
+          intensities (cctbx.miller.array): The intensities on which to perform
+            cosym anaylsis.
+          lattice_ids (scitbx.array_family.flex.int): An array of equal size to
+            `intensities` which maps each reflection to a given lattice (dataset).
+          weights (str): Optionally include weights in the target function.
+            Allowed values are `None`, "count" and "standard_error". The default
+            is to use no weights. If "count" is set, then weights are equal to the
+            number of pairs of reflections used in calculating each value of the
+            rij matrix. If "standard_error" is used, then weights are defined as
+            :math:`w_{ij} = 1/s`, where :math:`s = \sqrt{(1-r_{ij}^2)/(n-2)}`.
+            See also http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf.
+          min_pairs (int): Only calculate the correlation coefficient between two
+            datasets if they have more than `min_pairs` of common reflections.
+          lattice_group (cctbx.sgtbx.space_group): Optionally set the lattice
+            group to be used in the analysis.
+          dimensions (int): Optionally override the number of dimensions to be used
+            in the analysis. If not set, then the number of dimensions used is
+            equal to the greater of 2 or the number of symmetry operations in the
+            lattice group.
+          nproc (int): number of processors to use for computing the rij matrix.
 
-    """
+        """
         if weights is not None:
             assert weights in ("count", "standard_error")
         self._weights = weights
@@ -116,10 +116,10 @@ class Target(object):
     def set_dimensions(self, dimensions):
         """Set the number of dimensions for analysis.
 
-    Args:
-      dimensions (int): The number of dimensions to be used.
+        Args:
+          dimensions (int): The number of dimensions to be used.
 
-    """
+        """
         self.dim = dimensions
         logger.info("Using %i dimensions for analysis" % self.dim)
 
@@ -320,16 +320,16 @@ class Target(object):
     def compute_functional(self, x):
         """Compute the target function at coordinates `x`.
 
-    Args:
-      x (scitbx.array_family.flex.double):
-        a flattened list of the N-dimensional vectors, i.e. coordinates in
-        the first dimension are stored first, followed by the coordinates in
-        the second dimension, etc.
+        Args:
+          x (scitbx.array_family.flex.double):
+            a flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
 
-    Returns:
-      f (float): The value of the target function at coordinates `x`.
+        Returns:
+          f (float): The value of the target function at coordinates `x`.
 
-    """
+        """
         assert (x.size() // self.dim) == (self._lattices.size() * len(self._sym_ops))
         inner = self.rij_matrix.deep_copy()
         NN = x.size() // self.dim
@@ -346,19 +346,19 @@ class Target(object):
     def compute_gradients_fd(self, x, eps=1e-6):
         """Compute the gradients at coordinates `x` using finite differences.
 
-    Args:
-      x (scitbx.array_family.flex.double):
-        a flattened list of the N-dimensional vectors, i.e. coordinates in
-        the first dimension are stored first, followed by the coordinates in
-        the second dimension, etc.
-      eps (float):
-        The value of epsilon to use in finite difference calculations.
+        Args:
+          x (scitbx.array_family.flex.double):
+            a flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
+          eps (float):
+            The value of epsilon to use in finite difference calculations.
 
-    Returns:
-      grad (scitbx.array_family.flex.double):
-      The gradients of the target function with respect to the parameters.
+        Returns:
+          grad (scitbx.array_family.flex.double):
+          The gradients of the target function with respect to the parameters.
 
-    """
+        """
         grad = flex.double(x.size(), 0)
         for i in range(grad.size()):
             x[i] += eps  # x + eps
@@ -372,18 +372,18 @@ class Target(object):
     def compute_functional_and_gradients(self, x):
         """Compute the target function and gradients at coordinates `x`.
 
-    Args:
-      x (scitbx.array_family.flex.double):
-        a flattened list of the N-dimensional vectors, i.e. coordinates in
-        the first dimension are stored first, followed by the coordinates in
-        the second dimension, etc.
+        Args:
+          x (scitbx.array_family.flex.double):
+            a flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
 
-    Returns:
-      Tuple[float, scitbx.array_family.flex.double]:
-      f: The value of the target function at coordinates `x`.
-      grad: The gradients of the target function with respect to the parameters.
+        Returns:
+          Tuple[float, scitbx.array_family.flex.double]:
+          f: The value of the target function at coordinates `x`.
+          grad: The gradients of the target function with respect to the parameters.
 
-    """
+        """
         f = self.compute_functional(x)
         grad = flex.double()
         if self.wij_matrix is not None:
@@ -418,17 +418,17 @@ class Target(object):
     def curvatures(self, x):
         """Compute the curvature of the target function.
 
-    Args:
-      x (scitbx.array_family.flex.double):
-        a flattened list of the N-dimensional vectors, i.e. coordinates in
-        the first dimension are stored first, followed by the coordinates in
-        the second dimension, etc.
+        Args:
+          x (scitbx.array_family.flex.double):
+            a flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
 
-    Returns:
-      curvs (scitbx.array_family.flex.double):
-      The curvature of the target function with respect to the parameters.
+        Returns:
+          curvs (scitbx.array_family.flex.double):
+          The curvature of the target function with respect to the parameters.
 
-    """
+        """
         coords = []
         NN = x.size() // self.dim
         for i in range(self.dim):
@@ -448,19 +448,19 @@ class Target(object):
     def curvatures_fd(self, x, eps=1e-6):
         """Compute the curvatures at coordinates `x` using finite differences.
 
-    Args:
-      x (scitbx.array_family.flex.double):
-        a flattened list of the N-dimensional vectors, i.e. coordinates in
-        the first dimension are stored first, followed by the coordinates in
-        the second dimension, etc.
-      eps (float):
-        The value of epsilon to use in finite difference calculations.
+        Args:
+          x (scitbx.array_family.flex.double):
+            a flattened list of the N-dimensional vectors, i.e. coordinates in
+            the first dimension are stored first, followed by the coordinates in
+            the second dimension, etc.
+          eps (float):
+            The value of epsilon to use in finite difference calculations.
 
-    Returns:
-      curvs (scitbx.array_family.flex.double):
-      The curvature of the target function with respect to the parameters.
+        Returns:
+          curvs (scitbx.array_family.flex.double):
+          The curvature of the target function with respect to the parameters.
 
-    """
+        """
         f = self.compute_functional(x)
         curvs = flex.double(x.size(), 0)
         for i in range(curvs.size()):
@@ -475,11 +475,11 @@ class Target(object):
     def plot_rij_matrix(self, plot_name=None):
         """Plot the matrix of rij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         if self.rij_matrix.all()[0] > 2000:
             return
         from matplotlib import pyplot as plt
@@ -496,11 +496,11 @@ class Target(object):
     def plot_wij_matrix(self, plot_name=None):
         """Plot the matrix of wij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         if self._weights is None or self.wij_matrix.all()[0] > 2000:
             return
         from matplotlib import pyplot as plt
@@ -519,11 +519,11 @@ class Target(object):
     def plot_rij_histogram(self, plot_name=None):
         """Plot a histogram of the rij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         rij = self.rij_matrix.as_1d()
         rij = rij.select(rij != 0)
         hist = flex.histogram(rij, data_min=-1, data_max=1, n_slots=100)
@@ -547,11 +547,11 @@ class Target(object):
     def plot_wij_histogram(self, plot_name=None):
         """Plot a histogram of the wij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         if self._weights is None:
             return
         wij = self.wij_matrix.as_1d()
@@ -574,11 +574,11 @@ class Target(object):
     def plot_rij_cumulative_frequency(self, plot_name=None):
         """Plot the cumulative frequency of the rij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         rij = self.rij_matrix.as_1d()
         perm = flex.sort_permutation(rij)
         from matplotlib import pyplot as plt
@@ -596,11 +596,11 @@ class Target(object):
     def plot_wij_cumulative_frequency(self, plot_name=None):
         """Plot the cumulative frequency of the wij values.
 
-    Args:
-      plot_name (str): The file name to save the plot to.
-        If this is not defined then the plot is displayed in interactive mode.
+        Args:
+          plot_name (str): The file name to save the plot to.
+            If this is not defined then the plot is displayed in interactive mode.
 
-    """
+        """
         if self._weights is None:
             return
         wij = self.wij_matrix.as_1d()
@@ -631,8 +631,8 @@ class Target(object):
     def get_sym_ops(self):
         """Get the list of symmetry operations used in the analysis.
 
-    Returns:
-      List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
+        Returns:
+          List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
 
-    """
+        """
         return self._sym_ops

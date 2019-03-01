@@ -32,8 +32,8 @@ def test_exp_P1():
 
 def generate_simple_table(prf=True):
     """Generate a reflection table for testing intensity combination.
-  The numbers are contrived to make sum intensities agree well at high
-  intensity but terribly at low and vice versa for profile intensities."""
+    The numbers are contrived to make sum intensities agree well at high
+    intensity but terribly at low and vice versa for profile intensities."""
     reflections = flex.reflection_table()
     reflections["miller_index"] = flex.miller_index(
         [

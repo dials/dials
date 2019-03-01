@@ -504,8 +504,8 @@ def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
 @pytest.mark.dataset_test
 def test_scale_array(dials_regression, run_in_tmpdir):
     """Test a standard dataset - ideally needs a large dataset or full matrix
-  round may fail. Currently turning off absorption term to avoid
-  overparameterisation and failure of full matrix minimisation."""
+    round may fail. Currently turning off absorption term to avoid
+    overparameterisation and failure of full matrix minimisation."""
 
     data_dir = os.path.join(dials_regression, "xia2-28")
     pickle_path = os.path.join(data_dir, "20_integrated.pickle")

@@ -21,12 +21,12 @@ from dials.algorithms.refinement.refinement_helpers import dR_from_axis_and_angl
 
 class BeamMixin(object):
     """Mix-in class defining some functionality unique to beam parameterisations
-  that can be shared by static and scan-varying versions"""
+    that can be shared by static and scan-varying versions"""
 
     @staticmethod
     def _build_p_list(s0, goniometer, parameter_type=Parameter):
         """Build the list of parameters, using the parameter_type callback to
-    select between versions of the Parameter class"""
+        select between versions of the Parameter class"""
 
         # Set up the parameters
         if goniometer:
@@ -92,20 +92,20 @@ class BeamMixin(object):
 class BeamParameterisation(ModelParameterisation, BeamMixin):
     """A parameterisation of a Beam model.
 
-  The Beam direction and energy are parameterised using angles expressed in
-  mrad and wavenumber in inverse Angstroms. A goniometer can be provided (if
-  present in the experiment) to ensure a consistent definition of the beam
-  rotation angles with respect to the spindle-beam plane."""
+    The Beam direction and energy are parameterised using angles expressed in
+    mrad and wavenumber in inverse Angstroms. A goniometer can be provided (if
+    present in the experiment) to ensure a consistent definition of the beam
+    rotation angles with respect to the spindle-beam plane."""
 
     def __init__(self, beam, goniometer=None, experiment_ids=None):
         """Initialise the BeamParameterisation object
 
-    Args:
-        beam: A dxtbx Beam object to be parameterised.
-        goniometer: An optional dxtbx Goniometer object. Defaults to None.
-        experiment_ids (list): The experiment IDs affected by this
-            parameterisation. Defaults to None, which is replaced by [0].
-    """
+        Args:
+            beam: A dxtbx Beam object to be parameterised.
+            goniometer: An optional dxtbx Goniometer object. Defaults to None.
+            experiment_ids (list): The experiment IDs affected by this
+                parameterisation. Defaults to None, which is replaced by [0].
+        """
         # The state of the beam model consists of the s0 vector that it is
         # modelling. The initial state is the direction of this vector at the point
         # of initialisation. Future states are composed by rotations around axes

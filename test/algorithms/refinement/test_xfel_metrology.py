@@ -9,7 +9,7 @@ import pytest
 
 def test_joint_refinement(dials_regression, run_in_tmpdir):
     """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
-     with 300 crystals."""
+    with 300 crystals."""
     from dials.array_family import flex
 
     bevington = pytest.importorskip("scitbx.examples.bevington")

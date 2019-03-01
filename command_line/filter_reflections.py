@@ -149,7 +149,7 @@ class Script(object):
 
     def eval_flag_expression(self, expression, reflections):
         """Test a Boolean expression of reflection flags for validity then
-    evaluate it"""
+        evaluate it"""
 
         import token
         from tokenize import generate_tokens, TokenError, untokenize

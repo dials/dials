@@ -138,10 +138,10 @@ def integrated_data_to_filtered_miller_array(reflections, exp_crystal):
 class FilteringReductionMethods(object):
 
     """A collection of methods for filtering. Some internal methods require an
-  'intensity' string, which indicates which column to filter on. These
-  methods can be called multiple times to filter on multiple intensity
-  choices. All methods may reduce the size of the reflection table by deleting
-  data."""
+    'intensity' string, which indicates which column to filter on. These
+    methods can be called multiple times to filter on multiple intensity
+    choices. All methods may reduce the size of the reflection table by deleting
+    data."""
 
     @staticmethod
     def _filter_on_min_isigi(reflection_table, intensity, min_isigi=None):
@@ -208,9 +208,9 @@ class FilteringReductionMethods(object):
     @staticmethod
     def filter_unassigned_reflections(reflection_table):
         """"Select reflections that are assigned to an experiment (i.e.
-    non-negative id). This step will need to be looked at again once UIDS
-    are used. This should currently only affect output before the scaling step,
-    as scaling assigns an id."""
+        non-negative id). This step will need to be looked at again once UIDS
+        are used. This should currently only affect output before the scaling step,
+        as scaling assigns an id."""
         reflection_table = reflection_table.select(reflection_table["id"] >= 0)
         if reflection_table.size() == 0:
             raise Sorry("No experiment-assigned reflections were found")
@@ -253,7 +253,7 @@ class FilteringReductionMethods(object):
 class FilterForExportAlgorithm(FilteringReductionMethods):
 
     """An abstract class that defines the filter_for_export algorithm and
-  abstract methods which must be implemented in a subclass."""
+    abstract methods which must be implemented in a subclass."""
 
     __metaclass__ = abc.ABCMeta
 
@@ -317,7 +317,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     @abc.abstractmethod
     def reduce_on_intensities(reflection_table):
         """Reduce the reflection table to contain only the desired reflections
-    based on intensity choice."""
+        based on intensity choice."""
 
     @classmethod
     @abc.abstractmethod
@@ -337,7 +337,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 class PrfIntensityReducer(FilterForExportAlgorithm):
 
     """A class to implement methods to reduce prf intensity data and to
-  implement filtering for export"""
+    implement filtering for export"""
 
     intensities = ["prf"]
 
@@ -404,7 +404,7 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
 class SumIntensityReducer(FilterForExportAlgorithm):
 
     """A class to implement methods to reduce sum intensity data and to
-  implement filtering for export"""
+    implement filtering for export"""
 
     intensities = ["sum"]
 
@@ -466,8 +466,8 @@ class SumIntensityReducer(FilterForExportAlgorithm):
 class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
     """A class to implement methods to reduce sum and prf intensity data and to
-  implement filtering for export. Reflections are kept both a prf and
-  sum intensity is defined."""
+    implement filtering for export. Reflections are kept both a prf and
+    sum intensity is defined."""
 
     intensities = ["sum", "prf"]
 
@@ -509,7 +509,7 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
     @staticmethod
     def reduce_on_intensities(reflection_table):
         """First select the reflections which have successfully been integrated by
-    both methods"""
+        both methods"""
         if (
             reflection_table.get_flags(reflection_table.flags.integrated_prf).count(
                 True
@@ -552,7 +552,7 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 class ScaleIntensityReducer(FilterForExportAlgorithm):
 
     """A class to implement methods to reduce scale intensity data and to
-  implement filtering for export"""
+    implement filtering for export"""
 
     intensities = ["scale"]
 
@@ -627,8 +627,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
 class AllSumPrfScaleIntensityReducer(SumAndPrfIntensityReducer):
 
     """A class to implement methods to reduce data where both prf, sum and scale
-  intensities are defined. Only reflections with valid values for all intensity
-  types are retained."""
+    intensities are defined. Only reflections with valid values for all intensity
+    types are retained."""
 
     intensities = ["sum", "prf", "scale"]
 
@@ -654,8 +654,8 @@ class AllSumPrfScaleIntensityReducer(SumAndPrfIntensityReducer):
 
 def sum_partial_reflections(reflection_table):
     """Sum partial reflections; weighted sum for summation integration; weighted
-  average for profile fitted reflections. N.B. this will report total
-  partiality for the summed reflection."""
+    average for profile fitted reflections. N.B. this will report total
+    partiality for the summed reflection."""
 
     intensities = []
     for intensity in ["prf", "scale", "sum"]:

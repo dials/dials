@@ -20,8 +20,8 @@ from dials.algorithms.spot_prediction.reeke import reeke_model
 
 def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     """Write an R script and an associated data file
-  for visualisation of generated indices between phi_beg and phi_end,
-  using R and the rgl add-on package."""
+    for visualisation of generated indices between phi_beg and phi_end,
+    using R and the rgl add-on package."""
 
     # Sorry, this is ugly. I don't know matplotlib yet.
 
@@ -118,9 +118,9 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
 
 def reeke_model_for_use_case(phi_beg, phi_end, margin):
     """Construct a reeke_model for the geometry of the Use Case Thaumatin
-  dataset, taken from the XDS XPARM. The values are hard-
-  coded here so that this module does not rely on the location of that
-  file."""
+    dataset, taken from the XDS XPARM. The values are hard-
+    coded here so that this module does not rely on the location of that
+    file."""
 
     axis = matrix.col([0.0, 1.0, 0.0])
 
@@ -159,7 +159,7 @@ def reeke_model_for_use_case(phi_beg, phi_end, margin):
 
 def test_regression():
     """Perform a regression test by comparing to indices generating
-  by the brute force method used in the Use Case."""
+    by the brute force method used in the Use Case."""
 
     from rstbx.diffraction import rotation_angles
     from rstbx.diffraction import full_sphere_indices

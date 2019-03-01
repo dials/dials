@@ -547,7 +547,7 @@ def plot_2D_modulation_correction(experiment, reflections, outputfile=None):
 
 def plot_3D_absorption_correction(experiment, reflections, outputfile=None):
     """produces a plot of the absorption correction model parameters
-  for array-based parameterisation"""
+    for array-based parameterisation"""
     """first extract the model and data"""
     configdict = experiment.scaling_model.configdict
     n_time_bins = configdict["n_time_param"]

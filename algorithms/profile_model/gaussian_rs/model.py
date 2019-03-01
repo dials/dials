@@ -214,18 +214,18 @@ class Model(ProfileModelExt):
         profile=None,
     ):
         """
-    Create the profile model from data.
+        Create the profile model from data.
 
-    :param params: The phil parameters
-    :param reflections: The reflections
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
-    :return: An instance of the profile model
+        :param params: The phil parameters
+        :param reflections: The reflections
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
+        :return: An instance of the profile model
 
-    """
+        """
         if reflections is not None:
             model = cls.create_from_reflections(
                 params, reflections, crystal, beam, detector, goniometer, scan, profile
@@ -249,18 +249,18 @@ class Model(ProfileModelExt):
         profile=None,
     ):
         """
-    Create the profile model from parameters.
+        Create the profile model from parameters.
 
-    :param params: The phil parameters
-    :param reflections: The reflections
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
-    :return: An instance of the profile model
+        :param params: The phil parameters
+        :param reflections: The reflections
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
+        :return: An instance of the profile model
 
-    """
+        """
         if profile is not None:
             sigma_b = profile.sigma_b()
             sigma_m = profile.sigma_m()
@@ -293,18 +293,18 @@ class Model(ProfileModelExt):
         profile=None,
     ):
         """
-    Create the profile model from data.
+        Create the profile model from data.
 
-    :param params: The phil parameters
-    :param reflections: The reflections
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
-    :return: An instance of the profile model
+        :param params: The phil parameters
+        :param reflections: The reflections
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
+        :return: An instance of the profile model
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs.calculator import (
             ProfileModelCalculator,
         )
@@ -418,15 +418,15 @@ class Model(ProfileModelExt):
         **kwargs
     ):
         """
-    Given an experiment, predict the reflections.
+        Given an experiment, predict the reflections.
 
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
 
-    """
+        """
         from dxtbx.model.experiment_list import Experiment
         from dials.algorithms.spot_prediction.reflection_predictor import (
             ReflectionPredictor,
@@ -453,17 +453,17 @@ class Model(ProfileModelExt):
         self, reflections, crystal, beam, detector, goniometer=None, scan=None, **kwargs
     ):
         """
-    Given an experiment and list of reflections, compute the partiality of the
-    reflections
+        Given an experiment and list of reflections, compute the partiality of the
+        reflections
 
-    :param reflections: The reflection table
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
+        :param reflections: The reflection table
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
         from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
@@ -491,17 +491,17 @@ class Model(ProfileModelExt):
         sigma_b_multiplier=2.0,
         **kwargs
     ):
-        """ Given an experiment and list of reflections, compute the
-    bounding box of the reflections on the detector (and image frames).
+        """Given an experiment and list of reflections, compute the
+        bounding box of the reflections on the detector (and image frames).
 
-    :param reflections: The reflection table
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
+        :param reflections: The reflection table
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
 
         # Check the input
@@ -537,17 +537,17 @@ class Model(ProfileModelExt):
         **kwargs
     ):
         """
-    Given an experiment and list of reflections, compute the
-    foreground/background mask of the reflections.
+        Given an experiment and list of reflections, compute the
+        foreground/background mask of the reflections.
 
-    :param reflections: The reflection table
-    :param crystal: The crystal model
-    :param beam: The beam model
-    :param detector: The detector model
-    :param goniometer: The goniometer model
-    :param scan: The scan model
+        :param reflections: The reflection table
+        :param crystal: The crystal model
+        :param beam: The beam model
+        :param detector: The detector model
+        :param goniometer: The goniometer model
+        :param scan: The scan model
 
-    """
+        """
         from dials.algorithms.profile_model.gaussian_rs import MaskCalculator
 
         # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
@@ -579,11 +579,11 @@ class Model(ProfileModelExt):
 
     def fitting_class(self):
         """
-    Get the profile fitting algorithm associated with this profile model
+        Get the profile fitting algorithm associated with this profile model
 
-    :return: The profile fitting class
+        :return: The profile fitting class
 
-    """
+        """
         from dials.array_family import flex
 
         # Check input

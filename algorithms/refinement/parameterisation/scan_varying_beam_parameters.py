@@ -20,7 +20,7 @@ from dials.algorithms.refinement.parameterisation.beam_parameters import BeamMix
 
 class ScanVaryingBeamParameterisation(ScanVaryingModelParameterisation, BeamMixin):
     """A scan-varying parameterisation for the beam with angles expressed in
-  mrad and wavenumber in inverse Angstroms."""
+    mrad and wavenumber in inverse Angstroms."""
 
     def __init__(
         self, beam, t_range, num_intervals, goniometer=None, experiment_ids=None

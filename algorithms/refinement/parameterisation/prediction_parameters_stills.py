@@ -439,10 +439,10 @@ from dials_refinement_helpers_ext import dRq_de
 
 class StillsPredictionParameterisation(PredictionParameterisation):
     """Concrete class that inherits functionality of the
-  PredictionParameterisation parent class and provides a detector space
-  implementation of the get_gradients function for still images. Gradients of
-  the minimum rotation to the Ewald sphere, DeltaPsi, are calculated for use
-  as a restraint in refinement"""
+    PredictionParameterisation parent class and provides a detector space
+    implementation of the get_gradients function for still images. Gradients of
+    the minimum rotation to the Ewald sphere, DeltaPsi, are calculated for use
+    as a restraint in refinement"""
 
     _grad_names = ("dX_dp", "dY_dp", "dDeltaPsi_dp")
 
@@ -454,8 +454,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     def _local_setup(self, reflections):
         """Setup additional attributes used in gradients calculation. These are
-    specific to the stills-type prediction parameterisations that rotates the
-    relp q onto the Ewald sphere by an angle DeltaPsi before prediction"""
+        specific to the stills-type prediction parameterisations that rotates the
+        relp q onto the Ewald sphere by an angle DeltaPsi before prediction"""
 
         self._DeltaPsi = reflections["delpsical.rad"]
 
@@ -487,7 +487,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     def _beam_derivatives(self, isel, parameterisation=None, reflections=None):
         """helper function to extend the derivatives lists by derivatives of the
-    beam parameterisations"""
+        beam parameterisations"""
 
         # Get required data
         s0 = self._s0.select(isel)
@@ -548,7 +548,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         self, isel, parameterisation=None, reflections=None
     ):
         """helper function to extend the derivatives lists by derivatives of the
-    crystal orientation parameterisations"""
+        crystal orientation parameterisations"""
 
         # Get required data
         B = self._B.select(isel)
@@ -617,7 +617,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     def _xl_unit_cell_derivatives(self, isel, parameterisation=None, reflections=None):
         """helper function to extend the derivatives lists by derivatives of the
-    crystal unit cell parameterisations"""
+        crystal unit cell parameterisations"""
 
         # Get required data
         U = self._U.select(isel)
@@ -688,7 +688,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     @staticmethod
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(w_inv, u_w_inv, v_w_inv, dpv_dp):
         """helper function to calculate positional derivatives from
-    dpv_dp using the quotient rule"""
+        dpv_dp using the quotient rule"""
 
         dX_dp = []
         dY_dp = []
@@ -710,24 +710,24 @@ class StillsPredictionParameterisationSparse(
     SparseGradientVectorMixin, StillsPredictionParameterisation
 ):
     """A version of StillsPredictionParameterisation that uses a sparse matrix
-  data structure for memory efficiency when there are a large number of
-  Experiments"""
+    data structure for memory efficiency when there are a large number of
+    Experiments"""
 
     pass
 
 
 class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisation):
     """Modified StillsPredictionParameterisation for the model that assumes
-  relps are spherical and prediction requires that this sphere intersects the
-  Ewald sphere, not that the relp centre is rotated onto the Ewald sphere.
-  Gradients of DeltaPsi are still calculated for use as a restraint."""
+    relps are spherical and prediction requires that this sphere intersects the
+    Ewald sphere, not that the relp centre is rotated onto the Ewald sphere.
+    Gradients of DeltaPsi are still calculated for use as a restraint."""
 
     def _local_setup(self, reflections):
         """Setup additional attributes used in gradients calculation. These are
-    specific to the stills-type prediction parameterisations that leaves the
-    relp q generally off the Ewald sphere but assumes it has spherical extent
-    which intersects the Ewald sphere. Gradients of the minimum rotation
-    angle DeltaPsi are still calculated for use as a restraint"""
+        specific to the stills-type prediction parameterisations that leaves the
+        relp q generally off the Ewald sphere but assumes it has spherical extent
+        which intersects the Ewald sphere. Gradients of the minimum rotation
+        angle DeltaPsi are still calculated for use as a restraint"""
 
         self._DeltaPsi = reflections["delpsical.rad"]
 
@@ -767,7 +767,7 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
 
     def _beam_derivatives(self, isel, parameterisation=None, reflections=None):
         """helper function to extend the derivatives lists by derivatives of the
-    beam parameterisations"""
+        beam parameterisations"""
 
         # Get required data
         s0 = self._s0.select(isel)
@@ -822,7 +822,7 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
         self, isel, parameterisation=None, reflections=None
     ):
         """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
+        derivatives of the crystal orientation parameterisations"""
 
         # Get required data
         B = self._B.select(isel)
@@ -877,7 +877,7 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
 
     def _xl_unit_cell_derivatives(self, isel, parameterisation=None, reflections=None):
         """helper function to extend the derivatives lists by
-    derivatives of the crystal unit cell parameterisations"""
+        derivatives of the crystal unit cell parameterisations"""
 
         # Get required data
         U = self._U.select(isel)
@@ -936,7 +936,7 @@ class SphericalRelpStillsPredictionParameterisationSparse(
     SparseGradientVectorMixin, SphericalRelpStillsPredictionParameterisation
 ):
     """A version of SphericalRelpStillsPredictionParameterisation that uses a
-  sparse matrix data structure for memory efficiency when there are a large
-  number of Experiments"""
+    sparse matrix data structure for memory efficiency when there are a large
+    number of Experiments"""
 
     pass

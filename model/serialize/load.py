@@ -9,11 +9,11 @@ import six.moves.cPickle as pickle
 
 def reflections(infile):
     """
-  Load the given reflection file.
+    Load the given reflection file.
 
-  :params infile: The input filename or file object
-  :returns: The reflection list
-  """
+    :params infile: The input filename or file object
+    :returns: The reflection list
+    """
 
     # If the input is a string then open and read from that file
     if isinstance(infile, str):
@@ -27,11 +27,11 @@ def reflections(infile):
 
 def reference(infile):
     """
-  Load the given reference profile file.
+    Load the given reference profile file.
 
-  :params infile: The input filename or file object
-  :returns: The reference list
-  """
+    :params infile: The input filename or file object
+    :returns: The reference list
+    """
 
     # If the input is a string then open and read from that file
     if isinstance(infile, str):

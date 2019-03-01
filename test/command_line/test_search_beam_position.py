@@ -10,14 +10,14 @@ import scitbx
 def test_search_multiple(run_in_tmpdir, dials_regression):
     """Perform a beam-centre search and check that the output is sane.
 
-  Do the following:
-  1. Run dials.search_beam_centre on two datablocks and two pickled
-  reflection tables, as output by dials.find_spots;
-    a) Check that the program exits correctly;
-    b) Check that it produces the expected output datablock.
-  2. Check that the beam centre search has resulted in the expected shift
-  in detector origin.
-  """
+    Do the following:
+    1. Run dials.search_beam_centre on two datablocks and two pickled
+    reflection tables, as output by dials.find_spots;
+      a) Check that the program exits correctly;
+      b) Check that it produces the expected output datablock.
+    2. Check that the beam centre search has resulted in the expected shift
+    in detector origin.
+    """
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path1 = os.path.join(data_dir, "strong_P1_X6_1_0-1.pickle")
@@ -54,14 +54,14 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
 def test_index_after_search(dials_data, run_in_tmpdir):
     """Integrate the beam centre search with the rest of the toolchain
 
-  Do the following:
-  1. Run dials.import with a specified beam centre, check for expected output;
-  2. Run dials.find_spots, check for expected output;
-  3. Run dials.search_beam_centre on the resultant datablock and pickled
-  reflection table, check for expected output;
-  4. Run dials.index, using the datablock from the beam centre search,
-  and check that the expected unit ecll is obtained and that the RMSDs are
-  smaller than or equal to some expected values."""
+    Do the following:
+    1. Run dials.import with a specified beam centre, check for expected output;
+    2. Run dials.find_spots, check for expected output;
+    3. Run dials.search_beam_centre on the resultant datablock and pickled
+    reflection table, check for expected output;
+    4. Run dials.index, using the datablock from the beam centre search,
+    and check that the expected unit ecll is obtained and that the RMSDs are
+    smaller than or equal to some expected values."""
 
     dials_data = dials_data("thaumatin_i04").listdir(sort=True)
     g = [f.strpath for f in dials_data if f.ext == ".cbf"]
@@ -139,14 +139,14 @@ def test_index_after_search(dials_data, run_in_tmpdir):
 def test_search_single(run_in_tmpdir, dials_regression):
     """Perform a beam-centre search and check that the output is sane.
 
-  Do the following:
-  1. Run dials.search_beam_centre on a single datablock and pickled
-  reflection table, as output by dials.find_spots;
-    a) Check that the program exits correctly;
-    b) Check that it produces the expected output datablock.
-  2. Check that the beam centre search has resulted in the expected shift
-  in detector origin.
-  """
+    Do the following:
+    1. Run dials.search_beam_centre on a single datablock and pickled
+    reflection table, as output by dials.find_spots;
+      a) Check that the program exits correctly;
+      b) Check that it produces the expected output datablock.
+    2. Check that the beam centre search has resulted in the expected shift
+    in detector origin.
+    """
 
     data_dir = os.path.join(dials_regression, "indexing_test_data", "phi_scan")
     pickle_path = os.path.join(data_dir, "strong.pickle")
@@ -174,15 +174,15 @@ def test_search_single(run_in_tmpdir, dials_regression):
 def test_search_small_molecule(dials_data, run_in_tmpdir):
     """Perform a beam-centre search on a multi-sweep data set..
 
-  Do the following:
-  1. Run dials.search_beam_centre on a single datablock and pickled
-  reflection table containing multiple experiment IDs, as output by
-  dials.find_spots;
-    a) Check that the program exits correctly;
-    b) Check that it produces the expected output datablock.
-  2. Check that the beam centre search has resulted in the expected shift
-  in detector origin.
-  """
+    Do the following:
+    1. Run dials.search_beam_centre on a single datablock and pickled
+    reflection table containing multiple experiment IDs, as output by
+    dials.find_spots;
+      a) Check that the program exits correctly;
+      b) Check that it produces the expected output datablock.
+    2. Check that the beam centre search has resulted in the expected shift
+    in detector origin.
+    """
 
     data = dials_data("l_cysteine_dials_output", min_version="1.0.5")
     datablock_path = data.join("datablock.json").strpath

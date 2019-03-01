@@ -761,17 +761,17 @@ def build_prediction_parameterisation(
     options, experiments, reflection_manager, do_stills=False
 ):
     """Given a set of parameters, create a parameterisation from a set of
-  experimental models.
+    experimental models.
 
-  Params:
-      options: The input parameters
-      experiments: An ExperimentList object
-      reflection_manager: A ReflectionManager object
-      do_stills (bool)
+    Params:
+        options: The input parameters
+        experiments: An ExperimentList object
+        reflection_manager: A ReflectionManager object
+        do_stills (bool)
 
-  Returns:
-      A prediction equation parameterisation object
-  """
+    Returns:
+        A prediction equation parameterisation object
+    """
 
     # Get the working set of reflections
     reflections = reflection_manager.get_matches()

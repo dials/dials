@@ -1888,12 +1888,12 @@ class IntensityAnalyser(object):
 
 class ZScoreAnalyser(object):
     """
-  Analyse the distribution of intensity z-scores.
+    Analyse the distribution of intensity z-scores.
 
-  z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
-  <I> is a weighted mean and σ is the measurement error in intensity,
-  as calculated by dials.util.intensity_explorer.
-  """
+    z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
+    <I> is a weighted mean and σ is the measurement error in intensity,
+    as calculated by dials.util.intensity_explorer.
+    """
 
     def __init__(self):
         # Set the required fields
@@ -1906,18 +1906,18 @@ class ZScoreAnalyser(object):
 
     def __call__(self, rlist, experiments):
         """
-    :param rlist: A reflection table containing, at the least, the following
-    fields:
-      * ``miller_index``
-      * ``intensity.sum.value``
-      * ``intensity.sum.variance``
-      * ``xyzobs.px.value``
-    :type rlist: `dials_array_family_flex_ext.reflection_table`
-    :param experiments: An experiment list with space group information.
-    :type experiments: `dxtbx_model_ext.ExperimentList`
-    :return: A dictionary describing several Plotly plots.
-    :rtype:`dict`
-    """
+        :param rlist: A reflection table containing, at the least, the following
+        fields:
+          * ``miller_index``
+          * ``intensity.sum.value``
+          * ``intensity.sum.variance``
+          * ``xyzobs.px.value``
+        :type rlist: `dials_array_family_flex_ext.reflection_table`
+        :param experiments: An experiment list with space group information.
+        :type experiments: `dxtbx_model_ext.ExperimentList`
+        :return: A dictionary describing several Plotly plots.
+        :rtype:`dict`
+        """
 
         from dials.util.intensity_explorer import IntensityDist
 
@@ -1958,11 +1958,11 @@ class ZScoreAnalyser(object):
 
     def z_score_hist(self):
         """
-    Plot a histogram of z-scores.
+        Plot a histogram of z-scores.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         z_scores = self.z_score_data["intensity.z_score"]
         hist = flex.histogram(z_scores, -10, 10, 100)
@@ -1988,11 +1988,11 @@ class ZScoreAnalyser(object):
 
     def normal_probability_plot(self):
         """
-    Display a normal probability plot of the z-scores of the intensities.
+        Display a normal probability plot of the z-scores of the intensities.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         z_scores = self.z_score_data["intensity.z_score"]
         osm = self.z_score_data["intensity.order_statistic_medians"]
@@ -2028,11 +2028,11 @@ class ZScoreAnalyser(object):
 
     def z_vs_multiplicity(self):
         """
-    Plot z-score as a function of multiplicity of observation.
+        Plot z-score as a function of multiplicity of observation.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         multiplicity = self.z_score_data["multiplicity"]
         z_scores = self.z_score_data["intensity.z_score"]
@@ -2058,12 +2058,12 @@ class ZScoreAnalyser(object):
 
     def z_time_series(self):
         """
-    Plot a crude time-series of z-scores, with image number serving as a
-    proxy for time.
+        Plot a crude time-series of z-scores, with image number serving as a
+        proxy for time.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         batch_number = self.z_score_data["xyzobs.px.value"].parts()[2]
         z_scores = self.z_score_data["intensity.z_score"]
@@ -2089,11 +2089,11 @@ class ZScoreAnalyser(object):
 
     def z_vs_I(self):
         """
-    Plot z-scores versus intensity.
+        Plot z-scores versus intensity.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         intensity = self.z_score_data["intensity.mean.value"]
         z_scores = self.z_score_data["intensity.z_score"]
@@ -2119,11 +2119,11 @@ class ZScoreAnalyser(object):
 
     def z_vs_I_over_sigma(self):
         """
-    Plot z-scores versus intensity.
+        Plot z-scores versus intensity.
 
-    :return: A dictionary describing a Plotly plot.
-    :rtype:`dict`
-    """
+        :return: A dictionary describing a Plotly plot.
+        :rtype:`dict`
+        """
 
         i_over_sigma = (
             self.z_score_data["intensity.mean.value"]
@@ -2664,7 +2664,7 @@ class ScalingModelAnalyser(object):
     @staticmethod
     def get_smooth_plotting_data_from_model(experiment, component="scale"):
         """Return a tuple of phis, parameters, parameter esds,
-    sample positions for plotting and sample scale values."""
+        sample positions for plotting and sample scale values."""
         configdict = experiment.scaling_model.configdict
         valid_osc = configdict["valid_osc_range"]
         sample_values = flex.double(

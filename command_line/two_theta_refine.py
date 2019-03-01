@@ -158,8 +158,8 @@ class Script(object):
     @staticmethod
     def check_input(reflections):
         """Check the input is suitable for refinement. So far just check keys in
-    the reflection table. Maybe later check experiments have overlapping models
-    etc."""
+        the reflection table. Maybe later check experiments have overlapping models
+        etc."""
 
         msg = (
             "The supplied reflection table does not have the required data "
@@ -198,8 +198,8 @@ class Script(object):
     @staticmethod
     def filter_integrated_centroids(reflections):
         """Filter reflections to include only those with the integrated and the
-    strong flag set, but only if there are apparently some integrated
-    reflections"""
+        strong flag set, but only if there are apparently some integrated
+        reflections"""
 
         orig_len = len(reflections)
         inc = flex.bool(orig_len, False)

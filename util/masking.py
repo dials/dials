@@ -98,9 +98,9 @@ phil_scope = parse(
 
 def generate_ice_ring_resolution_ranges(beam, panel, params):
     """
-  Generate a set of resolution ranges from the ice ring parameters
+    Generate a set of resolution ranges from the ice ring parameters
 
-  """
+    """
     from cctbx import crystal
     from math import sqrt
 
@@ -412,11 +412,11 @@ class GoniometerShadowMaskGenerator(object):
 def convex_hull(points):
     """Computes the convex hull of a set of 2D points.
 
-  Input: an iterable sequence of (x, y) pairs representing the points.
-  Output: a list of vertices of the convex hull in counter-clockwise order,
-    starting from the vertex with the lexicographically smallest coordinates.
-  Implements Andrew's monotone chain algorithm. O(n log n) complexity.
-  """
+    Input: an iterable sequence of (x, y) pairs representing the points.
+    Output: a list of vertices of the convex hull in counter-clockwise order,
+      starting from the vertex with the lexicographically smallest coordinates.
+    Implements Andrew's monotone chain algorithm. O(n log n) complexity.
+    """
 
     # Sort the points lexicographically (tuples are compared lexicographically).
     # Remove duplicates to detect the case we have just one unique point.
