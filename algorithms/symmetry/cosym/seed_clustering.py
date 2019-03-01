@@ -235,13 +235,15 @@ class seed_clustering(object):
                 cluster_labels.set_selected(
                     cluster_labels_input == i, int(labels[i] - 1)
                 )
-            silhouette_avg = metrics.silhouette_score(
-                X, cluster_labels.as_numpy_array(), metric="cosine"
-            )
-            # Compute the silhouette scores for each sample
-            sample_silhouette_values = metrics.silhouette_samples(
-                X, cluster_labels.as_numpy_array(), metric="cosine"
-            )
+            if len(set(cluster_labels)) == X.shape[0]:
+                # silhouette coefficient not defined if 1 dataset per cluster
+                # not sure what the default value should be
+                sample_silhouette_values = np.full(cluster_labels.size(), 0)
+            else:
+                # Compute the silhouette scores for each sample
+                sample_silhouette_values = metrics.silhouette_samples(
+                    X, cluster_labels.as_numpy_array(), metric="cosine"
+                )
             silhouette_avg = sample_silhouette_values.mean()
             silhouette_scores.append(silhouette_avg)
             thresholds.append(threshold)
