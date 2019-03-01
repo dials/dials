@@ -16,16 +16,18 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 
 import logging
 
-logger = logging.getLogger('dials.command_line.combine_found_spots')
+logger = logging.getLogger("dials.command_line.combine_found_spots")
 
-help_message = '''
+help_message = """
 
 
-'''
+"""
 
 # Set the phil scope
 from libtbx.phil import parse
-phil_scope = parse('''
+
+phil_scope = parse(
+    """
 
   output {
     reflections = 'combined_strong.pickle'
@@ -116,198 +118,200 @@ phil_scope = parse('''
     .type = int(value_min=0)
     .help = "The verbosity level"
 
-''', process_includes=True)
+""",
+    process_includes=True,
+)
 
 
 def combine(experiments, reflections_list, params):
-  '''
-  Combine the found spots.
+    """
+    Combine the found spots.
 
-  '''
-  from dxtbx.model.experiment_list import BeamComparison
-  from dxtbx.model.experiment_list import DetectorComparison
-  from dxtbx.model.experiment_list import GoniometerComparison
-  from dxtbx.imageset import ImageSetFactory
-  from dials.algorithms.spot_finding import StrongSpotCombiner
-  from dials.array_family import flex
-  assert len(experiments) == len(reflections_list)
+    """
+    from dxtbx.model.experiment_list import BeamComparison
+    from dxtbx.model.experiment_list import DetectorComparison
+    from dxtbx.model.experiment_list import GoniometerComparison
+    from dxtbx.imageset import ImageSetFactory
+    from dials.algorithms.spot_finding import StrongSpotCombiner
+    from dials.array_family import flex
 
-  # Get a list of imagesets
-  imageset_list = experiments.imagesets()
+    assert len(experiments) == len(reflections_list)
 
-  compare_beam = BeamComparison(
-    wavelength_tolerance=params.input.tolerance.beam.wavelength,
-    direction_tolerance=params.input.tolerance.beam.direction,
-    polarization_normal_tolerance=params.input.tolerance.beam.polarization_normal,
-    polarization_fraction_tolerance=params.input.tolerance.beam.polarization_fraction)
-  compare_detector = DetectorComparison(
-    fast_axis_tolerance=params.input.tolerance.detector.fast_axis,
-    slow_axis_tolerance=params.input.tolerance.detector.slow_axis,
-    origin_tolerance=params.input.tolerance.detector.origin)
-  compare_goniometer = GoniometerComparison(
-    rotation_axis_tolerance=params.input.tolerance.goniometer.rotation_axis,
-    fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
-    setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation)
-  scan_tolerance = params.input.tolerance.scan.oscillation
+    # Get a list of imagesets
+    imageset_list = experiments.imagesets()
 
-  # The initial models
-  format_class = imageset_list[0].get_format_class()
-  beam = imageset_list[0].get_beam()
-  detector = imageset_list[0].get_detector()
-  goniometer = imageset_list[0].get_goniometer()
-  scan = imageset_list[0].get_scan()
-  template = imageset_list[0].get_template()
+    compare_beam = BeamComparison(
+        wavelength_tolerance=params.input.tolerance.beam.wavelength,
+        direction_tolerance=params.input.tolerance.beam.direction,
+        polarization_normal_tolerance=params.input.tolerance.beam.polarization_normal,
+        polarization_fraction_tolerance=params.input.tolerance.beam.polarization_fraction,
+    )
+    compare_detector = DetectorComparison(
+        fast_axis_tolerance=params.input.tolerance.detector.fast_axis,
+        slow_axis_tolerance=params.input.tolerance.detector.slow_axis,
+        origin_tolerance=params.input.tolerance.detector.origin,
+    )
+    compare_goniometer = GoniometerComparison(
+        rotation_axis_tolerance=params.input.tolerance.goniometer.rotation_axis,
+        fixed_rotation_tolerance=params.input.tolerance.goniometer.fixed_rotation,
+        setting_rotation_tolerance=params.input.tolerance.goniometer.setting_rotation,
+    )
+    scan_tolerance = params.input.tolerance.scan.oscillation
 
-  # Check all the models
-  for imageset in imageset_list[1:]:
-    b = imageset.get_beam()
-    d = imageset.get_detector()
-    g = imageset.get_goniometer()
-    s = imageset.get_scan()
-    if not imageset.get_format_class() == format_class:
-      raise RuntimeError('Format classes do not match')
-    if not imageset.get_template() == template:
-      raise RuntimeError('Templates do not match')
-    if not compare_beam(beam, b):
-      raise RuntimeError('Beam models are too dissimilar')
-    if not compare_detector(detector, d):
-      raise RuntimeError('Detector models are too dissimilar')
-    if not compare_goniometer(goniometer, g):
-      raise RuntimeError('Goniometer models are too dissimilar')
-    try:
-      scan.append(s, scan_tolerance=scan_tolerance)
-    except Exception:
-      raise RuntimeError('Scans do not match')
+    # The initial models
+    format_class = imageset_list[0].get_format_class()
+    beam = imageset_list[0].get_beam()
+    detector = imageset_list[0].get_detector()
+    goniometer = imageset_list[0].get_goniometer()
+    scan = imageset_list[0].get_scan()
+    template = imageset_list[0].get_template()
 
-  # Get the image range
-  image_range = scan.get_image_range()
-  image_range = (image_range[0], image_range[1]+1)
+    # Check all the models
+    for imageset in imageset_list[1:]:
+        b = imageset.get_beam()
+        d = imageset.get_detector()
+        g = imageset.get_goniometer()
+        s = imageset.get_scan()
+        if not imageset.get_format_class() == format_class:
+            raise RuntimeError("Format classes do not match")
+        if not imageset.get_template() == template:
+            raise RuntimeError("Templates do not match")
+        if not compare_beam(beam, b):
+            raise RuntimeError("Beam models are too dissimilar")
+        if not compare_detector(detector, d):
+            raise RuntimeError("Detector models are too dissimilar")
+        if not compare_goniometer(goniometer, g):
+            raise RuntimeError("Goniometer models are too dissimilar")
+        try:
+            scan.append(s, scan_tolerance=scan_tolerance)
+        except Exception:
+            raise RuntimeError("Scans do not match")
 
-  # Create the sweep
-  imageset = ImageSetFactory.make_sweep(
-    template, range(*image_range),
-    format_class,
-    beam, detector,
-    goniometer, scan)
+    # Get the image range
+    image_range = scan.get_image_range()
+    image_range = (image_range[0], image_range[1] + 1)
 
-  # Combine spots
-  combiner = StrongSpotCombiner()
-  for index, rlist in enumerate(reflections_list, start=1):
-    logger.info("Combining %d reflections from reflection list %d" % (
-      len(rlist),
-      index))
-    combiner.add(rlist['shoebox'])
-  shoeboxes = combiner.shoeboxes()
+    # Create the sweep
+    imageset = ImageSetFactory.make_sweep(
+        template, range(*image_range), format_class, beam, detector, goniometer, scan
+    )
 
-  # Calculate the spot centroids and intensities
-  logger.info('Combined into %d reflections' % len(shoeboxes))
-  centroid = shoeboxes.centroid_valid()
-  logger.info('Calculated {0} spot centroids'.format(len(shoeboxes)))
-  intensity = shoeboxes.summed_intensity()
-  logger.info('Calculated {0} spot intensities'.format(len(shoeboxes)))
+    # Combine spots
+    combiner = StrongSpotCombiner()
+    for index, rlist in enumerate(reflections_list, start=1):
+        logger.info(
+            "Combining %d reflections from reflection list %d" % (len(rlist), index)
+        )
+        combiner.add(rlist["shoebox"])
+    shoeboxes = combiner.shoeboxes()
 
-  # Construct the reflection table
-  reflections = flex.reflection_table(
-    flex.observation(
-      shoeboxes.panels(),
-      centroid,
-      intensity),
-    shoeboxes)
-  reflections['id'] = flex.int(len(reflections), 0)
-  reflections.set_flags(
-    flex.size_t_range(len(reflections)),
-    reflections.flags.strong)
+    # Calculate the spot centroids and intensities
+    logger.info("Combined into %d reflections" % len(shoeboxes))
+    centroid = shoeboxes.centroid_valid()
+    logger.info("Calculated {0} spot centroids".format(len(shoeboxes)))
+    intensity = shoeboxes.summed_intensity()
+    logger.info("Calculated {0} spot intensities".format(len(shoeboxes)))
 
-  # Return the experiments and reflections
-  return ExperimentListFactory.from_imageset_and_crystal(imageset, None), reflections
+    # Construct the reflection table
+    reflections = flex.reflection_table(
+        flex.observation(shoeboxes.panels(), centroid, intensity), shoeboxes
+    )
+    reflections["id"] = flex.int(len(reflections), 0)
+    reflections.set_flags(flex.size_t_range(len(reflections)), reflections.flags.strong)
+
+    # Return the experiments and reflections
+    return ExperimentListFactory.from_imageset_and_crystal(imageset, None), reflections
 
 
 class Script(object):
-  '''A class for running the script.'''
+    """A class for running the script."""
 
-  def __init__(self):
-    '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+    def __init__(self):
+        """Initialise the script."""
+        from dials.util.options import OptionParser
+        import libtbx.load_env
 
-    # The script usage
-    usage = "usage: %s [options] [param.phil] "\
-            "experiments.json" \
-            % libtbx.env.dispatcher_name
+        # The script usage
+        usage = (
+            "usage: %s [options] [param.phil] "
+            "experiments.json" % libtbx.env.dispatcher_name
+        )
 
-    # Initialise the base class
-    self.parser = OptionParser(
-      usage=usage,
-      phil=phil_scope,
-      epilog=help_message,
-      read_experiments=True,
-      read_reflections=True)
+        # Initialise the base class
+        self.parser = OptionParser(
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
+            read_experiments=True,
+            read_reflections=True,
+        )
 
-  def run(self):
-    '''Execute the script.'''
-    from dials.array_family import flex
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
-    from time import time
-    from dials.util import log
-    from dials.util import Sorry
-    start_time = time()
+    def run(self):
+        """Execute the script."""
+        from dials.array_family import flex
+        from dials.util.options import flatten_experiments
+        from dials.util.options import flatten_reflections
+        from time import time
+        from dials.util import log
+        from dials.util import Sorry
 
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=False)
+        start_time = time()
 
-    # Configure the logging
-    log.config(
-      params.verbosity,
-      info=params.output.log,
-      debug=params.output.debug_log)
+        # Parse the command line
+        params, options = self.parser.parse_args(show_diff_phil=False)
 
-    from dials.util.version import dials_version
-    logger.info(dials_version())
+        # Configure the logging
+        log.config(
+            params.verbosity, info=params.output.log, debug=params.output.debug_log
+        )
 
-    # Log the diff phil
-    diff_phil = self.parser.diff_phil.as_str()
-    if diff_phil is not '':
-      logger.info('The following parameters have been modified:\n')
-      logger.info(diff_phil)
+        from dials.util.version import dials_version
 
-    # Ensure we have a data block
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
-    if len(experiments) == 0 and len(reflections) == 0:
-      self.parser.print_help()
-      return
-    elif len(experiments) != len(reflections):
-      raise Sorry("Must have same number of experiments and reflection tables")
+        logger.info(dials_version())
 
-    # Combine the experiments and reflections
-    experiments, reflections = combine(
-      experiments,
-      reflections,
-      params)
+        # Log the diff phil
+        diff_phil = self.parser.diff_phil.as_str()
+        if diff_phil is not "":
+            logger.info("The following parameters have been modified:\n")
+            logger.info(diff_phil)
 
-    # Save the reflections to file
-    logger.info('\n' + '-' * 80)
-    reflections.as_pickle(params.output.reflections)
-    logger.info('Saved {0} reflections to {1}'.format(
-        len(reflections), params.output.reflections))
+        # Ensure we have a data block
+        experiments = flatten_experiments(params.input.experiments)
+        reflections = flatten_reflections(params.input.reflections)
+        if len(experiments) == 0 and len(reflections) == 0:
+            self.parser.print_help()
+            return
+        elif len(experiments) != len(reflections):
+            raise Sorry("Must have same number of experiments and reflection tables")
 
-    # Save the experiments
-    from dxtbx.model.experiment_list import ExperimentListDumper
-    logger.info('Saving experiments to {0}'.format(
-      params.output.experiments))
-    dump = ExperimentListDumper(experiments)
-    dump.as_file(params.output.experiments)
+        # Combine the experiments and reflections
+        experiments, reflections = combine(experiments, reflections, params)
+
+        # Save the reflections to file
+        logger.info("\n" + "-" * 80)
+        reflections.as_pickle(params.output.reflections)
+        logger.info(
+            "Saved {0} reflections to {1}".format(
+                len(reflections), params.output.reflections
+            )
+        )
+
+        # Save the experiments
+        from dxtbx.model.experiment_list import ExperimentListDumper
+
+        logger.info("Saving experiments to {0}".format(params.output.experiments))
+        dump = ExperimentListDumper(experiments)
+        dump.as_file(params.output.experiments)
+
+        # Print the time
+        logger.info("Time Taken: %f" % (time() - start_time))
 
 
-    # Print the time
-    logger.info("Time Taken: %f" % (time() - start_time))
+if __name__ == "__main__":
+    from dials.util import halraiser
 
-
-if __name__ == '__main__':
-  from dials.util import halraiser
-  try:
-    script = Script()
-    script.run()
-  except Exception as e:
-    halraiser(e)
+    try:
+        script = Script()
+        script.run()
+    except Exception as e:
+        halraiser(e)

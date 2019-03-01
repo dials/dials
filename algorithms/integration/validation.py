@@ -11,122 +11,125 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
+
 class ValidatedMultiExpProfileModeller(object):
-  '''
-  A class to wrap profile modeller for validation
+    """
+    A class to wrap profile modeller for validation
 
-  '''
+    """
 
-  def __init__(self):
-    '''
-    Init the list of modellers
+    def __init__(self):
+        """
+        Init the list of modellers
 
-    '''
-    self.modellers = []
-    self.finalized_modeller = None
+        """
+        self.modellers = []
+        self.finalized_modeller = None
 
-  def add(self, modeller):
-    '''
-    Add a MultiExpProfileModeller
+    def add(self, modeller):
+        """
+        Add a MultiExpProfileModeller
 
-    '''
-    self.modellers.append(modeller)
+        """
+        self.modellers.append(modeller)
 
-  def __getitem__(self, index):
-    '''
-    Get a modeller
+    def __getitem__(self, index):
+        """
+        Get a modeller
 
-    '''
-    return self.modellers[index]
+        """
+        return self.modellers[index]
 
-  def model(self, reflections):
-    '''
-    Do the modelling for all modellers
+    def model(self, reflections):
+        """
+        Do the modelling for all modellers
 
-    '''
-    from dials.array_family import flex
-    if 'profile.index' not in reflections:
-      assert(len(self.modellers) == 1)
-      self.modellers[0].model(reflections)
-    else:
-      for i, modeller in enumerate(self.modellers):
-        mask = reflections['profile.index'] != i
-        indices = flex.size_t(range(len(mask))).select(mask)
-        if len(indices) > 0:
-          subsample = reflections.select(indices)
-          modeller.model(subsample)
-          reflections.set_selected(indices, subsample)
+        """
+        from dials.array_family import flex
 
-  def validate(self, reflections):
-    '''
-    Do the validation.
+        if "profile.index" not in reflections:
+            assert len(self.modellers) == 1
+            self.modellers[0].model(reflections)
+        else:
+            for i, modeller in enumerate(self.modellers):
+                mask = reflections["profile.index"] != i
+                indices = flex.size_t(range(len(mask))).select(mask)
+                if len(indices) > 0:
+                    subsample = reflections.select(indices)
+                    modeller.model(subsample)
+                    reflections.set_selected(indices, subsample)
 
-    '''
-    from dials.array_family import flex
-    results = []
-    for i, modeller in enumerate(self.modellers):
-      mask = reflections['profile.index'] != i
-      indices = flex.size_t(range(len(mask))).select(mask)
-      if len(indices) > 0:
-        subsample = reflections.select(indices)
-        modeller.validate(subsample)
-        reflections.set_selected(indices, subsample)
-        corr = subsample['profile.correlation']
-        mean_corr = flex.mean(corr)
-      else:
-        mean_corr = None
-      results.append(mean_corr)
-    return results
+    def validate(self, reflections):
+        """
+        Do the validation.
 
-  def accumulate(self, other):
-    '''
-    Accumulate the modellers
+        """
+        from dials.array_family import flex
 
-    '''
-    assert(len(self) == len(other))
-    for ms, mo in zip(self, other):
-      ms.accumulate(mo)
+        results = []
+        for i, modeller in enumerate(self.modellers):
+            mask = reflections["profile.index"] != i
+            indices = flex.size_t(range(len(mask))).select(mask)
+            if len(indices) > 0:
+                subsample = reflections.select(indices)
+                modeller.validate(subsample)
+                reflections.set_selected(indices, subsample)
+                corr = subsample["profile.correlation"]
+                mean_corr = flex.mean(corr)
+            else:
+                mean_corr = None
+            results.append(mean_corr)
+        return results
 
-  def finalize(self):
-    '''
-    Finalize the model
+    def accumulate(self, other):
+        """
+        Accumulate the modellers
 
-    '''
-    assert not self.finalized()
-    for m in self:
-      if self.finalized_modeller is None:
-        self.finalized_modeller = m.copy()
-      else:
-        self.finalized_modeller.accumulate(m)
-      m.finalize()
-    self.finalized_modeller.finalize()
+        """
+        assert len(self) == len(other)
+        for ms, mo in zip(self, other):
+            ms.accumulate(mo)
 
-  def finalized(self):
-    '''
-    Check if the model has been finalized.
+    def finalize(self):
+        """
+        Finalize the model
 
-    '''
-    return self.finalized_modeller is not None
+        """
+        assert not self.finalized()
+        for m in self:
+            if self.finalized_modeller is None:
+                self.finalized_modeller = m.copy()
+            else:
+                self.finalized_modeller.accumulate(m)
+            m.finalize()
+        self.finalized_modeller.finalize()
 
-  def finalized_model(self):
-    '''
-    Get the finalized model
+    def finalized(self):
+        """
+        Check if the model has been finalized.
 
-    '''
-    assert self.finalized
-    return self.finalized_modeller
+        """
+        return self.finalized_modeller is not None
 
-  def __iter__(self):
-    '''
-    Iterate through the modellers
+    def finalized_model(self):
+        """
+        Get the finalized model
 
-    '''
-    for m in self.modellers:
-      yield m
+        """
+        assert self.finalized
+        return self.finalized_modeller
 
-  def __len__(self):
-    '''
-    Return the number of modellers
+    def __iter__(self):
+        """
+        Iterate through the modellers
 
-    '''
-    return len(self.modellers)
+        """
+        for m in self.modellers:
+            yield m
+
+    def __len__(self):
+        """
+        Return the number of modellers
+
+        """
+        return len(self.modellers)

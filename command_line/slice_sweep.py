@@ -14,13 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 from os.path import basename, splitext
 
-from dials.algorithms.refinement.refinement_helpers import \
-    calculate_frame_numbers
+from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
 from dxtbx.model.experiment_list import ExperimentList
 from dials.util import Sorry
 from scitbx.array_family import flex
 
-help_message = '''
+help_message = """
 
 Slice a sweep to produce a smaller sweep within the bounds of the original. If
 experiments or experiments are provided, modify the scan objects within these. If
@@ -39,11 +38,13 @@ Examples::
   dials.slice_sweep experiments.json reflections.pickle \
     "image_range=1 20" "image_range=5 30"
 
-'''
+"""
 
 # The phil scope
 from libtbx.phil import parse
-phil_scope = parse('''
+
+phil_scope = parse(
+    """
 
   output {
 
@@ -74,235 +75,261 @@ phil_scope = parse('''
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
 
-''')
+"""
+)
 
 
 def calculate_block_ranges(scan, block_size):
-  '''
+    """
 
-  :param scans
-  :type a scan object
-  :param block_size:
-  :type block_size: target block size in degrees'''
+    :param scans
+    :type a scan object
+    :param block_size:
+    :type block_size: target block size in degrees"""
 
-  image_ranges = []
-  nimages = scan.get_num_images()
-  osc_range = scan.get_oscillation_range(deg=True)
-  osc_width = abs(osc_range[1] - osc_range[0])
-  nblocks = max(int(round(osc_width / block_size)), 1)
-  nblocks = min(nblocks, nimages)
-  # equal sized blocks except the last one that may contain extra images
-  # to make up the remainder
-  nimages_per_block = [nimages // nblocks] * (nblocks - 1) + \
-    [nimages // nblocks + nimages % nblocks]
-  start = scan.get_image_range()[0]
-  for nim in nimages_per_block:
-    image_ranges.append((start, start + nim - 1))
-    start += nim
+    image_ranges = []
+    nimages = scan.get_num_images()
+    osc_range = scan.get_oscillation_range(deg=True)
+    osc_width = abs(osc_range[1] - osc_range[0])
+    nblocks = max(int(round(osc_width / block_size)), 1)
+    nblocks = min(nblocks, nimages)
+    # equal sized blocks except the last one that may contain extra images
+    # to make up the remainder
+    nimages_per_block = [nimages // nblocks] * (nblocks - 1) + [
+        nimages // nblocks + nimages % nblocks
+    ]
+    start = scan.get_image_range()[0]
+    for nim in nimages_per_block:
+        image_ranges.append((start, start + nim - 1))
+        start += nim
 
-  return image_ranges
+    return image_ranges
+
 
 def slice_experiments(experiments, image_ranges):
-  '''
+    """
 
-  :param experiments
-  :type experiments: dxtbx.model.experiment_list.ExperimentList
-  :param image_range:
-  :type image_range: list of 2-tuples defining scan range for each experiment'''
+    :param experiments
+    :type experiments: dxtbx.model.experiment_list.ExperimentList
+    :param image_range:
+    :type image_range: list of 2-tuples defining scan range for each experiment"""
 
-  # copy the experiments
-  import copy
-  experiments = copy.deepcopy(experiments)
+    # copy the experiments
+    import copy
 
-  if len(experiments) != len(image_ranges):
-    raise Sorry("Input experiment list and image_ranges are not of the same length")
+    experiments = copy.deepcopy(experiments)
 
-  for exp, sr in zip(experiments, image_ranges):
-    if sr is None: continue
-    im_range = exp.scan.get_image_range()
-    if sr[0] < im_range[0] or sr[1] > im_range[1]:
-      raise IndexError("requested slice outside current scan range")
+    if len(experiments) != len(image_ranges):
+        raise Sorry("Input experiment list and image_ranges are not of the same length")
 
-    # slicing uses the array range, not the image range
-    arr_start = exp.scan.get_array_range()[0]
-    beg = sr[0] - 1 - arr_start
-    end = sr[1] - arr_start
-    exp.scan.swap(exp.scan[beg:end])
+    for exp, sr in zip(experiments, image_ranges):
+        if sr is None:
+            continue
+        im_range = exp.scan.get_image_range()
+        if sr[0] < im_range[0] or sr[1] > im_range[1]:
+            raise IndexError("requested slice outside current scan range")
 
-  return experiments
+        # slicing uses the array range, not the image range
+        arr_start = exp.scan.get_array_range()[0]
+        beg = sr[0] - 1 - arr_start
+        end = sr[1] - arr_start
+        exp.scan.swap(exp.scan[beg:end])
+
+    return experiments
+
 
 def slice_reflections(reflections, image_ranges):
-  '''
+    """
 
-  :param reflections: reflection table of input reflections
-  :type reflections: dials.array_family.flex.reflection_table
-  :param image_range: list of 2-tuples defining scan range for each experiment
-                     id contained within the reflections
-  :type image_range: list of 2-tuples defining scan range for each experiment'''
+    :param reflections: reflection table of input reflections
+    :type reflections: dials.array_family.flex.reflection_table
+    :param image_range: list of 2-tuples defining scan range for each experiment
+                       id contained within the reflections
+    :type image_range: list of 2-tuples defining scan range for each experiment"""
 
-  # copy the reflections
-  import copy
-  reflections = copy.deepcopy(reflections)
+    # copy the reflections
+    import copy
 
-  to_keep = flex.size_t()
-  for iexp, sr in enumerate(image_ranges):
+    reflections = copy.deepcopy(reflections)
 
-    if sr is None: continue
-    isel = (reflections['id'] == iexp).iselection()
-    frames = (reflections['xyzobs.px.value'].parts()[2]).select(isel)
-    # reflns on image n have frames in range [n-1, n)
-    in_low_lim = frames >= sr[0] - 1
-    in_high_lim = frames < sr[1]
-    in_lim = in_low_lim & in_high_lim
+    to_keep = flex.size_t()
+    for iexp, sr in enumerate(image_ranges):
 
-    # which indices to keep?
-    sub_isel = isel.select(in_lim)
-    to_keep.extend(sub_isel)
+        if sr is None:
+            continue
+        isel = (reflections["id"] == iexp).iselection()
+        frames = (reflections["xyzobs.px.value"].parts()[2]).select(isel)
+        # reflns on image n have frames in range [n-1, n)
+        in_low_lim = frames >= sr[0] - 1
+        in_high_lim = frames < sr[1]
+        in_lim = in_low_lim & in_high_lim
 
-  # implictly also removes any reflections with ID outside the range of the
-  # length of image_ranges
-  return reflections.select(to_keep)
+        # which indices to keep?
+        sub_isel = isel.select(in_lim)
+        to_keep.extend(sub_isel)
+
+    # implictly also removes any reflections with ID outside the range of the
+    # length of image_ranges
+    return reflections.select(to_keep)
+
 
 class Script(object):
-  '''A class for running the script.'''
+    """A class for running the script."""
 
-  def __init__(self):
-    '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+    def __init__(self):
+        """Initialise the script."""
+        from dials.util.options import OptionParser
+        import libtbx.load_env
 
-    # The script usage
-    usage  = "usage: %s [options] [param.phil] " \
-             "experiments.json reflections.pickle" \
-               % libtbx.env.dispatcher_name
+        # The script usage
+        usage = (
+            "usage: %s [options] [param.phil] "
+            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+        )
 
-    # Create the parser
-    self.parser = OptionParser(
-      usage=usage,
-      phil=phil_scope,
-      read_reflections=True,
-      read_experiments=True,
-      check_format=False,
-      epilog=help_message)
+        # Create the parser
+        self.parser = OptionParser(
+            usage=usage,
+            phil=phil_scope,
+            read_reflections=True,
+            read_experiments=True,
+            check_format=False,
+            epilog=help_message,
+        )
 
-  def run(self):
-    '''Execute the script.'''
+    def run(self):
+        """Execute the script."""
 
-    from dials.util.options import flatten_reflections, flatten_experiments, \
-      flatten_experiments
+        from dials.util.options import (
+            flatten_reflections,
+            flatten_experiments,
+            flatten_experiments,
+        )
 
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+        # Parse the command line
+        params, options = self.parser.parse_args(show_diff_phil=True)
+        reflections = flatten_reflections(params.input.reflections)
+        experiments = flatten_experiments(params.input.experiments)
 
-    # Try to load the models and data
-    slice_exps = len(experiments) > 0
-    slice_refs = len(reflections) > 0
+        # Try to load the models and data
+        slice_exps = len(experiments) > 0
+        slice_refs = len(reflections) > 0
 
-    # Catch case of nothing to do
-    if not any([slice_exps, slice_refs]):
-      print("No suitable input provided")
-      self.parser.print_help()
-      return
+        # Catch case of nothing to do
+        if not any([slice_exps, slice_refs]):
+            print("No suitable input provided")
+            self.parser.print_help()
+            return
 
-    if reflections:
-      if len(reflections) > 1:
-        raise Sorry("Only one reflections list can be imported at present")
-      reflections = reflections[0]
+        if reflections:
+            if len(reflections) > 1:
+                raise Sorry("Only one reflections list can be imported at present")
+            reflections = reflections[0]
 
-      # calculate frame numbers if needed
-      if experiments:
-        reflections = calculate_frame_numbers(reflections, experiments)
+            # calculate frame numbers if needed
+            if experiments:
+                reflections = calculate_frame_numbers(reflections, experiments)
 
-      # if we still don't have the right column give up
-      if 'xyzobs.px.value' not in reflections:
-        raise Sorry("These reflections do not have frame numbers set, and "
-          "there are no experiments provided to calculate these.")
+            # if we still don't have the right column give up
+            if "xyzobs.px.value" not in reflections:
+                raise Sorry(
+                    "These reflections do not have frame numbers set, and "
+                    "there are no experiments provided to calculate these."
+                )
 
-    # set trivial case where no scan range is provided at all
-    if not params.image_range:
-      params.image_range = [None]
+        # set trivial case where no scan range is provided at all
+        if not params.image_range:
+            params.image_range = [None]
 
-    # check if slicing into blocks
-    if params.block_size is not None:
-      if slice_exps:
-        if len(experiments) > 1:
-          raise Sorry("For slicing into blocks please provide a single "
-                      "scan only")
-        scan = experiments[0].scan
+        # check if slicing into blocks
+        if params.block_size is not None:
+            if slice_exps:
+                if len(experiments) > 1:
+                    raise Sorry(
+                        "For slicing into blocks please provide a single " "scan only"
+                    )
+                scan = experiments[0].scan
 
-      # Having extracted the scan, calculate the blocks
-      params.image_range = calculate_block_ranges(scan, params.block_size)
+            # Having extracted the scan, calculate the blocks
+            params.image_range = calculate_block_ranges(scan, params.block_size)
 
-      # Do the slicing then recombine
-      if slice_exps:
-        sliced = [slice_experiments(experiments, [sr])[0] \
-          for sr in params.image_range]
-        sliced_experiments = ExperimentList()
-        for exp in sliced:
-          sliced_experiments.append(exp)
+            # Do the slicing then recombine
+            if slice_exps:
+                sliced = [
+                    slice_experiments(experiments, [sr])[0] for sr in params.image_range
+                ]
+                sliced_experiments = ExperimentList()
+                for exp in sliced:
+                    sliced_experiments.append(exp)
 
-      # slice reflections if present
-      if slice_refs:
-        sliced = [slice_reflections(reflections, [sr]) \
-          for sr in params.image_range]
-        sliced_reflections = sliced[0]
-        for i, rt in enumerate(sliced[1:]):
-          rt['id'] += (i + 1) # set id
-          sliced_reflections.extend(rt)
+            # slice reflections if present
+            if slice_refs:
+                sliced = [
+                    slice_reflections(reflections, [sr]) for sr in params.image_range
+                ]
+                sliced_reflections = sliced[0]
+                for i, rt in enumerate(sliced[1:]):
+                    rt["id"] += i + 1  # set id
+                    sliced_reflections.extend(rt)
 
-    else:
-      # slice each dataset into the requested subset
-      if slice_exps:
-        sliced_experiments = slice_experiments(experiments, params.image_range)
-      if slice_refs:
-        sliced_reflections = slice_reflections(reflections, params.image_range)
-
-    # Save sliced experiments
-    if slice_exps:
-      output_experiments_filename = params.output.experiments_filename
-      if output_experiments_filename is None:
-        # take first filename as template
-        bname = basename(params.input.experiments[0].filename)
-        bname = splitext(bname)[0]
-        if not bname: bname = "experiments"
-        if len(params.image_range) == 1 and params.image_range[0] is not None:
-          ext = "_{0}_{1}.json".format(*params.image_range[0])
         else:
-          ext = "_sliced.json"
-        output_experiments_filename = bname + ext
-      print('Saving sliced experiments to {0}'.format(
-        output_experiments_filename))
+            # slice each dataset into the requested subset
+            if slice_exps:
+                sliced_experiments = slice_experiments(experiments, params.image_range)
+            if slice_refs:
+                sliced_reflections = slice_reflections(reflections, params.image_range)
 
-      from dxtbx.model.experiment_list import ExperimentListDumper
-      dump = ExperimentListDumper(sliced_experiments)
-      dump.as_json(output_experiments_filename)
+        # Save sliced experiments
+        if slice_exps:
+            output_experiments_filename = params.output.experiments_filename
+            if output_experiments_filename is None:
+                # take first filename as template
+                bname = basename(params.input.experiments[0].filename)
+                bname = splitext(bname)[0]
+                if not bname:
+                    bname = "experiments"
+                if len(params.image_range) == 1 and params.image_range[0] is not None:
+                    ext = "_{0}_{1}.json".format(*params.image_range[0])
+                else:
+                    ext = "_sliced.json"
+                output_experiments_filename = bname + ext
+            print(
+                "Saving sliced experiments to {0}".format(output_experiments_filename)
+            )
 
-    # Save sliced reflections
-    if slice_refs:
-      output_reflections_filename = params.output.reflections_filename
-      if output_reflections_filename is None:
-        # take first filename as template
-        bname = basename(params.input.reflections[0].filename)
-        bname = splitext(bname)[0]
-        if not bname: bname = "reflections"
-        if len(params.image_range) == 1 and params.image_range[0] is not None:
-          ext = "_{0}_{1}.pickle".format(*params.image_range[0])
-        else:
-          ext = "_sliced.pickle"
-        output_reflections_filename = bname + ext
+            from dxtbx.model.experiment_list import ExperimentListDumper
 
-      print('Saving sliced reflections to {0}'.format(
-        output_reflections_filename))
-      sliced_reflections.as_pickle(output_reflections_filename)
+            dump = ExperimentListDumper(sliced_experiments)
+            dump.as_json(output_experiments_filename)
 
-    return
+        # Save sliced reflections
+        if slice_refs:
+            output_reflections_filename = params.output.reflections_filename
+            if output_reflections_filename is None:
+                # take first filename as template
+                bname = basename(params.input.reflections[0].filename)
+                bname = splitext(bname)[0]
+                if not bname:
+                    bname = "reflections"
+                if len(params.image_range) == 1 and params.image_range[0] is not None:
+                    ext = "_{0}_{1}.pickle".format(*params.image_range[0])
+                else:
+                    ext = "_sliced.pickle"
+                output_reflections_filename = bname + ext
 
-if __name__ == '__main__':
-  from dials.util import halraiser
-  try:
-    script = Script()
-    script.run()
-  except Exception as e:
-    halraiser(e)
+            print(
+                "Saving sliced reflections to {0}".format(output_reflections_filename)
+            )
+            sliced_reflections.as_pickle(output_reflections_filename)
+
+        return
+
+
+if __name__ == "__main__":
+    from dials.util import halraiser
+
+    try:
+        script = Script()
+        script.run()
+    except Exception as e:
+        halraiser(e)

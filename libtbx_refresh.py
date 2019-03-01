@@ -4,65 +4,77 @@ import os
 
 import libtbx.pkg_utils
 
-libtbx.pkg_utils.define_entry_points({
-  'dxtbx.profile_model': [
-    'gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt',
-  ],
-  'dxtbx.scaling_model_ext': [
-    'physical = dials.algorithms.scaling.model.scaling_model_ext:PhysicalScalingModelExt',
-    'KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt',
-    'array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt',
-  ]})
+libtbx.pkg_utils.define_entry_points(
+    {
+        "dxtbx.profile_model": [
+            "gaussian_rs = dials.extensions.gaussian_rs_profile_model_ext:GaussianRSProfileModelExt"
+        ],
+        "dxtbx.scaling_model_ext": [
+            "physical = dials.algorithms.scaling.model.scaling_model_ext:PhysicalScalingModelExt",
+            "KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt",
+            "array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt",
+        ],
+    }
+)
 
 
 try:
-  from dials.util.version import dials_version
-  print(dials_version())
+    from dials.util.version import dials_version
+
+    print(dials_version())
 except Exception:
-  pass
-
-import libtbx.pkg_utils
-os.environ["DISABLE_BLOSC_AVX2"] = "1" # disable AVX2 instruction set for blosc installation
-libtbx.pkg_utils.require('blosc')
-libtbx.pkg_utils.require('mock', '>=2.0')
-libtbx.pkg_utils.require('msgpack')
-libtbx.pkg_utils.require('orderedset')
-libtbx.pkg_utils.require('pytest', '>=3.6')
-libtbx.pkg_utils.require('Jinja2')
-libtbx.pkg_utils.require('procrunner', '>=0.6')
-libtbx.pkg_utils.require('scipy')
-libtbx.pkg_utils.require('scikit_learn[alldeps]')
-libtbx.pkg_utils.require('tqdm', '==4.23.4')
-
-def _install_dials_autocompletion():
-  '''generate bash.sh and SConscript file in /build/dials/autocomplete'''
-  import libtbx.load_env
-  import os # required due to cctbx weirdness
-
-  # Find the dials source directory
-  dist_path = libtbx.env.dist_path('dials')
-
-  # Set the location of the output directory
-  output_directory = libtbx.env.under_build(os.path.join('dials', 'autocomplete'))
-  try:
-    os.makedirs(output_directory)
-  except OSError:
     pass
 
-  commands_dir = os.path.join(dist_path, 'command_line')
-  command_list = []
-  print('Identifying autocompletable commands:', end=' ')
-  for file in sorted(os.listdir(commands_dir)):
-    if not file.startswith('_') and file.endswith('.py'):
-      if 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in open(os.path.join(commands_dir, file)).read():
-        command_name = 'dials.%s' % file[:-3]
-        print(command_name, end=' ')
-        command_list.append(command_name)
-  print()
+import libtbx.pkg_utils
 
-  # Generate the autocompletion SConscript.
-  with open(os.path.join(output_directory, 'SConscript'), 'w') as builder:
-    builder.write('''Import("env")
+os.environ[
+    "DISABLE_BLOSC_AVX2"
+] = "1"  # disable AVX2 instruction set for blosc installation
+libtbx.pkg_utils.require("blosc")
+libtbx.pkg_utils.require("mock", ">=2.0")
+libtbx.pkg_utils.require("msgpack")
+libtbx.pkg_utils.require("orderedset")
+libtbx.pkg_utils.require("pytest", ">=3.6")
+libtbx.pkg_utils.require("Jinja2")
+libtbx.pkg_utils.require("procrunner", ">=0.6")
+libtbx.pkg_utils.require("scipy")
+libtbx.pkg_utils.require("scikit_learn[alldeps]")
+libtbx.pkg_utils.require("tqdm", "==4.23.4")
+
+
+def _install_dials_autocompletion():
+    """generate bash.sh and SConscript file in /build/dials/autocomplete"""
+    import libtbx.load_env
+    import os  # required due to cctbx weirdness
+
+    # Find the dials source directory
+    dist_path = libtbx.env.dist_path("dials")
+
+    # Set the location of the output directory
+    output_directory = libtbx.env.under_build(os.path.join("dials", "autocomplete"))
+    try:
+        os.makedirs(output_directory)
+    except OSError:
+        pass
+
+    commands_dir = os.path.join(dist_path, "command_line")
+    command_list = []
+    print("Identifying autocompletable commands:", end=" ")
+    for file in sorted(os.listdir(commands_dir)):
+        if not file.startswith("_") and file.endswith(".py"):
+            if (
+                "DIALS_ENABLE_COMMAND_LINE_COMPLETION"
+                in open(os.path.join(commands_dir, file)).read()
+            ):
+                command_name = "dials.%s" % file[:-3]
+                print(command_name, end=" ")
+                command_list.append(command_name)
+    print()
+
+    # Generate the autocompletion SConscript.
+    with open(os.path.join(output_directory, "SConscript"), "w") as builder:
+        builder.write(
+            """Import("env")
 import os.path
 import libtbx.load_env
 def dispatcher_outer(name):
@@ -76,43 +88,53 @@ for cmd in [%s]:
   Requires(ac, Dir(libtbx.env.under_build('lib')))
   Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'options.py'))
   Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'autocomplete.sh'))
-''' % ', '.join(["'%s'" % cmd for cmd in command_list]))
+"""
+            % ", ".join(["'%s'" % cmd for cmd in command_list])
+        )
 
-  # Generate a bash script activating command line completion for each relevant command
-  with open(os.path.join(output_directory, 'bash.sh'), 'w') as script:
-    script.write("type compopt &>/dev/null && {\n")
-    for cmd in command_list:
-      script.write(" complete -F _dials_autocomplete %s\n" % cmd)
-    script.write("}\n")
-    script.write("type compopt &>/dev/null || {\n")
-    for cmd in command_list:
-      script.write(" complete -o nospace -F _dials_autocomplete %s\n" % cmd)
-    script.write("}\n")
+    # Generate a bash script activating command line completion for each relevant command
+    with open(os.path.join(output_directory, "bash.sh"), "w") as script:
+        script.write("type compopt &>/dev/null && {\n")
+        for cmd in command_list:
+            script.write(" complete -F _dials_autocomplete %s\n" % cmd)
+        script.write("}\n")
+        script.write("type compopt &>/dev/null || {\n")
+        for cmd in command_list:
+            script.write(" complete -o nospace -F _dials_autocomplete %s\n" % cmd)
+        script.write("}\n")
 
-  # Find the dials build directory
-  build_path = abs(libtbx.env.build_path)
+    # Find the dials build directory
+    build_path = abs(libtbx.env.build_path)
 
-  # Permanently install the autocompletion script into setpaths-scripts.
-  print("Installing autocompletion script into:", end=' ')
-  for file in os.listdir(build_path):
-    if file.startswith('setpath') and file.endswith('.sh'):
-      original_file = open(os.path.join(build_path, file)).read()
-      if not 'DIALS_ENABLE_COMMAND_LINE_COMPLETION' in original_file:
-        marker = "\nexport PATH\n"
-        original_position = original_file.find(marker)
-        if original_position >= 0:
-          print(file, end=' ')
-          insert_position = original_position + len(marker)
-          added_script = \
-            '# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n' \
-            '[ -n "$BASH_VERSION" ] && {\n' \
-            ' source $(libtbx.find_in_repositories dials/util/autocomplete.sh) && source %s || echo dials command line completion not available\n' \
-            '}\n' % (
-              os.path.join('$LIBTBX_BUILD', 'dials', 'autocomplete', 'bash.sh'))
-          with open(os.path.join(build_path, file), 'w') as script:
-            script.write(original_file[:insert_position] +
-                         added_script +
-                         original_file[insert_position:])
-  print()
+    # Permanently install the autocompletion script into setpaths-scripts.
+    print("Installing autocompletion script into:", end=" ")
+    for file in os.listdir(build_path):
+        if file.startswith("setpath") and file.endswith(".sh"):
+            original_file = open(os.path.join(build_path, file)).read()
+            if not "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in original_file:
+                marker = "\nexport PATH\n"
+                original_position = original_file.find(marker)
+                if original_position >= 0:
+                    print(file, end=" ")
+                    insert_position = original_position + len(marker)
+                    added_script = (
+                        "# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n"
+                        '[ -n "$BASH_VERSION" ] && {\n'
+                        " source $(libtbx.find_in_repositories dials/util/autocomplete.sh) && source %s || echo dials command line completion not available\n"
+                        "}\n"
+                        % (
+                            os.path.join(
+                                "$LIBTBX_BUILD", "dials", "autocomplete", "bash.sh"
+                            )
+                        )
+                    )
+                    with open(os.path.join(build_path, file), "w") as script:
+                        script.write(
+                            original_file[:insert_position]
+                            + added_script
+                            + original_file[insert_position:]
+                        )
+    print()
+
 
 _install_dials_autocompletion()

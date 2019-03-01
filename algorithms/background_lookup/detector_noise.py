@@ -12,46 +12,49 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
+
 class ComputeDetectorNoise(object):
-  '''Calculate the detector noise. Estimate this by calculating the mean
-  of the corner pixels in a series of images and return a constant.'''
+    """Calculate the detector noise. Estimate this by calculating the mean
+    of the corner pixels in a series of images and return a constant."""
 
-  def __init__(self):
-    '''Initialise the algorithm.'''
-    from scitbx.array_family import flex
-    self._pixels = flex.int()
+    def __init__(self):
+        """Initialise the algorithm."""
+        from scitbx.array_family import flex
 
-  def add(self, image):
-    '''Add another image to the calculation.
+        self._pixels = flex.int()
 
-    Params:
-        image The image to use
+    def add(self, image):
+        """Add another image to the calculation.
 
-    '''
-    # Get size of the image
-    height, width = image.all()
+        Params:
+            image The image to use
 
-    # Add pixels to the list
-    self._pixels.append(image[0,0])
-    self._pixels.append(image[0,width-1])
-    self._pixels.append(image[height-1,0])
-    self._pixels.append(image[height-1,width-1])
+        """
+        # Get size of the image
+        height, width = image.all()
 
-  def pixels(self):
-    '''Get the pixels used in the calculation.
+        # Add pixels to the list
+        self._pixels.append(image[0, 0])
+        self._pixels.append(image[0, width - 1])
+        self._pixels.append(image[height - 1, 0])
+        self._pixels.append(image[height - 1, width - 1])
 
-    Returns:
-        The array of pixel intensities
+    def pixels(self):
+        """Get the pixels used in the calculation.
 
-    '''
-    return self._pixels
+        Returns:
+            The array of pixel intensities
 
-  def compute(self):
-    '''Compute the noise.
+        """
+        return self._pixels
 
-    Returns:
-        The calculated detector noise
+    def compute(self):
+        """Compute the noise.
 
-    '''
-    from scitbx.array_family import flex
-    return flex.mean(self._pixels.as_double())
+        Returns:
+            The calculated detector noise
+
+        """
+        from scitbx.array_family import flex
+
+        return flex.mean(self._pixels.as_double())

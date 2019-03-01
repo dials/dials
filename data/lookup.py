@@ -12,7 +12,8 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 from libtbx.phil import parse
 
-phil_scope = parse('''
+phil_scope = parse(
+    """
 
 lookup
   .help = "Parameters specifying lookup file path"
@@ -22,4 +23,5 @@ lookup
     .type = str
 }
 
-''')
+"""
+)

@@ -15,15 +15,15 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 
 try:
-  # try importing scipy.linalg before any cctbx modules to avoid segfault on
-  # some platforms
-  import scipy.linalg # import dependency
+    # try importing scipy.linalg before any cctbx modules to avoid segfault on
+    # some platforms
+    import scipy.linalg  # import dependency
 except ImportError:
-  pass
+    pass
 
 from cmd import Cmd
 
-help_message = '''
+help_message = """
 
 This program is an interactive console mode for the dials command line programs.
 It provides convient access to the following dials programs
@@ -89,449 +89,454 @@ Examples::
   export
   EOF
 
-'''
+"""
+
 
 def print_error(exception):
-  '''
-  Print out the error message
+    """
+    Print out the error message
 
-  '''
-  print('')
-  print('*' * 80)
-  print('USER ERROR: PLEASE REPLACE USER')
-  print('')
-  print(exception)
-  print('*' * 80)
-  print('')
+    """
+    print("")
+    print("*" * 80)
+    print("USER ERROR: PLEASE REPLACE USER")
+    print("")
+    print(exception)
+    print("*" * 80)
+    print("")
 
 
 class Console(Cmd):
-  '''
-  A class to implement an interactive dials console
+    """
+    A class to implement an interactive dials console
 
-  '''
+    """
 
-  # The default prompt
-  prompt = ">> "
+    # The default prompt
+    prompt = ">> "
 
-  def __init__(self):
-    '''
-    Initialise the console
+    def __init__(self):
+        """
+        Initialise the console
 
-    '''
-    from dials.util.idials import Controller
+        """
+        from dials.util.idials import Controller
 
-    # Initialise the console base
-    Cmd.__init__(self)
+        # Initialise the console base
+        Cmd.__init__(self)
 
-    # Open a file for history
-    self.command_history = open("command_history", "a")
+        # Open a file for history
+        self.command_history = open("command_history", "a")
 
-    # Create the controller object
-    self.controller = Controller()
+        # Create the controller object
+        self.controller = Controller()
 
-    # Set the prompt to show the current mode
-    self.prompt = "%s >> " % self.controller.get_mode()
+        # Set the prompt to show the current mode
+        self.prompt = "%s >> " % self.controller.get_mode()
 
-  def precmd(self, line):
-    '''
-    Process command before
+    def precmd(self, line):
+        """
+        Process command before
 
-    '''
-    # Add command history to file
-    self.command_history.write("%s\n" % line)
-    self.command_history.flush()
+        """
+        # Add command history to file
+        self.command_history.write("%s\n" % line)
+        self.command_history.flush()
 
-    # Call parent
-    return Cmd.precmd(self, line)
+        # Call parent
+        return Cmd.precmd(self, line)
 
-  def emptyline(self):
-    ''' Do nothing on empty line '''
-    pass
+    def emptyline(self):
+        """ Do nothing on empty line """
+        pass
 
-  def default(self, line):
-    ''' The default line handler '''
-    try:
-      self.controller.set_parameters(line, short_syntax=True)
-    except Exception:
-      return Cmd.default(self, line)
-
-  def do_mode(self, mode):
-    ''' Set the program mode '''
-    try:
-      self.controller.set_mode(mode)
-      self.prompt = "%s >> " % self.controller.get_mode()
-    except Exception as e:
-      print_error(e)
-
-  def do_models(self, line):
-    ''' Show the models '''
-    import subprocess
-    try:
-      filename = self.controller.get_models()
-      if filename is None:
-        raise RuntimeError('No models to show')
-      subprocess.call('dials.show %s' % filename, shell=True)
-    except Exception as e:
-      print_error(e)
-
-  def do_summary(self, line):
-    ''' Get the report. '''
-    try:
-      filename = self.controller.get_summary()
-      if filename is None:
-        raise RuntimeError('No result to show')
-      print('For report, see: %s' % filename)
-    except Exception as e:
-      print_error(e)
-
-  def do_report(self, line):
-    ''' Get the results. '''
-    try:
-      import webbrowser
-      filename = self.controller.get_report()
-      if filename is None:
-        raise RuntimeError('No result to show')
-      webbrowser.open('file://%s' % filename)
-    except Exception as e:
-      print_error(e)
-
-  def do_set(self, parameter):
-    ''' Set a phil parameter '''
-    try:
-      self.controller.set_parameters(parameter, short_syntax=True)
-    except Exception as e:
-      print_error(e)
-
-  def do_reset(self, line):
-    ''' Reset parameters to default. '''
-    try:
-      self.controller.reset_parameters()
-    except Exception as e:
-      print_error(e)
-
-  def do_undo(self, line):
-    ''' Undo parameters. '''
-    try:
-      self.controller.undo_parameters()
-      print(self.controller.get_parameters(diff=True).as_str())
-    except Exception as e:
-      print_error(e)
-
-  def do_redo(self, line):
-    ''' Redo parameters. '''
-    try:
-      self.controller.redo_parameters()
-      print(self.controller.get_parameters(diff=True).as_str())
-    except Exception as e:
-      print_error(e)
-
-  def do_load(self, filename):
-    ''' Load a phil parameter file '''
-    try:
-      with open(filename) as infile:
-        self.controller.set_parameters(infile.read())
-    except Exception as e:
-      print_error(e)
-
-  def do_run(self, line):
-    ''' Run a program '''
-    try:
-      self.controller.run().wait()
-      self.print_history()
-    except Exception as e:
-      print_error(e)
-
-  def do_goto(self, line):
-    ''' Goto a particular history state '''
-    try:
-      self.controller.goto(int(line))
-      self.print_history()
-    except Exception as e:
-      print_error(e)
-
-  def do_get(self, line):
-    ''' Show all the possible parameters '''
-    print(self.controller.get_parameters(diff=True).as_str())
-
-  def do_all(self, line):
-    ''' Show all the possible parameters '''
-    print(self.controller.get_parameters(diff=False).as_str())
-
-  def do_history(self, line):
-    ''' Show the history. '''
-    self.print_history()
-
-  def do_import(self, line):
-    ''' Imperative import command '''
-    self.run_import_as_imperative(line)
-
-  def do_find_spots(self, params):
-    ''' Imperative find_spots command '''
-    self.run_as_imperative("find_spots", params)
-
-  def do_search_beam_position(self, params):
-    ''' Imperative search_beam_position command '''
-    self.run_as_imperative("search_beam_position", params)
-
-  def do_index(self, params):
-    ''' Imperative index command '''
-    self.run_as_imperative("index", params)
-
-  def do_refine_bravais_settings(self, params):
-    ''' Imperative refine_bravais_settings command '''
-    self.run_as_imperative("refine_bravais_settings", params)
-
-  def do_reindex(self, params):
-    ''' Imperative reindex command '''
-    self.run_as_imperative("reindex", params)
-
-  def do_refine(self, params):
-    ''' Imperative refine command '''
-    self.run_as_imperative("refine", params)
-
-  def do_integrate(self, params):
-    ''' Imperative integrate command '''
-    self.run_as_imperative("integrate", params)
-
-  def do_export(self, params):
-    ''' Imperative export command '''
-    self.run_as_imperative("export", params)
-
-  def do_exit(self, line):
-    ''' Exit the console '''
-    return True
-
-  def do_EOF(self, line):
-    ''' Exit the console '''
-    print('')
-    return True
-
-  def do_shell(self, line):
-    ''' Execute shell commands '''
-    import subprocess
-    try:
-      subprocess.call(line, shell=True)
-    except Exception as e:
-      print_error(e)
-
-  def run_import_as_imperative(self, line):
-    '''
-    Helper for import imperative mode. Change mode, set parameters and run the job
-
-    '''
-    self.run_as_imperative("import", self.parse_import_line(line))
-
-  def run_as_imperative(self, mode, parameters):
-    '''
-    Helper for imperative mode. Change mode, set parameters and run the job
-
-    '''
-    try:
-      self.controller.set_mode(mode)
-      self.prompt = "%s >> " % self.controller.get_mode()
-      self.controller.set_parameters(parameters, short_syntax=True)
-      self.controller.run().wait()
-      self.controller.undo_parameters()
-      self.print_history()
-    except Exception as e:
-      print_error(e)
-
-  def parse_import_line(self, line):
-    ''' Given a line after the import command. Figure out phil and filenames
-
-    Split line like a shell command line. Then check each argument. If an
-    argument is a directory, then find templates in that directory. Otherwise,
-    Find files matching the argument using the glob module and generate
-    templates from the matches. If there are no matches then input as a phil
-    parameter.
-
-    '''
-    from os import listdir
-    from os.path import isdir, isfile, join
-    from glob import glob
-    from dxtbx.model.scan_helpers import template_regex
-    import shlex
-    def templates_from_filenames(filenames):
-      templates = []
-      for f in filenames:
+    def default(self, line):
+        """ The default line handler """
         try:
-          templates.append(template_regex(f)[0])
+            self.controller.set_parameters(line, short_syntax=True)
         except Exception:
-          pass
-      return list(set(templates))
-    def templates_from_directory(directory):
-      filenames = []
-      for f in listdir(directory):
-        if isfile(join(directory, f)):
-          filenames.append(join(directory, f))
-      return templates_from_filenames(sorted(filenames))
-    parameters = []
-    arguments = shlex.split(line)
-    for arg in arguments:
-      if isdir(arg):
-        templates = templates_from_directory(arg)
-        for t in templates:
-          parameters.append("template=%s" % t)
-      else:
-        matches = glob(arg)
-        if len(matches) > 0:
-          templates = templates_from_filenames(matches)
-          for t in templates:
-            parameters.append("template=%s" % t)
-        else:
-          parameters.append(arg)
-    return ' '.join(parameters)
+            return Cmd.default(self, line)
 
-  def print_history(self):
-    '''
-    Print the history
+    def do_mode(self, mode):
+        """ Set the program mode """
+        try:
+            self.controller.set_mode(mode)
+            self.prompt = "%s >> " % self.controller.get_mode()
+        except Exception as e:
+            print_error(e)
 
-    '''
-    print('')
-    print('History')
-    print(self.controller.get_history())
+    def do_models(self, line):
+        """ Show the models """
+        import subprocess
 
-  def complete_mode(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for changing mode.
+        try:
+            filename = self.controller.get_models()
+            if filename is None:
+                raise RuntimeError("No models to show")
+            subprocess.call("dials.show %s" % filename, shell=True)
+        except Exception as e:
+            print_error(e)
 
-    '''
-    return [i for i in self.controller.mode_list if i.startswith(text)]
+    def do_summary(self, line):
+        """ Get the report. """
+        try:
+            filename = self.controller.get_summary()
+            if filename is None:
+                raise RuntimeError("No result to show")
+            print("For report, see: %s" % filename)
+        except Exception as e:
+            print_error(e)
 
-  def complete_set(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for setting parameters
+    def do_report(self, line):
+        """ Get the results. """
+        try:
+            import webbrowser
 
-    '''
-    return self.get_phil_completions(text)
+            filename = self.controller.get_report()
+            if filename is None:
+                raise RuntimeError("No result to show")
+            webbrowser.open("file://%s" % filename)
+        except Exception as e:
+            print_error(e)
 
-  def complete_load(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for loading phil files
+    def do_set(self, parameter):
+        """ Set a phil parameter """
+        try:
+            self.controller.set_parameters(parameter, short_syntax=True)
+        except Exception as e:
+            print_error(e)
 
-    '''
-    return get_path_completions(text, line, begidx, endidx)
+    def do_reset(self, line):
+        """ Reset parameters to default. """
+        try:
+            self.controller.reset_parameters()
+        except Exception as e:
+            print_error(e)
 
-  def complete_import(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for import
+    def do_undo(self, line):
+        """ Undo parameters. """
+        try:
+            self.controller.undo_parameters()
+            print(self.controller.get_parameters(diff=True).as_str())
+        except Exception as e:
+            print_error(e)
 
-    '''
-    return self.get_phil_completions(text, mode="import")
+    def do_redo(self, line):
+        """ Redo parameters. """
+        try:
+            self.controller.redo_parameters()
+            print(self.controller.get_parameters(diff=True).as_str())
+        except Exception as e:
+            print_error(e)
 
+    def do_load(self, filename):
+        """ Load a phil parameter file """
+        try:
+            with open(filename) as infile:
+                self.controller.set_parameters(infile.read())
+        except Exception as e:
+            print_error(e)
 
-  def complete_find_spots(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for find_spots
+    def do_run(self, line):
+        """ Run a program """
+        try:
+            self.controller.run().wait()
+            self.print_history()
+        except Exception as e:
+            print_error(e)
 
-    '''
-    return self.get_phil_completions(text, mode="find_spots")
+    def do_goto(self, line):
+        """ Goto a particular history state """
+        try:
+            self.controller.goto(int(line))
+            self.print_history()
+        except Exception as e:
+            print_error(e)
 
-  def complete_search_beam_position(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for search_beam_position
+    def do_get(self, line):
+        """ Show all the possible parameters """
+        print(self.controller.get_parameters(diff=True).as_str())
 
-    '''
-    return self.get_phil_completions(text, mode="search_beam_position")
+    def do_all(self, line):
+        """ Show all the possible parameters """
+        print(self.controller.get_parameters(diff=False).as_str())
 
-  def complete_index(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for index
+    def do_history(self, line):
+        """ Show the history. """
+        self.print_history()
 
-    '''
-    return self.get_phil_completions(text, mode="index")
+    def do_import(self, line):
+        """ Imperative import command """
+        self.run_import_as_imperative(line)
 
-  def complete_refine_bravais_settings(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for refine_bravais_settings
+    def do_find_spots(self, params):
+        """ Imperative find_spots command """
+        self.run_as_imperative("find_spots", params)
 
-    '''
-    return self.get_phil_completions(text, mode="refine_bravais_settings")
+    def do_search_beam_position(self, params):
+        """ Imperative search_beam_position command """
+        self.run_as_imperative("search_beam_position", params)
 
-  def complete_reindex(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for reindex
+    def do_index(self, params):
+        """ Imperative index command """
+        self.run_as_imperative("index", params)
 
-    '''
-    return self.get_phil_completions(text, mode="reindex")
+    def do_refine_bravais_settings(self, params):
+        """ Imperative refine_bravais_settings command """
+        self.run_as_imperative("refine_bravais_settings", params)
 
-  def complete_refine(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for refine
+    def do_reindex(self, params):
+        """ Imperative reindex command """
+        self.run_as_imperative("reindex", params)
 
-    '''
-    return self.get_phil_completions(text, mode="refine")
+    def do_refine(self, params):
+        """ Imperative refine command """
+        self.run_as_imperative("refine", params)
 
+    def do_integrate(self, params):
+        """ Imperative integrate command """
+        self.run_as_imperative("integrate", params)
 
-  def complete_integrate(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for integrate
+    def do_export(self, params):
+        """ Imperative export command """
+        self.run_as_imperative("export", params)
 
-    '''
-    return self.get_phil_completions(text, mode="integrate")
+    def do_exit(self, line):
+        """ Exit the console """
+        return True
 
-  def complete_export(self, text, line, begidx, endidx):
-    '''
-    Offer tab completion options for export
+    def do_EOF(self, line):
+        """ Exit the console """
+        print("")
+        return True
 
-    '''
-    return self.get_phil_completions(text, mode="export")
+    def do_shell(self, line):
+        """ Execute shell commands """
+        import subprocess
 
-  def get_phil_completions(self, text, mode=None):
-    '''
-    Get completions for phil parameters
+        try:
+            subprocess.call(line, shell=True)
+        except Exception as e:
+            print_error(e)
 
-    '''
-    phil_scope = self.controller.get_parameters(diff=False, mode=mode)
-    definitions = phil_scope.all_definitions()
-    full_names = [d.path for d in definitions]
-    return [i for i in full_names if text in i]
+    def run_import_as_imperative(self, line):
+        """
+        Helper for import imperative mode. Change mode, set parameters and run the job
 
-  def get_path_completions(self, text, line, begidx, endidx):
-    '''
-    Get completions for paths
+        """
+        self.run_as_imperative("import", self.parse_import_line(line))
 
-    '''
-    import os
-    from os.path import isdir
-    import glob
+    def run_as_imperative(self, mode, parameters):
+        """
+        Helper for imperative mode. Change mode, set parameters and run the job
 
-    def _append_slash_if_dir(p):
-      if p and isdir(p) and p[-1] != os.sep:
-        return p + os.sep
-      else:
-        return p
+        """
+        try:
+            self.controller.set_mode(mode)
+            self.prompt = "%s >> " % self.controller.get_mode()
+            self.controller.set_parameters(parameters, short_syntax=True)
+            self.controller.run().wait()
+            self.controller.undo_parameters()
+            self.print_history()
+        except Exception as e:
+            print_error(e)
 
-    before_arg = line.rfind(" ", 0, begidx)
-    if before_arg == -1:
-      return # arg not found
+    def parse_import_line(self, line):
+        """Given a line after the import command. Figure out phil and filenames
 
-    fixed = line[before_arg+1:begidx]  # fixed portion of the arg
-    arg = line[before_arg+1:endidx]
-    pattern = arg + '*'
+        Split line like a shell command line. Then check each argument. If an
+        argument is a directory, then find templates in that directory. Otherwise,
+        Find files matching the argument using the glob module and generate
+        templates from the matches. If there are no matches then input as a phil
+        parameter.
 
-    completions = []
-    for path in glob.glob(pattern):
-      path = _append_slash_if_dir(path)
-      completions.append(path.replace(fixed, "", 1))
-    return completions
+        """
+        from os import listdir
+        from os.path import isdir, isfile, join
+        from glob import glob
+        from dxtbx.model.scan_helpers import template_regex
+        import shlex
+
+        def templates_from_filenames(filenames):
+            templates = []
+            for f in filenames:
+                try:
+                    templates.append(template_regex(f)[0])
+                except Exception:
+                    pass
+            return list(set(templates))
+
+        def templates_from_directory(directory):
+            filenames = []
+            for f in listdir(directory):
+                if isfile(join(directory, f)):
+                    filenames.append(join(directory, f))
+            return templates_from_filenames(sorted(filenames))
+
+        parameters = []
+        arguments = shlex.split(line)
+        for arg in arguments:
+            if isdir(arg):
+                templates = templates_from_directory(arg)
+                for t in templates:
+                    parameters.append("template=%s" % t)
+            else:
+                matches = glob(arg)
+                if len(matches) > 0:
+                    templates = templates_from_filenames(matches)
+                    for t in templates:
+                        parameters.append("template=%s" % t)
+                else:
+                    parameters.append(arg)
+        return " ".join(parameters)
+
+    def print_history(self):
+        """
+        Print the history
+
+        """
+        print("")
+        print("History")
+        print(self.controller.get_history())
+
+    def complete_mode(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for changing mode.
+
+        """
+        return [i for i in self.controller.mode_list if i.startswith(text)]
+
+    def complete_set(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for setting parameters
+
+        """
+        return self.get_phil_completions(text)
+
+    def complete_load(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for loading phil files
+
+        """
+        return get_path_completions(text, line, begidx, endidx)
+
+    def complete_import(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for import
+
+        """
+        return self.get_phil_completions(text, mode="import")
+
+    def complete_find_spots(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for find_spots
+
+        """
+        return self.get_phil_completions(text, mode="find_spots")
+
+    def complete_search_beam_position(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for search_beam_position
+
+        """
+        return self.get_phil_completions(text, mode="search_beam_position")
+
+    def complete_index(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for index
+
+        """
+        return self.get_phil_completions(text, mode="index")
+
+    def complete_refine_bravais_settings(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for refine_bravais_settings
+
+        """
+        return self.get_phil_completions(text, mode="refine_bravais_settings")
+
+    def complete_reindex(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for reindex
+
+        """
+        return self.get_phil_completions(text, mode="reindex")
+
+    def complete_refine(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for refine
+
+        """
+        return self.get_phil_completions(text, mode="refine")
+
+    def complete_integrate(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for integrate
+
+        """
+        return self.get_phil_completions(text, mode="integrate")
+
+    def complete_export(self, text, line, begidx, endidx):
+        """
+        Offer tab completion options for export
+
+        """
+        return self.get_phil_completions(text, mode="export")
+
+    def get_phil_completions(self, text, mode=None):
+        """
+        Get completions for phil parameters
+
+        """
+        phil_scope = self.controller.get_parameters(diff=False, mode=mode)
+        definitions = phil_scope.all_definitions()
+        full_names = [d.path for d in definitions]
+        return [i for i in full_names if text in i]
+
+    def get_path_completions(self, text, line, begidx, endidx):
+        """
+        Get completions for paths
+
+        """
+        import os
+        from os.path import isdir
+        import glob
+
+        def _append_slash_if_dir(p):
+            if p and isdir(p) and p[-1] != os.sep:
+                return p + os.sep
+            else:
+                return p
+
+        before_arg = line.rfind(" ", 0, begidx)
+        if before_arg == -1:
+            return  # arg not found
+
+        fixed = line[before_arg + 1 : begidx]  # fixed portion of the arg
+        arg = line[before_arg + 1 : endidx]
+        pattern = arg + "*"
+
+        completions = []
+        for path in glob.glob(pattern):
+            path = _append_slash_if_dir(path)
+            completions.append(path.replace(fixed, "", 1))
+        return completions
 
 
 # The intre string for the console
-CONSOLE_INTRO = '''
+CONSOLE_INTRO = """
 DIALS interactive mode
 Type "help" for more information
-'''
+"""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-  # Print the console intro
-  print(CONSOLE_INTRO)
+    # Print the console intro
+    print(CONSOLE_INTRO)
 
-  # Create the console
-  console = Console()
+    # Create the console
+    console = Console()
 
-  # Enter the command loop
-  console.cmdloop()
+    # Enter the command loop
+    console.cmdloop()

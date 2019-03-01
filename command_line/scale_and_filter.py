@@ -30,13 +30,15 @@ import dials.util
 from dials.command_line.scale import Script as ScalingScript
 from dials.command_line.compute_delta_cchalf import Script as FilterScript
 from dials.util.exclude_images import get_valid_image_ranges
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 
-logger = logging.getLogger('dials')
+logger = logging.getLogger("dials")
 
-phil_scope = libtbx.phil.parse('''
+phil_scope = libtbx.phil.parse(
+    """
 filtering {
   max_cycles = 6
     .type = int(value_min=1)
@@ -78,389 +80,538 @@ output {
         .type = str
     }
 }
-''', process_includes=True)
+""",
+    process_includes=True,
+)
+
 
 class AnalysisResults(object):
-  """Class to store results from scaling and filtering."""
+    """Class to store results from scaling and filtering."""
 
-  def __init__(self):
-    self.termination_reason = None
-    self.cycle_results = []
-    self.initial_n_reflections = None
-    self.initial_expids_and_image_ranges = None
-    self.final_stats = None
+    def __init__(self):
+        self.termination_reason = None
+        self.cycle_results = []
+        self.initial_n_reflections = None
+        self.initial_expids_and_image_ranges = None
+        self.final_stats = None
 
-  def add_cycle_results(self, results_dict):
-    """Add the results dict from a scale and filter cycle."""
-    merging_stats_dict = self._parse_merging_stats(results_dict['merging_stats'])
-    results_dict['merging_stats'] = merging_stats_dict
-    self.cycle_results.append(results_dict)
+    def add_cycle_results(self, results_dict):
+        """Add the results dict from a scale and filter cycle."""
+        merging_stats_dict = self._parse_merging_stats(results_dict["merging_stats"])
+        results_dict["merging_stats"] = merging_stats_dict
+        self.cycle_results.append(results_dict)
 
-  @staticmethod
-  def _parse_merging_stats(merging_stats_obj):
-    merging_stats = {}
-    overall = merging_stats_obj.overall
-    merging_stats['ccs'] = [b.cc_one_half for b in merging_stats_obj.bins]
-    merging_stats['rmerge'] = [b.r_merge for b in merging_stats_obj.bins]
-    merging_stats['rpim'] = [b.r_pim for b in merging_stats_obj.bins]
-    merging_stats['d_min'] = [b.d_min for b in merging_stats_obj.bins]
-    merging_stats['overall'] = OrderedDict([('cc_one_half', overall.cc_one_half),
-      ('r_merge', overall.r_merge), ('r_pim', overall.r_pim),
-      ('i_over_sigma_mean', overall.i_over_sigma_mean),
-      ('completeness', 100 * overall.completeness), ('n_obs', overall.n_obs)])
-    return merging_stats
+    @staticmethod
+    def _parse_merging_stats(merging_stats_obj):
+        merging_stats = {}
+        overall = merging_stats_obj.overall
+        merging_stats["ccs"] = [b.cc_one_half for b in merging_stats_obj.bins]
+        merging_stats["rmerge"] = [b.r_merge for b in merging_stats_obj.bins]
+        merging_stats["rpim"] = [b.r_pim for b in merging_stats_obj.bins]
+        merging_stats["d_min"] = [b.d_min for b in merging_stats_obj.bins]
+        merging_stats["overall"] = OrderedDict(
+            [
+                ("cc_one_half", overall.cc_one_half),
+                ("r_merge", overall.r_merge),
+                ("r_pim", overall.r_pim),
+                ("i_over_sigma_mean", overall.i_over_sigma_mean),
+                ("completeness", 100 * overall.completeness),
+                ("n_obs", overall.n_obs),
+            ]
+        )
+        return merging_stats
 
-  def get_cycle_results(self):
-    """Get the results from all cycles."""
-    return self.cycle_results
+    def get_cycle_results(self):
+        """Get the results from all cycles."""
+        return self.cycle_results
 
-  def get_last_cycle_results(self):
-    """Get the results from the latest recorded cycle."""
-    return self.cycle_results[-1]
+    def get_last_cycle_results(self):
+        """Get the results from the latest recorded cycle."""
+        return self.cycle_results[-1]
 
-  def add_final_stats(self, final_stats):
-    """Add additional final merging stats from final rescale."""
-    self.final_stats = self._parse_merging_stats(final_stats)
+    def add_final_stats(self, final_stats):
+        """Add additional final merging stats from final rescale."""
+        self.final_stats = self._parse_merging_stats(final_stats)
 
-  def get_merging_stats(self):
-    """Get all merging stats, including additional final stats if present."""
-    stats = [res['merging_stats'] for res in self.cycle_results]
-    if self.final_stats:
-      stats += [self.final_stats]
-    return stats
+    def get_merging_stats(self):
+        """Get all merging stats, including additional final stats if present."""
+        stats = [res["merging_stats"] for res in self.cycle_results]
+        if self.final_stats:
+            stats += [self.final_stats]
+        return stats
 
-  def finish(self, termination_reason):
-    """Set the termination reason/"""
-    assert termination_reason in ['no_more_removed', 'max_cycles',
-      'max_percent_removed', 'below_completeness_limit']
-    self.termination_reason = termination_reason
+    def finish(self, termination_reason):
+        """Set the termination reason/"""
+        assert termination_reason in [
+            "no_more_removed",
+            "max_cycles",
+            "max_percent_removed",
+            "below_completeness_limit",
+        ]
+        self.termination_reason = termination_reason
 
-  def to_dict(self):
-    """Return the stored data as a dictionary."""
-    return {'termination_reason' : self.termination_reason,
-      'initial_n_reflections' : self.initial_n_reflections,
-      'initial_expids_and_image_ranges' : self.initial_expids_and_image_ranges,
-      'cycle_results' : OrderedDict([(i+1, val) for i, val in enumerate(self.cycle_results)]),
-      'final_stats' : self.final_stats}
+    def to_dict(self):
+        """Return the stored data as a dictionary."""
+        return {
+            "termination_reason": self.termination_reason,
+            "initial_n_reflections": self.initial_n_reflections,
+            "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
+            "cycle_results": OrderedDict(
+                [(i + 1, val) for i, val in enumerate(self.cycle_results)]
+            ),
+            "final_stats": self.final_stats,
+        }
 
-  @staticmethod
-  def from_dict(dictionary):
-    """Configure the class from its dictionary form."""
-    results = AnalysisResults()
-    results.termination_reason = dictionary['termination_reason']
-    results.initial_expids_and_image_ranges = dictionary['initial_expids_and_image_ranges']
-    results.cycle_results = [dictionary['cycle_results'][key] for key in \
-      sorted(dictionary['cycle_results'].iterkeys())]
-    results.initial_n_reflections = dictionary['initial_n_reflections']
-    results.final_stats = dictionary['final_stats']
-    return results
+    @staticmethod
+    def from_dict(dictionary):
+        """Configure the class from its dictionary form."""
+        results = AnalysisResults()
+        results.termination_reason = dictionary["termination_reason"]
+        results.initial_expids_and_image_ranges = dictionary[
+            "initial_expids_and_image_ranges"
+        ]
+        results.cycle_results = [
+            dictionary["cycle_results"][key]
+            for key in sorted(dictionary["cycle_results"].iterkeys())
+        ]
+        results.initial_n_reflections = dictionary["initial_n_reflections"]
+        results.final_stats = dictionary["final_stats"]
+        return results
+
 
 class ScaleAndFilter(object):
 
-  """Class to encapsulate a scaling and filtering algorithm."""
+    """Class to encapsulate a scaling and filtering algorithm."""
 
-  def __init__(self, scaling_script, filtering_script):
-    """Provide script classes that do scaling and filtering"""
-    self.scaling_script = scaling_script
-    self.filtering_script = filtering_script
+    def __init__(self, scaling_script, filtering_script):
+        """Provide script classes that do scaling and filtering"""
+        self.scaling_script = scaling_script
+        self.filtering_script = filtering_script
 
-  def scale_and_filter(self, experiments, reflections, params, scaling_params, filtering_params):
-    """Write the behaviour of the program as functions and classes outside run()"""
+    def scale_and_filter(
+        self, experiments, reflections, params, scaling_params, filtering_params
+    ):
+        """Write the behaviour of the program as functions and classes outside run()"""
 
-    results = AnalysisResults()
+        results = AnalysisResults()
 
-    for counter in range(1, params.filtering.max_cycles+1):
-      # First run scaling, followed by filtering
-      scaling_script = self.scaling_script(scaling_params, experiments, reflections)
-      scaling_script.run(save_data=False)
-      # Log initial expids here, need to do after dataset selection in scaling
-      # but before any filtering
-      if counter == 1:
-        results.initial_expids_and_image_ranges = [(exp.identifier, exp.scan.get_image_range()) \
-          if exp.scan else None for exp in experiments]
-      filter_script = self.filtering_script(filtering_params, scaling_script.experiments,
-        scaling_script.reflections)
-      filter_script.run()
+        for counter in range(1, params.filtering.max_cycles + 1):
+            # First run scaling, followed by filtering
+            scaling_script = self.scaling_script(
+                scaling_params, experiments, reflections
+            )
+            scaling_script.run(save_data=False)
+            # Log initial expids here, need to do after dataset selection in scaling
+            # but before any filtering
+            if counter == 1:
+                results.initial_expids_and_image_ranges = [
+                    (exp.identifier, exp.scan.get_image_range()) if exp.scan else None
+                    for exp in experiments
+                ]
+            filter_script = self.filtering_script(
+                filtering_params, scaling_script.experiments, scaling_script.reflections
+            )
+            filter_script.run()
 
-      # Log results from scaling and filtering
-      results = self.log_cycle_results(results, scaling_script, filter_script)
-      logger.info("Cycle %s of filtering, n_reflections removed this cycle: %s",
-        counter, results.get_last_cycle_results()['n_removed'])
+            # Log results from scaling and filtering
+            results = self.log_cycle_results(results, scaling_script, filter_script)
+            logger.info(
+                "Cycle %s of filtering, n_reflections removed this cycle: %s",
+                counter,
+                results.get_last_cycle_results()["n_removed"],
+            )
 
-      # Reset dataset inclusion/exclusion to avoid errors for repeated scaling.
-      experiments = filter_script.experiments
-      reflections = filter_script.reflections
-      scaling_params.dataset_selection.use_datasets = None
-      scaling_params.dataset_selection.exclude_datasets = None
+            # Reset dataset inclusion/exclusion to avoid errors for repeated scaling.
+            experiments = filter_script.experiments
+            reflections = filter_script.reflections
+            scaling_params.dataset_selection.use_datasets = None
+            scaling_params.dataset_selection.exclude_datasets = None
 
-      # Test termination conditions
-      latest_results = results.get_last_cycle_results()
-      if latest_results['n_removed'] == 0:
-        logger.info("Finishing scale and filtering as no data removed in this cycle.")
-        scaling_script.output()
-        results.finish(termination_reason='no_more_removed')
-        break
+            # Test termination conditions
+            latest_results = results.get_last_cycle_results()
+            if latest_results["n_removed"] == 0:
+                logger.info(
+                    "Finishing scale and filtering as no data removed in this cycle."
+                )
+                scaling_script.output()
+                results.finish(termination_reason="no_more_removed")
+                break
 
-      if latest_results['cumul_percent_removed'] > params.filtering.max_percent_removed:
-        logger.info("Finishing scale and filtering as have now removed more than the limit.")
-        results = self._run_final_scale(
-          scaling_params, experiments, reflections, results)
-        results.finish(termination_reason='max_percent_removed')
-        break
+            if (
+                latest_results["cumul_percent_removed"]
+                > params.filtering.max_percent_removed
+            ):
+                logger.info(
+                    "Finishing scale and filtering as have now removed more than the limit."
+                )
+                results = self._run_final_scale(
+                    scaling_params, experiments, reflections, results
+                )
+                results.finish(termination_reason="max_percent_removed")
+                break
 
-      if params.filtering.min_completeness:
-        if latest_results['merging_stats']['completeness'] < params.filtering.min_completeness:
-          logger.info("Finishing scale and filtering as completeness now below cutoff.")
-          results = self._run_final_scale(
-            scaling_params, experiments, reflections, results)
-          results.finish(termination_reason='below_completeness_limit')
-          break
+            if params.filtering.min_completeness:
+                if (
+                    latest_results["merging_stats"]["completeness"]
+                    < params.filtering.min_completeness
+                ):
+                    logger.info(
+                        "Finishing scale and filtering as completeness now below cutoff."
+                    )
+                    results = self._run_final_scale(
+                        scaling_params, experiments, reflections, results
+                    )
+                    results.finish(termination_reason="below_completeness_limit")
+                    break
 
-      if counter == params.filtering.max_cycles:
-        logger.info("Finishing as reached max number of cycles.")
-        results = self._run_final_scale(
-          scaling_params, experiments, reflections, results)
-        results.finish(termination_reason='max_cycles')
-        break
+            if counter == params.filtering.max_cycles:
+                logger.info("Finishing as reached max number of cycles.")
+                results = self._run_final_scale(
+                    scaling_params, experiments, reflections, results
+                )
+                results.finish(termination_reason="max_cycles")
+                break
 
-    # Print summary of results
-    logger.info("\nSummary of data removed:")
-    for i, res in enumerate(results.get_cycle_results()):
-      logger.info("Cycle number: %s", i+1)
-      if 'image_ranges_removed' in res:
-        if res['image_ranges_removed']:
-          logger.info("  Removed image ranges: \n    %s", '\n    '.join(
-            str(t[0]) + ', dataset '+str(t[1]) for t in res['image_ranges_removed']))
-      else:
-        if res['removed_datasets']:
-          logger.info("  Removed datasets: %s", res['removed_datasets'])
-      logger.info("  cumulative %% of reflections removed: %s",
-        res['cumul_percent_removed'])
+        # Print summary of results
+        logger.info("\nSummary of data removed:")
+        for i, res in enumerate(results.get_cycle_results()):
+            logger.info("Cycle number: %s", i + 1)
+            if "image_ranges_removed" in res:
+                if res["image_ranges_removed"]:
+                    logger.info(
+                        "  Removed image ranges: \n    %s",
+                        "\n    ".join(
+                            str(t[0]) + ", dataset " + str(t[1])
+                            for t in res["image_ranges_removed"]
+                        ),
+                    )
+            else:
+                if res["removed_datasets"]:
+                    logger.info("  Removed datasets: %s", res["removed_datasets"])
+            logger.info(
+                "  cumulative %% of reflections removed: %s",
+                res["cumul_percent_removed"],
+            )
 
-    return results
+        return results
 
-  def _run_final_scale(self, scaling_params, experiments, reflections, results):
-    scaling_script = self.scaling_script(scaling_params, experiments, reflections)
-    scaling_script.run(save_data=True)
-    results.add_final_stats(scaling_script.merging_statistics_result)
-    return results
+    def _run_final_scale(self, scaling_params, experiments, reflections, results):
+        scaling_script = self.scaling_script(scaling_params, experiments, reflections)
+        scaling_script.run(save_data=True)
+        results.add_final_stats(scaling_script.merging_statistics_result)
+        return results
 
-  @staticmethod
-  def log_cycle_results(results, scaling_script, filter_script):
-    """Log results from the scripts for this cycle and add to the results."""
-    cycle_results = {'merging_stats' : scaling_script.merging_statistics_result}
+    @staticmethod
+    def log_cycle_results(results, scaling_script, filter_script):
+        """Log results from the scripts for this cycle and add to the results."""
+        cycle_results = {"merging_stats": scaling_script.merging_statistics_result}
 
-    if not results.get_cycle_results():
-      results.initial_n_reflections = scaling_script.scaled_miller_array.size()
+        if not results.get_cycle_results():
+            results.initial_n_reflections = scaling_script.scaled_miller_array.size()
 
-    cycle_results['delta_cc_half_values'] = filter_script.results_summary[
-      'per_dataset_delta_cc_half_values']['delta_cc_half_values']
-    removal_summary = filter_script.results_summary['dataset_removal']
-    if removal_summary['mode'] == 'image_group':
-      cycle_results['image_ranges_removed'] = removal_summary['image_ranges_removed']
-    cycle_results['removed_datasets'] = removal_summary['experiments_fully_removed']
+        cycle_results["delta_cc_half_values"] = filter_script.results_summary[
+            "per_dataset_delta_cc_half_values"
+        ]["delta_cc_half_values"]
+        removal_summary = filter_script.results_summary["dataset_removal"]
+        if removal_summary["mode"] == "image_group":
+            cycle_results["image_ranges_removed"] = removal_summary[
+                "image_ranges_removed"
+            ]
+        cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
 
-    cycle_results['n_removed'] = filter_script.results_summary[
-    'dataset_removal']['n_reflections_removed']
+        cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
+            "n_reflections_removed"
+        ]
 
-    n_removed = sum([res['n_removed'] for res in results.get_cycle_results()]) + \
-      cycle_results['n_removed']
-    percent_removed = n_removed/results.initial_n_reflections * 100
-    cycle_results['cumul_percent_removed'] = percent_removed
+        n_removed = (
+            sum([res["n_removed"] for res in results.get_cycle_results()])
+            + cycle_results["n_removed"]
+        )
+        percent_removed = n_removed / results.initial_n_reflections * 100
+        cycle_results["cumul_percent_removed"] = percent_removed
 
-    results.add_cycle_results(cycle_results)
-    return results
+        results.add_cycle_results(cycle_results)
+        return results
 
-color_list = ['#F44336', '#FFC107', '#FFEB3B', '#8BC34A', '#03A9F4', '#3F51B5', '#607D8B']
+
+color_list = [
+    "#F44336",
+    "#FFC107",
+    "#FFEB3B",
+    "#8BC34A",
+    "#03A9F4",
+    "#3F51B5",
+    "#607D8B",
+]
+
 
 def make_plots(analysis_results, experiments, params):
-  """Make the three plots."""
-  make_histogram_plots(analysis_results, params.output.plots.histogram)
-  make_merging_stats_plots(analysis_results, params.output.plots.merging_stats)
-  if params.delta_cc_half.mode == 'image_group':
-    make_reduction_plots(analysis_results, experiments, params.output.plots.image_ranges)
+    """Make the three plots."""
+    make_histogram_plots(analysis_results, params.output.plots.histogram)
+    make_merging_stats_plots(analysis_results, params.output.plots.merging_stats)
+    if params.delta_cc_half.mode == "image_group":
+        make_reduction_plots(
+            analysis_results, experiments, params.output.plots.image_ranges
+        )
 
-def make_histogram_plots(analysis_results, filename='cc_half_histograms.png', n_cols=2, n_rows=None,
-  scale=1, n_cycles=None, color_list=color_list):
-  """Make and save the histogram plots."""
-  cycle_results = analysis_results.get_cycle_results()
-  if n_cycles:
-    n_cycles = min([n_cycles, len(cycle_results)])
-    cycle_results = cycle_results[:n_cycles]
 
-  delta_cc_half_lists = [res['delta_cc_half_values'] for res in cycle_results]
+def make_histogram_plots(
+    analysis_results,
+    filename="cc_half_histograms.png",
+    n_cols=2,
+    n_rows=None,
+    scale=1,
+    n_cycles=None,
+    color_list=color_list,
+):
+    """Make and save the histogram plots."""
+    cycle_results = analysis_results.get_cycle_results()
+    if n_cycles:
+        n_cycles = min([n_cycles, len(cycle_results)])
+        cycle_results = cycle_results[:n_cycles]
 
-  if not delta_cc_half_lists:
-    return
-  n = len(delta_cc_half_lists)
-  if n_cols and n_rows:
-    assert n <= n_cols * n_rows
-  else:
-    if n_cols:
-      n_rows = int(ceil(n/n_cols))
+    delta_cc_half_lists = [res["delta_cc_half_values"] for res in cycle_results]
+
+    if not delta_cc_half_lists:
+        return
+    n = len(delta_cc_half_lists)
+    if n_cols and n_rows:
+        assert n <= n_cols * n_rows
     else:
-      n_cols = int(ceil(n_rows))
-  n_cols = int(n_cols)
-  n_rows = int(n_rows)
-  grid = gridspec.GridSpec(n_rows, n_cols)
-  plt.figure(figsize=(5*n_cols*scale, 5*n_rows*scale))
-  axs = [plt.subplot(grid[int(c//n_cols), int(c % n_cols)]) for c in range(n)]
+        if n_cols:
+            n_rows = int(ceil(n / n_cols))
+        else:
+            n_cols = int(ceil(n_rows))
+    n_cols = int(n_cols)
+    n_rows = int(n_rows)
+    grid = gridspec.GridSpec(n_rows, n_cols)
+    plt.figure(figsize=(5 * n_cols * scale, 5 * n_rows * scale))
+    axs = [plt.subplot(grid[int(c // n_cols), int(c % n_cols)]) for c in range(n)]
 
-  colors = [(color_list*int(ceil(n/len(color_list))))[i] for i in range(n)]
-  #colors = [color_list[i%7] for i in range(n)]
-  ordinal = lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10%10 != 1)*(n%10 < 4)*n%10::4])
-  legends = [ordinal(i)+r' $\Delta$CC$_{1/2}$'+"\nanalysis" for i in range(1, n+1)]
-  if 'image_ranges_removed' in cycle_results[0]:
-    n_rej = [len(res['image_ranges_removed']) for res in cycle_results]
-  else:
-    n_rej = [len(res['removed_datasets']) for res in cycle_results]
+    colors = [(color_list * int(ceil(n / len(color_list))))[i] for i in range(n)]
+    # colors = [color_list[i%7] for i in range(n)]
+    ordinal = lambda n: "%d%s" % (
+        n,
+        "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4],
+    )
+    legends = [
+        ordinal(i) + r" $\Delta$CC$_{1/2}$" + "\nanalysis" for i in range(1, n + 1)
+    ]
+    if "image_ranges_removed" in cycle_results[0]:
+        n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
+    else:
+        n_rej = [len(res["removed_datasets"]) for res in cycle_results]
 
-  for i, (ax, deltas) in enumerate(
-    zip(axs, delta_cc_half_lists)):
-    counts, bins, _ = ax.hist(np.array(deltas), bins=40, color=colors[i], label=legends[i])
-    bin_width = bins[1] - bins[0]
-    ymax = max(4, min(max(counts), 25))
-    ax.set_ylim([0, ymax])
-    ax.set_xlabel(r'$\Delta$CC$_{1/2}$')
-    ax.set_ylabel('No. of image groups')
-    ax.set_alpha(0.2)
-    # Now plot some arrows
-    xmin, xmax, ymin, ymax = ax.axis()
-    n = 0
-    for count, b in zip(counts, bins):
-      if n >= n_rej[i]:
-        break
-      if count > 0:
-        headl = (ymax-ymin)/16.0
-        ax.arrow(b+(bin_width)/2.0, ymax/2.0, 0, -ymax/4.0 + 1.1*headl,
-          width=(xmax-xmin)/(5*80.0), head_width=(xmax-xmin)/20.0,
-          head_length=headl, color='k')
-        n += count
-    ax.legend(shadow=True, facecolor='w', framealpha=1, loc=2)
-    #ax.background(False)
-  plt.tight_layout()
-  logger.info("Saving histogram plots to %s", filename)
-  plt.savefig(filename)
+    for i, (ax, deltas) in enumerate(zip(axs, delta_cc_half_lists)):
+        counts, bins, _ = ax.hist(
+            np.array(deltas), bins=40, color=colors[i], label=legends[i]
+        )
+        bin_width = bins[1] - bins[0]
+        ymax = max(4, min(max(counts), 25))
+        ax.set_ylim([0, ymax])
+        ax.set_xlabel(r"$\Delta$CC$_{1/2}$")
+        ax.set_ylabel("No. of image groups")
+        ax.set_alpha(0.2)
+        # Now plot some arrows
+        xmin, xmax, ymin, ymax = ax.axis()
+        n = 0
+        for count, b in zip(counts, bins):
+            if n >= n_rej[i]:
+                break
+            if count > 0:
+                headl = (ymax - ymin) / 16.0
+                ax.arrow(
+                    b + (bin_width) / 2.0,
+                    ymax / 2.0,
+                    0,
+                    -ymax / 4.0 + 1.1 * headl,
+                    width=(xmax - xmin) / (5 * 80.0),
+                    head_width=(xmax - xmin) / 20.0,
+                    head_length=headl,
+                    color="k",
+                )
+                n += count
+        ax.legend(shadow=True, facecolor="w", framealpha=1, loc=2)
+        # ax.background(False)
+    plt.tight_layout()
+    logger.info("Saving histogram plots to %s", filename)
+    plt.savefig(filename)
 
-def make_merging_stats_plots(analysis_results, filename='merging_stats.png', n_cycles=None, color_list=color_list):
-  """Make and save the merging stats plots."""
-  merging_stats = analysis_results.get_merging_stats()
-  if n_cycles:
-    n_cycles = min([n_cycles, len(merging_stats)])
-    merging_stats = merging_stats[:n_cycles]
-  plt.figure(figsize=(14, 8))
-  grid = gridspec.GridSpec(2, 3)
-  axs = [plt.subplot(grid[int(c//3), int(c % 3)]) for c in range(3)]
-  n_datasets = len(merging_stats)
-  colors = [(color_list*int(ceil(n_datasets/len(color_list))))[i] for i in range(len(merging_stats))]
-  colors[-1] = 'k'
-  markers = ['s', 'o', 'v', '*']
-  ordinal = lambda n: "%d%s" % (n, "tsnrhtdd"[(n/10%10 != 1)*(n%10 < 4)*n%10::4])
-  legends = ['initial scale']
-  if len(merging_stats) > 2:
-    legends += [ordinal(i)+" rescale" for i in range(1, len(merging_stats)-1)] + ['final rescale']
-  elif len(merging_stats) == 2:
-    legends += ['final rescale']
-  for c, stats in enumerate(merging_stats):
-    x = [uctbx.d_as_d_star_sq(d) for d in stats['d_min']]
-    axs[0].scatter(x, stats['ccs'], color=colors[c],
-      marker=markers[c%4], label=legends[c])
-    axs[0].plot(x, stats['ccs'], color=colors[c], label=None)
-    axs[1].scatter(x, stats['rmerge'], color=colors[c],
-      marker=markers[c%4], label=legends[c])
-    axs[1].plot(x, stats['rmerge'], color=colors[c], label=None)
-    axs[2].scatter(x, stats['rpim'], color=colors[c],
-      marker=markers[c%4], label=legends[c])
-    axs[2].plot(x, stats['rpim'], color=colors[c], label=None)
-  xticks = axs[0].get_xticks()
-  new_labels = [str(round(1/x**0.5, 2)) if x != 0 else str(0) for x in xticks]
-  ylabels = ['CC$_{1/2}$', r'R$_{merge}$', r'R$_{pim}$']
-  ylims = [1.05, min(1.5, max(axs[1].get_ylim())), min(1.5, max(axs[2].get_ylim()))]
-  legend_locs = [3, 2, 2]
-  for i, ax in enumerate(axs):
-    ax.set_xticklabels(new_labels)
-    ax.set_xlabel(r'd ($\AA$)')
-    ax.grid()
-    ax.set_ylabel(ylabels[i])
-    ax.set_ylim([0.0, ylims[i]])
-    ax.legend(shadow=True, facecolor='w', framealpha=1, loc=legend_locs[i])
-  ax3 = plt.subplot(grid[1, :])
-  cell_text = []
-  columns = ['CC$_{1/2}$', r'R$_{merge}$', r'R$_{pim}$', '<I/sigma>',
-    'completeness', 'n observations']
-  for c, stats in enumerate(merging_stats):
-    cell_text.append(['%.3f' % v if k != 'n_obs' else str(int(v)) \
-      for k, v in stats['overall'].iteritems()])
-  ax3.axis('off')
-  ax3.table(cellText=cell_text, rowLabels=legends, colLabels=columns, loc='center')
-  logger.info("Saving merging statistics plots to %s", filename)
-  plt.savefig(filename)
 
-def make_reduction_plots(analysis_results, experiments, filename='reduced_image_ranges.png', colors=['k', 'b']):
-  """Make a chart showing excluded image ranges."""
-  valid_image_ranges = get_valid_image_ranges(experiments)
-  expids = [exp.identifier for exp in experiments]
-  # first plot all initial image ranges
-  x1 = range(len(analysis_results.initial_expids_and_image_ranges))
-  y1_tops = []
-  y1_bottoms = []
-  initial_expids = []
-  for expid_and_img in analysis_results.initial_expids_and_image_ranges:
-    y1_tops.append(expid_and_img[1][1] - expid_and_img[1][0] + 1)
-    y1_bottoms.append(expid_and_img[1][0] - 1)
-    initial_expids.append(expid_and_img[0])
-  x2 = []
-  y2_tops = []
-  y2_bottoms = []
-  for (valid, expid) in zip(valid_image_ranges, expids):
-    loc = initial_expids.index(expid)
-    for t in valid:
-      y2_tops.append(t[1]-t[0]+1)
-      y2_bottoms.append(t[0]-1)
-      x2.append(loc)
-  plt.figure(figsize=(7, 7))
-  plt.bar(x1, y1_tops, bottom=y1_bottoms, width=1, color=colors[0], alpha=0.5, label="Before filtering")
-  plt.bar(x2, y2_tops, bottom=y2_bottoms, width=1, color=colors[1], alpha=0.5, label="After filtering")
-  plt.xlabel("Dataset")
-  plt.ylabel("Image number")
-  plt.legend(loc=1)
-  logger.info("Saving image range plots to %s", filename)
-  plt.savefig(filename)
+def make_merging_stats_plots(
+    analysis_results, filename="merging_stats.png", n_cycles=None, color_list=color_list
+):
+    """Make and save the merging stats plots."""
+    merging_stats = analysis_results.get_merging_stats()
+    if n_cycles:
+        n_cycles = min([n_cycles, len(merging_stats)])
+        merging_stats = merging_stats[:n_cycles]
+    plt.figure(figsize=(14, 8))
+    grid = gridspec.GridSpec(2, 3)
+    axs = [plt.subplot(grid[int(c // 3), int(c % 3)]) for c in range(3)]
+    n_datasets = len(merging_stats)
+    colors = [
+        (color_list * int(ceil(n_datasets / len(color_list))))[i]
+        for i in range(len(merging_stats))
+    ]
+    colors[-1] = "k"
+    markers = ["s", "o", "v", "*"]
+    ordinal = lambda n: "%d%s" % (
+        n,
+        "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4],
+    )
+    legends = ["initial scale"]
+    if len(merging_stats) > 2:
+        legends += [
+            ordinal(i) + " rescale" for i in range(1, len(merging_stats) - 1)
+        ] + ["final rescale"]
+    elif len(merging_stats) == 2:
+        legends += ["final rescale"]
+    for c, stats in enumerate(merging_stats):
+        x = [uctbx.d_as_d_star_sq(d) for d in stats["d_min"]]
+        axs[0].scatter(
+            x, stats["ccs"], color=colors[c], marker=markers[c % 4], label=legends[c]
+        )
+        axs[0].plot(x, stats["ccs"], color=colors[c], label=None)
+        axs[1].scatter(
+            x, stats["rmerge"], color=colors[c], marker=markers[c % 4], label=legends[c]
+        )
+        axs[1].plot(x, stats["rmerge"], color=colors[c], label=None)
+        axs[2].scatter(
+            x, stats["rpim"], color=colors[c], marker=markers[c % 4], label=legends[c]
+        )
+        axs[2].plot(x, stats["rpim"], color=colors[c], label=None)
+    xticks = axs[0].get_xticks()
+    new_labels = [str(round(1 / x ** 0.5, 2)) if x != 0 else str(0) for x in xticks]
+    ylabels = ["CC$_{1/2}$", r"R$_{merge}$", r"R$_{pim}$"]
+    ylims = [1.05, min(1.5, max(axs[1].get_ylim())), min(1.5, max(axs[2].get_ylim()))]
+    legend_locs = [3, 2, 2]
+    for i, ax in enumerate(axs):
+        ax.set_xticklabels(new_labels)
+        ax.set_xlabel(r"d ($\AA$)")
+        ax.grid()
+        ax.set_ylabel(ylabels[i])
+        ax.set_ylim([0.0, ylims[i]])
+        ax.legend(shadow=True, facecolor="w", framealpha=1, loc=legend_locs[i])
+    ax3 = plt.subplot(grid[1, :])
+    cell_text = []
+    columns = [
+        "CC$_{1/2}$",
+        r"R$_{merge}$",
+        r"R$_{pim}$",
+        "<I/sigma>",
+        "completeness",
+        "n observations",
+    ]
+    for c, stats in enumerate(merging_stats):
+        cell_text.append(
+            [
+                "%.3f" % v if k != "n_obs" else str(int(v))
+                for k, v in stats["overall"].iteritems()
+            ]
+        )
+    ax3.axis("off")
+    ax3.table(cellText=cell_text, rowLabels=legends, colLabels=columns, loc="center")
+    logger.info("Saving merging statistics plots to %s", filename)
+    plt.savefig(filename)
+
+
+def make_reduction_plots(
+    analysis_results,
+    experiments,
+    filename="reduced_image_ranges.png",
+    colors=["k", "b"],
+):
+    """Make a chart showing excluded image ranges."""
+    valid_image_ranges = get_valid_image_ranges(experiments)
+    expids = [exp.identifier for exp in experiments]
+    # first plot all initial image ranges
+    x1 = range(len(analysis_results.initial_expids_and_image_ranges))
+    y1_tops = []
+    y1_bottoms = []
+    initial_expids = []
+    for expid_and_img in analysis_results.initial_expids_and_image_ranges:
+        y1_tops.append(expid_and_img[1][1] - expid_and_img[1][0] + 1)
+        y1_bottoms.append(expid_and_img[1][0] - 1)
+        initial_expids.append(expid_and_img[0])
+    x2 = []
+    y2_tops = []
+    y2_bottoms = []
+    for (valid, expid) in zip(valid_image_ranges, expids):
+        loc = initial_expids.index(expid)
+        for t in valid:
+            y2_tops.append(t[1] - t[0] + 1)
+            y2_bottoms.append(t[0] - 1)
+            x2.append(loc)
+    plt.figure(figsize=(7, 7))
+    plt.bar(
+        x1,
+        y1_tops,
+        bottom=y1_bottoms,
+        width=1,
+        color=colors[0],
+        alpha=0.5,
+        label="Before filtering",
+    )
+    plt.bar(
+        x2,
+        y2_tops,
+        bottom=y2_bottoms,
+        width=1,
+        color=colors[1],
+        alpha=0.5,
+        label="After filtering",
+    )
+    plt.xlabel("Dataset")
+    plt.ylabel("Image number")
+    plt.legend(loc=1)
+    logger.info("Saving image range plots to %s", filename)
+    plt.savefig(filename)
 
 
 def run(args=None, phil=phil_scope):
-  """Run the scale and filter script."""
-  import dials.util.log
-  from dials.util.options import OptionParser
-  from dials.util.options import flatten_reflections
-  from dials.util.options import flatten_experiments
+    """Run the scale and filter script."""
+    import dials.util.log
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_reflections
+    from dials.util.options import flatten_experiments
 
-  usage = "dials.scale_and_filter [options] integrated_experiments.json integrated.pickle"
+    usage = (
+        "dials.scale_and_filter [options] integrated_experiments.json integrated.pickle"
+    )
 
-  parser = OptionParser(usage=usage, phil=phil, read_reflections=True,
-    read_experiments=True, check_format=False, epilog=__doc__)
-  params, _ = parser.parse_args(args=args, show_diff_phil=False)
+    parser = OptionParser(
+        usage=usage,
+        phil=phil,
+        read_reflections=True,
+        read_experiments=True,
+        check_format=False,
+        epilog=__doc__,
+    )
+    params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
-  scaling_params = params.scale
-  filtering_params = params.delta_cc_half
+    scaling_params = params.scale
+    filtering_params = params.delta_cc_half
 
-  dials.util.log.config(info=params.output.log, debug=params.output.debug.log)
+    dials.util.log.config(info=params.output.log, debug=params.output.debug.log)
 
-  diff_phil = parser.diff_phil.as_str()
-  if diff_phil:
-    logger.info('The following parameters have been modified:\n%s', diff_phil)
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil:
+        logger.info("The following parameters have been modified:\n%s", diff_phil)
 
-  experiments = flatten_experiments(params.input.experiments)
-  reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+    reflections = flatten_reflections(params.input.reflections)
 
-  scale_and_filter = ScaleAndFilter(ScalingScript, FilterScript)
-  analysis_results = scale_and_filter.scale_and_filter(
-    experiments, reflections, params, scaling_params, filtering_params)
+    scale_and_filter = ScaleAndFilter(ScalingScript, FilterScript)
+    analysis_results = scale_and_filter.scale_and_filter(
+        experiments, reflections, params, scaling_params, filtering_params
+    )
 
-  with open(params.output.analysis_results, 'w') as f:
-    json.dump(analysis_results.to_dict(), f, indent=2)
-  make_plots(analysis_results, experiments, params)
+    with open(params.output.analysis_results, "w") as f:
+        json.dump(analysis_results.to_dict(), f, indent=2)
+    make_plots(analysis_results, experiments, params)
 
-if __name__ == '__main__':
-  with dials.util.show_mail_on_error():
-    run()
+
+if __name__ == "__main__":
+    with dials.util.show_mail_on_error():
+        run()

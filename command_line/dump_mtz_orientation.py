@@ -12,17 +12,20 @@
 
 from __future__ import absolute_import, division, print_function
 
+
 def dump_mtz_orientation(mtz_file):
-  from iotbx import mtz
-  from scitbx import matrix
-  from scitbx.math.euler_angles import xyz_angles
+    from iotbx import mtz
+    from scitbx import matrix
+    from scitbx.math.euler_angles import xyz_angles
 
-  m = mtz.object(mtz_file)
-  for b in m.batches():
-    rxyz = tuple(xyz_angles(matrix.sqr(b.umat())))
-    print(b.num(), '%7.4f %7.4f %7.4f' % rxyz)
+    m = mtz.object(mtz_file)
+    for b in m.batches():
+        rxyz = tuple(xyz_angles(matrix.sqr(b.umat())))
+        print(b.num(), "%7.4f %7.4f %7.4f" % rxyz)
 
-if __name__ == '__main__':
-  import sys
-  for mtz_file in sys.argv[1:]:
-    dump_mtz_orientation(mtz_file)
+
+if __name__ == "__main__":
+    import sys
+
+    for mtz_file in sys.argv[1:]:
+        dump_mtz_orientation(mtz_file)

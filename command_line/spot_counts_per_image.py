@@ -1,16 +1,20 @@
 from __future__ import absolute_import, division, print_function
+
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import sys
 
 from dials.util.options import OptionParser
-from dials.util.options \
-     import flatten_reflections, flatten_experiments, flatten_experiments
+from dials.util.options import (
+    flatten_reflections,
+    flatten_experiments,
+    flatten_experiments,
+)
 from dials.algorithms.spot_finding import per_image_analysis
 
 import iotbx.phil
 
-help_message = '''
+help_message = """
 
 Reports the number of strong spots and computes an estimate of the resolution
 limit for each image, given the results of dials.find_spots. Optionally
@@ -22,9 +26,10 @@ Examples::
 
   dials.spot_counts_per_image experiments.json strong.pickle plot=per_image.png
 
-'''
+"""
 
-phil_scope = iotbx.phil.parse("""\
+phil_scope = iotbx.phil.parse(
+    """\
 resolution_analysis = True
   .type = bool
 plot = None
@@ -39,71 +44,88 @@ individual_plots = False
   .type = bool
 id = None
   .type = int(value_min=0)
-""")
+"""
+)
+
 
 def run(args):
-  import libtbx.load_env
-  usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
+    import libtbx.load_env
 
-  parser = OptionParser(
-    usage=usage,
-    read_reflections=True,
-    read_experiments=True,
-    phil=phil_scope,
-    check_format=False,
-    epilog=help_message)
+    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
-  params, options = parser.parse_args(show_diff_phil=False)
-  reflections = flatten_reflections(params.input.reflections)
-  experiments = flatten_experiments(params.input.experiments)
+    parser = OptionParser(
+        usage=usage,
+        read_reflections=True,
+        read_experiments=True,
+        phil=phil_scope,
+        check_format=False,
+        epilog=help_message,
+    )
 
-  if not any([reflections, experiments]):
-    parser.print_help()
-    return
+    params, options = parser.parse_args(show_diff_phil=False)
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
 
-  if len(reflections) != 1:
-    raise Sorry('exactly 1 reflection table must be specified')
-  if len(experiments.imagesets()) != 1:
-    raise Sorry('exactly 1 experiment must be specified')
-  imageset = experiments.imagesets()[0]
+    if not any([reflections, experiments]):
+        parser.print_help()
+        return
 
-  reflections = reflections[0]
+    if len(reflections) != 1:
+        raise Sorry("exactly 1 reflection table must be specified")
+    if len(experiments.imagesets()) != 1:
+        raise Sorry("exactly 1 experiment must be specified")
+    imageset = experiments.imagesets()[0]
 
-  if params.id is not None:
-    reflections = reflections.select(reflections['id'] == params.id)
+    reflections = reflections[0]
 
-  stats = per_image_analysis.stats_imageset(
-    imageset, reflections, resolution_analysis=params.resolution_analysis,
-    plot=params.individual_plots)
-  per_image_analysis.print_table(stats)
+    if params.id is not None:
+        reflections = reflections.select(reflections["id"] == params.id)
 
-  from libtbx import table_utils
-  overall_stats = per_image_analysis.stats_single_image(
-    imageset, reflections, resolution_analysis=params.resolution_analysis)
-  rows = [
-    ("Overall statistics", ""),
-    ("#spots", "%i" % overall_stats.n_spots_total),
-    ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
-    ("d_min", "%.2f" % overall_stats.estimated_d_min),
-    ("d_min (distl method 1)", "%.2f (%.2f)" % (
-      overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
-    ("d_min (distl method 2)", "%.2f (%.2f)" % (
-      overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1)),
+    stats = per_image_analysis.stats_imageset(
+        imageset,
+        reflections,
+        resolution_analysis=params.resolution_analysis,
+        plot=params.individual_plots,
+    )
+    per_image_analysis.print_table(stats)
+
+    from libtbx import table_utils
+
+    overall_stats = per_image_analysis.stats_single_image(
+        imageset, reflections, resolution_analysis=params.resolution_analysis
+    )
+    rows = [
+        ("Overall statistics", ""),
+        ("#spots", "%i" % overall_stats.n_spots_total),
+        ("#spots_no_ice", "%i" % overall_stats.n_spots_no_ice),
+        ("d_min", "%.2f" % overall_stats.estimated_d_min),
+        (
+            "d_min (distl method 1)",
+            "%.2f (%.2f)"
+            % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
+        ),
+        (
+            "d_min (distl method 2)",
+            "%.2f (%.2f)"
+            % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
+        ),
     ]
-  print(table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
+    print(table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
 
-  if params.json:
-    import json
-    if params.split_json:
-      for k in stats.__dict__:
-        start, end = params.json.split('.')
-        with open('%s_%s.%s' % (start, k, end), 'wb') as fp:
-          json.dump(stats.__dict__[k], fp)
-    if params.joint_json:
-      with open(params.json, 'wb') as fp:
-        json.dump(stats.__dict__, fp)
-  if params.plot:
-    per_image_analysis.plot_stats(stats, filename=params.plot)
+    if params.json:
+        import json
 
-if __name__ == '__main__':
-  run(sys.argv[1:])
+        if params.split_json:
+            for k in stats.__dict__:
+                start, end = params.json.split(".")
+                with open("%s_%s.%s" % (start, k, end), "wb") as fp:
+                    json.dump(stats.__dict__[k], fp)
+        if params.joint_json:
+            with open(params.json, "wb") as fp:
+                json.dump(stats.__dict__, fp)
+    if params.plot:
+        per_image_analysis.plot_stats(stats, filename=params.plot)
+
+
+if __name__ == "__main__":
+    run(sys.argv[1:])

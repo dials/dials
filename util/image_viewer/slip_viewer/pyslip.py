@@ -61,16 +61,17 @@ import math
 # if we don't have log.py, don't crash
 try:
     import log
-    log = log.Log('pyslip.log', log.Log.DEBUG)
+
+    log = log.Log("pyslip.log", log.Log.DEBUG)
 except Exception:
 
     def log(*args, **kwargs):
         pass
 
 
-__version__ = '2.2'
+__version__ = "2.2"
 
-__all__ = ['PySlip']
+__all__ = ["PySlip"]
 
 WX3 = wx.VERSION[0] == 3
 
@@ -84,6 +85,7 @@ EventRightBoxSelect = 3
 ######
 # utility routines.
 ######
+
 
 def point_inside_polygon(x, y, poly):
     """Decide if point is inside polygon.
@@ -113,7 +115,7 @@ def point_inside_polygon(x, y, poly):
             if y <= max(p1y, p2y):
                 if x <= max(p1x, p2x):
                     if p1y != p2y:
-                        xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y) + p1x
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
                     if p1x == p2x or x <= xinters:
                         inside = not inside
         (p1x, p1y) = (p2x, p2y)
@@ -125,6 +127,7 @@ def point_inside_polygon(x, y, poly):
 # Base class for the widget canvas - buffered and flicker-free.
 ######
 
+
 class _BufferedCanvas(wx.Panel):
     """Implements a buffered, flicker-free canvas widget.
 
@@ -135,8 +138,14 @@ class _BufferedCanvas(wx.Panel):
     # The backing buffer
     buffer = None
 
-    def __init__(self, parent, id=wx.ID_ANY, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=wx.NO_FULL_REPAINT_ON_RESIZE):
+    def __init__(
+        self,
+        parent,
+        id=wx.ID_ANY,
+        pos=wx.DefaultPosition,
+        size=wx.DefaultSize,
+        style=wx.NO_FULL_REPAINT_ON_RESIZE,
+    ):
         """Initialize the canvas.
 
         parent  reference to 'parent' widget
@@ -154,7 +163,8 @@ class _BufferedCanvas(wx.Panel):
 
         # Disable background erasing (flicker-licious)
         def disable_event(*pargs, **kwargs):
-            pass            # the sauce, please
+            pass  # the sauce, please
+
         self.Bind(wx.EVT_ERASE_BACKGROUND, disable_event)
 
         # set callback upon onSize event
@@ -202,9 +212,11 @@ class _BufferedCanvas(wx.Panel):
         # Now update the screen
         self.Update()
 
+
 ######
 # Base class for a tile object - handles access to tiles.
 ######
+
 
 class _Tiles(object):
     """An object to handle a pyslip tiles directory.
@@ -214,13 +226,13 @@ class _Tiles(object):
     """
 
     # the name of the tile info file (under the main tile dir)
-    TileInfoFilename = 'tile.info'
+    TileInfoFilename = "tile.info"
 
     # expected form of individual tile level directories (2 decimal digits)
-    TileFilenameTemplate = '[0-9][0-9]'
+    TileFilenameTemplate = "[0-9][0-9]"
 
     # name of picture file to use if tile missing (under the main tile dir)
-    MissingTileFilename = 'missing_tile.png'
+    MissingTileFilename = "missing_tile.png"
 
     # maximum number of tiles held in each level cache
     MaxTileList = 4096
@@ -235,9 +247,13 @@ class _Tiles(object):
         self.tile_dir = tile_dir
         info_file = os.path.join(tile_dir, self.TileInfoFilename)
         try:
-            fd = open(info_file, 'rb')
-            (self.extent, self.tile_size,
-                 self.sea_colour, self.land_colour) = pickle.load(fd)
+            fd = open(info_file, "rb")
+            (
+                self.extent,
+                self.tile_size,
+                self.sea_colour,
+                self.land_colour,
+            ) = pickle.load(fd)
             fd.close()
         except IOError:
             msg = "'%s' doesn't appear to be a tile directory" % tile_dir
@@ -247,8 +263,9 @@ class _Tiles(object):
 
         # get list of tile levels
         tile_mask = os.path.join(tile_dir, self.TileFilenameTemplate)
-        self.levels = [int(os.path.basename(l))
-                           for l in glob.glob(os.path.join(tile_mask))]
+        self.levels = [
+            int(os.path.basename(l)) for l in glob.glob(os.path.join(tile_mask))
+        ]
 
         # setup the tile caches and LRU lists
         self.cache = {}
@@ -287,11 +304,14 @@ class _Tiles(object):
         (self.num_tiles_x, self.num_tiles_y, self.ppd_x, self.ppd_y) = info
 
         # store partial path to level dir
-        self.tile_level_dir = os.path.join(self.tile_dir, '%02d' % n)
+        self.tile_level_dir = os.path.join(self.tile_dir, "%02d" % n)
 
-        return (self.tile_size_x * self.num_tiles_x,
-                self.tile_size_y * self.num_tiles_y,
-                self.ppd_x, self.ppd_y)
+        return (
+            self.tile_size_x * self.num_tiles_x,
+            self.tile_size_y * self.num_tiles_y,
+            self.ppd_x,
+            self.ppd_y,
+        )
 
     def GetInfo(self, level):
         """Get tile info for a particular level.
@@ -302,10 +322,9 @@ class _Tiles(object):
         """
 
         # see if we can open the tile info file.
-        info_file = os.path.join(self.tile_dir, '%02d' % level,
-                                 self.TileInfoFilename)
+        info_file = os.path.join(self.tile_dir, "%02d" % level, self.TileInfoFilename)
         try:
-            fd = open(info_file, 'rb')
+            fd = open(info_file, "rb")
         except IOError:
             return None
 
@@ -336,16 +355,14 @@ class _Tiles(object):
             del self.tile_list[index]
         except KeyError:
             # tile *not* in cache: get image, cache and return it
-            img_name = os.path.join(self.tile_level_dir,
-                                    'tile_%d_%d.png' % (x, y))
+            img_name = os.path.join(self.tile_level_dir, "tile_%d_%d.png" % (x, y))
 
             # load tile as not in cache
             if not os.path.exists(img_name):
                 # tile not there, use 'missing tile'
                 if not self.missing_tile:
                     # load missing tile
-                    img_name = os.path.join(self.tile_dir,
-                                            self.MissingTileFilename)
+                    img_name = os.path.join(self.tile_dir, self.MissingTileFilename)
                     img = wx.Image(img_name, wx.BITMAP_TYPE_ANY)
                     self.missing_tile = img.ConvertToBitmap()
                 pic = self.missing_tile
@@ -364,18 +381,29 @@ class _Tiles(object):
         self.tile_list.insert(0, (x, y))
         return pic
 
+
 ######
 # A layer class - encapsulates all layer data.
 ######
 
+
 class _Layer(object):
     """A Layer object."""
 
-    DefaultDelta = 5        # default selection delta
+    DefaultDelta = 5  # default selection delta
 
-    def __init__(self, id=0, painter=None, data=None, map_rel=True,
-                 visible=False, show_levels=None, selectable=False,
-                 name="<no name given>", type=None):
+    def __init__(
+        self,
+        id=0,
+        painter=None,
+        data=None,
+        map_rel=True,
+        visible=False,
+        show_levels=None,
+        selectable=False,
+        name="<no name given>",
+        type=None,
+    ):
         """Initialise the Layer object.
 
         id           unique layer ID
@@ -389,24 +417,30 @@ class _Layer(object):
         type         a layer 'type' flag
         """
 
-        self.painter = painter          # routine to draw layer
-        self.data = data                # data that defined the layer
-        self.map_rel = map_rel          # True if layer is map relative
-        self.visible = visible          # True if layer visible
+        self.painter = painter  # routine to draw layer
+        self.data = data  # data that defined the layer
+        self.map_rel = map_rel  # True if layer is map relative
+        self.visible = visible  # True if layer visible
         self.show_levels = show_levels  # None or list of levels to auto-show
-        self.selectable = selectable    # True if we can select on this layer
+        self.selectable = selectable  # True if we can select on this layer
         self.delta = self.DefaultDelta  # minimum distance for selection
-        self.name = name                # name of this layer
-        self.type = type                # type of layer
-        self.id = id                    # ID of this layer
+        self.name = name  # name of this layer
+        self.type = type  # type of layer
+        self.id = id  # ID of this layer
 
     def __str__(self):
-        return ('<pyslip Layer: id=%d, name=%s, map_rel=%s, visible=%s'
-                % (self.id, self.name, str(self.map_rel), str(self.visible)))
+        return "<pyslip Layer: id=%d, name=%s, map_rel=%s, visible=%s" % (
+            self.id,
+            self.name,
+            str(self.map_rel),
+            str(self.visible),
+        )
+
 
 ###############################################################################
 # A Resource class that abstracts loading/storing resources from/to disk.
 ###############################################################################
+
 
 class Resource(object):
     """A class to allow the loading of layer data to/from disk as a resource.
@@ -443,9 +477,10 @@ class Resource(object):
 
         try:
             import json
+
             self.layers = json.load(open(fname))
         except IOError as e:
-            msg = 'Error opening %s: %s' % (fname, str(e))
+            msg = "Error opening %s: %s" % (fname, str(e))
             raise IOError(msg)
 
     def Write(self, fname=None):
@@ -460,11 +495,17 @@ class Resource(object):
             self.filename = fname
 
         if not self.filename:
-            raise Exception('Write() called but no filename supplied')
+            raise Exception("Write() called but no filename supplied")
 
         import json
-        json.dump(self.layers, open(self.filename, 'wb'), ensure_ascii=False,
-                      indent=2, separators=(',', ':'))
+
+        json.dump(
+            self.layers,
+            open(self.filename, "wb"),
+            ensure_ascii=False,
+            indent=2,
+            separators=(",", ":"),
+        )
 
     def AddLayer(self, name, layer_type, data):
         """Add a layer to the Resource.
@@ -510,6 +551,7 @@ class Resource(object):
 
         return len(self.layers)
 
+
 ###############################################################################
 # The wxPython pySlip widget events.
 # define the events that are raised by the pySlip widget
@@ -546,9 +588,11 @@ class _PySlipEvent(wx.PyCommandEvent):
 
         wx.PyCommandEvent.__init__(self, eventType, id)
 
+
 ###############################################################################
 # The wxPython pySlip widget proper
 ###############################################################################
+
 
 class PySlip(_BufferedCanvas):
     """A widget to display a tiled map, a la Google maps."""
@@ -559,122 +603,134 @@ class PySlip(_BufferedCanvas):
     # dictionary for map-relative image placement
     # assumes variables x, y, w, h, w2, h2, x_off & y_off are set
     # perturbs x and y to top-left image corner for placing
-    image_map_placement = {'cc': 'x=x-w2+x_off;  y=y-h2+y_off',
-                           'nw': 'x=x+x_off;     y=y+y_off',
-                           'cn': 'x=x-w2+x_off;  y=y+y_off',
-                           'ne': 'x=x-w+x_off;   y=y+y_off',
-                           'ce': 'x=x-w+x_off;   y=y-h2+y_off',
-                           'se': 'x=x-w+x_off;   y=y-h+y_off',
-                           'cs': 'x=x-w2+x_off;  y=y-h+y_off',
-                           'sw': 'x=x+x_off;     y=y-h+y_off',
-                           'cw': 'x=x+x_off;     y=y-h2+y_off'}
+    image_map_placement = {
+        "cc": "x=x-w2+x_off;  y=y-h2+y_off",
+        "nw": "x=x+x_off;     y=y+y_off",
+        "cn": "x=x-w2+x_off;  y=y+y_off",
+        "ne": "x=x-w+x_off;   y=y+y_off",
+        "ce": "x=x-w+x_off;   y=y-h2+y_off",
+        "se": "x=x-w+x_off;   y=y-h+y_off",
+        "cs": "x=x-w2+x_off;  y=y-h+y_off",
+        "sw": "x=x+x_off;     y=y-h+y_off",
+        "cw": "x=x+x_off;     y=y-h2+y_off",
+    }
     placements.append(image_map_placement)
 
     # dictionary for view-relative image placement
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to top-left image corner for drawing
-    image_view_placement = {'cc': 'x=dc_w2-w2;     y=dc_h2-h2',
-                            'nw': 'x=x_off;        y=y_off',
-                            'cn': 'x=dc_w2-w2;     y=y_off',
-                            'ne': 'x=dc_w-w-x_off; y=y_off',
-                            'ce': 'x=dc_w-w-x_off; y=dc_h2-h2',
-                            'se': 'x=dc_w-w-x_off; y=dc_h-h-y_off',
-                            'cs': 'x=dc_w2-w2;     y=dc_h-h-y_off',
-                            'sw': 'x=x_off;        y=dc_h-h-y_off',
-                            'cw': 'x=x_off;        y=dc_h2-h2'}
+    image_view_placement = {
+        "cc": "x=dc_w2-w2;     y=dc_h2-h2",
+        "nw": "x=x_off;        y=y_off",
+        "cn": "x=dc_w2-w2;     y=y_off",
+        "ne": "x=dc_w-w-x_off; y=y_off",
+        "ce": "x=dc_w-w-x_off; y=dc_h2-h2",
+        "se": "x=dc_w-w-x_off; y=dc_h-h-y_off",
+        "cs": "x=dc_w2-w2;     y=dc_h-h-y_off",
+        "sw": "x=x_off;        y=dc_h-h-y_off",
+        "cw": "x=x_off;        y=dc_h2-h2",
+    }
     placements.append(image_view_placement)
 
     # map-relative text placement dictionary
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # w and h are text width and height
     # perturbs x and y to correct values for the placement
-    text_map_placement = {'cc': 'x=x-w2;      y=y-h2',
-                          'nw': 'x=x+x_off;   y=y+y_off',
-                          'cn': 'x=x-w2;      y=y+y_off',
-                          'ne': 'x=x-w-x_off; y=y+y_off',
-                          'ce': 'x=x-w-x_off; y=y-h2',
-                          'se': 'x=x-w-x_off; y=y-h-y_off',
-                          'cs': 'x=x-w2;      y=y-h-y_off',
-                          'sw': 'x=x+x_off;   y=y-h-y_off',
-                          'cw': 'x=x+x_off;   y=y-h2'}
+    text_map_placement = {
+        "cc": "x=x-w2;      y=y-h2",
+        "nw": "x=x+x_off;   y=y+y_off",
+        "cn": "x=x-w2;      y=y+y_off",
+        "ne": "x=x-w-x_off; y=y+y_off",
+        "ce": "x=x-w-x_off; y=y-h2",
+        "se": "x=x-w-x_off; y=y-h-y_off",
+        "cs": "x=x-w2;      y=y-h-y_off",
+        "sw": "x=x+x_off;   y=y-h-y_off",
+        "cw": "x=x+x_off;   y=y-h2",
+    }
     placements.append(text_map_placement)
 
     # view-relative text placement dictionary
     # assumes variables x, y, w, h, dc_w, dc_h, x_off, y_off are set
     # w and h are text width and height
     # perturbs x and y to correct values for the placement
-    text_view_placement = {'cc': 'x=x+dc_w2-w2; y=y+dc_h2-h2',
-                           'nw': 'x=x;          y=y',
-                           'cn': 'x=x+dc_w2-w2; y=y',
-                           'ne': 'x=x+dc_w-w;   y=y',
-                           'ce': 'x=x+dc_w-w;   y=y+dc_h2-h2',
-                           'se': 'x=x+dc_w-w;   y=y+dc_h-h',
-                           'cs': 'x=x+dc_w2-w2; y=y+dc_h-h',
-                           'sw': 'x=x;          y=y+dc_h-h',
-                           'cw': 'x=x;          y=y+dc_h2-h2'}
+    text_view_placement = {
+        "cc": "x=x+dc_w2-w2; y=y+dc_h2-h2",
+        "nw": "x=x;          y=y",
+        "cn": "x=x+dc_w2-w2; y=y",
+        "ne": "x=x+dc_w-w;   y=y",
+        "ce": "x=x+dc_w-w;   y=y+dc_h2-h2",
+        "se": "x=x+dc_w-w;   y=y+dc_h-h",
+        "cs": "x=x+dc_w2-w2; y=y+dc_h-h",
+        "sw": "x=x;          y=y+dc_h-h",
+        "cw": "x=x;          y=y+dc_h2-h2",
+    }
     placements.append(text_view_placement)
 
     # view-relative polygon placement dictionary
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to correct values for the placement
-    poly_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                           'nw': 'x=x+x_off;      y=y+y_off',
-                           'cn': 'x=x+dc_w2;      y=y+y_off',
-                           'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                           'ce': 'x=x+dc_w-x_off; y=y+dc_h2-y_off',
-                           'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                           'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                           'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                           'cw': 'x=x+x_off;      y=y+dc_h2'}
+    poly_view_placement = {
+        "cc": "x=x+dc_w2;      y=y+dc_h2",
+        "nw": "x=x+x_off;      y=y+y_off",
+        "cn": "x=x+dc_w2;      y=y+y_off",
+        "ne": "x=x+dc_w-x_off; y=y+y_off",
+        "ce": "x=x+dc_w-x_off; y=y+dc_h2-y_off",
+        "se": "x=x+dc_w-x_off; y=y+dc_h-y_off",
+        "cs": "x=x+dc_w2;      y=y+dc_h-y_off",
+        "sw": "x=x+x_off;      y=y+dc_h-y_off",
+        "cw": "x=x+x_off;      y=y+dc_h2",
+    }
     placements.append(poly_view_placement)
 
     # dictionary for view-relative point placement
     # assumes variables x, y, dc_w, dc_h, x_off, y_off are set
     # perturbs x and y to point centre for drawing
-    point_view_placement = {'cc': 'x=x+dc_w2;      y=y+dc_h2',
-                            'nw': 'x=x+x_off;      y=y+y_off',
-                            'cn': 'x=x+dc_w2;      y=y+y_off',
-                            'ne': 'x=x+dc_w-x_off; y=y+y_off',
-                            'ce': 'x=x+dc_w-x_off; y=y+dc_h2',
-                            'se': 'x=x+dc_w-x_off; y=y+dc_h-y_off',
-                            'cs': 'x=x+dc_w2;      y=y+dc_h-y_off',
-                            'sw': 'x=x+x_off;      y=y+dc_h-y_off',
-                            'cw': 'x=x+x_off;      y=y+dc_h2'}
+    point_view_placement = {
+        "cc": "x=x+dc_w2;      y=y+dc_h2",
+        "nw": "x=x+x_off;      y=y+y_off",
+        "cn": "x=x+dc_w2;      y=y+y_off",
+        "ne": "x=x+dc_w-x_off; y=y+y_off",
+        "ce": "x=x+dc_w-x_off; y=y+dc_h2",
+        "se": "x=x+dc_w-x_off; y=y+dc_h-y_off",
+        "cs": "x=x+dc_w2;      y=y+dc_h-y_off",
+        "sw": "x=x+x_off;      y=y+dc_h-y_off",
+        "cw": "x=x+x_off;      y=y+dc_h2",
+    }
     placements.append(point_view_placement)
 
     # now pre-compile all the placement string dictionaries
     for p_dict in placements:
         for key in p_dict:
-            p_dict[key] = compile(p_dict[key], 'string', 'exec')
+            p_dict[key] = compile(p_dict[key], "string", "exec")
     del placements
 
     # panel background colour
     BackgroundColour = wx.WHITE
 
     # default text attributes - map relative
-    DefaultTextPlacement = 'se'
+    DefaultTextPlacement = "se"
     DefaultTextRadius = 2
     DefaultTextColour = wx.BLACK
     DefaultTextTextColour = wx.BLACK
     DefaultTextOffsetX = 5
     DefaultTextOffsetY = 1
-    DefaultTextFontname = 'ArialMT'
+    DefaultTextFontname = "ArialMT"
     DefaultTextFontSize = 9
     DefaultTextData = None
 
     # default text attributes - view relative
-    DefaultTextViewPlacement = 'se'
+    DefaultTextViewPlacement = "se"
     DefaultTextViewRadius = 0
     DefaultTextViewColour = wx.BLACK
     DefaultTextViewTextColour = wx.BLACK
     DefaultTextViewOffsetX = 0
     DefaultTextViewOffsetY = 0
-    DefaultTextViewFontname = 'ArialMT'
+    DefaultTextViewFontname = "ArialMT"
     DefaultTextViewFontSize = 9
     DefaultTextViewData = None
 
     # default point attributes
-    DefaultPointPlacement = 'nw'
+    DefaultPointPlacement = "nw"
     DefaultPointRadius = 3
     DefaultPointColour = wx.RED
     DefaultPointOffsetX = 0
@@ -682,19 +738,19 @@ class PySlip(_BufferedCanvas):
     DefaultPointData = None
 
     # default image attributes
-    DefaultImagePlacement = 'cc'
+    DefaultImagePlacement = "cc"
     DefaultImageRadius = 0
     DefaultImageColour = wx.BLACK
     DefaultImageOffsetX = 0
     DefaultImageOffsetY = 0
 
     # default polygon attributes
-    DefaultPolygonPlacement = 'cc'
+    DefaultPolygonPlacement = "cc"
     DefaultPolygonWidth = 1
     DefaultPolygonColour = wx.RED
     DefaultPolygonClose = False
     DefaultPolygonFilled = False
-    DefaultPolygonFillcolour = 'blue'
+    DefaultPolygonFillcolour = "blue"
     DefaultPolygonOffsetX = 0
     DefaultPolygonOffsetY = 0
 
@@ -705,8 +761,15 @@ class PySlip(_BufferedCanvas):
     TypeText = 3
     TypeEllipse = 4
 
-    def __init__(self, parent, tile_dir=None, start_level=None,
-                 min_level=None, max_level=None, **kwargs):
+    def __init__(
+        self,
+        parent,
+        tile_dir=None,
+        start_level=None,
+        min_level=None,
+        max_level=None,
+        **kwargs
+    ):
         """Initialise a pySlip instance.
 
         parent       reference to parent object
@@ -741,37 +804,37 @@ class PySlip(_BufferedCanvas):
         self.tile_size_y = self.tiles.tile_size_y
 
         # set some internal state
-        self.view_width = None          # view size in pixels
+        self.view_width = None  # view size in pixels
         self.view_height = None
 
-        self.ppd_x = 0                  # pixel_per_degree for current tileset
+        self.ppd_x = 0  # pixel_per_degree for current tileset
         self.ppd_y = 0
 
-        self.view_offset_x = 0          # pixel offset at left & top of view
+        self.view_offset_x = 0  # pixel offset at left & top of view
         self.view_offset_y = 0
 
-        self.NS_wrap = False            # disallow wraparound N-S
-        self.EW_wrap = False            # disallow wraparound E-W
+        self.NS_wrap = False  # disallow wraparound N-S
+        self.EW_wrap = False  # disallow wraparound E-W
 
         self.view_llon = self.view_rlon = None  # view limits
         self.view_tlat = self.view_blat = None
 
-        self.was_dragging = False               # True if dragging map
-        self.move_dx = 0                        # drag delta values
+        self.was_dragging = False  # True if dragging map
+        self.move_dx = 0  # drag delta values
         self.move_dy = 0
-        self.last_drag_x = None                 # previous drag position
+        self.last_drag_x = None  # previous drag position
         self.last_drag_y = None
 
-        self.ignore_next_up = False             # ignore next LEFT UP event
-        self.ignore_next_right_up = False       # ignore next RIGHT UP event
+        self.ignore_next_up = False  # ignore next LEFT UP event
+        self.ignore_next_right_up = False  # ignore next RIGHT UP event
 
-        self.is_box_select = False              # True if box selection
-        self.sbox_1_x = self.sbox_1_y = None    # box size
+        self.is_box_select = False  # True if box selection
+        self.sbox_1_x = self.sbox_1_y = None  # box size
 
         # layer stuff
-        self.next_layer_id = 1      # source of unique layer IDs
-        self.layer_z_order = []     # layer Z order, contains layer IDs
-        self.layer_mapping = {}     # maps layer ID to layer data
+        self.next_layer_id = 1  # source of unique layer IDs
+        self.layer_z_order = []  # layer Z order, contains layer IDs
+        self.layer_mapping = {}  # maps layer ID to layer data
 
         # True if we send event to report mouse position in view
         self.mouse_position_event = True
@@ -784,18 +847,20 @@ class PySlip(_BufferedCanvas):
 
         # set up dispatch dictionary for layer select handlers
         # for point select
-        self.layerPSelHandler = {self.TypePoint: self.GetNearestPointInLayer,
-                                 self.TypeImage: self.GetNearestImageInLayer,
-                                 self.TypePolygon:
-                                     self.GetNearestPolygonInLayer,
-                                 self.TypeText: self.GetNearestTextInLayer}
+        self.layerPSelHandler = {
+            self.TypePoint: self.GetNearestPointInLayer,
+            self.TypeImage: self.GetNearestImageInLayer,
+            self.TypePolygon: self.GetNearestPolygonInLayer,
+            self.TypeText: self.GetNearestTextInLayer,
+        }
 
         # for box select
-        self.layerBSelHandler = {self.TypePoint: self.GetBoxSelPointsInLayer,
-                                 self.TypeImage: self.GetBoxSelImagesInLayer,
-                                 self.TypePolygon:
-                                     self.GetBoxSelPolygonsInLayer,
-                                 self.TypeText: self.GetBoxSelTextsInLayer}
+        self.layerBSelHandler = {
+            self.TypePoint: self.GetBoxSelPointsInLayer,
+            self.TypeImage: self.GetBoxSelImagesInLayer,
+            self.TypePolygon: self.GetBoxSelPolygonsInLayer,
+            self.TypeText: self.GetBoxSelTextsInLayer,
+        }
 
         # bind event handlers
         self.Bind(wx.EVT_MOTION, self.OnMove)
@@ -834,9 +899,17 @@ class PySlip(_BufferedCanvas):
     # "add a layer" routines
     ######
 
-    def AddPointLayer(self, points, map_rel=True, visible=True,
-                      show_levels=None, selectable=False,
-                      name='<points_layer>', update=True, **kwargs):
+    def AddPointLayer(
+        self,
+        points,
+        map_rel=True,
+        visible=True,
+        show_levels=None,
+        selectable=False,
+        name="<points_layer>",
+        update=True,
+        **kwargs
+    ):
         """Add a layer of points.
 
         points       iterable of point data:
@@ -865,17 +938,17 @@ class PySlip(_BufferedCanvas):
         """
 
         # get global values
-        default_placement = kwargs.get('placement',
-                                       self.DefaultPointPlacement)
-        default_radius = kwargs.get('radius', self.DefaultPointRadius)
-        default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                          self.DefaultPointColour)
-        default_offset_x = kwargs.get('offset_x', self.DefaultPointOffsetX)
-        default_offset_y = kwargs.get('offset_y', self.DefaultPointOffsetY)
-        default_data = kwargs.get('data', self.DefaultPointData)
+        default_placement = kwargs.get("placement", self.DefaultPointPlacement)
+        default_radius = kwargs.get("radius", self.DefaultPointRadius)
+        default_colour = self.get_i18n_kw(
+            kwargs, ("colour", "color"), self.DefaultPointColour
+        )
+        default_offset_x = kwargs.get("offset_x", self.DefaultPointOffsetX)
+        default_offset_y = kwargs.get("offset_y", self.DefaultPointOffsetY)
+        default_data = kwargs.get("data", self.DefaultPointData)
 
         # create data iterable for draw method
-        draw_data = []              # list to hold draw data
+        draw_data = []  # list to hold draw data
 
         for pt in points:
             if len(pt) == 3:
@@ -884,70 +957,126 @@ class PySlip(_BufferedCanvas):
                 (x, y) = pt
                 attributes = {}
             else:
-                msg = ('Points data must be iterable of tuples: '
-                       '(x, y, [dict])\n'
-                       'Got: %s' % str(pt))
+                msg = (
+                    "Points data must be iterable of tuples: "
+                    "(x, y, [dict])\n"
+                    "Got: %s" % str(pt)
+                )
                 raise Exception(msg)
 
             # plug in any required layer defaults (override globals)
-            placement = attributes.get('placement', default_placement)
-            radius = attributes.get('radius', default_radius)
-            colour = self.get_i18n_kw(attributes, ('colour', 'color'),
-                                      default_colour)
-            offset_x = attributes.get('offset_x', default_offset_x)
-            offset_y = attributes.get('offset_y', default_offset_y)
-            data = attributes.get('data', default_data)
+            placement = attributes.get("placement", default_placement)
+            radius = attributes.get("radius", default_radius)
+            colour = self.get_i18n_kw(attributes, ("colour", "color"), default_colour)
+            offset_x = attributes.get("offset_x", default_offset_x)
+            offset_y = attributes.get("offset_y", default_offset_y)
+            data = attributes.get("data", default_data)
 
-            draw_data.append((x, y, placement.lower(),
-                              radius, colour, offset_x, offset_y, data))
+            draw_data.append(
+                (x, y, placement.lower(), radius, colour, offset_x, offset_y, data)
+            )
 
-        return self.AddLayer(kwargs.get("renderer",self.DrawPointLayer), draw_data, map_rel,
-                             visible=visible, show_levels=show_levels,
-                             selectable=selectable, name=name,
-                             type=self.TypePoint, update=update)
+        return self.AddLayer(
+            kwargs.get("renderer", self.DrawPointLayer),
+            draw_data,
+            map_rel,
+            visible=visible,
+            show_levels=show_levels,
+            selectable=selectable,
+            name=name,
+            type=self.TypePoint,
+            update=update,
+        )
 
-    def AddEllipseLayer(self, data, map_rel=True, visible=True,
-                        show_levels=None, selectable=False,
-                        name='<polygon_layer>', update=True, **kwargs):
+    def AddEllipseLayer(
+        self,
+        data,
+        map_rel=True,
+        visible=True,
+        show_levels=None,
+        selectable=False,
+        name="<polygon_layer>",
+        update=True,
+        **kwargs
+    ):
         # get global values, if required
-        default_placement = kwargs.get('placement',
-                                       self.DefaultPolygonPlacement)
-        default_width = kwargs.get('width', self.DefaultPolygonWidth)
-        default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                          self.DefaultPolygonColour)
-        default_close = kwargs.get('closed', self.DefaultPolygonClose)
-        default_filled = kwargs.get('filled', self.DefaultPolygonFilled)
-        default_fillcolour = self.get_i18n_kw(kwargs,
-                                              ('fillcolour', 'fillcolor'),
-                                              self.DefaultPolygonFillcolour)
-        default_offset_x = kwargs.get('offset_x', self.DefaultPolygonOffsetX)
-        default_offset_y = kwargs.get('offset_y', self.DefaultPolygonOffsetY)
+        default_placement = kwargs.get("placement", self.DefaultPolygonPlacement)
+        default_width = kwargs.get("width", self.DefaultPolygonWidth)
+        default_colour = self.get_i18n_kw(
+            kwargs, ("colour", "color"), self.DefaultPolygonColour
+        )
+        default_close = kwargs.get("closed", self.DefaultPolygonClose)
+        default_filled = kwargs.get("filled", self.DefaultPolygonFilled)
+        default_fillcolour = self.get_i18n_kw(
+            kwargs, ("fillcolour", "fillcolor"), self.DefaultPolygonFillcolour
+        )
+        default_offset_x = kwargs.get("offset_x", self.DefaultPolygonOffsetX)
+        default_offset_y = kwargs.get("offset_y", self.DefaultPolygonOffsetY)
 
         draw_data = []
-        for x in range(0,len(data),5):
-          # Calculate ellipse center, major and minor axes.
-          side1=col(( (data[x][0]+data[x+1][0])/2., (data[x][1]+data[x+1][1])/2.))
-          side2=col(( (data[x+1][0]+data[x+2][0])/2., (data[x+1][1]+data[x+2][1])/2.))
-          side3=col(( (data[x+2][0]+data[x+3][0])/2., (data[x+2][1]+data[x+3][1])/2.))
-          side4=col(( (data[x+3][0]+data[x+4][0])/2., (data[x+3][1]+data[x+4][1])/2.))
+        for x in range(0, len(data), 5):
+            # Calculate ellipse center, major and minor axes.
+            side1 = col(
+                (
+                    (data[x][0] + data[x + 1][0]) / 2.0,
+                    (data[x][1] + data[x + 1][1]) / 2.0,
+                )
+            )
+            side2 = col(
+                (
+                    (data[x + 1][0] + data[x + 2][0]) / 2.0,
+                    (data[x + 1][1] + data[x + 2][1]) / 2.0,
+                )
+            )
+            side3 = col(
+                (
+                    (data[x + 2][0] + data[x + 3][0]) / 2.0,
+                    (data[x + 2][1] + data[x + 3][1]) / 2.0,
+                )
+            )
+            side4 = col(
+                (
+                    (data[x + 3][0] + data[x + 4][0]) / 2.0,
+                    (data[x + 3][1] + data[x + 4][1]) / 2.0,
+                )
+            )
 
-          ellipse_center = (side1+side3)/2.
-          semimajor_axis = side3 - ellipse_center
-          semiminor_axis = side2 - ellipse_center
+            ellipse_center = (side1 + side3) / 2.0
+            semimajor_axis = side3 - ellipse_center
+            semiminor_axis = side2 - ellipse_center
 
-          p = (ellipse_center.elems,
-               (semimajor_axis + ellipse_center).elems,
-               (semiminor_axis + ellipse_center).elems)
+            p = (
+                ellipse_center.elems,
+                (semimajor_axis + ellipse_center).elems,
+                (semiminor_axis + ellipse_center).elems,
+            )
 
-          draw_data.append((p, default_placement.lower(),
-                            default_width, default_colour, True,
-                            default_filled, default_fillcolour,
-                            default_offset_x, default_offset_y, None))
+            draw_data.append(
+                (
+                    p,
+                    default_placement.lower(),
+                    default_width,
+                    default_colour,
+                    True,
+                    default_filled,
+                    default_fillcolour,
+                    default_offset_x,
+                    default_offset_y,
+                    None,
+                )
+            )
 
-        return self.AddLayer(self.DrawLightweightEllipticalSpline, draw_data, map_rel,
-                             visible, show_levels=show_levels,
-                             selectable=False, name=name,
-                             type=self.TypeEllipse, update=update)
+        return self.AddLayer(
+            self.DrawLightweightEllipticalSpline,
+            draw_data,
+            map_rel,
+            visible,
+            show_levels=show_levels,
+            selectable=False,
+            name=name,
+            type=self.TypeEllipse,
+            update=update,
+        )
 
     def DrawLightweightEllipticalSpline(self, dc, data, map_rel):
         assert map_rel
@@ -961,8 +1090,18 @@ class PySlip(_BufferedCanvas):
         except NotImplementedError:
             return
 
-        (p, place, width, colour, closed,
-             filled, fillcolour, x_off, y_off, pdata) = data[0]
+        (
+            p,
+            place,
+            width,
+            colour,
+            closed,
+            filled,
+            fillcolour,
+            x_off,
+            y_off,
+            pdata,
+        ) = data[0]
 
         dc.SetPen(wx.Pen(colour, width=width))
 
@@ -972,19 +1111,30 @@ class PySlip(_BufferedCanvas):
             dc.SetBrush(wx.TRANSPARENT_BRUSH)
 
         assert closed
-        assert x_off==0
-        assert y_off==0
+        assert x_off == 0
+        assert y_off == 0
 
         # Ellipses can be convenintly rendered on a graphics context,
         # but not on a generic device context.
         gc = dc.GetGraphicsContext()
-        for (p, place, width, colour, closed,
-             filled, fillcolour, x_off, y_off, pdata) in data:
+        for (
+            p,
+            place,
+            width,
+            colour,
+            closed,
+            filled,
+            fillcolour,
+            x_off,
+            y_off,
+            pdata,
+        ) in data:
 
             # Gather ellipse center, major and minor axes in view
             # coordinates.
             (ellipse_center, semimajor_axis, semiminor_axis) = [
-                self.ConvertGeo2View(lonlat) for lonlat in p]
+                self.ConvertGeo2View(lonlat) for lonlat in p
+            ]
 
             major = col(semimajor_axis) - col(ellipse_center)
             minor = col(semiminor_axis) - col(ellipse_center)
@@ -998,10 +1148,17 @@ class PySlip(_BufferedCanvas):
             gc.DrawEllipse(-r_major, -r_minor, 2 * r_major, 2 * r_minor)
             gc.PopState()
 
-
-    def AddPolygonLayer(self, data, map_rel=True, visible=True,
-                        show_levels=None, selectable=False,
-                        name='<polygon_layer>', update=True, **kwargs):
+    def AddPolygonLayer(
+        self,
+        data,
+        map_rel=True,
+        visible=True,
+        show_levels=None,
+        selectable=False,
+        name="<polygon_layer>",
+        update=True,
+        **kwargs
+    ):
         """Add a layer of polygon data to the map.
 
         data         iterable of polygon tuples:
@@ -1034,18 +1191,18 @@ class PySlip(_BufferedCanvas):
         """
 
         # get global values, if required
-        default_placement = kwargs.get('placement',
-                                       self.DefaultPolygonPlacement)
-        default_width = kwargs.get('width', self.DefaultPolygonWidth)
-        default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                          self.DefaultPolygonColour)
-        default_close = kwargs.get('closed', self.DefaultPolygonClose)
-        default_filled = kwargs.get('filled', self.DefaultPolygonFilled)
-        default_fillcolour = self.get_i18n_kw(kwargs,
-                                              ('fillcolour', 'fillcolor'),
-                                              self.DefaultPolygonFillcolour)
-        default_offset_x = kwargs.get('offset_x', self.DefaultPolygonOffsetX)
-        default_offset_y = kwargs.get('offset_y', self.DefaultPolygonOffsetY)
+        default_placement = kwargs.get("placement", self.DefaultPolygonPlacement)
+        default_width = kwargs.get("width", self.DefaultPolygonWidth)
+        default_colour = self.get_i18n_kw(
+            kwargs, ("colour", "color"), self.DefaultPolygonColour
+        )
+        default_close = kwargs.get("closed", self.DefaultPolygonClose)
+        default_filled = kwargs.get("filled", self.DefaultPolygonFilled)
+        default_fillcolour = self.get_i18n_kw(
+            kwargs, ("fillcolour", "fillcolor"), self.DefaultPolygonFillcolour
+        )
+        default_offset_x = kwargs.get("offset_x", self.DefaultPolygonOffsetX)
+        default_offset_y = kwargs.get("offset_y", self.DefaultPolygonOffsetY)
 
         # create draw_data iterable
         draw_data = []
@@ -1056,43 +1213,70 @@ class PySlip(_BufferedCanvas):
                 p = d
                 attributes = {}
             else:
-                msg = ('Polygon data must be iterable of tuples: '
-                       '(poly, [attributes])\n'
-                       'Got: %s' % str(d))
+                msg = (
+                    "Polygon data must be iterable of tuples: "
+                    "(poly, [attributes])\n"
+                    "Got: %s" % str(d)
+                )
                 raise Exception(msg)
 
             # get polygon attributes
-            placement = attributes.get('placement', default_placement)
-            width = attributes.get('width', default_width)
-            colour = self.get_i18n_kw(attributes, ('colour', 'color'),
-                                      default_colour)
-            close = attributes.get('closed', default_close)
-            filled = attributes.get('filled', default_filled)
+            placement = attributes.get("placement", default_placement)
+            width = attributes.get("width", default_width)
+            colour = self.get_i18n_kw(attributes, ("colour", "color"), default_colour)
+            close = attributes.get("closed", default_close)
+            filled = attributes.get("filled", default_filled)
             if filled:
                 close = True
-            fillcolour = self.get_i18n_kw(attributes,
-                                          ('fillcolour', 'fillcolor'),
-                                          default_fillcolour)
-            offset_x = attributes.get('offset_x', default_offset_x)
-            offset_y = attributes.get('offset_y', default_offset_y)
-            data = attributes.get('data', None)
+            fillcolour = self.get_i18n_kw(
+                attributes, ("fillcolour", "fillcolor"), default_fillcolour
+            )
+            offset_x = attributes.get("offset_x", default_offset_x)
+            offset_y = attributes.get("offset_y", default_offset_y)
+            data = attributes.get("data", None)
 
             # if polygon is to be filled, ensure closed
             if close:
                 p = list(p)
                 p.append(p[0])
 
-            draw_data.append((p, placement.lower(), width, colour, close,
-                              filled, fillcolour, offset_x, offset_y, data))
+            draw_data.append(
+                (
+                    p,
+                    placement.lower(),
+                    width,
+                    colour,
+                    close,
+                    filled,
+                    fillcolour,
+                    offset_x,
+                    offset_y,
+                    data,
+                )
+            )
 
-        return self.AddLayer(self.DrawPolygonLayer, draw_data, map_rel,
-                             visible=visible, show_levels=show_levels,
-                             selectable=selectable, name=name,
-                             type=self.TypePolygon, update=update)
+        return self.AddLayer(
+            self.DrawPolygonLayer,
+            draw_data,
+            map_rel,
+            visible=visible,
+            show_levels=show_levels,
+            selectable=selectable,
+            name=name,
+            type=self.TypePolygon,
+            update=update,
+        )
 
-    def AddImageLayer(self, data, map_rel=True, visible=True,
-                      show_levels=None, selectable=False,
-                      name='<image_layer>', **kwargs):
+    def AddImageLayer(
+        self,
+        data,
+        map_rel=True,
+        visible=True,
+        show_levels=None,
+        selectable=False,
+        name="<image_layer>",
+        **kwargs
+    ):
         """Add a layer of images to the map.
 
         data         list of (lon, lat, fname[, attributes]) (map_rel)
@@ -1117,16 +1301,15 @@ class PySlip(_BufferedCanvas):
         """
 
         # get global attribute values
-        default_placement = kwargs.get('placement',
-                                       self.DefaultImagePlacement)
-        default_offset_x = kwargs.get('offset_x', self.DefaultImageOffsetX)
-        default_offset_y = kwargs.get('offset_y', self.DefaultImageOffsetY)
+        default_placement = kwargs.get("placement", self.DefaultImagePlacement)
+        default_offset_x = kwargs.get("offset_x", self.DefaultImageOffsetX)
+        default_offset_y = kwargs.get("offset_y", self.DefaultImageOffsetY)
 
         # define cache variables for the image data
         fname_cache = None
         bmp_cache = None
         w_cache = None
-        h_cache = None          # used to optimize file access
+        h_cache = None  # used to optimize file access
 
         # load all image files, convert to bitmaps, create draw_data iterable
         draw_data = []
@@ -1137,14 +1320,16 @@ class PySlip(_BufferedCanvas):
                 (lon, lat, fname) = d
                 attributes = {}
             else:
-                msg = ('Points data must be iterable of tuples: '
-                       '(x, y, [dict])\nGot: %s' % str(d))
+                msg = (
+                    "Points data must be iterable of tuples: "
+                    "(x, y, [dict])\nGot: %s" % str(d)
+                )
                 raise Exception(msg)
 
-            placement = attributes.get('placement', default_placement)
-            offset_x = attributes.get('offset_x', default_offset_x)
-            offset_y = attributes.get('offset_y', default_offset_y)
-            data = attributes.get('data', None)
+            placement = attributes.get("placement", default_placement)
+            offset_x = attributes.get("offset_x", default_offset_x)
+            offset_y = attributes.get("offset_y", default_offset_y)
+            data = attributes.get("data", None)
 
             if fname == fname_cache:
                 bmap = bmp_cache
@@ -1157,16 +1342,32 @@ class PySlip(_BufferedCanvas):
                 (w, h) = bmap.GetSize()
                 w_cache = w
                 h_cache = h
-            draw_data.append((lon, lat, bmap, w, h, placement.lower(),
-                              offset_x, offset_y, data))
+            draw_data.append(
+                (lon, lat, bmap, w, h, placement.lower(), offset_x, offset_y, data)
+            )
 
-        return self.AddLayer(self.DrawImageLayer, draw_data, map_rel,
-                             visible=visible, show_levels=show_levels,
-                             selectable=selectable, name=name,
-                             type=self.TypeImage)
+        return self.AddLayer(
+            self.DrawImageLayer,
+            draw_data,
+            map_rel,
+            visible=visible,
+            show_levels=show_levels,
+            selectable=selectable,
+            name=name,
+            type=self.TypeImage,
+        )
 
-    def AddTextLayer(self, text, map_rel=True, visible=True, show_levels=None,
-                     selectable=False, name='<text_layer>', update=True, **kwargs):
+    def AddTextLayer(
+        self,
+        text,
+        map_rel=True,
+        visible=True,
+        show_levels=None,
+        selectable=False,
+        name="<text_layer>",
+        update=True,
+        **kwargs
+    ):
         """Add a text layer to the map.
 
         text         list of sequence of (lon, lat, text, [dict]) coordinates
@@ -1181,31 +1382,33 @@ class PySlip(_BufferedCanvas):
         """
 
         if map_rel:
-            default_placement = kwargs.get('placement', self.DefaultTextPlacement)
-            default_radius = kwargs.get('radius', self.DefaultTextRadius)
-            default_fontname = kwargs.get('fontname', self.DefaultTextFontname)
-            default_fontsize = kwargs.get('fontsize', self.DefaultTextFontSize)
-            default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultTextColour)
-            default_textcolour = self.get_i18n_kw(kwargs,
-                                                  ('textcolour', 'textcolor'),
-                                                  self.DefaultTextTextColour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultTextOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultTextOffsetY)
-            default_data = kwargs.get('data', self.DefaultTextData)
+            default_placement = kwargs.get("placement", self.DefaultTextPlacement)
+            default_radius = kwargs.get("radius", self.DefaultTextRadius)
+            default_fontname = kwargs.get("fontname", self.DefaultTextFontname)
+            default_fontsize = kwargs.get("fontsize", self.DefaultTextFontSize)
+            default_colour = self.get_i18n_kw(
+                kwargs, ("colour", "color"), self.DefaultTextColour
+            )
+            default_textcolour = self.get_i18n_kw(
+                kwargs, ("textcolour", "textcolor"), self.DefaultTextTextColour
+            )
+            default_offset_x = kwargs.get("offset_x", self.DefaultTextOffsetX)
+            default_offset_y = kwargs.get("offset_y", self.DefaultTextOffsetY)
+            default_data = kwargs.get("data", self.DefaultTextData)
         else:
-            default_placement = kwargs.get('placement', self.DefaultTextViewPlacement)
-            default_radius = kwargs.get('radius', self.DefaultTextViewRadius)
-            default_fontname = kwargs.get('fontname', self.DefaultTextViewFontname)
-            default_fontsize = kwargs.get('fontsize', self.DefaultTextViewFontSize)
-            default_colour = self.get_i18n_kw(kwargs, ('colour', 'color'),
-                                              self.DefaultTextViewColour)
-            default_textcolour = self.get_i18n_kw(kwargs,
-                                                  ('textcolour', 'textcolor'),
-                                                  self.DefaultTextViewTextColour)
-            default_offset_x = kwargs.get('offset_x', self.DefaultTextViewOffsetX)
-            default_offset_y = kwargs.get('offset_y', self.DefaultTextViewOffsetY)
-            default_data = kwargs.get('data', self.DefaultTextData)
+            default_placement = kwargs.get("placement", self.DefaultTextViewPlacement)
+            default_radius = kwargs.get("radius", self.DefaultTextViewRadius)
+            default_fontname = kwargs.get("fontname", self.DefaultTextViewFontname)
+            default_fontsize = kwargs.get("fontsize", self.DefaultTextViewFontSize)
+            default_colour = self.get_i18n_kw(
+                kwargs, ("colour", "color"), self.DefaultTextViewColour
+            )
+            default_textcolour = self.get_i18n_kw(
+                kwargs, ("textcolour", "textcolor"), self.DefaultTextViewTextColour
+            )
+            default_offset_x = kwargs.get("offset_x", self.DefaultTextViewOffsetX)
+            default_offset_y = kwargs.get("offset_y", self.DefaultTextViewOffsetY)
+            default_data = kwargs.get("data", self.DefaultTextData)
 
         # create data iterable ready for drawing
         draw_data = []
@@ -1216,36 +1419,67 @@ class PySlip(_BufferedCanvas):
                 (lon, lat, tdata) = t
                 attributes = {}
             else:
-                msg = ('Text data must be iterable of tuples: '
-                       '(lon, lat, text, [dict])\n'
-                       'Got: %s' % str(t))
+                msg = (
+                    "Text data must be iterable of tuples: "
+                    "(lon, lat, text, [dict])\n"
+                    "Got: %s" % str(t)
+                )
                 raise Exception(msg)
 
             # plug in any required defaults
-            placement = attributes.get('placement', default_placement)
-            radius = attributes.get('radius', default_radius)
-            fontname = attributes.get('fontname', default_fontname)
-            fontsize = attributes.get('fontsize', default_fontsize)
-            colour = self.get_i18n_kw(attributes, ('colour', 'color'),
-                                      default_colour)
-            textcolour = self.get_i18n_kw(attributes,
-                                          ('textcolour', 'textcolor'),
-                                          default_textcolour)
-            offset_x = attributes.get('offset_x', default_offset_x)
-            offset_y = attributes.get('offset_y', default_offset_y)
-            data = attributes.get('data', default_data)
+            placement = attributes.get("placement", default_placement)
+            radius = attributes.get("radius", default_radius)
+            fontname = attributes.get("fontname", default_fontname)
+            fontsize = attributes.get("fontsize", default_fontsize)
+            colour = self.get_i18n_kw(attributes, ("colour", "color"), default_colour)
+            textcolour = self.get_i18n_kw(
+                attributes, ("textcolour", "textcolor"), default_textcolour
+            )
+            offset_x = attributes.get("offset_x", default_offset_x)
+            offset_y = attributes.get("offset_y", default_offset_y)
+            data = attributes.get("data", default_data)
 
-            draw_data.append((lon, lat, tdata, placement.lower(),
-                              radius, colour, textcolour, fontname, fontsize,
-                              offset_x, offset_y, data))
+            draw_data.append(
+                (
+                    lon,
+                    lat,
+                    tdata,
+                    placement.lower(),
+                    radius,
+                    colour,
+                    textcolour,
+                    fontname,
+                    fontsize,
+                    offset_x,
+                    offset_y,
+                    data,
+                )
+            )
 
-        return self.AddLayer(self.DrawTextLayer, draw_data, map_rel,
-                             visible=visible, show_levels=show_levels,
-                             selectable=selectable, name=name,
-                             type=self.TypeText, update=update)
+        return self.AddLayer(
+            self.DrawTextLayer,
+            draw_data,
+            map_rel,
+            visible=visible,
+            show_levels=show_levels,
+            selectable=selectable,
+            name=name,
+            type=self.TypeText,
+            update=update,
+        )
 
-    def AddLayer(self, render, data, map_rel, visible, show_levels,
-                 selectable, name, type, update=True):
+    def AddLayer(
+        self,
+        render,
+        data,
+        map_rel,
+        visible,
+        show_levels,
+        selectable,
+        name,
+        type,
+        update=True,
+    ):
         """Add a generic layer to the system.
 
         render       the function used to render the layer
@@ -1269,9 +1503,17 @@ class PySlip(_BufferedCanvas):
             show_levels = range(self.min_level, self.max_level + 1)
 
         # create layer, add unique ID to Z order list
-        l = _Layer(id=id, painter=render, data=data, map_rel=map_rel,
-                   visible=visible, show_levels=show_levels,
-                   selectable=selectable, name=name, type=type)
+        l = _Layer(
+            id=id,
+            painter=render,
+            data=data,
+            map_rel=map_rel,
+            visible=visible,
+            show_levels=show_levels,
+            selectable=selectable,
+            name=name,
+            type=type,
+        )
 
         self.layer_mapping[id] = l
         self.layer_z_order.append(id)
@@ -1407,31 +1649,30 @@ class PySlip(_BufferedCanvas):
         rectangles or points (rather than circles) for performance reasons.
         """
         assert map_rel is True
-        if len(data)==0: return
-        (lon, lat, place,
-                 radius, colour, x_off, y_off, pdata) = data[0]
+        if len(data) == 0:
+            return
+        (lon, lat, place, radius, colour, x_off, y_off, pdata) = data[0]
 
         # draw points on map/view
         if map_rel:
             # GCDC device context permits antialiasing and transparent colors.
             # But, signficant time savings by not allowing these features
             # It's not clear that we actually want or use them anyway
-            #dc = wx.GCDC(dc)            # allow transparent colours
+            # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))
             dc.SetBrush(wx.Brush(colour))
             points = []
             rectangles = []
             if radius:
                 diameter = 2 * radius
-            for (lon, lat, place,
-                 radius, colour, x_off, y_off, pdata) in data:
+            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
                     if radius:
                         rectangles.append(
-                            (x + x_off - radius, y + y_off - radius,
-                             diameter, diameter))
+                            (x + x_off - radius, y + y_off - radius, diameter, diameter)
+                        )
                     else:
                         points.append((x + x_off, y + y_off))
             if len(points):
@@ -1449,20 +1690,19 @@ class PySlip(_BufferedCanvas):
         Assumes all points are the same colour, saving 100's of ms.
         """
         assert map_rel is True
-        if len(data)==0: return
-        (lon, lat, place,
-                 radius, colour, x_off, y_off, pdata) = data[0]
+        if len(data) == 0:
+            return
+        (lon, lat, place, radius, colour, x_off, y_off, pdata) = data[0]
 
         # draw points on map/view
         if map_rel:
             # GCDC device context permits antialiasing and transparent colors.
             # But, signficant time savings by not allowing these features
             # It's not clear that we actually want or use them anyway
-            #dc = wx.GCDC(dc)            # allow transparent colours
+            # dc = wx.GCDC(dc)            # allow transparent colours
             dc.SetPen(wx.Pen(colour))
             dc.SetBrush(wx.Brush(colour))
-            for (lon, lat, place,
-                 radius, colour, x_off, y_off, pdata) in data:
+            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1480,9 +1720,8 @@ class PySlip(_BufferedCanvas):
 
         # draw points on map/view
         if map_rel:
-            dc = wx.GCDC(dc)            # allow transparent colours
-            for (lon, lat, place,
-                 radius, colour, x_off, y_off, pdata) in data:
+            dc = wx.GCDC(dc)  # allow transparent colours
+            for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     dc.SetPen(wx.Pen(colour))
@@ -1496,7 +1735,7 @@ class PySlip(_BufferedCanvas):
             dc_h2 = dc_h / 2
             dc_h -= 1
             dc_w -= 1
-            dc = wx.GCDC(dc)            # allow transparent colours
+            dc = wx.GCDC(dc)  # allow transparent colours
             for (x, y, place, radius, colour, x_off, y_off, pdata) in data:
                 dc.SetPen(wx.Pen(colour))
                 dc.SetBrush(wx.Brush(colour))
@@ -1526,8 +1765,18 @@ class PySlip(_BufferedCanvas):
                 dc = wx.GCDC(dc)
             except NotImplementedError:
                 pass
-            for (p, place, width, colour, closed,
-                 filled, fillcolour, x_off, y_off, pdata) in data:
+            for (
+                p,
+                place,
+                width,
+                colour,
+                closed,
+                filled,
+                fillcolour,
+                x_off,
+                y_off,
+                pdata,
+            ) in data:
                 # gather all polygon points as view coords
                 p_lonlat = []
                 for lonlat in p:
@@ -1554,9 +1803,19 @@ class PySlip(_BufferedCanvas):
             dc_h2 = dc_h / 2
             dc_w -= 1
             dc_h -= 1
-            dc = wx.GCDC(dc)            # allow transparent colours
-            for (p, place, width, colour, closed,
-                 filled, fillcolour, x_off, y_off, pdata) in data:
+            dc = wx.GCDC(dc)  # allow transparent colours
+            for (
+                p,
+                place,
+                width,
+                colour,
+                closed,
+                filled,
+                fillcolour,
+                x_off,
+                y_off,
+                pdata,
+            ) in data:
                 # fetch the exec code, don't refetch for each point in polygon
                 place_exec = self.poly_view_placement[place]
                 pp = []
@@ -1626,10 +1885,22 @@ class PySlip(_BufferedCanvas):
 
         # draw text on map/view
         if map_rel:
-            dc = wx.GCDC(dc)            # allow transparent colours
+            dc = wx.GCDC(dc)  # allow transparent colours
             for t in text:
-                (lon, lat, tdata, place, radius, colour, textcolour,
-                     fontname, fontsize, x_off, y_off, data) = t
+                (
+                    lon,
+                    lat,
+                    tdata,
+                    place,
+                    radius,
+                    colour,
+                    textcolour,
+                    fontname,
+                    fontsize,
+                    x_off,
+                    y_off,
+                    data,
+                ) = t
 
                 # convert geo position to view (returns None if off-view)
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
@@ -1640,8 +1911,9 @@ class PySlip(_BufferedCanvas):
                     dc.SetPen(wx.Pen(colour))
                     dc.SetBrush(wx.Brush(colour))
                     dc.SetTextForeground(colour)
-                    font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
-                                   False, fontname)
+                    font = wx.Font(
+                        fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL, False, fontname
+                    )
                     dc.SetFont(font)
 
                     # draw hotpoint circle
@@ -1662,18 +1934,31 @@ class PySlip(_BufferedCanvas):
             dc_h2 = dc_h / 2
             dc_w -= 1
             dc_h -= 1
-            dc = wx.GCDC(dc)            # allow transparent colours
+            dc = wx.GCDC(dc)  # allow transparent colours
             for t in text:
                 # for each text element, get unpacked data
-                (x, y, tdata, place, radius, colour, textcolour,
-                     fontname, fontsize, x_off, y_off, data) = t
+                (
+                    x,
+                    y,
+                    tdata,
+                    place,
+                    radius,
+                    colour,
+                    textcolour,
+                    fontname,
+                    fontsize,
+                    x_off,
+                    y_off,
+                    data,
+                ) = t
 
                 # set font characteristics
                 dc.SetPen(wx.Pen(colour))
                 dc.SetBrush(wx.Brush(colour))
                 dc.SetTextForeground(colour)
-                font = wx.Font(fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL,
-                               False, fontname)
+                font = wx.Font(
+                    fontsize, wx.SWISS, wx.NORMAL, wx.NORMAL, False, fontname
+                )
                 dc.SetFont(font)
 
                 # draw hotpoint circle - do placement with x & y zero
@@ -1766,8 +2051,10 @@ class PySlip(_BufferedCanvas):
 
         (lon, lat) = lonlat
 
-        return ((lon - self.view_llon) * self.ppd_x,
-                (self.view_tlat - lat) * self.ppd_y)
+        return (
+            (lon - self.view_llon) * self.ppd_x,
+            (self.view_tlat - lat) * self.ppd_y,
+        )
 
     def ConvertGeo2ViewMasked(self, lonlat):
         """Convert a geo (lon+lat) position to view pixel coords.
@@ -1780,8 +2067,10 @@ class PySlip(_BufferedCanvas):
 
         (lon, lat) = lonlat
 
-        if (self.view_llon <= lon <= self.view_rlon and
-                self.view_blat <= lat <= self.view_tlat):
+        if (
+            self.view_llon <= lon <= self.view_rlon
+            and self.view_blat <= lat <= self.view_tlat
+        ):
             return self.ConvertGeo2View(lonlat)
 
         return None
@@ -1820,7 +2109,7 @@ class PySlip(_BufferedCanvas):
 
         # for windows, set focus onto pyslip window
         # linux seems to do this automatically
-        if sys.platform == 'win32' and self.FindFocus() != self:
+        if sys.platform == "win32" and self.FindFocus() != self:
             self.SetFocus()
 
         # get current mouse position
@@ -1832,8 +2121,7 @@ class PySlip(_BufferedCanvas):
             # are we doing box select?
             if self.is_box_select:
                 # set select box point 2 at mouse position
-                (self.sbox_w, self.sbox_h) = (x - self.sbox_1_x,
-                                              y - self.sbox_1_y)
+                (self.sbox_w, self.sbox_h) = (x - self.sbox_1_x, y - self.sbox_1_y)
             elif not self.last_drag_x is None:
                 # no, just a map drag
                 self.was_dragging = True
@@ -1886,15 +2174,14 @@ class PySlip(_BufferedCanvas):
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
         # we need a repaint to remove any selection box, but NOT YET!
-        delayed_paint = self.sbox_1_x       # True if box select active
+        delayed_paint = self.sbox_1_x  # True if box select active
 
         # if any layers interested, inform of possible select
         if not self.was_dragging:
             if self.is_box_select:
                 # possible box selection
                 ll_corner_v = (self.sbox_1_x, self.sbox_1_y)
-                tr_corner_v = (self.sbox_1_x + self.sbox_w,
-                               self.sbox_1_y + self.sbox_h)
+                tr_corner_v = (self.sbox_1_x + self.sbox_w, self.sbox_1_y + self.sbox_h)
                 ll_corner_m = self.ConvertView2Geo(ll_corner_v)
                 tr_corner_m = self.ConvertView2Geo(tr_corner_v)
 
@@ -1906,14 +2193,14 @@ class PySlip(_BufferedCanvas):
                     if l.selectable and l.visible:
                         if l.map_rel:
                             # map-relative, get all points selected (if any)
-                            p_data = self.layerBSelHandler[l.type](l,
-                                                                  ll_corner_m,
-                                                                  tr_corner_m)
+                            p_data = self.layerBSelHandler[l.type](
+                                l, ll_corner_m, tr_corner_m
+                            )
                         else:
                             # view-relative
-                            p_data = self.layerBSelHandler[l.type](l,
-                                                                  ll_corner_v,
-                                                                  tr_corner_v)
+                            p_data = self.layerBSelHandler[l.type](
+                                l, ll_corner_v, tr_corner_v
+                            )
                         self.RaiseSelectEvent(EventBoxSelect, l, p_data)
 
                         # user code possibly updated screen
@@ -1928,17 +2215,18 @@ class PySlip(_BufferedCanvas):
                 for id in self.layer_z_order[:]:
                     l = self.layer_mapping[id]
                     # if layer visible and selectable
-                    if l.selectable and l.visible and \
-                        (l.type in self.layerPSelHandler):
+                    if l.selectable and l.visible and (l.type in self.layerPSelHandler):
                         if l.map_rel:
-                            p_data = self.layerPSelHandler[l.type](l,
-                                                                   clickpt_m)
+                            p_data = self.layerPSelHandler[l.type](l, clickpt_m)
                         else:
-                            p_data = self.layerPSelHandler[l.type](l,
-                                                                   clickpt_v)
-                        self.RaiseSelectEvent(EventPointSelect, l, p_data,
-                                              vposn=clickpt_v,
-                                              mposn=clickpt_m)
+                            p_data = self.layerPSelHandler[l.type](l, clickpt_v)
+                        self.RaiseSelectEvent(
+                            EventPointSelect,
+                            l,
+                            p_data,
+                            vposn=clickpt_v,
+                            mposn=clickpt_m,
+                        )
 
                         # user code possibly updated screen
                         delayed_paint = True
@@ -2019,14 +2307,13 @@ class PySlip(_BufferedCanvas):
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
         # we need a repaint to remove any selection box, but NOT YET!
-        delayed_paint = self.sbox_1_x       # True if box select active
+        delayed_paint = self.sbox_1_x  # True if box select active
 
         # if any layers interested, inform of possible select
         if self.is_box_select:
             # possible box selection
             ll_corner_v = (self.sbox_1_x, self.sbox_1_y)
-            tr_corner_v = (self.sbox_1_x + self.sbox_w,
-                           self.sbox_1_y + self.sbox_h)
+            tr_corner_v = (self.sbox_1_x + self.sbox_w, self.sbox_1_y + self.sbox_h)
             ll_corner_m = self.ConvertView2Geo(ll_corner_v)
             tr_corner_m = self.ConvertView2Geo(tr_corner_v)
 
@@ -2034,15 +2321,13 @@ class PySlip(_BufferedCanvas):
             # we work on a copy as user response could change order
             for id in self.layer_z_order[:]:
                 l = self.layer_mapping[id]
-                if l.selectable and l.visible:   # and l.event_box_select:
+                if l.selectable and l.visible:  # and l.event_box_select:
                     if l.map_rel:
                         # map-relative, get all points selected (if any)
-                        pts = self.layerBSelHandler[l.type](l, ll_corner_m,
-                                                            tr_corner_m)
+                        pts = self.layerBSelHandler[l.type](l, ll_corner_m, tr_corner_m)
                     else:
                         # view-relative
-                        pts = self.layerBSelHandler[l.type](l, ll_corner_v,
-                                                            tr_corner_v)
+                        pts = self.layerBSelHandler[l.type](l, ll_corner_v, tr_corner_v)
                     self.RaiseSelectEvent(EventRightBoxSelect, l, pts)
 
                     # user code possibly updated screen
@@ -2062,9 +2347,9 @@ class PySlip(_BufferedCanvas):
                         pt = self.layerPSelHandler[l.type](l, clickpt_m)
                     else:
                         pt = self.layerPSelHandler[l.type](l, clickpt_v)
-                    self.RaiseSelectEvent(EventRightPointSelect, l, pt,
-                                          mposn=clickpt_m,
-                                          vposn=clickpt_v)
+                    self.RaiseSelectEvent(
+                        EventRightPointSelect, l, pt, mposn=clickpt_m, vposn=clickpt_v
+                    )
 
                     # user code possibly updated screen
                     delayed_paint = True
@@ -2090,7 +2375,7 @@ class PySlip(_BufferedCanvas):
         mouse_x, mouse_y = event.GetPositionTuple() if WX3 else event.GetPosition()
         mouse_latlon = self.ConvertView2Geo((mouse_x, mouse_y))
         # get center of view in map coords
-        x, y = self.view_width/2, self.view_height/2
+        x, y = self.view_width / 2, self.view_height / 2
         # determine which way to zoom, & *can* we zoom?
         if event.GetWheelRotation() > 0:
             if self.ZoomToLevel(self.level + 1):
@@ -2102,12 +2387,13 @@ class PySlip(_BufferedCanvas):
         # Translate the map so that the point under the mouse cursor is the same
         # after zooming in/out as before
         new_mouse_x, new_mouse_y = self.ConvertGeo2View(mouse_latlon)
-        new_center = (x + (new_mouse_x - mouse_x),
-                      y + (new_mouse_y - mouse_y))
+        new_center = (x + (new_mouse_x - mouse_x), y + (new_mouse_y - mouse_y))
         self.GotoPosition(self.ConvertView2Geo(new_center))
 
         # Raise position event to update the status text.
-        self.RaiseMousePositionEvent(event.GetPositionTuple() if WX3 else event.GetPosition())
+        self.RaiseMousePositionEvent(
+            event.GetPositionTuple() if WX3 else event.GetPosition()
+        )
 
     ######
     # Method that overrides _BufferedCanvas.Draw() method.
@@ -2129,54 +2415,59 @@ class PySlip(_BufferedCanvas):
         """
 
         # figure out how to draw tiles
-        if False:# self.view_offset_x < 0: # NKS No wrapping or hard boundaries
+        if False:  # self.view_offset_x < 0: # NKS No wrapping or hard boundaries
             # View > Map in X - centre in X direction
             if self.EW_wrap:
-                tile_margin = ((-self.view_offset_x + self.tile_size_x - 1) //
-                               self.tile_size_x)
-                col_start = (self.tiles.num_tiles_x -
-                             tile_margin % self.tiles.num_tiles_x)
+                tile_margin = (
+                    -self.view_offset_x + self.tile_size_x - 1
+                ) // self.tile_size_x
+                col_start = (
+                    self.tiles.num_tiles_x - tile_margin % self.tiles.num_tiles_x
+                )
                 col_list = []
                 for i in range(2 * tile_margin + self.tiles.num_tiles_x):
                     ii = (i + col_start) % self.tiles.num_tiles_x
                     col_list.append(ii)
-                x_pix = (self.view_offset_x
-                         + (tile_margin - 1) * self.tile_size_x)
+                x_pix = self.view_offset_x + (tile_margin - 1) * self.tile_size_x
             else:
                 col_list = range(0, self.tiles.num_tiles_x)
                 x_pix = -self.view_offset_x
         else:
             # Map > View - determine layout in X direction
             x_offset = self.view_offset_x + self.move_dx
-            import math # NKS allow negative tile coordinates
+            import math  # NKS allow negative tile coordinates
+
             start_x_tile = int(math.floor(x_offset / self.tile_size_x))
-            stop_x_tile = ((x_offset + self.view_width + self.tile_size_x - 1)
-                           / self.tile_size_x)
+            stop_x_tile = (
+                x_offset + self.view_width + self.tile_size_x - 1
+            ) / self.tile_size_x
             stop_x_tile = int(stop_x_tile)
             col_list = range(start_x_tile, stop_x_tile)
             x_pix = start_x_tile * self.tile_size_y - x_offset
 
-        if False:#self.view_offset_y < 0: # NKS No wrapping or hard boundaries
+        if False:  # self.view_offset_y < 0: # NKS No wrapping or hard boundaries
             # View > Map in Y - centre in Y direction
             if self.NS_wrap:
-                tile_margin = ((-self.view_offset_y + self.tile_size_y - 1)
-                               // self.tile_size_y)
-                row_start = (self.tiles.num_tiles_y
-                             - tile_margin % self.tiles.num_tiles_y)
+                tile_margin = (
+                    -self.view_offset_y + self.tile_size_y - 1
+                ) // self.tile_size_y
+                row_start = (
+                    self.tiles.num_tiles_y - tile_margin % self.tiles.num_tiles_y
+                )
                 row_list = []
                 for i in range(2 * tile_margin + self.tiles.num_tiles_y):
                     ii = (i + row_start) % self.tiles.num_tiles_y
                     row_list.append(ii)
-                y_pix_start = self.view_offset_y + \
-                                  (tile_margin - 1) * self.tile_size_y
+                y_pix_start = self.view_offset_y + (tile_margin - 1) * self.tile_size_y
             else:
                 row_list = range(0, self.tiles.num_tiles_y)
                 y_pix_start = -self.view_offset_y
         else:
             y_offset = self.view_offset_y + self.move_dy
             start_y_tile = int(math.floor(y_offset / self.tile_size_y))
-            stop_y_tile = ((y_offset + self.view_height
-                            + self.tile_size_y - 1) / self.tile_size_y)
+            stop_y_tile = (
+                y_offset + self.view_height + self.tile_size_y - 1
+            ) / self.tile_size_y
             stop_y_tile = int(stop_y_tile)
             row_list = range(start_y_tile, stop_y_tile)
             y_pix_start = start_y_tile * self.tile_size_y - y_offset
@@ -2201,8 +2492,7 @@ class PySlip(_BufferedCanvas):
             dc.SetPen(wx.Pen(penclr, width=1))
             brushclr = wx.Colour(0, 0, 0)
             dc.SetBrush(wx.Brush(brushclr, style=wx.TRANSPARENT))
-            dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y,
-                             self.sbox_w, self.sbox_h)
+            dc.DrawRectangle(self.sbox_1_x, self.sbox_1_y, self.sbox_w, self.sbox_h)
 
     ######
     # Miscellaneous
@@ -2221,7 +2511,9 @@ class PySlip(_BufferedCanvas):
         """
 
         # get new size of the view
-        (self.view_width, self.view_height) = self.GetClientSizeTuple() if WX3 else self.GetClientSize()
+        (self.view_width, self.view_height) = (
+            self.GetClientSizeTuple() if WX3 else self.GetClientSize()
+        )
 
         # if map > view in X axis
         if self.map_width > self.view_width:
@@ -2229,10 +2521,10 @@ class PySlip(_BufferedCanvas):
             # NKS allow background to show
             # do nothing unless background is showing
             # if map left edge right of view edge
-            #if self.view_offset_x < 0:
+            # if self.view_offset_x < 0:
             #    # move view to hide background at left
             #    self.view_offset_x = 0
-            #elif self.view_offset_x + self.view_width > self.map_width:
+            # elif self.view_offset_x + self.view_width > self.map_width:
             #    # move view to hide background at right
             #    self.view_offset_x = self.map_width - self.view_width
         else:
@@ -2245,10 +2537,10 @@ class PySlip(_BufferedCanvas):
             # NKS allow background to show
             # do nothing unless background is showing
             # if map top edge below view edge
-            #if self.view_offset_y < 0:
+            # if self.view_offset_y < 0:
             #    # move view to hide background at top
             #    self.view_offset_y = 0
-            #elif self.view_offset_y + self.view_height > self.map_height:
+            # elif self.view_offset_y + self.view_height > self.map_height:
             #    # move view to hide background at bottom
             #    self.view_offset_y = self.map_height - self.view_height
         else:
@@ -2283,10 +2575,13 @@ class PySlip(_BufferedCanvas):
             map_extent = self.tiles.UseLevel(level)
             if map_extent:
                 self.level = level
-                (self.map_width, self.map_height,
-                     self.ppd_x, self.ppd_y) = map_extent
-                (self.map_llon, self.map_rlon,
-                     self.map_blat, self.map_tlat) = self.tiles.extent
+                (self.map_width, self.map_height, self.ppd_x, self.ppd_y) = map_extent
+                (
+                    self.map_llon,
+                    self.map_rlon,
+                    self.map_blat,
+                    self.map_tlat,
+                ) = self.tiles.extent
 
                 # do level change callback
                 self.RaiseLevelChangeEvent(level)
@@ -2325,13 +2620,13 @@ class PySlip(_BufferedCanvas):
         Return None (no selection) or ((x, y), data) of closest point.
         """
 
-# TODO: speed this up?  Do we need to??
-# http://en.wikipedia.org/wiki/Kd-tree
-# would need to create kd-tree in AddLayer()
+        # TODO: speed this up?  Do we need to??
+        # http://en.wikipedia.org/wiki/Kd-tree
+        # would need to create kd-tree in AddLayer()
 
         (ptx, pty) = pt
         res = None
-        dist = 9999999.0        # more than possible
+        dist = 9999999.0  # more than possible
         if layer.map_rel:
             for p in layer.data:
                 (x, y, _, _, _, _, _, data) = p
@@ -2376,13 +2671,13 @@ class PySlip(_BufferedCanvas):
         of points inside the selection box.
         """
 
-# TODO: speed this up?  Do we need to??
+        # TODO: speed this up?  Do we need to??
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
+        lx = min(p1x, p2x)  # left x coord
         rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
+        ty = max(p1y, p2y)  # top y coord
         by = min(p1y, p2y)
 
         # get a list of points inside the selection box
@@ -2419,7 +2714,7 @@ class PySlip(_BufferedCanvas):
 
         (ptx, pty) = pt
         res = None
-        dist = 9999999.0        # more than possible
+        dist = 9999999.0  # more than possible
         for p in layer.data:
             x = p[0]
             y = p[1]
@@ -2448,9 +2743,9 @@ class PySlip(_BufferedCanvas):
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
+        lx = min(p1x, p2x)  # left x coord
         rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
+        ty = max(p1y, p2y)  # top y coord
         by = min(p1y, p2y)
 
         result = []
@@ -2511,7 +2806,7 @@ class PySlip(_BufferedCanvas):
 
         (ptx, pty) = pt
         res = None
-        dist = 1.0E+100        # more than possible
+        dist = 1.0e100  # more than possible
         for p in layer.data:
             (x, y, _, _, _, _, _, _, _, _, _, data) = p
             d = (x - ptx) * (x - ptx) + (y - pty) * (y - pty)
@@ -2541,9 +2836,9 @@ class PySlip(_BufferedCanvas):
         # get canonical box limits
         (p1x, p1y) = p1
         (p2x, p2y) = p2
-        lx = min(p1x, p2x)      # left x coord
+        lx = min(p1x, p2x)  # left x coord
         rx = max(p1x, p2x)
-        ty = max(p1y, p2y)      # top y coord
+        ty = max(p1y, p2y)  # top y coord
         by = min(p1y, p2y)
 
         # get a list of points inside the selection box
@@ -2673,7 +2968,7 @@ class PySlip(_BufferedCanvas):
         posn  a tuple (x,y) position in view pixel coordinates
         """
 
-        return True #NKS always accept mouse coordinates
+        return True  # NKS always accept mouse coordinates
         (x, y) = posn
 
         if self.view_offset_x < 0:

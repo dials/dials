@@ -13,10 +13,15 @@ cpp_tests = [
     "test/algorithms/spot_prediction/tst_reeke_model",
 ]
 
-@pytest.mark.parametrize('executable', cpp_tests, ids=[p.replace('/', '-') for p in cpp_tests])
-def test_cpp_program(executable):
-  full_path = os.path.join(os.environ["LIBTBX_BUILD"], 'dials', *(executable.split('/')))
-  print(full_path)
 
-  result = procrunner.run([full_path])
-  assert not result['exitcode'] and not result['stderr']
+@pytest.mark.parametrize(
+    "executable", cpp_tests, ids=[p.replace("/", "-") for p in cpp_tests]
+)
+def test_cpp_program(executable):
+    full_path = os.path.join(
+        os.environ["LIBTBX_BUILD"], "dials", *(executable.split("/"))
+    )
+    print(full_path)
+
+    result = procrunner.run([full_path])
+    assert not result["exitcode"] and not result["stderr"]

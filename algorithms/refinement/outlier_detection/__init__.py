@@ -12,9 +12,19 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-from dials.algorithms.refinement.outlier_detection.outlier_base import CentroidOutlier # import dependency
-from dials.algorithms.refinement.outlier_detection.outlier_base import CentroidOutlierFactory # import dependency
-from dials.algorithms.refinement.outlier_detection.outlier_base import phil_str # import dependency
-from dials.algorithms.refinement.outlier_detection.outlier_base import phil_scope # import dependency
-from dials.algorithms.refinement.outlier_detection.mcd import MCD # import dependency
-from dials.algorithms.refinement.outlier_detection.tukey import Tukey # import dependency
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    CentroidOutlier,
+)  # import dependency
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    CentroidOutlierFactory,
+)  # import dependency
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_str,
+)  # import dependency
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_scope,
+)  # import dependency
+from dials.algorithms.refinement.outlier_detection.mcd import MCD  # import dependency
+from dials.algorithms.refinement.outlier_detection.tukey import (
+    Tukey,
+)  # import dependency

@@ -4,12 +4,15 @@ import os
 
 from libtbx import easy_run
 
+
 def test_align_crystal(dials_regression, run_in_tmpdir):
-  path = os.path.join(dials_regression, "experiment_test_data")
-  cmd = "dials.align_crystal %s/kappa_experiments.json" %path
-  result = easy_run.fully_buffered(cmd).raise_if_errors()
-  out = "\n".join(result.stdout_lines[6:])
-  assert out == """\
+    path = os.path.join(dials_regression, "experiment_test_data")
+    cmd = "dials.align_crystal %s/kappa_experiments.json" % path
+    result = easy_run.fully_buffered(cmd).raise_if_errors()
+    out = "\n".join(result.stdout_lines[6:])
+    assert (
+        out
+        == """\
 Angles between reciprocal cell axes and principal experimental axes:
 --------------------------------------------
 Experimental axis | a*     | b*     | c*
@@ -36,3 +39,4 @@ c* (6-fold)  | a* (2-fold)    |   4.324   | -77.874
 c* (6-fold)  | a* (2-fold)    |  -4.324   |  106.075
 ----------------------------------------------------\
 """
+    )

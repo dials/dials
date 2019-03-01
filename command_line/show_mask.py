@@ -25,15 +25,18 @@ from libtbx.phil import parse
 from dials.util import Sorry
 
 # The phil scope
-phil_scope = parse('''
+phil_scope = parse(
+    """
 
   image = 0
     .type = int
     .help = "Which image to show"
 
-''', process_includes=True)
+""",
+    process_includes=True,
+)
 
-help_message = '''
+help_message = """
 
 Utility to just display the mask for the desired image
 
@@ -41,54 +44,55 @@ Examples::
 
   dev.dials.show_mask experiments.json image=1
 
-'''
+"""
+
 
 class Script(object):
+    def __init__(self):
+        """Initialise the script."""
+        from dials.util.options import OptionParser
+        import libtbx.load_env
 
-  def __init__(self):
-    '''Initialise the script.'''
-    from dials.util.options import OptionParser
-    import libtbx.load_env
+        # The script usage
+        usage = (
+            "usage: %s [options] [param.phil] "
+            "experiments1.json experiments2.json reflections1.pickle "
+            "reflections2.pickle..." % libtbx.env.dispatcher_name
+        )
 
-    # The script usage
-    usage  = "usage: %s [options] [param.phil] " \
-             "experiments1.json experiments2.json reflections1.pickle " \
-             "reflections2.pickle..." \
-             % libtbx.env.dispatcher_name
+        # Create the parser
+        self.parser = OptionParser(
+            usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
+        )
 
-    # Create the parser
-    self.parser = OptionParser(
-      usage=usage,
-      phil=phil_scope,
-      read_experiments=True,
-      epilog=help_message)
+    def run(self):
+        """Execute the script."""
 
-  def run(self):
-    '''Execute the script.'''
+        # Parse the command line
+        params, options = self.parser.parse_args(show_diff_phil=True)
 
-    # Parse the command line
-    params, options = self.parser.parse_args(show_diff_phil=True)
+        experiments = flatten_experiments(params.input.experiments)
+        assert len(experiments) == 1
+        imageset = experiments[0].imageset
 
-    experiments = flatten_experiments(params.input.experiments)
-    assert len(experiments) == 1
-    imageset = experiments[0].imageset
+        mask = imageset.get_mask(params.image)
 
-    mask = imageset.get_mask(params.image)
+        assert len(mask) == 1
 
-    assert(len(mask) == 1)
+        print("Num True: %d" % mask[0].count(True))
+        print("Num False: %d" % mask[0].count(False))
 
-    print("Num True: %d" % mask[0].count(True))
-    print("Num False: %d" % mask[0].count(False))
+        from matplotlib import pylab
 
-    from matplotlib import pylab
-    pylab.imshow(mask[0].as_numpy_array(), interpolation='none')
-    pylab.show()
+        pylab.imshow(mask[0].as_numpy_array(), interpolation="none")
+        pylab.show()
 
 
 if __name__ == "__main__":
-  from dials.util import halraiser
-  try:
-    script = Script()
-    script.run()
-  except Exception as e:
-    halraiser(e)
+    from dials.util import halraiser
+
+    try:
+        script = Script()
+        script.run()
+    except Exception as e:
+        halraiser(e)
