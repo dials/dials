@@ -1,0 +1,22 @@
+# Run dev.dials.install_pre_commits to enable repository pre-commits.
+
+repos:
+
+# If a python3 installation is available than can run black
+# then run that. Otherwise skip.
+-   repo: https://github.com/dials/black
+    rev: v2
+    hooks:
+    -   id: black
+        args: [--safe, --quiet]
+        language_version: libtbx.python
+
+# Syntax check and some basic flake8,
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.0.0
+    hooks:
+    -   id: check-ast
+        language_version: libtbx.python
+    -   id: flake8
+        language_version: libtbx.python
+        args: ['--max-line-length=88', '--select=W291,W292,W293,F401']
