@@ -5,9 +5,8 @@ import wx
 from wx.lib.intctrl import IntCtrl
 
 from .slip_viewer.frame import XrayFrame
-from .slip_viewer import pyslip
 
-from rstbx.viewer.frame import SettingsFrame, SettingsPanel
+from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
 from dials.array_family import flex
 
@@ -42,21 +41,6 @@ class LoadImageEvent(wx.PyCommandEvent):
 
 def create_load_image_event(destination, filename):
     wx.PostEvent(destination, LoadImageEvent(myEVT_LOADIMG, -1, filename))
-
-
-# class SpotFrame(XrayFrame):
-#   def __init__(self, *args, **kwds):
-#     self.datablock = kwds["datablock"]
-#     self.experiments = kwds["experiments"]
-#     if self.datablock is not None:
-#       self.imagesets = self.datablock.extract_imagesets()
-#       self.crystals = None
-#     else:
-#       self.imagesets = []
-#       self.crystals = []
-#       for expt_list in self.experiments:
-#         self.imagesets.extend(expt_list.imagesets())
-#         self.crystals.extend(expt_list.crystals())
 
 
 class SpotFrame(XrayFrame):
@@ -260,7 +244,6 @@ class SpotFrame(XrayFrame):
         self.Bind(wx.EVT_MENU, self.OnMask, source=item)
 
     def OnMask(self, event):
-        from .slip_viewer.score_frame import ScoreSettingsFrame
         from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 
         if not self._mask_frame:
