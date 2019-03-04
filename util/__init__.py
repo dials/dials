@@ -10,6 +10,9 @@ from libtbx.utils import Sorry
 fcntl, msvcrt = None, None
 try:
     import fcntl
+except ImportError:
+    pass
+try:
     import msvcrt
 except ImportError:
     pass
