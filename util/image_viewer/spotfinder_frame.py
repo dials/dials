@@ -1671,9 +1671,7 @@ class SpotFrame(XrayFrame):
                             )
                         else:
                             raise
-                    beam_x, beam_y = detector[panel].millimeter_to_pixel(
-                        beam_centre
-                    )
+                    beam_x, beam_y = detector[panel].millimeter_to_pixel(beam_centre)
                     beam_x, beam_y = map_coords(beam_x, beam_y, panel)
                 lines = []
                 for i, h in enumerate(((10, 0, 0), (0, 10, 0), (0, 0, 10))):
