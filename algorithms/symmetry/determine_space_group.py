@@ -14,7 +14,7 @@ from libtbx import table_utils
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
-from cctbx import sgtbx
+from cctbx import crystal, sgtbx
 
 from dials.algorithms.symmetry import symmetry_base
 
@@ -82,8 +82,17 @@ class determine_space_group(symmetry_base):
         self._score_laue_groups()
 
     def _estimate_cc_sig_fac(self):
+        """Estimation of sigma(CC) as a function of sample size.
 
-        # A1.1. Estimation of sigma(CC) as a function of sample size.
+        Estimate the error in the correlation coefficient, sigma(CC) by using
+        pairs of reflections at similar resolutions that are not related by
+        potential symmetry. Using pairs of unrelated reflections at similar
+        resolutions, calculate sigma(CC) == rms(CC) for groups of size N = 3..200.
+        The constant CCsigFac is obtained from a linear fit of
+        sigma(CC) to 1/N^(1/2), i.e.:
+            sigma(CC) = CCsigFac/N^(1/2)
+
+        """
 
         max_bins = 500
         reflections_per_bin = max(
@@ -102,8 +111,18 @@ class determine_space_group(symmetry_base):
             bin_isel = binner.array_indices(i)
             p = flex.random_permutation(count)
             p = p[: 2 * (count // 2)]  # ensure even count
-            a.extend(self.intensities.data().select(bin_isel.select(p[: count // 2])))
-            b.extend(self.intensities.data().select(bin_isel.select(p[count // 2 :])))
+            ma_tmp = self.intensities.customized_copy(
+                crystal_symmetry=crystal.symmetry(
+                    space_group=self.lattice_group,
+                    unit_cell=self.intensities.unit_cell(),
+                    assert_is_compatible_unit_cell=False)).map_to_asu()
+            ma_a = ma_tmp.select(bin_isel.select(p[: count // 2]))
+            ma_b = ma_tmp.select(bin_isel.select(p[count // 2 :]))
+            # only choose pairs of reflections that don't have the same indices
+            # in the asu of the lattice group
+            sel = ma_a.indices() != ma_b.indices()
+            a.extend(ma_a.data().select(sel))
+            b.extend(ma_b.data().select(sel))
 
         perm = flex.random_selection(a.size(), min(20000, a.size()))
         a = a.select(perm)
