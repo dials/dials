@@ -271,13 +271,14 @@ class Model(ProfileModelExt):
             sigma_b = params.gaussian_rs.parameters.sigma_b
         if params.gaussian_rs.parameters.sigma_m is not None:
             sigma_m = params.gaussian_rs.parameters.sigma_m
+        n_sigma = params.guassian_rs.parameters.n_sigma
         if sigma_m is None or sigma_b is None:
             raise RuntimeError("Not enough information to set profile parameters")
         logger.info("Creating profile model with parameters:")
         logger.info("  sigma_b: %f" % sigma_b)
         logger.info("  sigma_m: %f" % sigma_m)
         return cls(
-            params=params, n_sigma=3.0, sigma_b=sigma_b, sigma_m=sigma_m, deg=True
+            params=params, n_sigma=n_sigma, sigma_b=sigma_b, sigma_m=sigma_m, deg=True
         )
 
     @classmethod
@@ -375,7 +376,7 @@ class Model(ProfileModelExt):
         ):
             return cls(
                 params=params,
-                n_sigma=3.0,
+                n_sigma=params.gaussian_rs.parameters.n_sigma,
                 sigma_b=params.gaussian_rs.parameters.sigma_b,
                 sigma_m=params.gaussian_rs.parameters.sigma_m,
                 deg=True,
@@ -397,7 +398,7 @@ class Model(ProfileModelExt):
         )
         return cls(
             params=params,
-            n_sigma=3.0,
+            n_sigma=params.gaussian_rs.parameters.n_sigma,
             sigma_b=calculator.sigma_b(),
             sigma_m=calculator.sigma_m(),
         )
