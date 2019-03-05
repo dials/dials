@@ -18,7 +18,7 @@ from dials.util import Sorry
 from mock import Mock
 import iotbx.merging_statistics
 from iotbx import cif, mtz
-from cctbx import miller, crystal
+from cctbx import miller, crystal, uctbx
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
@@ -349,6 +349,85 @@ def calculate_merging_statistics(reflection_table, experiments, use_internal_var
             ids.append(dataset_id)
     return results, ids
 
+def scaled_data_as_miller_array(
+        reflection_table_list, experiments, best_unit_cell=None, anomalous_flag=False
+    ):
+        """Get a scaled miller array from an experiment and reflection table."""
+        if len(reflection_table_list) > 1:
+            joint_table = flex.reflection_table()
+            for reflection_table in reflection_table_list:
+                # better to just create many miller arrays and join them?
+                refl_for_joint_table = flex.reflection_table()
+                for col in [
+                    "miller_index",
+                    "intensity.scale.value",
+                    "inverse_scale_factor",
+                    "intensity.scale.variance",
+                ]:
+                    refl_for_joint_table[col] = reflection_table[col]
+                good_refl_sel = ~reflection_table.get_flags(
+                    reflection_table.flags.bad_for_scaling, all=False
+                )
+                refl_for_joint_table = refl_for_joint_table.select(good_refl_sel)
+                joint_table.extend(refl_for_joint_table)
+        else:
+            reflection_table = reflection_table_list[0]
+            good_refl_sel = ~reflection_table.get_flags(
+                reflection_table.flags.bad_for_scaling, all=False
+            )
+            joint_table = reflection_table.select(good_refl_sel)
+        # Filter out negative scale factors to avoid merging statistics errors.
+        # These are not removed from the output data, as it is likely one would
+        # want to do further analysis e.g. delta cc1/2 and rescaling, to exclude
+        # certain data and get better scale factors for all reflections.
+        pos_scales = joint_table["inverse_scale_factor"] > 0
+        if pos_scales.count(False) > 0:
+            logger.info(
+                """There are %s reflections with non-positive scale factors which
+will not be used for calculating merging statistics"""
+                % pos_scales.count(False)
+            )
+            joint_table = joint_table.select(pos_scales)
+
+        if best_unit_cell is None:
+            best_unit_cell = determine_best_unit_cell(experiments)
+        miller_set = miller.set(
+            crystal_symmetry=crystal.symmetry(
+                unit_cell=best_unit_cell,
+                space_group=experiments[0].crystal.get_space_group(),
+                assert_is_compatible_unit_cell=False,
+            ),
+            indices=joint_table["miller_index"],
+            anomalous_flag=anomalous_flag,
+        )
+        i_obs = miller.array(
+            miller_set,
+            data=joint_table["intensity.scale.value"]
+            / joint_table["inverse_scale_factor"],
+        )
+        i_obs.set_observation_type_xray_intensity()
+        i_obs.set_sigmas(
+            (joint_table["intensity.scale.variance"] ** 0.5)
+            / joint_table["inverse_scale_factor"]
+        )
+        i_obs.set_info(
+            miller.array_info(source="DIALS", source_type="reflection_tables")
+        )
+        return i_obs
+
+def determine_best_unit_cell(experiments):
+    """Set the median unit cell as the best cell, for consistent d-values across
+    experiments."""
+    uc_params = [flex.double() for i in range(6)]
+    for exp in experiments:
+        for i, p in enumerate(exp.crystal.get_unit_cell().parameters()):
+            uc_params[i].append(p)
+    best_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+    if len(experiments) > 1:
+        logger.info(
+            "Using median unit cell across experiments : %s", best_unit_cell
+        )
+    return best_unit_cell
 
 def calculate_single_merging_stats(
     reflection_table, experiment, use_internal_variance, n_bins=20

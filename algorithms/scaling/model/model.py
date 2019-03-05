@@ -130,6 +130,7 @@ class ScalingModelBase(object):
                         [
                             ("n_parameters", self._components[key].n_params),
                             ("parameters", list(self._components[key].parameters)),
+                            ("null_parameter_value", self._components[key].null_parameter_value)
                         ]
                     )
                 }

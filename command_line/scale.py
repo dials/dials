@@ -44,14 +44,12 @@ import time
 import logging
 import sys
 import gc
-import copy as copy
 import libtbx
 from libtbx import phil
 from dials.util import Sorry
-from libtbx.str_utils import make_sub_header
-from cctbx import miller, crystal, uctbx
+from cctbx import crystal
 import iotbx.merging_statistics
-from dials.util import halraiser, log
+from dials.util import halraiser, log, show_mail_on_error
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
@@ -62,6 +60,8 @@ from dials.algorithms.scaling.scaling_library import (
     prepare_multiple_datasets_for_scaling,
     create_auto_scaling_model,
     set_image_ranges_in_scaling_models,
+    scaled_data_as_miller_array,
+    determine_best_unit_cell
 )
 from dials.algorithms.scaling.scaler_factory import create_scaler, MultiScalerFactory
 from dials.util.multi_dataset_handling import select_datasets_on_ids
@@ -80,9 +80,8 @@ from dials.algorithms.scaling.algorithm import (
     targeted_scaling_algorithm,
     scaling_algorithm,
 )
-from dials.algorithms.scaling.reflection_selection import (
-    determine_reflection_selection_parameters,
-)
+from dials.util.observer import Subject
+from dials.algorithms.scaling.observers import register_default_scaling_observers
 
 
 logger = logging.getLogger("dials")
@@ -114,6 +113,9 @@ phil_scope = phil.parse(
       .type = str
       .help = "Option to set filepath for output pickle file of scaled
                intensities."
+    html = "scaling.html"
+      .type = str
+      .help = "Filename for html report."
     unmerged_mtz = None
       .type = path
       .help = "Filename to export an unmerged_mtz, calls dials.export internally."
@@ -150,10 +152,11 @@ phil_scope = phil.parse(
 )
 
 
-class Script(object):
+class Script(Subject):
     """Main script to run the scaling algorithm."""
 
     def __init__(self, params, experiments, reflections):
+        super(Script, self).__init__(events=["merging_statistics", "run_script"])
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
@@ -161,6 +164,8 @@ class Script(object):
             params, experiments, reflections
         )
         self._create_model_and_scaler()
+        logger.debug("Initialised scaling script object")
+        log_memory_usage()
 
     def _create_model_and_scaler(self):
         """Create the scaling models and scaler."""
@@ -173,25 +178,24 @@ class Script(object):
                 self.params, self.experiments, self.reflections
             )
         logger.info("\nScaling models have been initialised for all experiments.")
-        logger.info("\n" + "=" * 80 + "\n")
+        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
         self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 
         self.scaler = create_scaler(self.params, self.experiments, self.reflections)
-        logger.debug("Initialised scaling script object")
-        log_memory_usage()
 
+    @Subject.notify_event(event="run_script")
     def run(self, save_data=True):
         """Run the scaling script."""
         start_time = time.time()
         self.scale()
         self.remove_unwanted_datasets()
-        print_scaling_model_error_info(self.experiments)
-        self.prepare_scaled_miller_array()
+        #print_scaling_model_error_info(self.experiments)
+        self.scaled_miller_array = scaled_data_as_miller_array(
+            self.reflections, self.experiments, anomalous_flag=False
+        )
         try:
-            self.merging_statistics_result = self.merging_stats(
-                self.scaled_miller_array, self.params
-            )
+            self.calculate_merging_stats()
         except DialsMergingStatisticsError as e:
             logger.info(e)
 
@@ -212,7 +216,7 @@ class Script(object):
         # All done!
         finish_time = time.time()
         logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
-        logger.info("\n" + "=" * 80 + "\n")
+        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     @staticmethod
     def prepare_input(params, experiments, reflections):
@@ -253,7 +257,7 @@ class Script(object):
             reflections.append(reflection_table)
 
         #### Perform any non-batch cutting of the datasets, including the target dataset
-        best_unit_cell = Script.determine_best_unit_cell(experiments)
+        best_unit_cell = determine_best_unit_cell(experiments)
         for reflection in reflections:
             if params.cut_data.d_min or params.cut_data.d_max:
                 d = best_unit_cell.d(reflection["miller_index"])
@@ -270,24 +274,28 @@ class Script(object):
                 )
         return params, experiments, reflections
 
-    @staticmethod
-    def determine_best_unit_cell(experiments):
-        """Set the median unit cell as the best cell, for consistent d-values across
-        experiments."""
-        uc_params = [flex.double() for i in range(6)]
-        for exp in experiments:
-            for i, p in enumerate(exp.crystal.get_unit_cell().parameters()):
-                uc_params[i].append(p)
-        best_unit_cell = uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
-        if len(experiments) > 1:
-            logger.info(
-                "Using median unit cell across experiments : %s", best_unit_cell
-            )
-        return best_unit_cell
-
     def scale(self):
-        """Do the scaling."""
-        self.scaler = self.scaling_algorithm(self.scaler)
+        """The main scaling algorithm."""
+
+        if self.scaler.id_ == "target":
+            ### FIXME add in quick prescaling round if large scale difference?
+            self.scaler.perform_scaling()
+
+            if (
+                self.params.scaling_options.only_target
+                or self.params.scaling_options.target_model
+                or self.params.scaling_options.target_mtz
+            ):
+
+                self.scaler = targeted_scaling_algorithm(self.scaler)
+                return
+            # Now pass to a multiscaler ready for next round of scaling.
+            self.scaler.expand_scales_to_all_reflections()
+            self.scaler = MultiScalerFactory.create_from_targetscaler(self.scaler)
+
+        # From here onwards, scaler should only be a SingleScaler
+        # or MultiScaler (not TargetScaler).
+        self.scaler = scaling_algorithm(self.scaler)
 
     def remove_unwanted_datasets(self):
         """Remove any target model/mtz data and any datasets which were removed
@@ -313,97 +321,30 @@ class Script(object):
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )
 
-    @staticmethod
-    def scaled_data_as_miller_array(
-        reflection_table_list, experiments, best_unit_cell=None, anomalous_flag=False
-    ):
-        """Get a scaled miller array from an experiment and reflection table."""
-        if len(reflection_table_list) > 1:
-            joint_table = flex.reflection_table()
-            for reflection_table in reflection_table_list:
-                # better to just create many miller arrays and join them?
-                refl_for_joint_table = flex.reflection_table()
-                for col in [
-                    "miller_index",
-                    "intensity.scale.value",
-                    "inverse_scale_factor",
-                    "intensity.scale.variance",
-                ]:
-                    refl_for_joint_table[col] = reflection_table[col]
-                good_refl_sel = ~reflection_table.get_flags(
-                    reflection_table.flags.bad_for_scaling, all=False
-                )
-                refl_for_joint_table = refl_for_joint_table.select(good_refl_sel)
-                joint_table.extend(refl_for_joint_table)
-        else:
-            reflection_table = reflection_table_list[0]
-            good_refl_sel = ~reflection_table.get_flags(
-                reflection_table.flags.bad_for_scaling, all=False
-            )
-            joint_table = reflection_table.select(good_refl_sel)
-        # Filter out negative scale factors to avoid merging statistics errors.
-        # These are not removed from the output data, as it is likely one would
-        # want to do further analysis e.g. delta cc1/2 and rescaling, to exclude
-        # certain data and get better scale factors for all reflections.
-        pos_scales = joint_table["inverse_scale_factor"] > 0
-        if pos_scales.count(False) > 0:
-            logger.info(
-                """There are %s reflections with non-positive scale factors which
-will not be used for calculating merging statistics"""
-                % pos_scales.count(False)
-            )
-            joint_table = joint_table.select(pos_scales)
-
-        if best_unit_cell is None:
-            best_unit_cell = Script.determine_best_unit_cell(experiments)
-        miller_set = miller.set(
-            crystal_symmetry=crystal.symmetry(
-                unit_cell=best_unit_cell,
-                space_group=experiments[0].crystal.get_space_group(),
-                assert_is_compatible_unit_cell=False,
-            ),
-            indices=joint_table["miller_index"],
-            anomalous_flag=anomalous_flag,
-        )
-        i_obs = miller.array(
-            miller_set,
-            data=joint_table["intensity.scale.value"]
-            / joint_table["inverse_scale_factor"],
-        )
-        i_obs.set_observation_type_xray_intensity()
-        i_obs.set_sigmas(
-            (joint_table["intensity.scale.variance"] ** 0.5)
-            / joint_table["inverse_scale_factor"]
-        )
-        i_obs.set_info(
-            miller.array_info(source="DIALS", source_type="reflection_tables")
-        )
-        return i_obs
-
-    def prepare_scaled_miller_array(self):
-        """Calculate a scaled miller array from the dataset."""
-        self.scaled_miller_array = self.scaled_data_as_miller_array(
-            self.reflections, self.experiments, anomalous_flag=False
-        )
 
     @staticmethod
     def stats_only(reflections, experiments, params):
         """Calculate and print merging stats."""
         best_unit_cell = params.reflection_selection.best_unit_cell
         if not params.reflection_selection.best_unit_cell:
-            best_unit_cell = Script.determine_best_unit_cell(experiments)
-        scaled_miller_array = Script.scaled_data_as_miller_array(
+            best_unit_cell = determine_best_unit_cell(experiments)
+        scaled_miller_array = scaled_data_as_miller_array(
             reflections, experiments, best_unit_cell=best_unit_cell
         )
         try:
-            _ = Script.merging_stats(scaled_miller_array, params)
+            _ = Script.merging_stats_from_scaled_array(scaled_miller_array, params)
         except DialsMergingStatisticsError as e:
             logger.info(e)
 
+    @Subject.notify_event(event="merging_statistics")
+    def calculate_merging_stats(self):
+        self.merging_statistics_result = self.merging_stats_from_scaled_array(
+            self.scaled_miller_array, self.params
+        )
+
     @staticmethod
-    def merging_stats(scaled_miller_array, params):
+    def merging_stats_from_scaled_array(scaled_miller_array, params):
         """Calculate and print the merging statistics."""
-        logger.info("%s %s %s", "\n", "=" * 80, "\n")
 
         if scaled_miller_array.is_unique_set_under_symmetry():
             logger.info(
@@ -414,9 +355,6 @@ will not be used for calculating merging statistics"""
             )
             return None
 
-        make_sub_header(
-            "Overall merging statistics (non-anomalous)", out=log.info_handle(logger)
-        )
         try:
             result = iotbx.merging_statistics.dataset_statistics(
                 i_obs=scaled_miller_array,
@@ -425,15 +363,14 @@ will not be used for calculating merging statistics"""
                 sigma_filtering=None,
                 eliminate_sys_absent=False,
                 use_internal_variance=params.output.use_internal_variance,
+                cc_one_half_significance_level=0.01
             )
-            show_merging_summary(result.overall)
-            show_merging_stats_by_resolution(result)
-            show_estimated_cutoffs(result)
-            return result
         except RuntimeError:
             raise DialsMergingStatisticsError(
                 "Failure during merging statistics calculation"
             )
+        else:
+            return result
 
     def delete_datastructures(self):
         """Delete the data in the scaling datastructures to save RAM before
@@ -446,12 +383,8 @@ will not be used for calculating merging statistics"""
 
     def output(self):
         """Save the experiments json and scaled pickle file."""
-        logger.info("\n" + "=" * 80 + "\n")
+        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
-        """if self.params.scaling_options.target_model or \
-      self.params.scaling_options.target_mtz or \
-      self.params.scaling_options.only_target:
-      self.experiments = self.experiments[:-1]"""
         save_experiments(self.experiments, self.params.output.experiments)
 
         # Now create a joint reflection table. Delete all other data before
@@ -516,7 +449,7 @@ may be best to rerun scaling from this point for an improved model.""",
                 crystal_name="dials", column_root_label="IMEAN"
             )  # what does column_root_label do?
 
-            anomalous_scaled = self.scaled_data_as_miller_array(
+            anomalous_scaled = scaled_data_as_miller_array(
                 [joint_table], self.experiments, anomalous_flag=True
             )
             merged_anom = anomalous_scaled.merge_equivalents(
@@ -534,30 +467,6 @@ may be best to rerun scaling from this point for an improved model.""",
             date_str = time.strftime("%d/%m/%Y at %H:%M:%S", time.gmtime())
             mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
             mtz_file.write(self.params.output.merged_mtz)
-
-    def scaling_algorithm(self, scaler):
-        """The main scaling algorithm."""
-
-        if scaler.id_ == "target":
-            ### FIXME add in quick prescaling round if large scale difference?
-            scaler.perform_scaling()
-
-            if (
-                scaler.params.scaling_options.only_target
-                or scaler.params.scaling_options.target_model
-                or scaler.params.scaling_options.target_mtz
-            ):
-
-                scaler = targeted_scaling_algorithm(scaler)
-                return scaler
-            # Now pass to a multiscaler ready for next round of scaling.
-            scaler.expand_scales_to_all_reflections()
-            scaler = MultiScalerFactory.create_from_targetscaler(scaler)
-
-        # From here onwards, scaler should only be a SingleScaler
-        # or MultiScaler (not TargetScaler).
-        scaler = scaling_algorithm(scaler)
-        return scaler
 
 
 def ensure_consistent_space_groups(experiments, params):
@@ -596,203 +505,71 @@ space groups numbers found: %s""",
     )
     return experiments
 
+def run_scaling(params, experiments, reflections):
+    """Run scaling algorithms; stats only, cross validation or standard."""
+    if params.stats_only:
+        Script.stats_only(reflections, experiments, params)
+        sys.exit()
 
-def print_scaling_model_error_info(experiments):
-    """Print out information on model errors"""
-    if experiments[0].scaling_model.components.values()[0].parameter_esds:
-        p_sigmas = flex.double()
-        for experiment in experiments:
-            for component in experiment.scaling_model.components.itervalues():
-                if component.parameter_esds:
-                    p_sigmas.extend(
-                        flex.abs(component.parameters) / component.parameter_esds
-                    )
-        log_p_sigmas = flex.log(p_sigmas)
-        frac_high_uncertainty = (log_p_sigmas < 1.0).count(True) / len(log_p_sigmas)
-        if frac_high_uncertainty > 0:
-            if frac_high_uncertainty > 0.5:
-                logger.warn(
-                    """Warning: Over half (%.2f%%) of model parameters have signficant
-uncertainty (sigma/abs(parameter) > 0.5), which could indicate a
-poorly-determined scaling problem or overparameterisation."""
-                    % (frac_high_uncertainty * 100)
-                )
-            else:
-                logger.info(
-                    """%.2f%% of model parameters have signficant uncertainty
-(sigma/abs(parameter) > 0.5)"""
-                    % (frac_high_uncertainty * 100)
-                )
-            logger.info("Plots of parameter uncertainties can be seen in dials report")
+    if params.output.delete_integration_shoeboxes:
+        for r in reflections:
+            del r["shoebox"]
 
-
-def show_merging_summary(overall):
-    """Output a summary of merging statistics"""
-    logger.info(
-        (
-            "Resolution: {0:.2f} - {1:.2f} {sep}Observations: {2:d} {sep}"
-            "Unique reflections: {3:d} {sep}Redundancy: {4:.1f} {sep}"
-            "Completeness: {5:.2f}% {sep}Mean intensity: {6:.1f} {sep}"
-            "Mean I/sigma(I): {7:.1f}"
-        ).format(
-            overall.d_max,
-            overall.d_min,
-            overall.n_obs,
-            overall.n_uniq,
-            overall.mean_redundancy,
-            overall.completeness * 100,
-            overall.i_mean,
-            overall.i_over_sigma_mean,
-            sep="\n",
+    if params.cross_validation.cross_validation_mode:
+        from dials.algorithms.scaling.cross_validation.cross_validate import (
+            cross_validate,
         )
-    )
-    if overall.n_neg_sigmas > 0:
-        logger.info("SigI < 0 (rejected): %d observations", overall.n_neg_sigmas)
-    if overall.n_rejected_before_merge > 0:
+        from dials.algorithms.scaling.cross_validation.crossvalidator import (
+            DialsScaleCrossValidator,
+        )
+
+        cross_validator = DialsScaleCrossValidator(experiments, reflections)
+        cross_validate(params, cross_validator)
+
         logger.info(
-            "I < -3*SigI (rejected): %d observations", overall.n_rejected_before_merge
+            "Cross validation analysis does not produce scaling output files, rather\n"
+            "it gives insight into the dataset. Choose an appropriate parameterisation\n"
+            "and rerun scaling without cross_validation_mode.\n"
         )
-    if overall.n_rejected_after_merge > 0:
-        logger.info(
-            "I < -3*SigI (rejected): %d reflections", overall.n_rejected_after_merge
-        )
-    logger.info(
-        ("R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}").format(
-            overall.r_merge, overall.r_meas, overall.r_pim, sep="\n"
-        )
+
+    else:
+        script = Script(params, experiments, reflections)
+        # Register the observers at the highest level
+        register_default_scaling_observers(script)
+        script.run()
+
+def run():
+    """Run the scaling from the command-line."""
+    usage = """Usage: dials.scale integrated.pickle integrated_experiments.json
+[integrated.pickle(2) integrated_experiments.json(2) ....] [options]"""
+
+    parser = OptionParser(
+        usage=usage,
+        read_experiments=True,
+        read_reflections=True,
+        phil=phil_scope,
+        check_format=False,
+        epilog=help_message,
     )
+    params, _ = parser.parse_args(show_diff_phil=False)
 
+    if not params.input.experiments or not params.input.reflections:
+        parser.print_help()
+        sys.exit()
 
-def show_merging_stats_by_resolution(result):
-    """Output merging statistics by resolution bin"""
-    logger.info("Statistics by resolution bin:")
-    logger.info(
-        " d_max  d_min   #obs  #uniq   mult.  %%comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   %scc1/2  cc_ano",
-        (" " if result.overall.cc_one_half_significance is not None else ""),
-    )
-    for bin_stats in result.bins:
-        logger.info(bin_stats.format())
-    logger.info(result.overall.format())
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
 
+    log.config(verbosity=1, info=params.output.log, debug=params.output.debug.log)
+    logger.info(dials_version())
 
-def show_estimated_cutoffs(result):
-    """Show estimated cutoffs based on iotbx code"""
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil is not "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
 
-    def format_d_min(value):
-        """Format result values"""
-        if value is None:
-            return "(use all data)"
-        return "%7.3f" % value
-
-    cc_one_half_cut = result.estimate_d_min(min_cc_one_half=0.33)
-    i_over_sigma_cut = result.estimate_d_min(min_i_over_sigma=2.0)
-    r_merge_cut = result.estimate_d_min(max_r_merge=0.5)
-    r_meas_cut = result.estimate_d_min(max_r_meas=0.5)
-    completeness_cut_conservative = result.estimate_d_min(min_completeness=0.9)
-    completeness_cut_permissive = result.estimate_d_min(min_completeness=0.5)
-    logger.info("\nResolution cutoff estimates:")
-    logger.info("resolution of all data          : %7.3f", result.overall.d_min)
-    logger.info("based on CC(1/2) >= 0.33        : %s", format_d_min(cc_one_half_cut))
-    logger.info("based on mean(I/sigma) >= 2.0   : %s", format_d_min(i_over_sigma_cut))
-    logger.info("based on R-merge < 0.5          : %s", format_d_min(r_merge_cut))
-    logger.info("based on R-meas < 0.5           : %s", format_d_min(r_meas_cut))
-    logger.info(
-        "based on completeness >= 90%%    : %s",
-        format_d_min(completeness_cut_conservative),
-    )
-    logger.info(
-        "based on completeness >= 50%%    : %s",
-        format_d_min(completeness_cut_permissive),
-    )
-    logger.info(
-        "NOTE: we recommend using all data out to the CC(1/2) limit for refinement"
-    )
-
+    run_scaling(params, experiments, reflections)
 
 if __name__ == "__main__":
-    try:
-        # Parse the command line and flatten reflections, experiments
-        usage = """Usage: dials.scale integrated.pickle integrated_experiments.json
-[integrated.pickle(2) integrated_experiments.json(2) ....] [options]"""
-        optionparser = OptionParser(
-            usage=usage,
-            read_experiments=True,
-            read_reflections=True,
-            read_datablocks=False,
-            phil=phil_scope,
-            check_format=False,
-            epilog=help_message,
-        )
-        params, _ = optionparser.parse_args(show_diff_phil=False)
-        if not params.input.experiments or not params.input.reflections:
-            optionparser.print_help()
-            sys.exit()
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
-
-        if params.output.delete_integration_shoeboxes:
-            for r in reflections:
-                del r["shoebox"]
-
-        if params.stats_only:
-            log.config(
-                verbosity=1, info=params.output.log, debug=params.output.debug.log
-            )
-            logger.info(dials_version())
-            Script.stats_only(reflections, experiments, params)
-            sys.exit()
-
-        if params.cross_validation.cross_validation_mode:
-            from dials.algorithms.scaling.cross_validation.cross_validate import (
-                cross_validate,
-            )
-            from dials.algorithms.scaling.cross_validation.crossvalidator import (
-                DialsScaleCrossValidator,
-            )
-
-            log.config(
-                verbosity=1,
-                info=params.cross_validation.log,
-                debug=params.cross_validation.debug.log,
-            )
-            logger.info(dials_version())
-            diff_phil = optionparser.diff_phil
-            if diff_phil.as_str() is not "":
-                logger.info("The following parameters have been modified:\n")
-                logger.info(diff_phil.as_str())
-            diff_phil.objects = [
-                obj
-                for obj in diff_phil.objects
-                if not (obj.name == "input" or obj.name == "cross_validation")
-            ]
-
-            cross_validator = DialsScaleCrossValidator(experiments, reflections)
-            cross_validate(params, cross_validator)
-
-            if diff_phil.objects:
-                logger.info(
-                    "\nAdditional configuration for all runs: \n%s", diff_phil.as_str()
-                )
-
-            logger.info(
-                "Cross validation analysis does not produce scaling output files, rather\n"
-                "it gives insight into the dataset. Choose an appropriate parameterisation\n"
-                "and rerun scaling without cross_validation_mode.\n"
-            )
-
-        else:
-            # Set up the log
-            log.config(
-                verbosity=1, info=params.output.log, debug=params.output.debug.log
-            )
-            logger.info(dials_version())
-            diff_phil = optionparser.diff_phil.as_str()
-            if diff_phil is not "":
-                logger.info("The following parameters have been modified:\n")
-                logger.info(diff_phil)
-
-            script = Script(params, experiments, reflections)
-            script.run()
-
-    except Exception as e:
-        halraiser(e)
+    with show_mail_on_error():
+        run()

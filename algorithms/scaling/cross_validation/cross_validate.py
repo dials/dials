@@ -75,14 +75,6 @@ phil_scope = phil.parse(
               "allowed is 1/free_set_percentage; if set greater than this then"
               "the repetition will finish afer 1/free_set_percentage folds."
       .expert_level = 2
-    log = dials.cross_validate.log
-      .type = str
-      .help = "The log filename"
-      .expert_level = 2
-    debug.log = dials.cross_validate.debug.log
-      .type = str
-      .help = "The debug log filename"
-      .expert_level = 2
   }
 """
 )

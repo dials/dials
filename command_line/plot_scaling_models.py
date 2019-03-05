@@ -67,7 +67,6 @@ def plot_scaling_models(argv):
         usage=None,
         read_experiments=True,
         read_reflections=True,
-        read_datablocks=False,
         phil=phil_scope,
         check_format=False,
     )

@@ -1,0 +1,22 @@
+{% extends "report_base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ page_title }}</h1>
+</div>
+
+<div>
+  <div class="panel-group">
+      <div class="panel-body">
+          <p><b>Summary of merging statistics</b></p>
+          {{ macros.table(scaling_tables[0]) }}
+          <p><b>Merging statistics by resolution bin</b></p>
+          {{ macros.table(scaling_tables[1]) }}
+      </div>
+      {{ macros.panel('CC-half plot', 'cc_one_half', cc_one_half_plot) }}
+      {{ macros.panel('Scaling model plots', 'scaling_model', scaling_model_graphs) }}
+      {{ macros.panel('Scaling outlier plots', 'outlier_plots', scaling_outlier_graphs) }}
+      {{ macros.panel('Normal probability plots', 'normal_prob_plot', normal_prob_plot) }}
+  </div>
+</div>
+
+{% endblock %}
