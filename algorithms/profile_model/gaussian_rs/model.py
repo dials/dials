@@ -14,6 +14,7 @@ import logging
 
 from dials.model.experiment.profile import ProfileModelExt
 from libtbx.phil import parse
+from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +101,6 @@ class Model(ProfileModelExt):
     def __init__(self, params, n_sigma, sigma_b, sigma_m, deg=False):
         """ Initialise with the parameters. """
         from math import pi
-        from dials.array_family import flex
 
         self.params = params
         self._n_sigma = n_sigma
@@ -584,7 +584,6 @@ class Model(ProfileModelExt):
         :return: The profile fitting class
 
         """
-        from dials.array_family import flex
 
         # Check input
         if self._scan_varying:
