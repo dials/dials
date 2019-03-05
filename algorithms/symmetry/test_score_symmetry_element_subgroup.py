@@ -6,8 +6,49 @@ from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from cctbx.sgtbx.subgroups import subgroups
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
-from dials.algorithms.symmetry.determine_space_group import ScoreSymmetryElement
-from dials.algorithms.symmetry.determine_space_group import ScoreSubGroup
+from dials.algorithms.symmetry.determine_space_group import (
+    ScoreCorrelationCoefficient,
+    ScoreSubGroup,
+    ScoreSymmetryElement,
+)
+
+
+def test_score_correlation_coefficient():
+    cc = 1
+    expected_cc = 1
+    sigma_cc = 0.1
+    score_cc = ScoreCorrelationCoefficient(cc, sigma_cc, expected_cc)
+    assert score_cc.p_s_given_cc == pytest.approx(0.92228731117286322)
+
+    cc = 0.5
+    expected_cc = 0.6
+    sigma_cc = 0.2
+    score_cc = ScoreCorrelationCoefficient(cc, sigma_cc, expected_cc)
+    assert score_cc.p_s_given_cc == pytest.approx(0.6219260650411923)
+
+    if 0:
+        from matplotlib import pyplot as plt
+        import numpy as np
+
+        x = np.linspace(-1, 1)
+        values = [(0.1, 1), (0.1, 0.8), (0.2, 1), (0.2, 0.8)]
+        fig, axes = plt.subplots(nrows=2, ncols=2)
+        for ax, (sigma_cc, expected_cc) in zip(axes.flatten(), values):
+            ax.set_title("E(CC) = %.1f, sigma(cc) = %.1f" % (expected_cc, sigma_cc))
+            p_cc_given_s = []
+            p_cc_given_not_s = []
+            p_s_given_cc = []
+            for _ in x:
+                score_cc = ScoreCorrelationCoefficient(_, sigma_cc, expected_cc)
+                p_cc_given_s.append(score_cc.p_cc_given_s)
+                p_cc_given_not_s.append(score_cc.p_cc_given_not_s)
+                p_s_given_cc.append(score_cc.p_s_given_cc)
+            ax.plot(x, p_cc_given_s, label="p(CC;S)")
+            ax.plot(x, p_cc_given_not_s, label="p(CC;!S)")
+            ax.plot(x, p_s_given_cc, label="p(S;CC)")
+        for ax in axes.flatten():
+            ax.legend()
+        plt.show()
 
 
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"][:])
