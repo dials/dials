@@ -455,7 +455,7 @@ def test_target_gradient_calculation_finite_difference(
     assert len(test_reflections) == 1
     experiments = create_scaling_model(params, test_experiments, test_reflections)
     scaler = create_scaler(params, experiments, test_reflections)
-    assert scaler.experiments.scaling_model.id_ == "physical"
+    assert scaler.experiment.scaling_model.id_ == "physical"
 
     # Initialise the parameters and create an apm
     scaler.components["scale"].inverse_scales = flex.double([2.0, 1.0, 2.0])

@@ -259,17 +259,17 @@ class ScalingRefinery(object):
         if self._scaler.id_ == "single":
             if self._parameters.apm_list[0].var_cov_matrix:
                 self._scaler.update_var_cov(self._parameters.apm_list[0])
-                self._scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                self._scaler.experiment.scaling_model.set_scaling_model_as_scaled()
         elif self._scaler.id_ == "multi" or self._scaler.id_ == "target":
             if self._parameters.apm_list[0].var_cov_matrix:  # test if has been set
                 for i, scaler in enumerate(self._scaler.active_scalers):
                     scaler.update_var_cov(self._parameters.apm_list[i])
-                    scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                    scaler.experiment.scaling_model.set_scaling_model_as_scaled()
 
         if not isinstance(self._scaler, MultiScalerBase):
-            self._scaler.experiments.scaling_model.normalise_components()
+            self._scaler.experiment.scaling_model.normalise_components()
 
-        logger.debug("\n" + str(self._scaler.experiments.scaling_model))
+        logger.debug("\n" + str(self._scaler.experiment.scaling_model))
 
         if self._scaler.Ih_table.free_Ih_table:
             i_obs = self._scaler.Ih_table.as_miller_array(

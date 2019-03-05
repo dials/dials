@@ -149,7 +149,7 @@ def test_combine_intensities(test_exp_P1):
     scaler.reflection_table = reflections
     scaler.suitable_refl_for_scaling_sel = flex.bool(reflections.size(), True)
     scaler.outliers = flex.bool(reflections.size(), False)
-    scaler.experiments = test_exp_P1
+    scaler.experiment = test_exp_P1
     scaler.params.reflection_selection.combine.Imid = None
 
     combiner = SingleDatasetIntensityCombiner(scaler)
@@ -177,18 +177,18 @@ def test_combine_intensities_multi_dataset(test_exp_P1):
     scaler1.reflection_table = r1
     scaler1.suitable_refl_for_scaling_sel = flex.bool(r1.size(), True)
     scaler1.outliers = flex.bool(r1.size(), False)
-    scaler1.experiments = test_exp_P1
+    scaler1.experiment = test_exp_P1
     scaler1.params.reflection_selection.combine.Imid = None
     scaler2 = Mock()
     scaler2.reflection_table = r2
     scaler2.suitable_refl_for_scaling_sel = flex.bool(r2.size(), True)
     scaler2.outliers = flex.bool(r2.size(), False)
-    scaler2.experiments = test_exp_P1
+    scaler2.experiment = test_exp_P1
     scaler2.params.reflection_selection.combine.Imid = None
 
     multiscaler = Mock()
     multiscaler.active_scalers = [scaler1, scaler2]
-    multiscaler.experiments = test_exp_P1
+    multiscaler.experiment = test_exp_P1
     multiscaler.params.reflection_selection.combine.Imid = None
 
     combiner = MultiDatasetIntensityCombiner(multiscaler)
