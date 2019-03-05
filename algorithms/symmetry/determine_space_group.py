@@ -223,7 +223,7 @@ class determine_space_group(symmetry_base):
 
         confidence = flex.double(len(self.subgroup_scores), 0)
         for i, score in enumerate(self.subgroup_scores[:-1]):
-            next_score = subgroup_scores[i + 1]
+            next_score = self.subgroup_scores[i + 1]
             if score.likelihood > 0 and next_score.likelihood > 0:
                 lgc = score.likelihood * (score.likelihood - next_score.likelihood)
                 confidence = abs(lgc) ** 0.5
