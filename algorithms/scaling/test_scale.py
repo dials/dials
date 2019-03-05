@@ -53,6 +53,7 @@ class run_one_scaling(object):
         _ = easy_run.fully_buffered(command=command).raise_if_errors()
         assert os.path.exists("scaled_experiments.json")
         assert os.path.exists("scaled.pickle")
+        assert os.path.exists("scaling.html")
 
         with open("scaled.pickle", "rb") as fh:
             table = pickle.load(fh)
@@ -201,7 +202,9 @@ def test_scale_merging_stats():
     reflections.set_flags(flex.bool(4, False), reflections.flags.bad_for_scaling)
     params.output.merging.nbins = 1
     scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
-    merging_statistics_result = Script.merging_stats(scaled_array, params)
+    merging_statistics_result = Script.merging_stats_from_scaled_array(
+        scaled_array, params
+    )
     assert merging_statistics_result is not None
 
     # test for sensible return if small dataset with no equivalent reflections
@@ -209,7 +212,9 @@ def test_scale_merging_stats():
         [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
     )
     scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
-    merging_statistics_result = Script.merging_stats(scaled_array, params)
+    merging_statistics_result = Script.merging_stats_from_scaled_array(
+        scaled_array, params
+    )
     assert merging_statistics_result is None
 
 
