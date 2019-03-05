@@ -55,9 +55,6 @@ def test_register_scaling_observers():
     assert script.scaler.get_observers("performed_outlier_rejection") == {
         ScalingOutlierObserver(): ScalingOutlierObserver().update
     }
-    assert script.scaler.get_observers("performed_error_analysis") == {
-        ErrorModelObserver(): ErrorModelObserver().update
-    }
 
 
 def test_ScalingHTMLGenerator(run_in_tmpdir):
