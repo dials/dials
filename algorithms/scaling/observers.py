@@ -28,9 +28,6 @@ def register_default_scaling_observers(script):
     script.scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
-    script.scaler.register_observer(
-        event="performed_error_analysis", observer=ErrorModelObserver()
-    )
 
 @singleton
 class ScalingHTMLGenerator(Observer):
