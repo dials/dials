@@ -183,22 +183,28 @@ class ScaleAndFilter(object):
 
     """Class to encapsulate a scaling and filtering algorithm."""
 
-    def __init__(self, scaling_script, filtering_script):
-        """Provide script classes that do scaling and filtering"""
+    def __init__(
+        self, params, scaling_params, filtering_params, scaling_script, filtering_script
+    ):
+        """Provide script classes and params that do scaling and filtering.
+
+        Separate on input to (in theory) allow customisation for different
+        filtering/scaling scripts."""
         self.scaling_script = scaling_script
         self.filtering_script = filtering_script
+        self.params = params
+        self.scaling_params = scaling_params
+        self.filtering_params = filtering_params
 
-    def scale_and_filter(
-        self, experiments, reflections, params, scaling_params, filtering_params
-    ):
+    def scale_and_filter(self, experiments, reflections):
         """Write the behaviour of the program as functions and classes outside run()"""
 
         results = AnalysisResults()
 
-        for counter in range(1, params.filtering.max_cycles + 1):
+        for counter in range(1, self.params.filtering.max_cycles + 1):
             # First run scaling, followed by filtering
             scaling_script = self.scaling_script(
-                scaling_params, experiments, reflections
+                self.scaling_params, experiments, reflections
             )
             scaling_script.run(save_data=False)
             # Log initial expids here, need to do after dataset selection in scaling
@@ -209,7 +215,9 @@ class ScaleAndFilter(object):
                     for exp in experiments
                 ]
             filter_script = self.filtering_script(
-                filtering_params, scaling_script.experiments, scaling_script.reflections
+                self.filtering_params,
+                scaling_script.experiments,
+                scaling_script.reflections,
             )
             filter_script.run()
 
@@ -224,8 +232,8 @@ class ScaleAndFilter(object):
             # Reset dataset inclusion/exclusion to avoid errors for repeated scaling.
             experiments = filter_script.experiments
             reflections = filter_script.reflections
-            scaling_params.dataset_selection.use_datasets = None
-            scaling_params.dataset_selection.exclude_datasets = None
+            self.scaling_params.dataset_selection.use_datasets = None
+            self.scaling_params.dataset_selection.exclude_datasets = None
 
             # Test termination conditions
             latest_results = results.get_last_cycle_results()
@@ -239,35 +247,35 @@ class ScaleAndFilter(object):
 
             if (
                 latest_results["cumul_percent_removed"]
-                > params.filtering.max_percent_removed
+                > self.params.filtering.max_percent_removed
             ):
                 logger.info(
                     "Finishing scale and filtering as have now removed more than the limit."
                 )
                 results = self._run_final_scale(
-                    scaling_params, experiments, reflections, results
+                    self.scaling_params, experiments, reflections, results
                 )
                 results.finish(termination_reason="max_percent_removed")
                 break
 
-            if params.filtering.min_completeness:
+            if self.params.filtering.min_completeness:
                 if (
                     latest_results["merging_stats"]["completeness"]
-                    < params.filtering.min_completeness
+                    < self.params.filtering.min_completeness
                 ):
                     logger.info(
                         "Finishing scale and filtering as completeness now below cutoff."
                     )
                     results = self._run_final_scale(
-                        scaling_params, experiments, reflections, results
+                        self.scaling_params, experiments, reflections, results
                     )
                     results.finish(termination_reason="below_completeness_limit")
                     break
 
-            if counter == params.filtering.max_cycles:
+            if counter == self.params.filtering.max_cycles:
                 logger.info("Finishing as reached max number of cycles.")
                 results = self._run_final_scale(
-                    scaling_params, experiments, reflections, results
+                    self.scaling_params, experiments, reflections, results
                 )
                 results.finish(termination_reason="max_cycles")
                 break
@@ -590,9 +598,6 @@ def run(args=None, phil=phil_scope):
     )
     params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
-    scaling_params = params.scale
-    filtering_params = params.delta_cc_half
-
     dials.util.log.config(info=params.output.log, debug=params.output.debug.log)
 
     diff_phil = parser.diff_phil.as_str()
@@ -602,10 +607,10 @@ def run(args=None, phil=phil_scope):
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
 
-    scale_and_filter = ScaleAndFilter(ScalingScript, FilterScript)
-    analysis_results = scale_and_filter.scale_and_filter(
-        experiments, reflections, params, scaling_params, filtering_params
+    scale_and_filter = ScaleAndFilter(
+        params, params.scale, params.delta_cc_half, ScalingScript, FilterScript
     )
+    analysis_results = scale_and_filter.scale_and_filter(experiments, reflections)
 
     with open(params.output.analysis_results, "w") as f:
         json.dump(analysis_results.to_dict(), f, indent=2)

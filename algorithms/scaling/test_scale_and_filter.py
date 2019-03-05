@@ -152,13 +152,13 @@ def test_scale_and_filter_termination(last_cycle_results, expected_termination):
 
     mock_res = _mock_results(last_cycle_results)
 
-    scale_and_filter = ScaleAndFilter(_scaling_script, _scaling_script)
+    scale_and_filter = ScaleAndFilter(
+        params, params.scale, params.delta_cc_half, _scaling_script, _scaling_script
+    )
     with mock.patch.object(
         scale_and_filter, "log_cycle_results", return_value=mock_res
     ):
-        results = scale_and_filter.scale_and_filter(
-            exp, refl, params, params.scale, params.delta_cc_half
-        )
+        results = scale_and_filter.scale_and_filter(exp, refl)
         results.finish.assert_called_with(termination_reason=expected_termination)
 
 

@@ -258,17 +258,17 @@ class ScalingRefinery(object):
         if self._scaler.id_ == "single":
             if self._parameters.apm_list[0].var_cov_matrix:
                 self._scaler.update_var_cov(self._parameters.apm_list[0])
-                self._scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                self._scaler.experiment.scaling_model.set_scaling_model_as_scaled()
         elif self._scaler.id_ == "multi" or self._scaler.id_ == "target":
             if self._parameters.apm_list[0].var_cov_matrix:  # test if has been set
                 for i, scaler in enumerate(self._scaler.active_scalers):
                     scaler.update_var_cov(self._parameters.apm_list[i])
-                    scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                    scaler.experiment.scaling_model.set_scaling_model_as_scaled()
 
         if not isinstance(self._scaler, MultiScalerBase):
-            self._scaler.experiments.scaling_model.normalise_components()
+            self._scaler.experiment.scaling_model.normalise_components()
 
-        logger.debug("\n" + str(self._scaler.experiments.scaling_model))
+        logger.debug("\n" + str(self._scaler.experiment.scaling_model))
 
         from dials.algorithms.scaling.scaling_library import (
             calculate_single_merging_stats,
@@ -281,7 +281,7 @@ class ScalingRefinery(object):
             )
             free_Ih["miller_index"] = free_Ih["asu_miller_index"]
             res = calculate_single_merging_stats(
-                free_Ih, self._scaler.experiments, use_internal_variance=False
+                free_Ih, self._scaler.experiment, use_internal_variance=False
             )
             free_rmeas = res.overall.r_meas
             free_cc12 = res.overall.cc_one_half
@@ -290,7 +290,7 @@ class ScalingRefinery(object):
             Ih.set_flags(flex.bool(Ih.size(), False), Ih.flags.outlier_in_scaling)
             Ih["miller_index"] = Ih["asu_miller_index"]
             res = calculate_single_merging_stats(
-                Ih, self._scaler.experiments, use_internal_variance=False
+                Ih, self._scaler.experiment, use_internal_variance=False
             )
             work_rmeas = res.overall.r_meas
             work_cc12 = res.overall.cc_one_half
