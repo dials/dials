@@ -81,7 +81,10 @@ class ComputeEsdBeamDivergence(object):
             panel = shoebox[r].panel
             s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
             angles = s1.angle(s1_centroid, deg=False)
-            variance.append(flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1))
+            if flex.sum(values) > 1:
+                variance.append(
+                    flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
+                )
 
         # Return a list of variances
         return flex.double(variance)
@@ -165,7 +168,6 @@ class FractionOfObservedIntensity(object):
             A list of log intensity fractions
 
         """
-        from math import sqrt
         from scitbx.array_family import flex
         import scitbx.math
 
@@ -366,7 +368,7 @@ class ComputeEsdReflectingRange(object):
 
         def target(self, log_sigma):
             """ The target for minimization. """
-            from math import sqrt, exp, pi, log
+            from math import exp, pi, log
             from scitbx.array_family import flex
             import scitbx.math
 
