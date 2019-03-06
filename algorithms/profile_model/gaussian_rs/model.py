@@ -276,7 +276,7 @@ class Model(ProfileModelExt):
             sigma_b = params.gaussian_rs.parameters.sigma_b
         if params.gaussian_rs.parameters.sigma_m is not None:
             sigma_m = params.gaussian_rs.parameters.sigma_m
-        n_sigma = params.guassian_rs.parameters.n_sigma
+        n_sigma = params.gaussian_rs.parameters.n_sigma
         if sigma_m is None or sigma_b is None:
             raise RuntimeError("Not enough information to set profile parameters")
         logger.info("Creating profile model with parameters:")
