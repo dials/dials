@@ -18,6 +18,7 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
+from math import sqrt
 
 import logging
 
@@ -64,6 +65,7 @@ class ComputeEsdBeamDivergence(object):
         shoebox = reflections["shoebox"]
         bbox = reflections["bbox"]
         xyz = reflections["xyzobs.px.value"]
+        s1_centroid = reflections['s1']
 
         # Loop through all the reflections
         variance = []
@@ -79,8 +81,8 @@ class ComputeEsdBeamDivergence(object):
 
             # Calculate the beam vector at the centroid
             panel = shoebox[r].panel
-            s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
-            angles = s1.angle(s1_centroid, deg=False)
+            #s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
+            angles = s1.angle(s1_centroid[r], deg=False)
             variance.append(flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1))
 
         # Return a list of variances
@@ -660,16 +662,14 @@ class ScanVaryingProfileModelCalculator(object):
 
         # Compute for all frames
         self._num = []
-        sigma_b = []
-        sigma_m = []
+        sigma_b = flex.double()
+        sigma_m = flex.double()
         for i in range(z0, z1):
 
             # Get reflections at the index
             reflections = reflection_list[i]
 
             self._num.append(len(reflections))
-
-            logger.info("Computing profile model for frame %d" % i)
 
             # Calculate the E.S.D of the beam divergence
             beam_divergence = ComputeEsdBeamDivergence(detector, reflections)
@@ -680,6 +680,14 @@ class ScanVaryingProfileModelCalculator(object):
             # Calculate the E.S.D of the reflecting range
             reflecting_range = ComputeEsdReflectingRange(
                 crystal, beam, detector, goniometer, scan, reflections
+            )
+
+            logger.info(
+                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees" % (
+                    i,
+                    beam_divergence.sigma() * 180/pi,
+                    reflecting_range.sigma() * 180/pi
+                )
             )
 
             # Set the sigmas
@@ -716,15 +724,30 @@ class ScanVaryingProfileModelCalculator(object):
 
         # Smooth the parameters
         kernel = gaussian_kernel(51)
-        sigma_b_new = convolve(sigma_b, kernel)
-        sigma_m_new = convolve(sigma_m, kernel)
-        self._sigma_b = flex.double(sigma_b_new)
-        self._sigma_m = flex.double(sigma_m_new)
-        assert len(self._sigma_b) == len(self._sigma_m)
-
+        sigma_b_sq_new = convolve(sigma_b**2, kernel)
+        sigma_m_sq_new = convolve(sigma_m**2, kernel)
+          
         # Print the output - mean as is scan varying
-        mean_sigma_b = sum(self._sigma_b) / len(self._sigma_b)
-        mean_sigma_m = sum(self._sigma_m) / len(self._sigma_m)
+        mean_sigma_b = sqrt(sum(sigma_b**2) / len(sigma_b))
+        mean_sigma_m = sqrt(sum(sigma_m**2) / len(sigma_m))
+        
+        # Save the smoothed parameters
+        self._sigma_b = flex.sqrt(flex.double(sigma_b_sq_new))
+        self._sigma_m = flex.sqrt(flex.double(sigma_m_sq_new))
+        assert len(self._sigma_b) == len(self._sigma_m)
+        
+        # Print out smoothed profile parameters
+        logger.info("")
+        for i in range(len(sigma_b)):
+          logger.info(
+            "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees" % (
+                      i,
+                      self._sigma_b[i] * 180/pi,
+                      self._sigma_m[i] * 180/pi
+                  )
+              )
+
+        # Print the mean parameters
         logger.info(" sigma b: %f degrees" % (mean_sigma_b * 180 / pi))
         logger.info(" sigma m: %f degrees" % (mean_sigma_m * 180 / pi))
 
