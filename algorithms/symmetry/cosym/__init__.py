@@ -258,6 +258,8 @@ class analyse_datasets(symmetry_base):
         self._principal_component_analysis()
 
         self._cosine_analysis()
+        if self.input_space_group.type().number() == 1:
+            self._symmetry_analysis()
         self._cluster_analysis()
         if self.params.save_plot:
             self._plot()
@@ -319,6 +321,15 @@ class analyse_datasets(symmetry_base):
         import numpy
 
         self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
+
+    def _symmetry_analysis(self):
+        sym_ops = [
+            sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
+        ]
+        analysis = SymmetryAnalysis(
+            self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
+        )
+        logger.info(str(analysis))
 
     def _cosine_analysis(self):
         from scipy.cluster import hierarchy
@@ -830,3 +841,361 @@ def plot_dendrogram(linkage_matrix, file_name, labels=None, color_threshold=0.05
     plt.setp(labels, rotation=70)
     fig.savefig(file_name)
     plt.close(fig)
+
+
+class SymmetryAnalysis(object):
+    def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
+
+        import scipy.spatial.distance as ssd
+        from scitbx import matrix
+
+        self.subgroups = subgroups
+        self.cb_op_inp_min = cb_op_inp_min
+        lattice_group = subgroups.result_groups[0]["subsym"].space_group()
+        X = coords.as_numpy_array()
+        n_datasets = coords.all()[0] // len(sym_ops)
+        dist_mat = ssd.pdist(X, metric="cosine")
+        cos_angle = 1 - ssd.squareform(dist_mat)
+
+        self._sym_ops_cos_angle = OrderedDict()
+        for dataset_id in range(n_datasets):
+            ref_sym_op_id = None
+            ref_cluster_id = None
+            for ref_sym_op_id in range(len(sym_ops)):
+                ref_idx = n_datasets * ref_sym_op_id + dataset_id
+                for sym_op_id in range(ref_sym_op_id + 1, len(sym_ops)):
+                    op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
+                    op = op.new_denominators(1, 12)
+                    comp_idx = n_datasets * sym_op_id + dataset_id
+                    self._sym_ops_cos_angle.setdefault(op, flex.double())
+                    self._sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
+
+        self._score_symmetry_elements()
+        self._score_laue_groups()
+
+    def _score_symmetry_elements(self):
+        self.sym_op_scores = OrderedDict()
+        for op, cos_angle in self._sym_ops_cos_angle.items():
+            cc_true = 1
+            cc = flex.mean(cos_angle)
+            score = ScoreSymmetryElement(cc, sigma_cc=0.1, cc_true=cc_true)
+            score.sym_op = op
+            self.sym_op_scores[op] = score
+
+    def _score_laue_groups(self):
+        subgroup_scores = [
+            ScoreSubGroup(subgrp, self.sym_op_scores.values())
+            for subgrp in self.subgroups.result_groups
+        ]
+        total_likelihood = sum(score.likelihood for score in subgroup_scores)
+        sort_order = flex.sort_permutation(
+            flex.double(score.likelihood for score in subgroup_scores),
+            reverse=True,
+            stable=True,
+        )
+        self.subgroup_scores = [subgroup_scores[i] for i in sort_order]
+        for score in self.subgroup_scores:
+            score.likelihood /= total_likelihood
+
+        # The 'confidence' scores are derived from the total probability of the best
+        # solution p_best and that for the next best solution p_next:
+        #   confidence = [p_best * (p_best - p_next)]^1/2.
+
+        confidence = flex.double(len(self.subgroup_scores), 0)
+        for i, score in enumerate(self.subgroup_scores[:-1]):
+            next_score = self.subgroup_scores[i + 1]
+            if score.likelihood > 0 and next_score.likelihood > 0:
+                lgc = score.likelihood * (score.likelihood - next_score.likelihood)
+                confidence = abs(lgc) ** 0.5
+                if lgc < 0:
+                    confidence = -confidence
+                score.confidence = confidence
+
+        self.best_solution = self.subgroup_scores[0]
+
+    def __str__(self):
+        """Return a string representation of the results.
+
+        Returns:
+          str:
+
+        """
+        output = []
+        header = ("likelihood", "Z-CC", "CC", "", "Operator")
+        rows = [header]
+        for score in self.sym_op_scores.values():
+            if score.likelihood > 0.9:
+                stars = "***"
+            elif score.likelihood > 0.7:
+                stars = "**"
+            elif score.likelihood > 0.5:
+                stars = "*"
+            else:
+                stars = ""
+            rows.append(
+                (
+                    "%.3f" % score.likelihood,
+                    "%.2f" % score.z_cc,
+                    "%.2f" % score.cc,
+                    stars,
+                    "%s" % score.sym_op.r().info(),
+                )
+            )
+        output.append("Scoring individual symmetry elements")
+        output.append(table_utils.format(rows, has_header=True, delim="  "))
+
+        header = (
+            "Patterson group",
+            "",
+            "Likelihood",
+            "NetZcc",
+            "Zcc+",
+            "Zcc-",
+            "delta",
+            "Reindex operator",
+        )
+        rows = [header]
+        for score in self.subgroup_scores:
+            if score.likelihood > 0.8:
+                stars = "***"
+            elif score.likelihood > 0.6:
+                stars = "**"
+            elif score.likelihood > 0.4:
+                stars = "*"
+            else:
+                stars = ""
+            rows.append(
+                (
+                    "%s" % score.subgroup["best_subsym"].space_group_info(),
+                    stars,
+                    "%.3f" % score.likelihood,
+                    "% .2f" % score.z_cc_net,
+                    "% .2f" % score.z_cc_for,
+                    "% .2f" % score.z_cc_against,
+                    "%.1f" % score.subgroup["max_angular_difference"],
+                    "%s" % (score.subgroup["cb_op_inp_best"] * self.cb_op_inp_min),
+                )
+            )
+        output.append("Scoring all possible sub-groups")
+        output.append(table_utils.format(rows, has_header=True, delim="  "))
+
+        output.append(
+            "Best solution: %s"
+            % self.best_solution.subgroup["best_subsym"].space_group_info()
+        )
+        output.append(
+            "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
+        )
+        output.append(
+            "Reindex operator: %s"
+            % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
+        )
+        output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
+        output.append("Laue group confidence: %.3f" % self.best_solution.confidence)
+        return "\n".join(output)
+
+    def as_dict(self):
+        """Return a dictionary representation of the results.
+
+        Returns:
+          dict
+
+        """
+        d = {
+            "input_symmetry": {
+                "hall_symbol": self.input_intensities[0]
+                .space_group()
+                .type()
+                .hall_symbol(),
+                "unit_cell": self.median_unit_cell.parameters(),
+            },
+            "cb_op_inp_min": self.cb_op_inp_min.as_xyz(),
+            "min_cell_symmetry": {
+                "hall_symbol": self.intensities.space_group().type().hall_symbol(),
+                "unit_cell": self.intensities.unit_cell().parameters(),
+            },
+            "lattice_point_group": self.lattice_group.type().hall_symbol(),
+            "cc_unrelated_pairs": self.corr_unrelated.coefficient(),
+            "n_unrelated_pairs": self.corr_unrelated.n(),
+            "E_cc_true": self.E_cc_true,
+            "cc_sig_fac": self.cc_sig_fac,
+            "cc_true": self.cc_true,
+        }
+
+        d["sym_op_scores"] = [score.as_dict() for score in self.sym_op_scores]
+        d["subgroup_scores"] = [score.as_dict() for score in self.subgroup_scores]
+        return d
+
+
+from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
+
+
+class ScoreSymmetryElement(object):
+    """Analyse intensities for presence of a given symmetry operation.
+
+    1) Calculate the probability of observing this CC if the sym op is present,
+       p(CC; S), modelled by a Cauchy distribution centred on cc_true and width
+       gamma = sigma_cc.
+
+    2) Calculate the probability of observing this CC if the sym op is
+       NOT present, p(CC; !S).
+
+    3) Calculate the likelihood of symmetry element being present,
+       p(S; CC) = p(CC; S) / (p(CC; S) + p(CC; !S))
+
+    See appendix A1 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
+    <https://doi.org/10.1107/S090744491003982X>`_
+
+    """
+
+    def __init__(self, cc, sigma_cc, cc_true):
+        """Initialise a ScoreSymmetryElement object.
+
+        Args:
+          cc (float): the correlation coefficient for this symmetry element
+          sigma_cc (float): the estimated error in the correlation coefficient
+          cc_true (float): the expected value of CC if the symmetry element is present,
+            E(CC; S)
+
+        """
+
+        self.cc = cc
+        self.sigma_cc = sigma_cc
+        self.z_cc = self.cc / self.sigma_cc
+        score_cc = ScoreCorrelationCoefficient(self.cc, self.sigma_cc, cc_true)
+        self.p_cc_given_s = score_cc.p_cc_given_s
+        self.p_cc_given_not_s = score_cc.p_cc_given_not_s
+        self.likelihood = score_cc.p_s_given_cc
+
+    def as_dict(self):
+        """Return a dictionary representation of the symmetry element scoring.
+
+        The dictionary will contain the following keys:
+          - likelihood: The likelihood of the symmetry element being present
+          - z_cc: The Z-score for the correlation coefficent
+          - cc: The correlation coefficient for the symmetry element
+          - operator: The xyz representation of the symmetry element
+
+        Returns:
+          dict:
+
+        """
+        return {
+            "likelihood": self.likelihood,
+            "z_cc": self.z_cc,
+            "cc": self.cc,
+            # "n_ref": self.n_refs,
+            # "operator": self.sym_op.as_xyz(),
+        }
+
+
+class ScoreSubGroup(object):
+    """Score the probability of a given subgroup being the true subgroup.
+
+    1) Calculates overall Zcc scores for symmetry elements present/absent from
+       the subgroup.
+
+    2) Calculates the overall likelihood for this subgroup.
+
+    See appendix A2 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
+    <https://doi.org/10.1107/S090744491003982X>`_
+
+    """
+
+    def __init__(self, subgroup, sym_op_scores):
+        """Initialise a ScoreSubGroup object.
+
+        Args:
+          subgroup (dict): A dictionary describing the subgroup as generated by
+            :class:`cctbx.sgtbx.lattice_symmetry.metric_subgroups`.
+          sym_op_scores (list): A list of :class:`ScoreSymmetryElement` objects for each
+            symmetry element possibly in the lattice symmetry.
+
+        """
+        # Combined correlation coefficients for symmetry operations
+        # present/absent from subgroup
+        self.subgroup = subgroup
+        cb_op_inp_best = subgroup["cb_op_inp_best"]
+        patterson_group = (
+            subgroup["best_subsym"].space_group().change_basis(cb_op_inp_best.inverse())
+        )
+
+        # Overall Zcc scores for symmetry elements present/absent from subgroup
+        self.z_cc_for = 0
+        self.z_cc_against = 0
+        n_for = 0
+        n_against = 0
+        PL_for = 0
+        PL_against = 0
+        power = 2
+        for score in sym_op_scores:
+            if score.sym_op in patterson_group:
+                self.z_cc_for += score.z_cc ** power
+                n_for += 1
+                PL_for += math.log(score.p_cc_given_s)
+            else:
+                self.z_cc_against += score.z_cc ** power
+                n_against += 1
+                PL_against += math.log(score.p_cc_given_not_s)
+
+        # Overall likelihood for this subgroup
+        self.likelihood = math.exp(PL_for + PL_against)
+
+        if n_against > 0:
+            self.z_cc_against = (self.z_cc_against / n_against) ** (1 / power)
+        if n_for > 0:
+            self.z_cc_for = (self.z_cc_for / n_for) ** (1 / power)
+        self.z_cc_net = self.z_cc_for - self.z_cc_against
+        self.confidence = 0
+
+    def __str__(self):
+        """Return a string representation of the subgroup scores.
+
+        Returns:
+          str:
+
+        """
+        return "%s %.3f" % (
+            self.subgroup["best_subsym"].space_group_info(),
+            self.likelihood,
+            self.z_cc_net,
+            self.z_cc_for,
+            self.z_cc_against,
+        )
+
+    def as_dict(self):
+        """Return a dictionary representation of the subgroup scoring.
+
+        The dictionary will contain the following keys:
+          - patterson_group: The current subgroup
+          - likelihood: The likelihood of the subgroup being correct
+          - confidence: The confidence of the subgroup being correct
+          - z_cc_for: The combined Z-scores for all symmetry elements present in the
+            subgroup
+          - z_cc_against: The combined Z-scores for all symmetry elements present in
+            the lattice group but not in the subgroup
+          - z_cc_net: The net Z-score, i.e. z_cc_for - z_cc_against
+          - max_angular_difference: The maximum angular difference between the
+            symmetrised unit cell and the P1 unit cell.
+          - cb_op: The change of basis operation from the input unit cell to the
+            'best' unit cell.
+
+        Returns:
+          dict:
+
+        """
+        return {
+            "patterson_group": self.subgroup["best_subsym"]
+            .space_group()
+            .type()
+            .hall_symbol(),
+            "likelihood": self.likelihood,
+            "confidence": self.confidence,
+            "z_cc_net": "% .2f" % self.z_cc_net,
+            "z_cc_for": "% .2f" % self.z_cc_for,
+            "z_cc_against": "% .2f" % self.z_cc_against,
+            # "cc_for": "% .2f" % self.cc_for.coefficient(),
+            # "cc_against": "% .2f" % self.cc_against.coefficient(),
+            "max_angular_difference": "%.1f" % self.subgroup["max_angular_difference"],
+            "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+        }
