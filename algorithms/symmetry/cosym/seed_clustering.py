@@ -232,6 +232,8 @@ class seed_clustering(object):
             n = len(set(labels))
             if n == 1:
                 continue
+            elif n_clusters is not Auto and n != n_clusters:
+                continue
             for i in range(len(labels)):
                 cluster_labels.set_selected(
                     cluster_labels_input == i, int(labels[i] - 1)
