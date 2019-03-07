@@ -26,7 +26,7 @@ def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
     params = phil_scope.extract()
-    params.cluster.agglomerative.n_clusters = len(expected_reindexing_ops)
+    params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
 
     result = analyse_datasets(datasets, params)

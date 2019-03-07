@@ -82,6 +82,8 @@ termination_params {
 cluster {
   method = dbscan bisect minimize_divide agglomerative *seed
     .type = choice
+  n_clusters = auto
+    .type = int(value_min=1)
   dbscan {
     eps = 0.5
       .type = float(value_min=0)
@@ -92,15 +94,9 @@ cluster {
     axis = 0
       .type = int(value_min=0)
   }
-  agglomerative {
-    n_clusters = 2
-      .type = int(value_min=1)
-  }
   seed {
     min_silhouette_score = 0.2
       .type = float(value_min=-1, value_max=1)
-    n_clusters = auto
-      .type = int(value_min=1)
   }
 }
 
@@ -259,6 +255,8 @@ class analyse_datasets(symmetry_base):
 
         if self.input_space_group.type().number() == 1:
             self._symmetry_analysis()
+        else:
+            self.best_solution = None
         self._cluster_analysis()
         if self.params.save_plot:
             self._plot()
@@ -329,6 +327,12 @@ class analyse_datasets(symmetry_base):
             self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
         )
         logger.info(str(analysis))
+        self.best_solution = analysis.best_solution
+
+        cosets = sgtbx.cosets.left_decomposition(
+            self.lattice_group, self.best_solution.subgroup["subsym"].space_group()
+        )
+        self.params.cluster.n_clusters = len(cosets.partitions)
 
     def _space_group_for_dataset(self, dataset_id, sym_ops):
         sg = copy.deepcopy(self.input_space_group)
@@ -374,7 +378,10 @@ class analyse_datasets(symmetry_base):
 
     def _cluster_analysis(self):
 
-        self.cluster_labels = self._do_clustering(self.params.cluster.method)
+        if self.params.cluster.n_clusters == 1:
+            self.cluster_labels = flex.double(self.coords.all()[0])
+        else:
+            self.cluster_labels = self._do_clustering(self.params.cluster.method)
 
         cluster_miller_arrays = []
 
@@ -436,6 +443,7 @@ class analyse_datasets(symmetry_base):
         return flex.int(db.labels_.astype(np.int32))
 
     def _bisect_clustering(self):
+        assert self.params.cluster.n_clusters in (2, Auto)
         axis = self.params.cluster.bisect.axis
         assert axis < self.coords_reduced.all()[1]
         x = self.coords_reduced[:, axis : axis + 1].as_1d()
@@ -444,6 +452,7 @@ class analyse_datasets(symmetry_base):
         return cluster_labels
 
     def _minimize_divide_clustering(self):
+        assert self.params.cluster.n_clusters in (2, Auto)
         x = self.coords_reduced[:, :1].as_1d()
         y = self.coords_reduced[:, 1:2].as_1d()
         from cctbx.merging.brehm_diederichs import minimize_divide
@@ -461,7 +470,7 @@ class analyse_datasets(symmetry_base):
         import numpy as np
 
         model = AgglomerativeClustering(
-            n_clusters=self.params.cluster.agglomerative.n_clusters,
+            n_clusters=self.params.cluster.n_clusters,
             linkage="average",
             affinity="cosine",
         )
@@ -476,7 +485,7 @@ class analyse_datasets(symmetry_base):
             len(self.input_intensities),
             len(self.target.get_sym_ops()),
             min_silhouette_score=self.params.cluster.seed.min_silhouette_score,
-            n_clusters=self.params.cluster.seed.n_clusters,
+            n_clusters=self.params.cluster.n_clusters,
             plot_prefix=self.params.plot_prefix if self.params.save_plot else None,
         )
         return clustering.cluster_labels
