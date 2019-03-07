@@ -14,6 +14,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn import metrics
 
 from libtbx import Auto
+from libtbx.utils import Sorry
 from scitbx.array_family import flex
 from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
 

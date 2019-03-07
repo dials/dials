@@ -1081,7 +1081,7 @@ class ScoreSubGroup(object):
           str:
 
         """
-        return "%s %.3f" % (
+        return "%s %.3f %.2f %.2f %.2f" % (
             self.subgroup["best_subsym"].space_group_info(),
             self.likelihood,
             self.z_cc_net,
