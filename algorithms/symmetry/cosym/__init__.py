@@ -257,7 +257,6 @@ class analyse_datasets(symmetry_base):
         self._optimise()
         self._principal_component_analysis()
 
-        self._cosine_analysis()
         if self.input_space_group.type().number() == 1:
             self._symmetry_analysis()
         self._cluster_analysis()
@@ -330,76 +329,6 @@ class analyse_datasets(symmetry_base):
             self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
         )
         logger.info(str(analysis))
-
-    def _cosine_analysis(self):
-        from scipy.cluster import hierarchy
-        import scipy.spatial.distance as ssd
-
-        X = self.coords.as_numpy_array()
-        dist_mat = ssd.pdist(X, metric="cosine")
-        cos_angle = 1 - ssd.squareform(dist_mat)
-        linkage_matrix = hierarchy.linkage(dist_mat, method="average")
-
-        c, coph_dists = hierarchy.cophenet(linkage_matrix, dist_mat)
-        logger.debug(
-            "Cophenetic correlation coefficient between heirarchical clustering and pairwise distance matrix: %.3f"
-            % c
-        )
-
-        if self.params.save_plot:
-            plot_matrix(
-                cos_angle,
-                linkage_matrix,
-                "%scos_angle_matrix.png" % self.params.plot_prefix,
-            )
-            plot_dendrogram(
-                linkage_matrix, "%scos_angle_dendrogram.png" % self.params.plot_prefix
-            )
-
-        sym_ops = [
-            sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
-        ]
-
-        sym_ops_cos_angle = OrderedDict()
-
-        for dataset_id in range(len(self.input_intensities)):
-            ref_sym_op_id = None
-            ref_cluster_id = None
-            for sym_op_id in range(len(sym_ops)):
-                if ref_sym_op_id is None:
-                    ref_sym_op_id = sym_op_id
-                    continue
-                op = sym_ops[ref_sym_op_id].inverse().multiply(sym_ops[sym_op_id])
-                op = op.new_denominators(1, 12)
-
-                ref_idx = len(self.input_intensities) * ref_sym_op_id + dataset_id
-                comp_idx = len(self.input_intensities) * sym_op_id + dataset_id
-                sym_ops_cos_angle.setdefault(op, flex.double())
-                sym_ops_cos_angle[op].append(cos_angle[ref_idx, comp_idx])
-
-        # print symops sorted by average cos(angle)
-        sg = copy.deepcopy(self.input_space_group)
-        rows = [["symop", "order", "sg", "mean(cos(angle))", "median(cos(angle))"]]
-        perm = flex.sort_permutation(
-            flex.double([flex.mean(ca) for ca in sym_ops_cos_angle.values()]),
-            reverse=True,
-        )
-        for p in perm:
-            op, ca = sym_ops_cos_angle.items()[p]
-            sg.expand_smx(op)
-            rows.append(
-                (
-                    str(op),
-                    str(op.r().order()),
-                    str(sg.info().reference_setting()),
-                    "%.3f" % flex.mean(ca),
-                    "%.3f" % flex.median(ca),
-                )
-            )
-        logger.info(
-            "Analysis of cos(angle) between points corresponding to the same datasets:"
-        )
-        logger.info(table_utils.format(rows, has_header=True))
 
     def _space_group_for_dataset(self, dataset_id, sym_ops):
         sg = copy.deepcopy(self.input_space_group)
