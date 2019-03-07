@@ -887,6 +887,25 @@ class StillsReflectionManager(ReflectionManager):
 
     _weighting_strategy = weighting_strategies.StillsWeightingStrategy()
 
+    def _id_refs_to_keep(self, obs_data):
+        """Create a selection of observations that pass certain conditions.
+
+        Stills-specific version removes checks relevant only to experiments
+        with a rotation axis."""
+
+        # first exclude reflections with miller index set to 0,0,0
+        sel1 = obs_data["miller_index"] != (0, 0, 0)
+
+        # exclude reflections with overloads, as these have worse centroids
+        sel2 = ~obs_data.get_flags(obs_data.flags.overloaded)
+
+        # combine selections
+        sel = sel1 & sel2
+        inc = flex.size_t_range(len(obs_data)).select(sel)
+        obs_data = obs_data.select(sel)
+
+        return inc
+
     def print_stats_on_matches(self):
         """Print some basic statistics on the matches"""
 
