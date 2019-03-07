@@ -817,14 +817,11 @@ class SymmetryAnalysis(object):
             for subgrp in self.subgroups.result_groups
         ]
         total_likelihood = sum(score.likelihood for score in subgroup_scores)
-        sort_order = flex.sort_permutation(
-            flex.double(score.likelihood for score in subgroup_scores),
-            reverse=True,
-            stable=True,
-        )
-        self.subgroup_scores = [subgroup_scores[i] for i in sort_order]
-        for score in self.subgroup_scores:
+        for score in subgroup_scores:
             score.likelihood /= total_likelihood
+        self.subgroup_scores = sorted(
+            subgroup_scores, key=lambda score: score.likelihood, reverse=True
+        )
 
         # The 'confidence' scores are derived from the total probability of the best
         # solution p_best and that for the next best solution p_next:
