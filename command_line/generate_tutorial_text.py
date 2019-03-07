@@ -90,10 +90,10 @@ class Processing_Tutorial(object):
             self.cmd = "dials.import {0}".format(dataset)
 
     class dials_find_spots(Job):
-        cmd = "dials.find_spots experiments.json nproc=4"
+        cmd = "dials.find_spots imported_experiments.json nproc=4"
 
     class dials_index(Job):
-        cmd = "dials.index experiments.json strong.pickle"
+        cmd = "dials.index imported_experiments.json strong.pickle"
 
     class dials_refine_bravais_settings(Job):
         cmd = "dials.refine_bravais_settings experiments.json indexed.pickle"
