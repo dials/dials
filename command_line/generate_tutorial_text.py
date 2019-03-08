@@ -96,7 +96,7 @@ class Processing_Tutorial(object):
         cmd = "dials.index imported_experiments.json strong.pickle"
 
     class dials_refine_bravais_settings(Job):
-        cmd = "dials.refine_bravais_settings experiments.json indexed.pickle"
+        cmd = "dials.refine_bravais_settings indexed_experiments.json indexed.pickle"
 
     class dials_reindex(Job):
         cmd = "dials.reindex indexed.pickle change_of_basis_op=a,b,c"
