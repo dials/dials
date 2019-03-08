@@ -101,13 +101,9 @@ class symmetry_base(object):
             max_delta=self.lattice_symmetry_max_delta,
             bravais_types_only=False,
         )
-        self.cb_op_min_best = self.subgroups.result_groups[0]["cb_op_inp_best"]
-        self.lattice_group = self.subgroups.result_groups[0][
-            "best_subsym"
-        ].space_group()
-        self.lattice_group = self.lattice_group.change_basis(
-            self.cb_op_min_best.inverse()
-        ).make_tidy()
+        self.lattice_group = (
+            self.subgroups.result_groups[0]["subsym"].space_group().make_tidy()
+        )
         self.patterson_group = (
             self.lattice_group.build_derived_patterson_group().make_tidy()
         )
