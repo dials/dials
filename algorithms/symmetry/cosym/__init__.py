@@ -253,11 +253,7 @@ class analyse_datasets(symmetry_base):
         self._optimise()
         self._principal_component_analysis()
 
-        self._cosine_analysis()
-        if self.input_space_group.type().number() == 1:
-            self._symmetry_analysis()
-        else:
-            self.best_solution = None
+        self._analyse_symmetry()
         self._cluster_analysis()
         if self.params.save_plot:
             self._plot()
@@ -320,15 +316,20 @@ class analyse_datasets(symmetry_base):
 
         self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
 
-    def _symmetry_analysis(self):
+    def _analyse_symmetry(self):
+        if self.input_space_group.type().number() > 1:
+            self.best_solution = None
+            self._symmetry_analysis = None
+            return
+
         sym_ops = [
             sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
         ]
-        analysis = SymmetryAnalysis(
+        self._symmetry_analysis = SymmetryAnalysis(
             self.coords, sym_ops, self.subgroups, self.cb_op_inp_min
         )
-        logger.info(str(analysis))
-        self.best_solution = analysis.best_solution
+        logger.info(str(self._symmetry_analysis))
+        self.best_solution = self._symmetry_analysis.best_solution
 
         cosets = sgtbx.cosets.left_decomposition(
             self.lattice_group, self.best_solution.subgroup["subsym"].space_group()
@@ -616,6 +617,63 @@ class analyse_datasets(symmetry_base):
                 labels=self.cluster_labels,
                 plot_name="%sxyz_pca.png" % self.params.plot_prefix,
             )
+
+    def as_dict(self):
+        """Return a dictionary representation of the results.
+
+        Returns:
+          dict
+
+        """
+        d = {
+            "input_symmetry": {
+                "hall_symbol": self.input_intensities[0]
+                .space_group()
+                .type()
+                .hall_symbol(),
+                "unit_cell": self.median_unit_cell.parameters(),
+            },
+            "cb_op_inp_min": self.cb_op_inp_min.as_xyz(),
+            "min_cell_symmetry": {
+                "hall_symbol": self.intensities.space_group().type().hall_symbol(),
+                "unit_cell": self.intensities.unit_cell().parameters(),
+            },
+            "lattice_point_group": self.lattice_group.type().hall_symbol(),
+        }
+
+        if self._symmetry_analysis is not None:
+            d["sym_op_scores"] = dict(
+                (
+                    (str(sym_op), score.as_dict())
+                    for sym_op, score in self._symmetry_analysis.sym_op_scores.items()
+                )
+            )
+            d["subgroup_scores"] = [
+                score.as_dict() for score in self._symmetry_analysis.subgroup_scores
+            ]
+        return d
+
+    def as_json(self, filename=None, indent=2):
+        """Return a json representation of the results.
+
+        Args:
+          filename (str): Optional filename to export the json representation of
+            the results.
+          indent (int): The indent level for pretty-printing of the json. If ``None``
+            is the most compact representation.
+
+        Returns:
+          str:
+
+        """
+        d = self.as_dict()
+        import json
+
+        json_str = json.dumps(d, indent=indent)
+        if filename is not None:
+            with open(filename, "wb") as f:
+                f.write(json_str)
+        return json.dumps(d, indent=indent)
 
 
 def _plot(coords, labels=None, plot_name="xy.png"):
@@ -1089,13 +1147,7 @@ class ScoreSymmetryElement(object):
           dict:
 
         """
-        return {
-            "likelihood": self.likelihood,
-            "z_cc": self.z_cc,
-            "cc": self.cc,
-            # "n_ref": self.n_refs,
-            # "operator": self.sym_op.as_xyz(),
-        }
+        return {"likelihood": self.likelihood, "z_cc": self.z_cc, "cc": self.cc}
 
 
 class ScoreSubGroup(object):

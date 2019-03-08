@@ -55,6 +55,8 @@ output {
     .type = path
   reflections = "reindexed_reflections.pickle"
     .type = path
+  json = dials.cosym.json
+    .type = path
 }
 
 verbosity = 1
@@ -115,6 +117,9 @@ class cosym(object):
         for cb_op, datasets in reindexing_ops.iteritems():
             logger.info(cb_op)
             logger.info(datasets)
+
+        if params.output.json is not None:
+            result.as_json(filename=params.output.json)
 
         if result.best_solution is not None:
             subgroup = result.best_solution.subgroup
