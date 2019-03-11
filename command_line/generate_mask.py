@@ -75,7 +75,7 @@ phil_scope = parse(
 )
 
 
-def script(experiments, params):
+def generate_mask(experiments, params):
     """
     Generate a pixel mask for each image in an experiment.
 
@@ -109,12 +109,12 @@ def script(experiments, params):
         beams = experiments.beams()
         for d in detectors[1:]:
             if not d.is_similar_to(detectors[0]):
-                raise ValueError(
+                sys.exit(
                     "Multiple imagesets are present, but their detector models differ."
                 )
         for b in beams[1:]:
             if not b.is_similar_to(beams[0]):
-                raise ValueError(
+                sys.exit(
                     "Multiple imagesets are present, but their beam models differ."
                 )
 
@@ -178,7 +178,7 @@ def run(phil=phil_scope, args=None):
         sys.exit("Exactly 1 experiment must be specified.")
 
     # Run the script
-    script(experiments, params)
+    generate_mask(experiments, params)
 
 
 if __name__ == "__main__":
