@@ -628,10 +628,7 @@ class ScoreSubGroup(object):
         # Combined correlation coefficients for symmetry operations
         # present/absent from subgroup
         self.subgroup = subgroup
-        cb_op_inp_best = subgroup["cb_op_inp_best"]
-        patterson_group = (
-            subgroup["best_subsym"].space_group().change_basis(cb_op_inp_best.inverse())
-        )
+        patterson_group = subgroup["subsym"].space_group()
         self.cc_for = CorrelationCoefficientAccumulator()
         self.cc_against = CorrelationCoefficientAccumulator()
         for score in sym_op_scores:

@@ -18,6 +18,7 @@ import math
 from libtbx import Auto
 from libtbx import table_utils
 from scitbx.array_family import flex
+from scitbx import matrix
 from cctbx import sgtbx
 import iotbx.phil
 
@@ -188,8 +189,6 @@ class analyse_datasets(symmetry_base):
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
             # See also dials/algorithms/spot_finding/per_image_analysis.py
-
-            from scitbx import matrix
 
             x = flex.double(dimensions)
             y = flex.double(functional)
@@ -374,7 +373,10 @@ class analyse_datasets(symmetry_base):
                 for partition in cosets.partitions:
                     if sym_ops[sym_op_id] in partition:
                         if i_cluster not in reindexing_ops:
-                            reindexing_ops[i_cluster] = partition[0].as_xyz()
+                            cb_op = sgtbx.change_of_basis_op(
+                                partition[0]
+                            ).new_denominators(self.cb_op_inp_min)
+                            reindexing_ops[i_cluster] = cb_op.as_xyz()
 
         return reindexing_ops
 
@@ -403,8 +405,7 @@ class analyse_datasets(symmetry_base):
             )
 
             cosets = sgtbx.cosets.left_decomposition(
-                self.target._lattice_group,
-                space_groups[dataset_id].info().primitive_setting().group(),
+                self.target._lattice_group, space_groups[dataset_id]
             )
 
             reindexing_ops[dataset_id] = self._reindexing_ops_for_dataset(
@@ -615,7 +616,7 @@ def _plot(coords, labels=None, plot_name="xy.png"):
 
     fig = plt.figure()
     if len(coords) > 2:
-        from mpl_toolkits.mplot3d import Axes3D  # import dependency
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
         ax = fig.add_subplot(111, projection="3d")
         coord_z = coords[2]
@@ -844,7 +845,6 @@ class SymmetryAnalysis(object):
     def __init__(self, coords, sym_ops, subgroups, cb_op_inp_min):
 
         import scipy.spatial.distance as ssd
-        from scitbx import matrix
 
         self.subgroups = subgroups
         self.cb_op_inp_min = cb_op_inp_min
@@ -1103,10 +1103,7 @@ class ScoreSubGroup(object):
         # Combined correlation coefficients for symmetry operations
         # present/absent from subgroup
         self.subgroup = subgroup
-        cb_op_inp_best = subgroup["cb_op_inp_best"]
-        patterson_group = (
-            subgroup["best_subsym"].space_group().change_basis(cb_op_inp_best.inverse())
-        )
+        patterson_group = subgroup["subsym"].space_group()
 
         # Overall Zcc scores for symmetry elements present/absent from subgroup
         self.z_cc_for = 0

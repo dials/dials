@@ -43,6 +43,7 @@ def generate_test_data(
     else:
         cs = sgi.any_compatible_crystal_symmetry(volume=unit_cell_volume)
 
+    cs = cs.minimum_cell()
     intensities = generate_intensities(cs, d_min=d_min)
     intensities.show_summary()
 

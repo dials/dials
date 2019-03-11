@@ -87,7 +87,7 @@ class symmetry_base(object):
         self.intensities = self.intensities.select(~sys_absent_flags)
         self.dataset_ids = self.dataset_ids.select(~sys_absent_flags)
 
-        self.cb_op_inp_min = self.intensities.change_of_basis_op_to_niggli_cell()
+        self.cb_op_inp_min = self.intensities.change_of_basis_op_to_minimum_cell()
         self.intensities = (
             self.intensities.change_basis(self.cb_op_inp_min)
             .customized_copy(space_group_info=sgtbx.space_group_info("P1"))
