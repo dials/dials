@@ -8,7 +8,7 @@ import procrunner
 def test_import_integrate_hkl(dials_regression, run_in_tmpdir):
     from dials.array_family import flex  # import dependency
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
@@ -33,7 +33,7 @@ def test_import_integrate_hkl(dials_regression, run_in_tmpdir):
 
 
 def test_import_spot_xds(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
@@ -55,7 +55,7 @@ def test_import_spot_xds(dials_regression, run_in_tmpdir):
 
 
 def test_import_spot_xds_with_filtering(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
@@ -79,7 +79,7 @@ def test_import_spot_xds_with_filtering(dials_regression, run_in_tmpdir):
 
 def test_from_xds_files(dials_regression, run_in_tmpdir):
     # Import from the image files
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=experiment",

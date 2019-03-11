@@ -13,7 +13,7 @@ def test(run_in_tmpdir):
     table.as_pickle("temp1.pickle")
     table.as_pickle("temp2.pickle")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dev.dials.merge_reflection_lists",
             "temp1.pickle",
@@ -27,7 +27,7 @@ def test(run_in_tmpdir):
     table = flex.reflection_table.from_pickle("merged.pickle")
     assert len(table) == 360
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dev.dials.merge_reflection_lists",
             "temp1.pickle",

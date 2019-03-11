@@ -11,7 +11,7 @@ from dials.array_family import flex  # import dependency
 
 
 def test_find_spots_from_images(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
@@ -36,7 +36,7 @@ def test_find_spots_from_images(dials_regression, run_in_tmpdir):
 
 
 def test_find_spots_with_resolution_filter(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
@@ -58,7 +58,7 @@ def test_find_spots_with_resolution_filter(dials_regression, run_in_tmpdir):
 
 def test_find_spots_with_hot_mask(dials_regression, run_in_tmpdir):
     # now write a hot mask
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "write_hot_mask=True",
@@ -85,7 +85,7 @@ def test_find_spots_with_hot_mask(dials_regression, run_in_tmpdir):
 
 def test_find_spots_with_hot_mask_with_prefix(dials_regression, run_in_tmpdir):
     # now write a hot mask
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "write_hot_mask=True",
@@ -112,7 +112,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_regression, run_in_tmpdir):
 
 def test_find_spots_with_generous_parameters(dials_regression, run_in_tmpdir):
     # now with more generous parameters
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "min_spot_size=3",
@@ -132,7 +132,7 @@ def test_find_spots_with_generous_parameters(dials_regression, run_in_tmpdir):
 
 def test_find_spots_with_user_defined_mask(dials_regression, run_in_tmpdir):
     # Now with a user defined mask
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
@@ -164,7 +164,7 @@ def test_find_spots_with_user_defined_mask(dials_regression, run_in_tmpdir):
 
 
 def test_find_spots_with_user_defined_region(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
@@ -188,7 +188,7 @@ def test_find_spots_with_user_defined_region(dials_regression, run_in_tmpdir):
 
 def test_find_spots_with_xfel_stills(dials_regression, run_in_tmpdir):
     # now with XFEL stills
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             os.path.join(

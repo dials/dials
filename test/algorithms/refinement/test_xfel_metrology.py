@@ -19,7 +19,7 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
     data_dir = os.path.join(dials_regression, "refinement_test_data", "xfel_metrology")
 
     # Do refinement and load the history
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             os.path.join(data_dir, "benchmark_level2d.json"),

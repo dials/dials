@@ -12,7 +12,7 @@ import procrunner
 
 def test2(dials_regression, run_in_tmpdir):
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
@@ -57,7 +57,7 @@ def test2(dials_regression, run_in_tmpdir):
         json.dump(j, fh)
 
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             "experiments.json",
@@ -100,7 +100,7 @@ def test2(dials_regression, run_in_tmpdir):
 
 def test_integration_with_sampling(dials_regression, run_in_tmpdir):
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
@@ -119,7 +119,7 @@ def test_integration_with_sampling(dials_regression, run_in_tmpdir):
 
 def test_integration_with_sample_size(dials_regression, run_in_tmpdir):
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
@@ -139,7 +139,7 @@ def test_integration_with_sample_size(dials_regression, run_in_tmpdir):
 
 def test_multi_sweep(dials_regression, run_in_tmpdir):
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(
@@ -186,7 +186,7 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
 
 def test_multi_lattice(dials_regression, run_in_tmpdir):
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(
@@ -224,7 +224,7 @@ def test_multi_lattice(dials_regression, run_in_tmpdir):
 
 
 def test_output_rubbish(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.index",
             os.path.join(dials_regression, "centroid_test_data", "datablock.json"),
@@ -237,7 +237,7 @@ def test_output_rubbish(dials_regression, run_in_tmpdir):
     assert os.path.exists("indexed.pickle")
 
     # Call dials.integrate
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.integrate",
             "indexed_experiments.json",
@@ -336,7 +336,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
-        result = procrunner.run_process(
+        result = procrunner.run(
             ["dials.integrate", pickle_name, json_name, phil]
         )
         assert result["exitcode"] == 0

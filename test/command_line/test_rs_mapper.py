@@ -7,7 +7,7 @@ import pytest
 
 
 def test_rs_mapper(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.rs_mapper",
             os.path.join(dials_regression, "centroid_test_data", "datablock.json"),

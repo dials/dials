@@ -7,7 +7,7 @@ import pytest
 
 def test_basic(dials_regression, run_in_tmpdir):
     # Call dials.create_profile_model
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.create_profile_model",
             os.path.join(
@@ -42,7 +42,7 @@ def test_basic(dials_regression, run_in_tmpdir):
 
 def test_extended(dials_regression, run_in_tmpdir):
     # Call dials.create_profile_model
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.create_profile_model",
             os.path.join(

@@ -13,14 +13,14 @@ def input_filename(dials_regression, run_in_tmpdir):
 
 
 def test_generate_mask(input_filename):
-    result = procrunner.run_process(["dials.generate_mask", input_filename])
+    result = procrunner.run(["dials.generate_mask", input_filename])
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert os.path.exists("mask.pickle")
 
 
 def test_generate_mask_with_untrusted_rectangle(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,
@@ -43,7 +43,7 @@ def test_generate_mask_with_untrusted_rectangle(input_filename):
 
 
 def test_generate_mask_with_untrusted_circle(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,
@@ -57,7 +57,7 @@ def test_generate_mask_with_untrusted_circle(input_filename):
 
 
 def test_generate_mask_with_resolution_range(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,
@@ -71,7 +71,7 @@ def test_generate_mask_with_resolution_range(input_filename):
 
 
 def test_generate_mask_with_d_min_d_max(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,
@@ -86,7 +86,7 @@ def test_generate_mask_with_d_min_d_max(input_filename):
 
 
 def test_generate_mask_with_ice_rings(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,
@@ -100,7 +100,7 @@ def test_generate_mask_with_ice_rings(input_filename):
 
 
 def test_generate_mask_with_untrusted_polygon_and_pixels(input_filename):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.generate_mask",
             input_filename,

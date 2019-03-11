@@ -8,7 +8,7 @@ import procrunner
 def test(dials_regression, run_in_tmpdir):
     images = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             "output.experiments=experiments.json",
@@ -22,7 +22,7 @@ def test(dials_regression, run_in_tmpdir):
     assert os.path.exists("experiments.json")
     assert os.path.exists("spotfinder.pickle")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_hot_pixels",
             "input.experiments=experiments.json",

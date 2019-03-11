@@ -82,6 +82,6 @@ def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
             "detector_phase.refinement.parameterisation.detector.hierarchy_level=1"
         )
 
-    result = procrunner.run_process(cmd)
+    result = procrunner.run(cmd)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""

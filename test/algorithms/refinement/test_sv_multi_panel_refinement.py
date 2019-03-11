@@ -10,7 +10,7 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(
 ):
     from dials.array_family import flex
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             os.path.join(

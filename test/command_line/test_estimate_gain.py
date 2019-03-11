@@ -9,7 +9,7 @@ def test(dials_regression, run_in_tmpdir):
         dials_regression, "centroid_test_data", "datablock.json"
     )
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         ["dials.estimate_gain", "input.experiments=" + input_filename]
     )
     assert result["exitcode"] == 0
