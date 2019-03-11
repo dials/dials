@@ -32,19 +32,20 @@ Examples::
 
 from __future__ import absolute_import, division, print_function
 
-import sys
 import logging
+import sys
+
 import six.moves.cPickle as pickle
 
 import dials.util
 import dials.util.log
-from scitbx.array_family import flex
-import libtbx.phil as phil
 import libtbx.load_env
-from dials.util.options import OptionParser, flatten_experiments
+import libtbx.phil as phil
 from dials.util.masking import MaskGenerator
+from dials.util.options import OptionParser, flatten_experiments
 from dxtbx.format.image import ImageBool
-from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListDumper
+from scitbx.array_family import flex
 
 try:
     from typing import List, Optional, Tuple
@@ -53,7 +54,7 @@ try:
 except ImportError:
     pass
 
-log = logging.getLogger('dials.generate_mask')
+log = logging.getLogger("dials.generate_mask")
 
 phil_scope = phil.parse(
     """
@@ -64,7 +65,7 @@ phil_scope = phil.parse(
         experiments = None
             .type = path
             .help = "Name of output experiment list file.  If this is set, a copy of "
-                    "the experiments, modified with the generated pixel masks, " 
+                    "the experiments, modified with the generated pixel masks, "
                     "will be saved to this location."
         log = 'dials.generate_masks.log'
             .type = str
@@ -72,7 +73,7 @@ phil_scope = phil.parse(
     }
 
     include scope dials.util.masking.phil_scope
-    
+
     verbosity = 1
         .type = int(value_min=0)
         .help = "The verbosity level."
