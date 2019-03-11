@@ -125,21 +125,25 @@ class cosym(object):
             subgroup = result.best_solution.subgroup
         else:
             subgroup = None
-        self._export_experiments_reflections(experiments, reflections, reindexing_ops, subgroup=subgroup)
+        self._export_experiments_reflections(
+            experiments, reflections, reindexing_ops, subgroup=subgroup
+        )
 
-    def _export_experiments_reflections(self, experiments, reflections, reindexing_ops, subgroup=None):
+    def _export_experiments_reflections(
+        self, experiments, reflections, reindexing_ops, subgroup=None
+    ):
         reindexed_reflections = flex.reflection_table()
         for cb_op, dataset_ids in reindexing_ops.iteritems():
             cb_op = sgtbx.change_of_basis_op(cb_op)
             if subgroup is not None:
-                cb_op = subgroup['cb_op_inp_best'] * cb_op
+                cb_op = subgroup["cb_op_inp_best"] * cb_op
             for dataset_id in dataset_ids:
                 expt = experiments[dataset_id]
                 refl = reflections[dataset_id]
                 refl_reindexed = copy.deepcopy(refl)
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 if subgroup is not None:
-                    expt.crystal.set_space_group(subgroup['best_subsym'].space_group())
+                    expt.crystal.set_space_group(subgroup["best_subsym"].space_group())
                 refl_reindexed["miller_index"] = cb_op.apply(
                     refl_reindexed["miller_index"]
                 )
@@ -250,7 +254,7 @@ class cosym(object):
         cb_op_ref_min = (
             experiments[0]
             .crystal.get_crystal_symmetry()
-            .change_of_basis_op_to_niggli_cell()
+            .change_of_basis_op_to_minimum_cell()
         )
         for expt, refl in zip(experiments, reflections):
             expt.crystal = expt.crystal.change_basis(cb_op_ref_min)

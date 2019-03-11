@@ -125,10 +125,10 @@ class Target(object):
 
     def _generate_twin_operators(self, lattice_symmetry_max_delta=3.0):
         # see also mmtbx.scaling.twin_analyses.twin_laws
-        cb_op_to_niggli_cell = self._data.change_of_basis_op_to_niggli_cell()
+        cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
         if self._lattice_group is None:
             minimum_cell_symmetry = self._data.crystal_symmetry().change_basis(
-                cb_op=cb_op_to_niggli_cell
+                cb_op=cb_op_to_minimum_cell
             )
             self._lattice_group = sgtbx.lattice_symmetry.group(
                 reduced_cell=minimum_cell_symmetry.unit_cell(),
@@ -137,13 +137,13 @@ class Target(object):
             intensity_symmetry = minimum_cell_symmetry.reflection_intensity_symmetry(
                 anomalous_flag=self._data.anomalous_flag()
             )
-            cb_op = cb_op_to_niggli_cell.inverse()
+            cb_op = cb_op_to_minimum_cell.inverse()
         else:
             cb_op = sgtbx.change_of_basis_op()
             intensity_symmetry = self._data.reflection_intensity_symmetry()
 
         operators = []
-        for partition in sgtbx.cosets.left_decomposition(
+        for partition in cctbx.sgtbx.cosets.left_decomposition(
             g=self._lattice_group,
             h=intensity_symmetry.space_group()
             .build_derived_acentric_group()
