@@ -35,26 +35,27 @@ from __future__ import absolute_import, division, print_function
 import sys
 import logging
 import six.moves.cPickle as pickle
-from typing import Tuple, Optional
 
 import dials.util
 import dials.util.log
 from scitbx.array_family import flex
-from iotbx.phil import parse
-from libtbx.phil import scope, scope_extract
+import libtbx.phil as phil
 import libtbx.load_env
 from dials.util.options import OptionParser, flatten_experiments
 from dials.util.masking import MaskGenerator
 from dxtbx.format.image import ImageBool
-from dxtbx.model.experiment_list import Experiment, ExperimentList, ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentListDumper, ExperimentList
 
-Masks = Tuple[flex.bool, ...]
+try:
+    from typing import List, Optional, Tuple
 
-help_message = __doc__
+    Masks = Tuple[flex.bool, ...]
+except ImportError:
+    pass
 
 log = logging.getLogger('dials.generate_mask')
 
-phil_scope = parse(
+phil_scope = phil.parse(
     """
     output {
         mask = mask.pickle
@@ -81,7 +82,7 @@ phil_scope = parse(
 
 
 def generate_mask(experiments, params):
-    # type: (ExperimentList, scope_extract) -> Tuple[Masks, Optional[ExperimentList]]
+    # type: (ExperimentList, phil.scope_extract) -> Tuple[Masks, Optional[ExperimentList]]
     """
     Generate a pixel mask for each image in an experiment.
 
@@ -96,12 +97,14 @@ def generate_mask(experiments, params):
 
     Args:
         experiments: An experiment list containing only one experiment.
-        params: Masking parameters, having the structure defined in :data:`phil_scope`.
+        params: Masking parameters, having the structure defined in
+            :data:`phil_scope`.
 
     Returns:
         A tuple containing the generated pixel masks.
-        A copy of :param:`experiments` with the masks applied
-            (optional, only returned if :attr:`params.output.experiments` is set).
+
+        A copy of :param:`experiments` with the masks applied (optional,
+        only returned if :attr:`params.output.experiments` is set).
     """
     imagesets = experiments.imagesets()
     if len(imagesets) > 1:
@@ -147,23 +150,20 @@ def generate_mask(experiments, params):
 
 
 def run(phil=phil_scope, args=None):
-    # type: (scope, list) -> None
+    # type: (phil.scope, List[str]) -> None
     """
     Parse command-line arguments, run the script.
 
-    Use the DIALS option parser to extract an experiment list and parameters.  Pass
-    these to :func:`script`.  If :param:`args` is `None` (default), the option parser
-    defaults to :data:`sys.argv[1:]`.
+    Uses the DIALS option parser to extract an experiment list and
+    parameters, then passes these to :func:`generate_mask`.
 
     Args:
         phil: PHIL scope for option parser.
-        args: Arguments to parse.  Defaults to :data:`sys.argv[1:]`.
+        args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
     usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
-    parser = OptionParser(
-        usage=usage, phil=phil, epilog=help_message, read_experiments=True
-    )
+    parser = OptionParser(usage=usage, phil=phil, epilog=__doc__, read_experiments=True)
 
     # Parse the command line arguments
     params, options = parser.parse_args(args=args, show_diff_phil=True)
