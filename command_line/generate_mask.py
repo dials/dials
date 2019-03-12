@@ -88,7 +88,7 @@ def generate_mask(experiments, params):
     Generate a pixel mask for each image in an experiment.
 
     Use the masking parameters :param:`params` and an experiment in the experiment
-    list :param:`experiments` to define pixel masks for the associated imagesets.
+    list :param:`experiments` to define pixel masks for the associated imageset.
     The masks are generated using :mod:`dials.util.masking`.
 
     The masks will be saved to disk at the location specified by
@@ -97,7 +97,7 @@ def generate_mask(experiments, params):
     with the masks applied will be saved to that location.
 
     Args:
-        experiments: An experiment list containing only one experiment.
+        experiments: An experiment list containing only one imageset.
         params: Masking parameters, having the structure defined in
             :data:`phil_scope`.
 
@@ -108,21 +108,7 @@ def generate_mask(experiments, params):
         only returned if :attr:`params.output.experiments` is set).
     """
     imagesets = experiments.imagesets()
-    if len(imagesets) > 1:
-        # Check beams (for resolution) and detectors are equivalent in each case
-        # otherwise the mask may not be appropriate across all imagesets
-        detectors = experiments.detectors()
-        beams = experiments.beams()
-        for d in detectors[1:]:
-            if not d.is_similar_to(detectors[0]):
-                sys.exit(
-                    "Multiple imagesets are present, but their detector models differ."
-                )
-        for b in beams[1:]:
-            if not b.is_similar_to(beams[0]):
-                sys.exit(
-                    "Multiple imagesets are present, but their beam models differ."
-                )
+    assert len(imagesets) == 1, "Only single imagesets supported"
 
     imageset = imagesets[0]
 
