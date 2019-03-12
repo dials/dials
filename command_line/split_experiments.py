@@ -51,6 +51,13 @@ class Script(object):
           .help = "If not None, instead of creating many individual"
                   "files, create composite files with no more than"
                   "chunk_size experiments per file."
+        chunk_sizes = None
+          .type = ints
+          .expert_level = 2
+          .help = "If not None, instead of creating many individual"
+                  "files, create composite files with the number of"
+                  "datasets given in the chunk_sizes list."
+
       }
     """,
             process_includes=True,
@@ -114,6 +121,11 @@ class Script(object):
 
         from dxtbx.model.experiment_list import ExperimentList
         from dxtbx.serialize import dump
+
+        if params.output.chunk_sizes:
+            if not sum(params.output.chunk_sizes) == len(experiments):
+                raise Sorry("Sum of chunk sizes list (%s) not equal to number of experiments (%s)" %
+                    (sum(params.output.chunk_sizes), len(experiments)))
 
         if params.by_detector:
             assert (
@@ -185,7 +197,7 @@ class Script(object):
                         % (i, reflections_filename)
                     )
                     split_data[detector]["reflections"].as_pickle(reflections_filename)
-        elif params.output.chunk_size:
+        elif params.output.chunk_size or params.output.chunk_sizes:
             from dxtbx.model.experiment_list import ExperimentList
             from dxtbx.serialize import dump
 
@@ -233,7 +245,11 @@ class Script(object):
                         ref_sel = reflections.select(reflections["id"] == i)
                         ref_sel["id"] = flex.int(len(ref_sel), len(chunk_expts) - 1)
                     chunk_refls.extend(ref_sel)
-                if len(chunk_expts) == params.output.chunk_size:
+                if params.output.chunk_sizes:
+                    chunk_limit = params.output.chunk_sizes[chunk_counter]
+                else:
+                    chunk_limit = params.output.chunk_size
+                if len(chunk_expts) == chunk_limit:
                     save_chunk(chunk_counter, chunk_expts, chunk_refls)
                     chunk_counter += 1
                     chunk_expts = ExperimentList()
