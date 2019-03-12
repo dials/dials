@@ -432,6 +432,7 @@ will not be used for calculating merging statistics"""
                 sigma_filtering=None,
                 eliminate_sys_absent=False,
                 use_internal_variance=params.output.use_internal_variance,
+                cc_one_half_significance_level=0.01
             )
         except RuntimeError:
             raise DialsMergingStatisticsError(

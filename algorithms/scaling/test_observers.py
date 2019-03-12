@@ -202,19 +202,30 @@ def test_MergingStatisticsObserver():
     """Test that the observer correctly logs data when passed a script."""
     script = mock.Mock()
     script.merging_statistics_result = "result"
-
+    script.scaled_miller_array.space_group.return_value.is_centric.return_value = True
     observer = MergingStatisticsObserver()
     observer.update(script)
 
-    assert observer.data == {"statistics": "result"}
+    assert observer.data == {"statistics": "result", "is_centric" : True}
 
     mock_func = mock.Mock()
     mock_func.return_value = "return_tables"
+    mock_func_2 = mock.Mock()
+    mock_func_2.return_value = "cchalfplot"
 
     with mock.patch(
         "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
     ):
-        r = observer.make_plots()
-        assert mock_func.call_count == 1
-        assert mock_func.call_args_list == [mock.call(observer.data["statistics"])]
-        assert r == {"scaling_tables": "return_tables"}
+        with mock.patch("dials.algorithms.scaling.observers.cc_one_half_plot",
+        new=mock_func_2):
+            r = observer.make_plots()
+            assert mock_func.call_count == 1
+            assert mock_func.call_args_list == [
+              mock.call(observer.data["statistics"])]
+            assert mock_func_2.call_count == 1
+            assert mock_func_2.call_args_list == [
+              mock.call(observer.data["statistics"], is_centric=True)]
+            assert r == {
+              'cc_one_half_plot': 'cchalfplot',
+              'scaling_tables': 'return_tables'
+            }

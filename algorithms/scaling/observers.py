@@ -8,9 +8,9 @@ from dials.algorithms.scaling.plots import (
     statistics_tables,
     plot_outliers,
     normal_probability_plot,
+    cc_one_half_plot
 )
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-
 
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
@@ -56,6 +56,7 @@ class ScalingHTMLGenerator(Observer):
             page_title="DIALS scaling report",
             scaling_model_graphs=self.data["scaling_model"],
             scaling_tables=self.data["scaling_tables"],
+            cc_one_half_plot=self.data["cc_one_half_plot"],
             scaling_outlier_graphs=self.data["outlier_plots"],
             normal_prob_plot=self.data["normal_prob_plot"],
         )
@@ -162,11 +163,17 @@ class MergingStatisticsObserver(Observer):
 
     def update(self, scaling_script):
         if scaling_script.merging_statistics_result:
-            self.data = {"statistics": scaling_script.merging_statistics_result}
+            self.data = {
+              "statistics": scaling_script.merging_statistics_result,
+              "is_centric" : scaling_script.scaled_miller_array.space_group().is_centric()
+            }
 
     def make_plots(self):
         """Generate tables of overall and resolution-binned merging statistics."""
-        d = {"scaling_tables": [[], []]}
+        d = {"scaling_tables": [[], []], "cc_one_half_plot": {}}
         if "statistics" in self.data:
             d["scaling_tables"] = statistics_tables(self.data["statistics"])
+            d["cc_one_half_plot"] = cc_one_half_plot(
+                self.data["statistics"], is_centric=self.data["is_centric"]
+            )
         return d
