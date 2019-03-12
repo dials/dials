@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 from glob import glob
 import os
 
-from procrunner import run_process
+import procrunner
 import pytest
 
 
@@ -17,7 +17,7 @@ def test_multiple_sweep_import_fails_without_allow_parameter(
     del image_files[4]  # Delete filename to force two sweeps
 
     # run without allowing multiple sweeps
-    result = run_process(
+    result = procrunner.run(
         ["dials.import"]
         + image_files
         + ["output.experiments=experiments_multiple_sweeps.json"]
@@ -36,7 +36,7 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(
     )
     del image_files[4]  # Delete filename to force two sweeps
 
-    result = run_process(
+    result = procrunner.run(
         ["dials.import"]
         + image_files
         + [
@@ -61,7 +61,7 @@ def test_with_mask(dials_regression, run_in_tmpdir):
     )
     mask_filename = os.path.join(dials_regression, "centroid_test_data", "mask.pickle")
 
-    result = run_process(
+    result = procrunner.run(
         ["dials.import"]
         + image_files
         + ["mask=" + mask_filename, "output.experiments=experiments_with_mask.json"]
@@ -118,7 +118,7 @@ def test_override_geometry(dials_regression, run_in_tmpdir):
   """
         )
 
-    result = run_process(
+    result = procrunner.run(
         ["dials.import"]
         + image_files
         + ["geometry.phil", "output.experiments=override_geometry.json"]
@@ -164,7 +164,7 @@ def tst_import_beam_centre(dials_regression, run_in_tmpdir):
     image_files = " ".join(image_files)
 
     # provide mosflm beam centre to dials.import
-    result = run_process(
+    result = procrunner.run(
         [
             "dials.import",
             "mosflm_beam_centre=100,200",
@@ -184,7 +184,7 @@ def tst_import_beam_centre(dials_regression, run_in_tmpdir):
     assert beam_centre == pytest.approx((200, 100))
 
     # provide an alternative experiments.json to get geometry from
-    result = run_process(
+    result = procrunner.run(
         [
             "dials.import",
             "reference_geometry=mosflm_beam_centre.json",
@@ -209,7 +209,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
         "LCLS_cspad_nexus",
         "idx-20130301060858401.cbf",
     )
-    result = run_process(
+    result = procrunner.run(
         [
             "dials.import",
             "slow_fast_beam_centre=134,42,18",
@@ -239,7 +239,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
         intra_pnl = o - matrix.col(p.get_origin())
         offsets.append(intra_pnl.length())
 
-    result = run_process(["dials.import", "output.experiments=reference.json", impath])
+    result = procrunner.run(["dials.import", "output.experiments=reference.json", impath])
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert os.path.exists("reference.json")
@@ -261,7 +261,7 @@ def test_from_image_files(dials_regression, run_in_tmpdir):
     )
 
     # Import from the image files
-    result = run_process(
+    result = procrunner.run(
         ["dials.import"] + image_files + ["output.experiments=import_experiments.json"]
     )
     assert result["exitcode"] == 0
@@ -273,7 +273,7 @@ def test_from_template(dials_regression, run_in_tmpdir):
     template = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
 
     # Import from the image files
-    result = run_process(
+    result = procrunner.run(
         [
             "dials.import",
             "template=" + template,
@@ -288,7 +288,7 @@ def test_extrapolate_scan(dials_regression, run_in_tmpdir):
     # First image file
     image = os.path.join(dials_regression, "centroid_test_data", "centroid_0001.cbf")
 
-    result = run_process(
+    result = procrunner.run(
         [
             "dials.import",
             image,

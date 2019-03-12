@@ -7,7 +7,7 @@ import shutil
 from optparse import SUPPRESS_HELP, OptionParser
 
 import libtbx.load_env
-from procrunner import run_process
+import procrunner
 
 # Disable all HTTPS verification. This is to work around an issue
 # in biopython, possibly biopython relying on unreliable servers.
@@ -164,11 +164,11 @@ if __name__ == "__main__":
         env["SPHINXOPTS"] = "-W"
 
     if options.clean:
-        result = run_process(["make", "clean"], environment_override=env)
+        result = procrunner.run(["make", "clean"], environment_override=env)
         assert result["exitcode"] == 0, (
             "make clean failed with exit code %d" % result["exitcode"]
         )
-    result = run_process(["make", "html"], environment_override=env)
+    result = procrunner.run(["make", "html"], environment_override=env)
     assert result["exitcode"] == 0, (
         "make html failed with exit code %d" % result["exitcode"]
     )
