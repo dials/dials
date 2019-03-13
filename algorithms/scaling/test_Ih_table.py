@@ -5,7 +5,7 @@ import pytest
 from mock import Mock
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
-from cctbx.sgtbx import space_group
+from cctbx.sgtbx import space_group, uctbx
 from scitbx import sparse
 
 
@@ -40,7 +40,7 @@ def generate_refl_1():
     in this example."""
     reflections = flex.reflection_table()
     reflections["intensity"] = flex.double([100.0, 100.0, 80.0, 60.0, 30.0, 40.0, 60.0])
-    reflections["inverse_scale_factor"] = flex.double(7, 1.0)
+    reflections["inverse_scale_factor"] = flex.double(7, 2.0)
     reflections["variance"] = flex.double([90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0])
     reflections["miller_index"] = flex.miller_index(
         [(1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 2, 0), (0, 4, 0), (0, 0, -2), (0, 0, 2)]
@@ -54,7 +54,7 @@ def generate_refl_2():
     reflections = flex.reflection_table()
     reflections["intensity"] = flex.double([60.0, 30.0, 10.0, 30.0])
     reflections["variance"] = flex.double([60.0, 30.0, 10.0, 30.0])
-    reflections["inverse_scale_factor"] = flex.double([1.0, 1.0, 1.0, 1.0])
+    reflections["inverse_scale_factor"] = flex.double(4, 2.0)
     reflections["miller_index"] = flex.miller_index(
         [(1, 0, 0), (0, 4, 0), (10, 0, 0), (0, 4, 0)]
     )
@@ -179,7 +179,8 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert list(block.weights) == list(1.0 / large_reflection_table["variance"])
     assert not "Ih_values" in block.Ih_table
     block.calc_Ih()
-    assert list(block.Ih_values) == [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]
+    assert list(block.Ih_values) == [x / 2.0 for x in \
+      [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]]
 
     with pytest.raises(AssertionError):
         block.add_data(0, group_ids, large_reflection_table)
@@ -217,7 +218,8 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert new_block.h_expand_matrix[0, 1] == 1
     assert new_block.h_expand_matrix[1, 2] == 1
 
-    assert list(new_block.Ih_values) == [90.0, 90.0, 30.0]
+    assert list(new_block.Ih_values) == [x / 2.0 for x in \
+      [90.0, 90.0, 30.0]]
 
     # test setter methods
     new_block.inverse_scale_factors = flex.double([1.0, 2.0, 3.0])
@@ -247,7 +249,8 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert new_block.h_expand_matrix[0, 1] == 1
     assert new_block.h_expand_matrix[1, 2] == 1
 
-    assert list(new_block.Ih_values) == [90.0, 90.0, 30.0]
+    assert list(new_block.Ih_values) == [x / 2.0 for x in \
+      [90.0, 90.0, 30.0]]
 
 
 def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
@@ -549,6 +552,26 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
 
     Ih_table.calc_Ih()
 
+    # Test the 'as_miller_array' method.
+    unit_cell = uctbx.unit_cell((1.0, 1.0, 1.0, 90., 90., 90.))
+
+    arr = Ih_table.as_miller_array(unit_cell)
+    assert arr.size() == 5
+    assert list(arr.indices()) == \
+        [(0, 0, 1), (0, 2, 0), (0, 4, 0), (0, 4, 0), (10, 0, 0)]
+    assert list(arr.data()) == [x / 2.0 for x in \
+        [100.0, 60.0, 30.0, 30.0, 10.0]]
+    assert list(arr.sigmas()) == [(x / 4.0) **0.5 for x in \
+        [100.0, 60.0, 30.0, 30.0, 10.0]]
+
+    arr = Ih_table.as_miller_array(unit_cell, return_free_set_data=True)
+    assert arr.size() == 4
+    assert list(arr.indices()) == \
+        [(0, 0, 2), (1, 0, 0), (1, 0, 0), (1, 0, 0)]
+    assert list(arr.data()) == [x / 2.0 for x in \
+        [40.0, 100.0, 80.0, 60.0]]
+    assert list(arr.sigmas()) == [(x / 4.0) **0.5 for x in \
+        [50.0, 90.0, 90.0, 60.0]]
 
 def test_set_Ih_values_to_target(test_sg):
     """Test the setting of Ih values for targeted scaling."""
