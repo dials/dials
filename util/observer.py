@@ -4,6 +4,7 @@ Define an interface for observers and subjects.
 A singleton decorator is also defined.
 """
 
+import functools
 
 def singleton(cls):
     instances = {}
@@ -36,6 +37,7 @@ class Subject(object):
         """Define a decorator for notifying of a specific event."""
 
         def wrap(method):
+            @functools.wraps(method)
             def notify(self, *args, **kwargs):
                 r = method(self, *args, **kwargs)
                 self.notify(event)
