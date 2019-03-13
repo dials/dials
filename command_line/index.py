@@ -11,7 +11,7 @@ try:
     # try importing scipy.linalg before any cctbx modules, otherwise we
     # sometimes get a segmentation fault/core dump if it is imported after
     # scipy.linalg is a dependency of sklearn.cluster.DBSCAN
-    import scipy.linalg  # import dependency
+    import scipy.linalg  # noqa: F401
 except ImportError:
     pass
 
@@ -20,7 +20,6 @@ import copy
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
 from dials.util.options import flatten_experiments
 
 help_message = """
