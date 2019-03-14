@@ -1,27 +1,47 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import itertools
+import math
+
+from past.builtins import basestring, unicode
 
 import rstbx.viewer.display
 import wx
-from wx.lib.intctrl import IntCtrl
-
-from .slip_viewer.frame import XrayFrame
-
+from cctbx import crystal, uctbx
+from cctbx.miller import index_generator
+from dials.algorithms.image.threshold import DispersionThresholdDebug
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
+from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
+from dials.util import masking
+from dials.util.image_viewer.mask_frame import MaskSettingsFrame
+from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
+from dxtbx.imageset import ImageSet
+from dxtbx.model.experiment_list import ExperimentList
+from libtbx import group_args
+from libtbx.utils import flat_list, time_log
+from rstbx.slip_viewer import pyslip
 from rstbx.viewer.frame import SettingsFrame
 from scitbx import matrix
-from dials.array_family import flex
-
-from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
+from wx.lib.intctrl import IntCtrl
+from wxtbx import bitmaps, icons
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
+from wxtbx.phil_controls.floatctrl import FloatCtrl
+from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
+from wxtbx.phil_controls.ints import IntsCtrl
+from wxtbx.phil_controls.strctrl import StrCtrl
 
-from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
-
+from .slip_viewer.frame import XrayFrame
 from .viewer_tools import (
-    LegacyChooserAdapter,
-    ImageCollectionWithSelection,
     ImageChooserControl,
+    ImageCollectionWithSelection,
+    LegacyChooserAdapter,
 )
+
+try:
+    from typing import Optional
+except ImportError:
+    pass
 
 WX3 = wx.VERSION[0] == 3
 
@@ -82,8 +102,6 @@ class SpotFrame(XrayFrame):
         self.mask_input = self.params.mask
         self.mask_image_viewer = None
         self._mask_frame = None
-
-        from libtbx.utils import time_log
 
         self.show_all_pix_timer = time_log("show_all_pix")
         self.show_shoebox_timer = time_log("show_shoebox")
@@ -150,9 +168,6 @@ class SpotFrame(XrayFrame):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIMask, id=self._id_mask)
 
     def setup_toolbar(self):
-        from wxtbx import bitmaps
-        from wxtbx import icons
-
         btn = self.toolbar.AddLabelTool(
             id=-1,
             label="Load file",
@@ -246,8 +261,6 @@ class SpotFrame(XrayFrame):
         self.Bind(wx.EVT_MENU, self.OnMask, source=item)
 
     def OnMask(self, event):
-        from dials.util.image_viewer.mask_frame import MaskSettingsFrame
-
         if not self._mask_frame:
             self._mask_frame = MaskSettingsFrame(
                 self,
@@ -364,8 +377,6 @@ class SpotFrame(XrayFrame):
     def boxSelect(self, event):
         """Select event from pyslip."""
 
-        from rstbx.slip_viewer import pyslip
-
         point = event.point
         assert event.evtype == pyslip.EventBoxSelect
 
@@ -401,9 +412,6 @@ class SpotFrame(XrayFrame):
 
             else:
                 panel_id = 0
-
-            from dials.util import masking
-            from libtbx.utils import flat_list
 
             region = masking.phil_scope.extract().untrusted[0]
             region.polygon = flat_list(point)
@@ -665,10 +673,6 @@ class SpotFrame(XrayFrame):
             dc.DrawCircle(x, y, radius * scale)
 
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
-        from cctbx.array_family import flex
-        from cctbx import uctbx
-        import math
-
         image = self.image_chooser.GetClientData(
             self.image_chooser.GetSelection()
         ).image_set
@@ -679,8 +683,6 @@ class SpotFrame(XrayFrame):
         d_star_sq_max = uctbx.d_as_d_star_sq(d_min)
 
         if unit_cell is not None and space_group is not None:
-            from cctbx.miller import index_generator
-
             unit_cell = space_group.average_unit_cell(unit_cell)
             generator = index_generator(unit_cell, space_group.type(), False, d_min)
             indices = generator.to_array()
@@ -933,9 +935,6 @@ class SpotFrame(XrayFrame):
             self.Layout()
 
     def get_raw_data(self, image):
-        from dials.algorithms.image.threshold import DispersionThresholdDebug
-        from dials.array_family import flex
-
         detector = image.get_detector()
         image.set_raw_data(None)
         raw_data = image.get_raw_data()
@@ -1264,9 +1263,6 @@ class SpotFrame(XrayFrame):
         self.pyslip.Update()
 
     def get_mask(self, image):
-        detector = image.get_detector()
-        trange = [p.get_trusted_range() for p in detector]
-        mask = []
         mask = image.get_mask()
         if self.mask_input is not None:
             for p1, p2 in zip(self.mask_input, mask):
@@ -1274,8 +1270,7 @@ class SpotFrame(XrayFrame):
         if self.mask_image_viewer is not None:
             for p1, p2 in zip(self.mask_image_viewer, mask):
                 p2 &= p1
-        if mask is None:
-            mask = [p.get_trusted_range_mask(im) for im, p in zip(raw_data, detector)]
+        assert mask is not None, "Mask should never be None here"
         return mask
 
     def mask_raw_data(self, raw_data):
@@ -1284,6 +1279,7 @@ class SpotFrame(XrayFrame):
             rd.set_selected(~m, -2)
 
     def __get_imageset_filter(self, reflections, imageset):
+        # type: (flex.reflection_table, ImageSet) -> Optional[flex.bool]
         """Get a filter to ensure only reflections from an imageset.
 
         This is not a well-defined problem because of unindexed reflections
@@ -1293,14 +1289,13 @@ class SpotFrame(XrayFrame):
         there is a single imageset.
 
         Args:
-            reflections (dials.array_family.flex.reflection_table):
+            reflections:
                 The reflections table to filter
-            imageset (dxtbx.imageset.ImageSet):
+            imageset:
                 The imageset to filter reflections to
 
         Returns:
-            (scitbx.array_family.flex.bool or None):
-                The selection, or None if there is nothing to select
+            The selection, or None if there is nothing to select.
         """
         reflections_id = self.reflections.index(reflections)
         experimentlist = self.experiments[reflections_id]
@@ -1332,11 +1327,6 @@ class SpotFrame(XrayFrame):
         return selection
 
     def get_spotfinder_data(self):
-        from scitbx.array_family import flex
-        import math
-        from dials.algorithms.shoebox import MaskCode
-
-        bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
         fg_code = MaskCode.Valid | MaskCode.Foreground
         strong_code = MaskCode.Valid | MaskCode.Strong
 
@@ -1616,8 +1606,6 @@ class SpotFrame(XrayFrame):
             and self.crystals is not None
             and self.crystals[0] is not None
         ):
-            from cctbx import crystal
-
             for experiments in self.experiments:
                 for experiment in experiments:
                     if experiment.imageset != imageset:
@@ -1689,8 +1677,6 @@ class SpotFrame(XrayFrame):
                             )
                         )
 
-        from libtbx import group_args
-
         return group_args(
             all_pix_data=all_pix_data,
             all_foreground_circles=all_foreground_circles,
@@ -1710,8 +1696,6 @@ class SpotFrame(XrayFrame):
         return self.imagesets[0].get_beam()
 
     def predict(self):
-        from dxtbx.model.experiment_list import ExperimentList
-
         predicted_all = []
         for experiments in self.experiments:
             this_predicted = flex.reflection_table()
@@ -1929,8 +1913,6 @@ class SpotSettingsPanel(wx.Panel):
         grid1 = wx.FlexGridSizer(cols=2, rows=7, vgap=0, hgap=0)
         s.Add(grid1)
 
-        from wxtbx.phil_controls.floatctrl import FloatCtrl
-
         txt1 = wx.StaticText(self, -1, "Sigma background")
         grid1.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.nsigma_b_ctrl = FloatCtrl(
@@ -1969,8 +1951,6 @@ class SpotSettingsPanel(wx.Panel):
         self.gain_ctrl.SetMin(0)
         grid1.Add(self.gain_ctrl, 0, wx.ALL, 5)
 
-        from wxtbx.phil_controls.ints import IntsCtrl
-
         txt3 = wx.StaticText(self, -1, "Kernel size")
         grid1.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.kernel_size_ctrl = IntsCtrl(
@@ -2002,8 +1982,6 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(
             EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.gain_ctrl
         )
-
-        from wxtbx.phil_controls.strctrl import StrCtrl
 
         self.save_params_txt_ctrl = StrCtrl(
             self, value=self.settings.find_spots_phil, name="find_spots_phil"
@@ -2181,9 +2159,7 @@ class SpotSettingsPanel(wx.Panel):
         pyslip.GotoPosition(center)
 
     def OnSaveFindSpotsParams(self, event):
-        from dials.command_line.find_spots import phil_scope
-
-        params = phil_scope.extract()
+        params = find_spots_phil_scope.extract()
         dispersion = params.spotfinder.threshold.dispersion
         dispersion.gain = self.settings.gain
         dispersion.global_threshold = self.settings.global_threshold
@@ -2193,7 +2169,9 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.sigma_strong = self.settings.nsigma_s
         with open(self.settings.find_spots_phil, "wb") as f:
             print("Saving parameters to %s" % self.settings.find_spots_phil)
-            phil_scope.fetch_diff(phil_scope.format(params)).show(f)
+            find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
+                f
+            )
 
     def OnUpdateDispersionThresholdDebug(self, event):
         if (
