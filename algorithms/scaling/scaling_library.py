@@ -462,6 +462,7 @@ def calculate_single_merging_stats(
         sigma_filtering=None,
         use_internal_variance=use_internal_variance,
         eliminate_sys_absent=False,
+        cc_one_half_significance_level=0.01,
     )
     return result
 
