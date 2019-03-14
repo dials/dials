@@ -1,12 +1,12 @@
-from scitbx.array_family import flex
-from iotbx.merging_statistics import dataset_statistics
+"""
+Tests for the dials.algorithms.scaling.plots module
+"""
+
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
     plot_outliers,
-    statistics_tables,
     normal_probability_plot,
 )
-
 
 def test_plot_scaling_models():
 
@@ -41,6 +41,9 @@ def test_plot_scaling_models():
     d = plot_scaling_models(physical_dict)
     assert "smooth_scale_model" in d
     assert "absorption_surface" in d
+    assert "absorption_parameters" in d
+    assert d["smooth_scale_model"]["data"][0] != []
+    assert d["absorption_parameters"]["data"][0] != []
 
 
 def test_normal_probability_plot():
@@ -60,26 +63,3 @@ def test_plot_outliers():
     d = plot_outliers(data)
     assert "outliers_vs_z" in d
     assert "outlier_xy_positions" in d
-
-
-def test_statistics_tables():
-    """Test generation of statistics tables"""
-    import random
-    from cctbx import miller
-    from cctbx import crystal
-
-    ms = miller.build_set(
-        crystal_symmetry=crystal.symmetry(
-            space_group_symbol="P1", unit_cell=(6, 6, 6, 90, 90, 90)
-        ),
-        anomalous_flag=True,
-        d_min=1.0,
-    )
-    data = flex.double(float(random.randrange(0, 100)) for _ in range(ms.size()))
-    iobs = miller.array(ms, data, sigmas=data)
-    iobs.change_symmetry(space_group_symbol="P222", merge_non_unique=False)
-    iobs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
-    iobs.set_observation_type_xray_intensity()
-    result = dataset_statistics(iobs, assert_is_not_unique_set_under_symmetry=False)
-    tables = statistics_tables(result)
-    assert len(tables) == 2  # overall and per resolution

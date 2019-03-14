@@ -1,9 +1,10 @@
 import os
 import mock
+from cctbx import miller
 from collections import OrderedDict
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import KBScalingModel
-from dxtbx.model import Experiment
+from dxtbx.model import Experiment, Crystal
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
@@ -203,36 +204,76 @@ def test_ErrorModelObserver():
         assert mock_func.call_args_list == [mock.call(observer.data)]
         assert r == {"normal_prob_plot": {"plot": {}}}
 
+def example_refls():
+    """Generate a reflection table for a test."""
+    refls = flex.reflection_table()
+    refls['inverse_scale_factor'] = flex.double([2.0, 1.0, 0.5])
+    refls['xyzobs.px.value'] = flex.vec3_double([
+        (0.0, 0.0, 0.5), (0.0, 0.0, 5.5), (0.0, 0.0, 8.5)
+    ])
+    refls.set_flags(flex.bool(3, False), refls.flags.outlier_in_scaling)
+    refls['intensity'] = flex.double([1.0, 1.0, 1.0])
+    refls['variance'] = flex.double([1.0, 1.0, 1.0])
+    refls['miller_index'] = flex.miller_index([(1, 1, 1), (1, 1, 1), (1, 1, 1)])
+    return refls
+
+def example_array(reflections):
+    """Generate a miller array for a test."""
+    exp_dict = {
+        "__id__": "crystal",
+        "real_space_a": [1.0, 0.0, 0.0],
+        "real_space_b": [0.0, 1.0, 0.0],
+        "real_space_c": [0.0, 0.0, 1.0],
+        "space_group_hall_symbol": "-P 2yb",
+    }
+    crystal = Crystal.from_dict(exp_dict)
+    ms = miller.set(
+        crystal_symmetry=crystal.get_crystal_symmetry(),
+        indices=reflections['miller_index'],
+        anomalous_flag=False
+    )
+    ma = miller.array(ms, data=reflections['intensity'])
+    ma.set_sigmas(reflections['variance'] ** 0.5)
+    return ma
 
 def test_MergingStatisticsObserver():
     """Test that the observer correctly logs data when passed a script."""
+    refls = example_refls()
     script = mock.Mock()
     script.merging_statistics_result = "result"
-    script.scaled_miller_array.space_group.return_value.is_centric.return_value = True
+    script.scaled_miller_array = example_array(refls)
+    script.experiments = [mock.Mock()]
+    script.experiments[0].scan.get_image_range.return_value = [0, 10]
+    script.reflections = [refls]
     observer = MergingStatisticsObserver()
     observer.update(script)
 
-    assert observer.data == {"statistics": "result", "is_centric" : True}
+    assert observer.data["statistics"] == 'result'
+    assert observer.data["is_centric"] is True
+    assert "bm" in observer.data
+    assert "isigivsbatch" in observer.data
+    assert "r_merge_vs_batch" in observer.data
+    assert "scale_vs_batch" in observer.data
 
-    mock_func = mock.Mock()
-    mock_func.return_value = "return_tables"
-    mock_func_2 = mock.Mock()
-    mock_func_2.return_value = "cchalfplot"
+    class MockResolution(object):
+
+        """Mock the ResolutionPlotsAndStats class."""
+
+        def __init__(self, *_, **__):
+            pass
+
+        def make_all_plots(self, *_):
+            """Mock resolution dependent plots method."""
+            return {"return_plots": []}
+
+        def statistics_tables(self, *_):
+            """Mock statistics tables method."""
+            return "return_tables"
 
     with mock.patch(
-        "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
+        "dials.algorithms.scaling.observers.ResolutionPlotsAndStats", new=MockResolution
     ):
-        with mock.patch("dials.algorithms.scaling.observers.cc_one_half_plot",
-        new=mock_func_2):
-            r = observer.make_plots()
-            assert mock_func.call_count == 1
-            assert mock_func.call_args_list == [
-              mock.call(observer.data["statistics"])]
-            assert mock_func_2.call_count == 1
-            assert mock_func_2.call_args_list == [
-              mock.call(observer.data["statistics"], is_centric=True)]
-            assert r == {
-              'cc_one_half_plot': 'cchalfplot',
-              'scaling_tables': 'return_tables'
-            }
-
+        r = observer.make_plots()
+        assert r["scaling_tables"] == "return_tables"
+        assert r["resolution_plots"] == {"return_plots": []}
+        assert "batch_plots" in r

@@ -12,6 +12,84 @@ from dials.util import Sorry
 logger = logging.getLogger("dials")
 
 
+class batch_manager(object):
+    def __init__(self, batches, batch_params):
+        # batch params is a list of dicts with "id" and "range" - used to be
+        # a 'scope extract' object
+        self.batch_params = sorted(batch_params, key=lambda b: b["range"][0])
+        self.batches = batches
+        self.reduced_batches, self._batch_increments = self._reduce()
+
+    def _reduce(self):
+        reduced_batches = flex.int(self.batches)
+        batch_increments = []
+        incr = 0
+        for batch in self.batch_params:
+            sel = (reduced_batches >= batch["range"][0]) & (
+                reduced_batches <= batch["range"][1]
+            )
+            reduced_batches.set_selected(
+                sel, reduced_batches.select(sel) - (batch["range"][0] - incr) + 1
+            )
+            batch_increments.append(incr)
+            incr += batch["range"][1] - batch["range"][0] + 1
+        assert len(set(reduced_batches)) == len(reduced_batches)
+        return list(reduced_batches), batch_increments
+
+    def batch_plot_shapes_and_annotations(self):
+        light_grey = "#d3d3d3"
+        grey = "#808080"
+        shapes = []
+        annotations = []
+        batches = flex.int(self.batches)
+        text = flex.std_string(batches.size())
+        for i, batch in enumerate(self.batch_params):
+            fillcolor = [light_grey, grey][i % 2]  # alternate colours
+            shapes.append(
+                {
+                    "type": "rect",
+                    # x-reference is assigned to the x-values
+                    "xref": "x",
+                    # y-reference is assigned to the plot paper [0,1]
+                    "yref": "paper",
+                    "x0": self._batch_increments[i],
+                    "y0": 0,
+                    "x1": self._batch_increments[i] + (batch["range"][1] - batch["range"][0]),
+                    "y1": 1,
+                    "fillcolor": fillcolor,
+                    "opacity": 0.2,
+                    "line": {"width": 0},
+                }
+            )
+            annotations.append(
+                {
+                    # x-reference is assigned to the x-values
+                    "xref": "x",
+                    # y-reference is assigned to the plot paper [0,1]
+                    "yref": "paper",
+                    "x": self._batch_increments[i]
+                    + (batch["range"][1] - batch["range"][0]) / 2,
+                    "y": 1,
+                    "text": "%s" % batch["id"],
+                    "showarrow": False,
+                    "yshift": 20,
+                    #'arrowhead': 7,
+                    #'ax': 0,
+                    #'ay': -40
+                }
+            )
+            sel = (batches >= batch["range"][0]) & (batches <= batch["range"][1])
+            text.set_selected(
+                sel,
+                flex.std_string(
+                    [
+                        "%s: %s" % (batch["id"], j - batch["range"][0] + 1)
+                        for j in batches.select(sel)
+                    ]
+                ),
+            )
+        return shapes, annotations, list(text)
+
 def assign_batches_to_reflections(reflections, batch_offsets):
     """Assign a 'batch' column to the reflection table"""
     for batch_offset, refl in zip(batch_offsets, reflections):

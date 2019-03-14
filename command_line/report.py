@@ -18,9 +18,20 @@ import copy
 import math
 from collections import OrderedDict
 import numpy as np
+from cctbx import miller
 
 import dials.util.banner
 from dials.array_family import flex
+from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
+from dials.algorithms.scaling.plots import plot_scaling_models
+from dials.report.analysis import combined_table_to_batch_dependent_properties
+from dials.report.plots import (
+    ResolutionPlotsAndStats,
+    scale_rmerge_vs_batch_plot,
+    i_over_sig_i_vs_batch_plot,
+)
+from dials.util.batch_handling import batch_manager
+
 
 RAD2DEG = 180 / math.pi
 
@@ -2627,366 +2638,45 @@ class ScalingModelAnalyser(object):
         d = OrderedDict()
 
         if experiments is not None and len(experiments):
-            if len(experiments) > 1:
-                for i, exp in enumerate(experiments):
-                    model = exp.scaling_model
-                    if model is not None:
-                        if model.id_ == "physical":
-                            if (
-                                "scale" in model.components
-                                or "decay" in model.components
-                            ):
-                                smooth = self.plot_smooth_model(exp)
-                                d["smooth_scale_model_" + str(i)] = smooth[
-                                    "smooth_scale_model"
-                                ]
-                            if "absorption" in model.components:
-                                absorption = self.plot_absorption_surface(exp)
-                                d["absorption_surface_" + str(i)] = absorption[
-                                    "absorption_surface"
-                                ]
-            else:
-                model = experiments[0].scaling_model
+            for i, exp in enumerate(experiments):
+                model = exp.scaling_model
                 if model is not None:
                     if model.id_ == "physical":
-                        if "scale" in model.components or "decay" in model.components:
-                            d.update(self.plot_smooth_model(experiments[0]))
-                        if "absorption" in model.components:
-                            d.update(self.plot_absorption_surface(experiments[0]))
-            if experiments.scaling_models().count(None) < len(
-                experiments.scaling_models()
-            ):
-                uncertainties = self.plot_parameter_uncertainties(experiments)
-                if uncertainties:
-                    d.update(uncertainties)
+                        scaling_model_plots = plot_scaling_models(model.to_dict())
+                        for name, plot in scaling_model_plots.iteritems():
+                            d.update({name + "_" + str(i): plot})
         return {"scaling_model": d}
 
-    @staticmethod
-    def get_smooth_plotting_data_from_model(experiment, component="scale"):
-        """Return a tuple of phis, parameters, parameter esds,
-        sample positions for plotting and sample scale values."""
-        configdict = experiment.scaling_model.configdict
-        valid_osc = configdict["valid_osc_range"]
-        sample_values = flex.double(
-            np.linspace(
-                valid_osc[0],
-                valid_osc[1],
-                ((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
-                endpoint=True,
-            )
-        )  # Make a grid of
-        # points with 10 points per degree.
-        if component == "scale":
-            if "scale" in configdict["corrections"]:
-                scale_SF = experiment.scaling_model.components["scale"]
-                norm_vals = (
-                    sample_values
-                    / experiment.scaling_model.configdict["scale_rot_interval"]
-                )
-                scale_SF.data = {"x": norm_vals}
-                scale_SF.update_reflection_data()
-                s = scale_SF.calculate_scales()
-                smoother_phis = [
-                    (i * configdict["scale_rot_interval"]) + valid_osc[0]
-                    for i in scale_SF.smoother.positions()
-                ]
-            return (
-                smoother_phis,
-                scale_SF.parameters,
-                scale_SF.parameter_esds,
-                sample_values,
-                s,
-            )
-        if component == "decay":
-            if "decay" in configdict["corrections"]:
-                decay_SF = experiment.scaling_model.components["decay"]
-                norm_vals = (
-                    sample_values
-                    / experiment.scaling_model.configdict["decay_rot_interval"]
-                )
-                decay_SF.data = {
-                    "x": norm_vals,
-                    "d": flex.double(norm_vals.size(), 1.0),
-                }
-                decay_SF.update_reflection_data()
-                s = decay_SF.calculate_scales()
-                smoother_phis = [
-                    (i * configdict["decay_rot_interval"]) + valid_osc[0]
-                    for i in decay_SF._smoother.positions()
-                ]
-            return (
-                smoother_phis,
-                decay_SF.parameters,
-                decay_SF.parameter_esds,
-                sample_values,
-                s,
-            )
 
-    def plot_smooth_model(self, experiment):
-        """Plot a smooth scaling model for a physical scaling model."""
-
-        d = {
-            "smooth_scale_model": {
-                "data": [],
-                "layout": {
-                    "title": "Smoothly varying corrections",
-                    "xaxis": {
-                        "domain": [0, 1],
-                        "anchor": "y",
-                        "title": "rotation angle (°)",
-                    },
-                    "yaxis": {
-                        "domain": [0, 0.45],
-                        "anchor": "x",
-                        "title": "relative B-factor",
-                    },
-                    "yaxis2": {
-                        "domain": [0.5, 0.95],
-                        "anchor": "x",
-                        "title": "inverse <br> scale factor",
-                    },
-                },
-            }
-        }
-
-        import numpy as np
-
-        data = []
-
-        configdict = experiment.scaling_model.configdict
-        if "scale" in configdict["corrections"]:
-            smoother_phis, parameters, parameter_esds, sample_values, sample_scales = self.get_smooth_plotting_data_from_model(
-                experiment, component="scale"
-            )
-
-            data.append(
-                {
-                    "x": list(sample_values),
-                    "y": list(sample_scales),
-                    "type": "line",
-                    "name": "smooth scale term",
-                    "xaxis": "x",
-                    "yaxis": "y2",
-                }
-            )
-            data.append(
-                {
-                    "x": list(smoother_phis),
-                    "y": list(parameters),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": "scale term parameters",
-                    "xaxis": "x",
-                    "yaxis": "y2",
-                }
-            )
-            if parameter_esds:
-                data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
-
-        if "decay" in configdict["corrections"]:
-            smoother_phis, parameters, parameter_esds, sample_values, sample_scales = self.get_smooth_plotting_data_from_model(
-                experiment, component="decay"
-            )
-
-            data.append(
-                {
-                    "x": list(sample_values),
-                    "y": list(np.log(sample_scales) * 2.0),
-                    "type": "line",
-                    "name": "smooth decay term",
-                    "xaxis": "x",
-                    "yaxis": "y",
-                }
-            )
-            data.append(
-                {
-                    "x": list(smoother_phis),
-                    "y": list(parameters),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "name": "decay term parameters",
-                    "xaxis": "x",
-                    "yaxis": "y",
-                }
-            )
-            if parameter_esds:
-                data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
-        d["smooth_scale_model"]["data"].extend(data)
-        return d
-
-    def plot_absorption_surface(self, experiment):
-        """Plot an absorption surface for a physical scaling model."""
-
-        d = {
-            "absorption_surface": {
-                "data": [],
-                "layout": {
-                    "title": "Absorption correction surface",
-                    "xaxis": {"domain": [0, 1], "anchor": "y", "title": "theta (°)"},
-                    "yaxis": {"domain": [0, 1], "anchor": "x", "title": "phi (°)"},
-                },
-            }
-        }
-
-        params = experiment.scaling_model.components["absorption"].parameters
-
-        from scitbx import math
-        import math as pymath
-        import numpy as np
-
-        order = int(-1.0 + ((1.0 + len(params)) ** 0.5))
-        lfg = math.log_factorial_generator(2 * order + 1)
-        STEPS = 50
-        phi = np.linspace(0, 2 * np.pi, 2 * STEPS)
-        theta = np.linspace(0, np.pi, STEPS)
-        THETA, _ = np.meshgrid(theta, phi)
-        lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
-        Intensity = np.ones(THETA.shape)
-        counter = 0
-        sqrt2 = pymath.sqrt(2)
-        nsssphe = math.nss_spherical_harmonics(order, 50000, lfg)
-        for l in range(1, lmax + 1):
-            for m in range(-l, l + 1):
-                for it, t in enumerate(theta):
-                    for ip, p in enumerate(phi):
-                        Ylm = nsssphe.spherical_harmonic(l, abs(m), t, p)
-                        if m < 0:
-                            r = sqrt2 * ((-1) ** m) * Ylm.imag
-                        elif m == 0:
-                            assert Ylm.imag == 0.0
-                            r = Ylm.real
-                        else:
-                            r = sqrt2 * ((-1) ** m) * Ylm.real
-                        Intensity[ip, it] += params[counter] * r
-                counter += 1
-        d["absorption_surface"]["data"].append(
-            {
-                "x": list(theta * 180.0 / np.pi),
-                "y": list(phi * 180.0 / np.pi),
-                "z": list(Intensity.T.tolist()),
-                "type": "heatmap",
-                "colorscale": "Viridis",
-                "colorbar": {"title": "inverse <br>scale factor"},
-                "name": "absorption surface",
-                "xaxis": "x",
-                "yaxis": "y",
-            }
-        )
-        return d
-
-    def plot_parameter_uncertainties(self, experiments):
-        d = None
-        if experiments[0].scaling_model.components.values()[0].parameter_esds:
-            p_sigmas = flex.double()
-            for experiment in experiments:
-                for component in experiment.scaling_model.components.itervalues():
-                    if component.parameter_esds:
-                        p_sigmas.extend(
-                            flex.abs(component.parameters) / component.parameter_esds
-                        )
-            log_p_sigmas = flex.log(p_sigmas)
-            hist = flex.histogram(
-                log_p_sigmas, n_slots=min(20, int(len(log_p_sigmas) / 2))
-            )
-            d = {
-                "uncertainties_plot": {
-                    "data": [
-                        {
-                            "x": list(hist.slot_centers()),
-                            "y": list(hist.slots()),
-                            "type": "bar",
-                            "name": "uncertainties_plot",
-                        }
-                    ],
-                    "layout": {
-                        "title": "Distribution of relative uncertainties of scaling model parameters",
-                        "xaxis": {
-                            "title": "log ( | parameter value | / standard uncertainty (sigma) )"
-                        },
-                        "yaxis": {"title": "count"},
-                        "bargap": 0,
-                    },
-                }
-            }
-        return d
-
-
-def scaling_model_tables(reflections, experiments):
+def merging_stats_results(reflections, experiments):
     if not "inverse_scale_factor" in reflections:
-        return [], [], []
-    from dials.algorithms.scaling.scaling_library import (
-        calculate_single_merging_stats,
-        choose_scaling_intensities,
-    )
+        return [], [], {}, {}
 
-    reflections = choose_scaling_intensities(reflections)
+    reflections["intensity"] = reflections["intensity.scale.value"]
+    reflections["variance"] = reflections["intensity.scale.variance"]
     result = calculate_single_merging_stats(
         reflections, experiments[0], use_internal_variance=False
     )
-    results_table = [
-        (
-            "d_max",
-            "d_min",
-            "n_obs",
-            "n_uniq",
-            "mult",
-            "comp",
-            "&ltI&gt",
-            "&ltI/sI&gt",
-            "r_merge",
-            "r_meas",
-            "r_pim",
-            "cc1/2",
-            "cc_anom",
-        )
-    ]
-    for bin_stats in result.bins:
-        results_table.append(tuple(bin_stats.format().split()))
-    result = result.overall
-    summary_table = [
-        ("Resolution", "{0:.3f} - {1:.3f}".format(result.d_max, result.d_min)),
-        ("Observations", result.n_obs),
-        ("Unique Reflections", result.n_uniq),
-        ("Redundancy", "{:.2f}".format(result.mean_redundancy)),
-        ("Completeness", "{:.2f}".format(result.completeness * 100)),
-        ("Mean intensity", "{:.1f}".format(result.i_mean)),
-        ("Mean I/sigma(I)", "{:.1f}".format(result.i_over_sigma_mean)),
-        ("R-merge", "{:.4f}".format(result.r_merge)),
-        ("R-meas", "{:.4f}".format(result.r_meas)),
-        ("R-pim", "{:.4f}".format(result.r_pim)),
-    ]
-    # Summary of scaling model.
-    scaling_models = [
-        exp.scaling_model.id_ if exp.scaling_model is not None else None
-        for exp in experiments
-    ]
-    if all([i is None for i in scaling_models]):  # no scaling models.
-        summary = []
-    else:
-        if len(set(scaling_models)) == 1:  # all scaling models same.
-            scaling_models = [scaling_models[0]]
-        summary = [
-            ("Number of datasets", len(experiments)),
-            (
-                "Scaling model(s) applied",
-                ", ".join(i.capitalize() for i in scaling_models),
-            ),
-        ]
-        if "error_model_type" in experiments[0].scaling_model.configdict:
-            conf = experiments[0].scaling_model.configdict
-            typ = conf["error_model_type"]
-            summary.append(
-                (
-                    "Error model applied",
-                    str(conf["error_model_type"])
-                    + ": parameters = "
-                    + ", ".join(
-                        "{:.3f}".format(i) for i in conf["error_model_parameters"]
-                    ),
-                )
-            )
+    anom_result = calculate_single_merging_stats(
+        reflections, experiments[0], use_internal_variance=False, anomalous=True
+    )
+    is_centric = experiments[0].crystal.get_space_group().is_centric()
 
-    return summary, summary_table, results_table
+    resolution_plots = OrderedDict()
+    plotter = ResolutionPlotsAndStats(result, anom_result, is_centric)
+    resolution_plots.update(plotter.make_all_plots())
+    summary_table, results_table = plotter.statistics_tables()
+
+    batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
+        reflections, experiments)
+
+    bm = batch_manager(batches, batch_data)
+
+    batch_plots = OrderedDict()
+    batch_plots.update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+    batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
+
+    return summary_table, results_table, resolution_plots, batch_plots
 
 
 class Analyser(object):
@@ -3036,7 +2726,7 @@ class Analyser(object):
             crystal_table, expt_geom_table = self.experiments_table(experiments)
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
-            summary, scaling_table_by_resolution, scaling_summary_table = scaling_model_tables(
+            summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
 
@@ -3068,17 +2758,15 @@ class Analyser(object):
                 page_title="DIALS analysis report",
                 scan_varying_graphs=graphs["scan_varying"],
                 scaling_model_graphs=graphs["scaling_model"],
+                resolution_plots=resolution_plots,
+                batch_graphs=batch_plots,
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],
                 intensity_graphs=graphs["intensity"],
                 reference_graphs=graphs["reference"],
                 crystal_table=crystal_table,
                 geometry_table=expt_geom_table,
-                scaling_tables=(
-                    summary,
-                    scaling_table_by_resolution,
-                    scaling_summary_table,
-                ),
+                scaling_tables=(summary, scaling_table_by_resolution),
                 static_dir=static_dir,
             )
 

@@ -430,7 +430,7 @@ def determine_best_unit_cell(experiments):
     return best_unit_cell
 
 def calculate_single_merging_stats(
-    reflection_table, experiment, use_internal_variance, n_bins=20
+    reflection_table, experiment, use_internal_variance, n_bins=20, anomalous=False
 ):
     """Calculate the merging stats for a single dataset."""
     bad_refl_sel = reflection_table.get_flags(
@@ -448,13 +448,19 @@ def calculate_single_merging_stats(
     i_obs.set_observation_type_xray_intensity()
     i_obs.set_sigmas((r_t["variance"] ** 0.5) / r_t["inverse_scale_factor"])
     i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
+    if anomalous:
+        intensities_anom = i_obs.as_anomalous_array()
+        i_obs = intensities_anom.map_to_asu().customized_copy(
+            info=intensities_anom.info()
+        )
     result = iotbx.merging_statistics.dataset_statistics(
         i_obs=i_obs,
         n_bins=n_bins,
-        anomalous=False,
+        anomalous=anomalous,
         sigma_filtering=None,
         use_internal_variance=use_internal_variance,
         eliminate_sys_absent=False,
+        cc_one_half_significance_level=0.01,
     )
     return result
 
