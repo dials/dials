@@ -1,7 +1,5 @@
 """
 Test the command line script dials.scale, for successful completion.
-Also tested are the command line files dials.plot_scaling_models and
-dials.plot_scaling_outliers
 """
 
 from __future__ import absolute_import, division, print_function
@@ -21,7 +19,10 @@ from mock import Mock
 import mock
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
-from dials.algorithms.scaling.scaling_library import create_scaling_model, scaled_data_as_miller_array
+from dials.algorithms.scaling.scaling_library import (
+    create_scaling_model,
+    scaled_data_as_miller_array,
+)
 
 
 class run_delta_cchalf(object):
@@ -46,7 +47,7 @@ class run_delta_cchalf(object):
 class run_one_scaling(object):
     """Class to run the dials.scale algorithm."""
 
-    def __init__(self, pickle_path_list, sweep_path_list, extra_args, plot=True):
+    def __init__(self, pickle_path_list, sweep_path_list, extra_args):
         args = ["dials.scale"] + pickle_path_list + sweep_path_list + extra_args
         command = " ".join(args)
         print(command)
@@ -60,24 +61,6 @@ class run_one_scaling(object):
 
         assert "inverse_scale_factor" in table
         assert "inverse_scale_factor_variance" in table
-
-        if plot:
-            args = [
-                "dials.plot_scaling_models",
-                "scaled.pickle",
-                "scaled_experiments.json",
-            ]
-            command = " ".join(args)
-            print(command)
-            _ = easy_run.fully_buffered(command=command).raise_if_errors()
-            args = [
-                "dials.plot_scaling_outliers",
-                "scaled.pickle",
-                "scaled_experiments.json",
-            ]
-            command = " ".join(args)
-            print(command)
-            _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
 
 def get_merging_stats(
@@ -385,9 +368,6 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
         "intensity_choice=combine",
     ]
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    assert os.path.exists("scale_model.png")
-    assert os.path.exists("absorption_surface.png")
-    assert os.path.exists("outliers.png")
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
@@ -511,8 +491,6 @@ def test_scale_array(dials_regression, run_in_tmpdir):
     extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
 
     _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
-    assert os.path.exists("decay_correction.png")
-    assert os.path.exists("outliers.png")
 
 
 @pytest.mark.dataset_test
@@ -534,12 +512,6 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     _ = run_one_scaling(
         [pickle_path_1, pickle_path_2], [sweep_path_1, sweep_path_2], extra_args
     )
-    assert os.path.exists("scale_model_1.png")
-    assert os.path.exists("scale_model_2.png")
-    assert os.path.exists("absorption_surface_1.png")
-    assert os.path.exists("absorption_surface_2.png")
-    assert os.path.exists("outliers_1.png")
-    assert os.path.exists("outliers_2.png")
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
