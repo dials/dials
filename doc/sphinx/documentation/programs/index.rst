@@ -18,7 +18,6 @@ Main processing commands:
    dials_symmetry
    dials_scale
    dials_export
-   idials
 
 
 Utilities:
