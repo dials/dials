@@ -2,7 +2,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import argparse
 import glob
 import os
 import shlex
@@ -228,11 +227,11 @@ def generate_processing_detail_text_betalactamase():
     # Make an ordered list of named steps and associated commands
     commands = [
         ("dials.import", "dials.import {}".format(DATA_PATH)),
-        ("dials.find_spots", "dials.find_spots experiments.json nproc=4"),
-        ("dials.index", "dials.index experiments.json strong.pickle"),
+        ("dials.find_spots", "dials.find_spots imported_experiments.json nproc=4"),
+        ("dials.index", "dials.index imported_experiments.json strong.pickle"),
         (
             "dials.refine_bravais_settings",
-            "dials.refine_bravais_settings experiments.json indexed.pickle",
+            "dials.refine_bravais_settings indexed_experiments.json indexed.pickle",
         ),
         ("dials.reindex", "dials.reindex indexed.pickle change_of_basis_op=a+b,-a+b,c"),
         (
