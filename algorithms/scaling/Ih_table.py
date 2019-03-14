@@ -357,6 +357,57 @@ class IhTable(object):
         self.Ih_table_blocks.append(free_Ih_table.blocked_data_list[0])
         self.blocked_selection_list.append(free_Ih_table.blocked_selection_list[0])
 
+    def as_miller_array(self, unit_cell, return_free_set_data=False):
+        """Get a scaled miller array from the Ih_table and an experiment."""
+        blocked_data_list = self.blocked_data_list
+
+        if self.free_Ih_table:
+            if return_free_set_data:
+                blocked_data_list = [blocked_data_list[-1]]
+            else:
+                blocked_data_list = blocked_data_list[:-1]
+        if len(blocked_data_list) > 1:
+            joint_table = flex.reflection_table()
+            for block in blocked_data_list:
+                # better to just create many miller arrays and join them?
+                refl_for_joint_table = flex.reflection_table()
+                for col in [
+                    "asu_miller_index",
+                    "intensity",
+                    "inverse_scale_factor",
+                    "variance",
+                ]:
+                    refl_for_joint_table[col] = block.Ih_table[col]
+                joint_table.extend(refl_for_joint_table)
+        else:
+            joint_table = blocked_data_list[0].Ih_table
+        # Filter out negative scale factors to avoid merging statistics errors.
+        pos_scales = joint_table["inverse_scale_factor"] > 0
+        joint_table = joint_table.select(pos_scales)
+
+        miller_set = miller.set(
+            crystal_symmetry=crystal.symmetry(
+                unit_cell=unit_cell,
+                space_group=self.space_group,
+                assert_is_compatible_unit_cell=False,
+            ),
+            indices=joint_table["asu_miller_index"],
+            anomalous_flag=False,
+        )
+        i_obs = miller.array(
+            miller_set,
+            data=joint_table["intensity"]
+            / joint_table["inverse_scale_factor"],
+        )
+        i_obs.set_observation_type_xray_intensity()
+        i_obs.set_sigmas(
+            (joint_table["variance"] ** 0.5)
+            / joint_table["inverse_scale_factor"]
+        )
+        i_obs.set_info(
+            miller.array_info(source="DIALS", source_type="reflection_tables")
+        )
+        return i_obs
 
 class IhTableBlock(object):
     """

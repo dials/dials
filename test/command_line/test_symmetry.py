@@ -8,7 +8,7 @@ import procrunner
 def test_symmetry(dials_regression, run_in_tmpdir):
     """Simple test to check that dials.symmetry completes"""
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.symmetry",
             os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),

@@ -185,6 +185,10 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             goniometer_parameterisations=goniometer_parameterisations,
         )
 
+        # Avoid calculation in calculate_model_state_uncertainties unless this
+        # is set to True
+        self.set_scan_varying_errors = False
+
     def _get_xl_orientation_parameterisation(self, experiment_id):
         """Return the crystal orientation parameterisation for the requested
         experiment number (or None if the crystal orientation in that experiment
@@ -628,7 +632,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         experiment_id to calculate for a particular crystal at a particular
         scan-point"""
 
-        # first call, only a variance-covariance matrix is supplied
+        # First call, only a variance-covariance matrix is supplied
         if var_cov is not None:
             assert [obs_image_number, experiment_id].count(None) == 2
             super(
@@ -636,7 +640,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             ).calculate_model_state_uncertainties(var_cov)
             return
 
-        # later calls, only an experiment and image number are supplied
+        # Later calls, only an experiment and image number are supplied for
         # identify the crystal parameterisations for this experiment
         xl_op = self._get_xl_orientation_parameterisation(experiment_id)
         xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)

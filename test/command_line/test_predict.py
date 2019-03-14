@@ -20,7 +20,7 @@ def plausible(table):
 
 
 def test_static_prediction(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.predict",
             os.path.join(
@@ -40,7 +40,7 @@ def test_static_prediction(dials_regression, run_in_tmpdir):
 
 
 def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.predict",
             os.path.join(
@@ -60,7 +60,7 @@ def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
 
 
 def test_force_static_prediction(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.predict",
             os.path.join(

@@ -5,7 +5,7 @@ import procrunner
 
 
 def test(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.plot_scan_varying_model",
             os.path.join(

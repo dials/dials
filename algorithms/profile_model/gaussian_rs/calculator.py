@@ -82,7 +82,10 @@ class ComputeEsdBeamDivergence(object):
             panel = shoebox[r].panel
             # s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
             angles = s1.angle(s1_centroid[r], deg=False)
-            variance.append(flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1))
+            if flex.sum(values) > 1:
+                variance.append(
+                    flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
+                )
 
         # Return a list of variances
         return flex.double(variance)

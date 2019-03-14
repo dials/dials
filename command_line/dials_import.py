@@ -715,7 +715,7 @@ class Script(object):
         self.parser = OptionParser(
             usage=usage,
             sort_options=True,
-            phil=phil_scope,
+            phil=phil,
             read_experiments_from_images=True,
             epilog=help_message,
         )

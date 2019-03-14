@@ -24,7 +24,7 @@ def test_spots_xds(run_in_tmpdir):
 """
         )
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.import_xds",
             xds_input,  # xparm_file,
@@ -47,7 +47,7 @@ def test_spots_xds(run_in_tmpdir):
     assert not os.path.exists(xds_input)
 
     # now test we can export it again
-    result = procrunner.run_process(["dials.export", "format=xds", output_pickle])
+    result = procrunner.run(["dials.export", "format=xds", output_pickle])
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert os.path.exists(os.path.join("xds", "SPOT.XDS"))
@@ -69,7 +69,7 @@ def test_spots_xds(run_in_tmpdir):
 
 
 def test_export_xds(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.find_spots",
             os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
@@ -79,7 +79,7 @@ def test_export_xds(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
     assert os.path.exists("strong.pickle")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=xds",
@@ -97,7 +97,7 @@ def test_export_xds(dials_regression, run_in_tmpdir):
     os.remove("xds/XPARM.XDS")
     assert not os.path.exists("xds/XDS.INP")
     assert not os.path.exists("xds/XPARM.XDS")
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=xds",

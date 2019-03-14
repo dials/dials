@@ -13,7 +13,7 @@ def test(dials_regression, run_in_tmpdir):
     )
     output_filename = "output_experiments.json"
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.apply_mask",
             "input.experiments=%s" % input_filename,
@@ -45,7 +45,7 @@ def test_experiments(dials_regression, run_in_tmpdir):
     )
     output_filename = "output_experiments.json"
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.apply_mask",
             "input.experiments=%s" % input_filename,

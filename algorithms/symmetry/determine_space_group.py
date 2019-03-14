@@ -115,7 +115,9 @@ class determine_space_group(symmetry_base):
                 crystal_symmetry=crystal.symmetry(
                     space_group=self.lattice_group,
                     unit_cell=self.intensities.unit_cell(),
-                    assert_is_compatible_unit_cell=False)).map_to_asu()
+                    assert_is_compatible_unit_cell=False,
+                )
+            ).map_to_asu()
             ma_a = ma_tmp.select(bin_isel.select(p[: count // 2]))
             ma_b = ma_tmp.select(bin_isel.select(p[count // 2 :]))
             # only choose pairs of reflections that don't have the same indices
@@ -227,14 +229,11 @@ class determine_space_group(symmetry_base):
             for subgrp in self.subgroups.result_groups
         ]
         total_likelihood = sum(score.likelihood for score in subgroup_scores)
-        sort_order = flex.sort_permutation(
-            flex.double(score.likelihood for score in subgroup_scores),
-            reverse=True,
-            stable=True,
-        )
-        self.subgroup_scores = [subgroup_scores[i] for i in sort_order]
-        for score in self.subgroup_scores:
+        for score in subgroup_scores:
             score.likelihood /= total_likelihood
+        self.subgroup_scores = sorted(
+            subgroup_scores, key=lambda score: score.likelihood, reverse=True
+        )
 
         # The 'confidence' scores are derived from the total probability of the best
         # solution p_best and that for the next best solution p_next:
@@ -415,6 +414,68 @@ class determine_space_group(symmetry_base):
         return json.dumps(d, indent=indent)
 
 
+class ScoreCorrelationCoefficient(object):
+    def __init__(self, cc, sigma_cc, expected_cc, lower_bound=-1, upper_bound=1, k=2):
+        self.cc = cc
+        self.sigma_cc = sigma_cc
+        self.expected_cc = expected_cc
+        self._lower_bound = lower_bound
+        self._upper_bound = upper_bound
+        self._k = k
+        self._compute_p_cc_given_s()
+        self._compute_p_cc_given_not_s()
+
+    def _compute_p_cc_given_s(self):
+        self._p_cc_given_s = trunccauchy_pdf(
+            self.cc,
+            self._lower_bound,
+            self._upper_bound,
+            self.expected_cc,
+            self.sigma_cc,
+        )
+
+    def _compute_p_cc_given_not_s(self):
+        sump = scipy.integrate.quad(self._numerator, 0, 1)[0]
+        sumw = scipy.integrate.quad(self._denominator, 0, 1)[0]
+        self._p_cc_given_not_s = sump / sumw
+
+    @property
+    def p_cc_given_s(self):
+        """Probability of observing this CC if the sym op is present, p(CC; S).
+
+        Modelled by a Cauchy distribution centred on cc_true and width gamma = sigma_cc
+
+        """
+        return self._p_cc_given_s
+
+    @property
+    def p_cc_given_not_s(self):
+        """Probability of observing this CC if the sym op is NOT present, p(CC; !S).
+
+        """
+        return self._p_cc_given_not_s
+
+    @property
+    def p_s_given_cc(self):
+        """The likelihood of this symmetry element being present.
+
+        p(S; CC) = p(CC; S) / (p(CC; S) + p(CC; !S))
+
+        """
+        return self._p_cc_given_s / (self._p_cc_given_s + self._p_cc_given_not_s)
+
+    def _p_mu_power_pdf(self, m):
+        return (1.0 - pow(m, self._k)) ** (1.0 / self._k)
+
+    def _numerator(self, x):
+        return trunccauchy_pdf(
+            x, self._lower_bound, self._upper_bound, loc=self.cc, scale=self.sigma_cc
+        ) * self._p_mu_power_pdf(x)
+
+    def _denominator(self, x):
+        return self._p_mu_power_pdf(x)
+
+
 class ScoreSymmetryElement(object):
     """Analyse intensities for presence of a given symmetry operation.
 
@@ -492,40 +553,12 @@ class ScoreSymmetryElement(object):
 
         self.sigma_cc = max(0.1, cc_sig_fac / self.n_refs ** 0.5)
         self.z_cc = self.cc.coefficient() / self.sigma_cc
-
-        # Probability of observing this CC if the sym op is present
-        # Modelled by a Cauchy distribution centred on cc_true and width gamma = sigma_cc
-        # p(CC; S)
-        self.p_cc_given_s = trunccauchy_pdf(
-            self.cc.coefficient(), -1, 1, cc_true, self.sigma_cc
+        score_cc = ScoreCorrelationCoefficient(
+            self.cc.coefficient(), self.sigma_cc, cc_true
         )
-
-        def DM_power_pdf(m, k=2):
-            return (1.0 - pow(m, k)) ** (1.0 / k)
-
-        def numerator(x, loc, scale, k):
-            return trunccauchy_pdf(x, -1, 1, loc=loc, scale=scale) * DM_power_pdf(
-                x, k=k
-            )
-
-        def denominator(x, k):
-            return DM_power_pdf(x, k=k)
-
-        # Probability of observing this CC if the sym op is NOT present
-        # p(CC; !S)
-
-        k = 2
-        sump = scipy.integrate.quad(
-            numerator, 0, 1, args=(self.cc.coefficient(), self.sigma_cc, k)
-        )[0]
-        sumw = scipy.integrate.quad(denominator, 0, 1, args=(k,))[0]
-        self.p_cc_given_not_s = sump / sumw
-
-        # Likelihood of symmetry element being present
-        # p(S; CC) = p(CC; S) / (p(CC; S) + p(CC; !S))
-        self.likelihood = self.p_cc_given_s / (
-            self.p_cc_given_s + self.p_cc_given_not_s
-        )
+        self.p_cc_given_s = score_cc.p_cc_given_s
+        self.p_cc_given_not_s = score_cc.p_cc_given_not_s
+        self.likelihood = score_cc.p_s_given_cc
 
     def __str__(self):
         """Return a string representation of the symmetry element scoring.
@@ -595,10 +628,7 @@ class ScoreSubGroup(object):
         # Combined correlation coefficients for symmetry operations
         # present/absent from subgroup
         self.subgroup = subgroup
-        cb_op_inp_best = subgroup["cb_op_inp_best"]
-        patterson_group = (
-            subgroup["best_subsym"].space_group().change_basis(cb_op_inp_best.inverse())
-        )
+        patterson_group = subgroup["subsym"].space_group()
         self.cc_for = CorrelationCoefficientAccumulator()
         self.cc_against = CorrelationCoefficientAccumulator()
         for score in sym_op_scores:

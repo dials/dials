@@ -1101,6 +1101,10 @@ class ScanVaryingRefiner(Refiner):
             if A_list is not None:
                 exp.crystal.set_A_at_scan_points(A_list)
 
+            # Return early if not calculating scan-varying errors
+            if not self._pred_param.set_scan_varying_errors:
+                return
+
             # get state covariance matrices the whole range of images. We select
             # the first element of this at each image because crystal scan-varying
             # parameterisations are not multi-state

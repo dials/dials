@@ -13,7 +13,7 @@ def test1(dials_regression, run_in_tmpdir):
 
     data_dir = os.path.join(dials_regression, "refinement_test_data", "multi_stills")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             os.path.join(data_dir, "combined_experiments.json"),
@@ -68,13 +68,13 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
         "engine=LBFGScurvs",
         "output.reflections=None",
     ]
-    result = procrunner.run_process(
+    result = procrunner.run(
         cmd + ["output.experiments=refined_experiments_nproc4.json", "nproc=4"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         cmd + ["output.experiments=refined_experiments_nproc1.json", "nproc=1"]
     )
     assert result["exitcode"] == 0

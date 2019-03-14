@@ -14,7 +14,7 @@ def test_nxs(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=nxs",
@@ -31,7 +31,7 @@ def test_mtz(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=mtz",
@@ -48,7 +48,7 @@ def test_mmcif(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export after integration
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=mmcif",
@@ -67,7 +67,7 @@ def test_xds_ascii(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "intensity=sum",
@@ -102,7 +102,7 @@ def test_sadabs(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "intensity=sum",
@@ -138,7 +138,7 @@ def test_json(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=json",
@@ -167,7 +167,7 @@ def test_json_shortened(dials_regression, tmpdir):
     tmpdir.chdir()
 
     # Call dials.export
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.export",
             "format=json",

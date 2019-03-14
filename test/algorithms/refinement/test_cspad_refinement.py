@@ -20,7 +20,7 @@ def test1(dials_regression, run_in_tmpdir):
         dials_regression, "refinement_test_data", "cspad_refinement"
     )
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             os.path.join(data_dir, "cspad_refined_experiments_step6_level2_300.json"),

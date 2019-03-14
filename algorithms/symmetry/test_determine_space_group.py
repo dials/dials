@@ -26,9 +26,7 @@ def test_determine_space_group(space_group):
     intensities = intensities.customized_copy(sigmas=intensities.data() / 50)
     intensities.set_info(miller.array_info(source="fake", source_type="mtz"))
     result = determine_space_group([intensities], normalisation=None)
-    # import logging
-    # logging.basicConfig(level=logging.INFO)
-    # result.show()
+    print(result)
     assert (
         result.best_solution.subgroup["best_subsym"].space_group()
         == sg.build_derived_patterson_group()

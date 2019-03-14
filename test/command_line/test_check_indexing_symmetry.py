@@ -13,7 +13,7 @@ def test(dials_regression, run_in_tmpdir):
     for path in (experiments_path, pickle_path):
         assert os.path.exists(path)
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.check_indexing_symmetry",
             experiments_path,

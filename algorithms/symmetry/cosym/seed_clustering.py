@@ -14,6 +14,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn import metrics
 
 from libtbx import Auto
+from libtbx.utils import Sorry
 from scitbx.array_family import flex
 from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
 
@@ -230,6 +231,8 @@ class seed_clustering(object):
 
             n = len(set(labels))
             if n == 1:
+                continue
+            elif n_clusters is not Auto and n != n_clusters:
                 continue
             for i in range(len(labels)):
                 cluster_labels.set_selected(

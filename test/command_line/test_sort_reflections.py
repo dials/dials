@@ -5,7 +5,7 @@ import procrunner
 
 
 def test_sort_intensities(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dev.dials.sort_reflections",
             os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
@@ -24,7 +24,7 @@ def test_sort_intensities(dials_regression, run_in_tmpdir):
 
 
 def test_reverse_sort_intensities(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dev.dials.sort_reflections",
             os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
@@ -44,7 +44,7 @@ def test_reverse_sort_intensities(dials_regression, run_in_tmpdir):
 
 
 def test_default_sort_on_miller_index(dials_regression, run_in_tmpdir):
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dev.dials.sort_reflections",
             os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),

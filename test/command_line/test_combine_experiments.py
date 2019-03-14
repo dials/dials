@@ -50,7 +50,7 @@ def test(dials_regression, run_in_tmpdir):
     with open("input.phil", "w") as phil_file:
         phil_file.writelines(input_phil)
 
-    result = procrunner.run_process(["dials.combine_experiments", "input.phil"])
+    result = procrunner.run(["dials.combine_experiments", "input.phil"])
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
@@ -73,7 +73,7 @@ def test(dials_regression, run_in_tmpdir):
     # test the reflections
     assert len(ref) == 11689
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.split_experiments",
             "combined_experiments.json",
@@ -102,7 +102,7 @@ def test(dials_regression, run_in_tmpdir):
         assert len(ref_single) == len(ref.select(ref["id"] == i))
         assert ref_single["id"].all_eq(0)
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.split_experiments",
             "combined_experiments.json",
@@ -125,7 +125,7 @@ def test(dials_regression, run_in_tmpdir):
         exp[i].detector = detector
     dump.experiment_list(exp, "modded_experiments.json")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.split_experiments",
             "modded_experiments.json",
@@ -157,7 +157,7 @@ def test(dials_regression, run_in_tmpdir):
     reflections.as_pickle("assigned_reflections.pickle")
     dump.experiment_list(explist, "assigned_experiments.json")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.split_experiments",
             "assigned_experiments.json",
@@ -191,7 +191,7 @@ def test(dials_regression, run_in_tmpdir):
         exp.identifier = str(i * 2)
     dump.experiment_list(moddedlist, "modded_experiments.json")
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.split_experiments",
             "modded_experiments.json",

@@ -98,6 +98,15 @@ phil_str = (
       .type = float(value_min = 0.)
       .expert_level = 1
 
+    set_scan_varying_errors = False
+      .type = bool
+      .help = "If scan-varying refinement is done, and if the estimated"
+              "covariance of the model states have been calculated by the"
+              "minimiser, choose whether to return this to the models or"
+              "not. The default is not to, in order to keep the file size"
+              "of the serialized model small. At the moment, this only has"
+              "an effect for crystal unit cell (B matrix) errors."
+
     debug_centroid_analysis = False
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"
@@ -163,14 +172,6 @@ phil_str = (
           .help = "Force a static parameterisation for the crystal unit cell"
                   "when doing scan-varying refinement"
           .expert_level = 1
-
-        set_scan_varying_errors = False
-          .type = bool
-          .help = "If scan-varying refinement is done, and if the estimated"
-                  "covariance of the B matrix has been calculated by the"
-                  "minimiser, choose whether to return this to the model or"
-                  "not. The default is not to, in order to keep the file size"
-                  "of the serialized model small."
 
         %(sv_phil)s
       }
@@ -508,7 +509,7 @@ def _parameterise_crystals(options, experiments, analysis):
             n_intervals = _set_n_intervals(
                 options.crystal.unit_cell.smoother, analysis, scan, exp_ids
             )
-            set_errors = options.crystal.unit_cell.set_scan_varying_errors
+            set_errors = options.set_scan_varying_errors
             xl_uc_param = ScanVaryingCrystalUnitCellParameterisation(
                 crystal,
                 array_range,
@@ -835,6 +836,8 @@ def build_prediction_parameterisation(
                 xl_uc_params,
                 gon_params,
             )
+            pred_param.set_scan_varying_errors = options.set_scan_varying_errors
+
         else:
             if options.sparse:
                 PredParam = XYPhiPredictionParameterisationSparse

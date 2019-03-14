@@ -22,14 +22,22 @@ def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
         space_group=sgtbx.space_group_info(symbol=space_group).group(),
         unit_cell_volume=10000,
         d_min=1.5,
+        map_to_p1=True,
+        sample_size=20,
     )
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
     params = phil_scope.extract()
-    params.cluster.agglomerative.n_clusters = len(expected_reindexing_ops)
+    params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
 
     result = analyse_datasets(datasets, params)
+    d = result.as_dict()
+    assert d["subgroup_scores"][0]["likelihood"] > 0.89
+    assert (
+        sgtbx.space_group(d["subgroup_scores"][0]["patterson_group"])
+        == sgtbx.space_group_info(space_group).group().build_derived_patterson_group()
+    )
 
     space_groups = {}
     reindexing_ops = {}

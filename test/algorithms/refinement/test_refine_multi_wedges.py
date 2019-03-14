@@ -24,7 +24,7 @@ def test(dials_regression, run_in_tmpdir):
 
     # Combine all the separate sweeps
 
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.combine_experiments",
             "reference_from_experiment.beam=0",
@@ -47,7 +47,7 @@ def test(dials_regression, run_in_tmpdir):
 
     # turn off outlier rejection so that test takes about 4s rather than 10s
     # set close_to_spindle_cutoff to old default
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             "combined_experiments.json",
@@ -89,7 +89,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     selection2 = (2, 3, 4, 6, 5)
 
     # First run
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.combine_experiments",
             "reference_from_experiment.beam=0",
@@ -107,7 +107,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             "combined_experiments.json",
@@ -122,7 +122,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     # Second run
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.combine_experiments",
             "reference_from_experiment.beam=0",
@@ -140,7 +140,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    result = procrunner.run_process(
+    result = procrunner.run(
         [
             "dials.refine",
             "combined_experiments.json",
