@@ -20,6 +20,7 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,12 @@ class ComputeEsdBeamDivergence(object):
 
         """
         from scitbx.array_family import flex
-        from math import sqrt
 
         # Calculate the beam direction variances
         variance = self._beam_direction_variance_list(detector, reflections)
 
         # Calculate and return the e.s.d of the beam divergence
-        self._sigma = sqrt(flex.sum(variance) / len(variance))
+        self._sigma = math.sqrt(flex.sum(variance) / len(variance))
 
     def sigma(self):
         """ Return the E.S.D of the beam divergence. """
@@ -64,6 +64,7 @@ class ComputeEsdBeamDivergence(object):
         shoebox = reflections["shoebox"]
         bbox = reflections["bbox"]
         xyz = reflections["xyzobs.px.value"]
+        s1_centroid = reflections["s1"]
 
         # Loop through all the reflections
         variance = []
@@ -79,8 +80,8 @@ class ComputeEsdBeamDivergence(object):
 
             # Calculate the beam vector at the centroid
             panel = shoebox[r].panel
-            s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
-            angles = s1.angle(s1_centroid, deg=False)
+            # s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
+            angles = s1.angle(s1_centroid[r], deg=False)
             if flex.sum(values) > 1:
                 variance.append(
                     flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
@@ -102,7 +103,6 @@ class FractionOfObservedIntensity(object):
 
         """
         from dials.array_family import flex
-        from math import sqrt
 
         # Get the oscillation width
         dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
@@ -112,9 +112,9 @@ class FractionOfObservedIntensity(object):
             crystal, beam, detector, goniometer, scan, reflections
         )
 
-        # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
-        self.e1 = (tau + dphi2) * flex.abs(zeta) / sqrt(2.0)
-        self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
+        # Calculate zeta * (tau +- dphi / 2) / math.sqrt(2)
+        self.e1 = (tau + dphi2) * flex.abs(zeta) / math.sqrt(2.0)
+        self.e2 = (tau - dphi2) * flex.abs(zeta) / math.sqrt(2.0)
 
     def _calculate_tau_and_zeta(
         self, crystal, beam, detector, goniometer, scan, reflections
@@ -203,7 +203,6 @@ class ComputeEsdReflectingRange(object):
             """Initialise the optmization."""
             from scitbx import simplex
             from scitbx.array_family import flex
-            from math import pi, exp
 
             # FIXME in here this code is very unstable or actually broken if
             # we pass in a few lone images i.e. screening shots - propose need
@@ -211,7 +210,7 @@ class ComputeEsdReflectingRange(object):
             # something like this
             #
             # if scan.get_num_images() == 1:
-            #   self.sigma = 0.5 * scan.get_oscillation_range()[1] * pi / 180.0
+            #   self.sigma = 0.5 * scan.get_oscillation_range()[1] * math.pi / 180.0
             #   return
             #
             # is used... @JMP please could we discuss? assert best method to get
@@ -225,8 +224,8 @@ class ComputeEsdReflectingRange(object):
 
             # Set the starting values to try 1, 3 degrees seems sensible for
             # crystal mosaic spread
-            start = 1 * pi / 180
-            stop = 3 * pi / 180
+            start = 1 * math.pi / 180
+            stop = 3 * math.pi / 180
             starting_simplex = [flex.double([start]), flex.double([stop])]
 
             # Initialise the optimizer
@@ -235,14 +234,13 @@ class ComputeEsdReflectingRange(object):
             )
 
             # Get the solution
-            self.sigma = exp(optimizer.get_solution()[0])
+            self.sigma = math.exp(optimizer.get_solution()[0])
 
         def target(self, log_sigma):
             """ The target for minimization. """
             from scitbx.array_family import flex
-            from math import exp
 
-            return -flex.sum(self._R(exp(log_sigma[0])))
+            return -flex.sum(self._R(math.exp(log_sigma[0])))
 
     class CrudeEstimator(object):
         """ If the main estimator failed make a crude estimate """
@@ -250,7 +248,6 @@ class ComputeEsdReflectingRange(object):
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
 
             from dials.array_family import flex
-            from math import sqrt
 
             # Get the oscillation width
             dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
@@ -260,10 +257,10 @@ class ComputeEsdReflectingRange(object):
                 crystal, beam, detector, goniometer, scan, reflections
             )
 
-            # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
+            # Calculate zeta * (tau +- dphi / 2) / math.sqrt(2)
             X = tau * zeta
             mv = flex.mean_and_variance(X)
-            self.sigma = sqrt(mv.unweighted_sample_variance())
+            self.sigma = math.sqrt(mv.unweighted_sample_variance())
 
         def _calculate_tau_and_zeta(
             self, crystal, beam, detector, goniometer, scan, reflections
@@ -322,7 +319,6 @@ class ComputeEsdReflectingRange(object):
         ):
 
             from dials.array_family import flex
-            from math import sqrt, pi, exp, log
             from scitbx import simplex
 
             # Get the oscillation width
@@ -333,9 +329,9 @@ class ComputeEsdReflectingRange(object):
                 crystal, beam, detector, goniometer, scan, reflections
             )
 
-            # Calculate zeta * (tau +- dphi / 2) / sqrt(2)
-            self.e1 = (tau + dphi2) * flex.abs(zeta) / sqrt(2.0)
-            self.e2 = (tau - dphi2) * flex.abs(zeta) / sqrt(2.0)
+            # Calculate zeta * (tau +- dphi / 2) / math.sqrt(2)
+            self.e1 = (tau + dphi2) * flex.abs(zeta) / math.sqrt(2.0)
+            self.e2 = (tau - dphi2) * flex.abs(zeta) / math.sqrt(2.0)
             self.n = n
             self.indices = indices
             if len(self.e1) == 0:
@@ -351,8 +347,8 @@ class ComputeEsdReflectingRange(object):
 
             # Set the starting values to try 1, 3 degrees seems sensible for
             # crystal mosaic spread
-            start = log(0.1 * pi / 180)
-            stop = log(1 * pi / 180)
+            start = math.log(0.1 * math.pi / 180)
+            stop = math.log(1 * math.pi / 180)
             starting_simplex = [flex.double([start]), flex.double([stop])]
 
             # Initialise the optimizer
@@ -361,18 +357,17 @@ class ComputeEsdReflectingRange(object):
             )
 
             # Get the solution
-            sigma = exp(optimizer.get_solution()[0])
+            sigma = math.exp(optimizer.get_solution()[0])
 
             # Save the result
             self.sigma = sigma
 
         def target(self, log_sigma):
             """ The target for minimization. """
-            from math import exp, pi, log
             from scitbx.array_family import flex
             import scitbx.math
 
-            sigma_m = exp(log_sigma[0])
+            sigma_m = math.exp(log_sigma[0])
 
             # Tiny value
             TINY = 1e-10
@@ -419,9 +414,9 @@ class ComputeEsdReflectingRange(object):
                 kj = K[j]
                 Z = flex.sum(zj)
                 # L += flex.sum(nj * flex.log(zj)) - kj * Z
-                # L += flex.sum(nj * flex.log(zj)) - kj * log(Z)
-                L += flex.sum(nj * flex.log(zj)) - kj * log(Z) + log(Z)
-            logger.debug("Sigma M: %f, log(L): %f" % (sigma_m * 180 / pi, L))
+                # L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z)
+                L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z) + math.log(Z)
+            logger.debug("Sigma M: %f, log(L): %f", sigma_m * 180 / math.pi, L)
 
             # Return the logarithm of r
             return -L
@@ -533,7 +528,6 @@ class ProfileModelCalculator(object):
         """ Calculate the profile model. """
         from dxtbx.model.experiment_list import Experiment
         from dials.array_family import flex
-        from math import pi
 
         # Check input has what we want
         assert reflections is not None
@@ -584,8 +578,8 @@ class ProfileModelCalculator(object):
             self._sigma_m = reflecting_range.sigma()
 
         # Print the output
-        logger.info(" sigma b: %f degrees" % (self._sigma_b * 180 / pi))
-        logger.info(" sigma m: %f degrees" % (self._sigma_m * 180 / pi))
+        logger.info(" sigma b: %f degrees", self._sigma_b * 180 / math.pi)
+        logger.info(" sigma m: %f degrees", self._sigma_m * 180 / math.pi)
 
     def sigma_b(self):
         """ Return the E.S.D beam divergence. """
@@ -614,7 +608,6 @@ class ScanVaryingProfileModelCalculator(object):
         from copy import deepcopy
         from collections import defaultdict
         from dials.array_family import flex
-        from math import pi
         from dxtbx.model.experiment_list import Experiment
 
         # Check input has what we want
@@ -662,16 +655,14 @@ class ScanVaryingProfileModelCalculator(object):
 
         # Compute for all frames
         self._num = []
-        sigma_b = []
-        sigma_m = []
+        sigma_b = flex.double()
+        sigma_m = flex.double()
         for i in range(z0, z1):
 
             # Get reflections at the index
             reflections = reflection_list[i]
 
             self._num.append(len(reflections))
-
-            logger.info("Computing profile model for frame %d" % i)
 
             # Calculate the E.S.D of the beam divergence
             beam_divergence = ComputeEsdBeamDivergence(detector, reflections)
@@ -682,6 +673,13 @@ class ScanVaryingProfileModelCalculator(object):
             # Calculate the E.S.D of the reflecting range
             reflecting_range = ComputeEsdReflectingRange(
                 crystal, beam, detector, goniometer, scan, reflections
+            )
+
+            logger.info(
+                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees",
+                i,
+                beam_divergence.sigma() * 180 / math.pi,
+                reflecting_range.sigma() * 180 / math.pi,
             )
 
             # Set the sigmas
@@ -705,30 +703,41 @@ class ScanVaryingProfileModelCalculator(object):
             return result
 
         def gaussian_kernel(n):
-            from math import exp
-
             assert n & 1
             mid = n // 2
             sigma = mid / 3.0
             kernel = []
             for i in range(n):
-                kernel.append(exp(-(i - mid) ** 2 / (2 * sigma ** 2)))
+                kernel.append(math.exp(-(i - mid) ** 2 / (2 * sigma ** 2)))
             kernel = [k / sum(kernel) for k in kernel]
             return kernel
 
         # Smooth the parameters
         kernel = gaussian_kernel(51)
-        sigma_b_new = convolve(sigma_b, kernel)
-        sigma_m_new = convolve(sigma_m, kernel)
-        self._sigma_b = flex.double(sigma_b_new)
-        self._sigma_m = flex.double(sigma_m_new)
-        assert len(self._sigma_b) == len(self._sigma_m)
+        sigma_b_sq_new = convolve(sigma_b ** 2, kernel)
+        sigma_m_sq_new = convolve(sigma_m ** 2, kernel)
 
         # Print the output - mean as is scan varying
-        mean_sigma_b = sum(self._sigma_b) / len(self._sigma_b)
-        mean_sigma_m = sum(self._sigma_m) / len(self._sigma_m)
-        logger.info(" sigma b: %f degrees" % (mean_sigma_b * 180 / pi))
-        logger.info(" sigma m: %f degrees" % (mean_sigma_m * 180 / pi))
+        mean_sigma_b = math.sqrt(sum(sigma_b ** 2) / len(sigma_b))
+        mean_sigma_m = math.sqrt(sum(sigma_m ** 2) / len(sigma_m))
+
+        # Save the smoothed parameters
+        self._sigma_b = flex.sqrt(flex.double(sigma_b_sq_new))
+        self._sigma_m = flex.sqrt(flex.double(sigma_m_sq_new))
+        assert len(self._sigma_b) == len(self._sigma_m)
+
+        # Print out smoothed profile parameters
+        for i in range(len(sigma_b)):
+            logger.info(
+                "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees",
+                i,
+                self._sigma_b[i] * 180 / math.pi,
+                self._sigma_m[i] * 180 / math.pi,
+            )
+
+        # Print the mean parameters
+        logger.info(" sigma b: %f degrees", mean_sigma_b * 180 / math.pi)
+        logger.info(" sigma m: %f degrees", mean_sigma_m * 180 / math.pi)
 
     def num(self):
         """ The number of reflections used. """
