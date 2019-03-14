@@ -37,7 +37,6 @@ class ComputeEsdBeamDivergence(object):
 
         """
         from scitbx.array_family import flex
-        from math import sqrt
 
         # Calculate the beam direction variances
         variance = self._beam_direction_variance_list(detector, reflections)
@@ -65,7 +64,7 @@ class ComputeEsdBeamDivergence(object):
         shoebox = reflections["shoebox"]
         bbox = reflections["bbox"]
         xyz = reflections["xyzobs.px.value"]
-        s1_centroid = reflections['s1']
+        s1_centroid = reflections["s1"]
 
         # Loop through all the reflections
         variance = []
@@ -81,7 +80,7 @@ class ComputeEsdBeamDivergence(object):
 
             # Calculate the beam vector at the centroid
             panel = shoebox[r].panel
-            #s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
+            # s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
             angles = s1.angle(s1_centroid[r], deg=False)
             variance.append(flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1))
 
@@ -101,7 +100,6 @@ class FractionOfObservedIntensity(object):
 
         """
         from dials.array_family import flex
-        from math import sqrt
 
         # Get the oscillation width
         dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
@@ -167,7 +165,6 @@ class FractionOfObservedIntensity(object):
             A list of log intensity fractions
 
         """
-        from math import sqrt
         from scitbx.array_family import flex
         import scitbx.math
 
@@ -250,7 +247,6 @@ class ComputeEsdReflectingRange(object):
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
 
             from dials.array_family import flex
-            from math import sqrt
 
             # Get the oscillation width
             dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
@@ -368,7 +364,7 @@ class ComputeEsdReflectingRange(object):
 
         def target(self, log_sigma):
             """ The target for minimization. """
-            from math import sqrt, exp, pi, log
+            from math import exp, pi, log
             from scitbx.array_family import flex
             import scitbx.math
 
@@ -683,10 +679,11 @@ class ScanVaryingProfileModelCalculator(object):
             )
 
             logger.info(
-                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees" % (
+                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees"
+                % (
                     i,
-                    beam_divergence.sigma() * 180/pi,
-                    reflecting_range.sigma() * 180/pi
+                    beam_divergence.sigma() * 180 / pi,
+                    reflecting_range.sigma() * 180 / pi,
                 )
             )
 
@@ -724,28 +721,25 @@ class ScanVaryingProfileModelCalculator(object):
 
         # Smooth the parameters
         kernel = gaussian_kernel(51)
-        sigma_b_sq_new = convolve(sigma_b**2, kernel)
-        sigma_m_sq_new = convolve(sigma_m**2, kernel)
-          
+        sigma_b_sq_new = convolve(sigma_b ** 2, kernel)
+        sigma_m_sq_new = convolve(sigma_m ** 2, kernel)
+
         # Print the output - mean as is scan varying
-        mean_sigma_b = sqrt(sum(sigma_b**2) / len(sigma_b))
-        mean_sigma_m = sqrt(sum(sigma_m**2) / len(sigma_m))
-        
+        mean_sigma_b = sqrt(sum(sigma_b ** 2) / len(sigma_b))
+        mean_sigma_m = sqrt(sum(sigma_m ** 2) / len(sigma_m))
+
         # Save the smoothed parameters
         self._sigma_b = flex.sqrt(flex.double(sigma_b_sq_new))
         self._sigma_m = flex.sqrt(flex.double(sigma_m_sq_new))
         assert len(self._sigma_b) == len(self._sigma_m)
-        
+
         # Print out smoothed profile parameters
         logger.info("")
         for i in range(len(sigma_b)):
-          logger.info(
-            "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees" % (
-                      i,
-                      self._sigma_b[i] * 180/pi,
-                      self._sigma_m[i] * 180/pi
-                  )
-              )
+            logger.info(
+                "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees"
+                % (i, self._sigma_b[i] * 180 / pi, self._sigma_m[i] * 180 / pi)
+            )
 
         # Print the mean parameters
         logger.info(" sigma b: %f degrees" % (mean_sigma_b * 180 / pi))
