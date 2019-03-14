@@ -413,7 +413,7 @@ class ComputeEsdReflectingRange(object):
                 # L += flex.sum(nj * flex.log(zj)) - kj * Z
                 # L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z)
                 L += flex.sum(nj * flex.log(zj)) - kj * math.log(Z) + math.log(Z)
-            logger.debug("Sigma M: %f, log(L): %f" % (sigma_m * 180 / math.pi, L))
+            logger.debug("Sigma M: %f, log(L): %f", sigma_m * 180 / math.pi, L)
 
             # Return the logarithm of r
             return -L
@@ -575,8 +575,8 @@ class ProfileModelCalculator(object):
             self._sigma_m = reflecting_range.sigma()
 
         # Print the output
-        logger.info(" sigma b: %f degrees" % (self._sigma_b * 180 / math.pi))
-        logger.info(" sigma m: %f degrees" % (self._sigma_m * 180 / math.pi))
+        logger.info(" sigma b: %f degrees", self._sigma_b * 180 / math.pi)
+        logger.info(" sigma m: %f degrees", self._sigma_m * 180 / math.pi)
 
     def sigma_b(self):
         """ Return the E.S.D beam divergence. """
@@ -673,12 +673,10 @@ class ScanVaryingProfileModelCalculator(object):
             )
 
             logger.info(
-                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees"
-                % (
-                    i,
-                    beam_divergence.sigma() * 180 / math.pi,
-                    reflecting_range.sigma() * 180 / math.pi,
-                )
+                "Computing profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees",
+                i,
+                beam_divergence.sigma() * 180 / math.pi,
+                reflecting_range.sigma() * 180 / math.pi,
             )
 
             # Set the sigmas
@@ -726,20 +724,17 @@ class ScanVaryingProfileModelCalculator(object):
         assert len(self._sigma_b) == len(self._sigma_m)
 
         # Print out smoothed profile parameters
-        logger.info("")
         for i in range(len(sigma_b)):
             logger.info(
-                "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees"
-                % (
-                    i,
-                    self._sigma_b[i] * 180 / math.pi,
-                    self._sigma_m[i] * 180 / math.pi,
-                )
+                "Smoothed profile model for frame %d: sigma_b = %.4f degrees, sigma_m = %.4f degrees",
+                i,
+                self._sigma_b[i] * 180 / math.pi,
+                self._sigma_m[i] * 180 / math.pi,
             )
 
         # Print the mean parameters
-        logger.info(" sigma b: %f degrees" % (mean_sigma_b * 180 / math.pi))
-        logger.info(" sigma m: %f degrees" % (mean_sigma_m * 180 / math.pi))
+        logger.info(" sigma b: %f degrees", mean_sigma_b * 180 / math.pi)
+        logger.info(" sigma m: %f degrees", mean_sigma_m * 180 / math.pi)
 
     def num(self):
         """ The number of reflections used. """
