@@ -12,6 +12,7 @@ from dials.algorithms.scaling.observers import (
     ScalingHTMLGenerator,
     ErrorModelObserver,
     MergingStatisticsObserver,
+    ScalingSummaryGenerator,
 )
 
 
@@ -47,7 +48,8 @@ def test_register_scaling_observers():
         MergingStatisticsObserver(): MergingStatisticsObserver().update
     }
     assert script.get_observers("run_script") == {
-        ScalingHTMLGenerator(): ScalingHTMLGenerator().make_scaling_html
+        ScalingHTMLGenerator(): ScalingHTMLGenerator().make_scaling_html,
+        ScalingSummaryGenerator() : ScalingSummaryGenerator().print_scaling_summary,
     }
     assert script.scaler.get_observers("performed_scaling") == {
         ScalingModelObserver(): ScalingModelObserver().update
@@ -74,7 +76,8 @@ def test_ScalingModelObserver():
     KB_dict = {
         "__id__": "KB",
         "is_scaled": True,
-        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05]},
+        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05],
+            "null_parameter_value": 1},
         "configuration_parameters": {"corrections": ["scale"]},
     }
 
@@ -90,6 +93,9 @@ def test_ScalingModelObserver():
     observer = ScalingModelObserver()
     observer.update(scaler1)
     assert observer.data["0"] == KB_dict
+
+    msg = observer.return_model_error_summary()
+    assert msg != ''
 
     mock_func = mock.Mock()
     mock_func.return_value = {"plot": {}}
@@ -229,3 +235,4 @@ def test_MergingStatisticsObserver():
               'cc_one_half_plot': 'cchalfplot',
               'scaling_tables': 'return_tables'
             }
+

@@ -2,6 +2,8 @@
 Observers for the scaling algorithm.
 """
 from collections import OrderedDict
+import logging
+from scitbx.array_family import flex
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -12,6 +14,8 @@ from dials.algorithms.scaling.plots import (
 )
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
+logger = logging.getLogger('dials')
+
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
     script.register_observer(
@@ -19,15 +23,45 @@ def register_default_scaling_observers(script):
     )
     script.register_observer(
         event="run_script",
+        observer=ScalingSummaryGenerator(),
+        callback="print_scaling_summary",
+    )
+    script.register_observer(
+        event="run_script",
         observer=ScalingHTMLGenerator(),
         callback="make_scaling_html",
     )
+
     script.scaler.register_observer(
         event="performed_scaling", observer=ScalingModelObserver()
     )
     script.scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
+
+def register_merging_stats_observers(script):
+    """Register only obsevers needed to record and print merging stats."""
+    script.register_observer(
+            event="merging_statistics", observer=MergingStatisticsObserver()
+        )
+    script.register_observer(
+        event="run_script",
+        observer=ScalingSummaryGenerator(),
+        callback="print_scaling_summary",
+    )
+
+@singleton
+class ScalingSummaryGenerator(Observer):
+    """
+    Observer to summarise data
+    """
+
+    def print_scaling_summary(self, scaling_script):
+        if ScalingModelObserver().data:
+            logger.info(ScalingModelObserver().return_model_error_summary())
+        if MergingStatisticsObserver().data:
+            logger.info("\n\t----------Overall merging statistics (non-anomalous)----------\t\n")
+            logger.info(MergingStatisticsObserver().make_statistics_summary())
 
 @singleton
 class ScalingHTMLGenerator(Observer):
@@ -38,6 +72,8 @@ class ScalingHTMLGenerator(Observer):
 
     def make_scaling_html(self, scaling_script):
         """Collect data from the individual observers and write the html."""
+        if not scaling_script.params.output.html:
+            return
         self.data.update(ScalingModelObserver().make_plots())
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
@@ -89,6 +125,35 @@ class ScalingModelObserver(Observer):
                 d.update({name + "_" + str(key): plot})
         graphs = {"scaling_model": d}
         return graphs
+
+    def return_model_error_summary(self):
+        """Get a summary of the error distribution of the models."""
+        first_model = self.data.values()[0]
+        component = first_model["configuration_parameters"]["corrections"][0]
+        msg = ""
+        if "est_standard_devs" in first_model[component]:
+            p_sigmas = flex.double()
+            for model in self.data.values():
+                for component in model["configuration_parameters"]["corrections"]:
+                    if "est_standard_devs" in model[component]:
+                        params = flex.double(model[component]["parameters"])
+                        sigmas = flex.double(model[component]["est_standard_devs"])
+                        null_value = flex.double(len(params), model[component]["null_parameter_value"])
+                        p_sigmas.extend(flex.abs(params - null_value)/sigmas)
+            log_p_sigmas = flex.log(p_sigmas)
+            frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+            if frac_high_uncertainty > 0.5:
+                msg = (
+                  "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
+                  "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
+                  "poorly-determined scaling problem or overparameterisation.\n"
+                  ).format(frac_high_uncertainty * 100)
+            else:
+                msg = (
+                  "{0:.2f}% of model parameters have signficant uncertainty\n"
+                  "(sigma/abs(parameter) > 0.5)\n"
+                ).format(frac_high_uncertainty * 100)
+        return msg
 
 
 @singleton
@@ -177,3 +242,70 @@ class MergingStatisticsObserver(Observer):
                 self.data["statistics"], is_centric=self.data["is_centric"]
             )
         return d
+
+    def make_statistics_summary(self):
+        """Format merging statistics information into an output string."""
+        result = self.data["statistics"]
+        overall = result.overall
+        # First make overall summary
+        msg = (
+            "Resolution: {0:.2f} - {1:.2f} {sep}Observations: {2:d} {sep}"
+            "Unique reflections: {3:d} {sep}Redundancy: {4:.1f} {sep}"
+            "Completeness: {5:.2f}% {sep}Mean intensity: {6:.1f} {sep}"
+            "Mean I/sigma(I): {7:.1f}"
+        ).format(
+            overall.d_max,
+            overall.d_min,
+            overall.n_obs,
+            overall.n_uniq,
+            overall.mean_redundancy,
+            overall.completeness * 100,
+            overall.i_mean,
+            overall.i_over_sigma_mean,
+            sep="\n",
+        )
+        if overall.n_neg_sigmas > 0:
+            msg += "SigI < 0 (rejected): {0} observations\n".format(
+              overall.n_neg_sigmas)
+        if overall.n_rejected_before_merge > 0:
+            msg += "I < -3*SigI (rejected): {0} observations\n".format(
+                overall.n_rejected_before_merge)
+        if overall.n_rejected_after_merge > 0:
+            msg += "I < -3*SigI (rejected): {0} reflections\n".format(
+                overall.n_rejected_after_merge)
+        msg += "{sep}R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}".format(
+            overall.r_merge, overall.r_meas, overall.r_pim, sep="\n")
+
+        # Next make statistics by resolution bin
+        msg += "\nStatistics by resolution bin:\n"
+        msg += " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>" + \
+            "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+        for bin_stats in self.data["statistics"].bins:
+          msg += bin_stats.format()+"\n"
+        msg += self.data["statistics"].overall.format()+"\n"
+
+        # Now show estimated cutoffs, based on iotbx code
+        def format_d_min(value):
+            """Format result values"""
+            if value is None:
+                return "(use all data)"
+            return "%7.3f" % value
+
+        msg += "\nResolution cutoff estimates:"
+        msg += """
+resolution of all data          : {0:7.3f}
+based on CC(1/2) >= 0.33        : {1}
+based on mean(I/sigma) >= 2.0   : {2}
+based on R-merge < 0.5          : {3}
+based on R-meas < 0.5           : {4}
+based on completeness >= 90%    : {5}
+based on completeness >= 50%    : {6}\n""".format(
+          result.overall.d_min,
+          format_d_min(result.estimate_d_min(min_cc_one_half=0.33)),
+          format_d_min(result.estimate_d_min(min_i_over_sigma=2.0)),
+          format_d_min(result.estimate_d_min(max_r_merge=0.5)),
+          format_d_min(result.estimate_d_min(max_r_meas=0.5)),
+          format_d_min(result.estimate_d_min(min_completeness=0.9)),
+          format_d_min(result.estimate_d_min(min_completeness=0.5)))
+        msg += "NOTE: we recommend using all data out to the CC(1/2) limit for refinement\n"
+        return msg

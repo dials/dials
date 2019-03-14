@@ -21,7 +21,7 @@ from mock import Mock
 import mock
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
-from dials.algorithms.scaling.scaling_library import create_scaling_model
+from dials.algorithms.scaling.scaling_library import create_scaling_model, scaled_data_as_miller_array
 
 
 class run_delta_cchalf(object):
@@ -201,7 +201,7 @@ def test_scale_merging_stats():
     )
     reflections.set_flags(flex.bool(4, False), reflections.flags.bad_for_scaling)
     params.output.merging.nbins = 1
-    scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
+    scaled_array = scaled_data_as_miller_array([reflections], exp)
     merging_statistics_result = Script.merging_stats_from_scaled_array(
         scaled_array, params
     )
@@ -211,7 +211,7 @@ def test_scale_merging_stats():
     reflections["miller_index"] = flex.miller_index(
         [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
     )
-    scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
+    scaled_array = scaled_data_as_miller_array([reflections], exp)
     merging_statistics_result = Script.merging_stats_from_scaled_array(
         scaled_array, params
     )

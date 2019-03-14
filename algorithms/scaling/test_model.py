@@ -112,7 +112,12 @@ def test_KBScalingModel():
     KB_dict = {
         "__id__": "KB",
         "is_scaled": True,
-        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05]},
+        "scale": {
+            "n_parameters": 1,
+            "parameters": [0.5],
+            "est_standard_devs": [0.05],
+            "null_parameter_value": 1
+          },
         "configuration_parameters": {"corrections": ["scale"]},
     }
     KBmodel = KBScalingModel.from_dict(KB_dict)
@@ -129,8 +134,8 @@ def test_KBScalingModel():
     KB_dict = {
         "__id__": "KB",
         "is_scaled": True,
-        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05]},
-        "decay": {"n_parameters": 1, "parameters": [0.2], "est_standard_devs": [0.02]},
+        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05], "null_parameter_value": 1},
+        "decay": {"n_parameters": 1, "parameters": [0.2], "est_standard_devs": [0.02], "null_parameter_value": 0},
         "configuration_parameters": {"corrections": ["scale", "decay"]},
     }
     KBmodel = KBScalingModel.from_dict(KB_dict)
@@ -211,6 +216,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
             "est_standard_devs": [0.05, 0.1],
+            "null_parameter_value": 1
         },
         "configuration_parameters": {
             "corrections": ["scale"],
@@ -238,16 +244,19 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
             "n_parameters": 2,
             "parameters": [0.5, 1.0],
             "est_standard_devs": [0.05, 0.1],
+            "null_parameter_value": 1
         },
         "decay": {
             "n_parameters": 2,
             "parameters": [0.1, 0.2],
             "est_standard_devs": [0.01, 0.01],
+            "null_parameter_value": 0
         },
         "absorption": {
             "n_parameters": 3,
             "parameters": [0.0, 0.1, 0.2],
             "est_standard_devs": [0.01, 0.02, 0.03],
+            "null_parameter_value": 0
         },
         "configuration_parameters": {
             "corrections": ["scale", "decay", "absorption"],
@@ -470,6 +479,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
         "decay": {
             "n_parameters": 4,
             "parameters": [0.5, 1.0, 0.4, 1.0],
+            "null_parameter_value": 1.0,
             "est_standard_devs": [0.05, 0.1, 0.05, 0.1],
         },
         "configuration_parameters": {

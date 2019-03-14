@@ -30,6 +30,7 @@ import dials.util
 from dials.command_line.scale import Script as ScalingScript
 from dials.command_line.compute_delta_cchalf import Script as FilterScript
 from dials.util.exclude_images import get_valid_image_ranges
+from dials.algorithms.scaling.observers import register_merging_stats_observers
 
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
@@ -206,6 +207,7 @@ class ScaleAndFilter(object):
             scaling_script = self.scaling_script(
                 self.scaling_params, experiments, reflections
             )
+            register_merging_stats_observers(scaling_script)
             scaling_script.run(save_data=False)
             # Log initial expids here, need to do after dataset selection in scaling
             # but before any filtering

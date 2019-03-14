@@ -9,6 +9,7 @@ import itertools
 from copy import deepcopy
 from scitbx.array_family import flex
 from libtbx.table_utils import simple_table
+from dials.algorithms.scaling.observers import register_merging_stats_observers
 
 
 class CrossValidator(object):
@@ -234,6 +235,7 @@ class DialsScaleCrossValidator(CrossValidator):
             experiments=deepcopy(self.experiments),
             reflections=deepcopy(self.reflections),
         )
+        register_merging_stats_observers(script)
         script.run(save_data=False)
         results = self.get_results_from_script(script)
         self.add_results_to_results_dict(config_no, results)
