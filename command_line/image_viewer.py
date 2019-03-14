@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-import dials.util.banner
+import dials.util.banner  # noqa: F401 - Importing means that it prints
 import iotbx.phil
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
@@ -135,7 +135,7 @@ class Script(object):
 
     def __call__(self):
         """Run the script."""
-        from dials.array_family import flex  # import dependency
+        from dials.array_family import flex  # noqa
 
         self.view()
 
@@ -163,7 +163,6 @@ if __name__ == "__main__":
         wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
 
     from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
@@ -182,7 +181,7 @@ if __name__ == "__main__":
         epilog=help_message,
     )
     params, options = parser.parse_args(show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
+    experiments = [x.data for x in params.input.experiments]
     reflections = flatten_reflections(params.input.reflections)
 
     if len(experiments) == 0:

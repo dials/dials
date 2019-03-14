@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
+import itertools
+
 import rstbx.viewer.display
 import wx
 from wx.lib.intctrl import IntCtrl
@@ -45,15 +47,15 @@ def create_load_image_event(destination, filename):
 
 class SpotFrame(XrayFrame):
     def __init__(self, *args, **kwds):
-        self.experiments = kwds["experiments"]
-        self.imagesets = self.experiments.imagesets()
-        self.crystals = self.experiments.crystals()
+        self.experiments = kwds.pop("experiments")
+        self.reflections = kwds.pop("reflections")
+
+        self.imagesets = list(
+            itertools.chain(*[x.imagesets() for x in self.experiments])
+        )
+        self.crystals = list(itertools.chain(*[x.crystals() for x in self.experiments]))
         if len(self.imagesets) == 0:
             raise RuntimeError("No imageset could be constructed")
-
-        self.reflections = kwds["reflections"]
-        del kwds["experiments"]
-        del kwds["reflections"]  # otherwise wx complains
 
         # Store the list of images we can view
         self.images = ImageCollectionWithSelection()
