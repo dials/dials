@@ -21,15 +21,7 @@ iqr_ratio = 1.5
 )
 
 from scitbx.array_family import flex
-
-
-def uc_params_from_experiments(experiments):
-    uc_params = [flex.double() for i in range(6)]
-    for expt in experiments:
-        uc = expt.crystal.get_unit_cell()
-        for i in range(6):
-            uc_params[i].append(uc.parameters()[i])
-    return uc_params
+from dials.algorithms.clustering.observers import uc_params_from_experiments
 
 
 def panel_distances_from_experiments(experiments):
