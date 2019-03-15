@@ -16,7 +16,6 @@ from sklearn import metrics
 from libtbx import Auto
 from libtbx.utils import Sorry
 from scitbx.array_family import flex
-from dials.algorithms.symmetry.cosym import plot_matrix, plot_dendrogram
 
 
 class seed_clustering(object):
@@ -38,13 +37,7 @@ class seed_clustering(object):
     """
 
     def __init__(
-        self,
-        coordinates,
-        n_datasets,
-        n_sym_ops,
-        min_silhouette_score,
-        n_clusters=Auto,
-        plot_prefix=None,
+        self, coordinates, n_datasets, n_sym_ops, min_silhouette_score, n_clusters=Auto
     ):
         """Initialise a seed_clustering object.
 
@@ -75,21 +68,7 @@ class seed_clustering(object):
             linkage_matrix,
             n_clusters=n_clusters,
             min_silhouette_score=min_silhouette_score,
-            plot_prefix=plot_prefix,
         )
-
-        if plot_prefix is not None:
-            plot_matrix(
-                1 - ssd.squareform(dist_mat),
-                linkage_matrix,
-                "%sseed_clustering_cos_angle_matrix.png" % plot_prefix,
-                color_threshold=threshold,
-            )
-            plot_dendrogram(
-                linkage_matrix,
-                "%sseed_clustering_cos_angle_dendrogram.png" % plot_prefix,
-                color_threshold=threshold,
-            )
 
     def _label_clusters_first_pass(self, n_datasets, n_sym_ops):
         """First pass labelling of clusters.
@@ -185,12 +164,7 @@ class seed_clustering(object):
         return dist_mat, hierarchy.linkage(dist_mat, method="average")
 
     def _silhouette_analysis(
-        self,
-        cluster_labels,
-        linkage_matrix,
-        n_clusters,
-        min_silhouette_score,
-        plot_prefix=None,
+        self, cluster_labels, linkage_matrix, n_clusters, min_silhouette_score
     ):
         """Compare valid equal-sized clustering using silhouette scores.
 
@@ -203,8 +177,6 @@ class seed_clustering(object):
             number of clusters.
           min_silhouette_score (float): The minimum silhouette score to be used
             in automatic determination of the number of clusters.
-          plot_prefix (bool): Optional plot_prefix to plot the silhouette analysis
-            for each possible clustering.
 
         Returns:
           cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
@@ -264,13 +236,6 @@ class seed_clustering(object):
                 "  -ve silhouette scores: %.1f%%"
                 % (100 * count_negative / sample_silhouette_values.size)
             )
-
-            if plot_prefix is not None:
-                _plot_silhouette(
-                    sample_silhouette_values,
-                    cluster_labels.as_numpy_array(),
-                    file_name="%ssilhouette_%i.png" % (plot_prefix, n),
-                )
 
         if n_clusters is Auto:
             idx = flex.max_index(silhouette_scores)
