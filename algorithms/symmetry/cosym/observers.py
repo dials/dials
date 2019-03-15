@@ -48,12 +48,7 @@ class CosymHTMLGenerator(Observer):
             page_title="DIALS cosym report",
             cosym_graphs=self.data["cosym_graphs"],
             unit_cell_graphs=self.data["unit_cell_graphs"],
-            # symmetry_analysis=self.data["symmetry_analysis"],
-            symmetry_analysis=[
-                self.data["symmetry_analysis"]["sym_ops_table"],
-                self.data["symmetry_analysis"]["subgroups_table"],
-                self.data["symmetry_analysis"]["summary_table"],
-            ],
+            symmetry_analysis=self.data["symmetry_analysis"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -89,6 +84,8 @@ class SymmetryAnalysisObserver(Observer):
     """
 
     def update(self, cosym):
+        if cosym._symmetry_analysis is None:
+            return
         self.data["sym_ops_table"] = cosym._symmetry_analysis.sym_ops_table()
         self.data["subgroups_table"] = cosym._symmetry_analysis.subgroups_table()
         d = cosym._symmetry_analysis.as_dict()
