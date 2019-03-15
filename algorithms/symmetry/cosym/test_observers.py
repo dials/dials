@@ -7,6 +7,14 @@ from dials.algorithms.symmetry.cosym import observers
 def test_SymmetryAnalysisObserver():
     # setup script
     script = mock.Mock()
+
+    # test when no symmetry analysis has been performed
+    script._symmetry_analysis = None
+    observer = observers.SymmetryAnalysisObserver()
+    observer.update(script)
+    d = observer.make_tables()
+    assert d == {"symmetry_analysis": {}}
+
     script._symmetry_analysis = mock.Mock()
     script._symmetry_analysis.sym_ops_table = mock.Mock()
     script._symmetry_analysis.subgroups_table = mock.Mock()
@@ -29,6 +37,11 @@ def test_SymmetryAnalysisObserver():
     observer.update(script)
     d = observer.make_tables()
     assert "symmetry_analysis" in d
+    assert d["symmetry_analysis"].keys() == [
+        "summary_table",
+        "subgroups_table",
+        "sym_ops_table",
+    ]
 
 
 def test_CosymClusterAnalysisObserver():

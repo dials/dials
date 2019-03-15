@@ -6,6 +6,7 @@
 
 <div>
     <div class="panel-group">
+        {% if symmetry_analysis.summary_table is defined %}
         <div class="panel panel-default">
             <div class="panel-heading" data-toggle="collapse" data-target="#collapse_symmetry">
                 <h4 class="panel-title">
@@ -16,21 +17,22 @@
                 <div class="panel-body">
                     <p><b>Scoring individual symmetry operations</b></p>
                     <div style="width: 800px">
-                        {{ macros.table(symmetry_analysis[0], has_column_header=True) }}
+                        {{ macros.table(symmetry_analysis.sym_ops_table, has_column_header=True) }}
                     </div>
                     <p><b>Scoring all possible subgroups</b></p>
                     <div style="width: 800px">
-                        {{ macros.table(symmetry_analysis[1], has_column_header=True) }}
+                        {{ macros.table(symmetry_analysis.subgroups_table, has_column_header=True) }}
                     </div>
                     <div style="width: 600px">
-                        {{ macros.table(symmetry_analysis[2], has_row_header=True) }}
+                        {{ macros.table(symmetry_analysis.summary_table, has_row_header=True) }}
                     </div>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-            {{ macros.panel('Unit cell analysis', 'unit_cell', unit_cell_graphs) }}
-            {{ macros.panel('Cosym plots', 'cosym_plots', cosym_graphs) }}
+        {{ macros.panel('Unit cell analysis', 'unit_cell', unit_cell_graphs) }}
+        {{ macros.panel('Cosym plots', 'cosym_plots', cosym_graphs) }}
 
     </div>
 </div>
