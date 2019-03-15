@@ -278,25 +278,13 @@ class cosym(object):
         ucs = Cluster.from_crystal_symmetries(
             crystal_symmetries, lattice_ids=lattice_ids
         )
-        if self._params.save_plot:
-            from matplotlib import pyplot as plt
-
-            fig = plt.figure("Andrews-Bernstein distance dendogram", figsize=(12, 8))
-            ax = plt.gca()
-        else:
-            ax = None
         clusters, _ = ucs.ab_cluster(
             self._params.unit_cell_clustering.threshold,
             log=self._params.unit_cell_clustering.log,
             write_file_lists=False,
             schnell=False,
-            doplot=self._params.save_plot,
-            ax=ax,
+            doplot=False,
         )
-        if self._params.save_plot:
-            plt.tight_layout()
-            plt.savefig("%scluster_unit_cell.png" % self._params.plot_prefix)
-            plt.close(fig)
         logger.info(unit_cell_info(clusters))
         largest_cluster = None
         largest_cluster_lattice_ids = None
@@ -372,12 +360,6 @@ def run(args):
 
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
-
-    if params.save_plot:
-        import matplotlib
-
-        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-        matplotlib.use("Agg")  # use a non-interactive backend
 
     if not params.input.experiments or not params.input.reflections:
         parser.print_help()
