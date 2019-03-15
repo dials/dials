@@ -18,7 +18,9 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     select_datasets_on_ids,
 )
-from dials.algorithms.symmetry.cosym import analyse_datasets
+from dials.util.observer import Subject
+from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
+from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 phil_scope = iotbx.phil.parse(
@@ -57,6 +59,8 @@ output {
     .type = path
   json = dials.cosym.json
     .type = path
+  html = dials.cosym.html
+    .type = path
 }
 
 verbosity = 1
@@ -67,46 +71,61 @@ verbosity = 1
 )
 
 
-class cosym(object):
+class cosym(Subject):
     def __init__(self, experiments, reflections, params=None):
+        super(cosym, self).__init__(
+            events=["run_cosym", "performed_unit_cell_clustering"]
+        )
         if params is None:
             params = phil_scope.extract()
-        self._params = params
+        self.params = params
 
         # map experiments and reflections to primitive setting
-        experiments, reflections = self._map_to_primitive(experiments, reflections)
+        self._experiments, self._reflections = self._map_to_primitive(
+            experiments, reflections
+        )
 
-        if len(experiments) > 1:
+        if len(self._experiments) > 1:
             # perform unit cell clustering
-            identifiers = self._unit_cell_clustering(experiments)
-            if len(identifiers) < len(experiments):
+            identifiers = self._unit_cell_clustering(self._experiments)
+            if len(identifiers) < len(self._experiments):
                 logger.info(
                     "Selecting subset of %i datasets for cosym analysis: %s"
                     % (len(identifiers), str(identifiers))
                 )
-                experiments, reflections = select_datasets_on_ids(
-                    experiments, reflections, use_datasets=identifiers
+                self._experiments, self._reflections = select_datasets_on_ids(
+                    self._experiments, self._reflections, use_datasets=identifiers
                 )
 
-        experiments, reflections = self._map_to_minimum_cell(experiments, reflections)
+        self._experiments, reflections = self._map_to_minimum_cell(
+            self._experiments, self._reflections
+        )
 
         # transform models into miller arrays
         datasets = self._miller_arrays_from_experiments_reflections(
-            experiments, reflections
+            self._experiments, self._reflections
         )
 
-        result = analyse_datasets(datasets, params)
+        self.cosym_analysis = CosymAnalysis(datasets, self.params)
+
+    @Subject.notify_event(event="run_cosym")
+    def run(self):
+        self.cosym_analysis.run()
 
         space_groups = {}
         reindexing_ops = {}
-        for dataset_id in result.reindexing_ops.iterkeys():
-            if 0 in result.reindexing_ops[dataset_id]:
-                cb_op = result.reindexing_ops[dataset_id][0]
+        for dataset_id in self.cosym_analysis.reindexing_ops.iterkeys():
+            if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
+                cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
                 reindexing_ops.setdefault(cb_op, [])
                 reindexing_ops[cb_op].append(dataset_id)
-            if dataset_id in result.space_groups:
-                space_groups.setdefault(result.space_groups[dataset_id], [])
-                space_groups[result.space_groups[dataset_id]].append(dataset_id)
+            if dataset_id in self.cosym_analysis.space_groups:
+                space_groups.setdefault(
+                    self.cosym_analysis.space_groups[dataset_id], []
+                )
+                space_groups[self.cosym_analysis.space_groups[dataset_id]].append(
+                    dataset_id
+                )
 
         logger.info("Space groups:")
         for sg, datasets in space_groups.iteritems():
@@ -118,15 +137,16 @@ class cosym(object):
             logger.info(cb_op)
             logger.info(datasets)
 
-        if params.output.json is not None:
-            result.as_json(filename=params.output.json)
+        if self.params.output.json is not None:
+            self.cosym_analysis.as_json(filename=self.params.output.json)
 
-        if result.best_solution is not None:
-            subgroup = result.best_solution.subgroup
+        if self.cosym_analysis.best_solution is not None:
+            subgroup = self.cosym_analysis.best_solution.subgroup
         else:
             subgroup = None
+
         self._export_experiments_reflections(
-            experiments, reflections, reindexing_ops, subgroup=subgroup
+            self._experiments, self._reflections, reindexing_ops, subgroup=subgroup
         )
 
     def _export_experiments_reflections(
@@ -151,13 +171,13 @@ class cosym(object):
 
         reindexed_reflections.reset_ids()
         logger.info(
-            "Saving reindexed experiments to %s" % self._params.output.experiments
+            "Saving reindexed experiments to %s" % self.params.output.experiments
         )
-        dump.experiment_list(experiments, self._params.output.experiments)
+        dump.experiment_list(experiments, self.params.output.experiments)
         logger.info(
-            "Saving reindexed reflections to %s" % self._params.output.reflections
+            "Saving reindexed reflections to %s" % self.params.output.reflections
         )
-        reindexed_reflections.as_pickle(self._params.output.reflections)
+        reindexed_reflections.as_pickle(self.params.output.reflections)
 
     def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
         miller_arrays = []
@@ -188,7 +208,7 @@ class cosym(object):
                 min_isigi=-5,
                 filter_ice_rings=False,
                 combine_partials=True,
-                partiality_threshold=self._params.partiality_threshold,
+                partiality_threshold=self.params.partiality_threshold,
             )
             assert refl.size() > 0
             try:
@@ -231,8 +251,8 @@ class cosym(object):
                 refl = refl.select(sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
 
-            if self._params.space_group is not None:
-                space_group_info = self._params.space_group.primitive_setting()
+            if self.params.space_group is not None:
+                space_group_info = self.params.space_group.primitive_setting()
                 if not space_group_info.group().is_compatible_unit_cell(
                     expt.crystal.get_unit_cell()
                 ):
@@ -259,36 +279,37 @@ class cosym(object):
             expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
             refl["miller_index"] = cb_op_ref_min.apply(refl["miller_index"])
 
-            if self._params.space_group is not None:
+            if self.params.space_group is not None:
                 expt.crystal.set_space_group(
-                    self._params.space_group.primitive_setting().group()
+                    self.params.space_group.primitive_setting().group()
                 )
             else:
                 expt.crystal.set_space_group(sgtbx.space_group())
         return experiments, reflections
 
+    @Subject.notify_event("performed_unit_cell_clustering")
     def _unit_cell_clustering(self, experiments):
         crystal_symmetries = [
             expt.crystal.get_crystal_symmetry() for expt in experiments
         ]
         lattice_ids = experiments.identifiers()
-        from xfel.clustering.cluster import Cluster
+        from dials.algorithms.clustering.unit_cell import UnitCellCluster
         from xfel.clustering.cluster_groups import unit_cell_info
 
-        ucs = Cluster.from_crystal_symmetries(
+        ucs = UnitCellCluster.from_crystal_symmetries(
             crystal_symmetries, lattice_ids=lattice_ids
         )
-        clusters, _ = ucs.ab_cluster(
-            self._params.unit_cell_clustering.threshold,
-            log=self._params.unit_cell_clustering.log,
+        self.unit_cell_clusters, self.unit_cell_dendrogram, _ = ucs.ab_cluster(
+            self.params.unit_cell_clustering.threshold,
+            log=self.params.unit_cell_clustering.log,
             write_file_lists=False,
             schnell=False,
             doplot=False,
         )
-        logger.info(unit_cell_info(clusters))
+        logger.info(unit_cell_info(self.unit_cell_clusters))
         largest_cluster = None
         largest_cluster_lattice_ids = None
-        for cluster in clusters:
+        for cluster in self.unit_cell_clusters:
             cluster_lattice_ids = [m.lattice_id for m in cluster.members]
             if largest_cluster_lattice_ids is None:
                 largest_cluster_lattice_ids = cluster_lattice_ids
@@ -370,7 +391,12 @@ def run(args):
     reflections = parse_multiple_datasets(reflections)
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
 
-    cosym(experiments=experiments, reflections=reflections, params=params)
+    cosym_instance = cosym(
+        experiments=experiments, reflections=reflections, params=params
+    )
+    if params.output.html:
+        register_default_cosym_observers(cosym_instance)
+    cosym_instance.run()
 
 
 if __name__ == "__main__":

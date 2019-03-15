@@ -126,3 +126,31 @@ Reindex operator: b-c,-a+c,a+b+c
 Laue group probability: 0.990
 Laue group confidence: 0.987"""
     )
+
+    d = analysis.as_dict()
+    assert d["sym_op_scores"][0] == {
+        "cc": 0.19620531091685714,
+        "operator": "-x,-z,-y",
+        "likelihood": 0.087072167056788843,
+        "stars": "",
+        "z_cc": 1.9620531091685713,
+    }
+    assert d["subgroup_scores"][0] == {
+        "confidence": 0.9865787185561198,
+        "z_cc_for": " 10.00",
+        "stars": "***",
+        "patterson_group": "-R 3",
+        "max_angular_difference": "0.0",
+        "likelihood": 0.990099835863844,
+        "cb_op": "-1/3*x+2/3*y-1/3*z,-2/3*x+1/3*y+1/3*z,1/3*x+1/3*y+1/3*z",
+        "z_cc_against": " 1.96",
+        "unit_cell": (
+            98.32999999999998,
+            98.32999999999998,
+            135.99,
+            90.0,
+            90.0,
+            119.99999999999999,
+        ),
+        "z_cc_net": " 8.04",
+    }

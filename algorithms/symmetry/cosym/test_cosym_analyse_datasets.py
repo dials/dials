@@ -7,13 +7,13 @@ from cctbx import sgtbx
 
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.cosym import phil_scope
-from dials.algorithms.symmetry.cosym import analyse_datasets
+from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
     ("space_group", "dimensions"), [("P2", None), ("P3", None), ("I23", libtbx.Auto)]
 )
-def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
+def test_cosym(space_group, dimensions, run_in_tmpdir):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -31,8 +31,9 @@ def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
     params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
 
-    result = analyse_datasets(datasets, params)
-    d = result.as_dict()
+    cosym = CosymAnalysis(datasets, params)
+    cosym.run()
+    d = cosym.as_dict()
     assert d["subgroup_scores"][0]["likelihood"] > 0.89
     assert (
         sgtbx.space_group(d["subgroup_scores"][0]["patterson_group"])
@@ -41,14 +42,14 @@ def test_cosym_analyse_datasets(space_group, dimensions, run_in_tmpdir):
 
     space_groups = {}
     reindexing_ops = {}
-    for dataset_id in result.reindexing_ops.iterkeys():
-        if 0 in result.reindexing_ops[dataset_id]:
-            cb_op = result.reindexing_ops[dataset_id][0]
+    for dataset_id in cosym.reindexing_ops.iterkeys():
+        if 0 in cosym.reindexing_ops[dataset_id]:
+            cb_op = cosym.reindexing_ops[dataset_id][0]
             reindexing_ops.setdefault(cb_op, set())
             reindexing_ops[cb_op].add(dataset_id)
-        if dataset_id in result.space_groups:
-            space_groups.setdefault(result.space_groups[dataset_id], set())
-            space_groups[result.space_groups[dataset_id]].add(dataset_id)
+        if dataset_id in cosym.space_groups:
+            space_groups.setdefault(cosym.space_groups[dataset_id], set())
+            space_groups[cosym.space_groups[dataset_id]].add(dataset_id)
 
     assert len(reindexing_ops) == len(expected_reindexing_ops)
     assert sorted(reindexing_ops.keys()) == sorted(expected_reindexing_ops.keys())
