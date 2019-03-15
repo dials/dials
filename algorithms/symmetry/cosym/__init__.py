@@ -25,6 +25,7 @@ import iotbx.phil
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
+from dials.util.observer import Subject
 
 phil_scope = iotbx.phil.parse(
     """\
@@ -103,7 +104,7 @@ nproc = 1
 )
 
 
-class analyse_datasets(symmetry_base):
+class CosymAnalysis(symmetry_base, Subject):
     """Peform cosym analysis.
 
     Peform cosym analysis on the input intensities using the methods of
@@ -115,7 +116,7 @@ class analyse_datasets(symmetry_base):
     """
 
     def __init__(self, intensities, params):
-        """Initialise an analyse_datasets object.
+        """Initialise a CosymAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -124,7 +125,7 @@ class analyse_datasets(symmetry_base):
 
         """
         self.input_space_group = intensities[0].space_group()
-        super(analyse_datasets, self).__init__(
+        super(CosymAnalysis, self).__init__(
             intensities,
             normalisation=params.normalisation,
             lattice_symmetry_max_delta=5.0,
@@ -134,6 +135,9 @@ class analyse_datasets(symmetry_base):
             relative_length_tolerance=None,
             absolute_angle_tolerance=None,
         )
+        Subject.__init__(
+            self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
+        )
 
         self.params = params
         self.intensities = self.intensities.customized_copy(
@@ -141,11 +145,12 @@ class analyse_datasets(symmetry_base):
                 self.cb_op_inp_min
             ).info()
         )
+
+    def _intialise_target(self):
         if self.params.dimensions is Auto:
             dimensions = None
         else:
             dimensions = self.params.dimensions
-        lattice_group = None
         if self.params.lattice_group is not None:
             lattice_group = (
                 self.params.lattice_group.group()
@@ -154,6 +159,8 @@ class analyse_datasets(symmetry_base):
                 .primitive_setting()
                 .group()
             )
+        else:
+            lattice_group = None
         self.target = target.Target(
             self.intensities,
             self.dataset_ids,
@@ -163,6 +170,8 @@ class analyse_datasets(symmetry_base):
             weights=self.params.weights,
             nproc=self.params.nproc,
         )
+
+    def _determine_dimensions(self):
         if self.params.dimensions is Auto and self.target.dim == 2:
             self.params.dimensions = 2
         elif self.params.dimensions is Auto:
@@ -211,12 +220,16 @@ class analyse_datasets(symmetry_base):
             logger.info("Best number of dimensions: %i" % x_g)
             self.target.set_dimensions(int(x_g))
 
+    def run(self):
+        self._intialise_target()
+        self._determine_dimensions()
         self._optimise()
         self._principal_component_analysis()
 
         self._analyse_symmetry()
         self._cluster_analysis()
 
+    @Subject.notify_event(event="optimised")
     def _optimise(self):
         NN = len(self.input_intensities)
         dim = self.target.dim
@@ -275,6 +288,7 @@ class analyse_datasets(symmetry_base):
 
         self.coords_reduced = flex.double(numpy.ascontiguousarray(x_reduced))
 
+    @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
         if self.input_space_group.type().number() > 1:
             self.best_solution = None
@@ -340,6 +354,7 @@ class analyse_datasets(symmetry_base):
 
         return reindexing_ops
 
+    @Subject.notify_event(event="analysed_clusters")
     def _cluster_analysis(self):
 
         if self.params.cluster.n_clusters == 1:
@@ -576,37 +591,22 @@ class SymmetryAnalysis(object):
 
         self.best_solution = self.subgroup_scores[0]
 
-    def __str__(self):
-        """Return a string representation of the results.
-
-        Returns:
-          str:
-
-        """
-        output = []
+    def sym_ops_table(self):
         header = ("likelihood", "Z-CC", "CC", "", "Operator")
         rows = [header]
         for score in self.sym_op_scores.values():
-            if score.likelihood > 0.9:
-                stars = "***"
-            elif score.likelihood > 0.7:
-                stars = "**"
-            elif score.likelihood > 0.5:
-                stars = "*"
-            else:
-                stars = ""
             rows.append(
                 (
                     "%.3f" % score.likelihood,
                     "%.2f" % score.z_cc,
                     "%.2f" % score.cc,
-                    stars,
+                    score.stars,
                     "%s" % score.sym_op.r().info(),
                 )
             )
-        output.append("Scoring individual symmetry elements")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        return rows
 
+    def subgroups_table(self):
         header = (
             "Patterson group",
             "",
@@ -619,18 +619,10 @@ class SymmetryAnalysis(object):
         )
         rows = [header]
         for score in self.subgroup_scores:
-            if score.likelihood > 0.8:
-                stars = "***"
-            elif score.likelihood > 0.6:
-                stars = "**"
-            elif score.likelihood > 0.4:
-                stars = "*"
-            else:
-                stars = ""
             rows.append(
                 (
                     "%s" % score.subgroup["best_subsym"].space_group_info(),
-                    stars,
+                    score.stars,
                     "%.3f" % score.likelihood,
                     "% .2f" % score.z_cc_net,
                     "% .2f" % score.z_cc_for,
@@ -639,8 +631,25 @@ class SymmetryAnalysis(object):
                     "%s" % (score.subgroup["cb_op_inp_best"] * self.cb_op_inp_min),
                 )
             )
+        return rows
+
+    def __str__(self):
+        """Return a string representation of the results.
+
+        Returns:
+          str:
+
+        """
+        output = []
+        output.append("Scoring individual symmetry elements")
+        output.append(
+            table_utils.format(self.sym_ops_table(), has_header=True, delim="  ")
+        )
+
         output.append("Scoring all possible sub-groups")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        output.append(
+            table_utils.format(self.subgroups_table(), has_header=True, delim="  ")
+        )
 
         output.append(
             "Best solution: %s"
@@ -664,29 +673,22 @@ class SymmetryAnalysis(object):
           dict
 
         """
-        d = {
-            "input_symmetry": {
-                "hall_symbol": self.input_intensities[0]
-                .space_group()
-                .type()
-                .hall_symbol(),
-                "unit_cell": self.median_unit_cell.parameters(),
-            },
-            "cb_op_inp_min": self.cb_op_inp_min.as_xyz(),
-            "min_cell_symmetry": {
-                "hall_symbol": self.intensities.space_group().type().hall_symbol(),
-                "unit_cell": self.intensities.unit_cell().parameters(),
-            },
-            "lattice_point_group": self.lattice_group.type().hall_symbol(),
-            "cc_unrelated_pairs": self.corr_unrelated.coefficient(),
-            "n_unrelated_pairs": self.corr_unrelated.n(),
-            "E_cc_true": self.E_cc_true,
-            "cc_sig_fac": self.cc_sig_fac,
-            "cc_true": self.cc_true,
-        }
+        d = {"cb_op_inp_min": self.cb_op_inp_min.as_xyz()}
 
-        d["sym_op_scores"] = [score.as_dict() for score in self.sym_op_scores]
-        d["subgroup_scores"] = [score.as_dict() for score in self.subgroup_scores]
+        d["sym_op_scores"] = []
+        for rt_mx, score in self.sym_op_scores.items():
+            dd = score.as_dict()
+            dd["operator"] = rt_mx.as_xyz()
+            d["sym_op_scores"].append(dd)
+
+        d["subgroup_scores"] = []
+        for score in self.subgroup_scores:
+            dd = score.as_dict()
+            dd["cb_op"] = (
+                sgtbx.change_of_basis_op(dd["cb_op"]) * self.cb_op_inp_min
+            ).as_xyz()
+            d["subgroup_scores"].append(dd)
+
         return d
 
 
@@ -730,6 +732,19 @@ class ScoreSymmetryElement(object):
         self.p_cc_given_not_s = score_cc.p_cc_given_not_s
         self.likelihood = score_cc.p_s_given_cc
 
+    @property
+    def stars(self):
+        # define stars attribute - used mainly for output
+        if self.likelihood > 0.9:
+            stars = "***"
+        elif self.likelihood > 0.7:
+            stars = "**"
+        elif self.likelihood > 0.5:
+            stars = "*"
+        else:
+            stars = ""
+        return stars
+
     def as_dict(self):
         """Return a dictionary representation of the symmetry element scoring.
 
@@ -743,7 +758,13 @@ class ScoreSymmetryElement(object):
           dict:
 
         """
-        return {"likelihood": self.likelihood, "z_cc": self.z_cc, "cc": self.cc}
+
+        return {
+            "likelihood": self.likelihood,
+            "z_cc": self.z_cc,
+            "cc": self.cc,
+            "stars": self.stars,
+        }
 
 
 class ScoreSubGroup(object):
@@ -817,6 +838,18 @@ class ScoreSubGroup(object):
             self.z_cc_against,
         )
 
+    @property
+    def stars(self):
+        if self.likelihood > 0.8:
+            stars = "***"
+        elif self.likelihood > 0.6:
+            stars = "**"
+        elif self.likelihood > 0.4:
+            stars = "*"
+        else:
+            stars = ""
+        return stars
+
     def as_dict(self):
         """Return a dictionary representation of the subgroup scoring.
 
@@ -843,6 +876,7 @@ class ScoreSubGroup(object):
             .space_group()
             .type()
             .hall_symbol(),
+            "unit_cell": self.subgroup["best_subsym"].unit_cell().parameters(),
             "likelihood": self.likelihood,
             "confidence": self.confidence,
             "z_cc_net": "% .2f" % self.z_cc_net,
@@ -852,4 +886,5 @@ class ScoreSubGroup(object):
             # "cc_against": "% .2f" % self.cc_against.coefficient(),
             "max_angular_difference": "%.1f" % self.subgroup["max_angular_difference"],
             "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
+            "stars": self.stars,
         }
