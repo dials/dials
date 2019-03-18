@@ -85,7 +85,7 @@ def plot_rij_histogram(rij_matrix):
             ],
             "layout": {
                 "title": "Distribution of values in the Rij matrix",
-                "xaxis": {"title": "$r_{ij}$"},
+                "xaxis": {"title": "r<sub>ij</sub>"},
                 "yaxis": {"title": "Frequency"},
                 "bargap": 0,
             },
