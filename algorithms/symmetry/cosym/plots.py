@@ -47,8 +47,8 @@ def plot_coords(coords, labels=None):
             "data": data,
             "layout": {
                 "title": "Cosym coordinates",
-                "xaxis": {"range": [-1, 1]},
-                "yaxis": {"range": [-1, 1]},
+                "xaxis": {"range": [-1, 1], "constrain": "domain"},
+                "yaxis": {"range": [-1, 1], "scaleanchor": "x", "constrain": "domain"},
             },
         }
     }
