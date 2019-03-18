@@ -469,7 +469,7 @@ class ScoreCorrelationCoefficient(object):
 
     def _numerator(self, x):
         return trunccauchy_pdf(
-            x, self._lower_bound, self._upper_bound, loc=self.cc, scale=self.sigma_cc
+            self.cc, self._lower_bound, self._upper_bound, loc=x, scale=self.sigma_cc
         ) * self._p_mu_power_pdf(x)
 
     def _denominator(self, x):

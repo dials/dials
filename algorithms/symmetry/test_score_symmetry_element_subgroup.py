@@ -4,7 +4,6 @@ import pytest
 
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
-from cctbx.sgtbx.subgroups import subgroups
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
 from dials.algorithms.symmetry.determine_space_group import (
     ScoreCorrelationCoefficient,
@@ -18,13 +17,17 @@ def test_score_correlation_coefficient():
     expected_cc = 1
     sigma_cc = 0.1
     score_cc = ScoreCorrelationCoefficient(cc, sigma_cc, expected_cc)
-    assert score_cc.p_s_given_cc == pytest.approx(0.92228731117286322)
+    assert score_cc.p_s_given_cc == pytest.approx(0.9492499653267421)
+
+    cc = 0.5
+    score_cc = ScoreCorrelationCoefficient(cc, sigma_cc, expected_cc)
+    assert score_cc.p_s_given_cc == pytest.approx(0.19697339347266518)
 
     cc = 0.5
     expected_cc = 0.6
     sigma_cc = 0.2
     score_cc = ScoreCorrelationCoefficient(cc, sigma_cc, expected_cc)
-    assert score_cc.p_s_given_cc == pytest.approx(0.6219260650411923)
+    assert score_cc.p_s_given_cc == pytest.approx(0.6178439917879021)
 
     if 0:
         from matplotlib import pyplot as plt
@@ -46,8 +49,10 @@ def test_score_correlation_coefficient():
             ax.plot(x, p_cc_given_s, label="p(CC;S)")
             ax.plot(x, p_cc_given_not_s, label="p(CC;!S)")
             ax.plot(x, p_s_given_cc, label="p(S;CC)")
+        ylim = max(ax.get_ylim()[1] for ax in axes.flatten())
         for ax in axes.flatten():
             ax.legend()
+            ax.set_ylim(ax.get_ylim()[0], ylim)
         plt.show()
 
 
