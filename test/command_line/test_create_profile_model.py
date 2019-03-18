@@ -36,7 +36,7 @@ def test_basic(dials_regression, run_in_tmpdir):
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
-    assert sigma_b == pytest.approx(0.02195, abs=1e-3)
+    assert sigma_b == pytest.approx(0.02446, abs=1e-3)
     assert sigma_m == pytest.approx(0.06833, abs=1e-3)
 
 
@@ -70,5 +70,5 @@ def test_extended(dials_regression, run_in_tmpdir):
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
-    assert sigma_b == pytest.approx(0.02195, abs=1e-3)
+    assert sigma_b == pytest.approx(0.02446, abs=1e-3)
     assert sigma_m == pytest.approx(0.04187, abs=1e-3)
