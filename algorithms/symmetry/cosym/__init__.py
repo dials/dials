@@ -45,7 +45,7 @@ min_cc_half = 0.6
 lattice_group = None
   .type = space_group
 
-dimensions = None
+dimensions = Auto
   .type = int(value_min=2)
 
 use_curvatures = True
