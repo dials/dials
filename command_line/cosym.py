@@ -302,6 +302,7 @@ class cosym(Subject):
         self.unit_cell_clusters, self.unit_cell_dendrogram, _ = ucs.ab_cluster(
             self.params.unit_cell_clustering.threshold,
             log=self.params.unit_cell_clustering.log,
+            labels="lattice_id",
             write_file_lists=False,
             schnell=False,
             doplot=False,
