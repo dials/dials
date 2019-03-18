@@ -61,7 +61,7 @@ from dials.algorithms.scaling.scaling_library import (
     create_auto_scaling_model,
     set_image_ranges_in_scaling_models,
     scaled_data_as_miller_array,
-    determine_best_unit_cell
+    determine_best_unit_cell,
 )
 from dials.algorithms.scaling.scaler_factory import create_scaler, MultiScalerFactory
 from dials.util.multi_dataset_handling import select_datasets_on_ids
@@ -190,7 +190,7 @@ class Script(Subject):
         start_time = time.time()
         self.scale()
         self.remove_unwanted_datasets()
-        #print_scaling_model_error_info(self.experiments)
+        # print_scaling_model_error_info(self.experiments)
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -321,7 +321,6 @@ class Script(Subject):
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )
 
-
     @staticmethod
     def stats_only(reflections, experiments, params):
         """Calculate and print merging stats."""
@@ -363,7 +362,7 @@ class Script(Subject):
                 sigma_filtering=None,
                 eliminate_sys_absent=False,
                 use_internal_variance=params.output.use_internal_variance,
-                cc_one_half_significance_level=0.01
+                cc_one_half_significance_level=0.01,
             )
         except RuntimeError:
             raise DialsMergingStatisticsError(
@@ -502,6 +501,7 @@ space groups numbers found: %s""",
     )
     return experiments
 
+
 def run_scaling(params, experiments, reflections):
     """Run scaling algorithms; stats only, cross validation or standard."""
     if params.stats_only:
@@ -535,6 +535,7 @@ def run_scaling(params, experiments, reflections):
         register_default_scaling_observers(script)
         script.run()
 
+
 def run():
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.pickle integrated_experiments.json
@@ -566,6 +567,7 @@ def run():
         logger.info(diff_phil)
 
     run_scaling(params, experiments, reflections)
+
 
 if __name__ == "__main__":
     with show_mail_on_error():

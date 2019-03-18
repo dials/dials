@@ -168,6 +168,7 @@ class SingleScaleFactor(ScaleComponentBase):
     The inverse scale factor for every reflection is the parameter
     value itself and the derivatives are therefore all 1.0.
     """
+
     null_parameter_value = 1.0
 
     def __init__(self, initial_values, parameter_esds=None):
@@ -227,6 +228,7 @@ class SingleBScaleFactor(ScaleComponentBase):
     The inverse scale factor for each reflection is given by
     S = exp(B/(2 * d^2)), the derivatives are S/(2 * d^2).
     """
+
     null_parameter_value = 0.0
 
     def __init__(self, initial_values, parameter_esds=None):
@@ -301,6 +303,7 @@ class SHScaleComponent(ScaleComponentBase):
     the model parameters and Ylm are the spherical harmonic coefficients,
     the derivatives are then simply the coefficients Ylm.
     """
+
     null_parameter_value = 0.0
     coefficients_list = None  # shared class variable to reduce memory load
 

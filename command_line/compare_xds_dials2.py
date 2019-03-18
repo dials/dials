@@ -141,7 +141,7 @@ def pull_calculated(integrate_pkl):
             continue
         strong_reflections.append(r)
 
-    del (r_list)
+    del r_list
 
     hkl = []
     i = []

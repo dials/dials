@@ -139,7 +139,7 @@ class NexusFile(object):
     def close(self):
         """Close the file."""
         self._handle.close()
-        del (self._handle)
+        del self._handle
 
     def set_data(self, data, encoder):
         """Set the model data using the supplied encoder."""

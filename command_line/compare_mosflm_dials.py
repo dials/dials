@@ -92,7 +92,7 @@ def pull_calculated(integrate_pkl):
         if r.intensity > math.sqrt(r.intensity_variance):
             strong_reflections.append(r)
 
-    del (r_list)
+    del r_list
 
     hkl = []
     i = []

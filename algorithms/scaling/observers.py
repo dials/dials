@@ -10,11 +10,12 @@ from dials.algorithms.scaling.plots import (
     statistics_tables,
     plot_outliers,
     normal_probability_plot,
-    cc_one_half_plot
+    cc_one_half_plot,
 )
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
-logger = logging.getLogger('dials')
+logger = logging.getLogger("dials")
+
 
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
@@ -39,16 +40,18 @@ def register_default_scaling_observers(script):
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
 
+
 def register_merging_stats_observers(script):
     """Register only obsevers needed to record and print merging stats."""
     script.register_observer(
-            event="merging_statistics", observer=MergingStatisticsObserver()
-        )
+        event="merging_statistics", observer=MergingStatisticsObserver()
+    )
     script.register_observer(
         event="run_script",
         observer=ScalingSummaryGenerator(),
         callback="print_scaling_summary",
     )
+
 
 @singleton
 class ScalingSummaryGenerator(Observer):
@@ -60,8 +63,11 @@ class ScalingSummaryGenerator(Observer):
         if ScalingModelObserver().data:
             logger.info(ScalingModelObserver().return_model_error_summary())
         if MergingStatisticsObserver().data:
-            logger.info("\n\t----------Overall merging statistics (non-anomalous)----------\t\n")
+            logger.info(
+                "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
+            )
             logger.info(MergingStatisticsObserver().make_statistics_summary())
+
 
 @singleton
 class ScalingHTMLGenerator(Observer):
@@ -138,20 +144,24 @@ class ScalingModelObserver(Observer):
                     if "est_standard_devs" in model[component]:
                         params = flex.double(model[component]["parameters"])
                         sigmas = flex.double(model[component]["est_standard_devs"])
-                        null_value = flex.double(len(params), model[component]["null_parameter_value"])
-                        p_sigmas.extend(flex.abs(params - null_value)/sigmas)
+                        null_value = flex.double(
+                            len(params), model[component]["null_parameter_value"]
+                        )
+                        p_sigmas.extend(flex.abs(params - null_value) / sigmas)
             log_p_sigmas = flex.log(p_sigmas)
-            frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(log_p_sigmas)
+            frac_high_uncertainty = (log_p_sigmas < 0.69315).count(True) / len(
+                log_p_sigmas
+            )
             if frac_high_uncertainty > 0.5:
                 msg = (
-                  "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
-                  "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
-                  "poorly-determined scaling problem or overparameterisation.\n"
-                  ).format(frac_high_uncertainty * 100)
+                    "Warning: Over half ({0:.2f}%) of model parameters have signficant\n"
+                    "uncertainty (sigma/abs(parameter) > 0.5), which could indicate a\n"
+                    "poorly-determined scaling problem or overparameterisation.\n"
+                ).format(frac_high_uncertainty * 100)
             else:
                 msg = (
-                  "{0:.2f}% of model parameters have signficant uncertainty\n"
-                  "(sigma/abs(parameter) > 0.5)\n"
+                    "{0:.2f}% of model parameters have signficant uncertainty\n"
+                    "(sigma/abs(parameter) > 0.5)\n"
                 ).format(frac_high_uncertainty * 100)
         return msg
 
@@ -229,8 +239,8 @@ class MergingStatisticsObserver(Observer):
     def update(self, scaling_script):
         if scaling_script.merging_statistics_result:
             self.data = {
-              "statistics": scaling_script.merging_statistics_result,
-              "is_centric" : scaling_script.scaled_miller_array.space_group().is_centric()
+                "statistics": scaling_script.merging_statistics_result,
+                "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
 
     def make_plots(self):
@@ -266,23 +276,29 @@ class MergingStatisticsObserver(Observer):
         )
         if overall.n_neg_sigmas > 0:
             msg += "SigI < 0 (rejected): {0} observations\n".format(
-              overall.n_neg_sigmas)
+                overall.n_neg_sigmas
+            )
         if overall.n_rejected_before_merge > 0:
             msg += "I < -3*SigI (rejected): {0} observations\n".format(
-                overall.n_rejected_before_merge)
+                overall.n_rejected_before_merge
+            )
         if overall.n_rejected_after_merge > 0:
             msg += "I < -3*SigI (rejected): {0} reflections\n".format(
-                overall.n_rejected_after_merge)
+                overall.n_rejected_after_merge
+            )
         msg += "{sep}R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}".format(
-            overall.r_merge, overall.r_meas, overall.r_pim, sep="\n")
+            overall.r_merge, overall.r_meas, overall.r_pim, sep="\n"
+        )
 
         # Next make statistics by resolution bin
         msg += "\nStatistics by resolution bin:\n"
-        msg += " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>" + \
-            "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+        msg += (
+            " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
+            + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+        )
         for bin_stats in self.data["statistics"].bins:
-          msg += bin_stats.format()+"\n"
-        msg += self.data["statistics"].overall.format()+"\n"
+            msg += bin_stats.format() + "\n"
+        msg += self.data["statistics"].overall.format() + "\n"
 
         # Now show estimated cutoffs, based on iotbx code
         def format_d_min(value):
@@ -300,12 +316,13 @@ based on R-merge < 0.5          : {3}
 based on R-meas < 0.5           : {4}
 based on completeness >= 90%    : {5}
 based on completeness >= 50%    : {6}\n""".format(
-          result.overall.d_min,
-          format_d_min(result.estimate_d_min(min_cc_one_half=0.33)),
-          format_d_min(result.estimate_d_min(min_i_over_sigma=2.0)),
-          format_d_min(result.estimate_d_min(max_r_merge=0.5)),
-          format_d_min(result.estimate_d_min(max_r_meas=0.5)),
-          format_d_min(result.estimate_d_min(min_completeness=0.9)),
-          format_d_min(result.estimate_d_min(min_completeness=0.5)))
+            result.overall.d_min,
+            format_d_min(result.estimate_d_min(min_cc_one_half=0.33)),
+            format_d_min(result.estimate_d_min(min_i_over_sigma=2.0)),
+            format_d_min(result.estimate_d_min(max_r_merge=0.5)),
+            format_d_min(result.estimate_d_min(max_r_meas=0.5)),
+            format_d_min(result.estimate_d_min(min_completeness=0.9)),
+            format_d_min(result.estimate_d_min(min_completeness=0.5)),
+        )
         msg += "NOTE: we recommend using all data out to the CC(1/2) limit for refinement\n"
         return msg

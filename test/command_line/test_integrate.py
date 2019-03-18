@@ -336,9 +336,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
-        result = procrunner.run(
-            ["dials.integrate", pickle_name, json_name, phil]
-        )
+        result = procrunner.run(["dials.integrate", pickle_name, json_name, phil])
         assert result["exitcode"] == 0
         assert result["stderr"] == ""
 

@@ -124,8 +124,10 @@ class Script(object):
 
         if params.output.chunk_sizes:
             if not sum(params.output.chunk_sizes) == len(experiments):
-                raise Sorry("Sum of chunk sizes list (%s) not equal to number of experiments (%s)" %
-                    (sum(params.output.chunk_sizes), len(experiments)))
+                raise Sorry(
+                    "Sum of chunk sizes list (%s) not equal to number of experiments (%s)"
+                    % (sum(params.output.chunk_sizes), len(experiments))
+                )
 
         if params.by_detector:
             assert (

@@ -7,6 +7,7 @@ A singleton decorator is also defined.
 import functools
 from collections import OrderedDict
 
+
 def singleton(cls):
     instances = {}
 

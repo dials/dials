@@ -49,7 +49,7 @@ def test_register_scaling_observers():
     }
     assert script.get_observers("run_script") == {
         ScalingHTMLGenerator(): ScalingHTMLGenerator().make_scaling_html,
-        ScalingSummaryGenerator() : ScalingSummaryGenerator().print_scaling_summary,
+        ScalingSummaryGenerator(): ScalingSummaryGenerator().print_scaling_summary,
     }
     assert script.scaler.get_observers("performed_scaling") == {
         ScalingModelObserver(): ScalingModelObserver().update
@@ -76,8 +76,12 @@ def test_ScalingModelObserver():
     KB_dict = {
         "__id__": "KB",
         "is_scaled": True,
-        "scale": {"n_parameters": 1, "parameters": [0.5], "est_standard_devs": [0.05],
-            "null_parameter_value": 1},
+        "scale": {
+            "n_parameters": 1,
+            "parameters": [0.5],
+            "est_standard_devs": [0.05],
+            "null_parameter_value": 1,
+        },
         "configuration_parameters": {"corrections": ["scale"]},
     }
 
@@ -95,7 +99,7 @@ def test_ScalingModelObserver():
     assert observer.data["0"] == KB_dict
 
     msg = observer.return_model_error_summary()
-    assert msg != ''
+    assert msg != ""
 
     mock_func = mock.Mock()
     mock_func.return_value = {"plot": {}}
@@ -212,7 +216,7 @@ def test_MergingStatisticsObserver():
     observer = MergingStatisticsObserver()
     observer.update(script)
 
-    assert observer.data == {"statistics": "result", "is_centric" : True}
+    assert observer.data == {"statistics": "result", "is_centric": True}
 
     mock_func = mock.Mock()
     mock_func.return_value = "return_tables"
@@ -222,17 +226,17 @@ def test_MergingStatisticsObserver():
     with mock.patch(
         "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
     ):
-        with mock.patch("dials.algorithms.scaling.observers.cc_one_half_plot",
-        new=mock_func_2):
+        with mock.patch(
+            "dials.algorithms.scaling.observers.cc_one_half_plot", new=mock_func_2
+        ):
             r = observer.make_plots()
             assert mock_func.call_count == 1
-            assert mock_func.call_args_list == [
-              mock.call(observer.data["statistics"])]
+            assert mock_func.call_args_list == [mock.call(observer.data["statistics"])]
             assert mock_func_2.call_count == 1
             assert mock_func_2.call_args_list == [
-              mock.call(observer.data["statistics"], is_centric=True)]
+                mock.call(observer.data["statistics"], is_centric=True)
+            ]
             assert r == {
-              'cc_one_half_plot': 'cchalfplot',
-              'scaling_tables': 'return_tables'
+                "cc_one_half_plot": "cchalfplot",
+                "scaling_tables": "return_tables",
             }
-

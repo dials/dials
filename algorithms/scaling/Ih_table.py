@@ -396,18 +396,17 @@ class IhTable(object):
         )
         i_obs = miller.array(
             miller_set,
-            data=joint_table["intensity"]
-            / joint_table["inverse_scale_factor"],
+            data=joint_table["intensity"] / joint_table["inverse_scale_factor"],
         )
         i_obs.set_observation_type_xray_intensity()
         i_obs.set_sigmas(
-            (joint_table["variance"] ** 0.5)
-            / joint_table["inverse_scale_factor"]
+            (joint_table["variance"] ** 0.5) / joint_table["inverse_scale_factor"]
         )
         i_obs.set_info(
             miller.array_info(source="DIALS", source_type="reflection_tables")
         )
         return i_obs
+
 
 class IhTableBlock(object):
     """

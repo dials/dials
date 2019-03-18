@@ -274,18 +274,26 @@ class ScalingRefinery(object):
         if self._scaler.Ih_table.free_Ih_table:
             i_obs = self._scaler.Ih_table.as_miller_array(
                 self._scaler.experiment.crystal.get_unit_cell(),
-                return_free_set_data=True)
+                return_free_set_data=True,
+            )
             res = merging_statistics.dataset_statistics(
-                i_obs=i_obs, n_bins=1, anomalous=False, sigma_filtering=None,
+                i_obs=i_obs,
+                n_bins=1,
+                anomalous=False,
+                sigma_filtering=None,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
             )
             free_rmeas = res.overall.r_meas
             free_cc12 = res.overall.cc_one_half
             i_obs = self._scaler.Ih_table.as_miller_array(
-                self._scaler.experiment.crystal.get_unit_cell())
+                self._scaler.experiment.crystal.get_unit_cell()
+            )
             res = merging_statistics.dataset_statistics(
-                i_obs=i_obs, n_bins=1, anomalous=False, sigma_filtering=None,
+                i_obs=i_obs,
+                n_bins=1,
+                anomalous=False,
+                sigma_filtering=None,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
             )

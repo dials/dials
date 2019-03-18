@@ -239,7 +239,9 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
         intra_pnl = o - matrix.col(p.get_origin())
         offsets.append(intra_pnl.length())
 
-    result = procrunner.run(["dials.import", "output.experiments=reference.json", impath])
+    result = procrunner.run(
+        ["dials.import", "output.experiments=reference.json", impath]
+    )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert os.path.exists("reference.json")
