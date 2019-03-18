@@ -58,7 +58,7 @@ class CosymHTMLGenerator(Observer):
 class CosymClusterAnalysisObserver(Observer):
 
     """
-    Observer to record scaling model data and make model plots.
+    Observer to record cosym cluster analysis data and make model plots.
     """
 
     def update(self, cosym):
@@ -68,7 +68,7 @@ class CosymClusterAnalysisObserver(Observer):
         self.data["rij_matrix"] = cosym.target.rij_matrix
 
     def make_plots(self):
-        """Generate scaling model component plot data."""
+        """Generate cosym cluster analysis plot data."""
         d = OrderedDict()
         d.update(plot_rij_histogram(self.data["rij_matrix"]))
         d.update(plot_coords(self.data["coordinates"], self.data["labels"]))
@@ -108,7 +108,7 @@ class SymmetryAnalysisObserver(Observer):
         )
 
     def make_tables(self):
-        """Generate tables of overall and resolution-binned merging statistics."""
+        """Generate symmetry analysis tables."""
         d = {"symmetry_analysis": self.data}
 
         return d
