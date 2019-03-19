@@ -1,5 +1,8 @@
+from __future__ import absolute_import, division, print_function
+
 from scitbx.array_family import flex
 from cctbx import crystal, sgtbx, uctbx
+import pytest
 
 
 def test_symmetry_analysis():
@@ -131,7 +134,7 @@ Laue group confidence: 0.994"""
     assert d["sym_op_scores"][0] == {
         "cc": 0.19620531091685714,
         "operator": "-x,-z,-y",
-        "likelihood": 0.08665625555575088,
+        "likelihood": pytest.approx(0.08665625555575088),
         "stars": "",
         "z_cc": 1.9620531091685713,
     }
