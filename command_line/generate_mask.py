@@ -113,16 +113,18 @@ def generate_mask(experiments, params):
     imagesets = experiments.imagesets()
     masks = []
 
-    # Specify the formatting of the output filenames
+    # Create output mask filenames
     num_imagesets = len(imagesets)
-    pad = len("{:d}".format(num_imagesets))
-    # If there is more than one imageset, append a number to each output mask filename
-    filenames = [
-        "_{:0{:d}d}".format(i + 1, pad).join(os.path.splitext(params.output.mask))
-        if num_imagesets > 1
-        else params.output.mask
-        for i in range(num_imagesets)
-    ]
+    if num_imagesets == 1:
+        filenames = [params.output.mask]
+    else:
+        # If there is more than one imageset, append a number to each output filename
+        name, ext = os.path.splitext(params.output.mask)
+        pad = len(str(num_imagesets))
+        filenames = [
+            "{name}_{num:0{pad}}{ext}".format(name=name, num=i + 1, pad=pad, ext=ext)
+            for i in range(num_imagesets)
+        ]
 
     # Generate the mask
     generator = MaskGenerator(params)
