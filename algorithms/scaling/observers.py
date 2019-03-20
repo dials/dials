@@ -4,6 +4,7 @@ Observers for the scaling algorithm.
 from collections import OrderedDict
 import logging
 from scitbx.array_family import flex
+from cctbx import miller
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -12,10 +13,21 @@ from dials.algorithms.scaling.plots import (
     normal_probability_plot,
     cc_one_half_plot,
 )
+from dials.report.plots import (
+    scale_rmerge_vs_batch_plot,
+    i_over_sig_i_vs_batch_plot,
+)
+from dials.util.batch_handling import (
+    calculate_batch_offsets,
+    assign_batches_to_reflections,
+    get_batch_ranges,
+    batch_manager,
+)
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
-logger = logging.getLogger("dials")
+from xia2.Modules.Analysis import rmerge_vs_batch, scales_vs_batch, i_sig_i_vs_batch
 
+logger = logging.getLogger('dials')
 
 def register_default_scaling_observers(script):
     """Register the standard observers to the scaling script."""
@@ -101,6 +113,7 @@ class ScalingHTMLGenerator(Observer):
             cc_one_half_plot=self.data["cc_one_half_plot"],
             scaling_outlier_graphs=self.data["outlier_plots"],
             normal_prob_plot=self.data["normal_prob_plot"],
+            batch_plots=self.data["batch_plots"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -242,6 +255,33 @@ class MergingStatisticsObserver(Observer):
                 "statistics": scaling_script.merging_statistics_result,
                 "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
+            # Now calculate batch data
+            batch_offsets = calculate_batch_offsets(scaling_script.experiments)
+            batch_ranges = get_batch_ranges(scaling_script.experiments, batch_offsets)
+            reflections = assign_batches_to_reflections(
+                scaling_script.reflections,
+                batch_offsets
+            )
+            batches = flex.int()
+            scales = flex.double()
+            for r in reflections:
+                #filter bad refls and negative scales
+                sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
+                sel &= (r['inverse_scale_factor'] > 0)
+                batches.extend(r['batch'].select(sel))
+                scales.extend(r['inverse_scale_factor'].select(sel))
+
+            ms = scaling_script.scaled_miller_array.customized_copy()
+            batch_array = miller.array(ms, data=batches)
+            rvb = rmerge_vs_batch(scaling_script.scaled_miller_array, batch_array)
+            self.data["r_merge_vs_batch"] = rvb.data
+            svb = scales_vs_batch(miller.array(ms, data=scales), batch_array)
+            self.data["scale_vs_batch"] = svb.data
+            batch_data = [{"id" : i, "range": r} for i, r in enumerate(batch_ranges)]
+            self.data["bm"] = batch_manager(rvb.batches, batch_data)
+            self.data["isigivsbatch"] = i_sig_i_vs_batch(
+                scaling_script.scaled_miller_array, batch_array).data
+
 
     def make_plots(self):
         """Generate tables of overall and resolution-binned merging statistics."""
@@ -251,6 +291,16 @@ class MergingStatisticsObserver(Observer):
             d["cc_one_half_plot"] = cc_one_half_plot(
                 self.data["statistics"], is_centric=self.data["is_centric"]
             )
+            d["batch_plots"] = OrderedDict()
+            d["batch_plots"].update(scale_rmerge_vs_batch_plot(
+                self.data["bm"],
+                self.data["r_merge_vs_batch"],
+                self.data["scale_vs_batch"],
+            ))
+            d["batch_plots"].update(i_over_sig_i_vs_batch_plot(
+                self.data["bm"],
+                self.data["isigivsbatch"],
+            ))
         return d
 
     def make_statistics_summary(self):
