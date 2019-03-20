@@ -16,7 +16,7 @@ try:
 except ImportError:
     pkg_dials_data = None
 
-    @pytest.fixture
+    @pytest.fixture(scope="session")
     def dials_data():
         pytest.skip("Test requires python package dials_data")
 
