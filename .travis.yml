@@ -77,7 +77,7 @@ jobs:
          - $HOME/build_dials/modules/dials/.travis/build-for 30m if_required
 
          # Add dials-data to environment
-         - libtbx.pip install dials-data
+         # - libtbx.pip install dials-data
 
       script:
          # Finally. Do what we are here for. Run tests. Yay.

@@ -198,18 +198,19 @@ def test_regression(data):
     # print 'OK'
 
 
+from dials.test.algorithms.spot_prediction.test_scan_static_reflection_predictor import (  # noqa: F401, used as test fixture
+    data as static_test,
+)
+
+
 def test_scan_varying_results_are_close_to_static_prediction_when_model_is_static(
-    dials_regression
+    static_test
 ):
     """Test that various modes of scan-varying prediction produce results
     close to static prediction when the supplied models are indeed static"""
 
     # Get static predictor results
-    from dials.test.algorithms.spot_prediction.test_scan_static_reflection_predictor import (
-        Data as StaticTest,
-    )
 
-    static_test = StaticTest(dials_regression)
     scan = static_test.experiments[0].scan
     crystal = static_test.experiments[0].crystal
     beam = static_test.experiments[0].beam
@@ -223,8 +224,6 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
     from dials.array_family import flex
 
     predict = ScanVaryingReflectionPredictor(static_test.experiments[0])
-
-    from scitbx import matrix
 
     def compare(refs1, refs2):
         assert len(refs1) == len(refs2)
