@@ -1,16 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import procrunner
 
 
-def test_spots_xds(run_in_tmpdir):
+def test_spots_xds(tmpdir):
     xds_input = "SPOT.XDS"
     output_pickle = "spot.pickle"
 
-    with open(xds_input, "wb") as f:
-        f.write(
-            """\
+    tmpdir.join(xds_input).write(
+        """\
  2411.40 1000.70 25.00 16384. 0 0 0
  1328.60 2170.40 20.57 7326. 0 0 0
  177.56 2191.30 24.94 6779. 0 0 0
@@ -22,7 +20,7 @@ def test_spots_xds(run_in_tmpdir):
  1260.25 1300.55 13.67 116. -4 2 6
  1090.27 1199.47 41.49 114. -2 3 -13
 """
-        )
+    )
 
     result = procrunner.run(
         [
@@ -31,29 +29,31 @@ def test_spots_xds(run_in_tmpdir):
             "input.method=reflections",
             "output.filename=" + output_pickle,
             "remove_invalid=True",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists(output_pickle)
+    assert tmpdir.join(output_pickle).check(file=1)
 
     import six.moves.cPickle as pickle
 
-    with open(output_pickle, "rb") as f:
+    with tmpdir.join(output_pickle).open("rb") as f:
         reflections = pickle.load(f)
     assert len(reflections) == 5
 
-    os.remove(xds_input)
-    assert not os.path.exists(xds_input)
+    tmpdir.join(xds_input).remove()
+    assert not tmpdir.join(xds_input).check()
 
     # now test we can export it again
-    result = procrunner.run(["dials.export", "format=xds", output_pickle])
+    result = procrunner.run(
+        ["dials.export", "format=xds", output_pickle], working_directory=tmpdir.strpath
+    )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists(os.path.join("xds", "SPOT.XDS"))
+    assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
 
-    with open(os.path.join("xds", "SPOT.XDS"), "rb") as f:
-        txt = f.read()
+    txt = tmpdir.join("xds", "SPOT.XDS").read()
     assert [line.strip() for line in txt.split("\n")] == [
         line.strip()
         for line in """\
@@ -68,43 +68,46 @@ def test_spots_xds(run_in_tmpdir):
     ]
 
 
-def test_export_xds(dials_regression, run_in_tmpdir):
+def test_export_xds(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("strong.pickle")
+    assert tmpdir.join("strong.pickle").check(file=1)
 
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+            dials_data("centroid_test_data").join("experiments.json").strpath,
             "strong.pickle",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("xds/XDS.INP")
-    assert os.path.exists("xds/XPARM.XDS")
-    assert os.path.exists("xds/SPOT.XDS")
+    assert tmpdir.join("xds", "XDS.INP").check(file=1)
+    assert tmpdir.join("xds", "XPARM.XDS").check(file=1)
+    assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
 
-    os.remove("xds/XDS.INP")
-    os.remove("xds/XPARM.XDS")
-    assert not os.path.exists("xds/XDS.INP")
-    assert not os.path.exists("xds/XPARM.XDS")
+    tmpdir.join("xds", "XDS.INP").remove()
+    tmpdir.join("xds", "XPARM.XDS").remove()
+    assert not tmpdir.join("xds", "XDS.INP").check(file=1)
+    assert not tmpdir.join("xds", "XPARM.XDS").check(file=1)
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("xds/XDS.INP")
-    assert os.path.exists("xds/XPARM.XDS")
+    assert tmpdir.join("xds", "XDS.INP").check(file=1)
+    assert tmpdir.join("xds", "XPARM.XDS").check(file=1)

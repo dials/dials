@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import glob
 import os
 
 import procrunner
@@ -125,12 +124,14 @@ Goniometer:
     )
 
 
-def test_dials_show_centroid_test_data(dials_regression):
-    path = os.path.join(dials_regression, "centroid_test_data", "centroid_*.cbf")
-    g = glob.glob(path)
-    assert g, path
+def test_dials_show_centroid_test_data(dials_data):
     result = procrunner.run(
-        ["dials.show"] + g, environment_override={"DIALS_NOBANNER": "1"}
+        ["dials.show"]
+        + [
+            f.strpath
+            for f in dials_data("centroid_test_data").listdir("centroid_*.cbf")
+        ],
+        environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result["exitcode"] and not result["stderr"]
     output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
@@ -181,11 +182,14 @@ Goniometer:
     )
 
 
-def test_dials_show_reflection_table(dials_regression):
+def test_dials_show_reflection_table(dials_data):
     """Test the output of dials.show on a reflection_table pickle file"""
-    path = os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
     result = procrunner.run(
-        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+        [
+            "dials.show",
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result["exitcode"] and not result["stderr"]
     output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))

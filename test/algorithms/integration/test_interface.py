@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import random
 
 import pytest
@@ -404,13 +403,13 @@ def test_reflection_manager():
 
 
 @pytest.mark.parametrize("nproc", [1, 2])
-def test_integrator_3d(dials_regression, nproc):
+def test_integrator_3d(dials_data, nproc):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.array_family import flex
     from math import pi
 
-    path = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
+    path = dials_data("centroid_test_data").join("experiments.json").strpath
 
     exlist = ExperimentListFactory.from_json_file(path)
     exlist[0].profile = Model(
@@ -425,7 +424,6 @@ def test_integrator_3d(dials_regression, nproc):
 
     from dials.algorithms.integration.integrator import Integrator3D
     from dials.algorithms.integration.integrator import phil_scope
-    from dials.algorithms.integration.integrator import Parameters
     from libtbx.phil import parse
 
     params = phil_scope.fetch(
@@ -443,13 +441,13 @@ def test_integrator_3d(dials_regression, nproc):
     result = integrator.integrate()
 
 
-def test_summation(dials_regression):
+def test_summation(dials_data):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.array_family import flex
     from math import pi
 
-    path = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
+    path = dials_data("centroid_test_data").join("experiments.json").strpath
 
     exlist = ExperimentListFactory.from_json_file(path)
     exlist[0].profile = Model(

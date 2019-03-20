@@ -1,19 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 from dials.array_family import flex
 import dials.util.phil
 import mock
 
 
-@mock.patch("os.path.exists", mock.Mock(return_value=True))
 @mock.patch("dxtbx.model.experiment_list.ExperimentListFactory")
-def test(ExperimentListFactory, dials_regression):
+def test(ExperimentListFactory, dials_data):
     # Only use these filenames for verification
-    path = "centroid_test_data"
-    experiments_path = os.path.join(dials_regression, path, "experiments.json")
-    reflections_path1 = os.path.join(dials_regression, path, "integrated.pickle")
-    reflections_path2 = os.path.join(dials_regression, path, "integrated.mpack")
+    path = dials_data("centroid_test_data")
+    experiments_path = path.join("experiments.json").strpath
+    reflections_path1 = path.join("integrated.pickle").strpath
+    reflections_path2 = path.join("integrated.mpack").strpath
 
     phil_scope = dials.util.phil.parse(
         """

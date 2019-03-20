@@ -1,25 +1,25 @@
 from __future__ import absolute_import, division, print_function
 
 import six.moves.cPickle as pickle
-import os
 import procrunner
 
 
-def test_import_integrate_hkl(dials_regression, run_in_tmpdir):
-    from dials.array_family import flex  # import dependency
+def test_import_integrate_hkl(dials_data, tmpdir):
+    from dials.array_family import flex  # noqa: F401 import dependency
 
     result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
-            os.path.join(dials_regression, "centroid_test_data", "INTEGRATE.HKL"),
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-        ]
+            dials_data("centroid_test_data").join("INTEGRATE.HKL").strpath,
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("integrate_hkl.pickle", "rb") as fh:
+    with tmpdir.join("integrate_hkl.pickle").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -32,18 +32,19 @@ def test_import_integrate_hkl(dials_regression, run_in_tmpdir):
     assert len(table) == 174911
 
 
-def test_import_spot_xds(dials_regression, run_in_tmpdir):
+def test_import_spot_xds(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
-            os.path.join(dials_regression, "centroid_test_data", "SPOT.XDS"),
-        ]
+            dials_data("centroid_test_data").join("SPOT.XDS").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("spot_xds.pickle", "rb") as fh:
+    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -54,19 +55,20 @@ def test_import_spot_xds(dials_regression, run_in_tmpdir):
     assert len(table) == 742
 
 
-def test_import_spot_xds_with_filtering(dials_regression, run_in_tmpdir):
+def test_import_spot_xds_with_filtering(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
-            os.path.join(dials_regression, "centroid_test_data", "SPOT.XDS"),
+            dials_data("centroid_test_data").join("SPOT.XDS").strpath,
             "remove_invalid=True",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("spot_xds.pickle", "rb") as fh:
+    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -77,17 +79,18 @@ def test_import_spot_xds_with_filtering(dials_regression, run_in_tmpdir):
     assert len(table) == 664
 
 
-def test_from_xds_files(dials_regression, run_in_tmpdir):
+def test_from_xds_files(dials_data, tmpdir):
     # Import from the image files
     result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=experiment",
             "output.filename=import_experiments.json",
-            os.path.join(dials_regression, "centroid_test_data"),
-        ]
+            dials_data("centroid_test_data").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    assert os.path.exists("import_experiments.json")
+    assert tmpdir.join("import_experiments.json").check(file=1)

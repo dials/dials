@@ -5,8 +5,8 @@ from libtbx import easy_run
 from glob import glob
 
 
-def test_spot_counts_per_image(dials_regression, run_in_tmpdir):
-    path = os.path.join(dials_regression, "centroid_test_data")
+def test_spot_counts_per_image(dials_data, run_in_tmpdir):
+    path = dials_data("centroid_test_data").strpath
 
     # import the data
     cmd = "dials.import %s output.experiments=experiments.json" % " ".join(

@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import json
-import os
 import procrunner
 import pytest
 from dxtbx.serialize.load import _decode_dict
@@ -10,75 +9,71 @@ from dxtbx.serialize.load import _decode_dict
 # May need to add this again if lack of this check causes issues.
 
 
-def test_nxs(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_nxs(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=nxs",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.nxs")
+    assert tmpdir.join("integrated.nxs").check(file=1)
 
 
-def test_mtz(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_mtz(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=mtz",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.mtz")
+    assert tmpdir.join("integrated.mtz").check(file=1)
 
 
-def test_mmcif(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_mmcif(dials_data, tmpdir):
     # Call dials.export after integration
     result = procrunner.run(
         [
             "dials.export",
             "format=mmcif",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.cif")
+    assert tmpdir.join("integrated.cif").check(file=1)
 
     # TODO include similar test for exporting scaled data in mmcif format
 
 
-def test_xds_ascii(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_xds_ascii(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "intensity=sum",
             "format=xds_ascii",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("DIALS.HKL")
+    assert tmpdir.join("DIALS.HKL").check(file=1)
 
     psi_values = {
         (-9, 7, -10): 153.430361,
@@ -87,20 +82,19 @@ def test_xds_ascii(dials_regression, tmpdir):
         (2, 10, 20): 147.947274,
     }
 
-    for record in open("DIALS.HKL", "r"):
-        if record.startswith("!"):
-            continue
-        tokens = record.split()
-        hkl = tuple(map(int, tokens[:3]))
-        if not hkl in psi_values:
-            continue
-        psi = float(tokens[-1])
-        assert psi == pytest.approx(psi_values[hkl], abs=0.1)
+    with tmpdir.join("DIALS.HKL").open() as fh:
+        for record in fh:
+            if record.startswith("!"):
+                continue
+            tokens = record.split()
+            hkl = tuple(map(int, tokens[:3]))
+            if not hkl in psi_values:
+                continue
+            psi = float(tokens[-1])
+            assert psi == pytest.approx(psi_values[hkl], abs=0.1)
 
 
-def test_sadabs(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_sadabs(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
@@ -108,13 +102,14 @@ def test_sadabs(dials_regression, tmpdir):
             "intensity=sum",
             "mtz.partiality_threshold=0.99",
             "format=sadabs",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
-        ]
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.sad")
+    assert tmpdir.join("integrated.sad").check(file=1)
 
     direction_cosines = {
         (-9, 7, -10): (0.51253, -0.72107, 0.84696, -0.68476, -0.14130, -0.10561),
@@ -123,7 +118,7 @@ def test_sadabs(dials_regression, tmpdir):
         (2, 10, 20): (0.51239, -0.46605, 0.84693, -0.61521, -0.14204, 0.63586),
     }
 
-    with open("integrated.sad", "r") as fh:
+    with tmpdir.join("integrated.sad").open() as fh:
         for record in fh:
             record = record.replace("-", " -")
             tokens = record.split()
@@ -134,25 +129,24 @@ def test_sadabs(dials_regression, tmpdir):
             assert cosines == pytest.approx(direction_cosines[hkl], abs=0.001)
 
 
-def test_json(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_json(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=json",
-            os.path.join(dials_regression, "centroid_test_data", "datablock.json"),
-            os.path.join(dials_regression, "centroid_test_data", "strong.pickle"),
-        ]
+            dials_data("centroid_test_data").join("datablock.json").strpath,
+            dials_data("centroid_test_data").join("strong.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("rlp.json")
+    assert tmpdir.join("rlp.json").check(file=1)
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
-    with open("rlp.json", "rb") as f:
+    with tmpdir.join("rlp.json").open("rb") as f:
         d = json.load(f, object_hook=_decode_dict)
     assert d.keys() == ["imageset_id", "experiments", "rlp", "experiment_id"], d.keys()
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
@@ -163,26 +157,25 @@ def test_json(dials_regression, tmpdir):
     assert len(imgset) == 1
 
 
-def test_json_shortened(dials_regression, tmpdir):
-    tmpdir.chdir()
-
+def test_json_shortened(dials_data, tmpdir):
     # Call dials.export
     result = procrunner.run(
         [
             "dials.export",
             "format=json",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
-            os.path.join(dials_regression, "centroid_test_data", "integrated.pickle"),
+            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "json.filename=integrated.json",
             "n_digits=4",
             "compact=False",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.json")
+    assert tmpdir.join("integrated.json").check(file=1)
 
-    with open("integrated.json", "rb") as f:
+    with tmpdir.join("integrated.json").open("rb") as f:
         d = json.load(f)
     assert "imageset_id" in d.keys()
     assert "rlp" in d.keys()

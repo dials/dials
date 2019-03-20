@@ -1,91 +1,88 @@
 from __future__ import absolute_import, division, print_function
 
-from glob import glob
 import os
 
 import procrunner
 import pytest
 
 
-def test_multiple_sweep_import_fails_without_allow_parameter(
-    dials_regression, run_in_tmpdir
-):
+def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir):
     # Find the image files
-    image_files = sorted(
-        glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
-    )
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
     del image_files[4]  # Delete filename to force two sweeps
 
     # run without allowing multiple sweeps
     result = procrunner.run(
-        ["dials.import"]
-        + image_files
-        + ["output.experiments=experiments_multiple_sweeps.json"]
+        ["dials.import", "output.experiments=experiments_multiple_sweeps.json"]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 1
     assert "ore than 1 sweep" in result["stderr"]
-    assert not os.path.exists("experiments_multiple_sweeps.json")
+    assert not tmpdir.join("experiments_multiple_sweeps.json").check()
 
 
-def test_multiple_sweep_import_suceeds_with_allow_parameter(
-    dials_regression, run_in_tmpdir
-):
+def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     # Find the image files
-    image_files = sorted(
-        glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
-    )
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
     del image_files[4]  # Delete filename to force two sweeps
 
     result = procrunner.run(
-        ["dials.import"]
-        + image_files
-        + [
+        [
+            "dials.import",
             "output.experiments=experiments_multiple_sweeps.json",
             "allow_multiple_sweeps=True",
         ]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("experiments_multiple_sweeps.json")
+    assert tmpdir.join("experiments_multiple_sweeps.json").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("experiments_multiple_sweeps.json")
+    experiments = load.experiment_list(
+        tmpdir.join("experiments_multiple_sweeps.json").strpath
+    )
     assert len(experiments) == 2
 
 
-def test_with_mask(dials_regression, run_in_tmpdir):
+def test_with_mask(dials_data, tmpdir):
     # Find the image files
-    image_files = glob(
-        os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")
-    )
-    mask_filename = os.path.join(dials_regression, "centroid_test_data", "mask.pickle")
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    mask_filename = dials_data("centroid_test_data").join("mask.pickle")
 
     result = procrunner.run(
-        ["dials.import"]
-        + image_files
-        + ["mask=" + mask_filename, "output.experiments=experiments_with_mask.json"]
+        [
+            "dials.import",
+            "mask=" + mask_filename.strpath,
+            "output.experiments=experiments_with_mask.json",
+        ]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("experiments_with_mask.json")
+    assert tmpdir.join("experiments_with_mask.json").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("experiments_with_mask.json")
-    assert experiments[0].imageset.external_lookup.mask.filename == mask_filename
-
-
-def test_override_geometry(dials_regression, run_in_tmpdir):
-    # Find the image files
-    image_files = glob(
-        os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")
+    experiments = load.experiment_list(
+        tmpdir.join("experiments_with_mask.json").strpath
+    )
+    assert (
+        experiments[0].imageset.external_lookup.mask.filename == mask_filename.strpath
     )
 
+
+def test_override_geometry(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
     # Write a geometry phil file
-    with open("geometry.phil", "w") as outfile:
-        outfile.write(
-            """
+    tmpdir.join("geometry.phil").write(
+        """
       geometry {
         beam {
           wavelength = 2
@@ -116,20 +113,20 @@ def test_override_geometry(dials_regression, run_in_tmpdir):
         }
       }
   """
-        )
+    )
 
     result = procrunner.run(
-        ["dials.import"]
-        + image_files
-        + ["geometry.phil", "output.experiments=override_geometry.json"]
+        ["dials.import", "geometry.phil", "output.experiments=override_geometry.json"]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("override_geometry.json")
+    assert tmpdir.join("override_geometry.json").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("override_geometry.json")
+    experiments = load.experiment_list(tmpdir.join("override_geometry.json").strpath)
     imgset = experiments[0].imageset
 
     beam = imgset.get_beam()
@@ -156,12 +153,9 @@ def test_override_geometry(dials_regression, run_in_tmpdir):
     assert scan.get_oscillation() == (1, 2)
 
 
-def tst_import_beam_centre(dials_regression, run_in_tmpdir):
+def tst_import_beam_centre(dials_data, run_in_tmpdir):
     # Find the image files
-    image_files = glob(
-        os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")
-    )
-    image_files = " ".join(image_files)
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
 
     # provide mosflm beam centre to dials.import
     result = procrunner.run(
@@ -170,15 +164,16 @@ def tst_import_beam_centre(dials_regression, run_in_tmpdir):
             "mosflm_beam_centre=100,200",
             "output.experiments=mosflm_beam_centre.json",
         ]
-        + image_files
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("mosflm_beam_centre.json")
+    assert tmpdir.join("mosflm_beam_centre.json").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("mosflm_beam_centre.json")
+    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.json").strpath)
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
@@ -190,12 +185,13 @@ def tst_import_beam_centre(dials_regression, run_in_tmpdir):
             "reference_geometry=mosflm_beam_centre.json",
             "output.experiments=mosflm_beam_centre2.json",
         ]
-        + image_files
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("mosflm_beam_centre2.json")
-    experiments = load.experiment_list("mosflm_beam_centre2.json")
+    assert tmpdir.join("mosflm_beam_centre2.json").check(file=1)
+    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre2.json").strpath)
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
@@ -256,48 +252,50 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
     assert offsets == pytest.approx(ref_offsets)
 
 
-def test_from_image_files(dials_regression, run_in_tmpdir):
+def test_from_image_files(dials_data, tmpdir):
     # Find the image files
-    image_files = glob(
-        os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf")
-    )
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
 
     # Import from the image files
     result = procrunner.run(
-        ["dials.import"] + image_files + ["output.experiments=import_experiments.json"]
+        ["dials.import", "output.experiments=import_experiments.json"]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
-    assert os.path.exists("import_experiments.json")
+    assert tmpdir.join("import_experiments.json").check(file=1)
 
 
-def test_from_template(dials_regression, run_in_tmpdir):
+def test_from_template(dials_data, tmpdir):
     # Find the image files
-    template = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
+    template = dials_data("centroid_test_data").join("centroid_####.cbf")
 
     # Import from the image files
     result = procrunner.run(
         [
             "dials.import",
-            "template=" + template,
+            "template=" + template.strpath,
             "output.experiments=import_experiments.json",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
-    assert os.path.exists("import_experiments.json")
+    assert tmpdir.join("import_experiments.json").check(file=1)
 
 
-def test_extrapolate_scan(dials_regression, run_in_tmpdir):
+def test_extrapolate_scan(dials_data, tmpdir):
     # First image file
-    image = os.path.join(dials_regression, "centroid_test_data", "centroid_0001.cbf")
+    image = dials_data("centroid_test_data").join("centroid_0001.cbf")
 
     result = procrunner.run(
         [
             "dials.import",
-            image,
+            image.strpath,
             "output.experiments=import_extrapolate.json",
             "geometry.scan.image_range=1,900",
             "geometry.scan.extrapolate_scan=True",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
-    assert os.path.exists("import_extrapolate.json")
+    assert tmpdir.join("import_extrapolate.json").check(file=1)

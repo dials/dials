@@ -10,21 +10,22 @@ from dials.array_family import flex  # import dependency
 import procrunner
 
 
-def test2(dials_regression, run_in_tmpdir):
+def test2(dials_data, tmpdir):
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+            dials_data("centroid_test_data").join("experiments.json").strpath,
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("integrated.pickle", "rb") as fh:
+    with tmpdir.join("integrated.pickle").open("rb") as fh:
         table = pickle.load(fh)
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
@@ -35,25 +36,22 @@ def test2(dials_regression, run_in_tmpdir):
 
     originaltable = table
 
-    os.remove("integrated.pickle")
+    tmpdir.join("integrated.pickle").remove()
 
     for i in range(1, 10):
-        shutil.copyfile(
-            os.path.join(
-                dials_regression, "centroid_test_data", "centroid_000%d.cbf" % i
-            ),
-            "centroid_001%d.cbf" % i,
+        source = dials_data("centroid_test_data").join("centroid_000%d.cbf" % i)
+        destination = source.new(
+            dirname=tmpdir.strpath, basename="centroid_001%d.cbf" % i
         )
+        source.copy(destination)
 
-    with open(
-        os.path.join(dials_regression, "centroid_test_data", "experiments.json"), "r"
-    ) as fh:
+    with dials_data("centroid_test_data").join("experiments.json").open("r") as fh:
         j = json.load(fh)
     assert j["scan"][0]["image_range"] == [1, 9]
     j["scan"][0]["image_range"] = [11, 19]
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
-    with open("experiments.json", "w") as fh:
+    with tmpdir.join("experiments.json").open("w") as fh:
         json.dump(j, fh)
 
     # Call dials.integrate
@@ -64,12 +62,13 @@ def test2(dials_regression, run_in_tmpdir):
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("integrated.pickle", "rb") as fh:
+    with tmpdir.join("integrated.pickle").open("rb") as fh:
         table = pickle.load(fh)
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
@@ -98,41 +97,43 @@ def test2(dials_regression, run_in_tmpdir):
     # assert(flex.abs(diff_Obs_P).all_lt(1e-7))
 
 
-def test_integration_with_sampling(dials_regression, run_in_tmpdir):
+def test_integration_with_sampling(dials_data, tmpdir):
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+            dials_data("centroid_test_data").join("experiments.json").strpath,
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("integrated.pickle", "rb") as fh:
+    with tmpdir.join("integrated.pickle").open("rb") as fh:
         table = pickle.load(fh)
     assert len(table) == 1000
 
 
-def test_integration_with_sample_size(dials_regression, run_in_tmpdir):
+def test_integration_with_sample_size(dials_data, tmpdir):
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+            dials_data("centroid_test_data").join("experiments.json").strpath,
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("integrated.pickle", "rb") as fh:
+    with tmpdir.join("integrated.pickle").open("rb") as fh:
         table = pickle.load(fh)
     assert len(table) == 500
 
@@ -223,18 +224,19 @@ def test_multi_lattice(dials_regression, run_in_tmpdir):
     assert len(exp_id) == 2
 
 
-def test_output_rubbish(dials_regression, run_in_tmpdir):
+def test_output_rubbish(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.index",
-            os.path.join(dials_regression, "centroid_test_data", "datablock.json"),
-            os.path.join(dials_regression, "centroid_test_data", "strong.pickle"),
-        ]
+            dials_data("centroid_test_data").join("datablock.json").strpath,
+            dials_data("centroid_test_data").join("strong.pickle").strpath,
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("indexed_experiments.json")
-    assert os.path.exists("indexed.pickle")
+    assert tmpdir.join("indexed_experiments.json").check(file=1)
+    assert tmpdir.join("indexed.pickle").check(file=1)
 
     # Call dials.integrate
     result = procrunner.run(
@@ -244,13 +246,14 @@ def test_output_rubbish(dials_regression, run_in_tmpdir):
             "indexed.pickle",
             "profile.fitting=False",
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.pickle")
+    assert tmpdir.join("integrated.pickle").check(file=1)
 
-    with open("integrated.pickle", "rb") as fh:
+    with tmpdir.join("integrated.pickle").open("rb") as fh:
         table = pickle.load(fh)
 
     assert table.get_flags(table.flags.bad_reference) > 0
