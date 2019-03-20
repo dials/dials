@@ -76,10 +76,13 @@ jobs:
          # If needed allow up to further 30 minutes worth of building time
          - $HOME/build_dials/modules/dials/.travis/build-for 30m if_required
 
+         # Add dials-data to environment
+         - libtbx.pip install dials-data
+
       script:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
-         - pytest -ra -n 2 --runslow
+         - pytest -ra -n 2 --runslow --regression
 
 before_cache:
   - $HOME/build_dials/modules/dials/.travis/clean-cctbx
