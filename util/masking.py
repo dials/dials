@@ -249,15 +249,19 @@ class MaskGenerator(object):
                 d_max = max(d_min + 1, 1e9)
                 get_resolution_mask_generator().apply(mask, d_min, d_max)
 
-            # Mask out the resolution range
-            for drange in self.params.resolution_range:
-                d_min = min(drange)
-                d_max = max(drange)
-                assert d_min < d_max, "d_min must be < d_max"
-                logger.info("Generating resolution range mask:")
-                logger.info(" d_min = %f" % d_min)
-                logger.info(" d_max = %f" % d_max)
-                get_resolution_mask_generator().apply(mask, d_min, d_max)
+            try:
+                # Mask out the resolution range
+                for drange in self.params.resolution_range:
+                    d_min = min(drange)
+                    d_max = max(drange)
+                    assert d_min < d_max, "d_min must be < d_max"
+                    logger.info("Generating resolution range mask:")
+                    logger.info(" d_min = %f" % d_min)
+                    logger.info(" d_max = %f" % d_max)
+                    get_resolution_mask_generator().apply(mask, d_min, d_max)
+            except TypeError:
+                # Catch the default value None of self.params.resolution_range
+                pass
 
             # Mask out the resolution ranges for the ice rings
             for drange in generate_ice_ring_resolution_ranges(

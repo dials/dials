@@ -33,6 +33,7 @@ Examples::
 from __future__ import absolute_import, division, print_function
 
 import logging
+import os.path
 import sys
 
 import six.moves.cPickle as pickle
@@ -50,7 +51,7 @@ from scitbx.array_family import flex
 try:
     from typing import List, Optional, Tuple
 
-    Masks = Tuple[flex.bool, ...]
+    Masks = List[Tuple[flex.bool, ...]]
 except ImportError:
     pass
 
@@ -85,16 +86,18 @@ phil_scope = phil.parse(
 def generate_mask(experiments, params):
     # type: (ExperimentList, phil.scope_extract) -> Tuple[Masks, Optional[ExperimentList]]
     """
-    Generate a pixel mask for each image in an experiment.
+    Generate a pixel mask for each imageset in an experiment list.
 
-    Use the masking parameters :param:`params` and an experiment in the experiment
-    list :param:`experiments` to define pixel masks for the associated imageset.
-    The masks are generated using :mod:`dials.util.masking`.
+    Use the masking parameters :param:`params` and the experiments in the experiment
+    list :param:`experiments` to define a pixel mask for each of the associated
+    imagesets.  The masks are generated using :mod:`dials.util.masking`.
 
     The masks will be saved to disk at the location specified by
-    :attr:`params.output.mask`.  Optionally, if a path
-    :attr:`params.output.experiments` is set, a modified copy of :param:`experiments`
-    with the masks applied will be saved to that location.
+    :attr:`params.output.mask`.  If the experiment list contains more than one
+    imageset, multiple mask files will be produced, with filenames differentiated by
+    an appended number.  Optionally, if a path :attr:`params.output.experiments` is
+    set, a modified copy of :param:`experiments` with the masks applied will be saved
+    to that location.
 
     Args:
         experiments: An experiment list containing only one imageset.
@@ -102,38 +105,51 @@ def generate_mask(experiments, params):
             :data:`phil_scope`.
 
     Returns:
-        A tuple containing the generated pixel masks.
+        A list of masks, one for each imageset.
 
         A copy of :param:`experiments` with the masks applied (optional,
         only returned if :attr:`params.output.experiments` is set).
     """
     imagesets = experiments.imagesets()
-    assert len(imagesets) == 1, "Only single imagesets supported"
+    masks = []
 
-    imageset = imagesets[0]
+    # Specify the formatting of the output filenames
+    num_imagesets = len(imagesets)
+    pad = len("{:d}".format(num_imagesets))
+    # If there is more than one imageset, append a number to each output mask filename
+    filenames = [
+        "_{:0{:d}d}".format(i + 1, pad).join(os.path.splitext(params.output.mask))
+        if num_imagesets > 1
+        else params.output.mask
+        for i in range(num_imagesets)
+    ]
 
     # Generate the mask
     generator = MaskGenerator(params)
-    mask = generator.generate(imageset)
 
-    # Save the mask to file
-    log.info("Writing mask to %s", params.output.mask)
-    with open(params.output.mask, "wb") as fh:
-        pickle.dump(mask, fh)
+    for imageset, filename in zip(imagesets, filenames):
+        mask = generator.generate(imageset)
+        masks.append(mask)
 
-    # Save the experiment list
-    if params.output.experiments:
-        for imageset in imagesets:
+        # Save the mask to file
+        log.info("Writing mask to %s", filename)
+        with open(filename, "wb") as fh:
+            pickle.dump(mask, fh)
+
+        if params.output.experiments:
+            # Apply the mask to the imageset
             imageset.external_lookup.mask.data = ImageBool(mask)
-            imageset.external_lookup.mask.filename = params.output.mask
+            imageset.external_lookup.mask.filename = filename
 
+    if params.output.experiments:
+        # Save the experiment list
         log.info("Saving experiments to %s", params.output.experiments)
         dump = ExperimentListDumper(experiments)
         dump.as_file(params.output.experiments)
-
-        return mask, experiments
     else:
-        return mask, None
+        experiments = None
+
+    return masks, experiments
 
 
 def run(phil=phil_scope, args=None):
@@ -163,9 +179,6 @@ def run(phil=phil_scope, args=None):
     if len(experiments) == 0:
         parser.print_help()
         sys.exit(1)
-
-    if len(experiments) != 1:
-        sys.exit("Exactly 1 experiment must be specified.")
 
     # Run the script
     generate_mask(experiments, params)
