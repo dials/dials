@@ -1,15 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import pytest
 
 
-def test(dials_regression):
+def test(dials_data):
     from dials.algorithms.spot_prediction import PixelToMillerIndex
     from dials.array_family import flex
     from dxtbx.model.experiment_list import ExperimentListFactory
 
-    filename = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
+    filename = dials_data("centroid_test_data").join("experiments.json").strpath
 
     experiments = ExperimentListFactory.from_json_file(filename)
 

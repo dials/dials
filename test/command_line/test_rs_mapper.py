@@ -1,28 +1,26 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-
 import procrunner
 import pytest
 
 
-def test_rs_mapper(dials_regression, run_in_tmpdir):
+def test_rs_mapper(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.rs_mapper",
-            os.path.join(dials_regression, "centroid_test_data", "datablock.json"),
+            dials_data("centroid_test_data").join("datablock.json").strpath,
             'map_file="junk.ccp4"',
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("junk.ccp4")
+    assert not result["exitcode"] and not result["stderr"]
+    assert tmpdir.join("junk.ccp4").check()
 
     # load results
     from iotbx import ccp4_map
     from scitbx.array_family import flex
 
-    m = ccp4_map.map_reader(file_name="junk.ccp4")
+    m = ccp4_map.map_reader(file_name=tmpdir.join("junk.ccp4").strpath)
     assert len(m.data) == 7189057
     assert m.header_min == -1.0
     assert flex.min(m.data) == -1.0

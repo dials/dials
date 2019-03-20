@@ -1,12 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-from glob import glob
-import os
 import procrunner
 
 
-def test(dials_regression, run_in_tmpdir):
-    images = glob(os.path.join(dials_regression, "centroid_test_data", "centroid*.cbf"))
+def test(dials_data, tmpdir):
+    images = dials_data("centroid_test_data").listdir("centroid*.cbf")
 
     result = procrunner.run(
         [
@@ -15,12 +13,12 @@ def test(dials_regression, run_in_tmpdir):
             "output.reflections=spotfinder.pickle",
             "output.shoeboxes=True",
         ]
-        + images
+        + [f.strpath for f in images],
+        working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("experiments.json")
-    assert os.path.exists("spotfinder.pickle")
+    assert not result["exitcode"] and not result["stderr"]
+    assert tmpdir.join("experiments.json").check()
+    assert tmpdir.join("spotfinder.pickle").check()
 
     result = procrunner.run(
         [
@@ -28,9 +26,9 @@ def test(dials_regression, run_in_tmpdir):
             "input.experiments=experiments.json",
             "input.reflections=spotfinder.pickle",
             "output.mask=hot_mask.pickle",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("hot_mask.pickle")
+    assert not result["exitcode"] and not result["stderr"]
+    assert tmpdir.join("hot_mask.pickle").check()
     assert "Found 8 hot pixels" in result["stdout"]

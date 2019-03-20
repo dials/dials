@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import glob
 import multiprocessing
-import os
 import procrunner
 import pytest
 import socket
@@ -10,36 +8,36 @@ import time
 import timeit
 from xml.dom import minidom
 
-from libtbx import easy_run
+
+def start_server(server_command, working_directory):
+    procrunner.run(server_command, working_directory=working_directory)
 
 
-def start_server(server_command):
-    procrunner.run(server_command)
-
-
-def test_find_spots_server_client(dials_regression, run_in_tmpdir):
+def test_find_spots_server_client(dials_data, tmpdir):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("", 0))
     port = s.getsockname()[1]
     server_command = ["dials.find_spots_server", "port=%i" % port, "nproc=3"]
     print(server_command)
 
-    p = multiprocessing.Process(target=start_server, args=(server_command,))
+    p = multiprocessing.Process(
+        target=start_server, args=(server_command, tmpdir.strpath)
+    )
     p.daemon = True
     s.close()
     p.start()
     wait_for_server(port)  # need to give server chance to start
 
-    data_dir = os.path.join(dials_regression, "centroid_test_data")
-    filenames = sorted(glob.glob(os.path.join(data_dir, "*.cbf")))
+    filenames = [
+        f.strpath for f in dials_data("centroid_test_data").listdir("*.cbf", sort=True)
+    ]
 
     try:
         exercise_client(port=port, filenames=filenames)
 
     finally:
-        client_stop_command = "dials.find_spots_client port=%i stop" % port
-        result = easy_run.fully_buffered(command=client_stop_command).raise_if_errors()
-        # result.show_stdout()
+        result = procrunner.run(["dials.find_spots_client", "port=%i" % port, "stop"])
+        assert not result["exitcode"] and not result["stderr"]
         p.terminate()
 
 
@@ -68,25 +66,24 @@ def wait_for_server(port, max_wait=20):
 
 
 def exercise_client(port, filenames):
-    assert len(filenames) > 0
-    client_command = " ".join(
-        [
-            "dials.find_spots_client",
-            "port=%i" % port,
-            "min_spot_size=3",
-            "nproc=1",
-            filenames[0],
-        ]
-    )
+    assert filenames
+    client_command = [
+        "dials.find_spots_client",
+        "port=%i" % port,
+        "min_spot_size=3",
+        "nproc=1",
+        filenames[0],
+    ]
 
-    index_client_command = " ".join(
-        [client_command, "index=True", "indexing.method=fft1d", "max_refine=10"]
-    )
+    index_client_command = client_command + [
+        "index=True",
+        "indexing.method=fft1d",
+        "max_refine=10",
+    ]
     print(index_client_command)
-    result = easy_run.fully_buffered(command=index_client_command).raise_if_errors()
-    out = "<document>%s</document>" % "\n".join(result.stdout_lines)
-    result.show_stdout()
-    # result.show_stderr()
+    result = procrunner.run(index_client_command)
+    assert not result["exitcode"] and not result["stderr"]
+    out = "<document>%s</document>" % result["stdout"]
 
     xmldoc = minidom.parseString(out)
     assert len(xmldoc.getElementsByTagName("image")) == 1
@@ -107,9 +104,10 @@ def exercise_client(port, filenames):
         [39.90, 42.67, 42.37, 89.89, 90.10, 90.13], abs=1e-1
     )
 
-    client_command = " ".join([client_command] + filenames[1:])
-    result = easy_run.fully_buffered(command=client_command).raise_if_errors()
-    out = "<document>%s</document>" % "\n".join(result.stdout_lines)
+    client_command = client_command + filenames[1:]
+    result = procrunner.run(client_command)
+    assert not result["exitcode"] and not result["stderr"]
+    out = "<document>%s</document>" % result["stdout"]
 
     xmldoc = minidom.parseString(out)
     images = xmldoc.getElementsByTagName("image")

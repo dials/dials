@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 
-
-def test_run(dials_regression):
-    filename = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
+def test_run(dials_data):
+    filename = dials_data("centroid_test_data").join("experiments.json").strpath
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 

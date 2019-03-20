@@ -6,12 +6,12 @@ import pytest
 
 
 class Data(object):
-    def __init__(self, dials_regression):
+    def __init__(self, dials_data, dials_regression):
         from dxtbx.model.experiment_list import ExperimentListFactory
 
-        path = os.path.join(dials_regression, "centroid_test_data", "experiments.json")
-
-        self.experiments = ExperimentListFactory.from_json_file(path)
+        self.experiments = ExperimentListFactory.from_json_file(
+            dials_data("centroid_test_data").join("experiments.json").strpath
+        )
         assert len(self.experiments) == 1
         self.experiments[0].imageset.set_beam(self.experiments[0].beam)
         self.experiments[0].imageset.set_detector(self.experiments[0].detector)
@@ -42,8 +42,8 @@ class Data(object):
 
 
 @pytest.fixture(scope="session")
-def data(dials_regression):
-    return Data(dials_regression)
+def data(dials_data, dials_regression):
+    return Data(dials_data, dials_regression)
 
 
 def test_number_of_predictions(data):

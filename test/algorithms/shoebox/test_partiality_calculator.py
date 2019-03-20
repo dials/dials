@@ -1,18 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import os
 
 
-def test(dials_regression):
-    filename = os.path.join(
-        dials_regression, "centroid_test_data", "fake_long_experiments.json"
-    )
-
+def test(dials_data):
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dxtbx.model.experiment_list import ExperimentList
 
-    exlist = ExperimentListFactory.from_json_file(filename)
+    exlist = ExperimentListFactory.from_json_file(
+        dials_data("centroid_test_data").join("fake_long_experiments.json").strpath
+    )
+
     assert len(exlist) == 1
     experiment = exlist[0]
 
