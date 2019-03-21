@@ -5,7 +5,7 @@ import os
 from libtbx import easy_run
 
 
-def test_rl_png_centroid_data(dials_data, run_in_tmpdir):
+def test_rl_png_imported_experiments(dials_data, run_in_tmpdir):
     data_dir = dials_data("centroid_test_data")
     experiments_path = (data_dir / "imported_experiments.json").strpath
     strong_pickle = (data_dir / "strong.pickle").strpath
