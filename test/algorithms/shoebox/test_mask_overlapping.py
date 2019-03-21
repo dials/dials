@@ -41,7 +41,7 @@ def predict_reflections(sweep, crystal):
     return predicted, overlaps
 
 
-def test(dials_regression):
+def test(dials_data):
     from dxtbx.serialize import load
     from dials.algorithms import shoebox
     from dials.array_family import flex
