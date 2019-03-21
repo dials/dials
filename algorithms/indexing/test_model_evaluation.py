@@ -151,26 +151,18 @@ def test_ModelRank():
 
     ranker = model_evaluation.ModelRankWeighted()
     ranker.extend(results)
-    assert list(ranker.score_by_fraction_indexed()) == [
-        0.02449862002620243,
-        0.0,
-        1.550350501381241,
-    ]
-    assert list(ranker.score_by_rmsd_xy()) == [
-        0.0,
-        0.07598423386955666,
-        3.044108569529155,
-    ]
-    assert list(ranker.score_by_volume()) == [
-        0.44207271296753703,
-        0.45026641813391066,
-        0.0,
-    ]
-    assert list(ranker.combined_scores()) == [
-        0.19602846593366663,
-        0.20851345109588518,
-        11.670183660213905,
-    ]
+    assert list(ranker.score_by_fraction_indexed()) == pytest.approx(
+        [0.02449862002620243, 0.0, 1.550350501381241]
+    )
+    assert list(ranker.score_by_rmsd_xy()) == pytest.approx(
+        [0.0, 0.07598423386955666, 3.044108569529155]
+    )
+    assert list(ranker.score_by_volume()) == pytest.approx(
+        [0.44207271296753703, 0.45026641813391066, 0.0]
+    )
+    assert list(ranker.combined_scores()) == pytest.approx(
+        [0.19602846593366663, 0.20851345109588518, 11.670183660213905]
+    )
     assert (
         str(ranker)
         == """\
