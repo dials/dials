@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-
 
 def predict_reflections(sweep, crystal):
     from dials.algorithms import shoebox
@@ -43,19 +41,16 @@ def predict_reflections(sweep, crystal):
     return predicted, overlaps
 
 
-def test(dials_regression, run_in_tmpdir):
+def test(dials_regression):
     from dxtbx.serialize import load
     from dials.algorithms import shoebox
     from dials.array_family import flex
 
     # Load the sweep and crystal
-    sweep_filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-    crystal_filename = os.path.join(
-        dials_regression, "centroid_test_data", "crystal.json"
+    sweep = load.imageset(dials_data("centroid_test_data").join("sweep.json").strpath)
+    crystal = load.crystal(
+        dials_data("centroid_test_data").join("crystal.json").strpath
     )
-
-    sweep = load.imageset(sweep_filename)
-    crystal = load.crystal(crystal_filename)
 
     # Get models from the sweep
     beam = sweep.get_beam()

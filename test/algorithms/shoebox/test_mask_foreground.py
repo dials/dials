@@ -4,21 +4,17 @@ import math
 import os
 
 
-def test(dials_regression):
+def test(dials_data):
     from dxtbx.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import Model
     from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dxtbx.model.experiment_list import Experiment, ExperimentList
 
-    # Set the sweep filename and load the sweep
-    sweep_filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-    crystal_filename = os.path.join(
-        dials_regression, "centroid_test_data", "crystal.json"
+    sweep = load.imageset(dials_data("centroid_test_data").join("sweep.json").strpath)
+    crystal = load.crystal(
+        dials_data("centroid_test_data").join("crystal.json").strpath
     )
 
-    # Load the sweep
-    sweep = load.imageset(sweep_filename)
-    crystal = load.crystal(crystal_filename)
     beam = sweep.get_beam()
     detector = sweep.get_detector()
     goniometer = sweep.get_goniometer()
@@ -151,9 +147,7 @@ def test(dials_regression):
                             value2 = MaskCode.Valid | MaskCode.Background
                     new_mask[k, j, i] = value2
 
-        try:
-            assert all(m1 == m2 for m1, m2 in zip(mask, new_mask))
-        except Exception:
+        if not all(m1 == m2 for m1, m2 in zip(mask, new_mask)):
             import numpy
 
             numpy.set_printoptions(threshold=10000)
@@ -162,7 +156,7 @@ def test(dials_regression):
             # print mask.as_numpy_array()
             # print new_mask.as_numpy_array()
             # print (new_mask.as_numpy_array()[:,:,:] %2) * (new_mask.as_numpy_array() == 5)
-            raise
+            assert False
 
 
 def generate_reflections(detector, beam, scan, experiment, num):

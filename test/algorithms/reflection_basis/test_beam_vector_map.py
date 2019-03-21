@@ -1,24 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
+import random
+
 from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
 
 import pytest
 
 
 @pytest.fixture
-def sweep_and_model(dials_regression):
-    from dials.model.serialize import load
-    import os
-
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def sweep_and_model(dials_data):
     class Test(object):
         pass
 
     storage_class = Test()
 
-    # Load the sweep
-    storage_class.sweep = load.sweep(filename)
+    from dials.model.serialize import load
+
+    storage_class.sweep = load.sweep(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
     storage_class.beam = storage_class.sweep.get_beam()
@@ -31,7 +31,6 @@ def sweep_and_model(dials_regression):
 
 def test_at_corners(sweep_and_model):
     from scitbx import matrix
-    from random import randint
 
     assert len(sweep_and_model.detector) == 1
 
@@ -48,8 +47,8 @@ def test_at_corners(sweep_and_model):
     # Ensure a few random points are correct
     eps = 1e-7
     for k in range(1000):
-        j = randint(0, ds1.all()[0] - 1)
-        i = randint(0, ds1.all()[1] - 1)
+        j = random.randint(0, ds1.all()[0] - 1)
+        i = random.randint(0, ds1.all()[1] - 1)
         y = float(j)
         x = float(i)
         xyz = sweep_and_model.detector[0].get_pixel_lab_coord((x, y))
@@ -60,7 +59,6 @@ def test_at_corners(sweep_and_model):
 
 def test_sub_division_at_corners(sweep_and_model):
     from scitbx import matrix
-    from random import randint
 
     sweep_and_model.n_div = 2
 
@@ -79,8 +77,8 @@ def test_sub_division_at_corners(sweep_and_model):
     # Ensure a few random points are correct
     eps = 1e-7
     for k in range(1000):
-        j = randint(0, ds1.all()[0] - 1)
-        i = randint(0, ds1.all()[1] - 1)
+        j = random.randint(0, ds1.all()[0] - 1)
+        i = random.randint(0, ds1.all()[1] - 1)
         y = float(j) / sweep_and_model.n_div
         x = float(i) / sweep_and_model.n_div
         xyz = sweep_and_model.detector[0].get_pixel_lab_coord((x, y))
@@ -91,7 +89,6 @@ def test_sub_division_at_corners(sweep_and_model):
 
 def test_sub_division_at_centres(sweep_and_model):
     from scitbx import matrix
-    from random import randint
 
     sweep_and_model.n_div = 2
 
@@ -110,8 +107,8 @@ def test_sub_division_at_centres(sweep_and_model):
     # Ensure a few random points are correct
     eps = 1e-7
     for k in range(1000):
-        j = randint(0, ds1.all()[0] - 1)
-        i = randint(0, ds1.all()[1] - 1)
+        j = random.randint(0, ds1.all()[0] - 1)
+        i = random.randint(0, ds1.all()[1] - 1)
         y = float(j + 0.5) / sweep_and_model.n_div
         x = float(i + 0.5) / sweep_and_model.n_div
         xyz = sweep_and_model.detector[0].get_pixel_lab_coord((x, y))

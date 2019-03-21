@@ -1,19 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import math
 import random
 
 
-def test_run(dials_regression, run_in_tmpdir):
+def test_run(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import transform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx import matrix
     from dials.model.serialize import load
 
-    # Set the sweep filename and load the sweep
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()

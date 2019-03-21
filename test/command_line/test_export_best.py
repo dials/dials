@@ -1,15 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import procrunner
 
 
-def test_export_best(dials_regression, run_in_tmpdir):
-    path = os.path.join(dials_regression, "centroid_test_data", "centroid_####.cbf")
-
-    result = procrunner.run(["dials.import", "template=" + path])
+def test_export_best(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.import",
+            "template="
+            + dials_data("centroid_test_data").join("centroid_####.cbf").strpath,
+        ],
+        working_directory=tmpdir.strpath,
+    )
     assert not result["exitcode"] and not result["stderr"]
-    result = procrunner.run(["dials.find_spots", "imported_experiments.json"])
+    result = procrunner.run(
+        ["dials.find_spots", "imported_experiments.json"],
+        working_directory=tmpdir.strpath,
+    )
     assert not result["exitcode"] and not result["stderr"]
     result = procrunner.run(
         [
@@ -17,7 +24,8 @@ def test_export_best(dials_regression, run_in_tmpdir):
             "imported_experiments.json",
             "strong.pickle",
             "space_group=P422",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
     result = procrunner.run(
@@ -27,7 +35,8 @@ def test_export_best(dials_regression, run_in_tmpdir):
             "indexed.pickle",
             "prediction.padding=0",
             "sigma_m_algorithm=basic",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
     result = procrunner.run(
@@ -36,15 +45,16 @@ def test_export_best(dials_regression, run_in_tmpdir):
             "integrated_experiments.json",
             "integrated.pickle",
             "format=best",
-        ]
+        ],
+        working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
 
-    assert os.path.exists("best.dat")
-    assert os.path.exists("best.hkl")
-    assert os.path.exists("best.par")
+    assert tmpdir.join("best.dat").check()
+    assert tmpdir.join("best.hkl").check()
+    assert tmpdir.join("best.par").check()
 
-    with open("best.dat", "r") as f:
+    with tmpdir.join("best.dat").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
         lines
@@ -62,7 +72,7 @@ def test_export_best(dials_regression, run_in_tmpdir):
 """
     )
 
-    with open("best.hkl", "r") as f:
+    with tmpdir.join("best.hkl").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
         lines
@@ -80,8 +90,7 @@ def test_export_best(dials_regression, run_in_tmpdir):
 """
     )
 
-    with open("best.par", "r") as f:
-        lines = f.read()
+    lines = tmpdir.join("best.par").read()
     assert (
         lines
         == """\

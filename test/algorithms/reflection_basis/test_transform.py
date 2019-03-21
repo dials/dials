@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import os
+import random
 
 
 def evaluate_gaussian(x, a, x0, sx):
@@ -30,15 +30,12 @@ def gaussian(size, a, x0, sx):
                 return result
 
 
-def test_forward(dials_regression, run_in_tmpdir):
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def test_forward(dials_data):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import transform
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    # Load the sweep
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()
@@ -76,7 +73,6 @@ def test_forward(dials_regression, run_in_tmpdir):
     # tst_conservation_of_counts(self):
 
     from scitbx import matrix
-    from random import uniform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from dials.algorithms.profile_model.gaussian_rs import transform
     from scitbx.array_family import flex
@@ -282,9 +278,9 @@ def test_forward(dials_regression, run_in_tmpdir):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(300, 1800)
-        y = uniform(300, 1800)
-        z = uniform(0, 9)
+        x = random.uniform(300, 1800)
+        y = random.uniform(300, 1800)
+        z = random.uniform(0, 9)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
@@ -451,15 +447,12 @@ def test_forward(dials_regression, run_in_tmpdir):
 #        print 'OK'
 
 
-def test_forward_no_model(dials_regression, run_in_tmpdir):
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def test_forward_no_model(dials_data):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs import transform
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    # Load the sweep
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()
@@ -498,12 +491,11 @@ def test_forward_no_model(dials_regression, run_in_tmpdir):
     # tst_conservation_of_counts(self):
 
     from scitbx import matrix
-    from random import uniform, seed
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from dials.algorithms.profile_model.gaussian_rs import transform
     from scitbx.array_family import flex
 
-    seed(0)
+    random.seed(0)
 
     assert len(detector) == 1
 
@@ -517,9 +509,9 @@ def test_forward_no_model(dials_regression, run_in_tmpdir):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(300, 1800)
-        y = uniform(300, 1800)
-        z = uniform(500, 600)
+        x = random.uniform(300, 1800)
+        y = random.uniform(300, 1800)
+        z = random.uniform(500, 600)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length

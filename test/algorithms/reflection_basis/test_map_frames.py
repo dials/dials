@@ -1,18 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import os
+import random
 
 
-def test_map_frames_forward(dials_regression, run_in_tmpdir):
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def test_map_frames_forward(dials_data):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    # Load the sweep
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()
@@ -46,7 +43,6 @@ def test_map_frames_forward(dials_regression, run_in_tmpdir):
     )
 
     from scitbx import matrix
-    from random import uniform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
 
@@ -58,9 +54,9 @@ def test_map_frames_forward(dials_regression, run_in_tmpdir):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(0, 2000)
-        y = uniform(0, 2000)
-        z = uniform(0, 9)
+        x = random.uniform(0, 2000)
+        y = random.uniform(0, 2000)
+        z = random.uniform(0, 9)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
@@ -107,15 +103,12 @@ def test_map_frames_forward(dials_regression, run_in_tmpdir):
                 last = curr
 
 
-def test_map_frames_reverse(dials_regression, run_in_tmpdir):
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def test_map_frames_reverse(dials_data):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    # Load the sweep
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()
@@ -149,7 +142,6 @@ def test_map_frames_reverse(dials_regression, run_in_tmpdir):
     )
 
     from scitbx import matrix
-    from random import uniform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
 
@@ -160,9 +152,9 @@ def test_map_frames_reverse(dials_regression, run_in_tmpdir):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(0, 2000)
-        y = uniform(0, 2000)
-        z = uniform(0, 9)
+        x = random.uniform(0, 2000)
+        y = random.uniform(0, 2000)
+        z = random.uniform(0, 9)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
@@ -213,16 +205,13 @@ def test_map_frames_reverse(dials_regression, run_in_tmpdir):
                 last = curr
 
 
-def test_map_forward_reverse(dials_regression, run_in_tmpdir):
-    filename = os.path.join(dials_regression, "centroid_test_data", "sweep.json")
-
+def test_map_forward_reverse(dials_data):
     from dials.model.serialize import load
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    # Load the sweep
-    sweep = load.sweep(filename)
+    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
 
     # Get the models
     beam = sweep.get_beam()
@@ -266,7 +255,6 @@ def test_map_forward_reverse(dials_regression, run_in_tmpdir):
     )
 
     from scitbx import matrix
-    from random import uniform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     s0 = beam.get_s0()
@@ -276,9 +264,9 @@ def test_map_forward_reverse(dials_regression, run_in_tmpdir):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(0, 2000)
-        y = uniform(0, 2000)
-        z = uniform(0, 9)
+        x = random.uniform(0, 2000)
+        y = random.uniform(0, 2000)
+        z = random.uniform(0, 9)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
