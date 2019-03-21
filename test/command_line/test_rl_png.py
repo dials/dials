@@ -5,9 +5,9 @@ import os
 from libtbx import easy_run
 
 
-def test_rl_png_centroid_data(dials_regression, run_in_tmpdir):
+def test_rl_png_imported_experiments(dials_regression, run_in_tmpdir):
     data_dir = os.path.join(dials_regression, "centroid_test_data")
-    experiments_path = os.path.join(data_dir, "experiments.json")
+    experiments_path = os.path.join(data_dir, "imported_experiments.json")
     strong_pickle = os.path.join(data_dir, "strong.pickle")
 
     cmd = "dials.rl_png %s %s" % (experiments_path, strong_pickle)

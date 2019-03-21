@@ -184,7 +184,7 @@ def run(args):
 
     n_solutions = params.basis_vector_search.n_solutions
 
-    if len(experiments):
+    if experiments.crystals().count(None) < len(experiments):
         for i, c in enumerate(experiments.crystals()):
             A = matrix.sqr(c.get_A())
             astar = A[:3]
