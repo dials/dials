@@ -33,7 +33,7 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
 
-from cctbx import crystal, sgtbx, xray
+from cctbx import crystal, sgtbx
 
 from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -1359,8 +1359,6 @@ class indexer_base(object):
             finally:
                 reflogger.setLevel(level)
 
-        import copy
-
         params = copy.deepcopy(self.all_params)
         params.refinement.parameterisation.auto_reduction.action = "fix"
         params.refinement.parameterisation.scan_varying = False
@@ -1413,6 +1411,7 @@ class indexer_base(object):
                 continue
 
             from rstbx.dps_core.cell_assessment import SmallUnitCellVolume
+            from dials.algorithms.indexing import non_primitive_basis
 
             threshold = self.params.basis_vector_combinations.sys_absent_threshold
             if threshold and (
@@ -1420,7 +1419,9 @@ class indexer_base(object):
                 or self.target_symmetry_primitive.unit_cell() is None
             ):
                 try:
-                    self.correct_non_primitive_basis(experiments, refl, threshold)
+                    non_primitive_basis.correct(
+                        experiments, refl, self._assign_indices, threshold
+                    )
                     if refl.get_flags(refl.flags.indexed).count(True) == 0:
                         continue
                 except SmallUnitCellVolume:
@@ -1495,36 +1496,6 @@ class indexer_base(object):
             return best_solution.crystal, best_solution.n_indexed
         else:
             return None, None
-
-    def correct_non_primitive_basis(self, experiments, reflections, threshold):
-        assert len(experiments.crystals()) == 1
-        while True:
-            sel = reflections["miller_index"] != (0, 0, 0)
-            if sel.count(True) == 0:
-                break
-            T = detect_non_primitive_basis(
-                reflections["miller_index"].select(sel), threshold=threshold
-            )
-            if T is None:
-                break
-
-            crystal_model = experiments.crystals()[0]
-            direct_matrix = matrix.sqr(crystal_model.get_A()).inverse()
-            M = T.inverse().transpose()
-            new_direct_matrix = M * direct_matrix
-            crystal_model.set_A(new_direct_matrix.inverse())
-
-            from rstbx.dps_core.cell_assessment import unit_cell_too_small
-
-            unit_cell_too_small(crystal_model.get_unit_cell())
-            cb_op = crystal_model.get_unit_cell().change_of_basis_op_to_niggli_cell()
-            crystal_model.update(crystal_model.change_basis(cb_op))
-
-            reflections["id"] = flex.int(len(reflections), -1)
-            reflections.unset_flags(
-                flex.bool(len(reflections), True), reflections.flags.indexed
-            )
-            self.index_reflections(experiments, reflections)
 
     def filter_similar_orientations(self, crystal_models):
 
@@ -2058,38 +2029,6 @@ class SolutionTrackerWeighted(object):
         from libtbx import table_utils
 
         return table_utils.format(rows=rows, has_header=True)
-
-
-def detect_non_primitive_basis(miller_indices, threshold=0.9):
-
-    from rstbx.indexing_api import tools
-
-    for test in tools.R:
-        cum = tools.cpp_absence_test(miller_indices, test["mod"], test["vec"])
-        for counter in xrange(test["mod"]):
-            if float(cum[counter]) / miller_indices.size() > threshold and counter == 0:
-                # (if counter != 0 there is no obvious way to correct this)
-                logger.debug(
-                    "Detected exclusive presence of %dH %dK %dL = %dn, remainder %d"
-                    % (
-                        test["vec"][0],
-                        test["vec"][1],
-                        test["vec"][2],
-                        test["mod"],
-                        counter,
-                    )
-                )
-                logger.debug(
-                    "%s, %s, %s"
-                    % (
-                        test["vec"],
-                        test["mod"],
-                        float(cum[counter]) / miller_indices.size(),
-                    )
-                )
-                # flag = {'vec':test['vec'],'mod':test['mod'],
-                #'remainder':counter, 'trans':test['trans'].elems}
-                return test["trans"]
 
 
 def optimise_basis_vectors(reciprocal_lattice_points, vectors):
