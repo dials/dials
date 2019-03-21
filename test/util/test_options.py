@@ -9,13 +9,10 @@ from mock import Mock
 from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
 from dials.array_family import flex
 
-pytestmark = pytest.mark.skipif(
+@pytest.mark.skipif(
     not os.access("/dls/i04/data/2019/cm23004-1/20190109/Eiger", os.R_OK),
     reason="Test images not available",
 )
-
-
-@pytest.mark.xfail
 def test_not_master_h5():
     data_h5 = (
         "/dls/i04/data/2019/cm23004-1/20190109/Eiger/gw/Thaum/Thau_4/Thau_4_1_000001.h5"
@@ -37,13 +34,13 @@ def mock_reflection_file_object(id_=0, identifier=True):
     return fileobj
 
 
-def mock_two_reflection_file_object():
+def mock_two_reflection_file_object(ids=[0, 2]):
     """Create a mock reflection_file_object with two datasets."""
     fileobj = Mock()
     r = flex.reflection_table()
-    r["id"] = flex.int([-1, 0, 0, 2, 2])
-    r.experiment_identifiers()[0] = str(0)
-    r.experiment_identifiers()[2] = str(2)
+    r["id"] = flex.int([-1, ids[0], ids[0], ids[1], ids[1]])
+    r.experiment_identifiers()[ids[0]] = str(ids[0])
+    r.experiment_identifiers()[ids[1]] = str(ids[1])
     fileobj.data = r
     return fileobj
 
@@ -79,3 +76,17 @@ def test_flatten_experiments_updating_id_values():
     assert list(rs[1]["id"]) == [-1, 2, 2]
     assert list(rs[1].experiment_identifiers().keys()) == [2]
     assert list(rs[1].experiment_identifiers().values()) == ["0"]
+
+    file_list = [
+        mock_reflection_file_object(id_=0),
+        mock_two_reflection_file_object(ids=[1, 2])
+    ]
+    rs = flatten_reflections(file_list)
+    assert rs[0] is file_list[0].data
+    assert list(rs[0]["id"]) == [-1, 0, 0]
+    assert list(rs[0].experiment_identifiers().keys()) == [0]
+    assert list(rs[0].experiment_identifiers().values()) == ["0"]
+    assert rs[1] is file_list[1].data
+    assert list(rs[1]["id"]) == [-1, 1, 1, 2, 2]
+    assert list(rs[1].experiment_identifiers().keys()) == [1, 2]
+    assert list(rs[1].experiment_identifiers().values()) == ["1", "2"]

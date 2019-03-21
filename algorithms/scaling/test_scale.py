@@ -620,6 +620,8 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     sweep_path_1 = os.path.join(data_dir, "20_integrated_experiments.json")
     pickle_path_2 = os.path.join(data_dir, "25_integrated.pickle")
     sweep_path_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    pickle_path_3 = os.path.join(data_dir, "30_integrated.pickle")
+    sweep_path_3 = os.path.join(data_dir, "30_integrated_experiments.json")
 
     extra_args = ["model=physical"]
 
@@ -656,6 +658,20 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     assert len(experiments_list.scaling_models()) == 2
     assert experiments_list.scaling_models()[0].id_ == "physical"
     assert experiments_list.scaling_models()[1].id_ == "KB"
+
+    extra_args = ["model=KB"]
+    args = (
+        ["dials.scale"]
+        + [pickle_path_3]
+        + [sweep_path_3]
+        + ["scaled.pickle"]
+        + ["scaled_experiments.json"]
+        + extra_args
+    )
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.pickle")
 
     extra_args = ["model=KB", "only_target=True"]
     args = (

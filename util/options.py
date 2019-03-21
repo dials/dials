@@ -1112,9 +1112,12 @@ def flatten_reflections(filename_object_list):
     if len(tables) > 1:
         new_id_ = 0
         for table in tables:
-            table_id_values = set(table["id"]).difference(set([-1]))
+            table_id_values = sorted(list(set(table["id"]).difference(set([-1]))))
+            n_prev = new_id_
+            highest_new_id = new_id_ + len(table_id_values) - 1
             expt_ids_dict = table.experiment_identifiers()
             new_ids_dict = {}
+            new_id_ = highest_new_id
             while table_id_values:
                 val = table_id_values.pop()
                 sel = table["id"] == val
@@ -1123,7 +1126,8 @@ def flatten_reflections(filename_object_list):
                     new_ids_dict[new_id_] = expt_ids_dict[val]
                     del expt_ids_dict[val]
                 table["id"].set_selected(sel.iselection(), new_id_)
-                new_id_ += 1
+                new_id_ -= 1
+            new_id_ = highest_new_id + 1
             if new_ids_dict:
                 for i, v in new_ids_dict.iteritems():
                     expt_ids_dict[i] = v
