@@ -15,33 +15,36 @@ from iotbx.phil import parse
 
 help_message = """
 
-This program augments a experiements JSON file with a mask specified by the user.
-It's only function is to input the path to the mask file but means that the user
-does not have to edit the experiments file by hand.
+This program augments a experiements JSON file with one or more masks specified by the
+user.  Its only function is to input the mask file paths to the experiments JSON file,
+but means that the user does not have to edit the experiments file by hand.
+
+Crucially, the mask files must be provided in the same order as their corresponding
+imagesets (sweeps) appear in the experiments JSON file.
 
 Examples::
 
-  dials.apply_mask experiments.json input.mask=mask.pickle
+    dials.apply_mask experiments.json input.mask=mask.pickle
 
-  dials.apply_mask expriments.json input.mask=mask.pickle
+    dials.apply_mask experiments.json input.mask=mask1.pickle input.mask=mask2.pickle
 
 """
 
 phil_scope = parse(
     """
+        input {
+            mask = None
+                .multiple = True
+                .type = str
+                .help = "The mask filenames, one mask per imageset"
+        }
 
-  input {
-    mask = None
-      .type = str
-      .help = "The mask filename"
-  }
-
-  output {
-    experiments = experiments_with_mask.json
-      .type = str
-      .help = "Name of output experiments file"
-  }
-""",
+        output {
+            experiments = masked_experiments.json
+                .type = str
+                .help = "Name of output experiments file"
+        }
+    """,
     process_includes=True,
 )
 
@@ -55,7 +58,10 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
+        usage = (
+            "usage: %s experiments.json input.mask=mask.pickle"
+            % libtbx.env.dispatcher_name
+        )
         self.parser = OptionParser(
             usage=usage, epilog=help_message, phil=phil_scope, read_experiments=True
         )
@@ -70,28 +76,28 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=True)
         experiments = flatten_experiments(params.input.experiments)
 
-        # Check number of args
-        if len(experiments) == 0:
+        # Check that an experiment list and at least one mask file have been provided
+        if not (experiments and params.input.mask):
             self.parser.print_help()
             return
 
-        # Check the mask file is given
-        if params.input.mask is None:
-            self.parser.print_help()
-            return
-
-        # Check nbumber of experiments
-        if len(experiments) != 1:
-            raise Sorry("exactly 1 experiments must be specified")
+        # Check number of experiments
+        n_expts = len(experiments)
+        n_masks = len(params.input.mask)
+        if n_expts != n_masks:
+            raise Sorry(
+                "The number of masks provided must match the number of imagesets "
+                "(sweeps).\n"
+                "You have provided an experiment list containing {} imageset(s).\n"
+                "You have provided {} mask file(s).".format(n_expts, n_masks)
+            )
 
         # Get the imageset
         imagesets = experiments.imagesets()
-        if len(imagesets) != 1:
-            raise Sorry("experiments must contain exactly 1 imageset")
-        imageset = imagesets[0]
 
-        # Set the lookup
-        imageset.external_lookup.mask.filename = params.input.mask
+        for i, imageset in enumerate(imagesets):
+            # Set the lookup
+            imageset.external_lookup.mask.filename = params.input.mask[i]
 
         # Dump the experiments
         print("Writing experiments to %s" % params.output.experiments)
