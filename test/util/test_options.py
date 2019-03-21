@@ -13,6 +13,7 @@ from dials.array_family import flex
     not os.access("/dls/i04/data/2019/cm23004-1/20190109/Eiger", os.R_OK),
     reason="Test images not available",
 )
+@pytest.mark.xfail
 def test_not_master_h5():
     data_h5 = (
         "/dls/i04/data/2019/cm23004-1/20190109/Eiger/gw/Thaum/Thau_4/Thau_4_1_000001.h5"
