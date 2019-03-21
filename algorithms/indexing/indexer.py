@@ -1287,80 +1287,6 @@ class indexer_base(object):
                 n_indexed_cutoff=filter_params.n_indexed_cutoff,
             )
 
-        def run_one_refinement(args):
-            params, reflections, experiments = args
-            indexed_reflections = reflections.select(reflections["id"] > -1)
-
-            from dials.command_line import check_indexing_symmetry
-
-            grid_search_scope = params.indexing.check_misindexing.grid_search_scope
-
-            best_offset = (0, 0, 0)
-            best_cc = 0.0
-            best_nref = 0
-
-            if grid_search_scope > 0:
-                offsets, ccs, nref = check_indexing_symmetry.get_indexing_offset_correlation_coefficients(
-                    indexed_reflections,
-                    experiments.crystals()[0],
-                    grid=grid_search_scope,
-                    map_to_asu=True,
-                )
-
-                if len(offsets) > 1:
-                    max_nref = flex.max(nref)
-
-                    # select "best" solution - needs nref > 0.5 max nref && highest CC
-                    # FIXME perform proper statistical test in here do not like heuristics
-
-                    for offset, cc, n in zip(offsets, ccs, nref):
-                        if n < (max_nref // 2):
-                            continue
-                        if cc > best_cc:
-                            best_cc = cc
-                            best_offset = offset
-                            best_nref = n
-
-                    # print offsets[13], nref[13], '%.2f' %ccs[13] # (0,0,0)
-                    # print best_offset, best_nref, '%.2f' %best_cc
-
-                    if best_offset != (0, 0, 0):
-                        logger.debug(
-                            "Applying h,k,l offset: (%i, %i, %i)" % best_offset
-                            + " [cc = %.2f]" % best_cc
-                        )
-                        indexed_reflections["miller_index"] = apply_hkl_offset(
-                            indexed_reflections["miller_index"], best_offset
-                        )
-
-            from dials.algorithms.refinement import RefinerFactory
-
-            reflogger = logging.getLogger("dials.algorithms.refinement")
-            level = reflogger.getEffectiveLevel()
-            reflogger.setLevel(logging.ERROR)
-            try:
-                refiner = RefinerFactory.from_parameters_data_experiments(
-                    params, indexed_reflections, experiments
-                )
-                refiner.run()
-            except (RuntimeError, ValueError, Sorry) as e:
-                return
-            else:
-                rmsds = refiner.rmsds()
-                xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
-                model_likelihood = 1.0 - xy_rmsds
-                soln = model_evaluation.Result(
-                    model_likelihood=model_likelihood,
-                    crystal=experiments.crystals()[0],
-                    rmsds=rmsds,
-                    n_indexed=len(indexed_reflections),
-                    fraction_indexed=float(len(indexed_reflections)) / len(reflections),
-                    hkl_offset=best_offset,
-                )
-                return soln
-            finally:
-                reflogger.setLevel(level)
-
         params = copy.deepcopy(self.all_params)
         params.refinement.parameterisation.auto_reduction.action = "fix"
         params.refinement.parameterisation.scan_varying = False
@@ -1470,15 +1396,17 @@ class indexer_base(object):
                     miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
                     refl["miller_index"].set_selected(sel, miller_indices)
 
-            args.append((params, refl, experiments))
+            args.append((experiments, refl))
             if len(args) == params.indexing.basis_vector_combinations.max_refine:
                 break
 
         from libtbx import easy_mp
 
+        evaluator = model_evaluation.ModelEvaluation(params)
         results = easy_mp.parallel_map(
-            run_one_refinement,
+            evaluator.evaluate,
             args,
+            iterable_type=easy_mp.posiargs,
             processes=self.params.nproc,
             preserve_exception_message=True,
         )

@@ -1,7 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
+import os
+import pytest
+
 from dxtbx.model import Crystal
+from dxtbx.serialize import load
+from dials.array_family import flex
 from dials.algorithms.indexing import model_evaluation
+from dials.algorithms.indexing.assign_indices import assign_indices_global
+from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 
 
 def test_Result():
@@ -191,4 +199,64 @@ unit_cell                           | volume | n_indexed | fraction_indexed | li
 68.12 68.15 68.26 109.5 109.4 109.4 | 244274 | 19480     | 98               | 0.96
 47.94 63.06 65.84 75.2 71.6 74.5    | 178786 | 6651      | 34               | 0.66
 ----------------------------------------------------------------------------------------"""
+    )
+
+
+def test_ModelEvaluation(dials_regression, tmpdir):
+    # thaumatin
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    sweep_path = os.path.join(data_dir, "experiments_import.json")
+
+    input_reflections = flex.reflection_table.from_pickle(pickle_path)
+    input_experiments = load.experiment_list(sweep_path, check_format=False)
+
+    input_reflections = input_reflections.select(
+        input_reflections["xyzobs.px.value"].parts()[2] < 100
+    )
+    input_reflections.centroid_px_to_mm(
+        input_experiments[0].detector, scan=input_experiments[0].scan
+    )
+    input_reflections.map_centroids_to_reciprocal_space(
+        input_experiments[0].detector,
+        input_experiments[0].beam,
+        goniometer=input_experiments[0].goniometer,
+    )
+    input_reflections["imageset_id"] = flex.size_t(input_reflections.size(), 0)
+    input_reflections["id"] = flex.int(input_reflections.size(), -1)
+
+    refine_params = refine_phil.fetch().extract()
+    evaluator = model_evaluation.ModelEvaluation(refinement_params=refine_params)
+
+    experiments = copy.deepcopy(input_experiments)
+    reflections = copy.deepcopy(input_reflections)
+    experiments[0].crystal = Crystal.from_dict(
+        dict(
+            [
+                ("__id__", "crystal"),
+                (
+                    "real_space_a",
+                    (20.007058080503633, 49.721143642677994, 16.636052132572846),
+                ),
+                (
+                    "real_space_b",
+                    (-15.182202482876685, 24.93846318493148, -50.7116866438356),
+                ),
+                (
+                    "real_space_c",
+                    (-135.23051191036296, 41.14539066294313, 55.41374425160883),
+                ),
+                ("space_group_hall_symbol", " P 1"),
+            ]
+        )
+    )
+
+    assign_indices = assign_indices_global()
+    assign_indices(reflections, experiments)
+    result = evaluator.evaluate(experiments, reflections)
+    assert result is not None
+    assert result.n_indexed == 7313
+    assert result.fraction_indexed == pytest.approx(0.341155066244)
+    assert result.rmsds == pytest.approx(
+        (0.10215787570953785, 0.12954412140128563, 0.0010980583382102509)
     )

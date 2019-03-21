@@ -2,12 +2,15 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 
 import abc
+import copy
 import logging
 import math
 
 logger = logging.getLogger(__name__)
 
+import libtbx
 from libtbx import group_args
+from libtbx.utils import Sorry
 from scitbx import matrix
 from scitbx.array_family import flex
 
@@ -294,3 +297,63 @@ class ModelRankWeighted(ModelRank):
         from libtbx import table_utils
 
         return table_utils.format(rows=rows, has_header=True)
+
+
+class Strategy(object):
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def evaluate(self, reciprocal_lattice_vectors):
+        pass
+
+
+class ModelEvaluation(Strategy):
+    def __init__(self, refinement_params):
+        self._params = copy.deepcopy(refinement_params)
+        # override several parameters, mainly for speed
+        self._params.refinement.parameterisation.auto_reduction.action = "fix"
+        self._params.refinement.parameterisation.scan_varying = False
+        self._params.refinement.refinery.max_iterations = 4
+        self._params.refinement.reflections.reflections_per_degree = min(
+            self._params.refinement.reflections.reflections_per_degree, 20
+        )
+        if self._params.refinement.reflections.outlier.block_width is libtbx.Auto:
+            # auto block_width determination is potentially too expensive to do at
+            # this stage: instead set separate_blocks=False and increase value
+            # of tukey.iqr_multiplier to be more tolerant of outliers
+            self._params.refinement.reflections.outlier.separate_blocks = False
+            self._params.refinement.reflections.outlier.tukey.iqr_multiplier = (
+                2 * self._params.refinement.reflections.outlier.tukey.iqr_multiplier
+            )
+
+    def evaluate(self, experiments, reflections):
+
+        from dials.algorithms.refinement import RefinerFactory
+
+        indexed_reflections = reflections.select(reflections["id"] > -1)
+        reflogger = logging.getLogger("dials.algorithms.refinement")
+        level = reflogger.getEffectiveLevel()
+        reflogger.setLevel(logging.ERROR)
+        try:
+            refiner = RefinerFactory.from_parameters_data_experiments(
+                self._params, indexed_reflections, experiments
+            )
+            refiner.run()
+        except (RuntimeError, ValueError, Sorry) as e:
+            return
+        else:
+            rmsds = refiner.rmsds()
+            xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
+            model_likelihood = 1.0 - xy_rmsds
+            result = Result(
+                model_likelihood=model_likelihood,
+                crystal=experiments.crystals()[0],
+                rmsds=rmsds,
+                n_indexed=len(indexed_reflections),
+                fraction_indexed=float(len(indexed_reflections)) / len(reflections),
+                hkl_offset=(0, 0, 0),
+            )
+            return result
+        finally:
+            reflogger.setLevel(level)
