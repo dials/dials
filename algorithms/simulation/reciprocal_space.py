@@ -242,28 +242,16 @@ class Simulator(object):
 
 
 if __name__ == "__main__":
-
-    from math import pi
+    import math
     from dxtbx.model.experiment_list import ExperimentListFactory
-    import libtbx.load_env
-    from libtbx import easy_run
-    from os.path import join
-    import os
 
-    have_dials_regression = libtbx.env.has_module("dials_regression")
-    if have_dials_regression:
-        dials_regression = libtbx.env.find_in_repositories(
-            relative_path="dials_regression", test=os.path.isdir
-        )
-    else:
-        exit(0)
-
+    from dials_data.download import DataFetcher
     experiments = ExperimentListFactory.from_json_file(
-        join(dials_regression, "centroid_test_data", "experiments.json"),
+        DataFetcher()("centroid_test_data").join("experiments.json").strpath,
         check_format=False,
     )
-    sigma_b = 0.058 * pi / 180
-    sigma_m = 0.157 * pi / 180
+    sigma_b = 0.058 * math.pi / 180
+    sigma_m = 0.157 * math.pi / 180
     n_sigma = 3
 
     N = 100
