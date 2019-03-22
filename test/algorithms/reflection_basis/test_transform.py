@@ -89,9 +89,9 @@ def test_forward(dials_data):
     for i in range(100):
 
         # Get random x, y, z
-        x = uniform(300, 1800)
-        y = uniform(300, 1800)
-        z = uniform(0, 9)
+        x = random.uniform(300, 1800)
+        y = random.uniform(300, 1800)
+        z = random.uniform(0, 9)
 
         # Get random s1, phi, panel
         s1 = matrix.col(detector[0].get_pixel_lab_coord((x, y))).normalize() * s0_length
@@ -169,9 +169,9 @@ def test_forward(dials_data):
     #        s1_map = transform.beam_vector_map(detector, beam, True)
 
     #        # Get random x, y, z
-    #        x = uniform(300, 1800)
-    #        y = uniform(300, 1800)
-    #        z = uniform(-10, 0)
+    #        x = random.uniform(300, 1800)
+    #        y = random.uniform(300, 1800)
+    #        z = random.uniform(-10, 0)
 
     #        # Get random s1, phi, panel
     #        s1 = matrix.col(detector.get_pixel_lab_coord(
@@ -262,7 +262,6 @@ def test_forward(dials_data):
     # tst_transform_with_background(self):
 
     from scitbx import matrix
-    from random import uniform
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from dials.algorithms.profile_model.gaussian_rs import transform
     from scitbx.array_family import flex
@@ -394,7 +393,6 @@ def test_forward(dials_data):
 #    def tst_conservation_of_counts(self):
 
 #        from scitbx import matrix
-#        from random import uniform
 #        from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 #        from dials.algorithms.profile_model.gaussian_rs import transform
 #        from scitbx.array_family import flex
@@ -410,9 +408,9 @@ def test_forward(dials_data):
 #        for i in range(100):
 
 #            # Get random x, y, z
-#            x = uniform(300, 1800)
-#            y = uniform(300, 1800)
-#            z = uniform(-10, 0)
+#            x = random.uniform(300, 1800)
+#            y = random.uniform(300, 1800)
+#            z = random.uniform(-10, 0)
 
 #            # Get random s1, phi, panel
 #            s1 = matrix.col(detector.get_pixel_lab_coord(
