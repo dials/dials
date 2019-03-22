@@ -11,8 +11,8 @@ if [ -f $HOME/build_dials/.cache_valid ]; then
 else
   echo -e "\e[31;1mThis is not the cache you are looking for: Starting from scratch\e[0m"
   cd $HOME
-  wget http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz -O - | tar xJ
-  cd dials-installer-dev
+  wget https://dials.diamond.ac.uk/diamond_builds/dials-v1.14-release-candidate-linux-x86_64.tar.gz -O - | tar xz
+  cd dials-installer
   ./install --nopycompile --verbose --prefix=..
   cd ..
 
@@ -20,8 +20,8 @@ else
   rm -rf build_dials
 
   # Fix up build path
-  mv dials-dev* build_dials
-  sed -i -e 's/dials-dev[0-9]\+/build_dials/g' $HOME/build_dials/build/setpaths.sh
+  mv dials-v* build_dials
+  sed -i -e 's/dials-v[^/]\+/build_dials/g' $HOME/build_dials/build/setpaths.sh
 
   # Define this as a valid base install
   touch $HOME/build_dials/.cache_valid
