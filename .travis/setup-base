@@ -1,12 +1,14 @@
 #!/bin/bash
 
+EXPECTED_CACHE_REVISION=20190322
+
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then
   echo -e "\e[31;1mCron job build detected. Invalidating cache.\e[0m"
   rm -f $HOME/build_dials/.cache_valid
   rm -f $HOME/build_dials/.build_complete
 fi
 
-if [ -f $HOME/build_dials/.cache_valid ]; then
+if [ -f $HOME/build_dials/.cache_valid ] && [ "$EXPECTED_CACHE_REVISION" == "$(cat $HOME/build_dials/.cache_valid)" ]; then
   echo -e "\e[1mCache probably valid\e[0m"
 else
   echo -e "\e[31;1mThis is not the cache you are looking for: Starting from scratch\e[0m"
@@ -24,5 +26,5 @@ else
   sed -i -e 's/dials-dev[0-9]\+/build_dials/g' $HOME/build_dials/build/setpaths.sh
 
   # Define this as a valid base install
-  touch $HOME/build_dials/.cache_valid
+  echo $EXPECTED_CACHE_REVISION>$HOME/build_dials/.cache_valid
 fi
