@@ -51,7 +51,6 @@ def test_max_cell(setup):
     assert max_cell.max_cell > known_max_cell
 
 
-@pytest.mark.xfail
 def test_max_cell_low_res_with_high_res_noise(setup):
     reflections = setup["reflections"]
     crystal_symmetry = setup["crystal_symmetry"]
