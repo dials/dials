@@ -49,3 +49,27 @@ def test_max_cell(setup):
         crystal_symmetry.primitive_setting().unit_cell().parameters()[:3]
     )
     assert max_cell.max_cell > known_max_cell
+
+
+@pytest.mark.xfail
+def test_max_cell_low_res_with_high_res_noise(setup):
+    reflections = setup["reflections"]
+    crystal_symmetry = setup["crystal_symmetry"]
+
+    rlp = reflections["rlp"]
+    # select only low resolution reflections
+    reflections = reflections.select(1 / rlp.norms() > 4)
+
+    n = int(0.1 * reflections.size())
+    rlp_noise = flex.vec3_double(*(flex.random_double(n) for i in range(3)))
+    reflections["rlp"].extend(rlp_noise)
+    reflections["imageset_id"].extend(flex.int(rlp_noise.size()))
+    reflections["xyzobs.mm.value"].extend(flex.vec3_double(rlp_noise.size()))
+
+    max_cell_multiplier = 1.3
+    max_cell = find_max_cell(reflections, max_cell_multiplier=max_cell_multiplier)
+
+    known_max_cell = max(
+        crystal_symmetry.primitive_setting().unit_cell().parameters()[:3]
+    )
+    assert max_cell.max_cell > known_max_cell
