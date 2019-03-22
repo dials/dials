@@ -261,7 +261,7 @@ class MaskGenerator(object):
                     get_resolution_mask_generator().apply(mask, d_min, d_max)
             except TypeError:
                 # Catch the default value None of self.params.resolution_range
-                if self.params.resolution_range:
+                if any(self.params.resolution_range):
                     raise
                 else:
                     pass
