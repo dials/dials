@@ -19,7 +19,7 @@ def test_sort_intensities(dials_data, tmpdir):
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_pickle("sorted1.pickle")
+    data = flex.reflection_table.from_pickle(tmpdir.join("sorted1.pickle").strpath)
     assert_sorted(data["intensity.sum.value"])
 
 
@@ -40,7 +40,7 @@ def test_reverse_sort_intensities(dials_data, tmpdir):
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_pickle("sorted2.pickle")
+    data = flex.reflection_table.from_pickle(tmpdir.join("sorted2.pickle").strpath)
     assert_sorted(data["intensity.sum.value"], reverse=True)
 
 
