@@ -17,6 +17,7 @@ from libtbx.phil import parse
 from libtbx import easy_mp
 from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
+from iotbx import merging_statistics
 
 logger = logging.getLogger("dials")
 
@@ -258,39 +259,35 @@ class ScalingRefinery(object):
         if self._scaler.id_ == "single":
             if self._parameters.apm_list[0].var_cov_matrix:
                 self._scaler.update_var_cov(self._parameters.apm_list[0])
-                self._scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                self._scaler.experiment.scaling_model.set_scaling_model_as_scaled()
         elif self._scaler.id_ == "multi" or self._scaler.id_ == "target":
             if self._parameters.apm_list[0].var_cov_matrix:  # test if has been set
                 for i, scaler in enumerate(self._scaler.active_scalers):
                     scaler.update_var_cov(self._parameters.apm_list[i])
-                    scaler.experiments.scaling_model.set_scaling_model_as_scaled()
+                    scaler.experiment.scaling_model.set_scaling_model_as_scaled()
 
         if not isinstance(self._scaler, MultiScalerBase):
-            self._scaler.experiments.scaling_model.normalise_components()
+            self._scaler.experiment.scaling_model.normalise_components()
 
-        logger.debug("\n" + str(self._scaler.experiments.scaling_model))
-
-        from dials.algorithms.scaling.scaling_library import (
-            calculate_single_merging_stats,
-        )
+        logger.debug("\n" + str(self._scaler.experiment.scaling_model))
 
         if self._scaler.Ih_table.free_Ih_table:
-            free_Ih = self._scaler.Ih_table.blocked_data_list[-1].Ih_table
-            free_Ih.set_flags(
-                flex.bool(free_Ih.size(), False), free_Ih.flags.outlier_in_scaling
-            )
-            free_Ih["miller_index"] = free_Ih["asu_miller_index"]
-            res = calculate_single_merging_stats(
-                free_Ih, self._scaler.experiments, use_internal_variance=False
+            i_obs = self._scaler.Ih_table.as_miller_array(
+                self._scaler.experiment.crystal.get_unit_cell(),
+                return_free_set_data=True)
+            res = merging_statistics.dataset_statistics(
+                i_obs=i_obs, n_bins=1, anomalous=False, sigma_filtering=None,
+                use_internal_variance=False,
+                eliminate_sys_absent=False,
             )
             free_rmeas = res.overall.r_meas
             free_cc12 = res.overall.cc_one_half
-            ##FIXME why blocked_data_list[0] and not all ?
-            Ih = self._scaler.Ih_table.blocked_data_list[0].Ih_table
-            Ih.set_flags(flex.bool(Ih.size(), False), Ih.flags.outlier_in_scaling)
-            Ih["miller_index"] = Ih["asu_miller_index"]
-            res = calculate_single_merging_stats(
-                Ih, self._scaler.experiments, use_internal_variance=False
+            i_obs = self._scaler.Ih_table.as_miller_array(
+                self._scaler.experiment.crystal.get_unit_cell())
+            res = merging_statistics.dataset_statistics(
+                i_obs=i_obs, n_bins=1, anomalous=False, sigma_filtering=None,
+                use_internal_variance=False,
+                eliminate_sys_absent=False,
             )
             work_rmeas = res.overall.r_meas
             work_cc12 = res.overall.cc_one_half

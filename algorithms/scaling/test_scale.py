@@ -200,24 +200,17 @@ def test_scale_merging_stats():
     )
     reflections.set_flags(flex.bool(4, False), reflections.flags.bad_for_scaling)
     params.output.merging.nbins = 1
-    script = Script(params, exp, [reflections])
-    script.image_ranges = [(1, 100)]
-    script.batch_ranges = [(1, 100)]
-    script.best_unit_cell = uctbx.unit_cell([1.0, 1.0, 2.0, 90, 90, 90])
-    script.prepare_scaled_miller_array()
-    script.merging_stats(script.scaled_miller_array)
-    assert script.merging_statistics_result is not None
+    scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
+    merging_statistics_result = Script.merging_stats(scaled_array, params)
+    assert merging_statistics_result is not None
 
     # test for sensible return if small dataset with no equivalent reflections
     reflections["miller_index"] = flex.miller_index(
         [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
     )
-    script = Script(params, exp, [reflections])
-    script.image_ranges = [(1, 100)]
-    script.batch_ranges = [(1, 100)]
-    script.prepare_scaled_miller_array()
-    script.merging_stats(script.scaled_miller_array)
-    assert script.merging_statistics_result is None
+    scaled_array = Script.scaled_data_as_miller_array([reflections], exp)
+    merging_statistics_result = Script.merging_stats(scaled_array, params)
+    assert merging_statistics_result is None
 
 
 def test_scale_script_prepare_input():
@@ -229,22 +222,19 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input()
     # try to pass in unequal number of reflections and experiments
     reflections.append(test_reflections())
-    script = Script(params, exp, reflections)
     with pytest.raises(Sorry):
-        script.prepare_input()
+        script = Script(params, exp, reflections)
 
     params, exp, reflections = generate_test_input()
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = ["0"]
-    script = Script(params, exp, reflections)
     with pytest.raises(Sorry):
-        script.prepare_input()
+        script = Script(params, exp, reflections)
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = None
     params.dataset_selection.exclude_datasets = ["0"]
-    script = Script(params, exp, reflections)
     with pytest.raises(Sorry):
-        script.prepare_input()
+        script = Script(params, exp, reflections)
 
     # Now make two experiments with identifiers and select on them
     params, exp, reflections = generate_test_input(n=2)
@@ -257,10 +247,9 @@ def test_scale_script_prepare_input():
     reflections[0].assert_experiment_identifiers_are_consistent(list1)
     reflections[1].assert_experiment_identifiers_are_consistent(list2)
     params.dataset_selection.use_datasets = ["0"]
-    script = Script(params, exp, reflections)
-    script.prepare_input()
+    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
 
-    assert len(script.reflections) == 1
+    assert len(script_reflections) == 1
 
     # Try again, this time excluding
     params, exp, reflections = generate_test_input(n=2)
@@ -269,18 +258,18 @@ def test_scale_script_prepare_input():
     exp[1].identifier = "1"
     reflections[1].experiment_identifiers()[0] = "1"
     params.dataset_selection.exclude_datasets = ["0"]
-    script = Script(params, exp, reflections)
-    script.prepare_input()
+    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
 
-    assert len(script.reflections) == 1
-    assert script.reflections[0] is reflections[1]
+    assert len(script_reflections) == 1
+    assert script_reflections[0] is reflections[1]
 
     # Try setting space group
     params, exp, reflections = generate_test_input(n=1)
     params.scaling_options.space_group = "P1"
-    script = Script(params, exp, reflections)
-    script.prepare_input()
-    assert script.experiments[0].crystal.get_space_group().type().number() == 1
+    params, script_exp, script_reflections = Script.prepare_input(
+        params, exp, reflections
+    )
+    assert script_exp[0].crystal.get_space_group().type().number() == 1
 
     # Try having two unequal space groups
     params, exp, reflections = generate_test_input(n=2)
@@ -293,16 +282,18 @@ def test_scale_script_prepare_input():
     }
     crystal = Crystal.from_dict(exp_dict)
     exp[0].crystal = crystal
-    script = Script(params, exp, reflections)
     with pytest.raises(Sorry):
-        script.prepare_input()
+        params, script_exp, script_reflections = Script.prepare_input(
+            params, exp, reflections
+        )
 
     # Test cutting data
     params, exp, reflections = generate_test_input(n=1)
     params.cut_data.d_min = 1.5
-    script = Script(params, exp, reflections)
-    script.prepare_input()
-    r = script.reflections[0]
+    params, script_exp, script_reflections = Script.prepare_input(
+        params, exp, reflections
+    )
+    r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
         False,
@@ -310,9 +301,10 @@ def test_scale_script_prepare_input():
         True,
     ]
     params.cut_data.d_max = 2.25
-    script = Script(params, exp, reflections)
-    script.prepare_input()
-    r = script.reflections[0]
+    params, script_exp, script_reflections = Script.prepare_input(
+        params, exp, reflections
+    )
+    r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
         False,
@@ -323,9 +315,10 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input(n=1)
     reflections[0]["partiality"] = flex.double([0.5, 0.8, 1.0, 1.0])
     params.cut_data.partiality_cutoff = 0.75
-    script = Script(params, exp, reflections)
-    script.prepare_input()
-    r = script.reflections[0]
+    params, script_exp, script_reflections = Script.prepare_input(
+        params, exp, reflections
+    )
+    r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         True,
         False,

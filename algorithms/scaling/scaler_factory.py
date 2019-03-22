@@ -215,7 +215,7 @@ class MultiScalerFactory(object):
             single_scalers.append(scaler)
         single_scalers.extend(targetscaler.single_scalers)
         return MultiScaler(
-            targetscaler.params, [targetscaler.experiments], single_scalers
+            targetscaler.params, [targetscaler.experiment], single_scalers
         )
 
 
