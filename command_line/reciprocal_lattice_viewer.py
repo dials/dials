@@ -129,7 +129,7 @@ class render_3d(object):
                 pass
         else:
             self.set_beam_centre(self.settings.beam_centre)
-        if crystals is not None:
+        if crystals:
             vecs = [
                 matrix.sqr(c.get_A()).transpose().as_list_of_lists() for c in crystals
             ]
@@ -981,7 +981,7 @@ def run(args):
         exit(0)
 
     imagesets = experiments.imagesets()
-    crystals = experiments.crystals()
+    crystals = [c for c in experiments.crystals() if c is not None]
 
     if len(reflections) > 1:
         assert len(reflections) == len(imagesets)
