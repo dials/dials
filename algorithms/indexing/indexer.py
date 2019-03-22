@@ -12,7 +12,6 @@
 
 from __future__ import absolute_import, division
 from __future__ import print_function
-import copy
 import math
 import logging
 
@@ -1287,22 +1286,6 @@ class indexer_base(object):
                 n_indexed_cutoff=filter_params.n_indexed_cutoff,
             )
 
-        params = copy.deepcopy(self.all_params)
-        params.refinement.parameterisation.auto_reduction.action = "fix"
-        params.refinement.parameterisation.scan_varying = False
-        params.refinement.refinery.max_iterations = 4
-        params.refinement.reflections.reflections_per_degree = min(
-            params.refinement.reflections.reflections_per_degree, 20
-        )
-        if params.refinement.reflections.outlier.block_width is libtbx.Auto:
-            # auto block_width determination is potentially too expensive to do at
-            # this stage: instead set separate_blocks=False and increase value
-            # of tukey.iqr_multiplier to be more tolerant of outliers
-            params.refinement.reflections.outlier.separate_blocks = False
-            params.refinement.reflections.outlier.tukey.iqr_multiplier = (
-                2 * params.refinement.reflections.outlier.tukey.iqr_multiplier
-            )
-
         args = []
 
         for cm in candidate_orientation_matrices:
@@ -1397,12 +1380,12 @@ class indexer_base(object):
                     refl["miller_index"].set_selected(sel, miller_indices)
 
             args.append((experiments, refl))
-            if len(args) == params.indexing.basis_vector_combinations.max_refine:
+            if len(args) == self.params.basis_vector_combinations.max_refine:
                 break
 
         from libtbx import easy_mp
 
-        evaluator = model_evaluation.ModelEvaluation(params)
+        evaluator = model_evaluation.ModelEvaluation(self.all_params)
         results = easy_mp.parallel_map(
             evaluator.evaluate,
             args,
