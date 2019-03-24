@@ -246,6 +246,7 @@ if __name__ == "__main__":
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     from dials_data.download import DataFetcher
+
     experiments = ExperimentListFactory.from_json_file(
         DataFetcher()("centroid_test_data").join("experiments.json").strpath,
         check_format=False,

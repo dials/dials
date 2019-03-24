@@ -9,6 +9,7 @@ from mock import Mock
 from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
 from dials.array_family import flex
 
+
 @pytest.mark.skipif(
     not os.access("/dls/i04/data/2019/cm23004-1/20190109/Eiger", os.R_OK),
     reason="Test images not available",
@@ -80,7 +81,7 @@ def test_flatten_experiments_updating_id_values():
 
     file_list = [
         mock_reflection_file_object(id_=0),
-        mock_two_reflection_file_object(ids=[1, 2])
+        mock_two_reflection_file_object(ids=[1, 2]),
     ]
     rs = flatten_reflections(file_list)
     assert rs[0] is file_list[0].data
