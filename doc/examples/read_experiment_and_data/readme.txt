@@ -1,1 +1,0 @@
-dials.python example_experiment_data.py experiments_thaum_0500.json indexed_thaum_0500.pickle
