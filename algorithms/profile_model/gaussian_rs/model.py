@@ -45,7 +45,7 @@ phil_scope = parse(
       .help = "The algorithm to compute mosaicity"
 
     parameters {
-      
+
       n_sigma = 3.0
         .type = float(value_min=0)
         .help = "Sigma multiplier for shoebox"
