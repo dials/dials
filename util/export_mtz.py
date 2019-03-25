@@ -4,8 +4,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import time
-from collections import defaultdict
-from math import ceil, cos, floor, log, pi, sin, sqrt
+from math import cos, pi, sin
 
 from dials.array_family import flex
 from dials.util.version import dials_version
@@ -15,6 +14,8 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
     get_image_ranges,
 )
+
+from dials.util.ext import dials_u_to_mosflm
 from iotbx import mtz
 from dials.util import Sorry
 from scitbx import matrix
@@ -30,7 +31,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def dials_u_to_mosflm(dials_U, uc):
+def old_dials_u_to_mosflm(dials_U, uc):
     """Compute the mosflm U matrix i.e. the U matrix from same UB definition
     as DIALS, but with Busing & Levy B matrix definition."""
 
@@ -60,6 +61,20 @@ def dials_u_to_mosflm(dials_U, uc):
     )
 
     mosflm_U = dials_UB * mosflm_B.inverse()
+
+    # TODO make me into a test of C++ code
+
+    assert (
+        abs(
+            sum(
+                (
+                    mosflm_U.inverse() * matrix.sqr(dials_u_to_mosflm(dials_U, uc))
+                    - matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+                ).elems
+            )
+        )
+        < 1e-10
+    )
 
     return mosflm_U
 
@@ -126,7 +141,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
     # here we are just giving the effective axis so at scan angle 0 this will
     # not be correct... FIXME 2 not even sure we can express the stack of
     # matrices S * R * F * U * B in MTZ format?... see [=A=] below
-    _U = dials_u_to_mosflm(F * _U, _unit_cell)
+    _U = matrix.sqr(dials_u_to_mosflm(F * _U, _unit_cell))
 
     # FIXME need to get what was refined and what was constrained from the
     # crystal model - see https://github.com/dials/dials/issues/355
