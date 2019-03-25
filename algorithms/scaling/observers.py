@@ -8,14 +8,14 @@ from cctbx import miller
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
-    statistics_tables,
     plot_outliers,
     normal_probability_plot,
-    cc_one_half_plot,
 )
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
+    statistics_tables,
+    cc_one_half_plot,
 )
 from dials.util.batch_handling import (
     calculate_batch_offsets,
@@ -270,7 +270,6 @@ class MergingStatisticsObserver(Observer):
                 sel &= (r['inverse_scale_factor'] > 0)
                 batches.extend(r['batch'].select(sel))
                 scales.extend(r['inverse_scale_factor'].select(sel))
-
             ms = scaling_script.scaled_miller_array.customized_copy()
             batch_array = miller.array(ms, data=batches)
             rvb = rmerge_vs_batch(scaling_script.scaled_miller_array, batch_array)
@@ -285,13 +284,16 @@ class MergingStatisticsObserver(Observer):
 
     def make_plots(self):
         """Generate tables of overall and resolution-binned merging statistics."""
-        d = {"scaling_tables": [[], []], "cc_one_half_plot": {}}
+        d = {
+            "scaling_tables": [[], []],
+            "cc_one_half_plot": {},
+            "batch_plots" : OrderedDict(),
+        }
         if "statistics" in self.data:
             d["scaling_tables"] = statistics_tables(self.data["statistics"])
             d["cc_one_half_plot"] = cc_one_half_plot(
                 self.data["statistics"], is_centric=self.data["is_centric"]
             )
-            d["batch_plots"] = OrderedDict()
             d["batch_plots"].update(scale_rmerge_vs_batch_plot(
                 self.data["bm"],
                 self.data["r_merge_vs_batch"],

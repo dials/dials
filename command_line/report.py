@@ -22,11 +22,8 @@ import numpy as np
 import dials.util.banner
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
-from dials.algorithms.scaling.plots import (
-    cc_one_half_plot,
-    statistics_tables,
-    plot_scaling_models,
-)
+from dials.algorithms.scaling.plots import plot_scaling_models
+from dials.report.plots import cc_one_half_plot, statistics_tables
 
 RAD2DEG = 180 / math.pi
 
