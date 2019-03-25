@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import time
-from math import cos, pi, sin
 
 from dials.array_family import flex
 from dials.util.version import dials_version
@@ -29,54 +28,6 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-
-
-def old_dials_u_to_mosflm(dials_U, uc):
-    """Compute the mosflm U matrix i.e. the U matrix from same UB definition
-    as DIALS, but with Busing & Levy B matrix definition."""
-
-    parameters = uc.parameters()
-    dials_B = matrix.sqr(uc.fractionalization_matrix()).transpose()
-    dials_UB = dials_U * dials_B
-
-    r_parameters = uc.reciprocal_parameters()
-
-    a = parameters[:3]
-    al = [pi * p / 180.0 for p in parameters[3:]]
-    b = r_parameters[:3]
-    be = [pi * p / 180.0 for p in r_parameters[3:]]
-
-    mosflm_B = matrix.sqr(
-        (
-            b[0],
-            b[1] * cos(be[2]),
-            b[2] * cos(be[1]),
-            0,
-            b[1] * sin(be[2]),
-            -b[2] * sin(be[1]) * cos(al[0]),
-            0,
-            0,
-            1.0 / a[2],
-        )
-    )
-
-    mosflm_U = dials_UB * mosflm_B.inverse()
-
-    # TODO make me into a test of C++ code
-
-    assert (
-        abs(
-            sum(
-                (
-                    mosflm_U.inverse() * matrix.sqr(dials_u_to_mosflm(dials_U, uc))
-                    - matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
-                ).elems
-            )
-        )
-        < 1e-10
-    )
-
-    return mosflm_U
 
 
 def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
