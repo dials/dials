@@ -11,6 +11,7 @@ from dials.algorithms.scaling.plots import (
     plot_outliers,
     normal_probability_plot,
 )
+from dials.report.analysis import batch_dependent_properties
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
@@ -24,8 +25,6 @@ from dials.util.batch_handling import (
     batch_manager,
 )
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-
-from xia2.Modules.Analysis import rmerge_vs_batch, scales_vs_batch, i_sig_i_vs_batch
 
 logger = logging.getLogger('dials')
 
@@ -272,14 +271,17 @@ class MergingStatisticsObserver(Observer):
                 scales.extend(r['inverse_scale_factor'].select(sel))
             ms = scaling_script.scaled_miller_array.customized_copy()
             batch_array = miller.array(ms, data=batches)
-            rvb = rmerge_vs_batch(scaling_script.scaled_miller_array, batch_array)
-            self.data["r_merge_vs_batch"] = rvb.data
-            svb = scales_vs_batch(miller.array(ms, data=scales), batch_array)
-            self.data["scale_vs_batch"] = svb.data
+
+            batches, rvb, isigivb, svb = batch_dependent_properties(
+                batch_array,
+                scaling_script.scaled_miller_array,
+                miller.array(ms, data=scales),
+            )
             batch_data = [{"id" : i, "range": r} for i, r in enumerate(batch_ranges)]
-            self.data["bm"] = batch_manager(rvb.batches, batch_data)
-            self.data["isigivsbatch"] = i_sig_i_vs_batch(
-                scaling_script.scaled_miller_array, batch_array).data
+            self.data["bm"] = batch_manager(batches, batch_data)
+            self.data["r_merge_vs_batch"] = rvb
+            self.data["scale_vs_batch"] = svb
+            self.data["isigivsbatch"] = isigivb
 
 
     def make_plots(self):

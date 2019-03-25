@@ -60,5 +60,3 @@ def test_plot_outliers():
     d = plot_outliers(data)
     assert "outliers_vs_z" in d
     assert "outlier_xy_positions" in d
-
-
