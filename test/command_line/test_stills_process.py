@@ -112,6 +112,11 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
           detector.fix_list = Dist,Tau1
         }
       }
+      profile {
+        gaussian_rs {
+          centroid_definition = com
+        }
+      }
       """
             % geometry_path
         )
