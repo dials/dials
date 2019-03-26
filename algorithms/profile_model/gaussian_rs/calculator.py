@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class ComputeEsdBeamDivergence(object):
     """Calculate the E.s.d of the beam divergence."""
 
-    def __init__(self, detector, reflections):
+    def __init__(self, detector, reflections, centroid_definition="s1"):
         """Calculate the E.s.d of the beam divergence.
 
         Params:
@@ -39,7 +39,9 @@ class ComputeEsdBeamDivergence(object):
         from scitbx.array_family import flex
 
         # Calculate the beam direction variances
-        variance = self._beam_direction_variance_list(detector, reflections)
+        variance = self._beam_direction_variance_list(
+            detector, reflections, centroid_definition
+        )
 
         # Calculate and return the e.s.d of the beam divergence
         self._sigma = math.sqrt(flex.sum(variance) / len(variance))
@@ -48,7 +50,9 @@ class ComputeEsdBeamDivergence(object):
         """ Return the E.S.D of the beam divergence. """
         return self._sigma
 
-    def _beam_direction_variance_list(self, detector, reflections):
+    def _beam_direction_variance_list(
+        self, detector, reflections, centroid_definition="s1"
+    ):
         """Calculate the variance in beam direction for each spot.
 
         Params:
@@ -64,7 +68,6 @@ class ComputeEsdBeamDivergence(object):
         shoebox = reflections["shoebox"]
         bbox = reflections["bbox"]
         xyz = reflections["xyzobs.px.value"]
-        s1_centroid = reflections["s1"]
 
         # Loop through all the reflections
         variance = []
@@ -78,10 +81,18 @@ class ComputeEsdBeamDivergence(object):
             values = shoebox[r].values(mask)
             s1 = shoebox[r].beam_vectors(detector, mask)
 
-            # Calculate the beam vector at the centroid
-            panel = shoebox[r].panel
-            # s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
-            angles = s1.angle(s1_centroid[r], deg=False)
+            # TODO probably need to move some bit of this out of the loop as
+            # a lot of variable dereferencing going on here
+
+            if centroid_definition == "com":
+                # Calculate the beam vector at the centroid
+                panel = shoebox[r].panel
+                s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
+                angles = s1.angle(s1_centroid, deg=False)
+            else:
+                s1_centroid = reflections["s1"][r]
+                angles = s1.angle(s1_centroid, deg=False)
+
             if flex.sum(values) > 1:
                 variance.append(
                     flex.sum(values * (angles ** 2)) / (flex.sum(values) - 1)
@@ -524,6 +535,7 @@ class ProfileModelCalculator(object):
         scan,
         min_zeta=0.05,
         algorithm="basic",
+        centroid_definition="s1",
     ):
         """ Calculate the profile model. """
         from dxtbx.model.experiment_list import Experiment
@@ -537,9 +549,13 @@ class ProfileModelCalculator(object):
         assert "xyzobs.px.value" in reflections
         assert "xyzcal.mm" in reflections
 
+        assert centroid_definition in ("s1", "com")
+
         # Calculate the E.S.D of the beam divergence
         logger.info("Calculating E.S.D Beam Divergence.")
-        beam_divergence = ComputeEsdBeamDivergence(detector, reflections)
+        beam_divergence = ComputeEsdBeamDivergence(
+            detector, reflections, centroid_definition
+        )
 
         # Set the sigma b
         self._sigma_b = beam_divergence.sigma()
@@ -603,6 +619,7 @@ class ScanVaryingProfileModelCalculator(object):
         scan,
         min_zeta=0.05,
         algorithm="basic",
+        centroid_definition="s1",
     ):
         """ Calculate the profile model. """
         from copy import deepcopy
@@ -617,6 +634,8 @@ class ScanVaryingProfileModelCalculator(object):
         assert "shoebox" in reflections
         assert "xyzobs.px.value" in reflections
         assert "xyzcal.mm" in reflections
+
+        assert centroid_definition in ("s1", "com")
 
         # Select by zeta
         zeta = reflections.compute_zeta(

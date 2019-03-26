@@ -44,6 +44,10 @@ phil_scope = parse(
       .type = choice
       .help = "The algorithm to compute mosaicity"
 
+    centroid_definition = com *s1
+      .type = choice
+      .help = "The centroid to use as beam divergence (centre of mass or s1)"
+
     parameters {
 
       n_sigma = 3.0
@@ -400,6 +404,7 @@ class Model(ProfileModelExt):
             scan,
             params.gaussian_rs.filter.min_zeta,
             algorithm=params.gaussian_rs.sigma_m_algorithm,
+            centroid_definition=params.gaussian_rs.centroid_definition,
         )
         return cls(
             params=params,
