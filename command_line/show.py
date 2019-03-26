@@ -61,6 +61,14 @@ def beam_centre_mm(detector, s0):
     return panel_id, (x, y)
 
 
+def beam_centre_raw_image_px(detector, s0):
+    panel_id, (x, y) = beam_centre_mm(detector, s0)
+    panel = detector[panel_id]
+    x_px, y_px = panel.millimeter_to_pixel((x, y))
+    offset = panel.get_raw_image_offset()
+    return x_px + offset[0], y_px + offset[1]
+
+
 def show_beam(detector, beam):
 
     # standard static beam model string
@@ -75,21 +83,36 @@ def show_beam(detector, beam):
     if panel_id >= 0 and x is not None and y is not None:
         x_px, y_px = detector[panel_id].millimeter_to_pixel((x, y))
         if len(detector) > 1:
-            beam_centre_mm_str = "Beam centre (mm): panel %i, (%.2f,%.2f)" % (
-                panel_id,
-                x,
-                y,
-            )
-            beam_centre_px_str = "Beam centre (px): panel %i, (%.2f,%.2f)" % (
+            beam_centre_mm_str = "    mm: panel %i, (%.2f,%.2f)" % (panel_id, x, y)
+            beam_centre_px_str = "    px: panel %i, (%.2f,%.2f)" % (
                 panel_id,
                 x_px,
                 y_px,
             )
+            x_raw_px, y_raw_px = beam_centre_raw_image_px(detector, beam.get_s0())
+            beam_centre_raw_px_str = "    px, raw image: (%.2f,%.2f)" % (
+                x_raw_px,
+                y_raw_px,
+            )
+            x_raw_mm, y_raw_mm = detector[panel_id].pixel_to_millimeter(
+                (x_raw_px, y_raw_px)
+            )
+            beam_centre_raw_mm_str = "    mm, raw image: (%.2f,%.2f)" % (
+                x_raw_mm,
+                y_raw_mm,
+            )
         else:
-            beam_centre_mm_str = "Beam centre (mm): (%.2f,%.2f)" % (x, y)
-            beam_centre_px_str = "Beam centre (px): (%.2f,%.2f)" % (x_px, y_px)
+            beam_centre_mm_str = "    mm: (%.2f,%.2f)" % (x, y)
+            beam_centre_px_str = "    px: (%.2f,%.2f)" % (x_px, y_px)
+            beam_centre_raw_px_str = ""
+            beam_centre_raw_mm_str = ""
 
+        s += "\nBeam centre: \n"
         s += beam_centre_mm_str + "\n" + beam_centre_px_str + "\n"
+        if beam_centre_raw_mm_str:
+            s += beam_centre_raw_mm_str + "\n"
+        if beam_centre_raw_px_str:
+            s += beam_centre_raw_px_str + "\n"
 
     # report range of scan-varying model beam centres
     if beam.num_scan_points > 0:
@@ -142,7 +165,7 @@ def show_goniometer(goniometer):
 
 
 def run(args):
-    import dials.util.banner
+    import dials.util.banner  # noqa: F401 - Importing means that it prints
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_experiments

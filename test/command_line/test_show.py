@@ -43,8 +43,9 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
-Beam centre (mm): (212.48,220.00)
-Beam centre (px): (1235.34,1279.08)
+Beam centre:
+    mm: (212.48,220.00)
+    px: (1235.34,1279.08)
 Scan:
     image range:   {1,9}
     oscillation:   {0,0.2}
@@ -110,8 +111,9 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
-Beam centre (mm): (210.76,205.28)
-Beam centre (px): (1225.35,1193.47)
+Beam centre:
+    mm: (210.76,205.28)
+    px: (1225.35,1193.47)
 Scan:
     image range:   {1,540}
     oscillation:   {82,0.15}
@@ -168,14 +170,100 @@ Beam:
     sigma divergence: 0
     polarization normal: {0,1,0}
     polarization fraction: 0.999
-Beam centre (mm): (212.48,220.00)
-Beam centre (px): (1235.34,1279.08)
+Beam centre:
+    mm: (212.48,220.00)
+    px: (1235.34,1279.08)
 Scan:
     image range:   {1,9}
     oscillation:   {0,0.2}
     exposure time: 0.2
 Goniometer:
     Rotation axis:   {1,0,0}
+    Fixed rotation:  {1,0,0,0,1,0,0,0,1}
+    Setting rotation:{1,0,0,0,1,0,0,0,1}
+""".strip()
+    )
+
+
+def test_dials_show_multi_panel_i23(dials_regression):
+    path = os.path.join(
+        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
+    )
+    result = procrunner.run(
+        ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+
+    assert (
+        "\n".join(output[4:25])
+        == """
+Experiment 0:
+Detector:
+Panel:
+  name: row-00
+  type: SENSOR_PAD
+  identifier:
+  pixel_size:{0.172,0.172}
+  image_size: {2463,195}
+  trusted_range: {-1,1e+06}
+  thickness: 0.32
+  material: Si
+  mu: 3.663
+  gain: 1
+  pedestal: 0
+  fast_axis: {-1,0,0}
+  slow_axis: {0,-0.143467,-0.989655}
+  origin: {191.952,-243.628,52.4929}
+  distance: 248.638
+  pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
+    mu: 3.663
+    t0: 0.32
+""".strip()
+    )
+
+    assert (
+        "\n".join(output[-41:])
+        == """
+Panel:
+  name: row-23
+  type: SENSOR_PAD
+  identifier:
+  pixel_size:{0.172,0.172}
+  image_size: {2463,195}
+  trusted_range: {-1,1e+06}
+  thickness: 0.32
+  material: Si
+  mu: 3.663
+  gain: 1
+  pedestal: 0
+  fast_axis: {-1,0,0}
+  slow_axis: {-0,-0.0638966,0.997957}
+  origin: {191.952,251.939,-0.791525}
+  distance: 251.373
+  pixel to millimeter strategy: ParallaxCorrectedPxMmStrategy
+    mu: 3.663
+    t0: 0.32
+Max resolution (at corners): 0.624307
+Max resolution (inscribed):  0.829324
+Beam:
+    wavelength: 0.95373
+    sample to source direction : {0,0,1}
+    divergence: 0
+    sigma divergence: 0
+    polarization normal: {0,1,0}
+    polarization fraction: 0.999
+Beam centre:
+    mm: panel 12, (191.95,7.22)
+    px: panel 12, (1116.00,41.96)
+    mm, raw image: (191.95,444.63)
+    px, raw image: (1116.00,2585.96)
+Scan:
+    image range:   {1,1}
+    oscillation:   {0,0.1}
+    exposure time: 0.2
+Goniometer:
+    Rotation axis:   {-1,0,0}
     Fixed rotation:  {1,0,0,0,1,0,0,0,1}
     Setting rotation:{1,0,0,0,1,0,0,0,1}
 """.strip()
