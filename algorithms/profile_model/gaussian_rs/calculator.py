@@ -74,6 +74,16 @@ class ComputeEsdBeamDivergence(object):
 
         # Loop through all the reflections
         variance = []
+
+        if centroid_definition == "com":
+            # Calculate the beam vector at the centroid
+            s1_centroid = []
+            for r in range(len(reflections)):
+                panel = shoebox[r].panel
+                s1_centroid.append(detector[panel].get_pixel_lab_coord(xyz[r][0:2]))
+        else:
+            s1_centroid = reflections["s1"]
+
         for r in range(len(reflections)):
 
             # Get the coordinates and values of valid shoebox pixels
@@ -84,17 +94,7 @@ class ComputeEsdBeamDivergence(object):
             values = shoebox[r].values(mask)
             s1 = shoebox[r].beam_vectors(detector, mask)
 
-            # TODO probably need to move some bit of this out of the loop as
-            # a lot of variable dereferencing going on here
-
-            if centroid_definition == "com":
-                # Calculate the beam vector at the centroid
-                panel = shoebox[r].panel
-                s1_centroid = detector[panel].get_pixel_lab_coord(xyz[r][0:2])
-                angles = s1.angle(s1_centroid, deg=False)
-            else:
-                s1_centroid = reflections["s1"][r]
-                angles = s1.angle(s1_centroid, deg=False)
+            angles = s1.angle(s1_centroid[r], deg=False)
 
             if flex.sum(values) > 1:
                 variance.append(
