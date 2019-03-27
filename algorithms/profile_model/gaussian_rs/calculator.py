@@ -34,6 +34,7 @@ class ComputeEsdBeamDivergence(object):
         Params:
             detector The detector class
             reflections The reflections
+            centroid_definition ENUM com or s1
 
         """
         from scitbx.array_family import flex
@@ -56,7 +57,9 @@ class ComputeEsdBeamDivergence(object):
         """Calculate the variance in beam direction for each spot.
 
         Params:
+            detector The detector model
             reflections The list of reflections
+            centroid_definition ENUM com or s1
 
         Returns:
             The list of variances
