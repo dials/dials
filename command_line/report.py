@@ -2660,7 +2660,7 @@ class ScalingModelAnalyser(object):
 
 def merging_stats_results(reflections, experiments):
     if not "inverse_scale_factor" in reflections:
-        return [], [], {}
+        return [], [], {}, {}
 
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
