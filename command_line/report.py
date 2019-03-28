@@ -18,12 +18,24 @@ import copy
 import math
 from collections import OrderedDict
 import numpy as np
+from cctbx import miller
 
 import dials.util.banner
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
+from dials.algorithms.scaling.scaling_library import (
+    calculate_single_merging_stats,
+    scaled_data_as_miller_array,
+)
 from dials.algorithms.scaling.plots import plot_scaling_models
-from dials.report.plots import cc_one_half_plot, statistics_tables
+from dials.report.analysis import combined_table_to_batch_dependent_properties
+from dials.report.plots import (
+    cc_one_half_plot,
+    statistics_tables,
+    scale_rmerge_vs_batch_plot,
+    i_over_sig_i_vs_batch_plot,
+)
+from dials.util.batch_handling import batch_manager
+
 
 RAD2DEG = 180 / math.pi
 
@@ -2664,7 +2676,16 @@ def merging_stats_results(reflections, experiments):
         result, is_centric=experiments[0].crystal.get_space_group().is_centric()
     )
 
-    return summary_table, results_table, cc_plot
+    batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
+        reflections, experiments)
+
+    bm = batch_manager(batches, batch_data)
+
+    batch_plots = OrderedDict()
+    batch_plots.update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
+    batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
+
+    return summary_table, results_table, cc_plot, batch_plots
 
 
 class Analyser(object):
@@ -2714,7 +2735,7 @@ class Analyser(object):
             crystal_table, expt_geom_table = self.experiments_table(experiments)
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
-            summary, scaling_table_by_resolution, cc_plot = merging_stats_results(
+            summary, scaling_table_by_resolution, cc_plot, batch_plots = merging_stats_results(
                 rlist, experiments
             )
 
@@ -2747,6 +2768,7 @@ class Analyser(object):
                 scan_varying_graphs=graphs["scan_varying"],
                 scaling_model_graphs=graphs["scaling_model"],
                 cc_plot=cc_plot,
+                batch_graphs=batch_plots,
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],
                 intensity_graphs=graphs["intensity"],
