@@ -16,6 +16,7 @@ from dials.report.plots import (
     i_over_sig_i_vs_batch_plot,
     statistics_tables,
     cc_one_half_plot,
+    i_over_sig_i_plot,
 )
 from dials.util.batch_handling import batch_manager
 
@@ -105,7 +106,7 @@ class ScalingHTMLGenerator(Observer):
             page_title="DIALS scaling report",
             scaling_model_graphs=self.data["scaling_model"],
             scaling_tables=self.data["scaling_tables"],
-            cc_one_half_plot=self.data["cc_one_half_plot"],
+            resolution_plots=self.data["resolution_plots"],
             scaling_outlier_graphs=self.data["outlier_plots"],
             normal_prob_plot=self.data["normal_prob_plot"],
             batch_plots=self.data["batch_plots"],
@@ -266,14 +267,15 @@ class MergingStatisticsObserver(Observer):
         """Generate tables of overall and resolution-binned merging statistics."""
         d = {
             "scaling_tables": [[], []],
-            "cc_one_half_plot": {},
+            "resolution_plots": OrderedDict(),
             "batch_plots": OrderedDict(),
         }
         if "statistics" in self.data:
             d["scaling_tables"] = statistics_tables(self.data["statistics"])
-            d["cc_one_half_plot"] = cc_one_half_plot(
+            d["resolution_plots"].update(cc_one_half_plot(
                 self.data["statistics"], is_centric=self.data["is_centric"]
-            )
+            ))
+            d["resolution_plots"].update(i_over_sig_i_plot(self.data["statistics"]))
             d["batch_plots"].update(
                 scale_rmerge_vs_batch_plot(
                     self.data["bm"],

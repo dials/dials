@@ -30,6 +30,7 @@ from dials.report.plots import (
     statistics_tables,
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
+    i_over_sig_i_plot,
 )
 from dials.util.batch_handling import batch_manager
 
@@ -2669,9 +2670,11 @@ def merging_stats_results(reflections, experiments):
 
     summary_table, results_table = statistics_tables(result)
 
-    cc_plot = cc_one_half_plot(
+    resolution_plots = OrderedDict()
+    resolution_plots.update(cc_one_half_plot(
         result, is_centric=experiments[0].crystal.get_space_group().is_centric()
-    )
+    ))
+    resolution_plots.update(i_over_sig_i_plot(result))
 
     batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
         reflections, experiments)
@@ -2682,7 +2685,7 @@ def merging_stats_results(reflections, experiments):
     batch_plots.update(scale_rmerge_vs_batch_plot(bm, rvb, svb))
     batch_plots.update(i_over_sig_i_vs_batch_plot(bm, isigivb))
 
-    return summary_table, results_table, cc_plot, batch_plots
+    return summary_table, results_table, resolution_plots, batch_plots
 
 
 class Analyser(object):
@@ -2732,7 +2735,7 @@ class Analyser(object):
             crystal_table, expt_geom_table = self.experiments_table(experiments)
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
-            summary, scaling_table_by_resolution, cc_plot, batch_plots = merging_stats_results(
+            summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
 
@@ -2764,7 +2767,7 @@ class Analyser(object):
                 page_title="DIALS analysis report",
                 scan_varying_graphs=graphs["scan_varying"],
                 scaling_model_graphs=graphs["scaling_model"],
-                cc_plot=cc_plot,
+                resolution_plots=resolution_plots,
                 batch_graphs=batch_plots,
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],

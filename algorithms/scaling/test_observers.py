@@ -262,7 +262,9 @@ def test_MergingStatisticsObserver():
     mock_func = mock.Mock()
     mock_func.return_value = "return_tables"
     mock_func_2 = mock.Mock()
-    mock_func_2.return_value = "cchalfplot"
+    mock_func_2.return_value = {"cchalfplot" : {}}
+    mock_func_3 = mock.Mock()
+    mock_func_3.return_value = {"isigiplot" : {}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
@@ -270,13 +272,17 @@ def test_MergingStatisticsObserver():
         with mock.patch(
             "dials.algorithms.scaling.observers.cc_one_half_plot", new=mock_func_2
         ):
-            r = observer.make_plots()
-            assert mock_func.call_count == 1
-            assert mock_func.call_args_list == [mock.call(observer.data["statistics"])]
-            assert mock_func_2.call_count == 1
-            assert mock_func_2.call_args_list == [
-                mock.call(observer.data["statistics"], is_centric=True)
-            ]
-            assert r["cc_one_half_plot"] == "cchalfplot"
-            assert r["scaling_tables"] == "return_tables"
-            assert "batch_plots" in r
+            with mock.patch(
+            "dials.algorithms.scaling.observers.i_over_sig_i_plot", new=mock_func_3
+            ):
+                r = observer.make_plots()
+                assert mock_func.call_count == 1
+                assert mock_func.call_args_list == [mock.call(observer.data["statistics"])]
+                assert mock_func_2.call_count == 1
+                assert mock_func_2.call_args_list == [
+                    mock.call(observer.data["statistics"], is_centric=True)
+                ]
+                assert r["scaling_tables"] == "return_tables"
+                assert "cchalfplot" in r["resolution_plots"]
+                assert "isigiplot" in r["resolution_plots"]
+                assert "batch_plots" in r

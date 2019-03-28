@@ -222,6 +222,41 @@ def statistics_tables(dataset_statistics):
     ]
     return (summary_table, resolution_binned_table)
 
+def i_over_sig_i_plot(dataset_statistics):
+
+    i_over_sig_i_bins = [
+        bin_stats.i_over_sigma_mean for bin_stats in dataset_statistics.bins
+    ]
+
+    d_star_sq_bins = [
+        (1 / bin_stats.d_min ** 2) for bin_stats in dataset_statistics.bins
+    ]
+    d_star_sq_tickvals, d_star_sq_ticktext = _d_star_sq_to_d_ticks(
+        d_star_sq_bins, nticks=5
+    )
+
+    return {
+        "i_over_sig_i": {
+            "data": [
+                {
+                    "x": d_star_sq_bins,  # d_star_sq
+                    "y": i_over_sig_i_bins,
+                    "type": "scatter",
+                    "name": "I/sigI vs resolution",
+                }
+            ],
+            "layout": {
+                "title": "<I/sig(I)> vs resolution",
+                "xaxis": {
+                    "title": u"Resolution (Å)",
+                    "tickvals": d_star_sq_tickvals,
+                    "ticktext": d_star_sq_ticktext,
+                },
+                "yaxis": {"title": "<I/sig(I)>", "rangemode": "tozero"},
+            },
+        }
+    }
+
 def _d_star_sq_to_d_ticks(d_star_sq, nticks):
     min_d_star_sq = min(d_star_sq)
     dstep = (max(d_star_sq) - min_d_star_sq) / nticks

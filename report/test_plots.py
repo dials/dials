@@ -10,6 +10,7 @@ from dials.util.batch_handling import batch_manager
 from dials.report.plots import (
     statistics_tables,
     cc_one_half_plot,
+    i_over_sig_i_plot,
     i_over_sig_i_vs_batch_plot,
     scale_rmerge_vs_batch_plot,
 )
@@ -37,7 +38,7 @@ def test_statistics_tables(iobs):
     tables = statistics_tables(result)
     assert len(tables) == 2  # overall and per resolution
 
-def test_cc_one_half_plot(iobs):
+def test_resolution_dependent_plots(iobs):
     """Test cc half plot, for centric and acentric data"""
     n_bins = 2
     result = dataset_statistics(
@@ -66,6 +67,13 @@ def test_cc_one_half_plot(iobs):
         ['1.26', '1.19', '1.13', '1.08', '1.04']
 
     assert list(d['cc_one_half']['layout']['xaxis']['tickvals']) == pytest.approx(
+        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4)
+
+    d = i_over_sig_i_plot(result)
+    assert len(d['i_over_sig_i']['data'][0]['y']) == n_bins
+    assert list(d['i_over_sig_i']['layout']['xaxis']['ticktext']) == \
+        ['1.26', '1.19', '1.13', '1.08', '1.04']
+    assert list(d['i_over_sig_i']['layout']['xaxis']['tickvals']) == pytest.approx(
         [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4)
 
 @pytest.fixture
