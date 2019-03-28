@@ -1,19 +1,20 @@
 """Tests for dials.report.analysis module"""
 import pytest
+from mock import mock
 from cctbx import miller
-from cctbx.array_family import flex
+from dials.array_family import flex
 from dxtbx.model import Crystal
 from dials.report.analysis import (
     scales_vs_batch,
     i_sig_i_vs_batch,
     rmerge_vs_batch,
     batch_dependent_properties,
+    reflection_tables_to_batch_dependent_properties,
+    combined_table_to_batch_dependent_properties,
 )
 
-
 @pytest.fixture
-def example_miller_set():
-    """Generate an example miller set."""
+def example_crystal():
     exp_dict = {
         "__id__": "crystal",
         "real_space_a": [1.0, 0.0, 0.0],
@@ -22,8 +23,13 @@ def example_miller_set():
         "space_group_hall_symbol": "-P 2yb",
     }
     crystal = Crystal.from_dict(exp_dict)
+    return crystal
+
+@pytest.fixture
+def example_miller_set(example_crystal):
+    """Generate an example miller set."""
     ms = miller.set(
-        crystal_symmetry=crystal.get_crystal_symmetry(),
+        crystal_symmetry=example_crystal.get_crystal_symmetry(),
         indices=flex.miller_index([(1, 1, 1)] * 8 + [(2, 2, 2)]),
         anomalous_flag=False,
     )
@@ -78,6 +84,54 @@ def test_Rmerge_vs_batch(batch_array, data_array):
     bins, rmergevsb = rmerge_vs_batch(data_array, batch_array)
     assert bins == expected_results["bins"]
     assert rmergevsb == pytest.approx(expected_results["rmergevb"], 1e-4)
+
+def test_reflections_to_batch_properties(data_array, example_miller_set, example_crystal):
+    """Test the helper functions that provide the batch properties from reflection
+    tables and experiments."""
+    # first make a reflection table.
+    reflections = flex.reflection_table()
+    reflections['intensity.scale.value'] = data_array.data() * flex.double(9, 2.0)
+    reflections['inverse_scale_factor'] = flex.double(9, 2.0)
+    reflections['intensity.scale.variance'] = flex.double(9, 4.0) * flex.double(9, 4.0)
+    reflections['xyzobs.px.value'] = flex.vec3_double(
+        [(0, 0, 0.1)] * 3 + [(0, 0, 1.1)] * 3 + [(0, 0, 2.1)] * 2 + [(0, 0, 3.1)]
+    )
+    reflections['miller_index'] = example_miller_set.indices()
+    reflections['id'] = flex.int(9, 1)
+    reflections.set_flags(flex.bool(9, True), reflections.flags.integrated)
+
+    experiments = [mock.Mock()]
+    experiments[0].scan.get_image_range.return_value = [1, 10]
+    experiments[0].crystal = example_crystal
+
+    bins, rmerge, isigi, scalesvsbatch, batch_data = (# pylint: disable=unbalanced-tuple-unpacking
+        reflection_tables_to_batch_dependent_properties([reflections], experiments))
+
+    assert bins == expected_results["bins"]
+    assert rmerge == pytest.approx(expected_results["rmergevb"], 1e-4)
+    assert isigi == pytest.approx(expected_results["isigivb"], 1e-4)
+    assert scalesvsbatch == pytest.approx([2.0] * 4, 1e-4)
+    assert batch_data == [{'range': (1, 10), 'id': 0}]
+
+    # now try a two experiment dataset in a combined table.
+    import copy
+    reflections_2 = copy.deepcopy(reflections)
+    reflections_2['id'] = flex.int(9, 2)
+    reflections.extend(reflections_2)
+    experiments = [mock.Mock(), mock.Mock()]
+    experiments[0].scan.get_image_range.return_value = [1, 10]
+    experiments[0].crystal = example_crystal
+    experiments[1].scan.get_image_range.return_value = [1, 10]
+    experiments[1].crystal = example_crystal
+
+    bins, rmerge, isigi, scalesvsbatch, batch_data = (# pylint: disable=unbalanced-tuple-unpacking
+        combined_table_to_batch_dependent_properties(reflections, experiments))
+
+    assert bins == [1, 2, 3, 4, 101, 102, 103, 104]
+    assert rmerge == pytest.approx(expected_results["rmergevb"] * 2, 1e-4)
+    assert isigi == pytest.approx(expected_results["isigivb"] * 2, 1e-4)
+    assert scalesvsbatch == pytest.approx([2.0] * 8, 1e-4)
+    assert batch_data == [{'range': (1, 10), 'id': 0}, {'range': (101, 110), 'id': 1}]
 
 
 def test_batch_dependent_properties(batch_array, data_array):

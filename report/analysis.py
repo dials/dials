@@ -3,6 +3,14 @@
 from cctbx import miller
 from scitbx.array_family import flex
 
+from dials.util.batch_handling import (
+    calculate_batch_offsets,
+    get_batch_ranges,
+    assign_batches_to_reflections,
+    batch_manager,
+)
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+
 
 def batch_dependent_properties(batches, intensities, scales=None):
     """
@@ -46,6 +54,48 @@ def batch_dependent_properties(batches, intensities, scales=None):
     if scales:
         _, scalesvsbatch = scales_vs_batch(scales, batches)
     return binned_batches, rmerge, isigi, scalesvsbatch
+
+
+def combined_table_to_batch_dependent_properties(
+    combined_table, experiments, scaled_array=None
+):
+    """Extract batch dependent properties from a combined reflection table."""
+    tables = []
+    for id_ in set(combined_table["id"]).difference(set([-1])):
+        tables.append(combined_table.select(combined_table["id"] == id_))
+
+    return reflection_tables_to_batch_dependent_properties(
+        tables, experiments, scaled_array
+    )
+
+
+def reflection_tables_to_batch_dependent_properties(
+    reflection_tables, experiments, scaled_array=None
+):
+    """Extract batch dependent properties from a reflection table list."""
+    offsets = calculate_batch_offsets(experiments)
+    reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
+    # filter bad refls and negative scales
+    batches = flex.int()
+    scales = flex.double()
+    for r in reflection_tables:
+        sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
+        sel &= r["inverse_scale_factor"] > 0
+        batches.extend(r["batch"].select(sel))
+        scales.extend(r["inverse_scale_factor"].select(sel))
+    if not scaled_array:
+        scaled_array = scaled_data_as_miller_array(reflection_tables, experiments)
+    ms = scaled_array.customized_copy()
+    batch_array = miller.array(ms, data=batches)
+
+    batch_ranges = get_batch_ranges(experiments, offsets)
+    batch_data = [{"id": i, "range": r} for i, r in enumerate(batch_ranges)]
+
+    properties = batch_dependent_properties(
+        batch_array, scaled_array, miller.array(ms, data=scales)
+    )
+
+    return properties + (batch_data,)
 
 
 def rmerge_vs_batch(intensities, batches):
