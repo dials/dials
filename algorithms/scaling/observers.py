@@ -4,7 +4,6 @@ Observers for the scaling algorithm.
 from collections import OrderedDict
 import logging
 from scitbx.array_family import flex
-from cctbx import miller
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,

@@ -2,8 +2,8 @@
 import pytest
 from mock import mock
 from cctbx import miller
-from dials.array_family import flex
 from dxtbx.model import Crystal
+from dials.array_family import flex
 from dials.report.analysis import (
     scales_vs_batch,
     i_sig_i_vs_batch,

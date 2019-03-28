@@ -22,10 +22,7 @@ from cctbx import miller
 
 import dials.util.banner
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_library import (
-    calculate_single_merging_stats,
-    scaled_data_as_miller_array,
-)
+from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
 from dials.algorithms.scaling.plots import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (

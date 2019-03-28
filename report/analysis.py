@@ -7,7 +7,6 @@ from dials.util.batch_handling import (
     calculate_batch_offsets,
     get_batch_ranges,
     assign_batches_to_reflections,
-    batch_manager,
 )
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 

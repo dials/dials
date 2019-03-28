@@ -223,7 +223,6 @@ def statistics_tables(dataset_statistics):
     return (summary_table, resolution_binned_table)
 
 def _d_star_sq_to_d_ticks(d_star_sq, nticks):
-    d_spacings = uctbx.d_star_sq_as_d(flex.double(d_star_sq))
     min_d_star_sq = min(d_star_sq)
     dstep = (max(d_star_sq) - min_d_star_sq) / nticks
     tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
