@@ -31,10 +31,10 @@ from dials.algorithms.indexing import assign_indices
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.indexing.symmetry import SymmetryHandler
 
-from cctbx import crystal, sgtbx
+from cctbx import sgtbx
 
-from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing.max_cell import find_max_cell
@@ -662,132 +662,16 @@ class indexer_base(object):
         return idxr
 
     def _setup_symmetry(self):
-        self.target_symmetry_primitive = None
-        self.target_symmetry_reference_setting = None
-        self.cb_op_inp_ref = None
-
         target_unit_cell = self.params.known_symmetry.unit_cell
         target_space_group = self.params.known_symmetry.space_group
         if target_space_group is not None:
             target_space_group = target_space_group.group()
-            target_space_group = target_space_group.build_derived_patterson_group()
-
-        if target_unit_cell is not None or target_space_group is not None:
-
-            if target_unit_cell is not None and target_space_group is not None:
-                from cctbx.sgtbx.bravais_types import bravais_lattice
-
-                target_bravais_t = bravais_lattice(
-                    group=target_space_group.info().reference_setting().group()
-                )
-                best_subgroup = None
-                best_angular_difference = 1e8
-                from cctbx.sgtbx import lattice_symmetry
-
-                space_groups = [target_space_group]
-                if target_space_group.conventional_centring_type_symbol() != "P":
-                    space_groups.append(sgtbx.space_group())
-                for target in space_groups:
-                    cs = crystal.symmetry(
-                        unit_cell=target_unit_cell,
-                        space_group=target,
-                        assert_is_compatible_unit_cell=False,
-                    )
-                    target_best_cell = cs.best_cell().unit_cell()
-                    subgroups = lattice_symmetry.metric_subgroups(cs, max_delta=0.1)
-                    for subgroup in subgroups.result_groups:
-                        bravais_t = bravais_lattice(
-                            group=subgroup["ref_subsym"].space_group()
-                        )
-                        if bravais_t == target_bravais_t:
-                            # allow for the cell to be given as best cell, reference setting
-                            # primitive settings, or minimum cell
-                            best_subsym = subgroup["best_subsym"]
-                            ref_subsym = best_subsym.as_reference_setting()
-                            if not (
-                                best_subsym.unit_cell().is_similar_to(target_unit_cell)
-                                or ref_subsym.unit_cell().is_similar_to(
-                                    target_unit_cell
-                                )
-                                or ref_subsym.primitive_setting()
-                                .unit_cell()
-                                .is_similar_to(target_unit_cell)
-                                or best_subsym.primitive_setting()
-                                .unit_cell()
-                                .is_similar_to(target_unit_cell)
-                                or best_subsym.minimum_cell()
-                                .unit_cell()
-                                .is_similar_to(target_unit_cell.minimum_cell())
-                                or best_subsym.unit_cell().is_similar_to(
-                                    target_best_cell
-                                )
-                            ):
-                                continue
-                            if (
-                                subgroup["max_angular_difference"]
-                                < best_angular_difference
-                            ):
-                                best_subgroup = subgroup
-                                best_angular_difference = subgroup[
-                                    "max_angular_difference"
-                                ]
-
-                if best_subgroup is None:
-                    raise Sorry("Unit cell incompatible with space group")
-
-                cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-                best_subsym = best_subgroup["best_subsym"]
-                cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-                self.cb_op_inp_ref = cb_op_best_ref * cb_op_inp_best
-                self.target_symmetry_reference_setting = crystal.symmetry(
-                    unit_cell=target_unit_cell.change_basis(self.cb_op_inp_ref),
-                    space_group=target_space_group.info()
-                    .as_reference_setting()
-                    .group(),
-                )
-
-            elif target_unit_cell is not None:
-                self.target_symmetry_reference_setting = crystal.symmetry(
-                    unit_cell=target_unit_cell, space_group=sgtbx.space_group()
-                )
-                self.cb_op_inp_ref = sgtbx.change_of_basis_op()
-
-            elif target_space_group is not None:
-                self.cb_op_inp_ref = (
-                    target_space_group.info().change_of_basis_op_to_reference_setting()
-                )
-                self.target_symmetry_reference_setting = crystal.symmetry(
-                    space_group=target_space_group.change_basis(self.cb_op_inp_ref)
-                )
-
-            self.cb_op_reference_to_primitive = (
-                self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
-            )
-            if target_unit_cell is not None:
-                self.target_symmetry_primitive = self.target_symmetry_reference_setting.change_basis(
-                    self.cb_op_reference_to_primitive
-                )
-            else:
-                self.target_symmetry_primitive = crystal.symmetry(
-                    space_group=self.target_symmetry_reference_setting.space_group().change_basis(
-                        self.cb_op_reference_to_primitive
-                    )
-                )
-            self.cb_op_ref_inp = self.cb_op_inp_ref.inverse()
-            self.cb_op_primitive_inp = (
-                self.cb_op_ref_inp * self.cb_op_reference_to_primitive.inverse()
-            )
-
-            if self.target_symmetry_reference_setting is not None:
-                logger.debug("Target symmetry (reference setting):")
-                self.target_symmetry_reference_setting.show_summary(f=debug_handle)
-            if self.target_symmetry_primitive is not None:
-                logger.debug("Target symmetry (primitive cell):")
-                self.target_symmetry_primitive.show_summary(f=debug_handle)
-            logger.debug(
-                "cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive)
-            )
-            logger.debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
+        self._symmetry_handler = SymmetryHandler(
+            unit_cell=target_unit_cell,
+            space_group=target_space_group,
+            max_delta=self.params.known_symmetry.max_delta,
+        )
+        return
 
     def setup_indexing(self):
         reflections_input = self.reflections
@@ -923,15 +807,14 @@ class indexer_base(object):
                 if i_cycle == 0 and self.params.known_symmetry.space_group is not None:
                     # now apply the space group symmetry only after the first indexing
                     # need to make sure that the symmetrized orientation is similar to the P1 model
-                    target_space_group = self.target_symmetry_primitive.space_group()
                     for i_cryst, cryst in enumerate(experiments.crystals()):
                         if i_cryst >= n_lattices_previous_cycle:
-                            new_cryst, cb_op_to_primitive = self.apply_symmetry(
-                                cryst, target_space_group
+                            new_cryst, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                                cryst
                             )
-                            if self.cb_op_primitive_inp is not None:
+                            if self._symmetry_handler.cb_op_primitive_inp is not None:
                                 new_cryst = new_cryst.change_basis(
-                                    self.cb_op_primitive_inp
+                                    self._symmetry_handler.cb_op_primitive_inp
                                 )
                             cryst.update(new_cryst)
                             cryst.set_space_group(
@@ -950,11 +833,14 @@ class indexer_base(object):
                                     self.reflections["miller_index"].set_selected(
                                         self.reflections["id"] == i_expt, miller_indices
                                     )
-                                if self.cb_op_primitive_inp is not None:
+                                if (
+                                    self._symmetry_handler.cb_op_primitive_inp
+                                    is not None
+                                ):
                                     miller_indices = self.reflections[
                                         "miller_index"
                                     ].select(self.reflections["id"] == i_expt)
-                                    miller_indices = self.cb_op_primitive_inp.apply(
+                                    miller_indices = self._symmetry_handler.cb_op_primitive_inp.apply(
                                         miller_indices
                                     )
                                     self.reflections["miller_index"].set_selected(
@@ -1198,7 +1084,9 @@ class indexer_base(object):
         params = self.params.max_cell_estimation
         if self.params.max_cell is libtbx.Auto:
             if self.params.known_symmetry.unit_cell is not None:
-                uc_params = self.target_symmetry_primitive.unit_cell().parameters()
+                uc_params = (
+                    self._symmetry_handler.target_symmetry_primitive.unit_cell().parameters()
+                )
                 self.params.max_cell = params.multiplier * max(uc_params[:3])
                 logger.info("Using max_cell: %.1f Angstrom" % (self.params.max_cell))
             else:
@@ -1243,10 +1131,10 @@ class indexer_base(object):
         candidate_crystal_models = combinations.candidate_orientation_matrices(
             candidate_basis_vectors
         )
-        if self.target_symmetry_reference_setting is not None:
-            target_symmetry = self.target_symmetry_reference_setting
-        elif self.target_symmetry_primitive is not None:
-            target_symmetry = self.target_symmetry_primitive
+        if self._symmetry_handler.target_symmetry_reference_setting is not None:
+            target_symmetry = self._symmetry_handler.target_symmetry_reference_setting
+        elif self._symmetry_handler.target_symmetry_primitive is not None:
+            target_symmetry = self._symmetry_handler.target_symmetry_primitive
         else:
             target_symmetry = None
         if target_symmetry is not None:
@@ -1326,8 +1214,8 @@ class indexer_base(object):
 
             threshold = self.params.basis_vector_combinations.sys_absent_threshold
             if threshold and (
-                self.target_symmetry_primitive is None
-                or self.target_symmetry_primitive.unit_cell() is None
+                self._symmetry_handler.target_symmetry_primitive is None
+                or self._symmetry_handler.target_symmetry_primitive.unit_cell() is None
             ):
                 try:
                     non_primitive_basis.correct(
@@ -1356,9 +1244,8 @@ class indexer_base(object):
                     continue
 
             if self.params.known_symmetry.space_group is not None:
-                target_space_group = self.target_symmetry_primitive.space_group()
-                new_crystal, cb_op_to_primitive = self.apply_symmetry(
-                    experiments[0].crystal, target_space_group
+                new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                    experiments[0].crystal
                 )
                 if new_crystal is None:
                     continue
@@ -1434,58 +1321,6 @@ class indexer_base(object):
                     logger.debug("skipping crystal: too similar to other crystals")
                     continue
             yield cryst
-
-    def apply_symmetry(self, crystal_model, target_space_group):
-        A = crystal_model.get_A()
-
-        from cctbx.crystal_orientation import crystal_orientation
-        from cctbx.sgtbx.bravais_types import bravais_lattice
-        from rstbx import dps_core  # noqa: F401 - Import dependency
-        from rstbx.dps_core.lepage import iotbx_converter
-
-        max_delta = self.params.known_symmetry.max_delta
-        items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
-        target_sg_ref = target_space_group.info().reference_setting().group()
-        best_angular_difference = 1e8
-        best_subgroup = None
-        for item in items:
-            if bravais_lattice(group=target_sg_ref) != bravais_lattice(
-                group=item["ref_subsym"].space_group()
-            ):
-                continue
-            if item["max_angular_difference"] < best_angular_difference:
-                best_angular_difference = item["max_angular_difference"]
-                best_subgroup = item
-
-        if best_subgroup is None:
-            return None, None
-
-        cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-        orient = crystal_orientation(A, True)
-        orient_best = orient.change_basis(
-            matrix.sqr(cb_op_inp_best.c().as_double_array()[0:9]).transpose()
-        )
-        constrain_orient = orient_best.constrain(best_subgroup["system"])
-
-        best_subsym = best_subgroup["best_subsym"]
-        cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-        target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
-        ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-        cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-        primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
-        cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
-        cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
-
-        direct_matrix = constrain_orient.direct_matrix()
-
-        a = matrix.col(direct_matrix[:3])
-        b = matrix.col(direct_matrix[3:6])
-        c = matrix.col(direct_matrix[6:9])
-        model = Crystal(a, b, c, space_group=target_sg_best)
-        assert target_sg_best.is_compatible_unit_cell(model.get_unit_cell())
-
-        model = model.change_basis(cb_op_best_primitive)
-        return model, cb_op_inp_primitive
 
     def index_reflections(self, experiments, reflections):
         self._assign_indices(reflections, experiments, d_min=self.d_min)
