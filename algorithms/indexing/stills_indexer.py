@@ -205,14 +205,15 @@ class stills_indexer(indexer_base):
             ):
                 # now apply the space group symmetry only after the first indexing
                 # need to make sure that the symmetrized orientation is similar to the P1 model
-                target_space_group = self.target_symmetry_primitive.space_group()
                 for i_cryst, cryst in enumerate(experiments.crystals()):
                     if i_cryst >= n_lattices_previous_cycle:
-                        new_cryst, cb_op_to_primitive = self.apply_symmetry(
-                            cryst, target_space_group
+                        new_cryst, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                            cryst
                         )
-                        if self.cb_op_primitive_inp is not None:
-                            new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
+                        if self._symmetry_handler.cb_op_primitive_inp is not None:
+                            new_cryst = new_cryst.change_basis(
+                                self._symmetry_handler.cb_op_primitive_inp
+                            )
                             logger.info(new_cryst.get_space_group().info())
                         cryst.update(new_cryst)
                         cryst.set_space_group(
@@ -231,11 +232,11 @@ class stills_indexer(indexer_base):
                                 self.reflections["miller_index"].set_selected(
                                     self.reflections["id"] == i_expt, miller_indices
                                 )
-                            if self.cb_op_primitive_inp is not None:
+                            if self._symmetry_handler.cb_op_primitive_inp is not None:
                                 miller_indices = self.reflections[
                                     "miller_index"
                                 ].select(self.reflections["id"] == i_expt)
-                                miller_indices = self.cb_op_primitive_inp.apply(
+                                miller_indices = self._symmetry_handler.cb_op_primitive_inp.apply(
                                     miller_indices
                                 )
                                 self.reflections["miller_index"].set_selected(
@@ -655,14 +656,15 @@ class stills_indexer(indexer_base):
                 self.params.stills.refine_candidates_with_known_symmetry
                 and self.params.known_symmetry.space_group is not None
             ):
-                target_space_group = self.target_symmetry_primitive.space_group()
-                new_crystal, cb_op_to_primitive = self.apply_symmetry(
-                    cm, target_space_group
+                new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                    cm
                 )
                 if new_crystal is None:
                     print("Cannot convert to target symmetry, candidate %d" % (icm))
                     continue
-                new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
+                new_crystal = new_crystal.change_basis(
+                    self._symmetry_handler.cb_op_primitive_inp
+                )
                 cm = candidate_orientation_matrices[icm] = new_crystal
                 experiments = self.experiment_list_for_crystal(cm)
 
@@ -670,8 +672,10 @@ class stills_indexer(indexer_base):
                     indexed["miller_index"] = cb_op_to_primitive.apply(
                         indexed["miller_index"]
                     )
-                if self.cb_op_primitive_inp is not None:
-                    indexed["miller_index"] = self.cb_op_primitive_inp.apply(
+                if self._symmetry_handler.cb_op_primitive_inp is not None:
+                    indexed[
+                        "miller_index"
+                    ] = self._symmetry_handler.cb_op_primitive_inp.apply(
                         indexed["miller_index"]
                     )
 
@@ -742,11 +746,8 @@ class stills_indexer(indexer_base):
                         not self.params.stills.refine_candidates_with_known_symmetry
                         and self.params.known_symmetry.space_group is not None
                     ):
-                        target_space_group = (
-                            self.target_symmetry_primitive.space_group()
-                        )
-                        new_crystal, cb_op_to_primitive = self.apply_symmetry(
-                            crystal_model, target_space_group
+                        new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                            crystal_model
                         )
                         if new_crystal is None:
                             print(

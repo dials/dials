@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 try:
-    import scipy.linalg  # import dependency
+    import scipy.linalg  # noqa: F401 - import dependency
 except ImportError:
     pass
 
@@ -13,7 +13,7 @@ from libtbx import easy_run
 from scitbx import matrix
 from cctbx import uctbx
 from dxtbx.serialize import load
-from dials.array_family import flex  # import dependency
+from dials.array_family import flex
 
 
 def unit_cells_are_similar(
@@ -523,7 +523,8 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
             )
 
 
-def test_index_insulin(dials_data, run_in_tmpdir):
+@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
+def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     data_dir = dials_data("insulin")
 
     args = ["dials.import", "allow_multiple_sweeps=True"]
@@ -552,26 +553,66 @@ def test_index_insulin(dials_data, run_in_tmpdir):
     expected_hall_symbol = " I 2 2 3"
     expected_rmsds = (0.05, 0.06, 0.01)
 
-    for method in ("fft3d", "fft1d", "real_space_grid_search"):
-        extra_args = []
-        extra_args.append(
-            'known_symmetry.unit_cell="%s %s %s %s %s %s"'
-            % expected_unit_cell.parameters()
-        )
-        extra_args.append(
-            'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol
-        )
-        extra_args.append("indexing.method=%s" % method)
-        extra_args.append("treat_single_image_as_still=False")
+    extra_args = []
+    extra_args.append(
+        'known_symmetry.unit_cell="%s %s %s %s %s %s"' % expected_unit_cell.parameters()
+    )
+    extra_args.append('known_symmetry.space_group="Hall: %s"' % expected_hall_symbol)
+    extra_args.append("indexing.method=%s" % method)
+    extra_args.append("treat_single_image_as_still=False")
 
-        result = run_one_indexing(
-            pickle_path,
-            experiments_json,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    result = run_one_indexing(
+        pickle_path,
+        experiments_json,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
+@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
+def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
+    data_dir = dials_data("insulin")
+
+    args = [
+        "dials.import",
+        "convert_sweeps_to_stills=True",
+        data_dir.join("insulin_1_001.img").strpath,
+    ]
+    command = " ".join(args)
+    # print(command)
+    result = easy_run.fully_buffered(command=command).raise_if_errors()
+
+    experiments_json = "imported_experiments.json"
+    args = ["dials.find_spots", experiments_json]
+    command = " ".join(args)
+    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    pickle_path = "strong.pickle"
+    assert os.path.exists(pickle_path)
+
+    expected_unit_cell = uctbx.unit_cell(
+        (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
+    )
+    expected_hall_symbol = " I 2 2 3"
+    expected_rmsds = (0.05, 0.06, 0.01)
+
+    extra_args = [
+        "stills.indexer=stills",
+        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
+        % expected_unit_cell.parameters(),
+        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
+        "indexing.method=%s" % method,
+    ]
+
+    result = run_one_indexing(
+        pickle_path,
+        experiments_json,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
 def test_index_4rotation(dials_regression, tmpdir):
