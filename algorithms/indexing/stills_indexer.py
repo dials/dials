@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 logger = logging.getLogger(__name__)
+import math
 
 from dials.array_family import flex
 from dials.util import log
@@ -16,15 +17,10 @@ import libtbx
 from dials.util import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.known_orientation import indexer_known_orientation
-from dials.algorithms.indexing.real_space_grid_search import (
-    indexer_real_space_grid_search,
-)
-from dials.algorithms.indexing.fft3d import indexer_fft3d
-from dials.algorithms.indexing.fft1d import indexer_fft1d
-from dxtbx.model.experiment_list import Experiment, ExperimentList
+from dials.algorithms.indexing.lattice_search import BasisVectorSearch
 from dials.algorithms.indexing.nave_parameters import nave_parameters
-import math
 from dials.algorithms.indexing.indexer import master_params
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 
 def calc_2D_rmsd_and_displacements(reflections):
@@ -138,7 +134,7 @@ class stills_indexer(indexer_base):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
-        indexer_base.__init__(self, reflections, experiments, params)
+        super(stills_indexer, self).__init__(reflections, experiments, params)
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -625,7 +621,6 @@ class stills_indexer(indexer_base):
         return experiments
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-        from dxtbx.model.experiment_list import Experiment, ExperimentList
         import copy
 
         logger.info("*" * 80)
@@ -641,9 +636,11 @@ class stills_indexer(indexer_base):
 
         params = copy.deepcopy(self.all_params)
 
-        n_cand = len(candidate_orientation_matrices)
+        candidate_orientation_matrices = list(candidate_orientation_matrices)
 
         for icm, cm in enumerate(candidate_orientation_matrices):
+            if icm > self.params.basis_vector_combinations.max_refine:
+                break
             # Index reflections in P1
             sel = self.reflections["id"] == -1
             refl = self.reflections.select(sel)
@@ -663,10 +660,7 @@ class stills_indexer(indexer_base):
                     cm, target_space_group
                 )
                 if new_crystal is None:
-                    print(
-                        "Cannot convert to target symmetry, candidate %d/%d"
-                        % (icm, n_cand)
-                    )
+                    print("Cannot convert to target symmetry, candidate %d" % (icm))
                     continue
                 new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
                 cm = candidate_orientation_matrices[icm] = new_crystal
@@ -684,8 +678,8 @@ class stills_indexer(indexer_base):
             if params.indexing.stills.refine_all_candidates:
                 try:
                     print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"
-                        % (icm, n_cand)
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"
+                        % (icm)
                     )
                     acceptance_flags = self.identify_outliers(
                         params, experiments, indexed
@@ -694,8 +688,8 @@ class stills_indexer(indexer_base):
                     indexed = indexed.select(acceptance_flags)
 
                     print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"
-                        % (icm, n_cand)
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection"
+                        % (icm)
                     )
                     R = e_refine(
                         params=params,
@@ -723,8 +717,8 @@ class stills_indexer(indexer_base):
                     indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
                     print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"
-                        % (icm, n_cand)
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection"
+                        % (icm)
                     )
                     R = e_refine(
                         params=params,
@@ -756,8 +750,8 @@ class stills_indexer(indexer_base):
                         )
                         if new_crystal is None:
                             print(
-                                "P1 refinement yielded model diverged from target, candidate %d/%d"
-                                % (icm, n_cand)
+                                "P1 refinement yielded model diverged from target, candidate %d"
+                                % (icm)
                             )
                             continue
 
@@ -765,11 +759,11 @@ class stills_indexer(indexer_base):
                         R.predict_for_reflection_table(indexed)
                     )
                 except Exception as e:
-                    print("Couldn't refine candiate %d/%d, %s" % (icm, n_cand, str(e)))
+                    print("Couldn't refine candiate %d, %s" % (icm, str(e)))
                 else:
                     print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"
-                        % (icm, n_cand)
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done"
+                        % (icm)
                     )
                     candidates.append(
                         candidate_info(
@@ -964,15 +958,5 @@ class stills_indexer_known_orientation(indexer_known_orientation, stills_indexer
     pass
 
 
-class stills_indexer_real_space_grid_search(
-    stills_indexer, indexer_real_space_grid_search
-):
-    pass
-
-
-class stills_indexer_fft3d(stills_indexer, indexer_fft3d):
-    pass
-
-
-class stills_indexer_fft1d(stills_indexer, indexer_fft1d):
+class stills_indexer_basis_vector_search(stills_indexer, BasisVectorSearch):
     pass
