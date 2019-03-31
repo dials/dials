@@ -54,7 +54,8 @@ class batch_manager(object):
                     "yref": "paper",
                     "x0": self._batch_increments[i],
                     "y0": 0,
-                    "x1": self._batch_increments[i] + (batch["range"][1] - batch["range"][0]),
+                    "x1": self._batch_increments[i]
+                    + (batch["range"][1] - batch["range"][0]),
                     "y1": 1,
                     "fillcolor": fillcolor,
                     "opacity": 0.2,
@@ -89,6 +90,7 @@ class batch_manager(object):
                 ),
             )
         return shapes, annotations, list(text)
+
 
 def assign_batches_to_reflections(reflections, batch_offsets):
     """Assign a 'batch' column to the reflection table"""

@@ -6,6 +6,7 @@ for reports of several programs.
 from scitbx.array_family import flex
 from cctbx import uctbx
 
+
 def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
@@ -83,6 +84,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
             },
         }
     }
+
 
 def cc_one_half_plot(dataset_statistics, method=None, is_centric=False):
 
@@ -222,6 +224,7 @@ def statistics_tables(dataset_statistics):
     ]
     return (summary_table, resolution_binned_table)
 
+
 def i_over_sig_i_plot(dataset_statistics):
 
     i_over_sig_i_bins = [
@@ -256,6 +259,7 @@ def i_over_sig_i_plot(dataset_statistics):
             },
         }
     }
+
 
 def _d_star_sq_to_d_ticks(d_star_sq, nticks):
     min_d_star_sq = min(d_star_sq)

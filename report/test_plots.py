@@ -15,6 +15,7 @@ from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
 )
 
+
 @pytest.fixture
 def iobs():
     """Generate a miller array for testing plotters."""
@@ -32,57 +33,77 @@ def iobs():
     iobs.set_observation_type_xray_intensity()
     return iobs
 
+
 def test_statistics_tables(iobs):
     """Test generation of statistics tables"""
     result = dataset_statistics(iobs, assert_is_not_unique_set_under_symmetry=False)
     tables = statistics_tables(result)
     assert len(tables) == 2  # overall and per resolution
 
+
 def test_resolution_dependent_plots(iobs):
     """Test cc half plot, for centric and acentric data"""
     n_bins = 2
     result = dataset_statistics(
-        iobs,
-        assert_is_not_unique_set_under_symmetry=False,
-        n_bins=n_bins
+        iobs, assert_is_not_unique_set_under_symmetry=False, n_bins=n_bins
     )
     d = cc_one_half_plot(result)
-    assert len(d['cc_one_half']['data']) == 4
-    assert all([len(x['x']) == n_bins for x in d['cc_one_half']['data']])
+    assert len(d["cc_one_half"]["data"]) == 4
+    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"]])
     # check for correct labels
-    assert list(d['cc_one_half']['layout']['xaxis']['ticktext']) == \
-        ['1.26', '1.19', '1.13', '1.08', '1.04']
+    assert list(d["cc_one_half"]["layout"]["xaxis"]["ticktext"]) == [
+        "1.26",
+        "1.19",
+        "1.13",
+        "1.08",
+        "1.04",
+    ]
 
-    assert list(d['cc_one_half']['layout']['xaxis']['tickvals']) == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4)
+    assert list(d["cc_one_half"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
+        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
+    )
 
     # now try sigma tau and centric options
-    d = cc_one_half_plot(result, method='sigma_tau', is_centric=True)
-    assert len(d['cc_one_half']['data']) == 4
-    assert all([len(x['x']) == n_bins for x in d['cc_one_half']['data'][:2]])
-    assert d['cc_one_half']['data'][2] == {} # no anomalous plots
-    assert d['cc_one_half']['data'][3] == {} # no anomalous plots
+    d = cc_one_half_plot(result, method="sigma_tau", is_centric=True)
+    assert len(d["cc_one_half"]["data"]) == 4
+    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:2]])
+    assert d["cc_one_half"]["data"][2] == {}  # no anomalous plots
+    assert d["cc_one_half"]["data"][3] == {}  # no anomalous plots
     # check for correct labels
-    assert list(d['cc_one_half']['layout']['xaxis']['ticktext']) == \
-        ['1.26', '1.19', '1.13', '1.08', '1.04']
+    assert list(d["cc_one_half"]["layout"]["xaxis"]["ticktext"]) == [
+        "1.26",
+        "1.19",
+        "1.13",
+        "1.08",
+        "1.04",
+    ]
 
-    assert list(d['cc_one_half']['layout']['xaxis']['tickvals']) == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4)
+    assert list(d["cc_one_half"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
+        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
+    )
 
     d = i_over_sig_i_plot(result)
-    assert len(d['i_over_sig_i']['data'][0]['y']) == n_bins
-    assert list(d['i_over_sig_i']['layout']['xaxis']['ticktext']) == \
-        ['1.26', '1.19', '1.13', '1.08', '1.04']
-    assert list(d['i_over_sig_i']['layout']['xaxis']['tickvals']) == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4)
+    assert len(d["i_over_sig_i"]["data"][0]["y"]) == n_bins
+    assert list(d["i_over_sig_i"]["layout"]["xaxis"]["ticktext"]) == [
+        "1.26",
+        "1.19",
+        "1.13",
+        "1.08",
+        "1.04",
+    ]
+    assert list(d["i_over_sig_i"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
+        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
+    )
+
 
 @pytest.fixture
 def batch_manager_fix():
     """Make a batch manager fixture"""
 
-    batch_params = [{"id" : 0, "range" : [0, 10]}, {"id" : 1, "range" : [100, 110]}]
+    batch_params = [{"id": 0, "range": [0, 10]}, {"id": 1, "range": [100, 110]}]
     batches = flex.int(range(0, 10) + range(100, 110))
     return batch_manager(batches, batch_params)
+
 
 def test_i_over_sig_i_vs_batch_plot(batch_manager_fix):
     """Test the IsigI batch plot"""
@@ -91,6 +112,7 @@ def test_i_over_sig_i_vs_batch_plot(batch_manager_fix):
     d = i_over_sig_i_vs_batch_plot(bm, isigi)
     assert list(d["i_over_sig_i_vs_batch"]["data"][0]["x"]) == list(bm.reduced_batches)
     assert list(d["i_over_sig_i_vs_batch"]["data"][0]["y"]) == list(isigi)
+
 
 def test_scale_rmerge_vs_batch_plot(batch_manager_fix):
     """Test the scale and rmerge batch plot. Should have the option

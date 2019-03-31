@@ -208,18 +208,20 @@ def test_ErrorModelObserver():
         assert mock_func.call_args_list == [mock.call(observer.data)]
         assert r == {"normal_prob_plot": {"plot": {}}}
 
+
 def example_refls():
     """Generate a reflection table for a test."""
     refls = flex.reflection_table()
-    refls['inverse_scale_factor'] = flex.double([2.0, 1.0, 0.5])
-    refls['xyzobs.px.value'] = flex.vec3_double([
-        (0.0, 0.0, 0.5), (0.0, 0.0, 5.5), (0.0, 0.0, 8.5)
-    ])
+    refls["inverse_scale_factor"] = flex.double([2.0, 1.0, 0.5])
+    refls["xyzobs.px.value"] = flex.vec3_double(
+        [(0.0, 0.0, 0.5), (0.0, 0.0, 5.5), (0.0, 0.0, 8.5)]
+    )
     refls.set_flags(flex.bool(3, False), refls.flags.outlier_in_scaling)
-    refls['intensity'] = flex.double([1.0, 1.0, 1.0])
-    refls['variance'] = flex.double([1.0, 1.0, 1.0])
-    refls['miller_index'] = flex.miller_index([(1, 1, 1), (1, 1, 1), (1, 1, 1)])
+    refls["intensity"] = flex.double([1.0, 1.0, 1.0])
+    refls["variance"] = flex.double([1.0, 1.0, 1.0])
+    refls["miller_index"] = flex.miller_index([(1, 1, 1), (1, 1, 1), (1, 1, 1)])
     return refls
+
 
 def example_array(reflections):
     """Generate a miller array for a test."""
@@ -233,12 +235,13 @@ def example_array(reflections):
     crystal = Crystal.from_dict(exp_dict)
     ms = miller.set(
         crystal_symmetry=crystal.get_crystal_symmetry(),
-        indices=reflections['miller_index'],
-        anomalous_flag=False
+        indices=reflections["miller_index"],
+        anomalous_flag=False,
     )
-    ma = miller.array(ms, data=reflections['intensity'])
-    ma.set_sigmas(reflections['variance'] ** 0.5)
+    ma = miller.array(ms, data=reflections["intensity"])
+    ma.set_sigmas(reflections["variance"] ** 0.5)
     return ma
+
 
 def test_MergingStatisticsObserver():
     """Test that the observer correctly logs data when passed a script."""
@@ -252,7 +255,7 @@ def test_MergingStatisticsObserver():
     observer = MergingStatisticsObserver()
     observer.update(script)
 
-    assert observer.data["statistics"] == 'result'
+    assert observer.data["statistics"] == "result"
     assert observer.data["is_centric"] is True
     assert "bm" in observer.data
     assert "isigivsbatch" in observer.data
@@ -262,9 +265,9 @@ def test_MergingStatisticsObserver():
     mock_func = mock.Mock()
     mock_func.return_value = "return_tables"
     mock_func_2 = mock.Mock()
-    mock_func_2.return_value = {"cchalfplot" : {}}
+    mock_func_2.return_value = {"cchalfplot": {}}
     mock_func_3 = mock.Mock()
-    mock_func_3.return_value = {"isigiplot" : {}}
+    mock_func_3.return_value = {"isigiplot": {}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
@@ -273,11 +276,13 @@ def test_MergingStatisticsObserver():
             "dials.algorithms.scaling.observers.cc_one_half_plot", new=mock_func_2
         ):
             with mock.patch(
-            "dials.algorithms.scaling.observers.i_over_sig_i_plot", new=mock_func_3
+                "dials.algorithms.scaling.observers.i_over_sig_i_plot", new=mock_func_3
             ):
                 r = observer.make_plots()
                 assert mock_func.call_count == 1
-                assert mock_func.call_args_list == [mock.call(observer.data["statistics"])]
+                assert mock_func.call_args_list == [
+                    mock.call(observer.data["statistics"])
+                ]
                 assert mock_func_2.call_count == 1
                 assert mock_func_2.call_args_list == [
                     mock.call(observer.data["statistics"], is_centric=True)

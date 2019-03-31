@@ -2671,13 +2671,16 @@ def merging_stats_results(reflections, experiments):
     summary_table, results_table = statistics_tables(result)
 
     resolution_plots = OrderedDict()
-    resolution_plots.update(cc_one_half_plot(
-        result, is_centric=experiments[0].crystal.get_space_group().is_centric()
-    ))
+    resolution_plots.update(
+        cc_one_half_plot(
+            result, is_centric=experiments[0].crystal.get_space_group().is_centric()
+        )
+    )
     resolution_plots.update(i_over_sig_i_plot(result))
 
     batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
-        reflections, experiments)
+        reflections, experiments
+    )
 
     bm = batch_manager(batches, batch_data)
 

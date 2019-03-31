@@ -8,6 +8,7 @@ from dials.algorithms.scaling.plots import (
     normal_probability_plot,
 )
 
+
 def test_plot_scaling_models():
 
     physical_dict = {

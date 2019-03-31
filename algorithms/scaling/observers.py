@@ -272,9 +272,11 @@ class MergingStatisticsObserver(Observer):
         }
         if "statistics" in self.data:
             d["scaling_tables"] = statistics_tables(self.data["statistics"])
-            d["resolution_plots"].update(cc_one_half_plot(
-                self.data["statistics"], is_centric=self.data["is_centric"]
-            ))
+            d["resolution_plots"].update(
+                cc_one_half_plot(
+                    self.data["statistics"], is_centric=self.data["is_centric"]
+                )
+            )
             d["resolution_plots"].update(i_over_sig_i_plot(self.data["statistics"]))
             d["batch_plots"].update(
                 scale_rmerge_vs_batch_plot(
