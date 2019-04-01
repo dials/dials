@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import os
 import pytest
+from random import randint, uniform
 
 from dials.array_family import flex
 from dxtbx.model import ExperimentList, Experiment, Crystal
@@ -889,7 +890,6 @@ def test_split_indices_by_experiment_id():
 
 def test_split_partials():
     from dials.array_family import flex
-    from random import randint, uniform
 
     r = flex.reflection_table()
     r["value1"] = flex.double()
@@ -934,7 +934,6 @@ def test_split_partials():
 
 def test_split_partials_with_shoebox():
     from dials.array_family import flex
-    from random import randint, uniform
     from dials.model.data import Shoebox
 
     r = flex.reflection_table()
@@ -1015,8 +1014,6 @@ def test_split_partials_with_shoebox():
 
 def test_find_overlapping():
     from dials.array_family import flex
-    from random import randint, uniform
-    from dials.model.data import Shoebox
 
     N = 10000
     r = flex.reflection_table(N)
@@ -1437,3 +1434,25 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     assert refl1["rlp"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, 0.19707031842793443)
     )
+
+
+def test_calculate_entering_flags(dials_regression):
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    experiments_path = os.path.join(data_dir, "experiments_import.json")
+
+    refl = flex.reflection_table.from_pickle(pickle_path)
+    experiments = load.experiment_list(experiments_path, check_format=False)
+    experiment = experiments[0]
+    detector = experiment.detector
+    scan = experiment.scan
+    beam = experiment.beam
+    goniometer = experiment.goniometer
+
+    refl.centroid_px_to_mm(detector, scan=scan)
+    refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
+    refl.calculate_entering_flags(experiments)
+    assert "entering" in refl
+    flags = refl["entering"]
+    assert flags.count(True) == 58283
+    assert flags.count(False) == 57799

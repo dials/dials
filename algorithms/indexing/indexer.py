@@ -24,7 +24,6 @@ debug_handle = log.debug_handle(logger)
 import libtbx
 from dials.util import Sorry
 import iotbx.phil
-from scitbx import matrix
 
 from dials.array_family import flex
 from dials.algorithms.indexing import assign_indices
@@ -629,10 +628,8 @@ class indexer_base(object):
             spots_sel.map_centroids_to_reciprocal_space(
                 expt.detector, expt.beam, expt.goniometer
             )
-            spots_sel["entering"] = self.calculate_entering_flags(
-                spots_sel, beam=expt.beam, goniometer=expt.goniometer
-            )
             self.reflections.extend(spots_sel)
+        self.reflections.calculate_entering_flags(self.experiments)
 
         try:
             self.find_max_cell()
@@ -1044,21 +1041,6 @@ class indexer_base(object):
             self.reflections = filter_reflections_by_scan_range(
                 self.reflections, self.params.scan_range
             )
-
-    @staticmethod
-    def calculate_entering_flags(reflections, beam, goniometer):
-        if goniometer is None:
-            return flex.bool(len(reflections), False)
-        axis = matrix.col(goniometer.get_rotation_axis())
-        s0 = matrix.col(beam.get_s0())
-        # calculate a unit vector normal to the spindle-beam plane for this
-        # experiment, such that the vector placed at the centre of the Ewald sphere
-        # points to the hemisphere in which reflections cross from inside to outside
-        # of the sphere (reflections are exiting). NB this vector is in +ve Y
-        # direction when using imgCIF coordinate frame.
-        vec = s0.cross(axis)
-        entering = reflections["s1"].dot(vec) < 0.0
-        return entering
 
     def index_reflections(self, experiments, reflections):
         self._assign_indices(reflections, experiments, d_min=self.d_min)

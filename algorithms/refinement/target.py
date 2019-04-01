@@ -231,15 +231,8 @@ class Target(object):
     def predict_for_reflection_table(self, reflections, skip_derivatives=False):
         """perform prediction for all reflections in the supplied table"""
 
-        # set the entering flags if this has not been done
-        from dials.algorithms.refinement.reflection_manager import (
-            calculate_entering_flags,
-        )
-
         if "entering" not in reflections:
-            reflections["entering"] = calculate_entering_flags(
-                reflections, self._experiments
-            )
+            reflections.calculate_entering_flags(self._experiments)
 
         # can only predict for experiments that exist and within the scan range
         # any other reflections will be left unchanged
