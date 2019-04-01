@@ -5,20 +5,21 @@ from cctbx import sgtbx
 
 from dials.algorithms.indexing.basis_vector_search import strategies
 from dials.algorithms.indexing.basis_vector_search import combinations
-from dials.algorithms.indexing.basis_vector_search.test_strategies import setup
 
 
-def test_combinations(setup):
-    max_cell = 1.3 * max(setup["crystal_symmetry"].unit_cell().parameters()[:3])
+def test_combinations(setup_rlp):
+    max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
     strategy = strategies.fft1d(max_cell)
-    basis_vectors, used = strategy.find_basis_vectors(setup["rlp"])
+    basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
 
     for target_symmetry in (
-        setup["crystal_symmetry"],
-        setup["crystal_symmetry"]
+        setup_rlp["crystal_symmetry"],
+        setup_rlp["crystal_symmetry"]
         .primitive_setting()
         .customized_copy(space_group_info=sgtbx.space_group().info()),
-        setup["crystal_symmetry"].primitive_setting().customized_copy(unit_cell=None),
+        setup_rlp["crystal_symmetry"]
+        .primitive_setting()
+        .customized_copy(unit_cell=None),
     ):
 
         crystal_models = combinations.candidate_orientation_matrices(basis_vectors)

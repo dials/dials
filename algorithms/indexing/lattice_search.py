@@ -17,12 +17,14 @@ import logging
 import math
 
 from scitbx.array_family import flex
+import scitbx.matrix
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing.basis_vector_search import strategies
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.indexing.basis_vector_search import optimise
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +72,10 @@ class BasisVectorSearch(indexer.indexer_base):
         self.candidate_basis_vectors, used_in_indexing = self._basis_vector_search_strategy.find_basis_vectors(
             reflections["rlp"]
         )
-        used_in_indexing = sel.iselection().select(used_in_indexing)
+        self._used_in_indexing = sel.iselection().select(used_in_indexing)
         if self.d_min is None:
             self.d_min = flex.min(
-                1 / self.reflections["rlp"].select(used_in_indexing).norms()
+                1 / self.reflections["rlp"].select(self._used_in_indexing).norms()
             )
 
         self.debug_show_candidate_basis_vectors()
@@ -84,6 +86,8 @@ class BasisVectorSearch(indexer.indexer_base):
 
     def find_lattices(self):
         self.find_candidate_basis_vectors()
+        if self.params.optimise_initial_basis_vectors:
+            self.optimise_basis_vectors()
         self.candidate_crystal_models = self.find_candidate_orientation_matrices(
             self.candidate_basis_vectors
         )
@@ -305,6 +309,16 @@ class BasisVectorSearch(indexer.indexer_base):
                     logger.debug("skipping crystal: too similar to other crystals")
                     continue
             yield cryst
+
+    def optimise_basis_vectors(self):
+
+        optimised_basis_vectors = optimise.optimise_basis_vectors(
+            self.reflections["rlp"].select(self._used_in_indexing),
+            self.candidate_basis_vectors,
+        )
+        self.candidate_basis_vectors = [
+            scitbx.matrix.col(v) for v in optimised_basis_vectors
+        ]
 
     def debug_show_candidate_basis_vectors(self):
 
