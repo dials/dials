@@ -53,8 +53,8 @@ if __name__ == "__main__":
         plugins = read_entry_point(ep)
         for p in sorted(plugins):
             print(
-                " {GREEN}{p} {NC}({pp.module_name})".format(
-                    p=p, GREEN=GREEN, NC=NC, pp=plugins[p]
+                " {GREEN}{p} {NC}({pp.module_name} via {BOLD}{pp.dist.project_name}{NC} {pp.dist.version})".format(
+                    BOLD=BOLD, p=p, GREEN=GREEN, NC=NC, pp=plugins[p]
                 )
             )
         required_plugins = set(ep_dict.get("required", []))
