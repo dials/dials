@@ -117,7 +117,8 @@ class BasisVectorSearch(indexer.indexer_base):
         from dials.algorithms.indexing.basis_vector_search import combinations
 
         candidate_crystal_models = combinations.candidate_orientation_matrices(
-            candidate_basis_vectors
+            candidate_basis_vectors,
+            max_combinations=self.params.basis_vector_combinations.max_combinations,
         )
         if self._symmetry_handler.target_symmetry_reference_setting is not None:
             target_symmetry = self._symmetry_handler.target_symmetry_reference_setting
