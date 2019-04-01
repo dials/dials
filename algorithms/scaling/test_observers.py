@@ -262,32 +262,25 @@ def test_MergingStatisticsObserver():
     assert "r_merge_vs_batch" in observer.data
     assert "scale_vs_batch" in observer.data
 
-    mock_func = mock.Mock()
-    mock_func.return_value = "return_tables"
-    mock_func_2 = mock.Mock()
-    mock_func_2.return_value = {"cchalfplot": {}}
-    mock_func_3 = mock.Mock()
-    mock_func_3.return_value = {"isigiplot": {}}
+    class MockResolution(object):
+
+        """Mock the ResolutionPlotsAndStats class."""
+
+        def __init__(self, *_, **__):
+            pass
+
+        def make_all_plots(self, *_):
+            """Mock resolution dependent plots method."""
+            return {"return_plots": []}
+
+        def statistics_tables(self, *_):
+            """Mock statistics tables method."""
+            return "return_tables"
 
     with mock.patch(
-        "dials.algorithms.scaling.observers.statistics_tables", new=mock_func
+        "dials.algorithms.scaling.observers.ResolutionPlotsAndStats", new=MockResolution
     ):
-        with mock.patch(
-            "dials.algorithms.scaling.observers.cc_one_half_plot", new=mock_func_2
-        ):
-            with mock.patch(
-                "dials.algorithms.scaling.observers.i_over_sig_i_plot", new=mock_func_3
-            ):
-                r = observer.make_plots()
-                assert mock_func.call_count == 1
-                assert mock_func.call_args_list == [
-                    mock.call(observer.data["statistics"])
-                ]
-                assert mock_func_2.call_count == 1
-                assert mock_func_2.call_args_list == [
-                    mock.call(observer.data["statistics"], is_centric=True)
-                ]
-                assert r["scaling_tables"] == "return_tables"
-                assert "cchalfplot" in r["resolution_plots"]
-                assert "isigiplot" in r["resolution_plots"]
-                assert "batch_plots" in r
+        r = observer.make_plots()
+        assert r["scaling_tables"] == "return_tables"
+        assert r["resolution_plots"] == {"return_plots": []}
+        assert "batch_plots" in r

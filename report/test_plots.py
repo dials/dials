@@ -8,9 +8,7 @@ from scitbx.array_family import flex
 from iotbx.merging_statistics import dataset_statistics
 from dials.util.batch_handling import batch_manager
 from dials.report.plots import (
-    statistics_tables,
-    cc_one_half_plot,
-    i_over_sig_i_plot,
+    ResolutionPlotsAndStats,
     i_over_sig_i_vs_batch_plot,
     scale_rmerge_vs_batch_plot,
 )
@@ -34,66 +32,67 @@ def iobs():
     return iobs
 
 
-def test_statistics_tables(iobs):
-    """Test generation of statistics tables"""
-    result = dataset_statistics(iobs, assert_is_not_unique_set_under_symmetry=False)
-    tables = statistics_tables(result)
-    assert len(tables) == 2  # overall and per resolution
-
-
-def test_resolution_dependent_plots(iobs):
-    """Test cc half plot, for centric and acentric data"""
+def test_ResolutionPlotsAndStats(iobs):
+    i_obs_anom = iobs.as_anomalous_array()
+    iobs_anom = i_obs_anom.map_to_asu().customized_copy(info=iobs.info())
     n_bins = 2
     result = dataset_statistics(
         iobs, assert_is_not_unique_set_under_symmetry=False, n_bins=n_bins
     )
-    d = cc_one_half_plot(result)
-    assert len(d["cc_one_half"]["data"]) == 4
-    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"]])
-    # check for correct labels
-    assert list(d["cc_one_half"]["layout"]["xaxis"]["ticktext"]) == [
-        "1.26",
-        "1.19",
-        "1.13",
-        "1.08",
-        "1.04",
-    ]
+    anom_result = dataset_statistics(
+        iobs_anom,
+        assert_is_not_unique_set_under_symmetry=False,
+        anomalous=True,
+        n_bins=n_bins,
+    )
+    plotter = ResolutionPlotsAndStats(result, anom_result)
 
-    assert list(d["cc_one_half"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
+    assert plotter.d_star_sq_ticktext == ["1.26", "1.19", "1.13", "1.08", "1.04"]
+
+    assert plotter.d_star_sq_tickvals == pytest.approx(
         [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
     )
 
-    # now try sigma tau and centric options
-    d = cc_one_half_plot(result, method="sigma_tau", is_centric=True)
+    tables = plotter.statistics_tables()
+    assert len(tables) == 2  # overall and per resolution
+
+    # test plots individually
+    d = plotter.cc_one_half_plot()
+    assert len(d["cc_one_half"]["data"]) == 4
+    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"]])
+
+    d = plotter.i_over_sig_i_plot()
+    assert len(d["i_over_sig_i"]["data"]) == 1
+    assert len(d["i_over_sig_i"]["data"][0]["y"]) == n_bins
+
+    d = plotter.completeness_plot()
+    assert len(d["completeness"]["data"]) == 2
+    assert len(d["completeness"]["data"][0]["y"]) == n_bins
+
+    d = plotter.multiplicity_vs_resolution_plot()
+    assert len(d["multiplicity_vs_resolution"]["data"]) == 2
+    assert len(d["multiplicity_vs_resolution"]["data"][0]["y"]) == n_bins
+
+    # now try centric options and sigma tau for cc_one_half
+    plotter = ResolutionPlotsAndStats(result, anom_result, is_centric=True)
+    d = plotter.cc_one_half_plot(method="sigma_tau")
     assert len(d["cc_one_half"]["data"]) == 4
     assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:2]])
     assert d["cc_one_half"]["data"][2] == {}  # no anomalous plots
     assert d["cc_one_half"]["data"][3] == {}  # no anomalous plots
-    # check for correct labels
-    assert list(d["cc_one_half"]["layout"]["xaxis"]["ticktext"]) == [
-        "1.26",
-        "1.19",
-        "1.13",
-        "1.08",
-        "1.04",
-    ]
+    d = plotter.completeness_plot()
+    assert len(d["completeness"]["data"]) == 2
+    assert len(d["completeness"]["data"][0]["y"]) == n_bins
+    assert d["completeness"]["data"][1] == {}
+    d = plotter.multiplicity_vs_resolution_plot()
+    assert len(d["multiplicity_vs_resolution"]["data"]) == 2
+    assert len(d["multiplicity_vs_resolution"]["data"][0]["y"]) == n_bins
+    assert d["multiplicity_vs_resolution"]["data"][1] == {}
 
-    assert list(d["cc_one_half"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
-    )
-
-    d = i_over_sig_i_plot(result)
-    assert len(d["i_over_sig_i"]["data"][0]["y"]) == n_bins
-    assert list(d["i_over_sig_i"]["layout"]["xaxis"]["ticktext"]) == [
-        "1.26",
-        "1.19",
-        "1.13",
-        "1.08",
-        "1.04",
-    ]
-    assert list(d["i_over_sig_i"]["layout"]["xaxis"]["tickvals"]) == pytest.approx(
-        [0.6319, 0.7055, 0.7792, 0.8528, 0.9264], 1e-4
-    )
+    plots = plotter.make_all_plots()
+    for plot in plots.itervalues():
+        assert plot["layout"]["xaxis"]["ticktext"] == plotter.d_star_sq_ticktext
+        assert plot["layout"]["xaxis"]["tickvals"] == plotter.d_star_sq_tickvals
 
 
 @pytest.fixture

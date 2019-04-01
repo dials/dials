@@ -14,9 +14,7 @@ from dials.report.analysis import reflection_tables_to_batch_dependent_propertie
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
-    statistics_tables,
-    cc_one_half_plot,
-    i_over_sig_i_plot,
+    ResolutionPlotsAndStats,
 )
 from dials.util.batch_handling import batch_manager
 
@@ -249,6 +247,7 @@ class MergingStatisticsObserver(Observer):
         if scaling_script.merging_statistics_result:
             self.data = {
                 "statistics": scaling_script.merging_statistics_result,
+                "anomalous_statistics": scaling_script.anom_merging_statistics_result,
                 "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
             # Now calculate batch data
@@ -271,13 +270,13 @@ class MergingStatisticsObserver(Observer):
             "batch_plots": OrderedDict(),
         }
         if "statistics" in self.data:
-            d["scaling_tables"] = statistics_tables(self.data["statistics"])
-            d["resolution_plots"].update(
-                cc_one_half_plot(
-                    self.data["statistics"], is_centric=self.data["is_centric"]
-                )
+            plotter = ResolutionPlotsAndStats(
+                self.data["statistics"],
+                self.data["anomalous_statistics"],
+                is_centric=self.data["is_centric"],
             )
-            d["resolution_plots"].update(i_over_sig_i_plot(self.data["statistics"]))
+            d["resolution_plots"].update(plotter.make_all_plots())
+            d["scaling_tables"] = plotter.statistics_tables()
             d["batch_plots"].update(
                 scale_rmerge_vs_batch_plot(
                     self.data["bm"],

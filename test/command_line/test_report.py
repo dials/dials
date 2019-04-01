@@ -5,7 +5,7 @@ import procrunner
 
 
 def test_report_integrated_data(dials_regression, run_in_tmpdir):
-    """Simple test to check that dials.symmetry completes"""
+    """Simple test to check that dials.report completes when given integrated data."""
 
     result = procrunner.run(
         [

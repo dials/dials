@@ -160,6 +160,7 @@ class Script(Subject):
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
+        self.anom_merging_statistics_result = None
         self.params, self.experiments, self.reflections = self.prepare_input(
             params, experiments, reflections
         )
@@ -337,7 +338,7 @@ class Script(Subject):
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
-        self.merging_statistics_result = self.merging_stats_from_scaled_array(
+        self.merging_statistics_result, self.anom_merging_statistics_result = self.merging_stats_from_scaled_array(
             self.scaled_miller_array, self.params
         )
 
@@ -364,12 +365,26 @@ class Script(Subject):
                 use_internal_variance=params.output.use_internal_variance,
                 cc_one_half_significance_level=0.01,
             )
+
+            intensities_anom = scaled_miller_array.as_anomalous_array()
+            intensities_anom = intensities_anom.map_to_asu().customized_copy(
+                info=scaled_miller_array.info()
+            )
+            anom_result = iotbx.merging_statistics.dataset_statistics(
+                i_obs=intensities_anom,
+                n_bins=params.output.merging.nbins,
+                anomalous=True,
+                sigma_filtering=None,
+                cc_one_half_significance_level=0.01,
+                eliminate_sys_absent=False,
+                use_internal_variance=params.output.use_internal_variance,
+            )
         except RuntimeError:
             raise DialsMergingStatisticsError(
                 "Failure during merging statistics calculation"
             )
         else:
-            return result
+            return result, anom_result
 
     def delete_datastructures(self):
         """Delete the data in the scaling datastructures to save RAM before

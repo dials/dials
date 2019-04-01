@@ -26,11 +26,9 @@ from dials.algorithms.scaling.scaling_library import calculate_single_merging_st
 from dials.algorithms.scaling.plots import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
-    cc_one_half_plot,
-    statistics_tables,
+    ResolutionPlotsAndStats,
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
-    i_over_sig_i_plot,
 )
 from dials.util.batch_handling import batch_manager
 
@@ -2667,16 +2665,15 @@ def merging_stats_results(reflections, experiments):
     result = calculate_single_merging_stats(
         reflections, experiments[0], use_internal_variance=False
     )
-
-    summary_table, results_table = statistics_tables(result)
+    anom_result = calculate_single_merging_stats(
+        reflections, experiments[0], use_internal_variance=False, anomalous=True
+    )
+    is_centric = experiments[0].crystal.get_space_group().is_centric()
 
     resolution_plots = OrderedDict()
-    resolution_plots.update(
-        cc_one_half_plot(
-            result, is_centric=experiments[0].crystal.get_space_group().is_centric()
-        )
-    )
-    resolution_plots.update(i_over_sig_i_plot(result))
+    plotter = ResolutionPlotsAndStats(result, anom_result, is_centric)
+    resolution_plots.update(plotter.make_all_plots())
+    summary_table, results_table = plotter.statistics_tables()
 
     batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
         reflections, experiments
