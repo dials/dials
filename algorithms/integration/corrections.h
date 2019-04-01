@@ -77,7 +77,6 @@ namespace dials { namespace algorithms {
     double s1_length = s1.length();
     double s0_length = s0.length();
     DIALS_ASSERT(s1_length > 0 && s0_length > 0);
-    double two_theta = std::acos(s0 * s1 / (s0_length * s1_length));
     double P1 = ((pn * s1) / s1_length);
     double P2 = (1.0 - 2.0*pf) * (1.0 - P1*P1);
     double P3 = (s1 * s0 / (s1_length * s0_length));
