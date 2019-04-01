@@ -17,9 +17,15 @@ except ImportError:
 import copy
 
 import iotbx.phil
+from dxtbx.serialize import dump
+from dxtbx.model.experiment_list import ExperimentList
+from dials.algorithms.indexing import indexer
+from dials.command_line.slice_sweep import slice_reflections
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
+from dials.util import Sorry
+
 
 help_message = """
 
@@ -56,6 +62,15 @@ Examples::
 phil_scope = iotbx.phil.parse(
     """\
 include scope dials.algorithms.indexing.indexer.master_phil_scope
+
+image_range = None
+  .help = "Range in images to slice a sweep. The number of arguments"
+          "must be a factor of two. Each pair of arguments gives a range"
+          "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
+          "reflections by observed centroid."
+  .type = ints(size=2)
+  .multiple = True
+
 output {
   experiments = indexed_experiments.json
     .type = path
@@ -91,9 +106,70 @@ refinement
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
+class Index(object):
+    def __init__(self, experiments, reflections, params):
+
+        self._params = params
+
+        if experiments.crystals()[0] is not None:
+            known_crystal_models = experiments.crystals()
+        else:
+            known_crystal_models = None
+
+        if len(reflections) == 0:
+            raise Sorry("No reflection lists found in input")
+        if len(reflections) > 1:
+            assert len(reflections) == len(experiments)
+            from scitbx.array_family import flex
+
+            for i in range(len(reflections)):
+                reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
+                if i > 0:
+                    reflections[0].extend(reflections[i])
+
+        reflections = reflections[0]
+
+        for expt in experiments:
+            if (
+                expt.goniometer is not None
+                and expt.scan is not None
+                and expt.scan.get_oscillation()[1] == 0
+            ):
+                expt.goniometer = None
+                expt.scan = None
+
+        if self._params.image_range:
+            reflections = slice_reflections(reflections, self._params.image_range)
+
+        idxr = indexer.indexer_base.from_parameters(
+            reflections,
+            experiments,
+            known_crystal_models=known_crystal_models,
+            params=params,
+        )
+        idxr.index()
+        self._indexed_experiments = idxr.refined_experiments
+        self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
+        self._indexed_reflections.extend(idxr.unindexed_reflections)
+
+    def export_experiments(self, filename):
+        experiments = self._indexed_experiments
+        if self._params.output.split_experiments:
+            logger.info("Splitting experiments before output")
+
+            experiments = ExperimentList([copy.deepcopy(re) for re in experiments])
+        logger.info("Saving refined experiments to %s" % filename)
+
+        assert experiments.is_consistent()
+        dump.experiment_list(experiments, filename)
+
+    def export_reflections(self, filename):
+        logger.info("Saving refined reflections to %s" % filename)
+        self._indexed_reflections.as_pickle(filename=filename)
+
+
 def run(phil=working_phil, args=None):
     import libtbx.load_env
-    from dials.util import Sorry
 
     usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
@@ -108,13 +184,10 @@ def run(phil=working_phil, args=None):
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    if __name__ == "__main__":
-        from dials.util import log
+    from dials.util import log
 
-        # Configure the logging
-        log.config(
-            params.verbosity, info=params.output.log, debug=params.output.debug_log
-        )
+    # Configure the logging
+    log.config(params.verbosity, info=params.output.log, debug=params.output.debug_log)
 
     from dials.util.version import dials_version
 
@@ -133,70 +206,9 @@ def run(phil=working_phil, args=None):
         parser.print_help()
         return
 
-    if experiments.crystals()[0] is not None:
-        known_crystal_models = experiments.crystals()
-    else:
-        known_crystal_models = None
-
-    if len(reflections) == 0:
-        raise Sorry("No reflection lists found in input")
-    if len(reflections) > 1:
-        assert len(reflections) == len(experiments)
-        from scitbx.array_family import flex
-
-        for i in range(len(reflections)):
-            reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
-            if i > 0:
-                reflections[0].extend(reflections[i])
-
-    reflections = reflections[0]
-
-    for expt in experiments:
-        if (
-            expt.goniometer is not None
-            and expt.scan is not None
-            and expt.scan.get_oscillation()[1] == 0
-        ):
-            expt.goniometer = None
-            expt.scan = None
-
-    from dials.algorithms.indexing.indexer import indexer_base
-
-    idxr = indexer_base.from_parameters(
-        reflections,
-        experiments,
-        known_crystal_models=known_crystal_models,
-        params=params,
-    )
-    idxr.index()
-    refined_experiments = idxr.refined_experiments
-    reflections = copy.deepcopy(idxr.refined_reflections)
-    reflections.extend(idxr.unindexed_reflections)
-    if len(refined_experiments):
-        if params.output.split_experiments:
-            logger.info("Splitting experiments before output")
-            from dxtbx.model.experiment_list import ExperimentList
-
-            refined_experiments = ExperimentList(
-                [copy.deepcopy(re) for re in refined_experiments]
-            )
-        logger.info("Saving refined experiments to %s" % params.output.experiments)
-        idxr.export_as_json(refined_experiments, file_name=params.output.experiments)
-        logger.info("Saving refined reflections to %s" % params.output.reflections)
-        idxr.export_reflections(reflections, file_name=params.output.reflections)
-
-        if params.output.unindexed_reflections is not None:
-            logger.info(
-                "Saving unindexed reflections to %s"
-                % params.output.unindexed_reflections
-            )
-            idxr.export_reflections(
-                idxr.unindexed_reflections,
-                file_name=params.output.unindexed_reflections,
-            )
-            return refined_experiments, reflections, idxr.unindexed_reflections
-
-    return refined_experiments, reflections
+    indexed = Index(experiments, reflections, params)
+    indexed.export_experiments(params.output.experiments)
+    indexed.export_reflections(params.output.reflections)
 
 
 if __name__ == "__main__":

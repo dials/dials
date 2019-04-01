@@ -32,8 +32,6 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 )
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 
-from cctbx import sgtbx
-
 from dxtbx.model import ExperimentList
 
 from dials.algorithms.indexing.max_cell import find_max_cell
@@ -135,13 +133,6 @@ indexing {
   rmsd_cutoff = 15
     .type = float(value_min=0)
     .expert_level = 1
-  scan_range = None
-    .help = "The range of images to use in indexing. Number of arguments"
-            "must be a factor of two. Specifying \"0 0\" will use all images"
-            "by default. The given range follows C conventions"
-            "(e.g. j0 <= j < j1)."
-    .type = ints(size=2)
-    .multiple = True
   known_symmetry {
     space_group = None
       .type = space_group
@@ -424,20 +415,6 @@ refinement {
 master_params = master_phil_scope.fetch().extract()
 
 
-def filter_reflections_by_scan_range(reflections, scan_range):
-    reflections_in_scan_range = flex.bool(len(reflections), False)
-    frame_number = reflections["xyzobs.px.value"].parts()[2]
-
-    for scan_range in scan_range:
-        if scan_range is None:
-            continue
-        range_start, range_end = scan_range
-        reflections_in_scan_range.set_selected(
-            (frame_number >= range_start) & (frame_number < range_end), True
-        )
-    return reflections.select(reflections_in_scan_range)
-
-
 class indexer_base(object):
     def __init__(self, reflections, experiments, params=None):
         self.reflections = reflections
@@ -616,7 +593,6 @@ class indexer_base(object):
             refl = reflections_input.select(reflections_input["imageset_id"] == i)
             refl.centroid_px_to_mm(expt.detector, expt.scan)
             self.reflections.extend(refl)
-        self.filter_reflections_by_scan_range()
         if len(self.reflections) == 0:
             raise Sorry("No reflections left to index!")
 
@@ -1036,12 +1012,6 @@ class indexer_base(object):
                 ).max_cell
                 logger.info("Found max_cell: %.1f Angstrom" % (self.params.max_cell))
 
-    def filter_reflections_by_scan_range(self):
-        if len(self.params.scan_range):
-            self.reflections = filter_reflections_by_scan_range(
-                self.reflections, self.params.scan_range
-            )
-
     def index_reflections(self, experiments, reflections):
         self._assign_indices(reflections, experiments, d_min=self.d_min)
         if self.hkl_offset is not None and self.hkl_offset != (0, 0, 0):
@@ -1102,33 +1072,6 @@ class indexer_base(object):
                     xs.add_scatterer(xray.scatterer("C", site=site))
                 xs.sites_mod_short()
                 f.write(xs.as_pdb_file())
-
-    def debug_write_ccp4_map(self, map_data, file_name):
-        from iotbx import ccp4_map
-
-        gridding_first = (0, 0, 0)
-        gridding_last = map_data.all()
-        labels = ["cctbx.miller.fft_map"]
-        ccp4_map.write_ccp4_map(
-            file_name=file_name,
-            unit_cell=self.fft_cell,
-            space_group=sgtbx.space_group("P1"),
-            gridding_first=gridding_first,
-            gridding_last=gridding_last,
-            map_data=map_data,
-            labels=flex.std_string(labels),
-        )
-
-    def export_as_json(
-        self, experiments, file_name="indexed_experiments.json", compact=False
-    ):
-        from dxtbx.serialize import dump
-
-        assert experiments.is_consistent()
-        dump.experiment_list(experiments, file_name)
-
-    def export_reflections(self, reflections, file_name="reflections.pickle"):
-        reflections.as_pickle(file_name)
 
     def find_lattices(self):
         raise NotImplementedError()
