@@ -78,7 +78,7 @@ max_cell_estimation
 }
 """
 
-index_only_phil_str = (
+phil_str = (
     """\
 indexing {
   nproc = 1
@@ -105,34 +105,12 @@ indexing {
     .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
     .expert_level = 1
   %s
-  fft3d {
-    peak_search = *flood_fill clean
-      .type = choice
-      .expert_level = 2
-    peak_volume_cutoff = 0.15
-      .type = float
-      .expert_level = 2
-    reciprocal_space_grid {
-      n_points = 256
-        .type = int(value_min=0)
-        .expert_level = 1
-      d_min = Auto
-        .type = float(value_min=0)
-        .help = "The high resolution limit in Angstrom for spots to include in "
-                "the initial indexing."
-    }
-  }
   sigma_phi_deg = None
     .type = float(value_min=0)
     .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
             "rotation images where the phi sigma is almost certainly incorrect."
     .expert_level = 2
-  b_iso = Auto
-    .type = float(value_min=0)
-    .expert_level = 2
-  rmsd_cutoff = 15
-    .type = float(value_min=0)
-    .expert_level = 1
+
   known_symmetry {
     space_group = None
       .type = space_group
@@ -154,48 +132,7 @@ indexing {
               "combinations that are consistent with the given symmetry."
       .expert_level = 1
   }
-  basis_vector_combinations
-    .expert_level = 1
-  {
-    max_combinations = None
-      .type = int(value_min=1)
-      .help = "Maximum number of basis vector combinations to test for agreement"
-              "with input symmetry."
-    max_refine = Auto
-      .type = int(value_min=1)
-      .help = "Maximum number of putative crystal models to test. Default"
-              "for rotation sweeps: 50, for still images: 5"
-      .expert_level = 1
-    sys_absent_threshold = 0.9
-      .type = float(value_min=0.0, value_max=1.0)
-    solution_scorer = filter *weighted
-      .type = choice
-      .expert_level = 1
-    filter
-      .expert_level = 1
-    {
-      check_doubled_cell = True
-        .type = bool
-      likelihood_cutoff = 0.8
-        .type = float(value_min=0, value_max=1)
-      volume_cutoff = 1.25
-        .type = float(value_min=1)
-      n_indexed_cutoff = 0.9
-        .type = float(value_min=0, value_max=1)
-    }
-    weighted
-      .expert_level = 1
-    {
-      power = 1
-        .type = int(value_min=1)
-      volume_weight = 1
-        .type = float(value_min=0)
-      n_indexed_weight = 1
-        .type = float(value_min=0)
-      rmsd_weight = 1
-        .type = float(value_min=0)
-    }
-  }
+
   index_assignment {
     method = *simple local
       .type = choice
@@ -229,9 +166,6 @@ indexing {
       .type = int
       .help = "Search scope for testing misindexing on h, k, l."
   }
-  optimise_initial_basis_vectors = False
-    .type = bool
-    .expert_level = 2
   debug = False
     .type = bool
     .expert_level = 1
@@ -270,8 +204,6 @@ indexing {
               "during refinement."
       .expert_level = 1
   }
-  method = *fft3d fft1d real_space_grid_search
-    .type = choice
   multiple_lattice_search
     .expert_level = 1
   {
@@ -313,21 +245,6 @@ indexing {
       intersection_union_ratio_cutoff = 0.4
         .type = float(value_min=0.0, value_max=1.0)
     }
-  }
-  fft1d
-    .expert_level = 1
-  {
-    characteristic_grid = None
-      .help = Sampling frequency in radians. See Steller 1997. If None, \
-              determine a grid sampling automatically using the input \
-              reflections, using at most 0.029 radians.
-      .type = float(value_min=0)
-  }
-  real_space_grid_search
-    .expert_level = 1
-  {
-    characteristic_grid = 0.02
-      .type = float(value_min=0)
   }
   stills {
     indexer = *Auto stills sweeps
@@ -388,40 +305,13 @@ indexing {
     % max_cell_phil_str
 )
 
-index_only_phil_scope = iotbx.phil.parse(index_only_phil_str, process_includes=True)
-
-master_phil_scope = iotbx.phil.parse(
-    """
-%s
-include scope dials.algorithms.refinement.refiner.phil_scope
-"""
-    % index_only_phil_str,
-    process_includes=True,
-)
-
-# override default refinement parameters
-master_phil_scope = master_phil_scope.fetch(
-    source=iotbx.phil.parse(
-        """\
-refinement {
-  reflections {
-    reflections_per_degree=100
-  }
-}
-"""
-    )
-)
-
-master_params = master_phil_scope.fetch().extract()
+phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
 class indexer_base(object):
     def __init__(self, reflections, experiments, params=None):
         self.reflections = reflections
         self.experiments = experiments
-
-        if params is None:
-            params = master_params
 
         self.params = params.indexing
         self.all_params = params
@@ -483,9 +373,6 @@ class indexer_base(object):
     def from_parameters(
         reflections, experiments, known_crystal_models=None, params=None
     ):
-
-        if params is None:
-            params = master_params
 
         if known_crystal_models is not None:
             from dials.algorithms.indexing.known_orientation import (

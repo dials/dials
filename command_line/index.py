@@ -59,17 +59,26 @@ Examples::
 
 """
 
+
 phil_scope = iotbx.phil.parse(
     """\
-include scope dials.algorithms.indexing.indexer.master_phil_scope
+include scope dials.algorithms.indexing.indexer.phil_scope
 
-image_range = None
-  .help = "Range in images to slice a sweep. The number of arguments"
-          "must be a factor of two. Each pair of arguments gives a range"
-          "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
-          "reflections by observed centroid."
-  .type = ints(size=2)
-  .multiple = True
+indexing {
+
+    include scope dials.algorithms.indexing.lattice_search.basis_vector_search_phil_scope
+
+    image_range = None
+      .help = "Range in images to slice a sweep. The number of arguments"
+              "must be a factor of two. Each pair of arguments gives a range"
+              "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
+              "reflections by observed centroid."
+      .type = ints(size=2)
+      .multiple = True
+
+}
+
+include scope dials.algorithms.refinement.refiner.phil_scope
 
 output {
   experiments = indexed_experiments.json
@@ -89,18 +98,23 @@ output {
 verbosity = 1
   .type = int(value_min=0)
   .help = "The verbosity level"
+
 """,
     process_includes=True,
 )
 
-# local overrides for refiner.phil_scope
-phil_overrides = iotbx.phil.parse(
-    """
-refinement
-{
-  verbosity = 1
+# override default refinement parameters
+phil_overrides = phil_scope.fetch(
+    source=iotbx.phil.parse(
+        """\
+refinement {
+    reflections {
+        reflections_per_degree=100
+    }
+    verbosity = 1
 }
 """
+    )
 )
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
@@ -138,8 +152,10 @@ class Index(object):
                 expt.goniometer = None
                 expt.scan = None
 
-        if self._params.image_range:
-            reflections = slice_reflections(reflections, self._params.image_range)
+        if self._params.indexing.image_range:
+            reflections = slice_reflections(
+                reflections, self._params.indexing.image_range
+            )
 
         idxr = indexer.indexer_base.from_parameters(
             reflections,

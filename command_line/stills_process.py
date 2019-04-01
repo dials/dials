@@ -10,6 +10,7 @@ import os
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
+from dials.array_family import flex
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -134,7 +135,10 @@ dials_phil_str = """
 
   include scope dials.util.options.geometry_phil_scope
   include scope dials.algorithms.spot_finding.factory.phil_scope
-  include scope dials.algorithms.indexing.indexer.index_only_phil_scope
+  include scope dials.algorithms.indexing.indexer.phil_scope
+  indexing {
+      include scope dials.algorithms.indexing.lattice_search.basis_vector_search_phil_scope
+  }
   include scope dials.algorithms.refinement.refiner.phil_scope
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
@@ -554,7 +558,6 @@ class Processor(object):
         if params.output.composite_output:
             assert composite_tag is not None
             from dxtbx.model.experiment_list import ExperimentList
-            from dials.array_family import flex
 
             # self.all_strong_reflections = flex.reflection_table() # no composite strong pickles yet
             self.all_indexed_experiments = ExperimentList()
@@ -638,7 +641,6 @@ class Processor(object):
         debug_file_handle.close()
 
     def process_experiments(self, tag, experiments):
-        import os
 
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
@@ -722,7 +724,6 @@ class Processor(object):
 
     def find_spots(self, experiments):
         from time import time
-        from dials.array_family import flex
 
         st = time()
 
@@ -806,7 +807,6 @@ class Processor(object):
         experiments = idxr.refined_experiments
 
         if known_crystal_models is not None:
-            from dials.array_family import flex
 
             filtered = flex.reflection_table()
             for idx in set(indexed["miller_index"]):
@@ -872,7 +872,6 @@ class Processor(object):
                     self.params.output.refined_experiments_filename is not None
                     and self.params.output.indexed_filename is not None
                 )
-                from dials.array_family import flex
 
                 n = len(self.all_indexed_experiments)
                 self.all_indexed_experiments.extend(experiments)
@@ -913,7 +912,6 @@ class Processor(object):
         logger.info("Configuring integrator from input parameters")
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.algorithms.integration.integrator import IntegratorFactory
-        from dials.array_family import flex
 
         # Compute the profile model
         # Predict the reflections
@@ -999,7 +997,6 @@ class Processor(object):
                     self.params.output.integrated_experiments_filename is not None
                     and self.params.output.integrated_filename is not None
                 )
-                from dials.array_family import flex
 
                 n = len(self.all_integrated_experiments)
                 self.all_integrated_experiments.extend(experiments)
@@ -1081,9 +1078,7 @@ class Processor(object):
         if self.params.output.integration_pickle is not None:
 
             from libtbx import easy_pickle
-            import os
             from xfel.command_line.frame_extractor import ConstructFrame
-            from dials.array_family import flex
 
             # Split everything into separate experiments for pickling
             for e_number in xrange(len(experiments)):
@@ -1136,7 +1131,6 @@ class Processor(object):
 
     def process_reference(self, reference):
         """ Load the reference spots. """
-        from dials.array_family import flex
         from time import time
 
         if reference is None:

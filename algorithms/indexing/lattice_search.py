@@ -16,6 +16,7 @@ from __future__ import print_function
 import logging
 import math
 
+import libtbx.phil
 from scitbx.array_family import flex
 import scitbx.matrix
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -24,12 +25,106 @@ from dials.algorithms.indexing.basis_vector_search import strategies
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import optimise
 
 logger = logging.getLogger(__name__)
 
 
-from dials.algorithms.indexing import indexer
+basis_vector_search_phil_str = """\
+basis_vector_combinations
+    .expert_level = 1
+{
+    max_combinations = None
+        .type = int(value_min=1)
+        .help = "Maximum number of basis vector combinations to test for agreement"
+                "with input symmetry."
+    max_refine = Auto
+        .type = int(value_min=1)
+        .help = "Maximum number of putative crystal models to test. Default"
+                "for rotation sweeps: 50, for still images: 5"
+        .expert_level = 1
+    sys_absent_threshold = 0.9
+        .type = float(value_min=0.0, value_max=1.0)
+    solution_scorer = filter *weighted
+        .type = choice
+        .expert_level = 1
+    filter
+        .expert_level = 1
+    {
+        check_doubled_cell = True
+            .type = bool
+        likelihood_cutoff = 0.8
+            .type = float(value_min=0, value_max=1)
+        volume_cutoff = 1.25
+            .type = float(value_min=1)
+        n_indexed_cutoff = 0.9
+            .type = float(value_min=0, value_max=1)
+    }
+    weighted
+        .expert_level = 1
+    {
+        power = 1
+            .type = int(value_min=1)
+        volume_weight = 1
+            .type = float(value_min=0)
+        n_indexed_weight = 1
+            .type = float(value_min=0)
+        rmsd_weight = 1
+            .type = float(value_min=0)
+    }
+}
+
+fft1d
+    .expert_level = 1
+{
+    characteristic_grid = None
+        .help = Sampling frequency in radians. See Steller 1997. If None, \
+                determine a grid sampling automatically using the input \
+    reflections, using at most 0.029 radians.
+        .type = float(value_min=0)
+}
+
+fft3d {
+    b_iso = Auto
+        .type = float(value_min=0)
+        .expert_level = 2
+    rmsd_cutoff = 15
+        .type = float(value_min=0)
+        .expert_level = 1
+    peak_search = *flood_fill clean
+        .type = choice
+        .expert_level = 2
+    peak_volume_cutoff = 0.15
+        .type = float
+        .expert_level = 2
+    reciprocal_space_grid {
+        n_points = 256
+            .type = int(value_min=0)
+            .expert_level = 1
+        d_min = Auto
+            .type = float(value_min=0)
+            .help = "The high resolution limit in Angstrom for spots to include in "
+                    "the initial indexing."
+      }
+}
+
+real_space_grid_search
+    .expert_level = 1
+{
+    characteristic_grid = 0.02
+        .type = float(value_min=0)
+}
+
+method = *fft3d fft1d real_space_grid_search
+    .type = choice
+
+optimise_initial_basis_vectors = False
+    .type = bool
+    .expert_level = 2
+
+"""
+basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
 
 
 class BasisVectorSearch(indexer.indexer_base):
@@ -45,8 +140,8 @@ class BasisVectorSearch(indexer.indexer_base):
                 self.params.max_cell,
                 self.params.fft3d.reciprocal_space_grid.n_points,
                 d_min=self.params.fft3d.reciprocal_space_grid.d_min,
-                b_iso=self.params.b_iso,
-                rmsd_cutoff=self.params.rmsd_cutoff,
+                b_iso=self.params.fft3d.b_iso,
+                rmsd_cutoff=self.params.fft3d.rmsd_cutoff,
                 peak_volume_cutoff=self.params.fft3d.peak_volume_cutoff,
                 min_cell=self.params.min_cell,
             )
