@@ -42,6 +42,9 @@ def test_plot_scaling_models():
     d = plot_scaling_models(physical_dict)
     assert "smooth_scale_model" in d
     assert "absorption_surface" in d
+    assert "absorption_parameters" in d
+    assert d["smooth_scale_model"]["data"][0] != []
+    assert d["absorption_parameters"]["data"][0] != []
 
 
 def test_normal_probability_plot():
