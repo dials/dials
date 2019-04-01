@@ -38,7 +38,7 @@ def installation_is_valid():
 known_entry_points = {
     "dxtbx.profile_model": {
         "description": "profile models",
-        "required": ["gaussian_rs", "clown"],
+        "required": ["gaussian_rs"],
     },
     "dxtbx.scaling_model_ext": {"description": "scaling models"},
 }
