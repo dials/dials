@@ -22,11 +22,15 @@ from cctbx import miller
 
 import dials.util.banner
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_library import calculate_single_merging_stats
+from dials.algorithms.scaling.scaling_library import (
+    calculate_single_merging_stats,
+    scaled_data_as_miller_array,
+)
 from dials.algorithms.scaling.plots import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
     ResolutionPlotsAndStats,
+    IntensityStatisticsPlots,
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
 )
@@ -2687,6 +2691,16 @@ def merging_stats_results(reflections, experiments):
 
     return summary_table, results_table, resolution_plots, batch_plots
 
+def intensity_statistics(reflections, experiments):
+    if not 'inverse_scale_factor' in reflections:
+        return {}, {}
+    reflections["intensity"] = reflections["intensity.scale.value"]
+    reflections["variance"] = reflections["intensity.scale.variance"]
+    scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    plotter = IntensityStatisticsPlots(scaled_array)
+    resolution_plots = plotter.generate_resolution_dependent_plots()
+    misc_plots = plotter.generate_miscellanous_plots()
+    return resolution_plots, misc_plots
 
 class Analyser(object):
     """ Helper class to do all the analysis. """
@@ -2738,6 +2752,8 @@ class Analyser(object):
             summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
+            rplots, misc_plots = intensity_statistics(rlist, experiments)
+            resolution_plots.update(rplots)
 
         if self.params.output.html is not None:
 
@@ -2769,6 +2785,7 @@ class Analyser(object):
                 scaling_model_graphs=graphs["scaling_model"],
                 resolution_plots=resolution_plots,
                 batch_graphs=batch_plots,
+                misc_plots=misc_plots,
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],
                 intensity_graphs=graphs["intensity"],

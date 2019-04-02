@@ -15,6 +15,7 @@ from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
     ResolutionPlotsAndStats,
+    IntensityStatisticsPlots,
 )
 from dials.util.batch_handling import batch_manager
 
@@ -108,6 +109,7 @@ class ScalingHTMLGenerator(Observer):
             scaling_outlier_graphs=self.data["outlier_plots"],
             normal_prob_plot=self.data["normal_prob_plot"],
             batch_plots=self.data["batch_plots"],
+            misc_plots=self.data["misc_plots"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -256,7 +258,7 @@ class MergingStatisticsObserver(Observer):
                 scaling_script.experiments,
                 scaling_script.scaled_miller_array,
             )
-
+            self.data["scaled_miller_array"] = scaling_script.scaled_miller_array
             self.data["bm"] = batch_manager(batches, batch_data)
             self.data["r_merge_vs_batch"] = rvb
             self.data["scale_vs_batch"] = svb
@@ -265,9 +267,10 @@ class MergingStatisticsObserver(Observer):
     def make_plots(self):
         """Generate tables of overall and resolution-binned merging statistics."""
         d = {
-            "scaling_tables": [[], []],
+            "scaling_tables": ([], []),
             "resolution_plots": OrderedDict(),
             "batch_plots": OrderedDict(),
+            "misc_plots": OrderedDict(),
         }
         if "statistics" in self.data:
             plotter = ResolutionPlotsAndStats(
@@ -287,6 +290,9 @@ class MergingStatisticsObserver(Observer):
             d["batch_plots"].update(
                 i_over_sig_i_vs_batch_plot(self.data["bm"], self.data["isigivsbatch"])
             )
+            plotter = IntensityStatisticsPlots(self.data["scaled_miller_array"])
+            d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
+            d["misc_plots"].update(plotter.generate_miscellanous_plots())
         return d
 
     def make_statistics_summary(self):

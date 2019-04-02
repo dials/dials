@@ -73,6 +73,7 @@ def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
             s,
         )
 
+
 smooth_help_msg = """
 The inverse scale factor g, for a given reflection i, is defined as the product
 of the individual model components.
@@ -83,6 +84,7 @@ absorption surface correction Si,
 The scaled intensity is therefore given by Ii / gi, where
 gi = Ci * Ri * Si
 """
+
 
 def _plot_smooth_scales(physical_model):
     """Plot smooth scale factors for the physical model."""
@@ -108,7 +110,7 @@ def _plot_smooth_scales(physical_model):
                     "title": "inverse <br> scale factor",
                 },
             },
-            "help" : smooth_help_msg,
+            "help": smooth_help_msg,
         }
     }
 
@@ -174,6 +176,7 @@ def _plot_smooth_scales(physical_model):
     d["smooth_scale_model"]["data"].extend(data)
     return d
 
+
 absorption_help_msg = """
 The absorption correction uses a set of spherical harmonic functions as the
 basis of a smoothly varying absorption correction as a function of phi and
@@ -186,49 +189,44 @@ from -l, -l+1,...,l+1,l, shown in the plot from left to right for each l.
 s0 and s1 are the incoming and scattered beam vectors.
 """
 
+
 def plot_absorption_parameters(physical_model):
     """Make a simple plot showing the absorption parameters and errors."""
     params = physical_model.components["absorption"].parameters
     param_esds = physical_model.components["absorption"].parameter_esds
     d = {
         "absorption_parameters": {
-            "data": [{
-                "x": [i + 0.5 for i in range(len(params))],
-                "y": list(params),
-                "type": "scatter",
-                "name": "absorption parameters",
-                "xaxis": "x",
-                "yaxis": "y",
-                "mode": "markers",
-            }],
+            "data": [
+                {
+                    "x": [i + 0.5 for i in range(len(params))],
+                    "y": list(params),
+                    "type": "scatter",
+                    "name": "absorption parameters",
+                    "xaxis": "x",
+                    "yaxis": "y",
+                    "mode": "markers",
+                }
+            ],
             "layout": {
                 "title": "Absorption correction surface parameters",
-                "xaxis": {
-                    "domain": [0, 1],
-                    "anchor": "y",
-                    "title": "",
-                    "tickvals" : [],
-                },
-                "yaxis": {
-                    "domain": [0, 1],
-                    "anchor": "x",
-                    "title": "Parameter value",
-                },
+                "xaxis": {"domain": [0, 1], "anchor": "y", "title": "", "tickvals": []},
+                "yaxis": {"domain": [0, 1], "anchor": "x", "title": "Parameter value"},
             },
-            "help": absorption_help_msg
+            "help": absorption_help_msg,
         }
     }
     if param_esds:
         d["absorption_parameters"]["data"][-1]["error_y"] = {
-            "type": "data", "array": list(param_esds)
+            "type": "data",
+            "array": list(param_esds),
         }
 
     light_grey = "#d3d3d3"
     grey = "#808080"
     shapes = []
-    lmax = int(-1 + (1 + len(params))**0.5)
-    ls = [i+1 for i in range(lmax)]
-    ns = [(2*l) + 1 for l in ls]
+    lmax = int(-1 + (1 + len(params)) ** 0.5)
+    ls = [i + 1 for i in range(lmax)]
+    ns = [(2 * l) + 1 for l in ls]
     annotations = []
     start = 0
     for i, n in enumerate(ns):
@@ -248,16 +246,16 @@ def plot_absorption_parameters(physical_model):
             }
         )
         annotations.append(
-                {
-                    "xref": "x",
-                    "yref": "paper",
-                    "x": start + (n / 2.0),
-                    "y": 1,
-                    "text": "l=%s" % ls[i],
-                    "showarrow": False,
-                    "yshift": 20,
-                }
-            )
+            {
+                "xref": "x",
+                "yref": "paper",
+                "x": start + (n / 2.0),
+                "y": 1,
+                "text": "l=%s" % ls[i],
+                "showarrow": False,
+                "yshift": 20,
+            }
+        )
         start += n
     d["absorption_parameters"]["layout"]["shapes"] = shapes
     d["absorption_parameters"]["layout"]["annotations"] = annotations
@@ -275,7 +273,7 @@ def plot_absorption_surface(physical_model):
                 "xaxis": {"domain": [0, 1], "anchor": "y", "title": "theta (degrees)"},
                 "yaxis": {"domain": [0, 1], "anchor": "x", "title": "phi (degrees)"},
             },
-            "help" : absorption_help_msg,
+            "help": absorption_help_msg,
         }
     }
 
