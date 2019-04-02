@@ -11,6 +11,9 @@
 
 from __future__ import absolute_import, division, print_function
 
+import cPickle as pickle
+
+from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
 
 help_message = """
@@ -97,7 +100,10 @@ class Script(object):
 
         for i, imageset in enumerate(imagesets):
             # Set the lookup
+            with open(params.input.mask[i]) as f:
+                mask = pickle.load(f)
             imageset.external_lookup.mask.filename = params.input.mask[i]
+            imageset.external_lookup.mask.data = ImageBool(mask)
 
         # Dump the experiments
         print("Writing experiments to %s" % params.output.experiments)
