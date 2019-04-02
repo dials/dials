@@ -85,7 +85,273 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
     }
 
 
-class ResolutionPlotsAndStats(object):
+class ResolutionPlotterMixin(object):
+
+    """Define additional helper methods for plotting"""
+
+    @staticmethod
+    def _d_star_sq_to_d_ticks(d_star_sq, nticks):
+        min_d_star_sq = min(d_star_sq)
+        dstep = (max(d_star_sq) - min_d_star_sq) / nticks
+        tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
+        ticktext = ["%.2f" % (uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
+        return tickvals, ticktext
+
+
+class IntensityStatisticsPlots(ResolutionPlotterMixin):
+
+    """Generate plots for intensity-derived statistics."""
+
+    def __init__(
+        self,
+        intensities,
+        anomalous=False,
+        n_resolution_bins=20,
+        xtriage_analyses=None,
+        run_xtraige_analysis=True,
+    ):
+        self.n_bins = n_resolution_bins
+        self._xanalysis = xtriage_analyses
+        if anomalous:
+            intensities = intensities.as_anomalous_array()
+        intensities.setup_binner(n_bins=self.n_bins)
+        merged = intensities.merge_equivalents()
+        self.merged_intensities = merged.array()
+        self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
+        if not self._xanalysis and run_xtraige_analysis:
+            # imports needed here or won't work, unsure why.
+            from mmtbx.scaling.xtriage import xtriage_analyses
+            from mmtbx.scaling.xtriage import master_params as xtriage_master_params
+
+            xtriage_params = xtriage_master_params.fetch(sources=[]).extract()
+            xtriage_params.scaling.input.xray_data.skip_sanity_checks = True
+            xanalysis = xtriage_analyses(
+                miller_obs=self.merged_intensities,
+                unmerged_obs=intensities,
+                text_out="silent",
+                params=xtriage_params,
+            )
+            self._xanalysis = xanalysis
+
+    def generate_resolution_dependent_plots(self):
+        d = OrderedDict()
+        d.update(self.second_moments_plot())
+        d.update(self.wilson_plot())
+        return d
+
+    def generate_miscellanous_plots(self):
+        d = OrderedDict()
+        d.update(self.cumulative_intensity_distribution_plot())
+        d.update(self.l_test_plot())
+        return d
+
+    def wilson_plot(self):
+        if not self._xanalysis or not self._xanalysis.wilson_scaling:
+            return {}
+        wilson_scaling = self._xanalysis.wilson_scaling
+        tickvals_wilson, ticktext_wilson = self._d_star_sq_to_d_ticks(
+            wilson_scaling.d_star_sq, nticks=5
+        )
+
+        return {
+            "wilson_intensity_plot": {
+                "data": (
+                    [
+                        {
+                            "x": list(wilson_scaling.d_star_sq),
+                            "y": list(wilson_scaling.mean_I_obs_data),
+                            "type": "scatter",
+                            "name": "Observed",
+                        },
+                        {
+                            "x": list(wilson_scaling.d_star_sq),
+                            "y": list(wilson_scaling.mean_I_obs_theory),
+                            "type": "scatter",
+                            "name": "Expected",
+                        },
+                        {
+                            "x": list(wilson_scaling.d_star_sq),
+                            "y": list(wilson_scaling.mean_I_normalisation),
+                            "type": "scatter",
+                            "name": "Smoothed",
+                        },
+                    ]
+                ),
+                "layout": {
+                    "title": "Wilson intensity plot",
+                    "xaxis": {
+                        "title": u"Resolution (Å)",
+                        "tickvals": tickvals_wilson,
+                        "ticktext": ticktext_wilson,
+                    },
+                    "yaxis": {"type": "log", "title": "Mean(I)", "rangemode": "tozero"},
+                },
+            }
+        }
+
+    def cumulative_intensity_distribution_plot(self):
+        if not self._xanalysis or not self._xanalysis.twin_results:
+            return {}
+        nz_test = self._xanalysis.twin_results.nz_test
+        return {
+            "cumulative_intensity_distribution": {
+                "data": [
+                    {
+                        "x": list(nz_test.z),
+                        "y": list(nz_test.ac_obs),
+                        "type": "scatter",
+                        "name": "Acentric observed",
+                        "mode": "lines",
+                        "line": {"color": "rgb(31, 119, 180)"},
+                    },
+                    {
+                        "x": list(nz_test.z),
+                        "y": list(nz_test.c_obs),
+                        "type": "scatter",
+                        "name": "Centric observed",
+                        "mode": "lines",
+                        "line": {"color": "rgb(255, 127, 14)"},
+                    },
+                    {
+                        "x": list(nz_test.z),
+                        "y": list(nz_test.ac_untwinned),
+                        "type": "scatter",
+                        "name": "Acentric theory",
+                        "mode": "lines",
+                        "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
+                        "opacity": 0.8,
+                    },
+                    {
+                        "x": list(nz_test.z),
+                        "y": list(nz_test.c_untwinned),
+                        "type": "scatter",
+                        "name": "Centric theory",
+                        "mode": "lines",
+                        "line": {"color": "rgb(255, 127, 14)", "dash": "dot"},
+                        "opacity": 0.8,
+                    },
+                ],
+                "layout": {
+                    "title": "Cumulative intensity distribution",
+                    "xaxis": {"title": "z", "range": (0, 1)},
+                    "yaxis": {"title": "P(Z <= Z)", "range": (0, 1)},
+                },
+            }
+        }
+
+    def l_test_plot(self):
+        if not self._xanalysis or not self._xanalysis.twin_results:
+            return {}
+        l_test = self._xanalysis.twin_results.l_test
+        return {
+            "l_test": {
+                "data": [
+                    {
+                        "x": list(l_test.l_values),
+                        "y": list(l_test.l_cumul_untwinned),
+                        "type": "scatter",
+                        "name": "Untwinned",
+                        "mode": "lines",
+                        "line": {"color": "rgb(31, 119, 180)", "dash": "dashdot"},
+                    },
+                    {
+                        "x": list(l_test.l_values),
+                        "y": list(l_test.l_cumul_perfect_twin),
+                        "type": "scatter",
+                        "name": "Perfect twin",
+                        "mode": "lines",
+                        "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
+                        "opacity": 0.8,
+                    },
+                    {
+                        "x": list(l_test.l_values),
+                        "y": list(l_test.l_cumul),
+                        "type": "scatter",
+                        "name": "Observed",
+                        "mode": "lines",
+                        "line": {"color": "rgb(255, 127, 14)"},
+                    },
+                ],
+                "layout": {
+                    "title": "L test (Padilla and Yeates)",
+                    "xaxis": {"title": "|l|", "range": (0, 1)},
+                    "yaxis": {"title": "P(L >= l)", "range": (0, 1)},
+                },
+            }
+        }
+
+    def second_moments_plot(self):
+
+        acentric = self.merged_intensities.select_acentric()
+        centric = self.merged_intensities.select_centric()
+        if acentric.size():
+            acentric.setup_binner(n_bins=self.n_bins)
+            second_moments_acentric = acentric.second_moment_of_intensities(
+                use_binning=True
+            )
+        else:
+            second_moments_acentric = None
+        if centric.size():
+            centric.setup_binner(n_bins=self.n_bins)
+            second_moments_centric = centric.second_moment_of_intensities(
+                use_binning=True
+            )
+        else:
+            second_moments_centric = None
+
+        second_moment_d_star_sq = []
+        if acentric.size():
+            second_moment_d_star_sq.extend(
+                second_moments_acentric.binner.bin_centers(2)
+            )
+        if centric.size():
+            second_moment_d_star_sq.extend(second_moments_centric.binner.bin_centers(2))
+        tickvals_2nd_moment, ticktext_2nd_moment = self._d_star_sq_to_d_ticks(
+            second_moment_d_star_sq, nticks=5
+        )
+
+        return {
+            "second_moments": {
+                "data": [
+                    (
+                        {
+                            "x": list(
+                                second_moments_acentric.binner.bin_centers(2)
+                            ),  # d_star_sq
+                            "y": second_moments_acentric.data[1:-1],
+                            "type": "scatter",
+                            "name": "<I^2> acentric",
+                        }
+                        if acentric.size()
+                        else {}
+                    ),
+                    (
+                        {
+                            "x": list(
+                                second_moments_centric.binner.bin_centers(2)
+                            ),  # d_star_sq
+                            "y": second_moments_centric.data[1:-1],
+                            "type": "scatter",
+                            "name": "<I^2> centric",
+                        }
+                        if centric.size()
+                        else {}
+                    ),
+                ],
+                "layout": {
+                    "title": "Second moment of I",
+                    "xaxis": {
+                        "title": u"Resolution (Å)",
+                        "tickvals": tickvals_2nd_moment,
+                        "ticktext": ticktext_2nd_moment,
+                    },
+                    "yaxis": {"title": "<I^2>", "rangemode": "tozero"},
+                },
+            }
+        }
+
+
+class ResolutionPlotsAndStats(ResolutionPlotterMixin):
 
     """
     Use iotbx dataset statistics objects to make plots and tables for reports.
@@ -326,47 +592,104 @@ class ResolutionPlotsAndStats(object):
             }
         }
 
-    def statistics_tables(self):
-        """Make a tuple containing a summary table and resolution binned table."""
-        result = self.dataset_statistics
-        resolution_binned_table = [
-            (
-                "d_max",
-                "d_min",
-                "n_obs",
-                "n_uniq",
-                "mult",
-                "comp",
-                "&ltI&gt",
-                "&ltI/sI&gt",
-                "r_merge",
-                "r_meas",
-                "r_pim",
-                "cc1/2",
-                "cc_anom",
-            )
-        ]
-        for bin_stats in result.bins:
-            resolution_binned_table.append(tuple(bin_stats.format().split()))
-        result = result.overall
-        summary_table = [
-            ("Resolution", "{0:.3f} - {1:.3f}".format(result.d_max, result.d_min)),
-            ("Observations", result.n_obs),
-            ("Unique Reflections", result.n_uniq),
-            ("Redundancy", "{:.2f}".format(result.mean_redundancy)),
-            ("Completeness", "{:.2f}".format(result.completeness * 100)),
-            ("Mean intensity", "{:.1f}".format(result.i_mean)),
-            ("Mean I/sigma(I)", "{:.1f}".format(result.i_over_sigma_mean)),
-            ("R-merge", "{:.4f}".format(result.r_merge)),
-            ("R-meas", "{:.4f}".format(result.r_meas)),
-            ("R-pim", "{:.4f}".format(result.r_pim)),
-        ]
-        return (summary_table, resolution_binned_table)
+    def merging_statistics_table(self, cc_half_method=None):
 
-    @staticmethod
-    def _d_star_sq_to_d_ticks(d_star_sq, nticks):
-        min_d_star_sq = min(d_star_sq)
-        dstep = (max(d_star_sq) - min_d_star_sq) / nticks
-        tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
-        ticktext = ["%.2f" % (uctbx.d_star_sq_as_d(dsq)) for dsq in tickvals]
-        return tickvals, ticktext
+        headers = [
+            u"Resolution (Å)",
+            "N(obs)",
+            "N(unique)",
+            "Multiplicity",
+            "Completeness",
+            "Mean(I)",
+            "Mean(I/sigma)",
+            "Rmerge",
+            "Rmeas",
+            "Rpim",
+            "CC1/2",
+        ]
+        if not self.is_centric:
+            headers.append("CCano")
+        rows = []
+
+        def safe_format(format_str, item):
+            return format_str % item if item is not None else ""
+
+        for bin_stats in self.dataset_statistics.bins:
+            row = [
+                "%.2f - %.2f" % (bin_stats.d_max, bin_stats.d_min),
+                bin_stats.n_obs,
+                bin_stats.n_uniq,
+                "%.2f" % bin_stats.mean_redundancy,
+                "%.2f" % (100 * bin_stats.completeness),
+                "%.1f" % bin_stats.i_mean,
+                "%.1f" % bin_stats.i_over_sigma_mean,
+                safe_format("%.3f", bin_stats.r_merge),
+                safe_format("%.3f", bin_stats.r_meas),
+                safe_format("%.3f", bin_stats.r_pim),
+            ]
+            if cc_half_method == "sigma_tau":
+                row.append(
+                    "%.3f%s"
+                    % (
+                        bin_stats.cc_one_half_sigma_tau,
+                        "*" if bin_stats.cc_one_half_sigma_tau_significance else "",
+                    )
+                )
+            else:
+                row.append(
+                    "%.3f%s"
+                    % (
+                        bin_stats.cc_one_half,
+                        "*" if bin_stats.cc_one_half_significance else "",
+                    )
+                )
+
+            if not self.is_centric:
+                row.append(
+                    "%.3f%s"
+                    % (bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else "")
+                )
+            rows.append(row)
+
+        merging_stats_table = [headers]
+        merging_stats_table.extend(rows)
+
+        return merging_stats_table
+
+    def overall_statistics_table(self, cc_half_method=None):
+
+        headers = ["", "Overall", "Low resolution", "High resolution"]
+
+        stats = (
+            self.dataset_statistics.overall,
+            self.dataset_statistics.bins[0],
+            self.dataset_statistics.bins[-1],
+        )
+
+        rows = [
+            [u"Resolution (Å)"] + ["%.2f - %.2f" % (s.d_max, s.d_min) for s in stats],
+            ["Observations"] + ["%i" % s.n_obs for s in stats],
+            ["Unique reflections"] + ["%i" % s.n_uniq for s in stats],
+            ["Multiplicity"] + ["%.1f" % s.mean_redundancy for s in stats],
+            ["Completeness"] + ["%.2f%%" % (s.completeness * 100) for s in stats],
+            # ['Mean intensity'] + ['%.1f' %s.i_mean for s in stats],
+            ["Mean I/sigma(I)"] + ["%.1f" % s.i_over_sigma_mean for s in stats],
+            ["Rmerge"] + ["%.3f" % s.r_merge for s in stats],
+            ["Rmeas"] + ["%.3f" % s.r_meas for s in stats],
+            ["Rpim"] + ["%.3f" % s.r_pim for s in stats],
+        ]
+
+        if cc_half_method == "sigma_tau":
+            rows.append(["CC1/2"] + ["%.3f" % s.cc_one_half_sigma_tau for s in stats])
+        else:
+            rows.append(["CC1/2"] + ["%.3f" % s.cc_one_half for s in stats])
+        rows = [[u"<strong>%s</strong>" % r[0]] + r[1:] for r in rows]
+
+        overall_stats_table = [headers]
+        overall_stats_table.extend(rows)
+
+        return overall_stats_table
+
+    def statistics_tables(self):
+        """Generate the overall and by-resolution tables."""
+        return (self.overall_statistics_table(), self.merging_statistics_table())

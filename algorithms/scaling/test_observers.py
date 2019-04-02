@@ -257,7 +257,7 @@ def test_MergingStatisticsObserver():
 
     class MockResolution(object):
 
-        """Mock the ResolutionPlotsAndStats class."""
+        """A Mock class for ResolutionPlotsAndStats and IntensityStatisticsPlots."""
 
         def __init__(self, *_, **__):
             pass
@@ -270,10 +270,25 @@ def test_MergingStatisticsObserver():
             """Mock statistics tables method."""
             return "return_tables"
 
+        def generate_resolution_dependent_plots(self, *_):
+            """Mock method for namesake in IntensityStatisticsPlots"""
+            return {"resolution_plots": []}
+
+        def generate_miscellanous_plots(self, *_):
+            """Mock method for namesake in IntensityStatisticsPlots"""
+            return {"misc_plots": []}
+
     with mock.patch(
         "dials.algorithms.scaling.observers.ResolutionPlotsAndStats", new=MockResolution
     ):
-        r = observer.make_plots()
-        assert r["scaling_tables"] == "return_tables"
-        assert r["resolution_plots"] == {"return_plots": []}
-        assert "batch_plots" in r
+        with mock.patch(
+            "dials.algorithms.scaling.observers.IntensityStatisticsPlots",
+            new=MockResolution,
+        ):
+            r = observer.make_plots()
+            assert r["scaling_tables"] == "return_tables"
+            assert r["resolution_plots"] == OrderedDict(
+                {"return_plots": [], "resolution_plots": []}
+            )
+            assert "batch_plots" in r
+            assert r["misc_plots"] == {"misc_plots": []}

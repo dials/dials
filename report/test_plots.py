@@ -3,6 +3,7 @@ Tests for the dials.report.plots module.
 """
 import random
 import pytest
+import mock as mock
 from cctbx import miller, crystal
 from scitbx.array_family import flex
 from iotbx.merging_statistics import dataset_statistics
@@ -11,6 +12,7 @@ from dials.report.plots import (
     ResolutionPlotsAndStats,
     i_over_sig_i_vs_batch_plot,
     scale_rmerge_vs_batch_plot,
+    IntensityStatisticsPlots,
 )
 
 @pytest.fixture
@@ -29,6 +31,69 @@ def iobs():
     iobs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
     iobs.set_observation_type_xray_intensity()
     return iobs
+
+
+def test_IntensityStatisticsPlots(iobs):
+    n_bins = 2
+    # mock the wilson scaling
+    wilson_scaling = mock.Mock()
+    wilson_scaling.d_star_sq = [1.0, 2.0]
+    wilson_scaling.mean_I_obs_data = [1.0, 2.0]
+    wilson_scaling.mean_I_obs_theory = [1.0, 2.0]
+    wilson_scaling.mean_I_normalisation = [1.0, 2.0]
+    # mock the twin results
+    twin_results = mock.Mock()
+    twin_results.nz_test.z = [1.0, 2.0]
+    twin_results.nz_test.ac_obs = [1.0, 2.0]
+    twin_results.nz_test.c_obs = [1.0, 2.0]
+    twin_results.nz_test.ac_untwinned = [1.0, 2.0]
+    twin_results.nz_test.c_untwinned = [1.0, 2.0]
+    twin_results.l_test.l_values = [1.0, 2.0]
+    twin_results.l_test.l_cumul_untwinned = [1.0, 2.0]
+    twin_results.l_test.l_cumul_perfect_twin = [1.0, 2.0]
+    twin_results.l_test.l_cumul = [1.0, 2.0]
+    # mock the xtraige analysis
+    xtriage_analyses = mock.Mock()
+    xtriage_analyses.wilson_scaling = wilson_scaling
+    xtriage_analyses.twin_results = twin_results
+
+    plotter = IntensityStatisticsPlots(
+        iobs, n_resolution_bins=n_bins, xtriage_analyses=xtriage_analyses
+    )
+
+    d = plotter.generate_resolution_dependent_plots()
+    assert "wilson_intensity_plot" in d
+    assert "second_moments" in d
+    d = plotter.generate_miscellanous_plots()
+    assert "cumulative_intensity_distribution" in d
+    assert "l_test" in d
+
+    def mock_xtriage(*args, **kwargs):
+        return xtriage_analyses
+
+    with mock.patch("mmtbx.scaling.xtriage.xtriage_analyses", new=mock_xtriage):
+        plotter = IntensityStatisticsPlots(iobs)
+        d = plotter.generate_resolution_dependent_plots()
+        assert "wilson_intensity_plot" in d
+        assert "second_moments" in d
+        d = plotter.generate_miscellanous_plots()
+        assert "cumulative_intensity_distribution" in d
+        assert "l_test" in d
+
+    # try with anomalous
+    plotter = IntensityStatisticsPlots(
+        iobs,
+        anomalous=True,
+        n_resolution_bins=n_bins,
+        xtriage_analyses=xtriage_analyses,
+    )
+
+    d = plotter.generate_resolution_dependent_plots()
+    assert "wilson_intensity_plot" in d
+    assert "second_moments" in d
+    d = plotter.generate_miscellanous_plots()
+    assert "cumulative_intensity_distribution" in d
+    assert "l_test" in d
 
 
 def test_ResolutionPlotsAndStats(iobs):
