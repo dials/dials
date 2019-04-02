@@ -296,11 +296,14 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
         outlier_indices, other_potential_outliers = self._round_of_outlier_rejection()
         self._outlier_indices.extend(outlier_indices)
-        if other_potential_outliers:
+        internal_potential_outliers = other_potential_outliers
+        while other_potential_outliers:
             good_sel = flex.bool(self._Ih_table_block.Ih_table.size(), False)
-            good_sel.set_selected(other_potential_outliers, True)
+            good_sel.set_selected(internal_potential_outliers, True)
             self._Ih_table_block = self._Ih_table_block.select(good_sel)
-            self._check_for_more_outliers(other_potential_outliers)
+            other_potential_outliers, internal_potential_outliers = self._check_for_more_outliers(
+                other_potential_outliers
+            )
 
     def _check_for_more_outliers(self, other_potential_outliers):
         """
@@ -326,12 +329,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         new_other_potential_outliers = other_potential_outliers.select(
             internal_other_potential_outliers
         )  # still wrt original Ih_table data
-
-        if new_other_potential_outliers:
-            good_sel = flex.bool(self._Ih_table_block.size, False)
-            good_sel.set_selected(internal_other_potential_outliers, True)
-            self._Ih_table_block = self._Ih_table_block.select(good_sel)
-            self._check_for_more_outliers(new_other_potential_outliers)
+        return new_other_potential_outliers, internal_other_potential_outliers
 
     def _round_of_outlier_rejection(self):
         """
