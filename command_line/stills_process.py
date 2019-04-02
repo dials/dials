@@ -192,9 +192,9 @@ phil_scope = parse(control_phil_str + dials_phil_str, process_includes=True).fet
 )
 
 
-def do_import(filename):
+def do_import(filename, load_models=True):
     logger.info("Loading %s" % os.path.basename(filename))
-    experiments = ExperimentListFactory.from_filenames([filename])
+    experiments = ExperimentListFactory.from_filenames([filename], load_models=False)
     if len(experiments) == 0:
         try:
             experiments = ExperimentListFactory.from_json_file(filename)
@@ -207,6 +207,7 @@ def do_import(filename):
     from dxtbx.imageset import ImageSetFactory
 
     for experiment in experiments:
+        if load_models: experiment.load_models()
         imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
         imageset.set_scan(None)
         imageset.set_goniometer(None)
@@ -337,7 +338,7 @@ class Script(object):
 
             experiments = ExperimentList()
             for path in all_paths:
-                experiments.extend(do_import(path))
+                experiments.extend(do_import(path, load_models=False))
 
             indices = []
             basenames = []
@@ -365,6 +366,7 @@ class Script(object):
                     try:
                         assert len(item[1]) == 1
                         experiment = item[1][0]
+                        experiment.load_models()
                         imageset = experiment.imageset
                         update_geometry(imageset)
                         experiment.beam = imageset.get_beam()
@@ -411,7 +413,7 @@ class Script(object):
                 for item in item_list:
                     tag, filename = item
 
-                    experiments = do_import(filename)
+                    experiments = do_import(filename, load_models=True)
                     imagesets = experiments.imagesets()
                     if len(imagesets) == 0 or len(imagesets[0]) == 0:
                         logger.info("Zero length imageset in file: %s" % filename)
