@@ -23,9 +23,9 @@ Visualise the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.reciprocal_lattice_viewer experiments.json strong.pickle
+  dials.reciprocal_lattice_viewer experiments.json strong.mpack
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+  dials.reciprocal_lattice_viewer experiments.json indexed.mpack
 
 """
 
@@ -956,7 +956,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json reflections.pickle" % (
+    usage = "%s [options] experiments.json reflections.mpack" % (
         libtbx.env.dispatcher_name
     )
 

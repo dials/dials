@@ -65,11 +65,11 @@ class SpotXDSImporter(object):
             table["xyzobs.px.variance"] = flex.vec3_double(len(table), (1, 1, 1))
             Command.end("Standard columns added")
 
-        # Output the table to pickle file
+        # Output the table to mpack file
         if params.output.filename is None:
-            params.output.filename = "spot_xds.pickle"
+            params.output.filename = "spot_xds.mpack"
         Command.start("Saving reflection table to %s" % params.output.filename)
-        table.as_pickle(params.output.filename)
+        table.as_msgpack_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
 
 
@@ -141,11 +141,11 @@ class IntegrateHKLImporter(object):
         table["d"] = flex.double(uc.d(h) for h in hkl)
         Command.end("Created table with {0} reflections".format(len(table)))
 
-        # Output the table to pickle file
+        # Output the table to mpack file
         if params.output.filename is None:
-            params.output.filename = "integrate_hkl.pickle"
+            params.output.filename = "integrate_hkl.mpack"
         Command.start("Saving reflection table to %s" % params.output.filename)
-        table.as_pickle(params.output.filename)
+        table.as_msgpack_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
 
     def derive_reindex_matrix(self, handle):

@@ -45,13 +45,11 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s strong.pickle" % sys.argv[0])
+        raise RuntimeError("%s strong.mpack" % sys.argv[0])
 
-    import six.moves.cPickle as pickle
     from dials.array_family import flex
 
-    with open(sys.argv[1], "rb") as fh:
-        integrated_data = pickle.load(fh)
+    integrated_data = flex.reflection_table.from_msgpack_file(sys.argv[1])
 
     # keep only flagged as integrated reflections
     sel = integrated_data.get_flags(integrated_data.flags.integrated)

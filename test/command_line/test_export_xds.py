@@ -5,7 +5,7 @@ import procrunner
 
 def test_spots_xds(tmpdir):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.pickle"
+    output_pickle = "spot.mpack"
 
     tmpdir.join(xds_input).write(
         """\
@@ -36,10 +36,9 @@ def test_spots_xds(tmpdir):
     assert result["stderr"] == ""
     assert tmpdir.join(output_pickle).check(file=1)
 
-    import six.moves.cPickle as pickle
+    from dials.array_family import flex
 
-    with tmpdir.join(output_pickle).open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join(output_pickle).strpath)
     assert len(reflections) == 5
 
     tmpdir.join(xds_input).remove()
@@ -78,14 +77,14 @@ def test_export_xds(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("strong.pickle").check(file=1)
+    assert tmpdir.join("strong.mpack").check(file=1)
 
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
             dials_data("centroid_test_data").join("experiments.json").strpath,
-            "strong.pickle",
+            "strong.mpack",
         ],
         working_directory=tmpdir.strpath,
     )

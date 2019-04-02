@@ -33,7 +33,7 @@ class run_delta_cchalf(object):
             + sweep_path_list
             + extra_args
             + [
-                "output.reflections=filtered_reflections.pickle",
+                "output.reflections=filtered_reflections.mpack",
                 "output.experiments=filtered_experiments.json",
             ]
         )
@@ -41,7 +41,7 @@ class run_delta_cchalf(object):
         print(command)
         _ = easy_run.fully_buffered(command=command).raise_if_errors()
         assert os.path.exists("filtered_experiments.json")
-        assert os.path.exists("filtered_reflections.pickle")
+        assert os.path.exists("filtered_reflections.mpack")
 
 
 class run_one_scaling(object):
@@ -53,11 +53,10 @@ class run_one_scaling(object):
         print(command)
         _ = easy_run.fully_buffered(command=command).raise_if_errors()
         assert os.path.exists("scaled_experiments.json")
-        assert os.path.exists("scaled.pickle")
+        assert os.path.exists("scaled.mpack")
         assert os.path.exists("scaling.html")
 
-        with open("scaled.pickle", "rb") as fh:
-            table = pickle.load(fh)
+        table = flex.reflection_table.from_msgpack_file("scaled.mpack")
 
         assert "inverse_scale_factor" in table
         assert "inverse_scale_factor_variance" in table
@@ -381,7 +380,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     assert result.overall.n_obs > 2320  # at 07/01/19, was 2336, at 30/01/19 was 2334
     # test the 'stats_only' option
     extra_args = ["stats_only=True"]
-    _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
+    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
 
 
 import procrunner
@@ -406,12 +405,12 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
-        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+        command.append(location.join("reflections_" + str(i) + ".mpack").strpath)
 
     result = procrunner.run(command)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("analysis_results.json")
@@ -452,12 +451,12 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
-        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+        command.append(location.join("reflections_" + str(i) + ".mpack").strpath)
 
     result = procrunner.run(command)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("analysis_results.json")
@@ -526,7 +525,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz",
         "check_consistent_indexing=True"]
-    _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
+    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
@@ -541,7 +540,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     # until scaled data is available in dials_regression, test the command
     # line script dials.compute_delta_cchalf here
     _ = run_delta_cchalf(
-        ["scaled.pickle"], ["scaled_experiments.json"], extra_args=["stdcutoff=0.0"]
+        ["scaled.mpack"], ["scaled_experiments.json"], extra_args=["stdcutoff=0.0"]
     )  # set 0.0 to force one to be 'rejected'
 
 
@@ -592,7 +591,7 @@ def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
         "outlier_rejection=simple",
         "exclude_images=0:1401:1600",
     ]
-    _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
+    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
     experiments_list = load.experiment_list(
         "scaled_experiments.json", check_format=False
     )
@@ -630,7 +629,7 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
     experiments_list = load.experiment_list(
         "scaled_experiments.json", check_format=False
@@ -642,7 +641,7 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     extra_args = ["model=KB"]
     args = (
         ["dials.scale"]
-        + ["scaled.pickle"]
+        + ["scaled.mpack"]
         + ["scaled_experiments.json"]
         + [pickle_path_2]
         + [sweep_path_2]
@@ -651,7 +650,7 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
     experiments_list = load.experiment_list(
         "scaled_experiments.json", check_format=False
@@ -665,19 +664,19 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
         ["dials.scale"]
         + [pickle_path_3]
         + [sweep_path_3]
-        + ["scaled.pickle"]
+        + ["scaled.mpack"]
         + ["scaled_experiments.json"]
         + extra_args
     )
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
     extra_args = ["model=KB", "only_target=True"]
     args = (
         ["dials.scale"]
-        + ["scaled.pickle"]
+        + ["scaled.mpack"]
         + ["scaled_experiments.json"]
         + [pickle_path_2]
         + [sweep_path_2]
@@ -686,7 +685,7 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
 
 def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):

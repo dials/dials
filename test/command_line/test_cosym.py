@@ -16,5 +16,5 @@ def test_cosym(dials_data, tmpdir, space_group):
 
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("reindexed_reflections.pickle").check(file=1)
+    assert tmpdir.join("reindexed_reflections.mpack").check(file=1)
     assert tmpdir.join("reindexed_experiments.json").check(file=1)

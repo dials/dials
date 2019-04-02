@@ -1905,8 +1905,8 @@ class indexer_base(object):
         assert experiments.is_consistent()
         dump.experiment_list(experiments, file_name)
 
-    def export_reflections(self, reflections, file_name="reflections.pickle"):
-        reflections.as_pickle(file_name)
+    def export_reflections(self, reflections, file_name="reflections.mpack"):
+        reflections.as_msgpack_file(file_name)
 
     def find_lattices(self):
         raise NotImplementedError()

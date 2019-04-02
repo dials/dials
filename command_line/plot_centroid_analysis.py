@@ -44,7 +44,7 @@ for scan-varying refinement.
 
 Examples::
 
-  dev.dials.plot_centroid_analysis reflections.pickle
+  dev.dials.plot_centroid_analysis reflections.mpack
 
 """
 
@@ -192,7 +192,7 @@ def run(args):
 
     usage = (
         """\
-%s reflections.pickle [options]"""
+%s reflections.mpack [options]"""
         % libtbx.env.dispatcher_name
     )
     from dials.util.options import OptionParser

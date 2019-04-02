@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import pytest
 import os
 from libtbx import easy_run
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.array_family import flex
 
 
 def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_tmpdir):
@@ -29,8 +29,8 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_
     sliced_exp = ExperimentListFactory.from_json_file(
         "experiments_1_20.json", check_format=False
     )[0]
-    with open("indexed_strong_1_20.pickle", "rb") as f:
-        sliced_refs = pickle.load(f)
+    
+    sliced_refs = flex.reflection_table.from_msgpack_file("indexed_strong_1_20.mpack")
 
     # simple test of results
     assert sliced_exp.scan.get_image_range() == (1, 20)

@@ -30,12 +30,12 @@ are removed.
 
 Examples::
 
-  dials.slice_sweep experiments.json reflections.pickle "image_range=1 20"
+  dials.slice_sweep experiments.json reflections.mpack "image_range=1 20"
 
   dials.slice_sweep experiments.json "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
-  dials.slice_sweep experiments.json reflections.pickle \
+  dials.slice_sweep experiments.json reflections.mpack \
     "image_range=1 20" "image_range=5 30"
 
 """
@@ -184,7 +184,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "experiments.json reflections.mpack" % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -312,15 +312,15 @@ class Script(object):
                 if not bname:
                     bname = "reflections"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.pickle".format(*params.image_range[0])
+                    ext = "_{0}_{1}.mpack".format(*params.image_range[0])
                 else:
-                    ext = "_sliced.pickle"
+                    ext = "_sliced.mpack"
                 output_reflections_filename = bname + ext
 
             print(
                 "Saving sliced reflections to {0}".format(output_reflections_filename)
             )
-            sliced_reflections.as_pickle(output_reflections_filename)
+            sliced_reflections.as_msgpack_file(output_reflections_filename)
 
         return
 

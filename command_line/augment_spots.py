@@ -14,7 +14,7 @@ in peak region etc."""
 phil_scope = iotbx.phil.parse(
     """
 output {
-  reflections = stronger.pickle
+  reflections = stronger.mpack
     .type = path
 }
 find_max = False
@@ -104,7 +104,7 @@ def run(args):
     from dials.util import Sorry
     from dials.util import log
 
-    usage = "%s [options] [experiments.json] strong.pickle" % libtbx.env.dispatcher_name
+    usage = "%s [options] [experiments.json] strong.mpack" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,
@@ -126,7 +126,7 @@ def run(args):
         raise Sorry("0, 1 experiments required")
 
     stronger = augment_reflections(reflections[0], params, experiments=experiments)
-    stronger.as_pickle(params.output.reflections)
+    stronger.as_msgpack_file(params.output.reflections)
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ from dials.command_line.refine import phil_scope
 def run(args):
     from dials.util import log
 
-    usage = "%s experiments.json indexed.pickle [options]" % libtbx.env.dispatcher_name
+    usage = "%s experiments.json indexed.mpack [options]" % libtbx.env.dispatcher_name
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_reflections

@@ -13,7 +13,7 @@ def test_find_spots_from_images(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=True",
         ]
         + [
@@ -23,10 +23,9 @@ def test_find_spots_from_images(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack"))
     assert len(reflections) == 653
     refl = reflections[0]
     assert refl["intensity.sum.value"] == pytest.approx(42)
@@ -41,7 +40,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=False",
             "filter.d_min=2",
             "filter.d_max=15",
@@ -53,10 +52,9 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     assert len(reflections) == 467
     assert "shoebox" not in reflections
 
@@ -67,7 +65,7 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
         [
             "dials.find_spots",
             "write_hot_mask=True",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=False",
         ]
         + [
@@ -77,11 +75,10 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
     assert tmpdir.join("hot_mask_0.pickle").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     assert len(reflections) == 653
     assert "shoebox" not in reflections
 
@@ -98,7 +95,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
             "dials.find_spots",
             "write_hot_mask=True",
             "hot_mask_prefix=my_hot_mask",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=False",
         ]
         + [
@@ -108,11 +105,10 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
     assert tmpdir.join("my_hot_mask_0.pickle").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     assert len(reflections) == 653
     assert "shoebox" not in reflections
     with tmpdir.join("my_hot_mask_0.pickle").open("rb") as f:
@@ -128,7 +124,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
             "dials.find_spots",
             "min_spot_size=3",
             "max_separation=3",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
         ]
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
@@ -137,10 +133,9 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     assert len(reflections) == 678
 
 
@@ -149,7 +144,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=True",
             "lookup.mask="
             + dials_data("centroid_test_data").join("mask.pickle").strpath,
@@ -161,10 +156,9 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
@@ -184,7 +178,7 @@ def test_find_spots_with_user_defined_region(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
             "output.shoeboxes=True",
             "region_of_interest=800,1200,800,1200",
         ]
@@ -195,10 +189,9 @@ def test_find_spots_with_user_defined_region(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     x, y, z = reflections["xyzobs.px.value"].parts()
     assert x.all_ge(800)
     assert y.all_ge(800)
@@ -216,14 +209,13 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
                 "spotfinding_test_data",
                 "idx-s00-20131106040302615.cbf",
             ),
-            "output.reflections=spotfinder.pickle",
+            "output.reflections=spotfinder.mpack",
         ],
         working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("spotfinder.pickle").check(file=1)
+    assert tmpdir.join("spotfinder.mpack").check(file=1)
 
-    with tmpdir.join("spotfinder.pickle").open("rb") as f:
-        reflections = pickle.load(f)
+    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join("spotfinder.mpack").strpath)
     assert len(reflections) == 2643

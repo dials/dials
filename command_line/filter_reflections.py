@@ -27,16 +27,16 @@ reflection file.
 
 Examples::
 
-  dials.filter_reflections refined.pickle \
+  dials.filter_reflections refined.mpack \
     flag_expression=used_in_refinement
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.mpack \
     flag_expression="integrated & ~reference_spot"
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.mpack \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
-  dials.filter_reflections indexed.pickle experiments.json \
+  dials.filter_reflections indexed.mpack experiments.json \
     d_max=20 d_min=2.5
 """
 
@@ -57,7 +57,7 @@ class Script(object):
         phil_str = """
 
       output {
-        reflections = 'filtered.pickle'
+        reflections = 'filtered.mpack'
           .type = str
           .help = "The filtered reflections output filename"
       }
@@ -394,7 +394,7 @@ class Script(object):
                     len(reflections), params.output.reflections
                 )
             )
-            reflections.as_pickle(params.output.reflections)
+            reflections.as_msgpack_file(params.output.reflections)
 
         return
 

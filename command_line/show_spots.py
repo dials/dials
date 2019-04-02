@@ -43,13 +43,11 @@ if __name__ == "__main__":
     from dials.util import Sorry
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s strong.pickle")
+        raise RuntimeError("%s strong.mpack")
 
-    import six.moves.cPickle as pickle
     from dials.array_family import flex
 
-    with open(sys.argv[1], "rb") as fh:
-        strong_spots = pickle.load(fh)
+    strong_spots = flex.reflection_table.from_msgpack_file(sys.argv[1])
     try:
         show_spots(strong_spots)
     except KeyError:

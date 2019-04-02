@@ -24,7 +24,7 @@ combinations of experiments can be created by repeat runs.
 Examples::
 
   dials.combine_experiments experiments_0.json experiments_1.json \\
-    reflections_0.pickle reflections_1.pickle \\
+    reflections_0.mpack reflections_1.mpack \\
     reference_from_experiment.beam=0 \\
     reference_from_experiment.detector=0
 
@@ -116,7 +116,7 @@ phil_scope = parse(
       .type = str
       .help = "The filename for combined experimental models"
 
-    reflections_filename = combined_reflections.pickle
+    reflections_filename = combined_reflections.mpack
       .type = str
       .help = "The filename for combined reflections"
 
@@ -129,7 +129,7 @@ phil_scope = parse(
       .type = choice
       .help = "Algorithm to be used for choosing the n_subset images/"
               "experiments for refinement.  n_refl chooses the set with the"
-              "largest numbers of reflections listed in the pickle files"
+              "largest numbers of reflections listed in the mpack files"
               "significance filter used to select n_subset images based on"
               "I/sig(I) cutoff"
 
@@ -344,8 +344,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.json experiments2.json reflections1.mpack "
+            "reflections2.mpack..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -629,7 +629,7 @@ class Script(object):
                     sub_refls["id"] = flex.int(len(sub_refls), sub_id)
                     batch_refls.extend(sub_refls)
                 exp_filename = os.path.splitext(exp_name)[0] + "_%03d.json" % i
-                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.pickle" % i
+                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.mpack" % i
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
         def combine_in_clusters(
@@ -649,7 +649,7 @@ class Script(object):
                     "_cluster%d.json" % (end_count - cluster)
                 )
                 ref_filename = os.path.splitext(refl_name)[0] + (
-                    "_cluster%d.pickle" % (end_count - cluster)
+                    "_cluster%d.mpack" % (end_count - cluster)
                 )
                 result.append(
                     (cluster_expts, cluster_refls, exp_filename, ref_filename)
@@ -723,7 +723,7 @@ class Script(object):
         dump = ExperimentListDumper(experiments)
         dump.as_json(exp_name)
         print("Saving combined reflections to {0}".format(refl_name))
-        reflections.as_pickle(refl_name)
+        reflections.as_msgpack_file(refl_name)
 
 
 if __name__ == "__main__":

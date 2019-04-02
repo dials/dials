@@ -58,9 +58,9 @@ class run_one_indexing(object):
             len(experiments_list.crystals()),
             n_expected_lattices,
         )
-        assert os.path.exists("indexed.pickle")
+        assert os.path.exists("indexed.mpack")
 
-        self.indexed_reflections = flex.reflection_table.from_pickle("indexed.pickle")
+        self.indexed_reflections = flex.reflection_table.from_msgpack_file("indexed.mpack")
 
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]
@@ -537,7 +537,7 @@ def test_index_insulin(dials_data, run_in_tmpdir):
     command = " ".join(args)
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.pickle"
+    pickle_path = "strong.mpack"
     assert os.path.exists(pickle_path)
 
     expected_unit_cell = uctbx.unit_cell(
@@ -697,7 +697,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir)
         "max_lattices=3",
     ]
     easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
-    assert os.path.isfile("indexed.pickle") and os.path.isfile(
+    assert os.path.isfile("indexed.mpack") and os.path.isfile(
         "indexed_experiments.json"
     )
     experiments_list = load.experiment_list(

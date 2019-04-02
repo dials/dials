@@ -12,7 +12,7 @@ reflection file per output experiment file.
 
 Example::
 
-  dials.split_experiments combined_experiments.json combined_reflections.pickle
+  dials.split_experiments combined_experiments.json combined_reflections.mpack
 
 """
 
@@ -66,8 +66,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.json experiments2.json reflections1.mpack "
+            "reflections2.mpack..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -114,7 +114,7 @@ class Script(object):
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
         )
-        reflections_template = "%s_%%0%sd.pickle" % (
+        reflections_template = "%s_%%0%sd.mpack" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
         )
@@ -198,7 +198,7 @@ class Script(object):
                         "Saving reflections for experiment %d to %s"
                         % (i, reflections_filename)
                     )
-                    split_data[detector]["reflections"].as_pickle(reflections_filename)
+                    split_data[detector]["reflections"].as_msgpack_file(reflections_filename)
         elif params.output.chunk_size or params.output.chunk_sizes:
             from dxtbx.model.experiment_list import ExperimentList
             from dxtbx.serialize import dump
@@ -213,7 +213,7 @@ class Script(object):
                         "Saving reflections for chunk %d to %s"
                         % (chunk_id, reflections_filename)
                     )
-                    refls.as_pickle(reflections_filename)
+                    refls.as_msgpack_file(reflections_filename)
 
             chunk_counter = 0
             chunk_expts = ExperimentList()
@@ -285,7 +285,7 @@ class Script(object):
                         ref_sel.experiment_identifiers()[0] = identifier
                     else:
                         ref_sel["id"] = flex.int(len(ref_sel), 0)
-                    ref_sel.as_pickle(reflections_filename)
+                    ref_sel.as_msgpack_file(reflections_filename)
 
         return
 

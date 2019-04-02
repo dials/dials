@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import os
 
 import pytest
@@ -13,6 +12,7 @@ from libtbx import easy_run
 from libtbx.phil import parse
 
 from dials.command_line.stills_process import phil_scope, Processor
+from dials.array_family import flex
 
 
 def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
@@ -61,10 +61,9 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
         "20130301060858801", experiments
     )  # index/integrate the image
 
-    result = "idx-20130301060858801_integrated.pickle"
+    result = "idx-20130301060858801_integrated.mpack"
     n_refls = range(140, 152)  # large ranges to handle platform-specific differences
-    with open(result, "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_msgpack_file(result)
     assert len(table) in n_refls, len(table)
     assert "id" in table
     assert (table["id"] == 0).count(False) == 0
@@ -132,14 +131,13 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
 
     for result_filename, n_refls in zip(
         [
-            "idx-run266702-0-subset_00000_integrated.pickle",
-            "idx-run266702-0-subset_00001_integrated.pickle",
-            "idx-run266702-0-subset_00003_integrated.pickle",
+            "idx-run266702-0-subset_00000_integrated.mpack",
+            "idx-run266702-0-subset_00001_integrated.mpack",
+            "idx-run266702-0-subset_00003_integrated.mpack",
         ],
         [range(212, 225), range(565, 580), range(475, 500)],
     ):  # large ranges to handle platform-specific differences
-        with open(result_filename, "rb") as f:
-            table = pickle.load(f)
+        table = flex.reflection_table.from_msgpack_file(result_filename)
         assert len(table) in n_refls, (result_filename, len(table))
         assert "id" in table
         assert (table["id"] == 0).count(False) == 0

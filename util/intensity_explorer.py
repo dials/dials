@@ -414,21 +414,21 @@ def data_from_pickle_and_json():
     help_message = """
 
   Generates a dials.array_family.flex.reflection_table and a
-  dxtbx.model.experiment_list.ExperimentList from a reflections.pickle and an
+  dxtbx.model.experiment_list.ExperimentList from a reflections.mpack and an
   experiments.json.
 
   Examples:
 
-    dials.util.intensity_explorer indexed.pickle experiments.json
+    dials.util.intensity_explorer indexed.mpack experiments.json
 
-    dials.util.intensity_explorer integrated.pickle integrated_experiments.json
+    dials.util.intensity_explorer integrated.mpack integrated_experiments.json
 
     """
 
     # Create the parser
     usage = (
         "usage: dials.util.intensity_explorer [options] "
-        "reflections.pickle experiments.json"
+        "reflections.mpack experiments.json"
     )
     parser = OptionParser(
         usage=usage,

@@ -92,11 +92,11 @@ def generate_phil_scope():
         separate_files = True
           .type = bool
           .help = "If this is true, the shoeboxes are saved in separate files"
-                  "from the output integrated.pickle file. This is necessary"
+                  "from the output integrated.mpack file. This is necessary"
                   "in most cases since the amount of memory used by the"
                   "shoeboxes is typically greater than the available system"
                   "memory. If, however, you know that memory is not an issue,"
-                  "you can saved the shoeboxes in the integrated.pickle file"
+                  "you can saved the shoeboxes in the integrated.mpack file"
                   "by setting this option to False. This only works if the debug"
                   "output is during integrated and not modelling."
 

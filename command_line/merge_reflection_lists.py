@@ -32,7 +32,7 @@ help_message = """
 phil_scope = parse(
     """
 
-  output = merged.pickle
+  output = merged.mpack
     .type = str
     .help = "The output file"
 
@@ -95,7 +95,7 @@ class Script(object):
 
         # Write the reflections to the file
         Command.start("Writing %d reflections to %s" % (len(table), params.output))
-        table.as_pickle(params.output)
+        table.as_msgpack_file(params.output)
         Command.end("Wrote %d reflections to %s" % (len(table), params.output))
 
 

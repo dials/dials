@@ -497,7 +497,7 @@ def stills_detector_hybrid_refine(experiments, reflections, params):
                 params.output.reflections_filename
             )
         )
-        reflections.as_pickle(params.output.reflections_filename)
+        reflections.as_msgpack_file(params.output.reflections_filename)
 
 
 def run(args=None, phil=phil_scope):
@@ -554,7 +554,7 @@ detector_phase.refinement {
 
     # The script usage
     usage = (
-        "usage: %s [options] [param.phil] experiments.json reflections.pickle"
+        "usage: %s [options] [param.phil] experiments.json reflections.mpack"
         % libtbx.env.dispatcher_name
     )
 

@@ -28,7 +28,7 @@ phil_scope = phil.parse(
     .help = "User specified identifiers to use, must be a list of strings equal"
             "to the number of datasets."
   output {
-    reflections = assigned_reflections.pickle
+    reflections = assigned_reflections.mpack
       .type = str
     experiments = assigned_experiments.json
       .type = str
@@ -39,7 +39,7 @@ phil_scope = phil.parse(
 if __name__ == "__main__":
     try:
         # Parse the command line and flatten reflections, experiments
-        usage = """Usage: dev.dials.assign_experiment_identifiers reflections.pickle
+        usage = """Usage: dev.dials.assign_experiment_identifiers reflections.mpack
 experiments.json"""
         optionparser = OptionParser(
             usage=usage,
