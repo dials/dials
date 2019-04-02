@@ -1267,6 +1267,20 @@ def test_experiment_identifiers():
     other_table["id"] = flex.int([3, 4])
 
     table.assert_experiment_identifiers_are_consistent()
+    
+    packed = table.as_msgpack()
+    table2 = table.from_msgpack(packed)
+
+    id1 = table.experiment_identifiers()
+    id2 = table2.experiment_identifiers()
+
+    for i in id1.keys():
+        assert id1[i] == id2[i]
+
+    other_table = flex.reflection_table()
+    other_table["id"] = flex.int([3, 4])
+
+    table.assert_experiment_identifiers_are_consistent()
 
     identifiers = other_table.experiment_identifiers()
     identifiers[3] = "mnop"
