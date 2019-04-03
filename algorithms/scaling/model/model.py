@@ -257,7 +257,9 @@ class PhysicalScalingModel(ScalingModelBase):
             if reflection_table.size() > 100000:
                 assert "s0c" in reflection_table
                 assert "s1c" in reflection_table
-                theta_phi_0 = calc_theta_phi(reflection_table["s0c"]) # array of tuples in radians
+                theta_phi_0 = calc_theta_phi(
+                    reflection_table["s0c"]
+                )  # array of tuples in radians
                 theta_phi_1 = calc_theta_phi(reflection_table["s1c"])
                 s0_lookup_index = calc_lookup_index(theta_phi_0, points_per_degree=2)
                 s1_lookup_index = calc_lookup_index(theta_phi_1, points_per_degree=2)
@@ -277,7 +279,7 @@ class PhysicalScalingModel(ScalingModelBase):
             # here just pass in good reflections
             else:
                 self.components["absorption"].data = {
-                    "sph_harm_table": sph_harm_table(reflection_table, experiment, lmax)
+                    "sph_harm_table": sph_harm_table(reflection_table, lmax)
                 }
             surface_weight = self._configdict["abs_surface_weight"]
             parameter_restraints = flex.double([])

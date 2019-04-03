@@ -9,7 +9,7 @@ from __future__ import absolute_import, print_function
 
 from orderedset import OrderedSet
 from dials.array_family import flex
-from cctbx import miller, crystal
+from cctbx import miller, crystal, uctbx
 from scitbx import sparse
 
 
@@ -382,30 +382,7 @@ class IhTable(object):
         else:
             joint_table = blocked_data_list[0].Ih_table
         # Filter out negative scale factors to avoid merging statistics errors.
-        pos_scales = joint_table["inverse_scale_factor"] > 0
-        joint_table = joint_table.select(pos_scales)
-
-        miller_set = miller.set(
-            crystal_symmetry=crystal.symmetry(
-                unit_cell=unit_cell,
-                space_group=self.space_group,
-                assert_is_compatible_unit_cell=False,
-            ),
-            indices=joint_table["asu_miller_index"],
-            anomalous_flag=False,
-        )
-        i_obs = miller.array(
-            miller_set,
-            data=joint_table["intensity"] / joint_table["inverse_scale_factor"],
-        )
-        i_obs.set_observation_type_xray_intensity()
-        i_obs.set_sigmas(
-            (joint_table["variance"] ** 0.5) / joint_table["inverse_scale_factor"]
-        )
-        i_obs.set_info(
-            miller.array_info(source="DIALS", source_type="reflection_tables")
-        )
-        return i_obs
+        return _reflection_table_to_iobs(joint_table, unit_cell, self.space_group)
 
 
 class IhTableBlock(object):
@@ -445,6 +422,7 @@ class IhTableBlock(object):
         self.n_datasets = n_datasets
         self.h_expand_matrix = None
         self.derivatives = None
+        self.binner = None
 
     def add_data(self, dataset_id, group_ids, reflections):
         """
@@ -654,3 +632,42 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
     def asu_miller_index(self):
         """Return the miller indices in the asymmetric unit."""
         return self.Ih_table["asu_miller_index"]
+
+    def setup_binner(self, unit_cell, space_group, n_resolution_bins):
+        ma = _reflection_table_to_iobs(self.Ih_table, unit_cell, space_group)
+        # need d star sq step
+        d_star_sq = ma.d_star_sq().data()
+        d_star_sq_min = flex.min(d_star_sq)
+        d_star_sq_max = flex.max(d_star_sq)
+        span = d_star_sq_max - d_star_sq_min
+        relative_tolerance = 1e-6
+        d_star_sq_max += span * relative_tolerance
+        d_star_sq_min -= span * relative_tolerance
+        step = (d_star_sq_max - d_star_sq_min) / n_resolution_bins
+
+        self.binner = ma.setup_binner_d_star_sq_step(
+            auto_binning=False,
+            d_max=uctbx.d_star_sq_as_d(d_star_sq_max),
+            d_min=uctbx.d_star_sq_as_d(d_star_sq_min),
+            d_star_sq_step=step,
+        )
+
+
+def _reflection_table_to_iobs(table, unit_cell, space_group):
+
+    miller_set = miller.set(
+        crystal_symmetry=crystal.symmetry(
+            unit_cell=unit_cell,
+            space_group=space_group,
+            assert_is_compatible_unit_cell=False,
+        ),
+        indices=table["asu_miller_index"],
+        anomalous_flag=False,
+    )
+    i_obs = miller.array(
+        miller_set, data=table["intensity"] / table["inverse_scale_factor"]
+    )
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas((table["variance"] ** 0.5) / table["inverse_scale_factor"])
+    i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
+    return i_obs

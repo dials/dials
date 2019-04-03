@@ -144,11 +144,14 @@ class SingleScalerFactory(ScalerFactory):
             )
         if params.reflection_selection.method == "intensity_ranges":
             reflection_table = quasi_normalisation(reflection_table, experiment)
-        if (params.reflection_selection.method in (None, Auto, "auto", "quasi_random")) or (
-            experiment.scaling_model.id_ == 'physical' and 'absorption' in experiment.scaling_model.components
+        if (
+            params.reflection_selection.method in (None, Auto, "auto", "quasi_random")
+        ) or (
+            experiment.scaling_model.id_ == "physical"
+            and "absorption" in experiment.scaling_model.components
         ):
             if experiment.scan:
-                #calc theta and phi cryst
+                # calc theta and phi cryst
                 reflection_table["phi"] = (
                     reflection_table["xyzobs.px.value"].parts()[2]
                     * experiment.scan.get_oscillation()[1]

@@ -284,7 +284,7 @@ class ScalingRefinery(object):
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
             )
-            free_rmeas = res.overall.r_meas
+            free_rmeas = res.overall.r_pim
             free_cc12 = res.overall.cc_one_half
             i_obs = self._scaler.Ih_table.as_miller_array(
                 self._scaler.experiment.crystal.get_unit_cell()
@@ -297,7 +297,7 @@ class ScalingRefinery(object):
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
             )
-            work_rmeas = res.overall.r_meas
+            work_rmeas = res.overall.r_pim
             work_cc12 = res.overall.cc_one_half
 
             self._scaler.final_rmsds = [work_rmeas, free_rmeas, work_cc12, free_cc12]

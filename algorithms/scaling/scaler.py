@@ -538,11 +538,15 @@ class SingleScaler(ScalerBase):
             n_resolution_bins = self.params.reflection_selection.quasi_random.n_resolution_bins[
                 0
             ]
-            overall_scaling_selection = calculate_scaling_subset_connected(
-                self.reflection_table, self.experiment, min_per_area, n_resolution_bins
+            block = self.global_Ih_table.Ih_table_blocks[0]
+            loc_indices = block.Ih_table["loc_indices"]
+            block.Ih_table["s1c"] = (
+                self.reflection_table["s1c"]
+                .select(self.suitable_refl_for_scaling_sel)
+                .select(loc_indices)
             )
-            self.scaling_selection = overall_scaling_selection.select(
-                self.suitable_refl_for_scaling_sel
+            self.scaling_selection = calculate_scaling_subset_connected(
+                block, self.experiment, min_per_area, n_resolution_bins
             )
         elif self.params.reflection_selection.method == "intensity_ranges":
             overall_scaling_selection = calculate_scaling_subset(
@@ -914,10 +918,19 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
                 scaler.scaling_selection.set_selected(indices_for_dataset, True)
                 # now find good ones from resolution method.
+                sel = (
+                    self.global_Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"] == i
+                )
+                indiv_Ih_block = self.global_Ih_table.Ih_table_blocks[0].select(sel)
+                loc_indices = indiv_Ih_block.Ih_table["loc_indices"]
+                indiv_Ih_block.Ih_table["s1c"] = (
+                    scaler.reflection_table["s1c"]
+                    .select(scaler.suitable_refl_for_scaling_sel)
+                    .select(loc_indices)
+                )
+
                 indiv_indices = select_highly_connected_reflections(
-                    scaler.reflection_table.select(
-                        scaler.suitable_refl_for_scaling_sel
-                    ),
+                    indiv_Ih_block,
                     scaler.experiment,
                     qr.min_per_area[i],
                     qr.n_resolution_bins[i],
