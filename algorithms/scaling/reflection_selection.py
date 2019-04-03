@@ -64,10 +64,10 @@ intra-dataset connectedness.
 from __future__ import division
 from __future__ import absolute_import, print_function
 import logging
-from math import pi, sqrt, floor
+from math import pi, floor
 import libtbx
 from libtbx.table_utils import simple_table
-from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors
+from cctbx import uctbx
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import (
@@ -230,71 +230,42 @@ def _build_class_matrix(reflections, class_matrix, offset=0):
 
 
 def select_highly_connected_reflections(
-    reflections, experiment, min_per_area, n_resolution_bins, print_summary=False
+    Ih_table_block, experiment, min_per_area, n_resolution_bins, print_summary=False
 ):
     """Select highly connected reflections within a dataset, across resolutions."""
     min_per_bin = min_per_area * 12 * 1.5
     max_per_bin = min_per_area * 12 * 3.0
-    reflections["phi"] = (
-        reflections["xyzobs.px.value"].parts()[2] * experiment.scan.get_oscillation()[1]
-    )
-    reflections = calc_crystal_frame_vectors(reflections, experiment)
-    theta_phi_1 = calc_theta_phi(reflections["s1c"])
+    assert "s1c" in Ih_table_block.Ih_table
+
+    theta_phi_1 = calc_theta_phi(Ih_table_block.Ih_table["s1c"])
     theta = theta_phi_1.parts()[0]
     phi = theta_phi_1.parts()[1]
-    reflections["phi"] = (phi * 180 / pi) + 180.0
-    reflections["theta"] = theta * 180 / pi
-    reflections = assign_segment_index(reflections)
-    from dials.algorithms.statistics.delta_cchalf import ResolutionBinner
+    Ih_table_block.Ih_table["phi"] = (phi * 180 / pi) + 180.0
+    Ih_table_block.Ih_table["theta"] = theta * 180 / pi
 
-    binner = ResolutionBinner(
+    Ih_table_block.Ih_table = assign_segment_index(Ih_table_block.Ih_table)
+    Ih_table_block.setup_binner(
         experiment.crystal.get_unit_cell(),
-        min(reflections["d"]),
-        max(reflections["d"]),
+        experiment.crystal.get_space_group(),
         n_resolution_bins,
-        output=False,
     )
-    reflections["bin_index"] = flex.int(reflections.size(), 0)
-    for i, h in enumerate(reflections["miller_index"]):
-        reflections["bin_index"][i] = binner.index(h)
+    binner = Ih_table_block.binner
+
     overall_indices = flex.size_t()
 
-    header = [
-        "d-range",
-        "n_refl",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "10",
-        "11",
-    ]
+    header = ["d-range", "n_refl"] + [str(i) for i in range(0, 12)]
     rows = []
 
-    for n in range(n_resolution_bins):
-        sel = reflections["bin_index"] == n
-        r = reflections.select(sel)
-        isel = sel.iselection()
+    for ibin in binner.range_all():
+        sel = binner.selection(ibin)
+        sel_Ih_table_block = Ih_table_block.select(sel)
+        indices_wrt_original = Ih_table_block.Ih_table["loc_indices"].select(sel)
         indices, total_in_classes = select_highly_connected_reflections_in_bin(
-            r,
-            experiment.crystal.get_space_group(),
-            min_per_area,
-            min_per_bin,
-            max_per_bin,
+            sel_Ih_table_block, min_per_area, min_per_bin, max_per_bin
         )
         if indices:
-            sel2 = flex.bool(isel.size(), False)
-            sel2.set_selected(indices, True)
-            overall_indices.extend(isel.select(sel2))
-            b0, b1 = binner._bins[n]
-            d0 = sqrt(1 / b0)
-            d1 = sqrt(1 / b1)
+            overall_indices.extend(indices_wrt_original.select(indices))
+            d0, d1 = binner.bin_d_range(ibin)
             rows.append(
                 [
                     str(round(d0, 3)) + " - " + str(round(d1, 3)),
@@ -424,25 +395,24 @@ Choosing %s cross-dataset connected reflections from %s symmetry groups for mini
 
 
 def select_highly_connected_reflections_in_bin(
-    reflections, space_group, min_per_class=2, min_total=1000, max_total=10000
+    Ih_table_block, min_per_class=2, min_total=1000, max_total=10000
 ):
     """Select highly connected reflections within a resolution shell."""
-    Ih_table = IhTable([reflections], space_group).Ih_table_blocks[0]
 
-    n = flex.double(Ih_table.Ih_table.size(), 1.0) * Ih_table.h_index_matrix
+    n = flex.double(Ih_table_block.size, 1.0) * Ih_table_block.h_index_matrix
     sel = n > 1
     if sel.count(True) == 0:
         return None, None
-    Ih_table = Ih_table.select_on_groups(sel)
 
-    reflections = reflections.select(Ih_table.Ih_table["loc_indices"])
+    Ih_table_block.Ih_table["loc_indices"] = flex.size_t(range(0, Ih_table_block.size))
+    Ih_table_block = Ih_table_block.select_on_groups(sel)
 
     from scitbx import sparse
 
-    class_matrix = sparse.matrix(12, reflections.size())
+    class_matrix = sparse.matrix(12, Ih_table_block.size)
 
-    class_matrix = _build_class_matrix(reflections, class_matrix)
-    segments_in_groups = class_matrix * Ih_table.h_index_matrix
+    class_matrix = _build_class_matrix(Ih_table_block.Ih_table, class_matrix)
+    segments_in_groups = class_matrix * Ih_table_block.h_index_matrix
 
     total = flex.int(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
@@ -461,7 +431,7 @@ def select_highly_connected_reflections_in_bin(
     actual_cols_used = perm.select(cols_used)
 
     # now need to get reflection selection
-    reduced_Ih = Ih_table.select_on_groups_isel(actual_cols_used)
+    reduced_Ih = Ih_table_block.select_on_groups_isel(actual_cols_used)
     indices = reduced_Ih.Ih_table["loc_indices"]
     return indices, total_in_classes
 
@@ -539,44 +509,27 @@ def _loop_over_class_matrix(
 
 
 def calculate_scaling_subset_connected(
-    reflection_table, experiment, min_per_area, n_resolution_bins
+    global_Ih_table, experiment, min_per_area, n_resolution_bins
 ):
-    reasons = Reasons()
-    selection = ~reflection_table.get_flags(
-        reflection_table.flags.user_excluded_in_scaling
-    )
-    selection &= ~reflection_table.get_flags(
-        reflection_table.flags.excluded_for_scaling
-    )
-    reasons.add_reason("suitable/selected for scaling", selection.count(True))
-
-    suitable_subset = reflection_table.select(selection)
-    suitable_indices = selection.iselection()
     indices = select_highly_connected_reflections(
-        suitable_subset, experiment, min_per_area, n_resolution_bins, print_summary=True
+        global_Ih_table, experiment, min_per_area, n_resolution_bins, print_summary=True
     )
-    sel = flex.bool(suitable_indices.size(), False)
-    sel.set_selected(indices, True)
+    suitable_selection = flex.bool(global_Ih_table.size, False)
+    suitable_selection.set_selected(indices, True)
 
-    suitable_overall = flex.bool(selection.size(), False).set_selected(
-        suitable_indices.select(sel), True
-    )
-
-    reasons.add_reason("chosen by reflection selection algorithm", indices.size())
-    selection &= suitable_overall
-    msg = (
-        "{0} reflections were selected for scale factor determination \n"
-        "out of {1} reflections. ".format(
-            selection.count(True), reflection_table.size()
+    logger.info(
+        (
+            "{0} reflections were selected for scale factor determination \n"
+            "out of {1} suitable reflections. ".format(
+                suitable_selection.count(True), global_Ih_table.size
+            )
         )
     )
-    logger.info(msg)
-    logger.info(reasons)
-    if selection.count(True) == 0:
+    if suitable_selection.count(True) == 0:
         raise BadDatasetForScalingException(
             """No reflections pass all user-controllable selection criteria"""
         )
-    return selection
+    return suitable_selection
 
 
 def calculate_scaling_subset(reflection_table, params):

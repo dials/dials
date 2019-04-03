@@ -36,6 +36,8 @@ def generated_refl():
     rt = flex.reflection_table()
     rt["xyzobs.px.value"] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 0.2)])
     rt["s1"] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 1.1)])
+    rt["s1c"] = flex.vec3_double([(0.1, 0.1, 0.1), (0.1, 0.1, 1.1)])
+    rt["s0c"] = flex.vec3_double([(0.0, 0.0, 1.0), (0.0, 0.0, 1.0)])
     rt["d"] = flex.double([1.0, 1.0])
     rt["batch"] = flex.int([0, 1])
     return rt

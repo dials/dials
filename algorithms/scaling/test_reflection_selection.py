@@ -13,6 +13,7 @@ from dials.algorithms.scaling.reflection_selection import (
     select_connected_reflections_across_datasets,
     select_highly_connected_reflections_in_bin,
 )
+from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors
 
 
 def test_select_highly_connected_reflections_in_bin():
@@ -29,9 +30,13 @@ def test_select_highly_connected_reflections_in_bin():
     r1["inverse_scale_factor"] = flex.double(sum(n_list), 1)
 
     sg = sgtbx.space_group("P1")
+    Ih_table_block = IhTable([r1], sg).Ih_table_blocks[0]
+    Ih_table_block.Ih_table["class_index"] = r1["class_index"].select(
+        Ih_table_block.Ih_table["loc_indices"]
+    )
 
     indices, total_in_classes = select_highly_connected_reflections_in_bin(
-        r1, sg, min_per_class=2, min_total=6, max_total=100
+        Ih_table_block, min_per_class=2, min_total=6, max_total=100
     )
     assert list(total_in_classes) == [2, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     assert list(indices) == [0, 1, 2, 3, 4, 5, 10, 11]
@@ -125,15 +130,28 @@ def test_reflection_selection(dials_regression):
         reflection_table.get_flags(reflection_table.flags.integrated, all=True)
     )
 
+    Ih_table_block = IhTable(
+        [reflection_table], experiment.crystal.get_space_group()
+    ).Ih_table_blocks[0]
+
+    reflection_table["phi"] = (
+        reflection_table["xyzobs.px.value"].parts()[2]
+        * experiment.scan.get_oscillation()[1]
+    )
+    reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
+    Ih_table_block.Ih_table["s1c"] = reflection_table["s1c"].select(
+        Ih_table_block.Ih_table["loc_indices"]
+    )
+
     indices = select_highly_connected_reflections(
-        reflection_table, experiment, min_per_area=10, n_resolution_bins=10
+        Ih_table_block, experiment, min_per_area=10, n_resolution_bins=10
     )
     assert len(indices) > 1710 and len(indices) < 1800
 
     # Give a high min_per_area to check that all reflections with multiplciity > 1
     # are selected.
     indices = select_highly_connected_reflections(
-        reflection_table, experiment, min_per_area=50, n_resolution_bins=10
+        Ih_table_block, experiment, min_per_area=50, n_resolution_bins=10
     )
     # this dataset has 48 reflections with multiplicity = 1
     assert len(indices) == reflection_table.size() - 48

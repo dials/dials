@@ -284,7 +284,7 @@ class ScalingRefinery(object):
             res = calculate_single_merging_stats(
                 free_Ih, self._scaler.experiment, use_internal_variance=False
             )
-            free_rmeas = res.overall.r_meas
+            free_rmeas = res.overall.r_pim
             free_cc12 = res.overall.cc_one_half
             ##FIXME why blocked_data_list[0] and not all ?
             Ih = self._scaler.Ih_table.blocked_data_list[0].Ih_table
@@ -293,7 +293,7 @@ class ScalingRefinery(object):
             res = calculate_single_merging_stats(
                 Ih, self._scaler.experiment, use_internal_variance=False
             )
-            work_rmeas = res.overall.r_meas
+            work_rmeas = res.overall.r_pim
             work_cc12 = res.overall.cc_one_half
 
             self._scaler.final_rmsds = [work_rmeas, free_rmeas, work_cc12, free_cc12]
