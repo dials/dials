@@ -81,7 +81,7 @@ def run():
         raise Sorry("Only one experiment can be processed at a time")
     else:
         imagesets = experiments[0].imageset
-        assert len(imagesets) == 1
+        assert len(imagesets) == 1, len(imagesets)
         imageset = imagesets[0]
 
     convert_to_cbf(imageset, template)
