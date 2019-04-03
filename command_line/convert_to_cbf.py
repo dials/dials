@@ -80,7 +80,7 @@ def run():
     if len(experiments) > 1:
         raise Sorry("Only one experiment can be processed at a time")
     else:
-        imagesets = experiments[0].imageset
+        imagesets = experiments.imagesets()
         assert len(imagesets) == 1, len(imagesets)
         imageset = imagesets[0]
 
