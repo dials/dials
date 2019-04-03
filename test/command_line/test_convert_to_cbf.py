@@ -20,8 +20,13 @@ pytestmark = pytest.mark.skipif(
     ],
 )
 def test_convert_to_cbf(master_h5):
-    result = procrunner.run(["dials.convert_to_cbf", master_h5])
+    result = procrunner.run(["dials.import", master_h5, "image_range=1,10"])
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
+    assert os.path.exists("imported_experiments.json")
+
+    result = procrunner.run(["dials.convert_to_cbf", "imported_experiments.json"])
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     g = glob.glob("as_cbf_*.cbf")
-    assert len(g) == 900  # need a smaller test set!
+    assert len(g) == 10
