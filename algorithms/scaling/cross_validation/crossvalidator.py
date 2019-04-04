@@ -133,10 +133,27 @@ class DialsScaleCrossValidator(CrossValidator):
     """An implementation of the CrossValidator for running dials.scale"""
 
     results_metadata = {  # metadata used when constructing the results table
-        "names": ["Rwork", "Rfree", "CCwork", "CCfree"],
-        "indices_to_monitor": [1, 3],  # these indices of the above list will be
+        "names": [
+            "work Rpim",
+            "free Rpim",
+            "Rpim gap",
+            "work CC1/2",
+            "free CC1/2",
+            "CC1/2 gap",
+            "work w.a.-CC1/2",
+            "free w.a.-CC1/2",
+            "w.avg.-CC1/2 gap",
+        ],
+        "indices_to_monitor": [
+            1,
+            2,
+            4,
+            5,
+            7,
+            8,
+        ],  # these indices of the above list will be
         # monitored to see which config gives the best values
-        "best_criterion": ["min", "max"],
+        "best_criterion": ["min", "min", "max", "min", "max", "min"],
     }
 
     def get_results_from_script(self, script):

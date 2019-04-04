@@ -278,35 +278,80 @@ class ScalingRefinery(object):
             )
             res = merging_statistics.dataset_statistics(
                 i_obs=i_obs,
-                n_bins=1,
+                n_bins=20,
                 anomalous=False,
                 sigma_filtering=None,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
+                cc_one_half_method="sigma_tau",
             )
-            free_rmeas = res.overall.r_pim
+            free_rpim = res.overall.r_pim
             free_cc12 = res.overall.cc_one_half
+            ccs = flex.double([b.cc_one_half for b in res.bins])
+            n_refl = flex.double([b.n_obs for b in res.bins])
+            n_tot = sum(n_refl)
+            free_wcc12 = sum(ccs * n_refl / n_tot)
+
             i_obs = self._scaler.Ih_table.as_miller_array(
                 self._scaler.experiment.crystal.get_unit_cell()
             )
             res = merging_statistics.dataset_statistics(
                 i_obs=i_obs,
-                n_bins=1,
+                n_bins=20,
                 anomalous=False,
                 sigma_filtering=None,
                 use_internal_variance=False,
                 eliminate_sys_absent=False,
+                cc_one_half_method="sigma_tau",
             )
-            work_rmeas = res.overall.r_pim
+            work_rpim = res.overall.r_pim
             work_cc12 = res.overall.cc_one_half
+            ccs = flex.double([b.cc_one_half for b in res.bins])
+            n_refl = flex.double([b.n_obs for b in res.bins])
+            n_tot = sum(n_refl)
+            work_wcc12 = sum(ccs * n_refl / n_tot)
 
-            self._scaler.final_rmsds = [work_rmeas, free_rmeas, work_cc12, free_cc12]
-            header = ["", "Work", "Free"]
-            rows = [
-                ["Rmeas", str(round(work_rmeas, 5)), str(round(free_rmeas, 5))],
-                ["CC1/2", str(round(work_cc12, 5)), str(round(free_cc12, 5))],
+            rpim_gap = free_rpim - work_rpim
+            cc12_gap = work_cc12 - free_cc12
+            wcc12_gap = work_wcc12 - free_wcc12
+            self._scaler.final_rmsds = [
+                work_rpim,
+                free_rpim,
+                rpim_gap,
+                work_cc12,
+                free_cc12,
+                cc12_gap,
+                work_wcc12,
+                free_wcc12,
+                wcc12_gap,
             ]
-            logger.info("\nWork/Free set quality indicators:")
+            header = ["", "Work", "Free", "Gap"]
+            rows = [
+                [
+                    "Rpim",
+                    str(round(work_rpim, 5)),
+                    str(round(free_rpim, 5)),
+                    str(round(rpim_gap, 5)),
+                ],
+                [
+                    "CC1/2",
+                    str(round(work_cc12, 5)),
+                    str(round(free_cc12, 5)),
+                    str(round(cc12_gap, 5)),
+                ],
+                [
+                    "CC1/2 (weighted-avg)",
+                    str(round(work_wcc12, 5)),
+                    str(round(free_wcc12, 5)),
+                    str(round(wcc12_gap, 5)),
+                ],
+            ]
+            logger.info(
+                """\nWork/Free set quality indicators:
+(CC1/2 calculated using the sigma-tau method, weighted-avg is the
+average CC1/2 over resolution bins, weighted by n_obs per bin.)
+Gaps are defined as Rfree-Rwork and CCWork-CCfree."""
+            )
             st = simple_table(rows, header)
             logger.info(st.format())
 
