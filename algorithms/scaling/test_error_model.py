@@ -51,7 +51,7 @@ def generate_refl_1():
             (0, 0, -20),
             (0, 0, 2),
             (10, 0, 0),
-            (0, 0, 10),
+            (10, 0, 0),
             (1, 0, 0),
         ]
     )
@@ -69,30 +69,24 @@ def test_errormodel(large_reflection_table, test_sg):
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
     error_model = em(block, n_bins=2)
-    assert error_model.summation_matrix[0, 0] == 1
-    assert error_model.summation_matrix[1, 0] == 1
-    assert error_model.summation_matrix[2, 0] == 1
+    assert error_model.summation_matrix[0, 1] == 1
+    assert error_model.summation_matrix[1, 1] == 1
+    assert error_model.summation_matrix[2, 1] == 1
     assert error_model.summation_matrix[3, 0] == 1
-    assert error_model.summation_matrix[4, 1] == 1
-    assert error_model.summation_matrix[5, 0] == 1
-    assert error_model.summation_matrix[6, 0] == 1
-    assert error_model.summation_matrix[7, 0] == 1
-    assert error_model.summation_matrix[8, 0] == 1
-    assert error_model.summation_matrix.non_zeroes == 9
-    assert list(error_model.bin_counts) == [8, 1]
+    assert error_model.summation_matrix[4, 0] == 1
+    assert error_model.summation_matrix.non_zeroes == 5
+    assert list(error_model.bin_counts) == [2, 3]
 
     # Test calc sigmaprime
     x0 = 1.0
     x1 = 0.1
     error_model.sigmaprime = error_model.calc_sigmaprime([x0, x1])
-    assert (
-        list(error_model.sigmaprime)
-        == list(
-            x0
-            * ((block.variances + ((x1 * block.intensities) ** 2)) ** 0.5)
-            / block.inverse_scale_factors
-        )[1:]
+    cal_sigpr = list(
+        x0
+        * ((block.variances + ((x1 * block.intensities) ** 2)) ** 0.5)
+        / block.inverse_scale_factors
     )
+    assert list(error_model.sigmaprime) == cal_sigpr[4:7] + cal_sigpr[-2:]
 
     # Test calc delta_hl
     error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])  # Reset
@@ -101,15 +95,11 @@ def test_errormodel(large_reflection_table, test_sg):
     # delta_hl = sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
     error_model.delta_hl = error_model.calc_deltahl()
     expected_deltas = [
-        0.0,
-        0.0,
-        0.0,
-        0.0,
         (-3.0 / 2.0) * sqrt(2.0 / 3.0),
         (5.0 / 2.0) * sqrt(2.0 / 15.0),
         5.0 * sqrt(2.0 / 30.0),
-        0.0,
-        0.0,
+        -0.117647058824,
+        0.124783549621,
     ]
     assert approx_equal(list(error_model.delta_hl), expected_deltas)
 
@@ -128,7 +118,7 @@ def test_error_model_target(large_reflection_table, test_sg):
     # Test gradient calculation against finite differences.
     gradients = target.calculate_gradients()
     gradient_fd = calculate_gradient_fd(target)
-    assert approx_equal(gradients, gradient_fd)
+    assert approx_equal(list(gradients), list(gradient_fd))
 
     # Test the method calls
     r, g = target.compute_functional_gradients()

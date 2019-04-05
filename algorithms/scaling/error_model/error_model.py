@@ -33,7 +33,7 @@ class BasicErrorModel(object):
         self.n_bins = n_bins
         self.binning_info = {}
         # First select on initial delta
-        self.filter_large_deviants(cutoff=6.0)
+        self.filter_unsuitable_reflections(cutoff=6.0)
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = None
         self.delta_hl = None
@@ -63,7 +63,7 @@ class BasicErrorModel(object):
 
     def minimisation_summary(self):
         """Output a summary of model minimisation to the logger."""
-        header = ["Intensity range", "n_refl", "variance(norm_dev)"]
+        header = ["Intensity range (<Ih>)", "n_refl", "variance(norm_dev)"]
         rows = []
         bin_bounds = ["%.2f" % i for i in self.binning_info["bin_boundaries"]]
         for i, (bin_var, n_refl) in enumerate(
@@ -98,10 +98,14 @@ class BasicErrorModel(object):
         """An array of the number of intensities assigned to each bin."""
         return self._bin_counts
 
-    def filter_large_deviants(self, cutoff=6.0):
+    def filter_unsuitable_reflections(self, cutoff=6.0):
         """Do a first pass to calculate delta_hl and filter out the largest
         deviants, so that the error model is not misled by these and instead
-        operates on the central ~90% of the data."""
+        operates on the central ~90% of the data. Also choose reflection groups
+        with n_h > 1, as these have deltas of zero by definition and will bias
+        the variance calculations. Also, only use groups where <Ih> > 2.0, as
+        the assumptions of normally distributed deltas will not hold for low
+        <Ih>."""
         self.n_h = self.Ih_table.calc_nh()
         self.Ih_table.calc_Ih()
         self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
@@ -109,7 +113,8 @@ class BasicErrorModel(object):
         sel = flex.abs(delta_hl) < cutoff
         # also filter groups with Ih < 2.0
         sel2 = self.Ih_table.Ih_values > 2.0
-        self.Ih_table = self.Ih_table.select(sel & sel2)
+        sel3 = self.n_h > 1.0
+        self.Ih_table = self.Ih_table.select(sel & sel2 & sel3)
         self.n_h = self.Ih_table.calc_nh()
 
     def calc_sigmaprime(self, x):
@@ -146,15 +151,15 @@ class BasicErrorModel(object):
         n = self.Ih_table.size
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
-        scaled_I = self.Ih_table.intensities / self.Ih_table.inverse_scale_factors
-        size_order = flex.sort_permutation(scaled_I, reverse=True)
-        Imax = max(scaled_I)
-        Imin = max(1.0, min(scaled_I))  # avoid log issues
+        Ih = self.Ih_table.Ih_values
+        size_order = flex.sort_permutation(Ih, reverse=True)
+        Imax = max(Ih)
+        Imin = max(1.0, min(Ih))  # avoid log issues
         spacing = (log(Imax) - log(Imin)) / float(self.n_bins)
         boundaries = [Imax] + [
             exp(log(Imax) - (i * spacing)) for i in range(1, self.n_bins + 1)
         ]
-        boundaries[-1] = min(scaled_I) - 0.01
+        boundaries[-1] = min(Ih) - 0.01
         self.binning_info["bin_boundaries"] = boundaries
         self.binning_info["refl_per_bin"] = []
 
@@ -163,8 +168,8 @@ class BasicErrorModel(object):
         for i in range(len(boundaries) - 1):
             maximum = boundaries[i]
             minimum = boundaries[i + 1]
-            sel1 = scaled_I <= maximum
-            sel2 = scaled_I > minimum
+            sel1 = Ih <= maximum
+            sel2 = Ih > minimum
             sel = sel1 & sel2
             isel = sel.iselection()
             n_in_bin = isel.size()
@@ -172,11 +177,11 @@ class BasicErrorModel(object):
                 m = n_cumul + min_per_bin
                 if m < n:  # still some refl left to use
                     idx = size_order[m]
-                    intensity = scaled_I[idx]
+                    intensity = Ih[idx]
                     boundaries[i + 1] = intensity
                     maximum = boundaries[i]
                     minimum = boundaries[i + 1]
-                    sel = sel1 & (scaled_I > minimum)
+                    sel = sel1 & (Ih > minimum)
                     isel = sel.iselection()
                     n_in_bin = isel.size()
             self.binning_info["refl_per_bin"].append(n_in_bin)
