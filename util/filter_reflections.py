@@ -314,6 +314,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 
         return reflection_table
 
+    @staticmethod
     @abc.abstractmethod
     def reduce_on_intensities(reflection_table):
         """Reduce the reflection table to contain only the desired reflections
@@ -329,6 +330,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     def filter_on_min_isigi(cls, reflection_table, min_isigi=None):
         """Filter the given intensities on I/sigI"""
 
+    @classmethod
     @abc.abstractmethod
     def apply_scaling_factors(reflection_table):
         """Apply the relevent scaling factors including lp, qde, scale etc."""
@@ -605,8 +607,8 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
             )
         return reflection_table
 
-    @staticmethod
-    def apply_scaling_factors(reflection_table):
+    @classmethod
+    def apply_scaling_factors(cls, reflection_table):
         """Apply the inverse scale factor."""
         if "partiality" in reflection_table:
             reflection_table = reflection_table.select(
