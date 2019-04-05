@@ -3,6 +3,7 @@ Define an interface for observers and subjects.
 
 A singleton decorator is also defined.
 """
+from __future__ import absolute_import, division, print_function
 
 import functools
 from collections import OrderedDict

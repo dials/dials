@@ -2,6 +2,7 @@
 """
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 import math as pymath
 import numpy as np

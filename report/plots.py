@@ -3,6 +3,7 @@
 This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from cctbx import uctbx
 
