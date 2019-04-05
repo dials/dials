@@ -1838,7 +1838,6 @@ class AppFrame(wx.Frame):
 
     def handle_level_change(self, event):
         """Handle a pySlip LEVEL event."""
-        pass
         return
         self.map_level.SetLabel("%d" % event.level)
 
