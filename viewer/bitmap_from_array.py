@@ -25,7 +25,7 @@ class wxbmp_from_np_array(object):
         self, lst_data_in, show_nums=True, palette="black2white", lst_data_mask_in=None
     ):
         self.wx_bmp_arr = rgb_img()
-        if lst_data_in == None and lst_data_mask_in == None:
+        if lst_data_in is None and lst_data_mask_in is None:
             self._ini_wx_bmp_lst = None
 
         else:
@@ -67,7 +67,7 @@ class wxbmp_from_np_array(object):
                 self._ini_wx_bmp_lst.append(single_block_lst_01)
 
     def bmp_lst_scaled(self, scale=1.0):
-        if self._ini_wx_bmp_lst == None:
+        if self._ini_wx_bmp_lst is None:
 
             NewW = 350
             NewH = 50

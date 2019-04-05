@@ -190,7 +190,7 @@ class IntegratorStills(object):
 
         # Set all reflections which overlap bad pixels to zero
         Command.start("Filtering reflections by detector mask")
-        if experiments[0].scan == None:
+        if experiments[0].scan is None:
             array_range = 1
         else:
             array_range = experiments[0].scan.get_array_range()

@@ -409,7 +409,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
             for i, i_bmp in enumerate(lst_1d):
                 local_bitmap = wx.StaticBitmap(self, bitmap=i_bmp)
-                if self.parent_panel.local_bbox == None:
+                if self.parent_panel.local_bbox is None:
                     slice_string = "Slice[" + str(i) + ":" + str(i + 1) + ", :, :]"
                 else:
                     bbx = self.parent_panel.local_bbox

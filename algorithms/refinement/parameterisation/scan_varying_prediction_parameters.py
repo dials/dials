@@ -26,7 +26,7 @@ class StateDerivativeCache(object):
 
     def __init__(self, parameterisations=None):
 
-        if parameterisations == None:
+        if parameterisations is None:
             parameterisations = []
         self._cache = dict.fromkeys(parameterisations)
 

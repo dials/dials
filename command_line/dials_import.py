@@ -519,7 +519,7 @@ class MetaDataUpdater(object):
                 imageset = updater(imageset)
 
             # Check beam and detector are present
-            if imageset.get_beam() == None or imageset.get_detector() == None:
+            if imageset.get_beam() is None or imageset.get_detector() is None:
                 raise Sorry(
                     """
           Imageset contains no beam or detector model. This means you will be

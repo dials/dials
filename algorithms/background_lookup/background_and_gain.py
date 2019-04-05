@@ -51,13 +51,13 @@ class ComputeBackgroundAndGain(object):
         gain_map = flex.double(gain_map)
 
         # Add the gain to the sum
-        if self._gain == None:
+        if self._gain is None:
             self._gain = gain_map
         else:
             self._gain += gain_map
 
         # Add the image to the background sum
-        if self._background == None:
+        if self._background is None:
             self._background = mean
         else:
             self._background += mean
