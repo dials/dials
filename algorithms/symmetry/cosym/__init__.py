@@ -337,8 +337,6 @@ class CosymAnalysis(symmetry_base, Subject):
             dataset_ids = isel % len(self.input_intensities)
             idx = flex.first_index(dataset_ids, dataset_id)
             sel = (dataset_ids == dataset_id).iselection()
-            if idx >= 0:
-                sym_op_id = isel[idx] // len(self.input_intensities)
             for s in sel:
                 sym_op_id = isel[s] // len(self.input_intensities)
                 for partition in cosets.partitions:
