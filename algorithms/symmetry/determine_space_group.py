@@ -239,7 +239,6 @@ class determine_space_group(symmetry_base):
         # solution p_best and that for the next best solution p_next:
         #   confidence = [p_best * (p_best - p_next)]^1/2.
 
-        confidence = flex.double(len(self.subgroup_scores), 0)
         for i, score in enumerate(self.subgroup_scores[:-1]):
             next_score = self.subgroup_scores[i + 1]
             if score.likelihood > 0 and next_score.likelihood > 0:
