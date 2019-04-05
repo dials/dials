@@ -1,6 +1,7 @@
 """
 Observers for the cosym procedure.
 """
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from dials.util.observer import Observer, singleton
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram

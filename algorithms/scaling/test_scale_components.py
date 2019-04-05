@@ -1,7 +1,7 @@
 """
 Tests for scale components module.
 """
-from __future__ import division
+from __future__ import absolute_import, division, print_function
 from math import exp
 import pytest
 from scitbx import sparse

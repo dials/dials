@@ -1,6 +1,7 @@
 """
 Observers for the scaling algorithm.
 """
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 import logging
 from scitbx.array_family import flex
