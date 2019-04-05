@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     args = sys.argv[1:]
 
-    if os.name is not "nt":
+    if os.name != "nt":
         r, w, x = select.select([sys.stdin], [], [], 0)
         if len(r) > 0:
             args.extend([l.strip() for rr in r for l in rr.readlines()])
