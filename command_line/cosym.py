@@ -97,7 +97,7 @@ class cosym(Subject):
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
-        self._experiments, reflections = self._map_to_minimum_cell(
+        self._experiments, self._reflections = self._map_to_minimum_cell(
             self._experiments, self._reflections
         )
 
