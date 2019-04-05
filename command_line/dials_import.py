@@ -827,9 +827,9 @@ class Script(object):
             logger.debug(experiment.imageset.get_detector())
             logger.debug(experiment.imageset.get_scan())
 
-            # Only allow a single sweep
-            if params.input.allow_multiple_sweeps is False:
-                self.assert_single_sweep(experiments, params)
+        # Only allow a single sweep
+        if params.input.allow_multiple_sweeps is False:
+            self.assert_single_sweep(experiments, params)
 
         # Write the experiments to file
         self.write_experiments(experiments, params)
