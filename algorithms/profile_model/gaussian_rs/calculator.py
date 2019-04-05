@@ -159,7 +159,6 @@ class FractionOfObservedIntensity(object):
         # Calculate the list of tau values
         tau = []
         zeta2 = []
-        scan = scan
         for s, b, p, z in zip(sbox, bbox, phi, zeta):
             for z0, f in enumerate(range(b[4], b[5])):
                 phi0 = scan.get_angle_from_array_index(int(f), deg=False)
@@ -305,7 +304,6 @@ class ComputeEsdReflectingRange(object):
             # Calculate the list of tau values
             tau = []
             zeta2 = []
-            scan = scan
             for s, b, p, z in zip(sbox, bbox, phi, zeta):
                 for z0, f in enumerate(range(b[4], b[5])):
                     phi0 = scan.get_angle_from_array_index(int(f), deg=False)
@@ -465,7 +463,6 @@ class ComputeEsdReflectingRange(object):
             zeta2 = []
             num = []
             indices = [0]
-            scan = scan
             for s, p, z in zip(sbox, phi, zeta):
                 b = s.bbox
                 for z0, f in enumerate(range(b[4], b[5])):

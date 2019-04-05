@@ -92,7 +92,6 @@ class SauterPoon(CentroidOutlier):
         # execute Sauter and Poon (2010) algorithm
         from rstbx.indexing_api import outlier_detection
 
-        hardcoded_phil = hardcoded_phil
         od = outlier_detection.find_outliers_from_matches(
             matches, verbose=self._verbose, horizon_phil=hardcoded_phil
         )
