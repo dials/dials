@@ -210,12 +210,9 @@ class CosymAnalysis(symmetry_base, Subject):
                 g = abs(v.dot(r))
                 gaps.append(g)
 
-            p_k = flex.max_index(gaps)
-            g_k = gaps[p_k]
-            p_g = p_k
+            p_g = flex.max_index(gaps)
 
             x_g = x[p_g + p_m]
-            y_g = y[p_g + p_m]
 
             logger.info("Best number of dimensions: %i" % x_g)
             self.target.set_dimensions(int(x_g))
@@ -361,8 +358,6 @@ class CosymAnalysis(symmetry_base, Subject):
             self.cluster_labels = flex.double(self.coords.all()[0])
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
-
-        cluster_miller_arrays = []
 
         space_groups = []
 
@@ -532,7 +527,6 @@ class SymmetryAnalysis(object):
 
         self.subgroups = subgroups
         self.cb_op_inp_min = cb_op_inp_min
-        lattice_group = subgroups.result_groups[0]["subsym"].space_group()
         X = coords.as_numpy_array()
         n_datasets = coords.all()[0] // len(sym_ops)
         dist_mat = ssd.pdist(X, metric="cosine")
@@ -540,8 +534,6 @@ class SymmetryAnalysis(object):
 
         self._sym_ops_cos_angle = OrderedDict()
         for dataset_id in range(n_datasets):
-            ref_sym_op_id = None
-            ref_cluster_id = None
             for ref_sym_op_id in range(len(sym_ops)):
                 ref_idx = n_datasets * ref_sym_op_id + dataset_id
                 for sym_op_id in range(ref_sym_op_id + 1, len(sym_ops)):
@@ -579,7 +571,6 @@ class SymmetryAnalysis(object):
         # solution p_best and that for the next best solution p_next:
         #   confidence = [p_best * (p_best - p_next)]^1/2.
 
-        confidence = flex.double(len(self.subgroup_scores), 0)
         for i, score in enumerate(self.subgroup_scores[:-1]):
             next_score = self.subgroup_scores[i + 1]
             if score.likelihood > 0 and next_score.likelihood > 0:

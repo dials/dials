@@ -148,9 +148,7 @@ def estimate_global_threshold(image, mask=None, plot=False):
         g = abs(v.dot(r))
         gaps.append(g)
 
-    p_k = flex.max_index(gaps)
-    g_k = gaps[p_k]
-    p_g = p_k
+    p_g = flex.max_index(gaps)
 
     x_g_ = x[p_g + p_m]
     y_g_ = y[p_g + p_m]

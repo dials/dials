@@ -308,7 +308,6 @@ class cosym(Subject):
             doplot=False,
         )
         logger.info(unit_cell_info(self.unit_cell_clusters))
-        largest_cluster = None
         largest_cluster_lattice_ids = None
         for cluster in self.unit_cell_clusters:
             cluster_lattice_ids = [m.lattice_id for m in cluster.members]
