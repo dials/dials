@@ -506,6 +506,7 @@ class Target(object):
         grads.extend(dZ)
         return grads
 
+    @staticmethod
     @abc.abstractmethod
     def _extract_residuals_and_weights(matches):
         """extract vector of residuals and corresponding weights. The space the
@@ -514,6 +515,7 @@ class Target(object):
 
         pass
 
+    @staticmethod
     @abc.abstractmethod
     def _extract_squared_residuals(matches):
         """extract vector of squared residuals. The space the residuals are measured
