@@ -908,7 +908,6 @@ class SpotFinder(object):
                         max_scan_range[0] + 1, max_scan_range[1]
                     )
                 )
-            assert j1 >= j0 and j0 > max_scan_range[0] and j1 <= max_scan_range[1]
 
             logger.info("\nFinding spots in image {0} to {1}...".format(j0, j1))
             j0 -= 1
