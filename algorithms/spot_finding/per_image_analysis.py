@@ -138,7 +138,6 @@ def wilson_outliers(reflections, ice_sel=None, p_cutoff=1e-2):
 
     E_cutoff = math.sqrt(-math.log(p_cutoff))
     intensities = reflections["intensity.sum.value"]
-    variances = reflections["intensity.sum.variance"]
 
     Sigma_n = flex.mean(intensities.select(~ice_sel))
     normalised_amplitudes = flex.sqrt(intensities) / math.sqrt(Sigma_n)
@@ -194,7 +193,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
 
     low_percentile_limit = 0.1
     upper_percentile_limit = 1 - low_percentile_limit
-    d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
     for i_slot, slot in enumerate(binner.bins):
         sel_all = (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
         sel = ~(ice_sel) & sel_all
@@ -358,26 +356,18 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     return resolution_estimate
 
 
-def estimate_resolution_limit_distl_method1(
-    reflections, imageset, ice_sel=None, plot_filename=None
-):
+def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename=None):
 
     # Implementation of Method 1 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
     # https://doi.org/10.1107/S0021889805040677
 
-    if ice_sel is None:
-        ice_sel = flex.bool(len(reflections), False)
-
     variances = reflections["intensity.sum.variance"]
 
     sel = variances > 0
     intensities = reflections["intensity.sum.value"]
-    variances = variances.select(sel)
-    ice_sel = ice_sel.select(sel)
     reflections = reflections.select(sel)
-    intensities = reflections["intensity.sum.value"]
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
     d_star_cubed = flex.pow(reflections["rlp"].norms(), 3)
@@ -436,7 +426,6 @@ def estimate_resolution_limit_distl_method1(
         if g_i > (g_k - 0.5 * s):
             p_g = i
 
-    ds3_g = ds3_subset[p_g]
     d_g = d_subset[p_g]
 
     noisiness = 0
@@ -466,29 +455,20 @@ def estimate_resolution_limit_distl_method1(
     return d_g, noisiness
 
 
-def estimate_resolution_limit_distl_method2(
-    reflections, imageset, ice_sel=None, plot_filename=None
-):
+def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename=None):
 
     # Implementation of Method 2 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
     # https://doi.org/10.1107/S0021889805040677
 
-    if ice_sel is None:
-        ice_sel = flex.bool(len(reflections), False)
-
     variances = reflections["intensity.sum.variance"]
 
     sel = variances > 0
     intensities = reflections["intensity.sum.value"]
-    variances = variances.select(sel)
-    ice_sel = ice_sel.select(sel)
     reflections = reflections.select(sel)
-    intensities = reflections["intensity.sum.value"]
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
-    d_star_cubed = flex.pow(reflections["rlp"].norms(), 3)
 
     binner = binner_d_star_cubed(d_spacings)
 
@@ -496,7 +476,6 @@ def estimate_resolution_limit_distl_method2(
 
     for i_slot, slot in enumerate(binner.bins):
         sel_all = (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
-        # sel = ~(ice_sel) & sel_all
         sel = sel_all
 
         bin_counts.append(sel.count(True))
@@ -739,10 +718,10 @@ def stats_single_image(
             reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename
         )
         d_min_distl_method_1, noisiness_method_1 = estimate_resolution_limit_distl_method1(
-            reflections_all, imageset, ice_sel, plot_filename=distl_method_1_filename
+            reflections_all, imageset, plot_filename=distl_method_1_filename
         )
         d_min_distl_method_2, noisiness_method_2 = estimate_resolution_limit_distl_method2(
-            reflections_all, imageset, ice_sel, plot_filename=distl_method_2_filename
+            reflections_all, imageset, plot_filename=distl_method_2_filename
         )
     else:
         estimated_d_min = -1.0
@@ -816,7 +795,6 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
 def table(stats, perm=None, n_rows=None):
     n_spots_total = stats.n_spots_total
     n_spots_no_ice = stats.n_spots_no_ice
-    n_spots_4A = stats.n_spots_4A
     total_intensity = stats.total_intensity
     estimated_d_min = stats.estimated_d_min
     d_min_distl_method_1 = stats.d_min_distl_method_1
@@ -874,7 +852,6 @@ def table(stats, perm=None, n_rows=None):
             image[i_image],
             str(n_spots_total[i_image]),
             str(n_spots_no_ice[i_image]),
-            # str(n_spots_4A[i_image]),
             "%.0f" % total_intensity[i_image],
         ]
         if estimated_d_min is not None:
@@ -916,8 +893,7 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
     if pyplot is None:
         raise Sorry("matplotlib must be installed to generate a plot.")
-    plots = []
-    fig, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
+    _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
     ax1.scatter(
         list(i_image),
         list(n_spots_total),
