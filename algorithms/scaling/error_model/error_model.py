@@ -5,11 +5,13 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import logging
+from math import log, exp
 from dials.array_family import flex
 from scitbx import sparse
+from libtbx.table_utils import simple_table
 from dials.util import Sorry
 
-logger = logging.getLogger("dials")
+logger = logging.getLogger("dials.scale")
 
 
 def get_error_model(error_model_type):
@@ -29,6 +31,7 @@ class BasicErrorModel(object):
         logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
+        self.binning_info = {}
         # First select on initial delta
         self.filter_large_deviants(cutoff=6.0)
         self.n_h = self.Ih_table.calc_nh()
@@ -58,6 +61,33 @@ class BasicErrorModel(object):
             )
         )
 
+    def minimisation_summary(self):
+        """Output a summary of model minimisation to the logger."""
+        header = ["Intensity range", "n_refl", "variance(norm_dev)"]
+        rows = []
+        bin_bounds = ["%.2f" % i for i in self.binning_info["bin_boundaries"]]
+        for i, (bin_var, n_refl) in enumerate(
+            zip(self.binning_info["bin_variances"], self.binning_info["refl_per_bin"])
+        ):
+            rows.append(
+                [
+                    bin_bounds[i] + " - " + bin_bounds[i + 1],
+                    str(n_refl),
+                    str(round(bin_var, 3)),
+                ]
+            )
+        st = simple_table(rows, header)
+        logger.info(
+            "\n".join(
+                (
+                    "Intensity bins used during error model refinement:",
+                    st.format(),
+                    "variance(norm_dev) expected to be ~ 1 for each bin.",
+                    "",
+                )
+            )
+        )
+
     @property
     def summation_matrix(self):
         """A sparse matrix to allow summation over intensity groups."""
@@ -77,7 +107,9 @@ class BasicErrorModel(object):
         self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
         delta_hl = self.calc_deltahl()
         sel = flex.abs(delta_hl) < cutoff
-        self.Ih_table = self.Ih_table.select(sel)
+        # also filter groups with Ih < 2.0
+        sel2 = self.Ih_table.Ih_values > 2.0
+        self.Ih_table = self.Ih_table.select(sel & sel2)
         self.n_h = self.Ih_table.calc_nh()
 
     def calc_sigmaprime(self, x):
@@ -105,29 +137,64 @@ class BasicErrorModel(object):
         self.bin_variances = self.calculate_bin_variances()
 
     def create_summation_matrix(self):
-        """"Create a summation matrix to allow sums into intensity bins."""
-        sel = flex.sort_permutation(self.Ih_table.intensities)
-        # sel is the list of indices in order of least to greatest intensity.
+        """"Create a summation matrix to allow sums into intensity bins.
+
+        This routine attempts to bin into bins equally spaced in log(intensity),
+        to give a representative sample across all intensities. To avoid
+        undersampling, it is required that there are at least 100 reflections
+        per intensity bin unless there are very few reflections."""
         n = self.Ih_table.size
-        n_bins = self.n_bins
-        # if n < 10000: # what is a sensible limit here?
-        #  n_bins = 10 # what is a sensible number of bins?
-        # else:
-        #  n_bins = 20
-        summation_matrix = sparse.matrix(n, n_bins)
-        n_cumul_array = flex.int([])
-        for i in range(0, n_bins + 1):
-            n_cumul_array.append((i * n) // n_bins)
-        for j in range(len(n_cumul_array) - 1):
-            for index in sel[n_cumul_array[j] : n_cumul_array[j + 1]]:
-                summation_matrix[index, j] = 1
+        self.binning_info["n_reflections"] = n
+        summation_matrix = sparse.matrix(n, self.n_bins)
+        scaled_I = self.Ih_table.intensities / self.Ih_table.inverse_scale_factors
+        size_order = flex.sort_permutation(scaled_I, reverse=True)
+        Imax = max(scaled_I)
+        Imin = max(1.0, min(scaled_I))  # avoid log issues
+        spacing = (log(Imax) - log(Imin)) / float(self.n_bins)
+        boundaries = [Imax] + [
+            exp(log(Imax) - (i * spacing)) for i in range(1, self.n_bins + 1)
+        ]
+        boundaries[-1] = min(scaled_I) - 0.01
+        self.binning_info["bin_boundaries"] = boundaries
+        self.binning_info["refl_per_bin"] = []
+
+        n_cumul = 0
+        min_per_bin = min(100, int(n / (3.0 * self.n_bins)))
+        for i in range(len(boundaries) - 1):
+            maximum = boundaries[i]
+            minimum = boundaries[i + 1]
+            sel1 = scaled_I <= maximum
+            sel2 = scaled_I > minimum
+            sel = sel1 & sel2
+            isel = sel.iselection()
+            n_in_bin = isel.size()
+            if n_in_bin < min_per_bin:  # need more in this bin
+                m = n_cumul + min_per_bin
+                if m < n:  # still some refl left to use
+                    idx = size_order[m]
+                    intensity = scaled_I[idx]
+                    boundaries[i + 1] = intensity
+                    maximum = boundaries[i]
+                    minimum = boundaries[i + 1]
+                    sel = sel1 & (scaled_I > minimum)
+                    isel = sel.iselection()
+                    n_in_bin = isel.size()
+            self.binning_info["refl_per_bin"].append(n_in_bin)
+            for j in isel:
+                summation_matrix[j, i] = 1
+            n_cumul += n_in_bin
+
         return summation_matrix
 
     def calculate_bin_variances(self):
         """Calculate the variance of each bin."""
         sum_deltasq = (self.delta_hl ** 2) * self.summation_matrix
         sum_delta_sq = (self.delta_hl * self.summation_matrix) ** 2
-        return (sum_deltasq / self.bin_counts) - (sum_delta_sq / (self.bin_counts ** 2))
+        bin_vars = (sum_deltasq / self.bin_counts) - (
+            sum_delta_sq / (self.bin_counts ** 2)
+        )
+        self.binning_info["bin_variances"] = bin_vars
+        return bin_vars
 
     def update_variances(self, variances, intensities):
         """Use the error model parameter to calculate new values for the variances."""

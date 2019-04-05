@@ -459,6 +459,7 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
 
     def compute_functional_gradients_and_curvatures(self):
         """overwrite method to avoid calls to 'blocks' methods of target"""
+        logger.debug("Current parameters %s" % ["%.6f" % i for i in self.x])
         self.prepare_for_step()
 
         f, g, _ = self._target.compute_functional_gradients_and_curvatures()
@@ -471,7 +472,7 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
         if restraints:
             f += restraints[0]
             g += restraints[1]
-
+        logger.debug("Current functional %s" % f)
         return f, g, None
 
 
