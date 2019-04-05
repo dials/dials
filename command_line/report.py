@@ -18,9 +18,9 @@ import copy
 import math
 from collections import OrderedDict
 import numpy as np
-from cctbx import miller
 
-import dials.util.banner
+from cctbx import uctbx
+import dials.util.banner  # noqa: F401 - Importing means that it prints
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import (
     calculate_single_merging_stats,
@@ -34,6 +34,7 @@ from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
 )
+from dials.util.command_line import Command
 from dials.util.batch_handling import batch_manager
 
 
@@ -152,126 +153,6 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
-class per_panel_plot(object):
-
-    title = None
-    filename = None
-    cbar_ylabel = None
-    xlabel = "x"
-    ylabel = "y"
-
-    def __init__(self, rlist, directory, grid_size=None, pixels_per_bin=10):
-
-        from os.path import join
-
-        min_x, max_x, min_y, max_y = self.get_min_max_xy(rlist)
-        panel_ids = rlist["panel"]
-        crystal_ids = rlist["id"]
-        n_crystals = flex.max(crystal_ids) + 1
-        n_panels = flex.max(panel_ids) + 1
-
-        n_cols, n_rows = determine_grid_size(rlist, grid_size=grid_size)
-
-        from matplotlib import pyplot
-
-        for i_crystal in range(n_crystals):
-            if n_crystals > 1:
-                suffix = "_%i" % i_crystal
-            else:
-                suffix = ""
-            crystal_sel = crystal_ids == i_crystal
-            fig, axes = pyplot.subplots(n_rows, n_cols)
-
-            if n_panels == 1:
-                axes = [[axes]]
-            elif n_cols == 1:
-                axes = [[ax] for ax in axes]
-            elif n_rows == 1:
-                axes_x = [axes]
-
-            self.gridsize = tuple(
-                int(math.ceil(i))
-                for i in (max_x / pixels_per_bin, max_y / pixels_per_bin)
-            )
-
-            clim = (1e8, 1e-8)
-
-            plots = []
-
-            i_panel = 0
-            for i_row in range(n_rows):
-                for i_col in range(n_cols):
-
-                    panel_sel = panel_ids == i_panel
-                    sel = panel_sel & crystal_sel
-                    i_panel += 1
-
-                    if n_panels > 1:
-                        axes[i_row][i_col].set_title("Panel %d" % i_panel)
-                        axes[i_row][i_col].set_title("Panel %d" % i_panel)
-
-                    if (i_row + 1) == n_rows:
-                        axes[i_row][i_col].set_xlabel(self.xlabel)
-                    else:
-                        pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
-
-                    if i_col == 0:
-                        axes[i_row][i_col].set_ylabel(self.ylabel)
-                    else:
-                        pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
-
-                    if sel.count(True) > 0:
-                        rlist_sel = rlist.select(sel)
-                        if len(rlist_sel) <= 1:
-                            ax = pyplot.scatter([], [])  # create empty plot
-                        else:
-                            ax = self.plot_one_panel(axes[i_row][i_col], rlist_sel)
-                            clim = (
-                                min(clim[0], ax.get_clim()[0]),
-                                max(clim[1], ax.get_clim()[1]),
-                            )
-                        plots.append(ax)
-
-                    axes[i_row][i_col].set_xlim(min_x, max_x)
-                    axes[i_row][i_col].set_ylim(min_y, max_y)
-                    axes[i_row][i_col].axes.set_aspect("equal")
-                    axes[i_row][i_col].invert_yaxis()
-
-            for p in plots:
-                p.set_clim(clim)
-
-            default_size = fig.get_size_inches()
-            fig.set_size_inches((n_cols * default_size[0], n_rows * default_size[1]))
-
-            # pyplot.tight_layout()
-            if self.cbar_ylabel is not None:
-                cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
-                cbar = fig.colorbar(ax, cax=cax)
-                cbar.ax.set_ylabel(self.cbar_ylabel, fontsize=n_cols * 10)
-                cbar.ax.tick_params(labelsize=n_cols * 8)
-                if n_panels > 1:
-                    fig.subplots_adjust(hspace=0.1 / n_rows, right=0.8)
-
-            if self.title is not None:
-                fig.suptitle(self.title, fontsize=n_cols * 12)
-            fig.savefig(join(directory, self.filename))
-            fig.set_size_inches(default_size)
-            pyplot.close()
-
-    def get_min_max_xy(self, rlist):
-        xc, yc, zc = rlist["xyzcal.px"].parts()
-        xo, yo, zo = rlist["xyzobs.px.value"].parts()
-
-        min_x = math.floor(min(flex.min(xc), flex.min(xo)))
-        min_y = math.floor(min(flex.min(yc), flex.min(yo)))
-        max_x = math.ceil(max(flex.max(xc), flex.max(xo)))
-        max_y = math.ceil(max(flex.max(yc), flex.max(yo)))
-        return min_x, max_x, min_y, max_y
-
-    def plot_one_panel(self, ax, rlist):
-        raise NotImplementedError()
-
-
 class ScanVaryingCrystalAnalyser(object):
     """ Analyse a scan-varying crystal. """
 
@@ -287,8 +168,6 @@ class ScanVaryingCrystalAnalyser(object):
 
     def __call__(self, experiments):
         """ Analyse the strong spots. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing scan-varying crystal model")
 
@@ -534,8 +413,6 @@ class StrongSpotsAnalyser(object):
     """ Analyse a list of strong spots. """
 
     def __init__(self, pixels_per_bin=10):
-        from os.path import join
-
         self.pixels_per_bin = pixels_per_bin
 
         # Set the required fields
@@ -543,8 +420,6 @@ class StrongSpotsAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the strong spots. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing strong spots")
         if not ensure_required(rlist, self.required):
@@ -565,7 +440,6 @@ class StrongSpotsAnalyser(object):
             Command.start(" Selecting only strong reflections")
             mask = rlist.get_flags(rlist.flags.strong)
             if mask.count(True) > 0:
-                threshold = 10
                 rlist = rlist.select(mask)
             Command.end(" Selected %d strong reflections" % len(rlist))
 
@@ -585,13 +459,10 @@ class StrongSpotsAnalyser(object):
         d.update(self.unindexed_count_xy(rlist))
         # Look at distribution of indexed spots with detector position
         d.update(self.indexed_count_xy(rlist))
-        # self.spot_count_per_panel(rlist)
         return {"strong": d}
 
     def spot_count_per_image(self, rlist):
         """ Analyse the spot count per image. """
-        from os.path import join
-
         x, y, z = rlist["xyzobs.px.value"].parts()
         max_z = int(math.ceil(flex.max(z)))
 
@@ -696,8 +567,6 @@ ice rings, or poor spot-finding parameters.
 
     def unindexed_count_xy(self, rlist):
         """ Analyse the spot count in x/y. """
-        from os.path import join
-
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
@@ -706,8 +575,6 @@ ice rings, or poor spot-finding parameters.
 
         x = x.select(~indexed_sel).as_numpy_array()
         y = y.select(~indexed_sel).as_numpy_array()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(x, y, bins=(self.nbinsx, self.nbinsy))
 
@@ -739,8 +606,6 @@ ice rings, or poor spot-finding parameters.
 
     def indexed_count_xy(self, rlist):
         """Analyse the indexed spot count in x/y. """
-        from os.path import join
-
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
@@ -749,8 +614,6 @@ ice rings, or poor spot-finding parameters.
 
         x = x.select(indexed_sel).as_numpy_array()
         y = y.select(indexed_sel).as_numpy_array()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(x, y, bins=(self.nbinsx, self.nbinsy))
 
@@ -780,46 +643,11 @@ ice rings, or poor spot-finding parameters.
             }
         }
 
-    def spot_count_per_panel(self, rlist):
-        """ Analyse the spot count per panel. """
-        from os.path import join
-
-        panel = rlist["panel"]
-        if flex.max(panel) == 0:
-            # only one panel, don't bother generating a plot
-            return
-
-        n_panels = int(flex.max(panel))
-        spot_count_per_panel = flex.int()
-        for i in range(n_panels):
-            sel = (panel >= i) & (panel < (i + 1))
-            spot_count_per_panel.append(sel.count(True))
-
-        from matplotlib import pyplot
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111)
-        ax.set_title("Spot count per panel")
-        ax.scatter(
-            list(range(len(spot_count_per_panel))),
-            spot_count_per_panel,
-            s=10,
-            color="blue",
-            marker="o",
-            alpha=0.4,
-        )
-        ax.set_xlabel("Panel #")
-        ax.set_ylabel("# spots")
-        pyplot.savefig(join(self.directory, "spots_per_panel.png"))
-        pyplot.close()
-
 
 class CentroidAnalyser(object):
     """ Analyse the reflection centroids. """
 
     def __init__(self, grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
-        from os.path import join
-
         self.grid_size = grid_size
         self.pixels_per_bin = pixels_per_bin
         self.centroid_diff_max = centroid_diff_max
@@ -836,8 +664,6 @@ class CentroidAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reflection centroids")
         if not ensure_required(rlist, self.required):
@@ -886,8 +712,6 @@ class CentroidAnalyser(object):
 
     def centroid_diff_hist(self, rlist, threshold):
         """ Analyse the correlations. """
-        from os.path import join
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -926,8 +750,6 @@ class CentroidAnalyser(object):
 
     def centroid_diff_xy(self, rlist, threshold):
         """ Look at the centroid difference in x, y """
-        from os.path import join
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -956,8 +778,6 @@ class CentroidAnalyser(object):
         yc = yc.as_numpy_array()
         xd = xd.as_numpy_array()
         yd = yd.as_numpy_array()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy))
         H1, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=xd)
@@ -1022,8 +842,6 @@ class CentroidAnalyser(object):
 
     def centroid_diff_z(self, rlist, threshold):
         """ Look at the centroid difference in z """
-        from os.path import join
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1039,8 +857,6 @@ class CentroidAnalyser(object):
         if zd.all_approx_equal(zd[0]):
             # probably still images, no z residuals
             return {}
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(zc, zd, bins=(100, 100))
 
@@ -1069,9 +885,6 @@ class CentroidAnalyser(object):
         }
 
     def centroid_mean_diff_vs_phi(self, rlist, threshold):
-        from os.path import join
-        import math
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1098,7 +911,6 @@ class CentroidAnalyser(object):
         rmsd_x = flex.double()
         rmsd_y = flex.double()
         rmsd_phi = flex.double()
-        frame = []
         phi_obs_deg = RAD2DEG * zo
         phi = []
 
@@ -1192,9 +1004,6 @@ class CentroidAnalyser(object):
         return d
 
     def centroid_xy_xz_zy_residuals(self, rlist, threshold):
-        from os.path import join
-        import math
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1213,8 +1022,6 @@ class CentroidAnalyser(object):
         is_stills = dz.all_approx_equal(dz[0])
 
         d = OrderedDict()
-
-        import numpy as np
 
         histx = flex.histogram(dx, n_slots=100)
         histy = flex.histogram(dy, n_slots=100)
@@ -1418,7 +1225,6 @@ class IntensityAnalyser(object):
     """ Analyse the intensities. """
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
-        from os.path import join
 
         self.grid_size = grid_size
         self.pixels_per_bin = pixels_per_bin
@@ -1428,8 +1234,6 @@ class IntensityAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # FIXME Do the same and a comparison for intensity.prf
 
         # Check we have the required fields
@@ -1481,17 +1285,10 @@ class IntensityAnalyser(object):
         d.update(self.i_over_s_vs_z(rlist))
         print(" Analysing distribution of partialities")
         d.update(self.partiality_hist(rlist))
-        # print " Analysing number of background pixels used"
-        # self.num_background_hist(rlist)
-        # print " Analysing number of foreground pixels used"
-        # self.num_foreground_hist(rlist)
-
         return {"intensity": d}
 
     def i_over_s_hist(self, rlist):
         """ Analyse the correlations. """
-        from os.path import join
-
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1528,8 +1325,6 @@ class IntensityAnalyser(object):
         I_sig = I_sig.select(sel)
         I_over_S = I / I_sig
         x, y, z = rlist["xyzcal.px"].parts()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(
             x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy)
@@ -1580,8 +1375,6 @@ class IntensityAnalyser(object):
         I_over_S = I / I_sig
         x, y, z = rlist["xyzcal.px"].parts()
 
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(
             z.as_numpy_array(), flex.log10(I_over_S).as_numpy_array(), bins=(100, 100)
         )
@@ -1612,8 +1405,6 @@ class IntensityAnalyser(object):
 
     def partiality_hist(self, rlist):
         """ Analyse the partialities. """
-        from os.path import join
-
         partiality = rlist["partiality"]
         hist = flex.histogram(partiality.select(partiality > 0), 0, 1, n_slots=20)
 
@@ -1635,34 +1426,6 @@ class IntensityAnalyser(object):
                 },
             }
         }
-
-    def num_background_hist(self, rlist):
-        """ Analyse the number of background pixels. """
-        from os.path import join
-
-        if "n_background" in rlist:
-            N = rlist["n_background"]
-            fig = pyplot.figure()
-            pyplot.title("Num Background Pixel Histogram")
-            pyplot.hist(N, bins=20)
-            pyplot.xlabel("Number of pixels")
-            pyplot.ylabel("# reflections")
-            fig.savefig(join(self.directory, "n_background_hist.png"))
-            pyplot.close()
-
-    def num_foreground_hist(self, rlist):
-        """ Analyse the number of foreground pixels. """
-        from os.path import join
-
-        if "n_foreground" in rlist:
-            N = rlist["n_foreground"]
-            fig = pyplot.figure()
-            pyplot.title("Num Foreground Pixel Histogram")
-            pyplot.hist(N, bins=20)
-            pyplot.xlabel("Number of pixels")
-            pyplot.ylabel("# reflections")
-            fig.savefig(join(self.directory, "n_foreground_hist.png"))
-            pyplot.close()
 
 
 class ZScoreAnalyser(object):
@@ -1934,8 +1697,6 @@ class ReferenceProfileAnalyser(object):
     """ Analyse the reference profiles. """
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
-        from os.path import join
-
         self.grid_size = grid_size
         self.pixels_per_bin = pixels_per_bin
 
@@ -1949,8 +1710,6 @@ class ReferenceProfileAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reference profiles. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reference profiles")
         if not ensure_required(rlist, self.required):
@@ -1983,22 +1742,6 @@ class ReferenceProfileAnalyser(object):
         d.update(self.reference_z(rlist))
 
         # Look at correlations between profiles
-        def ideal_correlations(filename, rlist):
-            """ Call for reference spots and all reflections. """
-
-            print(" Analysing reflection profile correlations")
-            self.ideal_reflection_corr_hist(rlist, filename)
-
-            print(" Analysing reflection profile correlations vs x/y")
-            self.ideal_reflection_corr_vs_xy(rlist, filename)
-
-            print(" Analysing reflection profile correlations vs z")
-            self.ideal_reflection_corr_vs_z(rlist, filename)
-
-            print(" Analysing reflection profile correlations vs I/Sigma")
-            self.ideal_reflection_corr_vs_ios(rlist, filename)
-
-        # Look at correlations between profiles
         def correlations(filename, rlist):
             """ Call for reference spots and all reflections. """
 
@@ -2021,8 +1764,6 @@ class ReferenceProfileAnalyser(object):
         d.update(self.reflection_correlations_vs_resolution(rlist))
         d.update(correlations("reference", rlist.select(mask)))
         d.update(correlations("reflection", rlist))
-        # ideal_correlations("reference", rlist.select(mask))
-        # ideal_correlations("reflection", rlist)
 
         return {"reference": d}
 
@@ -2030,12 +1771,10 @@ class ReferenceProfileAnalyser(object):
         """ Analyse the distribution of reference profiles. """
 
         print(" Analysing reflection correlations vs resolution")
-        from cctbx import uctbx
         from dials.algorithms.spot_finding.per_image_analysis import binner_d_star_cubed
 
         profile_correlation = rlist["profile.correlation"]
         d_spacings = rlist["d"]
-        d_star_sq = uctbx.d_as_d_star_sq(d_spacings)
         binner = binner_d_star_cubed(d_spacings)
         bin_centres = flex.double()
         ccs = flex.double()
@@ -2055,9 +1794,6 @@ class ReferenceProfileAnalyser(object):
         d_star_sq_bins = uctbx.d_as_d_star_sq(bin_centres)
 
         def d_star_sq_to_d_ticks(d_star_sq, nticks):
-            from cctbx import uctbx
-
-            d_spacings = uctbx.d_star_sq_as_d(flex.double(d_star_sq))
             min_d_star_sq = min(d_star_sq)
             dstep = (max(d_star_sq) - min_d_star_sq) / nticks
             tickvals = list(min_d_star_sq + (i * dstep) for i in range(nticks))
@@ -2093,13 +1829,9 @@ class ReferenceProfileAnalyser(object):
 
     def reference_xy(self, rlist):
         """ Analyse the distribution of reference profiles. """
-        from os.path import join
-
         mask = rlist.get_flags(rlist.flags.reference_spot)
         rlist = rlist.select(mask)
         x, y, z = rlist["xyzcal.px"].parts()
-
-        import numpy as np
 
         H, xedges, yedges = np.histogram2d(
             x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy)
@@ -2133,7 +1865,6 @@ class ReferenceProfileAnalyser(object):
 
     def reference_z(self, rlist):
         """ Analyse the distribution of reference profiles. """
-        corr = rlist["profile.correlation"]
         x, y, z = rlist["xyzcal.px"].parts()
         hist = flex.histogram(z, n_slots=20)
 
@@ -2187,8 +1918,6 @@ class ReferenceProfileAnalyser(object):
         corr = rlist["profile.correlation"]
         x, y, z = rlist["xyzcal.px"].parts()
 
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(
             x.as_numpy_array(), y.as_numpy_array(), bins=(self.nbinsx, self.nbinsy)
         )
@@ -2239,8 +1968,6 @@ class ReferenceProfileAnalyser(object):
         corr = rlist["profile.correlation"]
         x, y, z = rlist["xyzcal.px"].parts()
 
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(
             z.as_numpy_array(), corr.as_numpy_array(), bins=(100, 100)
         )
@@ -2288,8 +2015,6 @@ class ReferenceProfileAnalyser(object):
         I_over_S = I_over_S.select(mask)
         corr = corr.select(mask)
 
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(
             flex.log10(I_over_S).as_numpy_array(),
             corr.as_numpy_array(),
@@ -2323,76 +2048,6 @@ class ReferenceProfileAnalyser(object):
                 },
             }
         }
-
-    def ideal_reflection_corr_hist(self, rlist, filename):
-        """ Analyse the correlations. """
-        from os.path import join
-
-        if "correlation.ideal.profile" in rlist:
-            corr = rlist["correlation.ideal.profile"]
-            pyplot.title("Reflection correlations histogram")
-            pyplot.hist(corr, bins=20)
-            pyplot.xlabel("Correlation with reference profile")
-            pyplot.ylabel("# reflections")
-            pyplot.savefig(join(self.directory, "ideal_%s_corr_hist" % filename))
-            pyplot.close()
-
-    def ideal_reflection_corr_vs_xy(self, rlist, filename):
-        """ Analyse the correlations. """
-        from os.path import join
-
-        if "correlation.ideal.profile" in rlist:
-            corr = rlist["correlation.ideal.profile"]
-            x, y, z = rlist["xyzcal.px"].parts()
-            pyplot.title("Reflection correlations binned in X/Y")
-            cax = pyplot.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
-            cbar = pyplot.colorbar(cax)
-            pyplot.xlabel("x")
-            pyplot.ylabel("y")
-            cbar.ax.set_ylabel("Correlation with reference profile")
-            pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_xy.png" % filename))
-            pyplot.close()
-
-    def ideal_reflection_corr_vs_z(self, rlist, filename):
-        """ Analyse the correlations. """
-        from os.path import join
-
-        if "correlation.ideal.profile" in rlist:
-            corr = rlist["correlation.ideal.profile"]
-            x, y, z = rlist["xyzcal.px"].parts()
-            pyplot.title("Reflection correlations vs Z")
-            cax = pyplot.hexbin(z, corr, gridsize=100)
-            cbar = pyplot.colorbar(cax)
-            pyplot.xlabel("z")
-            pyplot.ylabel("Correlation with reference profile")
-            cbar.ax.set_ylabel("# reflections")
-            pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_z.png" % filename))
-            pyplot.close()
-
-    def ideal_reflection_corr_vs_ios(self, rlist, filename):
-        """ Analyse the correlations. """
-        from os.path import join
-
-        if "correlation.ideal.profile" in rlist:
-            corr = rlist["correlation.ideal.profile"]
-            I = rlist["intensity.prf.value"]
-            I_sig = flex.sqrt(rlist["intensity.prf.variance"])
-            mask = I_sig > 0
-            I = I.select(mask)
-            I_sig = I_sig.select(mask)
-            corr = corr.select(mask)
-            I_over_S = I / I_sig
-            mask = I_over_S > 0.1
-            I_over_S = I_over_S.select(mask)
-            corr = corr.select(mask)
-            pyplot.title("Reflection correlations vs Log I/Sigma")
-            cax = pyplot.hexbin(flex.log10(I_over_S), corr, gridsize=100)
-            cbar = pyplot.colorbar(cax)
-            pyplot.xlabel("Log I/Sigma")
-            pyplot.ylabel("Correlation with reference profile")
-            cbar.ax.set_ylabel("# reflections")
-            pyplot.savefig(join(self.directory, "ideal_%s_corr_vs_ios.png" % filename))
-            pyplot.close()
 
 
 class ScalingModelAnalyser(object):
@@ -2447,8 +2102,9 @@ def merging_stats_results(reflections, experiments):
 
     return summary_table, results_table, resolution_plots, batch_plots
 
+
 def intensity_statistics(reflections, experiments):
-    if not 'inverse_scale_factor' in reflections:
+    if not "inverse_scale_factor" in reflections:
         return {}, {}
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
@@ -2457,6 +2113,7 @@ def intensity_statistics(reflections, experiments):
     resolution_plots = plotter.generate_resolution_dependent_plots()
     misc_plots = plotter.generate_miscellanous_plots()
     return resolution_plots, misc_plots
+
 
 class Analyser(object):
     """ Helper class to do all the analysis. """
@@ -2481,13 +2138,11 @@ class Analyser(object):
 
     def __call__(self, rlist=None, experiments=None):
         """ Do all the analysis. """
-        from copy import deepcopy
-
         json_data = OrderedDict()
 
         if rlist is not None:
             for analyse in self.analysers:
-                result = analyse(deepcopy(rlist))
+                result = analyse(copy.deepcopy(rlist))
                 if result is not None:
                     json_data.update(result)
         else:
@@ -2697,8 +2352,6 @@ class Analyser(object):
                 )
                 crystal_table.append(("", "A = UB:", "%s" % amat))
                 if expt.crystal.num_scan_points > 0:
-                    from cctbx import uctbx
-
                     abc = flex.vec3_double()
                     angles = flex.vec3_double()
                     for n in range(expt.crystal.num_scan_points):
@@ -2751,7 +2404,6 @@ class Script(object):
 
     def run(self):
         """ Run the script. """
-        from dials.util.command_line import Command
         from dials.util.options import flatten_reflections, flatten_experiments
 
         # Parse the command line arguments
