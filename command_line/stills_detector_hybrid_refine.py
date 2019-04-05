@@ -167,7 +167,7 @@ def detector_parallel_refiners(params, experiments, reflections):
 
     from dxtbx.model import Detector
 
-    sub_detectors = [Detector() for e in groups]
+    sub_detectors = [Detector() for _ in groups]
     for d, g in zip(sub_detectors, groups):
         d.hierarchy().set_name(g.get_name())
         d.hierarchy().set_frame(g.get_fast_axis(), g.get_slow_axis(), g.get_origin())
@@ -183,7 +183,7 @@ def detector_parallel_refiners(params, experiments, reflections):
             p.set_name(g.get_name())
 
     # set experiment lists for each sub-detector
-    sub_det_expts = [copy.deepcopy(experiments) for e in groups]
+    sub_det_expts = [copy.deepcopy(experiments) for _ in groups]
     for d, exp in zip(sub_detectors, sub_det_expts):
         exp.replace(exp.detectors()[0], d)
 
