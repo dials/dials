@@ -23,8 +23,6 @@ detector position, of measured multiplicity, of absolute intensity and of
 I/sigma.
 """
 
-
-import sys
 import logging
 from dials.array_family import flex
 
@@ -462,7 +460,7 @@ if __name__ == "__main__":
     # TODO Allow determination of output filename root.
     # FIXME Give a pickle and a json file as arguments:
 
-    data_from_pickle_and_json(sys.argv[1:])
+    data_from_pickle_and_json()
 
     data = IntensityDist(rtable, elist, outfile="Test")
     data.plot_z_histogram()
