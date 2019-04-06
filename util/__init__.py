@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import contextlib
 import sys
 
-from ._progress import progress
+from ._progress import progress  # noqa: F401, exported symbol
 
 from libtbx.utils import Sorry
 
@@ -161,7 +161,6 @@ def locked(file_handle):
     lock = False
     try:
         if fcntl:
-            flags = fcntl.LOCK_EX
             fcntl.lockf(file_handle, fcntl.LOCK_EX)
         else:
             file_handle.seek(0)

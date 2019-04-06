@@ -10,8 +10,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+import logging
 import math
 
 import libtbx
@@ -27,7 +28,6 @@ from dials.algorithms.indexing.indexer import (
 )
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,6 @@ class indexer_fft3d(indexer_base):
         d_min = self.params.fft3d.reciprocal_space_grid.d_min
 
         n_points = self.gridding[0]
-        rlgrid = 2 / (d_min * n_points)
 
         # real space FFT grid dimensions
         cell_lengths = [n_points * d_min / 2 for i in range(3)]
@@ -132,7 +131,7 @@ class indexer_fft3d(indexer_base):
         self.gridding = fftpack.adjust_gridding_triple(
             (n_points, n_points, n_points), max_prime=5
         )
-        n_points = self.gridding[0]
+        # n_points = self.gridding[0]
         self.map_centroids_to_reciprocal_space_grid()
         self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
 
@@ -257,7 +256,6 @@ class indexer_fft3d(indexer_base):
             with open("peaks.pdb", "wb") as f:
                 f.write(xs.as_pdb_file())
 
-        sites_frac = xs.sites_frac()
         vectors = xs.sites_cart()
         norms = vectors.norms()
         sel = (norms > self.params.min_cell) & (norms < (2 * self.params.max_cell))
@@ -272,7 +270,6 @@ class indexer_fft3d(indexer_base):
         relative_length_tolerance = 0.1
         angle_tolerance = 5  # degrees
 
-        orth = self.fft_cell.orthogonalize
         for v, volume in zip(vectors, volumes):
             length = v.length()
             if length < self.params.min_cell or length > (2 * self.params.max_cell):
@@ -340,8 +337,8 @@ class indexer_fft3d(indexer_base):
         # re-sort by peak volume
         perm = flex.sort_permutation(unique_volumes, reverse=True)
         vectors = [unique_vectors[i] for i in perm]
-        volumes = unique_volumes.select(perm)
 
+        # volumes = unique_volumes.select(perm)
         # for i, (v, volume) in enumerate(zip(vectors, volumes)):
         # logger.debug("%s %s %s" %(i, v.length(), volume))
 
@@ -373,11 +370,8 @@ class indexer_fft3d(indexer_base):
             with open("peaks.pdb", "wb") as f:
                 f.write(xs.as_pdb_file())
 
-        vector_heights = flex.double()
-
         sites_frac = xs.sites_frac()
         pair_asu_table = xs.pair_asu_table(distance_cutoff=self.params.max_cell)
-        asu_mappings = pair_asu_table.asu_mappings()
         distances = crystal.calculate_distances(pair_asu_table, sites_frac)
         vectors = []
         difference_vectors = []
@@ -575,9 +569,6 @@ class indexer_fft3d(indexer_base):
         # Compute DBSCAN
         params = self.params.multiple_lattice_search.cluster_analysis.dbscan
         db = DBSCAN(eps=params.eps, min_samples=params.min_samples).fit(X)
-        core_samples = db.core_sample_indices_
-        # core_samples is a list of numpy.int64 objects
-        core_samples = flex.int([int(i) for i in core_samples])
         labels = flex.int(db.labels_.astype(np.int32))
 
         # Number of clusters in labels, ignoring noise if present.
@@ -590,7 +581,7 @@ class indexer_fft3d(indexer_base):
     def debug_plot_clusters(self, vectors, labels, min_cluster_size=1):
         assert len(vectors) == len(labels)
         from matplotlib import pyplot
-        from mpl_toolkits.mplot3d import Axes3D  # import dependency
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401, import dependency
         import numpy
 
         # Black removed and is used for noise instead.

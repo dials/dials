@@ -161,9 +161,6 @@ class MaskGenerator(object):
         masks = []
         for index, (im, panel) in enumerate(zip(image, detector)):
 
-            # The image width height
-            height, width = im.all()
-
             # Create the basic mask from the trusted range
             if self.params.use_trusted_range:
                 low, high = panel.get_trusted_range()

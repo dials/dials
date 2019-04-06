@@ -247,20 +247,10 @@ class BackgroundGradientFilter(object):
 
     def run(self, flags, sweep=None, shoeboxes=None, **kwargs):
         from dials.array_family import flex
-        from dials.algorithms.shoebox import MaskCode
         from dials.algorithms.background.simple import Linear2dModeller
 
-        bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
-        fg_code = MaskCode.Valid | MaskCode.Foreground
-        strong_code = MaskCode.Valid | MaskCode.Strong
-
         modeller = Linear2dModeller()
-        expanded_shoeboxes = flex.shoebox()
         detector = sweep.get_detector()
-
-        zoffset = 0
-        if sweep.get_scan() is not None:
-            zoffset = sweep.get_scan().get_array_range()[0]
 
         class image_data_cache(object):
             def __init__(self, imageset, size=10):
@@ -278,9 +268,6 @@ class BackgroundGradientFilter(object):
                     self._image_data[i] = image_data
                 return image_data
 
-        cache = image_data_cache(sweep)
-        # cache = sweep
-
         # sort shoeboxes by centroid z
         frame = shoeboxes.centroid_all().position_frame()
         perm = flex.sort_permutation(frame)
@@ -295,7 +282,6 @@ class BackgroundGradientFilter(object):
             if not flags[perm[i]]:
                 continue
             panel = detector[shoebox.panel]
-            trusted_range = panel.get_trusted_range()
             max_x, max_y = panel.get_image_size()
             bbox = shoebox.bbox
             x1, x2, y1, y2, z1, z2 = bbox
@@ -320,20 +306,16 @@ class BackgroundGradientFilter(object):
         rlist["panel"] = shoeboxes.panels()
         rlist["bbox"] = shoeboxes.bounding_boxes()
 
-        t0 = time.time()
         rlist.extract_shoeboxes(sweep)
-        t1 = time.time()
 
         shoeboxes = rlist["shoebox"]
         shoeboxes.flatten()
 
-        t0 = time.time()
         for i, shoebox in enumerate(shoeboxes):
             if not flags[perm[i]]:
                 continue
             panel = detector[shoebox.panel]
             trusted_range = panel.get_trusted_range()
-            max_x, max_y = panel.get_image_size()
             ex1, ex2, ey1, ey2, ez1, ez2 = shoebox.bbox
             data = shoebox.data
             mask = flex.bool(data.accessor(), False)
@@ -352,12 +334,9 @@ class BackgroundGradientFilter(object):
 
             model = modeller.create(data.as_double(), mask)
             d, a, b = model.params()[:3]
-            c = -1
 
             if abs(a) > self.gradient_cutoff or abs(b) > self.gradient_cutoff:
                 flags[perm[i]] = False
-
-        t1 = time.time()
 
         return flags
 
@@ -421,7 +400,6 @@ class SpotDensityFilter(object):
                 cutoff = hist.slot_centers()[i - 1] - 0.5 * hist.slot_width()
 
         H_flex = flex.double(np.ascontiguousarray(H))
-        isel = (H_flex > cutoff).iselection()
         sel = np.column_stack(np.where(H > cutoff))
         for (ix, iy) in sel:
             flags.set_selected(
@@ -583,8 +561,6 @@ class SpotFinderFactory(object):
         :return: The filter algorithm
 
         """
-        from dials.algorithms import shoebox
-
         # Initialise an empty list of filters
         filters = []
 

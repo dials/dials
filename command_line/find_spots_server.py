@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 import time
-from multiprocessing import Process, current_process
+from multiprocessing import Process
 
 import libtbx.load_env
 import libtbx.phil
@@ -66,7 +66,6 @@ stop = False
 def work(filename, cl=None):
     if cl is None:
         cl = []
-    import libtbx.phil
 
     phil_scope = libtbx.phil.parse(
         """\
@@ -135,8 +134,6 @@ indexing_min_spots = 10
     logger.info("Resolution analysis took %.2f seconds" % (t2 - t1))
 
     if index and stats["n_spots_no_ice"] > indexing_min_spots:
-        import logging
-
         logging.basicConfig(stream=sys.stdout, level=logging.INFO)
         from dials.algorithms.indexing import indexer
 
@@ -144,7 +141,6 @@ indexing_min_spots = 10
         phil_scope, unhandled = interp.process_and_fetch(
             unhandled, custom_processor="collect_remaining"
         )
-        imagesets = [imageset]
         logger.info("The following indexing parameters have been modified:")
         indexer.master_phil_scope.fetch_diff(source=phil_scope).show()
         params = phil_scope.extract()
@@ -205,7 +201,6 @@ indexing_min_spots = 10
             phil_scope, unhandled = interp.process_and_fetch(
                 unhandled, custom_processor="collect_remaining"
             )
-            imagesets = [imageset]
             logger.error("The following integration parameters have been modified:")
             integrate_phil_scope.fetch_diff(source=phil_scope).show()
             params = phil_scope.extract()
@@ -285,7 +280,6 @@ class handler(server_base.BaseHTTPRequestHandler):
             return
         filename = s.path.split(";")[0]
         params = s.path.split(";")[1:]
-        proc = current_process().name
 
         d = {"image": filename}
 
@@ -301,8 +295,6 @@ class handler(server_base.BaseHTTPRequestHandler):
         response = json.dumps(d)
         s.wfile.write(response)
 
-        return
-
 
 def serve(httpd):
     try:
@@ -310,7 +302,6 @@ def serve(httpd):
             httpd.handle_request()
     except KeyboardInterrupt:
         pass
-    return
 
 
 phil_scope = libtbx.phil.parse(

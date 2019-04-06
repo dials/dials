@@ -5,7 +5,6 @@ import math
 
 from past.builtins import basestring, unicode
 
-import rstbx.viewer.display
 import wx
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
@@ -1153,32 +1152,20 @@ class SpotFrame(XrayFrame):
                                 ]:
                                     vertices.append(vertex)
 
-                            if False:
-                                self.dials_spotfinder_layers.append(
-                                    self.pyslip.AddPointLayer(
-                                        positions,
-                                        color="#%s" % base_color,
-                                        name="<all_pix_layer_%d>" % key,
-                                        radius=2,
-                                        renderer=self.pyslip.LightweightDrawPointLayer2,
-                                        show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-                                    )
+                            self.dials_spotfinder_layers.append(
+                                self.pyslip.AddEllipseLayer(
+                                    vertices,
+                                    color="#%s" % base_color,
+                                    name="<all_foreground_circles_%d>" % key,
+                                    width=2,
+                                    show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
+                                    update=False,
                                 )
-                            if True:
-                                self.dials_spotfinder_layers.append(
-                                    self.pyslip.AddEllipseLayer(
-                                        vertices,
-                                        color="#%s" % base_color,
-                                        name="<all_foreground_circles_%d>" % key,
-                                        width=2,
-                                        show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-                                        update=False,
-                                    )
-                                )
-                                print(
-                                    "Circles: center of foreground masks for the %d spots actually integrated"
-                                    % (len(vertices) // 5)
-                                )
+                            )
+                            print(
+                                "Circles: center of foreground masks for the %d spots actually integrated"
+                                % (len(vertices) // 5)
+                            )
                 else:
                     if len(all_pix_data) > 0:
                         self.dials_spotfinder_layers.append(
@@ -1649,7 +1636,6 @@ class SpotFrame(XrayFrame):
                             beam_centre
                         )
                         beam_x, beam_y = map_coords(beam_x, beam_y, panel)
-                    lines = []
                     for i, h in enumerate(((10, 0, 0), (0, 10, 0), (0, 0, 10))):
                         r = A * matrix.col(h)
                         if still:
@@ -1895,11 +1881,10 @@ class SpotSettingsPanel(wx.Panel):
         self.clear_all_button = wx.Button(self, -1, "Clear all")
         grid.Add(self.clear_all_button, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(wx.EVT_BUTTON, self.OnClearAll, self.clear_all_button)
-
         s.Add(grid)
 
         # Minimum spot area control
-        box = wx.BoxSizer(wx.HORIZONTAL)
+        # box = wx.BoxSizer(wx.HORIZONTAL)
         # self.minspotarea_ctrl = PhilIntCtrl(self, -1, pos=(300,180), size=(80,-1),
         # value=self.GetParent().GetParent().horizons_phil.distl.minimum_spot_area,
         # name="Minimum spot area (pxls)")
@@ -2045,15 +2030,6 @@ class SpotSettingsPanel(wx.Panel):
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdateShowMask, self.show_mask)
 
         self.Bind(wx.EVT_UPDATE_UI, self.UpdateZoomCtrl)
-
-        have_thumbnail = False
-        if have_thumbnail:
-            txt3 = wx.StaticText(self, -1, "Thumbnail view:")
-            s.Add(txt3, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-            self.thumb_panel = rstbx.viewer.display.ThumbnailView(
-                parent=self, size=(256, 256), style=wx.SUNKEN_BORDER
-            )
-            s.Add(self.thumb_panel, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
     def OnDestroy(self, event):
         "Handle any cleanup when the windows is being destroyed. Manually Called."

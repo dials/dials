@@ -9,8 +9,7 @@
 #  included in the root directory of this package.
 
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -123,7 +122,6 @@ class ProcessorImageBase(object):
 
             def execute_task(task):
                 from dials.util import log
-                import logging
 
                 log.config_simple_cached()
                 result = task()
@@ -519,7 +517,6 @@ class InitializerRot(object):
 
         # Filter the reflections by zeta
         mask = flex.abs(reflections["zeta"]) < self.params.filter.min_zeta
-        num_ignore = mask.count(True)
         reflections.set_flags(mask, reflections.flags.dont_integrate)
 
         # Filter the reflections by powder ring

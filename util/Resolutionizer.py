@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import copy
 import math
 import sys
 import time
@@ -19,8 +18,7 @@ start_time = time.time()
 
 
 def stamp(message):
-    if False:
-        print("[%7.3f] %s" % (time.time() - start_time, message))
+    #  print("[%7.3f] %s" % (time.time() - start_time, message))
     return
 
 
@@ -28,9 +26,6 @@ def poly_residual(xp, y, params):
     """Compute the residual between the observations y[i] and sum_j
     params[j] x[i]^j. For efficiency, x[i]^j are pre-calculated in xp."""
 
-    r = 0.0
-
-    n = len(params)
     c = len(y)
 
     e = flex.double([flex.sum(xp[j] * params) for j in range(c)])

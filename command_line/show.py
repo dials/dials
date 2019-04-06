@@ -556,7 +556,6 @@ def show_reflections(
 
     if keys_to_print:
         keys = [k for k in keys_to_print if k in rlist]
-        rows = [keys]
         if max_reflections is not None:
             max_reflections = min(len(rlist), max_reflections)
         else:

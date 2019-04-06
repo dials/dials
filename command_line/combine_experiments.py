@@ -1,6 +1,8 @@
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
 
+import os
+
 from libtbx.phil import parse
 from dials.util import Sorry
 
@@ -615,9 +617,7 @@ class Script(object):
             experiments, reflections, exp_name, refl_name, batch_size=1000
         ):
             from dxtbx.command_line.image_average import splitit
-            import os
 
-            result = []
             for i, indices in enumerate(
                 splitit(range(len(experiments)), (len(experiments) // batch_size) + 1)
             ):
@@ -635,8 +635,6 @@ class Script(object):
         def combine_in_clusters(
             experiments_l, reflections_l, exp_name, refl_name, end_count
         ):
-            import os
-
             result = []
             for cluster in xrange(len(experiments_l)):
                 cluster_expts = ExperimentList()
