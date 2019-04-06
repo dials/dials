@@ -322,7 +322,7 @@ def show_reflections(
     text = []
 
     import collections
-    from libtbx.containers import OrderedSet
+    from orderedset import OrderedSet
 
     formats = collections.OrderedDict(
         (
