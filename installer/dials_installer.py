@@ -166,15 +166,16 @@ class installer(install_distribution.installer):
         except Exception:
             print("Could not deduce python package paths")
 
+        rmdir("base/man")
         rmdir("base/share/doc")
         rmdir("base/share/gtk-doc")
         rmdir("base/share/hdf5_examples")
         rmdir("base/share/man")
         rmdir("build/dials_data")
         rmdir("build/regression_data")
-        rmdir("build/xia2_regression/blend_tutorial")
-        rmdir("build/xia2_regression/test_data")
+        rmdir("build/xia2_regression")
         for p in [
+            "chrono",
             "date_time",
             "detail",
             "filesystem",
@@ -182,6 +183,7 @@ class installer(install_distribution.installer):
             "python",
             "system",
             "thread",
+            "timer",
         ]:
             rmdir(os.path.join("modules/boost/libs", p, "example"))
             rmdir(os.path.join("modules/boost/libs", p, "doc"))
