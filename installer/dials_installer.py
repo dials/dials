@@ -37,6 +37,7 @@ class installer(install_distribution.installer):
         "tntbx",
         "clipper",
         # dials
+        "dxtbx",
         "dials",
         "xia2",
         "iota",
