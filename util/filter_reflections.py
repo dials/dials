@@ -332,7 +332,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 
     @classmethod
     @abc.abstractmethod
-    def apply_scaling_factors(reflection_table):
+    def apply_scaling_factors(cls, reflection_table):
         """Apply the relevent scaling factors including lp, qde, scale etc."""
 
 
