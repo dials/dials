@@ -9,8 +9,8 @@
     "msgpack",
     "orderedset",
     "procrunner>=0.6",
-    "pytest>=3.6",
-    "scikit_learn[alldeps]",
+    "pytest>=3.6,<5.0",
+    "scikit_learn[alldeps]<0.21",
     "scipy",
     "tqdm==4.23.4",
     "networkx"
