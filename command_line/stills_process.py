@@ -207,7 +207,8 @@ def do_import(filename, load_models=True):
     from dxtbx.imageset import ImageSetFactory
 
     for experiment in experiments:
-        if load_models: experiment.load_models()
+        if load_models:
+            experiment.load_models()
         imageset = ImageSetFactory.imageset_from_anyset(experiment.imageset)
         imageset.set_scan(None)
         imageset.set_goniometer(None)
