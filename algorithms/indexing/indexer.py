@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 #
 # dials.algorithms.indexing.indexer.py
@@ -10,8 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 import copy
 import math
 import logging
@@ -25,6 +23,7 @@ debug_handle = log.debug_handle(logger)
 import libtbx
 from dials.util import Sorry
 import iotbx.phil
+from scitbx import lbfgs
 from scitbx import matrix
 
 from dials.array_family import flex
@@ -1300,9 +1299,7 @@ class indexer_base(object):
                 # assert a.cross(b).dot(c) > 0
             model = Crystal(a, b, c, space_group_symbol="P 1")
             uc = model.get_unit_cell()
-            model_orig = model
             best_model = None
-            min_bmsd = 1e8
             cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
             model = model.change_basis(cb_op_to_niggli)
             if self.target_symmetry_primitive is not None:
@@ -1426,7 +1423,6 @@ class indexer_base(object):
 
             best_offset = (0, 0, 0)
             best_cc = 0.0
-            best_nref = 0
 
             if grid_search_scope > 0:
                 offsets, ccs, nref = check_indexing_symmetry.get_indexing_offset_correlation_coefficients(
@@ -1448,10 +1444,6 @@ class indexer_base(object):
                         if cc > best_cc:
                             best_cc = cc
                             best_offset = offset
-                            best_nref = n
-
-                    # print offsets[13], nref[13], '%.2f' %ccs[13] # (0,0,0)
-                    # print best_offset, best_nref, '%.2f' %best_cc
 
                     if best_offset != (0, 0, 0):
                         logger.debug(
@@ -1489,8 +1481,6 @@ class indexer_base(object):
                 return soln
             finally:
                 reflogger.setLevel(level)
-
-        import copy
 
         params = copy.deepcopy(self.all_params)
         params.refinement.parameterisation.auto_reduction.action = "fix"
@@ -1590,16 +1580,6 @@ class indexer_base(object):
                     sel = refl["id"] > -1
                     miller_indices = refl["miller_index"].select(sel)
                     miller_indices = cb_op_to_primitive.apply(miller_indices)
-                    refl["miller_index"].set_selected(sel, miller_indices)
-                if 0 and self.cb_op_primitive_to_given is not None:
-                    sel = refl["id"] > -1
-                    experiments[0].crystal.update(
-                        experiments[0].crystal.change_basis(
-                            self.cb_op_primitive_to_given
-                        )
-                    )
-                    miller_indices = refl["miller_index"].select(sel)
-                    miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
                     refl["miller_index"].set_selected(sel, miller_indices)
 
             if (
@@ -1716,7 +1696,6 @@ class indexer_base(object):
         target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
         ref_subsym = best_subsym.change_basis(cb_op_best_ref)
         cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-        primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
         cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
         cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
 
@@ -1774,7 +1753,6 @@ class indexer_base(object):
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
         predicted = refiner.predict_for_indexed()
-        verbosity = self.params.refinement_protocol.verbosity
         reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
         reflections["entering"] = predicted["entering"]
         reflections.unset_flags(
@@ -1887,8 +1865,6 @@ class indexer_base(object):
     def debug_write_reciprocal_lattice_points_as_pdb(
         self, file_name="reciprocal_lattice.pdb"
     ):
-        from cctbx import crystal, xray
-
         cs = crystal.symmetry(
             unit_cell=(1000, 1000, 1000, 90, 90, 90), space_group="P1"
         )
@@ -2179,7 +2155,7 @@ class SolutionTrackerWeighted(object):
         score_by_fraction_indexed = self.score_by_fraction_indexed()
         score_by_volume = self.score_by_volume()
         score_by_rmsd_xy = self.score_by_rmsd_xy()
-        score_by_rmsd_z = self.score_by_rmsd_z()
+        # score_by_rmsd_z = self.score_by_rmsd_z()
         overall_scores = self.solution_scores()
 
         perm = flex.sort_permutation(overall_scores)
@@ -2255,7 +2231,6 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
     return optimised
 
 
-from scitbx import lbfgs
 
 # Optimise the initial basis vectors as per equation 11.4.3.4 of
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
@@ -2389,7 +2364,6 @@ def plot_centroid_weights_histograms(reflections, n_slots=50):
     for i, h in enumerate([hx, hy, hz]):
         ax = fig.add_subplot(311 + i)
 
-        slots = h.slots().as_double()
         bins, data = hist_outline(h)
         log_scale = True
         if log_scale:

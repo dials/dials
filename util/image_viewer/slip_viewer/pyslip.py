@@ -1,6 +1,4 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
-# $Id$
+# -*- mode: python; coding: utf-8; indent-tabs-mode: nil -*-
 
 """
 A 'slippy map' widget for wxPython.
@@ -21,8 +19,7 @@ difficulty for most uses is to generate the map tiles.
 
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 from six.moves import range
 
 
@@ -57,16 +54,6 @@ from six.moves import cPickle as pickle
 import wx
 from scitbx.matrix import col
 import math
-
-# if we don't have log.py, don't crash
-try:
-    import log
-
-    log = log.Log("pyslip.log", log.Log.DEBUG)
-except Exception:
-
-    def log(*args, **kwargs):
-        pass
 
 
 __version__ = "2.2"
@@ -1005,7 +992,6 @@ class PySlip(_BufferedCanvas):
         default_colour = self.get_i18n_kw(
             kwargs, ("colour", "color"), self.DefaultPolygonColour
         )
-        default_close = kwargs.get("closed", self.DefaultPolygonClose)
         default_filled = kwargs.get("filled", self.DefaultPolygonFilled)
         default_fillcolour = self.get_i18n_kw(
             kwargs, ("fillcolour", "fillcolor"), self.DefaultPolygonFillcolour
@@ -2415,62 +2401,28 @@ class PySlip(_BufferedCanvas):
         """
 
         # figure out how to draw tiles
-        if False:  # self.view_offset_x < 0: # NKS No wrapping or hard boundaries
-            # View > Map in X - centre in X direction
-            if self.EW_wrap:
-                tile_margin = (
-                    -self.view_offset_x + self.tile_size_x - 1
-                ) // self.tile_size_x
-                col_start = (
-                    self.tiles.num_tiles_x - tile_margin % self.tiles.num_tiles_x
-                )
-                col_list = []
-                for i in range(2 * tile_margin + self.tiles.num_tiles_x):
-                    ii = (i + col_start) % self.tiles.num_tiles_x
-                    col_list.append(ii)
-                x_pix = self.view_offset_x + (tile_margin - 1) * self.tile_size_x
-            else:
-                col_list = range(0, self.tiles.num_tiles_x)
-                x_pix = -self.view_offset_x
-        else:
-            # Map > View - determine layout in X direction
-            x_offset = self.view_offset_x + self.move_dx
-            import math  # NKS allow negative tile coordinates
+        # NKS No wrapping or hard boundaries
+        # Map > View - determine layout in X direction
+        x_offset = self.view_offset_x + self.move_dx
+        # NKS allow negative tile coordinates
 
-            start_x_tile = int(math.floor(x_offset / self.tile_size_x))
-            stop_x_tile = (
-                x_offset + self.view_width + self.tile_size_x - 1
-            ) / self.tile_size_x
-            stop_x_tile = int(stop_x_tile)
-            col_list = range(start_x_tile, stop_x_tile)
-            x_pix = start_x_tile * self.tile_size_y - x_offset
+        start_x_tile = int(math.floor(x_offset / self.tile_size_x))
+        stop_x_tile = (
+            x_offset + self.view_width + self.tile_size_x - 1
+        ) / self.tile_size_x
+        stop_x_tile = int(stop_x_tile)
+        col_list = range(start_x_tile, stop_x_tile)
+        x_pix = start_x_tile * self.tile_size_y - x_offset
 
-        if False:  # self.view_offset_y < 0: # NKS No wrapping or hard boundaries
-            # View > Map in Y - centre in Y direction
-            if self.NS_wrap:
-                tile_margin = (
-                    -self.view_offset_y + self.tile_size_y - 1
-                ) // self.tile_size_y
-                row_start = (
-                    self.tiles.num_tiles_y - tile_margin % self.tiles.num_tiles_y
-                )
-                row_list = []
-                for i in range(2 * tile_margin + self.tiles.num_tiles_y):
-                    ii = (i + row_start) % self.tiles.num_tiles_y
-                    row_list.append(ii)
-                y_pix_start = self.view_offset_y + (tile_margin - 1) * self.tile_size_y
-            else:
-                row_list = range(0, self.tiles.num_tiles_y)
-                y_pix_start = -self.view_offset_y
-        else:
-            y_offset = self.view_offset_y + self.move_dy
-            start_y_tile = int(math.floor(y_offset / self.tile_size_y))
-            stop_y_tile = (
-                y_offset + self.view_height + self.tile_size_y - 1
-            ) / self.tile_size_y
-            stop_y_tile = int(stop_y_tile)
-            row_list = range(start_y_tile, stop_y_tile)
-            y_pix_start = start_y_tile * self.tile_size_y - y_offset
+        # NKS No wrapping or hard boundaries
+        y_offset = self.view_offset_y + self.move_dy
+        start_y_tile = int(math.floor(y_offset / self.tile_size_y))
+        stop_y_tile = (
+            y_offset + self.view_height + self.tile_size_y - 1
+        ) / self.tile_size_y
+        stop_y_tile = int(stop_y_tile)
+        row_list = range(start_y_tile, stop_y_tile)
+        y_pix_start = start_y_tile * self.tile_size_y - y_offset
 
         # start pasting tiles onto the view
         for x in col_list:
@@ -2969,21 +2921,6 @@ class PySlip(_BufferedCanvas):
         """
 
         return True  # NKS always accept mouse coordinates
-        (x, y) = posn
-
-        if self.view_offset_x < 0:
-            if x < -self.view_offset_x:
-                return False
-            if x > self.view_width + self.view_offset_x:
-                return False
-
-        if self.view_offset_y < 0:
-            if y < -self.view_offset_y:
-                return False
-            if y > self.view_height + self.view_offset_y:
-                return False
-
-        return True
 
     def get_i18n_kw(self, kwargs, kws, default):
         """Get alternate international keyword value.

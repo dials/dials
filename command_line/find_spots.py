@@ -166,7 +166,6 @@ class Script(object):
         from dials.util.ascii_art import spot_counts_per_image_plot
 
         for i, experiment in enumerate(experiments):
-            imageset = experiment.imageset
             ascii_plot = spot_counts_per_image_plot(
                 reflections.select(reflections["id"] == i)
             )

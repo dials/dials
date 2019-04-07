@@ -75,7 +75,6 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
-    experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
 
     if len(experiments) == 0 or len(reflections) == 0:
