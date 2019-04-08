@@ -49,7 +49,7 @@ from libtbx import phil
 from dials.util import Sorry
 from cctbx import crystal
 import iotbx.merging_statistics
-from dials.util import halraiser, log, show_mail_on_error
+from dials.util import log, show_mail_on_error
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
@@ -551,7 +551,7 @@ def run_scaling(params, experiments, reflections):
         script.run()
 
 
-def run():
+def run(args=None):
     """Run the scaling from the command-line."""
     usage = """Usage: dials.scale integrated.pickle integrated_experiments.json
 [integrated.pickle(2) integrated_experiments.json(2) ....] [options]"""
@@ -564,7 +564,7 @@ def run():
         check_format=False,
         epilog=help_message,
     )
-    params, _ = parser.parse_args(show_diff_phil=False)
+    params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
     if not params.input.experiments or not params.input.reflections:
         parser.print_help()

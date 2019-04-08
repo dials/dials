@@ -111,6 +111,10 @@ class SingleScalerFactory(ScalerFactory):
             reflection_table["inverse_scale_factor"] = flex.double(
                 reflection_table.size(), 1.0
             )
+        elif reflection_table["inverse_scale_factor"].count(0.0) == reflection_table.size():
+            reflection_table["inverse_scale_factor"] = flex.double(
+                reflection_table.size(), 1.0
+            )
         reflection_table = choose_scaling_intensities(
             reflection_table, params.reflection_selection.intensity_choice
         )

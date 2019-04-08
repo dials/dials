@@ -687,6 +687,49 @@ def test_targeted_scaling(dials_regression, run_in_tmpdir):
     assert os.path.exists("scaled_experiments.json")
     assert os.path.exists("scaled.pickle")
 
+def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
+    data_dir = os.path.join(dials_regression, "xia2-28")
+    pickle_path = os.path.join(data_dir, "20_integrated.pickle")
+    sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+
+    args = ["dials.scale"] + [pickle_path] + [sweep_path]
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.pickle")
+
+    # test order also - first new file before scaled
+    pickle_path = os.path.join(data_dir, "25_integrated.pickle")
+    sweep_path = os.path.join(data_dir, "25_integrated_experiments.json")
+    args = ["dials.cosym"] + [pickle_path] + [sweep_path] + ["scaled.pickle", "scaled_experiments.json"]
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("reindexed_experiments.json")
+    assert os.path.exists("reindexed_reflections.pickle")
+
+    args = ["dials.scale", "reindexed_reflections.pickle", "reindexed_experiments.json"]
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.pickle")
+
+    # test order also - first scaled file then new file
+    pickle_path = os.path.join(data_dir, "30_integrated.pickle")
+    sweep_path = os.path.join(data_dir, "30_integrated_experiments.json")
+    args = ["dials.cosym"] + ["scaled.pickle", "scaled_experiments.json"] + \
+        [pickle_path] + [sweep_path] + \
+        ["output.reflections=reindexed.pickle", "output.experiments=reindexed.json"]
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("reindexed_experiments.json")
+    assert os.path.exists("reindexed_reflections.pickle")
+
+    args = ["dials.scale", "reindexed_reflections.pickle", "reindexed_experiments.json"]
+    command = " ".join(args)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.pickle")
+
 
 @pytest.mark.dataset_test
 def test_scale_cross_validate(dials_regression, run_in_tmpdir):
