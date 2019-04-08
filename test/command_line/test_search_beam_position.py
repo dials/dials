@@ -205,4 +205,4 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
         detector_2[0].get_origin()
     )
     print(shift)
-    assert shift.elems == pytest.approx((-0.02, -1.18, 0.0), abs=1e-1)
+    assert shift.elems == pytest.approx((0.11, -1.03, 0.0), abs=1e-1)
