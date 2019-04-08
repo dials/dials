@@ -213,13 +213,7 @@ def run_dials_refine(experiments, reflections, params):
 
     refiner, history = run_macrocycle(params, reflections, experiments)
 
-    do_sv_macrocycle = False
     if params.refinement.parameterisation.scan_varying is Auto:
-        #FIXME check here if the refiner is scans or stills. If stills, then don't
-        #do following macrocycle
-        do_sv_macrocycle = True
-
-    if do_sv_macrocycle:
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
         refiner, history = run_macrocycle(params, reflections, experiments)

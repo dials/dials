@@ -236,6 +236,10 @@ class RefinerFactory(object):
             raise Sorry("Cannot refine a mixture of stills and scans")
         do_stills = exps_are_stills[0]
 
+        # If experiments are stills, ensure scan-varying refinement won't be attempted
+        if do_stills:
+            params.refinement.parameterisation.scan_varying = False
+
         # calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
@@ -354,7 +358,7 @@ class RefinerFactory(object):
         logger.debug("Refinement engine built")
 
         # build refiner interface and return
-        if params.refinement.parameterisation.scan_varying:
+        if params.refinement.parameterisation.scan_varying is True:
             refiner = ScanVaryingRefiner
         else:
             refiner = Refiner
