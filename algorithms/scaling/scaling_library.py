@@ -241,8 +241,8 @@ def create_auto_scaling_model(params, experiments, reflections):
     """Create a scaling model with auto determined parameterisation."""
     models = experiments.scaling_models()
     if None in models or params.overwrite_existing_models:
-        for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-            model = experiments.scaling_models()[i]
+        for exp, refl in zip(experiments, reflections):
+            model = exp.scaling_model
             if not model or params.overwrite_existing_models:
                 if not exp.scan:
                     params.model = "KB"
@@ -293,8 +293,8 @@ def create_scaling_model(params, experiments, reflections):
                 break
         if not factory:
             raise Sorry("Unable to create scaling model of type %s" % params.model)
-        for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-            model = experiments.scaling_models()[i]
+        for (exp, refl) in zip(experiments, reflections):
+            model = exp.scaling_model
             if not model or params.overwrite_existing_models:
                 exp.scaling_model = factory.create(params, exp, refl)
     return experiments
