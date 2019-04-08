@@ -115,6 +115,10 @@ phil_scope = libtbx.phil.parse(
       .expert_level = 1
   }
 
+  n_static_macrocycles = 1
+    .type = int(value_min=1)
+    .help = "Number of macro-cycles of static refinement to perform"
+
   include scope dials.algorithms.refinement.refiner.phil_scope
 """,
     process_includes=True,
@@ -211,15 +215,20 @@ def run_dials_refine(experiments, reflections, params):
     if params.output.correlation_plot.filename is not None:
         params.refinement.refinery.journal.track_parameter_correlation = True
 
-    refiner, history = run_macrocycle(params, reflections, experiments)
+    if params.n_static_macrocycles == 1:
+        refiner, history = run_macrocycle(params, reflections, experiments)
+        experiments = refiner.get_experiments()
+    else:
+        for i in range(params.n_static_macrocycles):
+            logger.info("\nStatic refinement macrocycle {0}".format(i + 1))
+            refiner, history = run_macrocycle(params, reflections, experiments)
+            experiments = refiner.get_experiments()
 
     if params.refinement.parameterisation.scan_varying is Auto:
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
         refiner, history = run_macrocycle(params, reflections, experiments)
-
-    # Get the refined experiments
-    experiments = refiner.get_experiments()
+        experiments = refiner.get_experiments()
 
     return experiments, reflections, refiner, history
 
