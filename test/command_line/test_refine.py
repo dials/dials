@@ -31,7 +31,7 @@ def test1(dials_regression, run_in_tmpdir):
     # set some old defaults
     cmd = (
         "dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 "
-        + "outlier.separate_blocks=False "
+        + "outlier.separate_blocks=False scan_varying=False "
         + experiments_path
         + " "
         + pickle_path
@@ -77,7 +77,7 @@ def test2(dials_regression, run_in_tmpdir):
         + experiments_path
         + " "
         + pickle_path
-        + " reflections_per_degree=50 "
+        + " scan_varying=False reflections_per_degree=50 "
         " outlier.algorithm=null close_to_spindle_cutoff=0.05"
     )
     cmd2 = (

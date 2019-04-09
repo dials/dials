@@ -166,7 +166,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     cmd = (
         "dials.refine foo_experiments.json foo_reflections.pickle "
         "history=history.pickle refinement.parameterisation.detector."
-        "constraints.parameter=Dist"
+        "constraints.parameter=Dist scan_varying=False"
     )
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load refinement history
