@@ -138,6 +138,15 @@ phil_overrides = libtbx.phil.parse(
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 def write_centroids_table(refiner, filename):
+    """Write a table of centroids from refinement for debugging.
+
+    Args:
+        refiner: A dials.algorithms.refinement.refiner.Refiner.
+        filename (str): The name of the file to which to write.
+
+    Returns:
+        None
+    """
 
     matches = refiner.get_matches()
 
@@ -191,7 +200,22 @@ def write_centroids_table(refiner, filename):
             f.write(msg)
 
 def run_macrocycle(params, reflections, experiments):
+    """Run one macrocycle of refinement.
 
+    One macrocycle of refinement is run, as specified by the PHIL
+    parameters, using the centroids from the supplied reflections
+    and the initial experimental geometry taken from experiments.
+
+
+    Args:
+        params: The working PHIL parameters.
+        reflections: A reflection table containing observed centroids
+        experiments: The initial dxtbx experimental geometry models
+
+    Returns:
+        tuple: The Refiner, the reflection table with updated predictions
+            and flags, and the refinement history object.
+    """
     # Get the refiner
     logger.info("Configuring refiner")
     refiner = RefinerFactory.from_parameters_data_experiments(
@@ -253,8 +277,26 @@ def run_macrocycle(params, reflections, experiments):
     return refiner, reflections, history
 
 def run_dials_refine(experiments, reflections, params):
-    """Functional interface to tasks performed by the program dials.refine,
-    excluding file i/o"""
+    """Functional interface to tasks performed by the program dials.refine.
+
+    This runs refinement according to the PHIL parameters in params, using
+    taking the initial experimental geometry from experiments, and the
+    observed reflection centroids from reflections.
+
+    Static refinement can be done in a number of macrocycles. By default,
+    for scans, this will be followed by a macrocycle of scan-varying
+    refinement.
+
+
+    Args:
+        experiments: The initial dxtbx experimental geometry models
+        reflections: A reflection table containing observed centroids
+        params: The working PHIL parameters
+
+    Returns:
+        tuple: The refined experiments, the updated reflection table, the
+            Refiner object and the refinement history object.
+    """
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
@@ -288,6 +330,15 @@ def run(args=None, phil=working_phil):
     """
     Set up refinement from command line options, files and PHIL parameters.
     Run refinement and save output files as specified.
+
+    Called when running dials.refine as a command-line program
+
+    Args:
+        args (list): Additional command-line arguments
+        phil: The working PHIL parameters
+
+    Returns:
+        None
     """
 
     import dials.util.log
