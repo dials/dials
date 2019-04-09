@@ -262,6 +262,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         self = handle.get_reflections()
         handle.close()
         return self
+    
+    @staticmethod
+    def from_file(filename):
+        """
+        Read the reflection table from either pickle or msgpack
+
+        """
+        try:
+            return reflection_table.from_msgpack_file(filename)
+        except Exception:
+            pass
+        return reflection_table.from_pickle(filename)
 
     @staticmethod
     def empty_standard(nrows):
