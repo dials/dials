@@ -206,7 +206,50 @@ def run_macrocycle(params, reflections, experiments):
 
     # Refine and get the refinement history
     history = refiner.run()
-    return refiner, history
+
+    # Update predictions for all indexed reflections
+    logger.info("Updating predictions for indexed reflections")
+    preds = refiner.predict_for_indexed()
+
+    # just copy over the columns of interest or columns that may have been
+    # updated, leaving behind things added by e.g. scan-varying refinement
+    # such as 'block', the U, B and UB matrices and gradients.
+    for key in preds.keys():
+        if key in reflections.keys() or key in [
+            "s1",
+            "xyzcal.mm",
+            "xyzcal.px",
+            "entering",
+            "delpsical.rad",
+        ]:
+            reflections[key] = preds[key]
+
+    # set refinement flags
+    assert len(preds) == len(reflections)
+    reflections.unset_flags(
+        flex.size_t_range(len(reflections)),
+        reflections.flags.excluded_for_refinement
+        | reflections.flags.used_in_refinement
+        | reflections.flags.centroid_outlier
+        | reflections.flags.predicted,
+    )
+    reflections.set_flags(
+        preds.get_flags(preds.flags.excluded_for_refinement),
+        reflections.flags.excluded_for_refinement,
+    )
+    reflections.set_flags(
+        preds.get_flags(preds.flags.centroid_outlier),
+        reflections.flags.centroid_outlier,
+    )
+    reflections.set_flags(
+        preds.get_flags(preds.flags.used_in_refinement),
+        reflections.flags.used_in_refinement,
+    )
+    reflections.set_flags(
+        preds.get_flags(preds.flags.predicted), reflections.flags.predicted
+    )
+
+    return refiner, reflections, history
 
 def run_dials_refine(experiments, reflections, params):
     """Functional interface to tasks performed by the program dials.refine."""
@@ -216,18 +259,18 @@ def run_dials_refine(experiments, reflections, params):
         params.refinement.refinery.journal.track_parameter_correlation = True
 
     if params.n_static_macrocycles == 1:
-        refiner, history = run_macrocycle(params, reflections, experiments)
+        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
     else:
         for i in range(params.n_static_macrocycles):
             logger.info("\nStatic refinement macrocycle {0}".format(i + 1))
-            refiner, history = run_macrocycle(params, reflections, experiments)
+            refiner, reflections, history = run_macrocycle(params, reflections, experiments)
             experiments = refiner.get_experiments()
 
     if params.refinement.parameterisation.scan_varying is Auto:
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
-        refiner, history = run_macrocycle(params, reflections, experiments)
+        refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
 
     return experiments, reflections, refiner, history
@@ -365,48 +408,6 @@ def run(args=None, phil=working_phil):
     # Save reflections with updated predictions if requested (allow to switch
     # this off if it is a time-consuming step)
     if params.output.reflections:
-        # Update predictions for all indexed reflections
-        logger.info("Updating predictions for indexed reflections")
-        preds = refiner.predict_for_indexed()
-
-        # just copy over the columns of interest or columns that may have been
-        # updated, leaving behind things added by e.g. scan-varying refinement
-        # such as 'block', the U, B and UB matrices and gradients.
-        for key in preds.keys():
-            if key in reflections.keys() or key in [
-                "s1",
-                "xyzcal.mm",
-                "xyzcal.px",
-                "entering",
-                "delpsical.rad",
-            ]:
-                reflections[key] = preds[key]
-
-        # set refinement flags
-        assert len(preds) == len(reflections)
-        reflections.unset_flags(
-            flex.size_t_range(len(reflections)),
-            reflections.flags.excluded_for_refinement
-            | reflections.flags.used_in_refinement
-            | reflections.flags.centroid_outlier
-            | reflections.flags.predicted,
-        )
-        reflections.set_flags(
-            preds.get_flags(preds.flags.excluded_for_refinement),
-            reflections.flags.excluded_for_refinement,
-        )
-        reflections.set_flags(
-            preds.get_flags(preds.flags.centroid_outlier),
-            reflections.flags.centroid_outlier,
-        )
-        reflections.set_flags(
-            preds.get_flags(preds.flags.used_in_refinement),
-            reflections.flags.used_in_refinement,
-        )
-        reflections.set_flags(
-            preds.get_flags(preds.flags.predicted), reflections.flags.predicted
-        )
-
         logger.info(
             "Saving reflections with updated predictions to {0}".format(
                 params.output.reflections
