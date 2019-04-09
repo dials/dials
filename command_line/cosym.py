@@ -6,7 +6,6 @@ import logging
 
 logger = logging.getLogger("dials.command_line.cosym")
 
-import copy
 import iotbx.phil
 from cctbx import crystal, miller
 from cctbx import sgtbx
@@ -90,8 +89,9 @@ class cosym(Subject):
             identifiers = self._unit_cell_clustering(self._experiments)
             if len(identifiers) < len(self._experiments):
                 logger.info(
-                    "Selecting subset of %i datasets for cosym analysis: %s"
-                    % (len(identifiers), str(identifiers))
+                    "Selecting subset of %i datasets for cosym analysis: %s",
+                    len(identifiers),
+                    str(identifiers),
                 )
                 self._experiments, self._reflections = select_datasets_on_ids(
                     self._experiments, self._reflections, use_datasets=identifiers
@@ -107,6 +107,16 @@ class cosym(Subject):
         )
 
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
+
+    @property
+    def experiments(self):
+        """Return the experiment list."""
+        return self._experiments
+
+    @property
+    def reflections(self):
+        """Return the list of reflection tables."""
+        return self._reflections
 
     @Subject.notify_event(event="run_cosym")
     def run(self):
@@ -137,47 +147,47 @@ class cosym(Subject):
             logger.info(cb_op)
             logger.info(datasets)
 
-        if self.params.output.json is not None:
-            self.cosym_analysis.as_json(filename=self.params.output.json)
-
         if self.cosym_analysis.best_solution is not None:
             subgroup = self.cosym_analysis.best_solution.subgroup
         else:
             subgroup = None
 
-        self._export_experiments_reflections(
-            self._experiments, self._reflections, reindexing_ops, subgroup=subgroup
-        )
+        self._apply_reindexing_operators(reindexing_ops, subgroup=subgroup)
 
-    def _export_experiments_reflections(
-        self, experiments, reflections, reindexing_ops, subgroup=None
-    ):
+    def export(self):
+        """Output the datafiles for cosym.
+
+        This includes the cosym.json, reflections and experiments files."""
+
         reindexed_reflections = flex.reflection_table()
+        for refl in self._reflections:
+            reindexed_reflections.extend(refl)
+        reindexed_reflections.reset_ids()
+
+        if self.params.output.json is not None:
+            self.cosym_analysis.as_json(filename=self.params.output.json)
+        logger.info(
+            "Saving reindexed experiments to %s", self.params.output.experiments
+        )
+        dump.experiment_list(self._experiments, self.params.output.experiments)
+        logger.info(
+            "Saving reindexed reflections to %s", self.params.output.reflections
+        )
+        reindexed_reflections.as_pickle(self.params.output.reflections)
+
+    def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
+        """Apply the reindexing operators to the reflections and experiments."""
         for cb_op, dataset_ids in reindexing_ops.iteritems():
             cb_op = sgtbx.change_of_basis_op(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
             for dataset_id in dataset_ids:
-                expt = experiments[dataset_id]
-                refl = reflections[dataset_id]
-                refl_reindexed = copy.deepcopy(refl)
+                expt = self._experiments[dataset_id]
+                refl = self._reflections[dataset_id]
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 if subgroup is not None:
                     expt.crystal.set_space_group(subgroup["best_subsym"].space_group())
-                refl_reindexed["miller_index"] = cb_op.apply(
-                    refl_reindexed["miller_index"]
-                )
-                reindexed_reflections.extend(refl_reindexed)
-
-        reindexed_reflections.reset_ids()
-        logger.info(
-            "Saving reindexed experiments to %s" % self.params.output.experiments
-        )
-        dump.experiment_list(experiments, self.params.output.experiments)
-        logger.info(
-            "Saving reindexed reflections to %s" % self.params.output.reflections
-        )
-        reindexed_reflections.as_pickle(self.params.output.reflections)
+                refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
         miller_arrays = []
@@ -245,8 +255,9 @@ class cosym(Subject):
             sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
             if sel.count(True):
                 logger.info(
-                    "Elminating %i systematic absences for experiment %s"
-                    % (sel.count(True), expt.identifier)
+                    "Elminating %i systematic absences for experiment %s",
+                    sel.count(True),
+                    expt.identifier,
                 )
                 refl = refl.select(sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
@@ -257,8 +268,9 @@ class cosym(Subject):
                     expt.crystal.get_unit_cell()
                 ):
                     logger.info(
-                        "Skipping data set - incompatible space group and unit cell: %s, %s"
-                        % (space_group_info, expt.crystal.get_unit_cell())
+                        "Skipping data set - incompatible space group and unit cell: %s, %s",
+                        space_group_info,
+                        expt.crystal.get_unit_cell(),
                     )
                     continue
             else:
@@ -359,7 +371,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options, args = parser.parse_args(
+    params, _, args = parser.parse_args(
         args=args, show_diff_phil=False, return_unhandled=True
     )
 
@@ -397,6 +409,7 @@ def run(args):
     if params.output.html:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
+    cosym_instance.export()
 
 
 if __name__ == "__main__":
