@@ -18,7 +18,8 @@ from dials.report.plots import (
     ResolutionPlotsAndStats,
     IntensityStatisticsPlots,
 )
-from dials.util.batch_handling import batch_manager
+from dials.util.batch_handling import batch_manager, get_image_ranges
+from dials.util.exclude_images import get_valid_image_ranges
 
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
@@ -68,8 +69,24 @@ class ScalingSummaryGenerator(Observer):
     """
 
     def print_scaling_summary(self, scaling_script):
+        """Log summary information after scaling."""
         if ScalingModelObserver().data:
             logger.info(ScalingModelObserver().return_model_error_summary())
+        valid_ranges = get_valid_image_ranges(scaling_script.experiments)
+        image_ranges = get_image_ranges(scaling_script.experiments)
+        msg = []
+        for (img, valid, exp) in zip(
+            image_ranges, valid_ranges, scaling_script.experiments
+        ):
+            if valid:
+                if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
+                    msg.append(
+                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
+                        % (exp.identifier, list(img), list(valid))
+                    )
+        if msg:
+            msg = ["Summary of image ranges removed:"] + msg
+            logger.info("\n".join(msg))
         if MergingStatisticsObserver().data:
             logger.info(
                 "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
@@ -93,7 +110,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
         filename = scaling_script.params.output.html
-        print("Writing html report to: %s" % filename)
+        logger.info("Writing html report to: %s", filename)
         loader = ChoiceLoader(
             [
                 PackageLoader("dials", "templates"),

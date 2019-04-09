@@ -208,7 +208,7 @@ class ScaleAndFilter(object):
                 self.scaling_params, experiments, reflections
             )
             register_merging_stats_observers(scaling_script)
-            scaling_script.run(save_data=False)
+            scaling_script.run()
             # Log initial expids here, need to do after dataset selection in scaling
             # but before any filtering
             if counter == 1:
@@ -307,7 +307,8 @@ class ScaleAndFilter(object):
 
     def _run_final_scale(self, scaling_params, experiments, reflections, results):
         scaling_script = self.scaling_script(scaling_params, experiments, reflections)
-        scaling_script.run(save_data=True)
+        scaling_script.run()
+        scaling_script.export()
         results.add_final_stats(scaling_script.merging_statistics_result)
         return results
 

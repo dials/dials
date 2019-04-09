@@ -71,11 +71,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
     DialsMergingStatisticsError,
 )
-from dials.util.batch_handling import get_image_ranges
-from dials.util.exclude_images import (
-    exclude_image_ranges_for_scaling,
-    get_valid_image_ranges,
-)
+from dials.util.exclude_images import exclude_image_ranges_for_scaling
 from dials.algorithms.scaling.algorithm import (
     targeted_scaling_algorithm,
     scaling_algorithm,
@@ -186,12 +182,11 @@ class Script(Subject):
         self.scaler = create_scaler(self.params, self.experiments, self.reflections)
 
     @Subject.notify_event(event="run_script")
-    def run(self, save_data=True):
+    def run(self):
         """Run the scaling script."""
         start_time = time.time()
         self.scale()
         self.remove_unwanted_datasets()
-        # print_scaling_model_error_info(self.experiments)
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -200,23 +195,8 @@ class Script(Subject):
         except DialsMergingStatisticsError as e:
             logger.info(e)
 
-        valid_ranges = get_valid_image_ranges(self.experiments)
-        image_ranges = get_image_ranges(self.experiments)
-        for (img, valid, exp) in zip(image_ranges, valid_ranges, self.experiments):
-            if valid:
-                if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
-                    logger.info(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s",
-                        exp.identifier,
-                        list(img),
-                        list(valid),
-                    )
-
-        if save_data:
-            self.output()
         # All done!
-        finish_time = time.time()
-        logger.info("\nTotal time taken: {0:.4f}s ".format(finish_time - start_time))
+        logger.info("\nTotal time taken: {0:.4f}s ".format(time.time() - start_time))
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     @staticmethod
@@ -395,7 +375,7 @@ class Script(Subject):
                 experiment.scaling_model.components[component] = []
         gc.collect()
 
-    def output(self):
+    def export(self):
         """Save the experiments json and scaled pickle file."""
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
@@ -437,10 +417,8 @@ may be best to rerun scaling from this point for an improved model.""",
             from dials.command_line.export import MTZExporter
             from dials.command_line.export import phil_scope as export_phil_scope
 
-            parser = OptionParser(
-                read_experiments=False, read_reflections=False, phil=export_phil_scope
-            )
-            params, _ = parser.parse_args(args=[], show_diff_phil=False)
+            params = export_phil_scope.extract()
+
             params.intensity = ["scale"]
             params.mtz.partiality_threshold = self.params.cut_data.partiality_cutoff
             params.mtz.hklout = self.params.output.unmerged_mtz
@@ -549,6 +527,7 @@ def run_scaling(params, experiments, reflections):
         # Register the observers at the highest level
         register_default_scaling_observers(script)
         script.run()
+        script.export()
 
 
 def run(args=None):
