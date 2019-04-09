@@ -143,7 +143,7 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # static model refinement
-      cmd = "dials.refine experiments.json indexed.pickle " + \
+      cmd = "dials.refine experiments.json indexed.pickle scan_varying=false " + \
             "outlier.algorithm=tukey use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("refined_experiments.json"):
@@ -263,7 +263,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true
+  dials.refine experiments.json indexed.pickle scan_varying=false outlier.algorithm=tukey use_all_reflections=true
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -507,7 +507,7 @@ between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
   cd sweep_00
-  dials.refine experiments.json indexed.pickle \
+  dials.refine experiments.json indexed.pickle scan_varying=false \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
@@ -690,7 +690,7 @@ crystal refinement job. First we try outlier rejection, so that the refinement
 run is similar to the jobs we ran on individual datasets::
 
   dials.refine combined_experiments.json combined_reflections.pickle \
-    use_all_reflections=true outlier.algorithm=tukey
+    scan_varying=false use_all_reflections=true outlier.algorithm=tukey
 
 ::
 
@@ -759,7 +759,7 @@ because it selectively removes reflections from the worst fitting experiments.
 Instead we try without outlier rejection::
 
   dials.refine combined_experiments.json combined_reflections.pickle \
-    use_all_reflections=true \
+    scan_varying=false use_all_reflections=true \
     output.experiments=refined_combined_experiments.json
 
 This worked much better::
@@ -875,6 +875,7 @@ perhaps we should use outlier rejection though. Now the models are close enough
 it is safe to do so::
 
   dials.refine refined_combined_experiments.json combined_reflections.pickle \
+    scan_varying=false \
     use_all_reflections=true \
     outlier.algorithm=tukey \
     output.experiments=refined_combined_experiments_outrej.json

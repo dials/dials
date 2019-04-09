@@ -101,7 +101,7 @@ class Processing_Tutorial(object):
         cmd = "dials.reindex indexed.pickle change_of_basis_op=a,b,c"
 
     class dials_refine(Job):
-        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle"
+        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle scan_varying=false"
 
     class dials_sv_refine(Job):
         cmd = "dials.refine refined_experiments.json refined.pickle scan_varying=true"
@@ -236,7 +236,7 @@ def generate_processing_detail_text_betalactamase():
         ("dials.reindex", "dials.reindex indexed.pickle change_of_basis_op=a+b,-a+b,c"),
         (
             "dials.refine",
-            "dials.refine bravais_setting_2.json reindexed_reflections.pickle",
+            "dials.refine bravais_setting_2.json reindexed_reflections.pickle scan_varying=false",
         ),
         (
             "dials.sv_refine",
