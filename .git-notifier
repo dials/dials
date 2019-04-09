@@ -1,0 +1,9 @@
+# GIT change notifications sent out by DLS Jenkins
+
+sender=DIALS commit
+
+recipient=dials-commit
+recipient_domain=jiscmail.ac.uk
+
+replyto=dials-support
+replyto_domain=lists.sourceforge.net
