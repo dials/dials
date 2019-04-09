@@ -1,5 +1,8 @@
 # GIT change notifications sent out by DLS Jenkins
 
+link=https://github.com/dials/dials
+commit_link=https://github.com/dials/dials/commit/%s
+
 sender=DIALS commit
 
 recipient=dials-commit
