@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import *
@@ -18,10 +17,6 @@ def index_reflections(reflections, experiments, d_min=None, tolerance=0.3):
     rlps = reciprocal_lattice_points.select(isel)
     refs = reflections.select(isel)
     phi = refs["xyzobs.mm.value"].parts()[2]
-
-    diffs = []
-    norms = []
-    hkl_ints = []
 
     UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
     imgset_ids = reflections["imageset_id"].select(sel)
@@ -89,10 +84,6 @@ def index_reflections_local(
             % len(rlps)
         )
 
-    diffs = []
-    norms = []
-    hkl_ints = []
-
     UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
     result = AssignIndicesLocal(
@@ -118,7 +109,6 @@ def index_reflections_local(
         A_inv = A.inverse()
 
         cryst_sel = crystal_ids == i_cryst
-        ref_sel = refs.select(cryst_sel)
         rlp_sel = rlps.select(cryst_sel)
         hkl_sel = hkl.select(cryst_sel).as_vec3_double()
 

@@ -1,13 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
+import httplib
+import json
+import os
 import socket as pysocket
+import sys
+import urllib2
 
 import libtbx.phil
 
 
 def work(host, port, filename, params):
-    import httplib
-
     conn = httplib.HTTPConnection(host, port)
     path = filename
     for param in params:
@@ -83,7 +86,6 @@ def work_all(
     grid=None,
     nproc=None,
 ):
-    import json
     from multiprocessing.pool import ThreadPool as thread_pool
 
     if nproc is None:
@@ -105,7 +107,6 @@ def work_all(
             json.dump(results, f)
 
     if plot or table:
-
         from scitbx.array_family import flex
         from libtbx import group_args
         from dials.algorithms.spot_finding.per_image_analysis import (
@@ -150,19 +151,13 @@ def work_all(
 
             n_spots_no_ice.reshape(flex.grid(grid))
             print(n_spots_no_ice.size())
-            from matplotlib import pyplot
 
             fig = pyplot.figure()
             pyplot.pcolormesh(n_spots_no_ice.as_numpy_array(), cmap=pyplot.cm.Reds)
             pyplot.savefig("spot_count.png")
 
-    return
-
 
 def stop(host, port, nproc):
-    import httplib
-    import urllib2
-
     stopped = 0
     for j in range(nproc):
         try:
@@ -206,9 +201,7 @@ grid = None
 )
 
 if __name__ == "__main__":
-    import os
     import select
-    import sys
 
     args = sys.argv[1:]
 
@@ -236,11 +229,9 @@ if __name__ == "__main__":
         stopped = stop(params.host, params.port, params.nproc)
         print("Stopped %d findspots processes" % stopped)
     elif len(unhandled) and unhandled[0] == "ping":
-        from urllib2 import urlopen
-
         url = "http://%s:%i" % (params.host, params.port)
         try:
-            data = urlopen(url).read()
+            data = urllib2.urlopen(url).read()
             print("Success")
             sys.exit(0)
         except Exception:
@@ -249,7 +240,6 @@ if __name__ == "__main__":
     else:
         if len(filenames) == 1:
             response = work(params.host, params.port, filenames[0], unhandled)
-            import json
 
             print(response_to_xml(json.loads(response)))
         else:

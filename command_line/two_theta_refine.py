@@ -12,8 +12,10 @@
 
 from __future__ import absolute_import, division, print_function
 
+import datetime
 import six.moves.cPickle as pickle
 import logging
+import math
 from time import time
 
 from dials.array_family import flex
@@ -202,7 +204,6 @@ class Script(object):
         reflections"""
 
         orig_len = len(reflections)
-        inc = flex.bool(orig_len, False)
         mask = reflections.get_flags(reflections.flags.integrated)
         if mask.count(True) == 0:
             return reflections
@@ -366,9 +367,7 @@ class Script(object):
     def generate_cif(crystal, refiner, file):
         logger.info("Saving CIF information to %s" % file)
         from cctbx import miller
-        import datetime
         import iotbx.cif.model
-        import math
 
         block = iotbx.cif.model.block()
         block["_audit_creation_method"] = dials_version()
@@ -428,9 +427,7 @@ class Script(object):
     def generate_mmcif(crystal, refiner, file):
         logger.info("Saving mmCIF information to %s" % file)
         from cctbx import miller
-        import datetime
         import iotbx.cif.model
-        import math
 
         block = iotbx.cif.model.block()
         block["_audit.creation_method"] = dials_version()
@@ -486,12 +483,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        from dials.algorithms.refinement.two_theta_refiner import (
-            TwoThetaReflectionManager,
-            TwoThetaTarget,
-            TwoThetaPredictionParameterisation,
-        )
-
         start_time = time()
 
         # Parse the command line

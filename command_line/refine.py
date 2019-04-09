@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from dials.util import Sorry
-from libtbx import Auto
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
 

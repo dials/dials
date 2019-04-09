@@ -8,10 +8,10 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
+from time import time
 
 from dials_algorithms_integration_parallel_integrator_ext import *
 
@@ -354,7 +354,6 @@ class IntegrationJob(object):
 
         """
         from dials.array_family import flex
-        from time import time
         from dials.algorithms.integration.processor import job
 
         # Get the start time
@@ -555,8 +554,6 @@ class IntegrationManager(object):
         Initialise the processing
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -624,8 +621,6 @@ class IntegrationManager(object):
         Finalize the processing and finish.
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -736,8 +731,6 @@ class IntegrationManager(object):
         Compute the jobs
 
         """
-        from math import ceil
-
         imageset = self.experiments[0].imageset
         array_range = imageset.get_array_range()
         block = self.params.integration.block
@@ -849,7 +842,6 @@ class ReferenceCalculatorJob(object):
 
         """
         from dials.array_family import flex
-        from time import time
         from dials.algorithms.integration.processor import job
 
         # Get the start time
@@ -1065,8 +1057,6 @@ class ReferenceCalculatorManager(object):
         Initialise the processing
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -1145,8 +1135,6 @@ class ReferenceCalculatorManager(object):
         Finalize the processing and finish.
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -1260,8 +1248,6 @@ class ReferenceCalculatorManager(object):
         Compute the jobs
 
         """
-        from math import ceil
-
         imageset = self.experiments[0].imageset
         array_range = imageset.get_array_range()
         block = self.params.integration.block

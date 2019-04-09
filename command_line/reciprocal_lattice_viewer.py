@@ -138,9 +138,6 @@ class render_3d(object):
         self.set_points()
 
     def map_points_to_reciprocal_space(self):
-
-        import copy
-
         reflections = flex.reflection_table()
         for i, imageset in enumerate(self.imagesets):
             if "imageset_id" in self.reflections_input:

@@ -8,14 +8,14 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
+import math
+from time import time
 
 import boost.python
 import libtbx
-from dials.util import phil
 from dials_algorithms_integration_integrator_ext import *
 
 logger = logging.getLogger(__name__)
@@ -190,7 +190,6 @@ class ExecuteParallelTask(object):
 
     def __call__(self, task):
         from dials.util import log
-        import logging
 
         log.config_simple_cached()
         result = task()
@@ -243,10 +242,8 @@ class Processor(object):
         :return: The processing results
 
         """
-        from time import time
         from dials.util.mp import multi_node_parallel_map
         import platform
-        from math import ceil
 
         start_time = time()
         self.manager.initialize()
@@ -268,7 +265,7 @@ class Processor(object):
         assert mp_nproc > 0, "Invalid number of processors"
         if mp_nproc * mp_njobs > len(self.manager):
             mp_nproc = min(mp_nproc, len(self.manager))
-            mp_njobs = int(ceil(len(self.manager) / mp_nproc))
+            mp_njobs = int(math.ceil(len(self.manager) / mp_nproc))
         logger.info(self.manager.summary())
         if mp_njobs > 1:
             assert mp_method is not "none" and mp_method is not None
@@ -399,7 +396,6 @@ class Task(object):
 
         """
         from dials.array_family import flex
-        from time import time
         from dials.model.data import make_image
         from libtbx.introspection import machine_memory_info
 
@@ -589,8 +585,6 @@ class Manager(object):
         Initialise the processing
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -665,8 +659,6 @@ class Manager(object):
         Finalize the processing and finish.
 
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -710,7 +702,6 @@ class Manager(object):
         Compute the processing block size.
 
         """
-        from math import ceil
 
         if self.params.block.size == libtbx.Auto:
             if (
@@ -734,7 +725,6 @@ class Manager(object):
 
         """
         from itertools import groupby
-        from math import ceil
 
         groups = groupby(
             range(len(self.experiments)),
@@ -756,12 +746,12 @@ class Manager(object):
                 block_size_frames = array_range[1] - array_range[0]
             elif self.params.block.units == "radians":
                 phi0, dphi = scan.get_oscillation(deg=False)
-                block_size_frames = int(ceil(self.params.block.size / dphi))
+                block_size_frames = int(math.ceil(self.params.block.size / dphi))
             elif self.params.block.units == "degrees":
                 phi0, dphi = scan.get_oscillation()
-                block_size_frames = int(ceil(self.params.block.size / dphi))
+                block_size_frames = int(math.ceil(self.params.block.size / dphi))
             elif self.params.block.units == "frames":
-                block_size_frames = int(ceil(self.params.block.size))
+                block_size_frames = int(math.ceil(self.params.block.size))
             else:
                 raise RuntimeError("Unknown block_size_units = %s" % block_size_units)
             self.jobs.add((i0, i1), array_range, block_size_frames)
@@ -805,7 +795,6 @@ class Manager(object):
 
         """
         from libtbx.introspection import machine_memory_info
-        from math import floor
         from dials.array_family import flex
 
         # Set the memory usage per processor
@@ -824,7 +813,7 @@ class Manager(object):
             if total_memory is not None:
                 assert total_memory > 0, "Your system appears to have no memory!"
                 limit_memory = total_memory * self.params.block.max_memory_usage
-                njobs = int(floor(limit_memory / max_memory))
+                njobs = int(math.floor(limit_memory / max_memory))
                 if njobs < 1:
                     raise RuntimeError(
                         """
