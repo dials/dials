@@ -384,6 +384,7 @@ class ReflectionManager(object):
     sampling to form the working subset."""
 
     _weighting_strategy = weighting_strategies.StatisticalWeightingStrategy()
+    experiment_type = 'scans'
 
     def __init__(
         self,
@@ -897,6 +898,7 @@ class StillsReflectionManager(ReflectionManager):
     about X, Y, DelPsi residuals"""
 
     _weighting_strategy = weighting_strategies.StillsWeightingStrategy()
+    experiment_type = 'stills'
 
     def _id_refs_to_keep(self, obs_data):
         """Create a selection of observations that pass certain conditions.

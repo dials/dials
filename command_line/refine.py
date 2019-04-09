@@ -130,6 +130,7 @@ phil_overrides = libtbx.phil.parse(
   refinement
   {
     verbosity = 2
+    parameterisation.scan_varying = Auto
   }
 """
 )
@@ -252,11 +253,18 @@ def run_macrocycle(params, reflections, experiments):
     return refiner, reflections, history
 
 def run_dials_refine(experiments, reflections, params):
-    """Functional interface to tasks performed by the program dials.refine."""
+    """Functional interface to tasks performed by the program dials.refine,
+    excluding file i/o"""
 
     # Modify options if necessary
     if params.output.correlation_plot.filename is not None:
         params.refinement.refinery.journal.track_parameter_correlation = True
+
+    # scan_varying=Auto is special to dials.refine. Refiner expects it to be
+    # True or False, so catch and set here
+    scan_varying = params.refinement.parameterisation.scan_varying
+    if scan_varying is Auto:
+        params.refinement.parameterisation.scan_varying = False
 
     if params.n_static_macrocycles == 1:
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
@@ -267,7 +275,8 @@ def run_dials_refine(experiments, reflections, params):
             refiner, reflections, history = run_macrocycle(params, reflections, experiments)
             experiments = refiner.get_experiments()
 
-    if params.refinement.parameterisation.scan_varying is Auto:
+    # Scan-varying macrocycle, if appropriate
+    if scan_varying is Auto and refiner.experiment_type == 'scans':
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)

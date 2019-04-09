@@ -240,6 +240,11 @@ class RefinerFactory(object):
         if do_stills:
             params.refinement.parameterisation.scan_varying = False
 
+        # Refiner does not accept scan_varying=Auto. This is a special case for
+        # doing macrocycles of refinement in dials.refine.
+        if params.refinement.parameterisation.scan_varying is libtbx.Auto:
+            params.refinement.parameterisation.scan_varying = False
+
         # calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
@@ -659,6 +664,9 @@ class Refiner(object):
         self._param_report = param_reporter
 
         self._verbosity = verbosity
+
+        # Keep track of whether this is stills or scans type refinement
+        self.experiment_type = refman.experiment_type
 
         return
 
