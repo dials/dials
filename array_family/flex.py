@@ -271,9 +271,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         try:
             return reflection_table.from_msgpack_file(filename)
-        except Exception:
-            pass
-        return reflection_table.from_pickle(filename)
+        except RuntimeError:
+            return reflection_table.from_pickle(filename)
 
     @staticmethod
     def empty_standard(nrows):
