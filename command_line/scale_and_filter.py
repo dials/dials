@@ -243,7 +243,7 @@ class ScaleAndFilter(object):
                 logger.info(
                     "Finishing scale and filtering as no data removed in this cycle."
                 )
-                scaling_script.output()
+                scaling_script.export()
                 results.finish(termination_reason="no_more_removed")
                 break
 
