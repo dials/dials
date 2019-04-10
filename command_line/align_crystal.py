@@ -115,7 +115,6 @@ class align_crystal(object):
         self.mode = mode
 
         gonio = experiment.goniometer
-        scan = experiment.scan
 
         self.s0 = matrix.col(self.experiment.beam.get_s0())
         self.rotation_axis = matrix.col(gonio.get_rotation_axis())
@@ -129,12 +128,12 @@ class align_crystal(object):
             raise Sorry("Only 3-axis goniometers supported")
         e1, e2, e3 = (matrix.col(e) for e in reversed(axes))
 
-        fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
-        setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-        rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
-        rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
-            experiment.scan.get_oscillation()[0], deg=True
-        )
+        # fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
+        # setting_rotation = matrix.sqr(gonio.get_setting_rotation())
+        # rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
+        # rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
+        #    experiment.scan.get_oscillation()[0], deg=True
+        # )
 
         from dials.algorithms.refinement import rotation_decomposition
 
@@ -167,7 +166,7 @@ class align_crystal(object):
                 crystal = crystal.change_basis(cb_op)
 
                 # Goniometer datum setting [D] at which the orientation was determined
-                D = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
+                # D = (setting_rotation * rotation_matrix * fixed_rotation).inverse()
 
                 # The setting matrix [U] will vary with the datum setting according to
                 # [U] = [D] [U0]
@@ -240,30 +239,24 @@ class align_crystal(object):
 
     def as_json(self, filename=None):
         names = self.experiment.goniometer.get_names()
-        solutions = []
         space_group = self.experiment.crystal.get_space_group()
-        reciprocal = self.frame == "reciprocal"
-        for angles, solns in self.unique_solutions.iteritems():
-            solutions.append(
-                {
-                    "primary_axis": [self._vector_as_str(v1) for v1, v2 in solns],
-                    "secondary_axis": [self._vector_as_str(v2) for v1, v2 in solns],
-                    "primary_axis_type": [
-                        axis_type(v1, space_group) for v1, v2 in solns
-                    ],
-                    "secondary_axis_type": [
-                        axis_type(v2, space_group) for v1, v2 in solns
-                    ],
-                    names[1]: angles[0],
-                    names[0]: angles[1],
-                }
-            )
+        solutions = [
+            {
+                "primary_axis": [self._vector_as_str(v1) for v1, v2 in solns],
+                "secondary_axis": [self._vector_as_str(v2) for v1, v2 in solns],
+                "primary_axis_type": [axis_type(v1, space_group) for v1, v2 in solns],
+                "secondary_axis_type": [axis_type(v2, space_group) for v1, v2 in solns],
+                names[1]: angles[0],
+                names[0]: angles[1],
+            }
+            for angles, solns in self.unique_solutions.iteritems()
+        ]
         d = {"solutions": solutions, "goniometer": self.experiment.goniometer.to_dict()}
         import json
 
         if filename:
             with open(filename, "wb") as fh:
-                return json.dump(d, fh, indent=2)
+                json.dump(d, fh, indent=2)
         else:
             return json.dumps(d, indent=2)
 
@@ -392,8 +385,6 @@ def run(args):
     if len(experiments) == 0:
         parser.print_help()
         exit(0)
-
-    imagesets = experiments.imagesets()
 
     expt = experiments[0]
 
