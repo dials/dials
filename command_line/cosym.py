@@ -255,7 +255,7 @@ class cosym(Subject):
             sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
             if sel.count(True):
                 logger.info(
-                    "Elminating %i systematic absences for experiment %s",
+                    "Eliminating %i systematic absences for experiment %s",
                     sel.count(True),
                     expt.identifier,
                 )
