@@ -597,11 +597,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             de1_dp = dq0.cross(s0u)
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            dr_de1 = dRq_de(DeltaPsi, e1, q)
-            drde_dedp = dr_de1 * de1_dp
+            #dr_de1 = dRq_de(DeltaPsi, e1, q)
+            #drde_dedp = dr_de1 * de1_dp
 
-            # calculate the partial derivative of r wrt change in rotation
-            # axis e1 by finite differences
+            # The above calculation is not correct. Instead, calculate the partial
+            # derivative of r wrt change in rotation axis e1 by finite differences
             dp = 1.0e-8
             del_e1 = de1_dp * dp
             e1f = e1 + del_e1 * 0.5
@@ -666,11 +666,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             de1_dp = dq0.cross(s0u)
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            dr_de1 = dRq_de(DeltaPsi, e1, q)
-            drde_dedp = dr_de1 * de1_dp
+            #dr_de1 = dRq_de(DeltaPsi, e1, q)
+            #drde_dedp = dr_de1 * de1_dp
 
-            # calculate the partial derivative of r wrt change in rotation
-            # axis e1 by finite differences
+            # The above calculation is not correct. Instead, calculate the partial
+            # derivative of r wrt change in rotation axis e1 by finite differences
             dp = 1.0e-8
             del_e1 = de1_dp * dp
             e1f = e1 + del_e1 * 0.5
@@ -778,7 +778,6 @@ class SphericalRelpStillsPredictionParameterisation(StillsPredictionParameterisa
         q_s0 = self._q_s0.select(isel)
         inv_s = self._inv_s.select(isel)
         inv_sss = self._inv_sss.select(isel)
-        DeltaPsi = self._DeltaPsi.select(isel)
         D = self._D.select(isel)
 
         # get the derivatives of the beam vector wrt the parameters

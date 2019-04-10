@@ -19,7 +19,6 @@ from dials.algorithms.refinement.parameterisation.model_parameters import (
     Parameter,
     ModelParameterisation,
 )
-from dxtbx.model import Crystal  # implicit import
 from scitbx import matrix
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.refinement_helpers import CrystalOrientationCompose
@@ -128,8 +127,6 @@ class CrystalUnitCellMixin(object):
         S = symmetrize_reduce_enlarge(crystal.get_space_group())
         S.set_orientation(orientation=crystal.get_B())
         X = S.forward_independent_parameters()
-        dB_dp = S.forward_gradients()
-        B = S.backward_orientation(independent=X).reciprocal_matrix()
 
         # Set up the independent parameters, with a change of scale
         p_list = [

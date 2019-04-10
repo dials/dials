@@ -1095,4 +1095,10 @@ class XYPhiPredictionParameterisationSparse(
     data structure for memory efficiency when there are a large number of
     Experiments"""
 
-    pass
+    # Explicitly delegate to the method from SparseGradientVectorMixin
+    # (https://lgtm.com/rules/7860084/)
+    @staticmethod
+    def _extend_gradient_vectors(results, m, n, keys=("dX_dp", "dY_dp", "dZ_dp")):
+        return SparseGradientVectorMixin._extend_gradient_vectors(
+            results, m, n, keys
+        )

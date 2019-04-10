@@ -173,7 +173,6 @@ class AutoReduce(object):
         free_gp_params = [a and not b for a, b in zip(gp_params, fixlist)]
         nparam = free_gp_params.count(True)
         cutoff = self._options.min_nref_per_parameter * nparam
-        isel = flex.size_t()
         reflections = self.reflection_manager.get_obs()
         surplus = pg_surpl(
             reflections["id"], reflections["panel"], pnl_ids, exp_ids, cutoff

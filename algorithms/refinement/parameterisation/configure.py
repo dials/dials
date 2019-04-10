@@ -44,7 +44,6 @@ from .prediction_parameters_stills import (
 )
 
 from .autoreduce import AutoReduce
-from .parameter_report import ParameterReporter
 
 # PHIL
 from libtbx.phil import parse
@@ -649,7 +648,7 @@ def _parameterise_detectors(options, experiments, analysis):
                 )
             else:  # options.detector.panels == "hierarchical"
                 try:  # Use hierarchy in parameterisation if the detector has one
-                    h = detector.hierarchy()
+                    detector.hierarchy()
                     det_param = DetectorParameterisationHierarchical(
                         detector,
                         experiment_ids=exp_ids,
@@ -773,9 +772,6 @@ def build_prediction_parameterisation(
     Returns:
         A prediction equation parameterisation object
     """
-
-    # Get the working set of reflections
-    reflections = reflection_manager.get_matches()
 
     # If required, do full centroid analysis on the reflections (assumes
     # outlier-rejection has been done already) to determine suitable interval

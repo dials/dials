@@ -211,26 +211,26 @@ class DetectorMixin(object):
         # derivative wrt tau3
         dd2_dtau3 = dTau321_dtau3 * (Py - P0)
 
-        # Derivatives of the direction dn, where
-        # dn = d1.cross(d2).normalize()
+        # Derivatives of the direction dn, where dn = d1.cross(d2).normalize()
+        # These derivatives are not used, but are left as comments for understanding
 
         # derivative wrt dist
-        ddn_ddist = matrix.col((0.0, 0.0, 0.0))
+        #ddn_ddist = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt shift1
-        ddn_dshift1 = matrix.col((0.0, 0.0, 0.0))
+        #ddn_dshift1 = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt shift2
-        ddn_dshift2 = matrix.col((0.0, 0.0, 0.0))
+        #ddn_dshift2 = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt tau1. Product rule for cross product applies
-        ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
+        #ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
 
         # derivative wrt tau2
-        ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
+        #ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
 
         # derivative wrt tau3
-        ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
+        #ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
         # calculate derivatives of the attached sensor matrix
         # ===================================================
@@ -582,7 +582,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
         # extract items from the initial state
         id1 = self._initial_state["d1"]
         id2 = self._initial_state["d2"]
-        idn = self._initial_state["dn"]
 
         # extract parameters from the internal list
         dist, shift1, shift2, tau1, tau2, tau3 = self._param
