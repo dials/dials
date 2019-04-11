@@ -18,6 +18,7 @@ from cctbx.sgtbx import space_group
 
 BasicErrorModel.min_reflections_required = 1
 
+
 @pytest.fixture()
 def large_reflection_table():
     """Create a reflection table."""

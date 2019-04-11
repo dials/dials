@@ -191,9 +191,13 @@ class ErrorModelRefinery(object):
         self._target.error_model.refined_parameters = self._target.x
         # logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
         #      .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
-        self._target.error_model.intensities = self._target.error_model.Ih_table.intensities
+        self._target.error_model.intensities = (
+            self._target.error_model.Ih_table.intensities
+        )
         self._target.error_model.sigmaprime = self._target.error_model.sigmaprime
-        self._target.error_model.inverse_scale_factors = self._target.error_model.Ih_table.inverse_scale_factors
+        self._target.error_model.inverse_scale_factors = (
+            self._target.error_model.Ih_table.inverse_scale_factors
+        )
         self._target.error_model.clear_Ih_table()
         return self._target.error_model
 

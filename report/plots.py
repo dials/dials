@@ -88,6 +88,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
         }
     }
 
+
 def i_over_sig_i_vs_i_plot(intensities, sigmas):
     """Plot unscaled I / sigma_adjusted vs unscaled I."""
     sel = intensities > 0

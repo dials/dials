@@ -252,15 +252,22 @@ class ErrorModelObserver(Observer):
             scaler.experiment.scaling_model.error_model.delta_hl
         )
         self.data["intensity"] = scaler.experiment.scaling_model.error_model.intensities
-        self.data["inv_scale"] = scaler.experiment.scaling_model.error_model.inverse_scale_factors
-        self.data["sigma"] = scaler.experiment.scaling_model.error_model.sigmaprime * self.data["inv_scale"]
+        self.data[
+            "inv_scale"
+        ] = scaler.experiment.scaling_model.error_model.inverse_scale_factors
+        self.data["sigma"] = (
+            scaler.experiment.scaling_model.error_model.sigmaprime
+            * self.data["inv_scale"]
+        )
 
     def make_plots(self):
         """Generate normal probability plot data."""
         d = {"error_model_plots": {}}
         if "delta_hl" in self.data:
             d["error_model_plots"].update(normal_probability_plot(self.data))
-            d["error_model_plots"].update(i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"]))
+            d["error_model_plots"].update(
+                i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
+            )
         return d
 
 

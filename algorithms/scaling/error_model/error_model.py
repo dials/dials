@@ -57,7 +57,9 @@ class BasicErrorModel(object):
                 + u"\u03C3"
                 + "'"
                 + u"\xb2"
-                + " = a" + u"\xb2" +"("
+                + " = a"
+                + u"\xb2"
+                + "("
                 + u"\u03C3\xb2"
                 " + (bI)" + u"\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %.3f" % (1.0 / (b * a)),
@@ -155,7 +157,9 @@ class BasicErrorModel(object):
         per intensity bin unless there are very few reflections."""
         n = self.Ih_table.size
         if n < self.min_reflections_required:
-            raise ValueError("Insufficient reflections (%s) to perform error modelling." % n)
+            raise ValueError(
+                "Insufficient reflections (%s) to perform error modelling." % n
+            )
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
         Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors

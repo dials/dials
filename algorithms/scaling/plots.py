@@ -391,9 +391,7 @@ def normal_probability_plot(data):
     y = flex.sorted(flex.double(data["delta_hl"]))
     x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
 
-    H, xedges, yedges = np.histogram2d(
-        np.array(x), y.as_numpy_array(), bins=(200, 200)
-    )
+    H, xedges, yedges = np.histogram2d(np.array(x), y.as_numpy_array(), bins=(200, 200))
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
     z[:] = np.NAN
@@ -420,7 +418,7 @@ def normal_probability_plot(data):
                     "type": "scatter",
                     "mode": "lines",
                     "name": "z = m",
-                    "color" : 'rgb(0,0,0)',
+                    "color": "rgb(0,0,0)",
                 },
             ],
             "layout": {

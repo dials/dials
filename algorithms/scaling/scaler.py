@@ -47,7 +47,6 @@ from dials.algorithms.scaling.reflection_selection import (
     calculate_scaling_subset_connected,
     calculate_scaling_subset_ranges_with_E2,
     calculate_scaling_subset_ranges,
-    select_highly_connected_reflections,
     select_connected_reflections_across_datasets,
 )
 from dials.util.observer import Subject
@@ -553,7 +552,9 @@ class SingleScaler(ScalerBase):
             suitable_table = self.reflection_table.select(
                 self.suitable_refl_for_scaling_sel
             )
-            presel = calculate_scaling_subset_ranges(suitable_table, self.params, print_summary=True)
+            presel = calculate_scaling_subset_ranges(
+                suitable_table, self.params, print_summary=True
+            )
             preselection = presel.select(block.Ih_table["loc_indices"])
             self.scaling_selection = calculate_scaling_subset_connected(
                 block, self.experiment, self.params, preselection, print_summary=True
@@ -947,14 +948,6 @@ class MultiScalerBase(ScalerBase):
                 sel = calculate_scaling_subset_connected(
                     indiv_Ih_block, scaler.experiment, self.params, preselection
                 )
-
-                '''indiv_indices = select_highly_connected_reflections(
-                    indiv_Ih_block,
-                    scaler.experiment,
-                    qr.min_per_area[i],
-                    qr.n_resolution_bins[i],
-                )
-                scaler.scaling_selection.set_selected(indiv_indices, True)'''
                 scaler.scaling_selection |= sel
                 rows.append(
                     [
