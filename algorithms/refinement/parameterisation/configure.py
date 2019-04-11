@@ -424,6 +424,9 @@ def _parameterise_beams(options, experiments, analysis):
             # Parameterise scan static beam, passing the goniometer
             beam_param = BeamParameterisation(beam, goniometer, experiment_ids=exp_ids)
 
+        # Set the model identifier to name the parameterisation
+        beam_param.model_identifier = "Beam{0}".format(ibeam + 1)
+
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
         num_beam = getattr(beam_param, "num_sets", getattr(beam_param, "num_total"))()
@@ -445,7 +448,7 @@ def _parameterise_beams(options, experiments, analysis):
         if fix_list:
             names = _filter_parameter_names(beam_param)
             assert len(names) == num_beam
-            to_fix = string_sel(fix_list, names, "Beam{0}".format(ibeam + 1))
+            to_fix = string_sel(fix_list, names, beam_param.model_identifier)
             beam_param.set_fixed(to_fix)
 
         if beam_param.num_free() > 0:
@@ -503,6 +506,9 @@ def _parameterise_crystals(options, experiments, analysis):
                 crystal, experiment_ids=exp_ids
             )
 
+        # Set the model identifier to name the parameterisation
+        xl_ori_param.model_identifier = "Crystal{0}".format(icrystal + 1)
+
         # unit cell parameterisation
         if sv_xl_uc:
             n_intervals = _set_n_intervals(
@@ -520,6 +526,9 @@ def _parameterise_crystals(options, experiments, analysis):
             xl_uc_param = CrystalUnitCellParameterisation(
                 crystal, experiment_ids=exp_ids
             )
+
+        # Set the model identifier to name the parameterisation
+        xl_uc_param.model_identifier = "Crystal{0}".format(icrystal + 1)
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -550,13 +559,13 @@ def _parameterise_crystals(options, experiments, analysis):
         if cell_fix_list:
             names = _filter_parameter_names(xl_uc_param)
             assert len(names) == num_uc
-            to_fix = string_sel(cell_fix_list, names, "Crystal{0}".format(icrystal + 1))
+            to_fix = string_sel(cell_fix_list, names, xl_uc_param.model_identifier)
             xl_uc_param.set_fixed(to_fix)
 
         if ori_fix_list:
             names = _filter_parameter_names(xl_ori_param)
             assert len(names) == num_ori
-            to_fix = string_sel(ori_fix_list, names, "Crystal{0}".format(icrystal + 1))
+            to_fix = string_sel(ori_fix_list, names, xl_ori_param.model_identifier)
             xl_ori_param.set_fixed(to_fix)
 
         if xl_ori_param.num_free() > 0:
@@ -660,6 +669,9 @@ def _parameterise_detectors(options, experiments, analysis):
                         "created for a detector without a hierarchy"
                     )
 
+        # Set the model identifier to name the parameterisation
+        det_param.model_identifier = "Detector{0}".format(idetector + 1)
+
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
         num_det = getattr(det_param, "num_sets", getattr(det_param, "num_total"))()
@@ -681,7 +693,7 @@ def _parameterise_detectors(options, experiments, analysis):
         if fix_list:
             names = _filter_parameter_names(det_param)
             assert len(names) == num_det
-            to_fix = string_sel(fix_list, names, "Detector{0}".format(idetector + 1))
+            to_fix = string_sel(fix_list, names, det_param.model_identifier)
             det_param.set_fixed(to_fix)
 
         if det_param.num_free() > 0:
@@ -727,6 +739,9 @@ def _parameterise_goniometers(options, experiments, analysis):
                 goniometer, beam, experiment_ids=exp_ids
             )
 
+        # Set the model identifier to name the parameterisation
+        gon_param.model_identifier = "Goniometer{0}".format(igoniometer + 1)
+
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
         num_gon = getattr(gon_param, "num_sets", getattr(gon_param, "num_total"))()
@@ -747,7 +762,7 @@ def _parameterise_goniometers(options, experiments, analysis):
             names = _filter_parameter_names(gon_param)
             assert len(names) == num_gon
             to_fix = string_sel(
-                fix_list, names, "Goniometer{0}".format(igoniometer + 1)
+                fix_list, names, gon_param.model_identifier
             )
             gon_param.set_fixed(to_fix)
 
