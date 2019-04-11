@@ -16,6 +16,7 @@ from dials.algorithms.scaling.Ih_table import IhTable
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
 
+BasicErrorModel.min_reflections_required = 1
 
 @pytest.fixture()
 def large_reflection_table():
@@ -68,14 +69,14 @@ def test_errormodel(large_reflection_table, test_sg):
     em = get_error_model("basic")
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
-    error_model = em(block, n_bins=2)
+    error_model = em(block, n_bins=2, min_Ih=1.0)
     assert error_model.summation_matrix[0, 1] == 1
     assert error_model.summation_matrix[1, 1] == 1
-    assert error_model.summation_matrix[2, 1] == 1
+    assert error_model.summation_matrix[2, 0] == 1
     assert error_model.summation_matrix[3, 0] == 1
     assert error_model.summation_matrix[4, 0] == 1
     assert error_model.summation_matrix.non_zeroes == 5
-    assert list(error_model.bin_counts) == [2, 3]
+    assert list(error_model.bin_counts) == [3, 2]
 
     # Test calc sigmaprime
     x0 = 1.0

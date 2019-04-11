@@ -526,7 +526,7 @@ class SingleScaler(ScalerBase):
         # now increase the errors slightly to take into account the uncertainty in the
         # inverse scale factors
         fractional_error = (
-            self.reflection_table["inverse_scale_factor_variance"]
+            self.reflection_table["inverse_scale_factor_variance"] ** 0.5
             / self.reflection_table["inverse_scale_factor"]
         )
         variance_scaling = (

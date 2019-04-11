@@ -27,13 +27,15 @@ class BasicErrorModel(object):
     Object to manage calculation of deviations for an error model.
     """
 
-    def __init__(self, Ih_table, n_bins=10):
+    min_reflections_required = 250
+
+    def __init__(self, Ih_table, n_bins=10, min_Ih=2.0):
         logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
         self.binning_info = {}
         # First select on initial delta
-        self.filter_unsuitable_reflections(cutoff=6.0)
+        self.filter_unsuitable_reflections(cutoff=6.0, min_Ih=min_Ih)
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = None
         self.delta_hl = None
@@ -43,20 +45,22 @@ class BasicErrorModel(object):
         self.refined_parameters = [1.0, 0.0]
 
     def __str__(self):
+        a = abs(self.refined_parameters[0])
+        b = abs(self.refined_parameters[1])
         return "\n".join(
             (
                 "",
                 "Error model details:",
                 "  Type: basic",
-                "  Current parameters: a = %.5f, b = %.5f"
-                % (abs(self.refined_parameters[0]), abs(self.refined_parameters[1])),
+                "  Current parameters: a = %.5f, b = %.5f" % (a, b),
                 "  Error model formula: "
                 + u"\u03C3"
                 + "'"
                 + u"\xb2"
-                + " = a("
+                + " = a" + u"\xb2" +"("
                 + u"\u03C3\xb2"
                 " + (bI)" + u"\xb2" + ")",
+                "  estimated I/sigma asymptotic limit: %.3f" % (1.0 / (b * a)),
                 "",
             )
         )
@@ -98,7 +102,7 @@ class BasicErrorModel(object):
         """An array of the number of intensities assigned to each bin."""
         return self._bin_counts
 
-    def filter_unsuitable_reflections(self, cutoff=6.0):
+    def filter_unsuitable_reflections(self, cutoff=6.0, min_Ih=2.0):
         """Do a first pass to calculate delta_hl and filter out the largest
         deviants, so that the error model is not misled by these and instead
         operates on the central ~90% of the data. Also choose reflection groups
@@ -112,7 +116,8 @@ class BasicErrorModel(object):
         delta_hl = self.calc_deltahl()
         sel = flex.abs(delta_hl) < cutoff
         # also filter groups with Ih < 2.0
-        sel2 = self.Ih_table.Ih_values > 2.0
+        scaled_Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
+        sel2 = scaled_Ih > min_Ih
         sel3 = self.n_h > 1.0
         self.Ih_table = self.Ih_table.select(sel & sel2 & sel3)
         self.n_h = self.Ih_table.calc_nh()
@@ -149,9 +154,11 @@ class BasicErrorModel(object):
         undersampling, it is required that there are at least 100 reflections
         per intensity bin unless there are very few reflections."""
         n = self.Ih_table.size
+        if n < self.min_reflections_required:
+            raise ValueError("Insufficient reflections (%s) to perform error modelling." % n)
         self.binning_info["n_reflections"] = n
         summation_matrix = sparse.matrix(n, self.n_bins)
-        Ih = self.Ih_table.Ih_values
+        Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
         size_order = flex.sort_permutation(Ih, reverse=True)
         Imax = max(Ih)
         Imin = max(1.0, min(Ih))  # avoid log issues
@@ -164,7 +171,7 @@ class BasicErrorModel(object):
         self.binning_info["refl_per_bin"] = []
 
         n_cumul = 0
-        min_per_bin = min(100, int(n / (3.0 * self.n_bins)))
+        min_per_bin = min(self.min_reflections_required, int(n / (3.0 * self.n_bins)))
         for i in range(len(boundaries) - 1):
             maximum = boundaries[i]
             minimum = boundaries[i + 1]
@@ -179,7 +186,6 @@ class BasicErrorModel(object):
                     idx = size_order[m]
                     intensity = Ih[idx]
                     boundaries[i + 1] = intensity
-                    maximum = boundaries[i]
                     minimum = boundaries[i + 1]
                     sel = sel1 & (Ih > minimum)
                     isel = sel.iselection()

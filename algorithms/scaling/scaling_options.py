@@ -170,10 +170,21 @@ phil_scope = iotbx.phil.parse(
       .help = "Option to allow optimisation of weights for scaling. Performs
                and additional scale factor minimisation after adjusting weights."
       .expert_level = 0
-    error_model = *basic
-      .type = choice
-      .help = "The name of the error model to use, if optimise_errors is True."
-      .expert_level = 1
+    error_model {
+      error_model = *basic
+        .type = choice
+        .help = "The name of the error model to use, if optimise_errors is True."
+        .expert_level = 1
+      min_Ih = 2.0
+        .type = float
+        .help = "Reflections with expected intensity above this value are to."
+                "be used in error model minimisation."
+        .expert_level = 2
+      n_bins = 10
+        .type = int
+        .help = "The number of intensity bins to use for the error model optimisation."
+        .expert_level = 2
+    }
     output_optimised_vars = True
       .type = bool
       .help = "If True, the error model determined will be applied to the
