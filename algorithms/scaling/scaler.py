@@ -45,7 +45,8 @@ from dials.algorithms.scaling.combine_intensities import (
 )
 from dials.algorithms.scaling.reflection_selection import (
     calculate_scaling_subset_connected,
-    calculate_scaling_subset,
+    calculate_scaling_subset_ranges_with_E2,
+    calculate_scaling_subset_ranges,
     select_highly_connected_reflections,
     select_connected_reflections_across_datasets,
 )
@@ -214,24 +215,31 @@ class ScalerBase(Subject):
         Ih_table = self.global_Ih_table
         Ih_table.reset_error_model()
         Ih_table.calc_Ih()
-        error_model = get_error_model(self.params.weighting.error_model)
-        refinery = error_model_refinery(
-            engine="SimpleLBFGS",
-            target=ErrorModelTarget(error_model(Ih_table.blocked_data_list[0])),
-            max_iterations=100,
-        )
+        error_model = get_error_model(self.params.weighting.error_model.error_model)
         try:
+            refinery = error_model_refinery(
+                engine="SimpleLBFGS",
+                target=ErrorModelTarget(
+                    error_model(
+                        Ih_table.blocked_data_list[0],
+                        self.params.weighting.error_model.n_bins,
+                        self.params.weighting.error_model.min_Ih,
+                    )
+                ),
+                max_iterations=100,
+            )
             refinery.run()
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.error(e, exc_info=True)
-        error_model = refinery.return_error_model()
-        self.update_error_model(
-            error_model,
-            update_Ih=update_Ih,
-            apply_to_reflection_table=apply_to_reflection_table,
-        )
-        logger.info(error_model)
-        error_model.minimisation_summary()
+        else:
+            error_model = refinery.return_error_model()
+            self.update_error_model(
+                error_model,
+                update_Ih=update_Ih,
+                apply_to_reflection_table=apply_to_reflection_table,
+            )
+            logger.info(error_model)
+            error_model.minimisation_summary()
         return error_model
 
     def clear_memory_from_derivs(self, block_id):
@@ -535,10 +543,6 @@ class SingleScaler(ScalerBase):
     def _select_reflections_for_scaling(self):
         """Select a subset of reflections to use in minimisation."""
         if self.params.reflection_selection.method == "quasi_random":
-            min_per_area = self.params.reflection_selection.quasi_random.min_per_area[0]
-            n_resolution_bins = self.params.reflection_selection.quasi_random.n_resolution_bins[
-                0
-            ]
             block = self.global_Ih_table.Ih_table_blocks[0]
             loc_indices = block.Ih_table["loc_indices"]
             block.Ih_table["s1c"] = (
@@ -546,11 +550,16 @@ class SingleScaler(ScalerBase):
                 .select(self.suitable_refl_for_scaling_sel)
                 .select(loc_indices)
             )
+            suitable_table = self.reflection_table.select(
+                self.suitable_refl_for_scaling_sel
+            )
+            presel = calculate_scaling_subset_ranges(suitable_table, self.params, print_summary=True)
+            preselection = presel.select(block.Ih_table["loc_indices"])
             self.scaling_selection = calculate_scaling_subset_connected(
-                block, self.experiment, min_per_area, n_resolution_bins
+                block, self.experiment, self.params, preselection, print_summary=True
             )
         elif self.params.reflection_selection.method == "intensity_ranges":
-            overall_scaling_selection = calculate_scaling_subset(
+            overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
                 self.reflection_table, self.params
             )
             self.scaling_selection = overall_scaling_selection.select(
@@ -929,19 +938,29 @@ class MultiScalerBase(ScalerBase):
                     .select(scaler.suitable_refl_for_scaling_sel)
                     .select(loc_indices)
                 )
+                suitable_table = scaler.reflection_table.select(
+                    scaler.suitable_refl_for_scaling_sel
+                )
+                presel = calculate_scaling_subset_ranges(suitable_table, self.params)
+                preselection = presel.select(indiv_Ih_block.Ih_table["loc_indices"])
 
-                indiv_indices = select_highly_connected_reflections(
+                sel = calculate_scaling_subset_connected(
+                    indiv_Ih_block, scaler.experiment, self.params, preselection
+                )
+
+                '''indiv_indices = select_highly_connected_reflections(
                     indiv_Ih_block,
                     scaler.experiment,
                     qr.min_per_area[i],
                     qr.n_resolution_bins[i],
                 )
-                scaler.scaling_selection.set_selected(indiv_indices, True)
+                scaler.scaling_selection.set_selected(indiv_indices, True)'''
+                scaler.scaling_selection |= sel
                 rows.append(
                     [
                         scaler.experiment.identifier,
                         str(indices_for_dataset.size()),
-                        str(indiv_indices.size()),
+                        str(sel.count(True)),
                         str(scaler.scaling_selection.count(True)),
                     ]
                 )
@@ -954,7 +973,7 @@ class MultiScalerBase(ScalerBase):
             logger.info(st.format())
         elif self.params.reflection_selection.method == "intensity_ranges":
             for scaler in self.active_scalers:
-                overall_scaling_selection = calculate_scaling_subset(
+                overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
                     scaler.reflection_table, scaler.params
                 )
                 scaler.scaling_selection = overall_scaling_selection.select(

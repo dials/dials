@@ -67,9 +67,7 @@ import logging
 from math import pi, floor
 import libtbx
 from libtbx.table_utils import simple_table
-from cctbx import uctbx
 from dials.array_family import flex
-from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import (
     Reasons,
     BadDatasetForScalingException,
@@ -78,7 +76,7 @@ from dials_scaling_ext import calc_theta_phi
 
 logger = logging.getLogger("dials")
 
-magic_theta = 70.53
+magic_theta = 70.53  # arccos(1/3) - to make all sphere regions equal.
 
 
 def determine_reflection_selection_parameters(params, experiments, reflections):
@@ -292,7 +290,7 @@ between %s and %s reflections per resolution bin""" % (
 
 
 def select_connected_reflections_across_datasets(
-    Ih_table, min_per_class=500, min_multiplicity=2, Isigma_cutoff=1.0
+    Ih_table, min_per_class=500, min_multiplicity=2, Isigma_cutoff=2.0
 ):
     """Select highly connected reflections across datasets."""
     assert Ih_table.n_work_blocks == 1
@@ -509,22 +507,30 @@ def _loop_over_class_matrix(
 
 
 def calculate_scaling_subset_connected(
-    global_Ih_table, experiment, min_per_area, n_resolution_bins
+    global_Ih_table, experiment, params, preselection=None, print_summary=False
 ):
-    indices = select_highly_connected_reflections(
-        global_Ih_table, experiment, min_per_area, n_resolution_bins, print_summary=True
-    )
-    suitable_selection = flex.bool(global_Ih_table.size, False)
-    suitable_selection.set_selected(indices, True)
+    """Determine the selection for the reflection table of suitable reflections.
 
-    logger.info(
-        (
-            "{0} reflections were selected for scale factor determination \n"
-            "out of {1} suitable reflections. ".format(
-                suitable_selection.count(True), global_Ih_table.size
-            )
-        )
+    A preselection can be given, which is applied to the global_Ih_table before
+    determining the connected subset."""
+    min_per_area = params.reflection_selection.quasi_random.min_per_area[0]
+    n_resolution_bins = params.reflection_selection.quasi_random.n_resolution_bins[0]
+    suitable_selection = flex.bool(global_Ih_table.size, False)
+    if preselection:
+        Ih_table = global_Ih_table.select(preselection)
+    else:
+        Ih_table = global_Ih_table
+    indices = select_highly_connected_reflections(
+        Ih_table, experiment, min_per_area, n_resolution_bins, print_summary
     )
+    suitable_selection.set_selected(indices, True)
+    if print_summary:
+        logger.info(
+            "%s reflections were selected for scale factor determination \n"
+            + "out of %s suitable reflections. ",
+            suitable_selection.count(True),
+            global_Ih_table.size,
+        )
     if suitable_selection.count(True) == 0:
         raise BadDatasetForScalingException(
             """No reflections pass all user-controllable selection criteria"""
@@ -532,7 +538,74 @@ def calculate_scaling_subset_connected(
     return suitable_selection
 
 
-def calculate_scaling_subset(reflection_table, params):
+def _determine_Isigma_selection(reflection_table, params):
+    Ioversigma = reflection_table["intensity"] / (reflection_table["variance"] ** 0.5)
+    Isiglow, Isighigh = params.reflection_selection.Isigma_range
+    selection = Ioversigma > Isiglow
+    if Isighigh != 0.0:
+        selection &= Ioversigma < Isighigh
+        reason = "in I/sigma range (%s > I/sig > %s)" % (Isighigh, Isiglow)
+    else:
+        reason = "in I/sigma range (I/sig > %s)" % Isiglow
+    return selection, reason
+
+
+def _determine_partiality_selection(reflection_table, params):
+    min_partiality = params.reflection_selection.min_partiality
+    selection = reflection_table["partiality"] > min_partiality
+    reason = "above min partiality ( > %s)" % min_partiality
+    return selection, reason
+
+
+def _determine_d_range_selection(reflection_table, params):
+    d_min, d_max = params.reflection_selection.d_range
+    d_sel = reflection_table["d"] > d_min
+    d_sel &= reflection_table["d"] < d_max
+    reason = "in d range (%s > d > %s)" % (d_max, d_min)
+    return d_sel, reason
+
+
+def _determine_E2_range_selection(reflection_table, params):
+    Elow, Ehigh = params.reflection_selection.E2_range
+    sel1 = reflection_table["Esq"] > Elow
+    sel2 = reflection_table["Esq"] < Ehigh
+    Esq_sel = sel1 & sel2
+    reason = "in E^2 range (%s > E^2 > %s)" % (Ehigh, Elow)
+    return Esq_sel, reason
+
+
+def calculate_scaling_subset_ranges(reflection_table, params, print_summary=False):
+    selection, reasons = _common_range_selections(Reasons(), reflection_table, params)
+    if print_summary:
+        logger.info(
+            "%s reflections were preselected for scale factor determination \n"
+            + "out of %s suitable reflections: \n%s",
+            selection.count(True),
+            reflection_table.size(),
+            reasons,
+        )
+    if selection.count(True) == 0:
+        raise BadDatasetForScalingException(
+            """No reflections pass all user-controllable selection criteria"""
+        )
+    return selection
+
+
+def _common_range_selections(reasons, reflection_table, params):
+    selection, reason = _determine_Isigma_selection(reflection_table, params)
+    reasons.add_reason(reason, selection.count(True))
+    if "partiality" in reflection_table:
+        sel, reason = _determine_partiality_selection(reflection_table, params)
+        reasons.add_reason(reason, sel.count(True))
+        selection &= sel
+    if params.reflection_selection.d_range:
+        sel, reason = _determine_d_range_selection(reflection_table, params)
+        reasons.add_reason(reason, sel.count(True))
+        selection &= sel
+    return selection, reasons
+
+
+def calculate_scaling_subset_ranges_with_E2(reflection_table, params):
     """Select reflections with non-zero weight and update scale weights."""
     reasons = Reasons()
     selection = ~reflection_table.get_flags(
@@ -543,47 +616,18 @@ def calculate_scaling_subset(reflection_table, params):
     )
     reasons.add_reason("suitable/selected for scaling", selection.count(True))
     if reflection_table["Esq"].count(1.0) != reflection_table.size():
-        Elow, Ehigh = params.reflection_selection.E2_range
-        sel1 = reflection_table["Esq"] > Elow
-        sel2 = reflection_table["Esq"] < Ehigh
-        Esq_sel = sel1 & sel2
-        reasons.add_reason(
-            "in E^2 range (%s > E^2 > %s)" % (Ehigh, Elow), Esq_sel.count(True)
-        )
-        selection &= Esq_sel
-    Ioversigma = reflection_table["intensity"] / reflection_table["variance"] ** 0.5
-    Isiglow, Isighigh = params.reflection_selection.Isigma_range
-    sel3 = Ioversigma > Isiglow
-    if Isighigh != 0.0:
-        sel3 &= Ioversigma < Isighigh
-        Isigreason = "in I/sigma range (%s > I/sig > %s)" % (Isighigh, Isiglow)
-    else:
-        Isigreason = "in I/sigma range (I/sig > %s)" % Isiglow
-    selection &= sel3
-    reasons.add_reason(Isigreason, sel3.count(True))
-    if "partiality" in reflection_table:
-        min_partiality = params.reflection_selection.min_partiality
-        sel4 = reflection_table["partiality"] > min_partiality
-        reasons.add_reason(
-            "above min partiality ( > %s)" % min_partiality, sel4.count(True)
-        )
-        selection &= sel4
-    if params.reflection_selection.d_range:
-        d_min, d_max = params.reflection_selection.d_range
-        d_sel = reflection_table["d"] > d_min
-        d_sel &= reflection_table["d"] < d_max
-        selection &= d_sel
-        reasons.add_reason(
-            "in d range (%s > d > %s)" % (d_max, d_min), d_sel.count(True)
-        )
-    msg = (
-        "{0} reflections were selected for scale factor determination \n"
-        "out of {1} reflections. ".format(
-            selection.count(True), reflection_table.size()
-        )
+        sel, reason = _determine_E2_range_selection(reflection_table, params)
+        reasons.add_reason(reason, sel.count(True))
+        selection &= sel
+    sel, reasons = _common_range_selections(reasons, reflection_table, params)
+    selection &= sel
+    logger.info(
+        "%s reflections were selected for scale factor determination \n"
+        + "out of %s suitable reflections: \n%s",
+        selection.count(True),
+        reflection_table.size(),
+        reasons,
     )
-    logger.info(msg)
-    logger.info(reasons)
     if selection.count(True) == 0:
         raise BadDatasetForScalingException(
             """No reflections pass all user-controllable selection criteria"""

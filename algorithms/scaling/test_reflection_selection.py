@@ -4,6 +4,7 @@ Tests for the reflection selection algorithm.
 from __future__ import absolute_import, division, print_function
 import os
 import itertools
+from libtbx import phil
 from cctbx import sgtbx
 from dxtbx.serialize import load
 from dials.array_family import flex
@@ -12,6 +13,8 @@ from dials.algorithms.scaling.reflection_selection import (
     select_highly_connected_reflections,
     select_connected_reflections_across_datasets,
     select_highly_connected_reflections_in_bin,
+    calculate_scaling_subset_ranges_with_E2,
+    calculate_scaling_subset_ranges,
 )
 from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors
 
@@ -65,7 +68,6 @@ def test_select_connected_reflections_across_datasets():
         """Make a reflection table with groups based on n_list."""
         r1 = flex.reflection_table()
         miller_indices = [[(0, 0, i + 1)] * n for i, n in enumerate(n_list)]
-        print(miller_indices)
         r1["miller_index"] = flex.miller_index(
             list(itertools.chain.from_iterable(miller_indices))
         )
@@ -87,22 +89,7 @@ def test_select_connected_reflections_across_datasets():
         table, min_per_class=5, Isigma_cutoff=0.0
     )
     assert list(total_in_classes) == [8, 7, 7]
-    assert list(indices) == [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        8,
-        9,
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
+    assert list(indices) == [0, 1, 2, 3, 4, 5, 8, 9] + [0, 1, 2, 3, 4, 5, 6] + [
         0,
         1,
         2,
@@ -112,6 +99,56 @@ def test_select_connected_reflections_across_datasets():
         12,
     ]
     assert list(datset_ids) == [0] * 8 + [1] * 7 + [2] * 7
+
+
+def generated_param():
+    """Generate a param phil scope."""
+    phil_scope = phil.parse(
+        """
+      include scope dials.algorithms.scaling.scaling_options.phil_scope
+  """,
+        process_includes=True,
+    )
+    param = phil_scope.extract()
+    return param
+
+
+def generated_refl_for_subset_calculation():
+    """Create a reflection table suitable for splitting into blocks."""
+    reflections = flex.reflection_table()
+    reflections["intensity"] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    reflections["variance"] = flex.double(6, 1.0)
+    reflections["d"] = flex.double([0.8, 2.1, 2.0, 1.4, 1.6, 2.5])
+    reflections["partiality"] = flex.double(6, 1.0)
+    reflections.set_flags(flex.bool(6, True), reflections.flags.integrated)
+    reflections.set_flags(flex.bool(6, False), reflections.flags.bad_for_scaling)
+    return reflections
+
+
+def test_selection_scaling_subset_ranges_with_E2():
+    """Test the scaling subset calculation with E2 range."""
+    test_params = generated_param()
+    rt = generated_refl_for_subset_calculation()
+    rt["Esq"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    test_params.reflection_selection.E2_range = 0.8, 5.0
+    test_params.reflection_selection.d_range = 1.0, 5.0  # all but first
+    test_params.reflection_selection.Isigma_range = 0.9, 5.5  # all but last
+    sel = calculate_scaling_subset_ranges_with_E2(rt, test_params)
+    assert list(sel) == [False, True, True, True, True, False]
+    rt["Esq"] = flex.double([1.0, 1.0, 1.0, 0.1, 6.0, 1.0])
+    sel = calculate_scaling_subset_ranges_with_E2(rt, test_params)
+    assert list(sel) == [False, True, True, False, False, False]
+
+
+def test_selection_scaling_subset_ranges():
+    """Test the scaling subset calculation with E2 range."""
+    test_params = generated_param()
+    rt = generated_refl_for_subset_calculation()
+    test_params.reflection_selection.E2_range = 0.8, 5.0
+    test_params.reflection_selection.d_range = 1.0, 5.0  # all but first
+    test_params.reflection_selection.Isigma_range = 0.9, 5.5  # all but last
+    sel = calculate_scaling_subset_ranges(rt, test_params)
+    assert list(sel) == [False, True, True, True, True, False]
 
 
 def test_reflection_selection(dials_regression):

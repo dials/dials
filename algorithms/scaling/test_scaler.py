@@ -28,7 +28,6 @@ from dials.algorithms.scaling.scaler import (
     MultiScaler,
     TargetScaler,
     NullScaler,
-    calculate_scaling_subset,
 )
 
 
@@ -167,29 +166,6 @@ def generated_refl(id_=0):
     )
     reflections["id"] = flex.int(8, id_)
     reflections.experiment_identifiers()[id_] = str(id_)
-    return reflections
-
-
-def refl_for_error_optimisation():
-    """Generate a reflection table."""
-    reflections = flex.reflection_table()
-    reflections["intensity"] = flex.double(range(0, 100))
-    reflections["variance"] = flex.double(100, 1)
-    reflections["miller_index"] = flex.miller_index([(1, 0, 0)] * 100)
-    reflections["d"] = flex.double(100, 2.0)
-    Esq = flex.double(10, 0.1)
-    Esq.extend(flex.double(90, 1.0))
-    reflections["Esq"] = Esq
-    reflections["inverse_scale_factor"] = flex.double(100, 1.0)
-    reflections["id"] = flex.int(100, 0)
-    reflections["xyzobs.px.value"] = flex.vec3_double(
-        [(0.0, 0.0, float(i)) for i in range(0, 100)]
-    )
-    reflections["s1"] = flex.vec3_double([(0.0, 0.1, 1.0)] * 100)
-    integrated_list = flex.bool(100, True)
-    bad_list = flex.bool(100, False)
-    reflections.set_flags(integrated_list, reflections.flags.integrated)
-    reflections.set_flags(bad_list, reflections.flags.bad_for_scaling)
     return reflections
 
 
@@ -514,60 +490,6 @@ def test_targetscaler_initialisation():
         .d_values
         == []
     )
-
-
-def generated_refl_for_splitting_1():
-    """Create a reflection table suitable for splitting into blocks."""
-    reflections = flex.reflection_table()
-    reflections["intensity.prf.value"] = flex.double([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
-    reflections["intensity.prf.variance"] = flex.double(6, 1.0)
-    reflections["miller_index"] = flex.miller_index(
-        [(1, 0, 0), (2, 0, 0), (0, 0, 1), (2, 2, 2), (1, 0, 0), (2, 0, 0)]
-    )
-    reflections["d"] = flex.double([0.8, 2.1, 2.0, 1.4, 1.6, 2.5])
-    reflections["partiality"] = flex.double(6, 1.0)
-    reflections["xyzobs.px.value"] = flex.vec3_double(
-        [
-            (0.0, 0.0, 0.0),
-            (0.0, 0.0, 5.0),
-            (0.0, 0.0, 8.0),
-            (0.0, 0.0, 10.0),
-            (0.0, 0.0, 12.0),
-            (0.0, 0.0, 15.0),
-        ]
-    )
-    reflections["s1"] = flex.vec3_double(
-        [
-            (0.0, 0.1, 1.0),
-            (0.0, 0.1, 1.0),
-            (0.0, 0.1, 1.0),
-            (0.0, 0.1, 1.0),
-            (0.0, 0.1, 1.0),
-            (0.0, 0.1, 1.0),
-        ]
-    )
-    reflections.set_flags(flex.bool(6, True), reflections.flags.integrated)
-    reflections.set_flags(flex.bool(6, False), reflections.flags.bad_for_scaling)
-    reflections["id"] = flex.int(6, 1)
-    reflections.experiment_identifiers()[0] = "0"
-    return reflections
-
-
-def test_scaling_subset():
-    # test scaling subset
-    test_params = generated_param()
-    rt = generated_refl_for_splitting_1()
-    rt["intensity"] = rt["intensity.prf.value"]
-    rt["variance"] = rt["intensity.prf.variance"]
-    rt["Esq"] = flex.double([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    test_params.reflection_selection.E2_range = 0.8, 5.0
-    test_params.reflection_selection.d_range = 1.0, 5.0  # all but first
-    test_params.reflection_selection.Isigma_range = 0.9, 5.5  # all but last
-    sel = calculate_scaling_subset(rt, test_params)
-    assert list(sel) == [False, True, True, True, True, False]
-    rt["Esq"] = flex.double([1.0, 1.0, 1.0, 0.1, 6.0, 1.0])
-    sel = calculate_scaling_subset(rt, test_params)
-    assert list(sel) == [False, True, True, False, False, False]
 
 
 def test_SingleScaler_expand_scales_to_all_reflections(mock_apm):
