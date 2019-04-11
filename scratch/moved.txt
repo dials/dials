@@ -1,4 +1,0 @@
-The /scratch directory has been moved into its own repository.
-To install this repository run
-
-libtbx.install dials_scratch
