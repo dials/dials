@@ -379,8 +379,7 @@ def plot_outliers(data):
 
 
 def normal_probability_plot(data):
-    ##FIXME this plot become very large/slow for a big dataset - can
-    ##we make this just a static image?
+    """Plot the distribution of normal probabilities of errors."""
     norm = distributions.normal_distribution()
 
     n = len(data["delta_hl"])
@@ -389,20 +388,31 @@ def normal_probability_plot(data):
     else:
         a = 0.5
 
-    sorted_data = flex.sorted(flex.double(data["delta_hl"]))
-    rankits = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+    y = flex.sorted(flex.double(data["delta_hl"]))
+    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
 
-    d = {
+    H, xedges, yedges = np.histogram2d(
+        np.array(x), y.as_numpy_array(), bins=(200, 200)
+    )
+    nonzeros = np.nonzero(H)
+    z = np.empty(H.shape)
+    z[:] = np.NAN
+    z[nonzeros] = H[nonzeros]
+
+    return {
         "normal_distribution_plot": {
             "data": [
                 {
-                    "x": rankits,
-                    "y": list(sorted_data),
-                    "type": "scatter",
-                    "mode": "markers",
-                    "xaxis": "x",
-                    "yaxis": "y",
+                    "x": xedges.tolist(),
+                    "y": yedges.tolist(),
+                    "z": z.transpose().tolist(),
+                    "type": "heatmap",
                     "name": "normalised deviations",
+                    "colorbar": {
+                        "title": "Number of reflections",
+                        "titleside": "right",
+                    },
+                    "colorscale": "Jet",
                 },
                 {
                     "x": [-5, 5],
@@ -410,6 +420,7 @@ def normal_probability_plot(data):
                     "type": "scatter",
                     "mode": "lines",
                     "name": "z = m",
+                    "color" : 'rgb(0,0,0)',
                 },
             ],
             "layout": {
@@ -419,5 +430,3 @@ def normal_probability_plot(data):
             },
         }
     }
-
-    return d

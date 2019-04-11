@@ -15,6 +15,7 @@ from dials.report.analysis import reflection_tables_to_batch_dependent_propertie
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
+    i_over_sig_i_vs_i_plot,
     ResolutionPlotsAndStats,
     IntensityStatisticsPlots,
 )
@@ -40,6 +41,9 @@ def register_default_scaling_observers(script):
         event="run_script",
         observer=ScalingHTMLGenerator(),
         callback="make_scaling_html",
+    )
+    script.scaler.register_observer(
+        event="performed_error_analysis", observer=ErrorModelObserver()
     )
 
     script.scaler.register_observer(
@@ -125,7 +129,7 @@ class ScalingHTMLGenerator(Observer):
             scaling_tables=self.data["scaling_tables"],
             resolution_plots=self.data["resolution_plots"],
             scaling_outlier_graphs=self.data["outlier_plots"],
-            normal_prob_plot=self.data["normal_prob_plot"],
+            error_model_plots=self.data["error_model_plots"],
             batch_plots=self.data["batch_plots"],
             misc_plots=self.data["misc_plots"],
         )
@@ -247,12 +251,16 @@ class ErrorModelObserver(Observer):
         self.data["delta_hl"] = list(
             scaler.experiment.scaling_model.error_model.delta_hl
         )
+        self.data["intensity"] = scaler.experiment.scaling_model.error_model.intensities
+        self.data["inv_scale"] = scaler.experiment.scaling_model.error_model.inverse_scale_factors
+        self.data["sigma"] = scaler.experiment.scaling_model.error_model.sigmaprime * self.data["inv_scale"]
 
     def make_plots(self):
         """Generate normal probability plot data."""
-        d = {"normal_prob_plot": {}}
+        d = {"error_model_plots": {}}
         if "delta_hl" in self.data:
-            d["normal_prob_plot"] = normal_probability_plot(self.data)
+            d["error_model_plots"].update(normal_probability_plot(self.data))
+            d["error_model_plots"].update(i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"]))
         return d
 
 

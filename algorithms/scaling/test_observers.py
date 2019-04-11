@@ -193,21 +193,30 @@ def test_ErrorModelObserver():
 
     scaler = mock.Mock()
     scaler.experiment.scaling_model.error_model.delta_hl = delta_hl
+    scaler.experiment.scaling_model.error_model.intensities = delta_hl
+    scaler.experiment.scaling_model.error_model.inverse_scale_factors = delta_hl
+    scaler.experiment.scaling_model.error_model.sigmaprime = delta_hl
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()
     observer.update(scaler)
     assert observer.data["delta_hl"] == list(delta_hl)
     mock_func = mock.Mock()
-    mock_func.return_value = {"plot": {}}
+    mock_func.return_value = {"norm_plot": {}}
+    mock_func2 = mock.Mock()
+    mock_func2.return_value = {"isigi_plot": {}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.normal_probability_plot", new=mock_func
     ):
-        r = observer.make_plots()
-        assert mock_func.call_count == 1
-        assert mock_func.call_args_list == [mock.call(observer.data)]
-        assert r == {"normal_prob_plot": {"plot": {}}}
+        with mock.patch(
+            "dials.algorithms.scaling.observers.i_over_sig_i_vs_i_plot", new=mock_func2
+        ):
+            r = observer.make_plots()
+            assert mock_func.call_count == 1
+            assert mock_func2.call_count == 1
+            assert mock_func.call_args_list == [mock.call(observer.data)]
+            assert "error_model_plots" in r
 
 
 def example_refls():

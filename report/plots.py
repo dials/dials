@@ -5,7 +5,9 @@ for reports of several programs.
 """
 from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
+import numpy as np
 from cctbx import uctbx
+from scitbx.array_family import flex
 
 
 def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
@@ -82,6 +84,44 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
                 "yaxis": {"title": "<I/sig(I)>", "rangemode": "tozero"},
                 "shapes": shapes,
                 "annotations": annotations,
+            },
+        }
+    }
+
+def i_over_sig_i_vs_i_plot(intensities, sigmas):
+    """Plot unscaled I / sigma_adjusted vs unscaled I."""
+    sel = intensities > 0
+    x = flex.log(intensities.select(sel))
+    y = (intensities / sigmas).select(sel)
+
+    H, xedges, yedges = np.histogram2d(
+        x.as_numpy_array(), y.as_numpy_array(), bins=(200, 200)
+    )
+    nonzeros = np.nonzero(H)
+    z = np.empty(H.shape)
+    z[:] = np.NAN
+    z[nonzeros] = H[nonzeros]
+
+    return {
+        "i_over_sig_i_vs_i": {
+            "data": [
+                {
+                    "x": xedges.tolist(),
+                    "y": yedges.tolist(),
+                    "z": z.transpose().tolist(),
+                    "type": "heatmap",
+                    "name": "Isigma distribution",
+                    "colorbar": {
+                        "title": "Number of reflections",
+                        "titleside": "right",
+                    },
+                    "colorscale": "Jet",
+                }
+            ],
+            "layout": {
+                "title": "I/sig(I) vs I",
+                "xaxis": {"title": "log I"},
+                "yaxis": {"title": "I/sig(I)"},
             },
         }
     }
