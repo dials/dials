@@ -113,7 +113,6 @@ class BasicErrorModel(object):
         the assumptions of normally distributed deltas will not hold for low
         <Ih>."""
         self.n_h = self.Ih_table.calc_nh()
-        self.Ih_table.calc_Ih()
         self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
         delta_hl = self.calc_deltahl()
         sel = flex.abs(delta_hl) < cutoff
@@ -121,7 +120,8 @@ class BasicErrorModel(object):
         scaled_Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
         sel2 = scaled_Ih > min_Ih
         sel3 = self.n_h > 1.0
-        self.Ih_table = self.Ih_table.select(sel & sel2 & sel3)
+        sel4 = self.Ih_table.intensities > 0.01
+        self.Ih_table = self.Ih_table.select(sel & sel2 & sel3 & sel4)
         self.n_h = self.Ih_table.calc_nh()
 
     def calc_sigmaprime(self, x):

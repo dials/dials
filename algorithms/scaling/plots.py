@@ -397,6 +397,16 @@ def normal_probability_plot(data):
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
+    #also make a histogram
+    histy = flex.histogram(y, n_slots=100)
+    #make a gaussian for reference also
+    n = y.size()
+    width = histy.slot_centers()[1] - histy.slot_centers()[0]
+    gaussian = []
+    from math import exp, pi
+    for x in histy.slot_centers():
+        gaussian.append(n * width * exp(-(x**2) / 2.0) / ((2.0 * pi) ** 0.5))
+
     return {
         "normal_distribution_plot": {
             "data": [
@@ -425,6 +435,27 @@ def normal_probability_plot(data):
                 "title": "Normal probability plot with error model applied",
                 "xaxis": {"anchor": "y", "title": "Order statistic medians, m"},
                 "yaxis": {"anchor": "x", "title": "Ordered responses, z"},
+            },
+        },
+        "nor_dev_hist": {
+            "data":[
+                {
+                    "x": list(histy.slot_centers()),
+                    "y": list(histy.slots()),
+                    "type": "bar",
+                    "name": "dataset normalised deviations"
+                },
+                {
+                    "x":list(histy.slot_centers()),
+                    "y": gaussian,
+                    "type": "scatter",
+                    "name": "Ideal normal distribution"
+                }
+            ],
+            "layout": {
+                "title": "Normal deviations with error model applied",
+                "xaxis": {"anchor": "y", "title": "Normalised deviation"},
+                "yaxis": {"anchor": "x", "title": "Number of reflections"},
             },
         }
     }
