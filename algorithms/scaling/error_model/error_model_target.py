@@ -98,8 +98,8 @@ class ErrorModelTarget(object):
         )  # curvatures
 
     def compute_restraints_functional_gradients_and_curvatures(self):
-        R1 = 25.0
-        R2 = 400.0
+        R1 = 50.0
+        R2 = 40.0
         residual_restraint = (R1 * ((1.0 - self.x[0]) ** 2)) + (
             R2 * ((0.0001 - self.x[1]) ** 2)
         )

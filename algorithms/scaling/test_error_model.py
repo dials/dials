@@ -13,10 +13,9 @@ from dials.algorithms.scaling.error_model.error_model import (
 )
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import IhTable
+from dials.algorithms.scaling.scaling_refiner import error_model_refinery
 from dials.array_family import flex
 from cctbx.sgtbx import space_group
-
-BasicErrorModel.min_reflections_required = 1
 
 
 @pytest.fixture()
@@ -44,21 +43,135 @@ def generate_refl_1():
         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
     )
     reflections["miller_index"] = flex.miller_index(
-        [
-            (1, 0, 0),
-            (0, 0, 1),
-            (-3, 0, 0),
-            (0, 2, 0),
-            (1, 0, 0),
-            (0, 0, -20),
-            (0, 0, 2),
-            (10, 0, 0),
-            (10, 0, 0),
-            (1, 0, 0),
-        ]
+        [(1, 0, 0), (0, 0, 1), (-3, 0, 0), (0, 2, 0), (1, 0, 0)]
+        + [(0, 0, -20), (0, 0, 2), (10, 0, 0), (10, 0, 0), (1, 0, 0)]
     )
     reflections.set_flags(flex.bool(10, True), reflections.flags.integrated)
     return reflections
+
+
+def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
+    """Model a set of poisson-distributed observations on a constant-variance
+    background."""
+
+    ## First create a miller array of observations (in asu)
+    from cctbx import miller
+    from cctbx import crystal
+
+    ms = miller.build_set(
+        crystal_symmetry=crystal.symmetry(
+            space_group_symbol="P212121", unit_cell=(12, 12, 25, 90, 90, 90)
+        ),
+        anomalous_flag=False,
+        d_min=1.0,
+    )
+    assert ms.size() == 2150
+    mean_intensities = 5.0 * (ms.d_spacings().data() ** 4)
+    # ^ get a good range of intensities, with high intensity at low
+    # miller index, mean = 285.2, median = 13.4
+
+    # when applying b, use fact that I' - Imean = alpha(I - Imean), will
+    # give the same distribution as sigma' = alpha sigma,
+    # where alpha = (1 + (b^2 I)) ^ 0.5. i.e. this is the way to increase the
+    # deviations of I-Imean and keep the same 'poisson' sigmas, such that the
+    # sigmas need to be inflated by the error model with the given b.
+    import scitbx
+    from scitbx.random import variate, poisson_distribution
+
+    scitbx.random.set_random_seed(0)
+    intensities = flex.int()
+    variances = flex.int()
+    miller_index = flex.miller_index()
+    for i, idx in zip(mean_intensities, ms.indices()):
+        g = variate(poisson_distribution(mean=i))
+        for _ in range(multiplicity):
+            I = next(g)
+            alpha = (1.0 + (b ** 2 * I)) ** 0.5
+            intensities.append(int((alpha * I) + ((1.0 - alpha) * i)))
+            variances.append(I + background_variance)
+            miller_index.append(idx)
+
+    reflections = flex.reflection_table()
+    reflections["intensity"] = intensities.as_double()
+    reflections["variance"] = variances.as_double()
+    reflections["miller_index"] = miller_index
+    reflections["inverse_scale_factor"] = flex.double(intensities.size(), 1.0)
+    reflections["id"] = flex.int(intensities.size(), 1)
+
+    return reflections
+
+
+test_input = [
+    [1, 100, [0.01, 1e-5], 0.0],  # no background var, no systematic error
+    [5, 100, [0.01, 1e-5], 0.0],  # low background var
+    [50, 100, [0.01, 1e-5], 0.0],  # high background var
+    [1, 100, [0.01, 0.005], 0.05],  # no background var, signficant systematic error
+    [5, 100, [0.01, 0.005], 0.05],  # low background var
+    [50, 100, [0.01, 0.005], 0.05],  # high background var
+    [1, 100, [0.01, 0.0025], 0.025],  # no background var, lower systematic error
+    [5, 100, [0.01, 0.0025], 0.025],  # low background var
+    [50, 100, [0.01, 0.0025], 0.025],  # high background var
+    [50, 10, [0.02, 0.01], 0.05],  # low mult, high background, high system. error
+    [50, 10, [0.02, 0.005], 0.025],  # low mult, high background, low systematic error
+]
+# Note, it appears that the b-parameter is usually slightly underestimated
+# compared to the simulated data.
+
+
+@pytest.mark.parametrize(
+    "background_variance, multiplicity, abs_tolerances, model_b", test_input
+)
+def test_error_model_on_simulated_data(
+    background_variance, multiplicity, abs_tolerances, model_b
+):
+    """Test the refinement of the error model using simulated data.
+
+    The simulated data consists of 2150 unique reflections, with I = 5.0 * d^4,
+    giving an intensity range from 122070.3 to 5.0, with a mean of 285.21 and a
+    median of 13.76.
+    Each reflection is sampled 'multiplicity' times from a poisson distribution
+    to give the intensities, which is scaled away from the mean I using the
+    model_bm factor (scaled such that when the model is refined, the correct b
+    should be returned).
+    The test uses three different representative levels of background variance
+    (1=None, 5=low, 50=high), which is added to the variance from poisson
+    counting statistics. A tolerance of 10 % is used for the model b parameter
+    for good cases, which is increased to 20 % for tough cases.
+
+    The purpose of the test is to show that the error model is finding the
+    correct solution for a variety of background levels, with varying levels of
+    systematic error (model b parameter, which is the one that has the highest
+    effect on the errors output by scaling). Included are some more realistic
+    cases, with lower multiplicity of measurement and high background variances.
+
+    These tests are also designed to help validate the cutoff choices in the
+    error model code:
+    - the need for a min_Ih to ensure that poisson approx normal distribution
+    - the need for an avg_I_over_var cutoff to remove background effects
+    - cutting off extreme 'outlier' deviations as not to mislead the model."""
+
+    data = data_for_error_model_test(
+        int(background_variance), int(multiplicity), b=model_b
+    )
+
+    Ih_table = IhTable([data], space_group("P 2ac 2ab"))
+    em = get_error_model("basic")
+    block = Ih_table.blocked_data_list[0]
+    em.min_reflections_required = 250
+    error_model = em(block, n_bins=10, min_Ih=10.0)
+    assert error_model.summation_matrix.n_rows > 400
+    refinery = error_model_refinery(
+        engine="SimpleLBFGS", target=ErrorModelTarget(error_model), max_iterations=100
+    )
+    refinery.run()
+    error_model = refinery.return_error_model()
+    print(list(error_model.refined_parameters))
+    assert error_model.refined_parameters[0] == pytest.approx(
+        1.00, abs=abs_tolerances[0]
+    )
+    assert abs(error_model.refined_parameters[1]) == pytest.approx(
+        model_b, abs=abs_tolerances[1]
+    )
 
 
 def test_errormodel(large_reflection_table, test_sg):
@@ -68,6 +181,7 @@ def test_errormodel(large_reflection_table, test_sg):
     with pytest.raises(Sorry):
         em = get_error_model("bad")
     em = get_error_model("basic")
+    em.min_reflections_required = 1
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
     error_model = em(block, n_bins=2, min_Ih=1.0)
@@ -110,7 +224,9 @@ def test_error_model_target(large_reflection_table, test_sg):
     """Test the error model target."""
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
-    error_model = BasicErrorModel(block, n_bins=2)
+    em = get_error_model("basic")
+    em.min_reflections_required = 1
+    error_model = em(block, n_bins=2, min_Ih=2.0)
     error_model.update_for_minimisation([1.0, 0.05])
     target = ErrorModelTarget(error_model, starting_values=[1.0, 0.05])
     # Test residual calculation

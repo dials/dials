@@ -7,9 +7,9 @@ from __future__ import absolute_import
 import logging
 from math import log, exp
 from dials.array_family import flex
+from dials.util import Sorry
 from scitbx import sparse
 from libtbx.table_utils import simple_table
-from dials.util import Sorry
 
 logger = logging.getLogger("dials.scale")
 
@@ -29,13 +29,13 @@ class BasicErrorModel(object):
 
     min_reflections_required = 250
 
-    def __init__(self, Ih_table, n_bins=10, min_Ih=2.0):
+    def __init__(self, Ih_table, n_bins=10, min_Ih=10.0):
         logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
         self.binning_info = {}
         # First select on initial delta
-        self.filter_unsuitable_reflections(cutoff=6.0, min_Ih=min_Ih)
+        self.filter_unsuitable_reflections(cutoff=12.0, min_Ih=min_Ih)
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = None
         self.delta_hl = None
@@ -104,7 +104,7 @@ class BasicErrorModel(object):
         """An array of the number of intensities assigned to each bin."""
         return self._bin_counts
 
-    def filter_unsuitable_reflections(self, cutoff=6.0, min_Ih=2.0):
+    def filter_unsuitable_reflections(self, cutoff=6.0, min_Ih=10.0):
         """Do a first pass to calculate delta_hl and filter out the largest
         deviants, so that the error model is not misled by these and instead
         operates on the central ~90% of the data. Also choose reflection groups
@@ -115,13 +115,38 @@ class BasicErrorModel(object):
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
         delta_hl = self.calc_deltahl()
+        # make sure the fit isn't misled by extreme values
         sel = flex.abs(delta_hl) < cutoff
-        # also filter groups with Ih < 2.0
+        self.Ih_table = self.Ih_table.select(sel)
+
+        n = self.Ih_table.size
+        sum_I_over_var = (
+            self.Ih_table.intensities / self.Ih_table.variances
+        ) * self.Ih_table.h_index_matrix
+        n_per_group = flex.double(n, 1) * self.Ih_table.h_index_matrix
+        avg_I_over_var = sum_I_over_var / n_per_group
+        sel = avg_I_over_var > 0.8
+        self.Ih_table = self.Ih_table.select_on_groups(sel)
+        self.n_h = self.Ih_table.calc_nh()
         scaled_Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
+        # need a scaled min_Ih, below which wouldn't expect norm distribution
+        # on the order of 3 sigma (so use min_Ih=10 by default, sigma ~ 3)
         sel2 = scaled_Ih > min_Ih
+        # can't calculate a true deviation for groups of 1
         sel3 = self.n_h > 1.0
-        sel4 = self.Ih_table.intensities > 0.01
-        self.Ih_table = self.Ih_table.select(sel & sel2 & sel3 & sel4)
+        # don't want to include weaker reflections where the background adds
+        # significantly to the variances, as these would no longer be normally
+        # distributed and skew the fit.
+        self.Ih_table = self.Ih_table.select(sel2 & sel3)
+        n = self.Ih_table.size
+        if n < self.min_reflections_required:
+            raise ValueError(
+                "Insufficient reflections (%s) to perform error modelling." % n
+            )
+        self.n_h = self.Ih_table.calc_nh()
+        # now make sure any left also have n > 1
+        sel = self.n_h > 1.0
+        self.Ih_table = self.Ih_table.select(sel)
         self.n_h = self.Ih_table.calc_nh()
 
     def calc_sigmaprime(self, x):
@@ -198,8 +223,18 @@ class BasicErrorModel(object):
             for j in isel:
                 summation_matrix[j, i] = 1
             n_cumul += n_in_bin
-
-        return summation_matrix
+        cols_to_del = []
+        for i, col in enumerate(summation_matrix.cols()):
+            if col.non_zeroes < min_per_bin - 5:
+                cols_to_del.append(i)
+        n_new_cols = summation_matrix.n_cols - len(cols_to_del)
+        new_sum_matrix = sparse.matrix(summation_matrix.n_rows, n_new_cols)
+        next_col = 0
+        for i, col in enumerate(summation_matrix.cols()):
+            if i not in cols_to_del:
+                new_sum_matrix[:, next_col] = col
+                next_col += 1
+        return new_sum_matrix
 
     def calculate_bin_variances(self):
         """Calculate the variance of each bin."""
@@ -219,4 +254,5 @@ class BasicErrorModel(object):
         return new_variance
 
     def clear_Ih_table(self):
+        """Delete the Ih_table, to free memory."""
         del self.Ih_table

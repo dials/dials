@@ -103,6 +103,15 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
+    y2 = (intensities / sigmas**2).select(sel)
+    H2, x2edges, y2edges = np.histogram2d(
+        x.as_numpy_array(), y2.as_numpy_array(), bins=(200, 200)
+    )
+    nonzeros = np.nonzero(H2)
+    z2 = np.empty(H2.shape)
+    z2[:] = np.NAN
+    z2[nonzeros] = H2[nonzeros]
+
     return {
         "i_over_sig_i_vs_i": {
             "data": [
@@ -123,6 +132,27 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
                 "title": "I/sig(I) vs I",
                 "xaxis": {"title": "log I"},
                 "yaxis": {"title": "I/sig(I)"},
+            },
+        },
+        "i_over_sig_isq_vs_i": {
+            "data": [
+                {
+                    "x": x2edges.tolist(),
+                    "y": y2edges.tolist(),
+                    "z": z2.transpose().tolist(),
+                    "type": "heatmap",
+                    "name": "Isigma2 distribution",
+                    "colorbar": {
+                        "title": "Number of reflections",
+                        "titleside": "right",
+                    },
+                    "colorscale": "Jet",
+                }
+            ],
+            "layout": {
+                "title": "I/sig(I)^2 vs I",
+                "xaxis": {"title": "log I"},
+                "yaxis": {"title": "I/sig(I)^2"},
             },
         }
     }

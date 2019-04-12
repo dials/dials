@@ -175,7 +175,7 @@ phil_scope = iotbx.phil.parse(
         .type = choice
         .help = "The name of the error model to use, if optimise_errors is True."
         .expert_level = 1
-      min_Ih = 2.0
+      min_Ih = 10.0
         .type = float
         .help = "Reflections with expected intensity above this value are to."
                 "be used in error model minimisation."

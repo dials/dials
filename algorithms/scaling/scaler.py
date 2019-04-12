@@ -232,13 +232,13 @@ class ScalerBase(Subject):
             logger.error(e, exc_info=True)
         else:
             error_model = refinery.return_error_model()
+            logger.info(error_model)
+            error_model.minimisation_summary()
             self.update_error_model(
                 error_model,
                 update_Ih=update_Ih,
                 apply_to_reflection_table=apply_to_reflection_table,
             )
-            logger.info(error_model)
-            error_model.minimisation_summary()
         return error_model
 
     def clear_memory_from_derivs(self, block_id):
