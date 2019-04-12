@@ -2,8 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+
 import copy
+import logging
 import math
+
 import iotbx.phil
 from scitbx import matrix
 from cctbx.array_family import flex
@@ -15,24 +18,18 @@ from dials.algorithms.indexing.indexer import (
     filter_reflections_by_scan_range,
 )
 
-import libtbx.load_env
-import logging
-
 logger = logging.getLogger("dials.command_line.search_beam_position")
 
-help_message = (
-    """
+help_message = """
 
 Search for a better beam centre using the results of spot finding. Based on
 method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  %s experiments.json strong.pickle
+  dials.search_beam_position experiments.json strong.pickle
 
 """
-    % libtbx.env.dispatcher_name
-)
 
 phil_scope = iotbx.phil.parse(
     """
@@ -548,7 +545,7 @@ def discover_better_experimental_model(
 def run(args):
     from dials.util import log
 
-    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
+    usage = "dials.search_beam_position [options] experiments.json strong.pickle"
 
     parser = OptionParser(
         usage=usage,
