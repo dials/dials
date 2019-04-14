@@ -1064,6 +1064,4 @@ class XYPhiPredictionParameterisationSparse(
     # (https://lgtm.com/rules/7860084/)
     @staticmethod
     def _extend_gradient_vectors(results, m, n, keys=("dX_dp", "dY_dp", "dZ_dp")):
-        return SparseGradientVectorMixin._extend_gradient_vectors(
-            results, m, n, keys
-        )
+        return SparseGradientVectorMixin._extend_gradient_vectors(results, m, n, keys)

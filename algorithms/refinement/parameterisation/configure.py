@@ -761,9 +761,7 @@ def _parameterise_goniometers(options, experiments, analysis):
         if fix_list:
             names = _filter_parameter_names(gon_param)
             assert len(names) == num_gon
-            to_fix = string_sel(
-                fix_list, names, gon_param.model_identifier
-            )
+            to_fix = string_sel(fix_list, names, gon_param.model_identifier)
             gon_param.set_fixed(to_fix)
 
         if gon_param.num_free() > 0:

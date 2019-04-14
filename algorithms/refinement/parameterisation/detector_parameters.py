@@ -215,22 +215,22 @@ class DetectorMixin(object):
         # These derivatives are not used, but are left as comments for understanding
 
         # derivative wrt dist
-        #ddn_ddist = matrix.col((0.0, 0.0, 0.0))
+        # ddn_ddist = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt shift1
-        #ddn_dshift1 = matrix.col((0.0, 0.0, 0.0))
+        # ddn_dshift1 = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt shift2
-        #ddn_dshift2 = matrix.col((0.0, 0.0, 0.0))
+        # ddn_dshift2 = matrix.col((0.0, 0.0, 0.0))
 
         # derivative wrt tau1. Product rule for cross product applies
-        #ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
+        # ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
 
         # derivative wrt tau2
-        #ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
+        # ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
 
         # derivative wrt tau3
-        #ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
+        # ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
         # calculate derivatives of the attached sensor matrix
         # ===================================================

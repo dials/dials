@@ -597,8 +597,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             de1_dp = dq0.cross(s0u)
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            #dr_de1 = dRq_de(DeltaPsi, e1, q)
-            #drde_dedp = dr_de1 * de1_dp
+            # dr_de1 = dRq_de(DeltaPsi, e1, q)
+            # drde_dedp = dr_de1 * de1_dp
 
             # The above calculation is not correct. Instead, calculate the partial
             # derivative of r wrt change in rotation axis e1 by finite differences
@@ -666,8 +666,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             de1_dp = dq0.cross(s0u)
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            #dr_de1 = dRq_de(DeltaPsi, e1, q)
-            #drde_dedp = dr_de1 * de1_dp
+            # dr_de1 = dRq_de(DeltaPsi, e1, q)
+            # drde_dedp = dr_de1 * de1_dp
 
             # The above calculation is not correct. Instead, calculate the partial
             # derivative of r wrt change in rotation axis e1 by finite differences

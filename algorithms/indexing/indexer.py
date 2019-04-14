@@ -2231,7 +2231,6 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
     return optimised
 
 
-
 # Optimise the initial basis vectors as per equation 11.4.3.4 of
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
 class basis_vector_target(object):

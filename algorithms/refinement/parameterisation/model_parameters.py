@@ -161,7 +161,7 @@ class ModelParameterisation(object):
         self._null_state = self.get_state() * 0.0
 
         # An attribute that can be set to name the model being parameterised
-        self.model_identifier = ''
+        self.model_identifier = ""
         return
 
     def is_multi_state(self):

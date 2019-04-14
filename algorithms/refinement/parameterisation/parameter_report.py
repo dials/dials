@@ -177,6 +177,7 @@ class ParameterReporter(object):
 
         return global_p_list
 
+
 class TableColumn(object):
     """Bucket to store data to be used for constructing tables to print."""
 
