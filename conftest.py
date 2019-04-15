@@ -26,15 +26,6 @@ def pytest_addoption(parser):
     if pkg_dials_data:
         pkg_dials_data.pytest_addoption(parser)
 
-    try:
-        parser.addoption(
-            "--regression",
-            action="store_true",
-            default=False,
-            help="run regression tests",
-        )
-    except ValueError:
-        pass  # Thrown in case the command line option is already defined
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
     )
