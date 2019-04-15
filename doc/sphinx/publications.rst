@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 30950396 How best to use photons
 * .. pubmed:: 30198898 Serial crystallography
 * .. pubmed:: 29872002 Electron diffraction
 * .. pubmed:: 29717711 Cosym
