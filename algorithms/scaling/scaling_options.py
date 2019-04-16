@@ -215,6 +215,10 @@ phil_scope = iotbx.phil.parse(
       .expert_level = 1
   }
   scaling_options {
+    check_consistent_indexing = False
+      .type = bool
+      .help = "If True, run dials.cosym on all data in the data preparation"
+              "step, to ensure consistent indexing."
     target_cycle = True
       .type = bool
       .help = "Option to turn of initial round of targeted scaling

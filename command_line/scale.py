@@ -78,7 +78,8 @@ from dials.algorithms.scaling.algorithm import (
 )
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import register_default_scaling_observers
-
+from dials.command_line.cosym import cosym
+from dials.command_line.cosym import phil_scope as cosym_phil_scope
 
 logger = logging.getLogger("dials")
 info_handle = log.info_handle(logger)
@@ -216,8 +217,18 @@ class Script(Subject):
             reflections, experiments, params.exclude_images
         )
 
-        #### Ensure all space groups are the same
-        experiments = ensure_consistent_space_groups(experiments, params)
+        if params.scaling_options.check_consistent_indexing:
+            logger.info("Running dials.cosym to check consistent indexing:\n")
+            cosym_params = cosym_phil_scope.extract()
+            cosym_params.nproc = params.scaling_options.nproc
+            cosym_instance = cosym(experiments, reflections, cosym_params)
+            cosym_instance.run()
+            experiments = cosym_instance.experiments
+            reflections = cosym_instance.reflections
+            logger.info("Finished running dials.cosym, continuing with scaling.\n")
+        else:
+            #### Ensure all space groups are the same
+            experiments = ensure_consistent_space_groups(experiments, params)
 
         #### If doing targeted scaling, extract data and append an experiment
         #### and reflection table to the lists

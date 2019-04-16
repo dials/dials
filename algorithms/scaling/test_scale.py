@@ -524,7 +524,8 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     print(result.overall.cc_one_half)
 
     # run again, optimising errors, and continuing from where last run left off.
-    extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz"]
+    extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz",
+        "check_consistent_indexing=True"]
     _ = run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
