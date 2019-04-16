@@ -1,3 +1,7 @@
+"""
+Definition of the target function for error model minimisation.
+"""
+
 from __future__ import division
 from __future__ import absolute_import, print_function
 from dials.array_family import flex
@@ -16,7 +20,6 @@ class ErrorModelTarget(object):
         # Note - don't initialise with b = 0.0 or it gets stuck on 0.0!!
         self.error_model = error_model
         self.x = starting_values
-
         # Quantities to cache each step
         self._rmsds = None
 
@@ -28,10 +31,12 @@ class ErrorModelTarget(object):
         """method for refinement engine access"""
         return self.x
 
-    def predict(self):  # do basis function calcuation and update Ih
+    def predict(self):
+        """Do the next step of the prediction."""
         self.error_model.update_for_minimisation(self.x)
 
     def get_num_matches(self):
+        """Get the number of reflections."""
         return self.error_model.Ih_table.size
 
     def rmsds(self):
@@ -54,7 +59,11 @@ class ErrorModelTarget(object):
     def calculate_residuals(self):
         """Return the residual vector"""
         bin_vars = self.error_model.bin_variances
-        R = (flex.double(bin_vars.size(), 1.0) - bin_vars) ** 2
+        R = (
+            (flex.double(bin_vars.size(), 0.5) - bin_vars) ** 2
+            + (1.0 / bin_vars)
+            - flex.double(bin_vars.size(), 1.25)
+        )
         return R
 
     def calculate_gradients(self):
@@ -74,32 +83,36 @@ class ErrorModelTarget(object):
         ddelta_dsigma = -1.0 * self.error_model.delta_hl / self.error_model.sigmaprime
         dsig_list = [ddelta_dsigma * dsig_da, ddelta_dsigma * dsig_dc]
         gradient = flex.double([])
+        dphi_by_dvar = -2.0 * (
+            flex.double(bin_vars.size(), 0.5)
+            - bin_vars
+            + (1.0 / (2.0 * (bin_vars ** 2)))
+        )
         for deriv in dsig_list:
             term1 = 2.0 * self.error_model.delta_hl * deriv * sum_matrix
             term2a = self.error_model.delta_hl * sum_matrix
             term2b = deriv * sum_matrix
-            grad = (
-                -2.0
-                * (flex.double(bin_vars.size(), 1.0) - bin_vars)
-                * ((term1 / bin_counts) - (2.0 * term2a * term2b / (bin_counts ** 2)))
+            grad = dphi_by_dvar * (
+                (term1 / bin_counts) - (2.0 * term2a * term2b / (bin_counts ** 2))
             )
             gradient.append(flex.sum(grad))
         return gradient
 
     # The following methods are for adaptlbfgs.
     def compute_functional_gradients(self):
+        """Compute the functional and gradients vector."""
         return flex.sum(self.calculate_residuals()), self.calculate_gradients()
 
     def compute_functional_gradients_and_curvatures(self):
-        return (
-            flex.sum(self.calculate_residuals()),
-            self.calculate_gradients(),
-            None,
-        )  # curvatures
+        """Compute the functional and gradients and curvatures vector."""
+        return (flex.sum(self.calculate_residuals()), self.calculate_gradients(), None)
 
     def compute_restraints_functional_gradients_and_curvatures(self):
-        R1 = 50.0
-        R2 = 40.0
+        """Compute the restraints for the functional and gradients.
+
+        This is applicable to the basic error model so should be refactored."""
+        R1 = 200.0
+        R2 = 100.0
         residual_restraint = (R1 * ((1.0 - self.x[0]) ** 2)) + (
             R2 * ((0.0001 - self.x[1]) ** 2)
         )
