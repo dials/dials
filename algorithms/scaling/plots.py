@@ -437,6 +437,15 @@ def normal_probability_plot(data):
                 "xaxis": {"anchor": "y", "title": "Order statistic medians, m"},
                 "yaxis": {"anchor": "x", "title": "Ordered responses, z"},
             },
+            "help": """\
+This plot shows the normalised devations (of each reflection from the
+group-weighted mean), sorted in order and plotted against the expected order
+based on a normal distribution model. A true normal distribution of deviations
+would give the straight line indicated. If the errors are well described by
+this model, the ordered responses should closely fit the straight line to
+high absolute values of x (>3), where there is typically a deviation away from
+the line due to wide tails of the distribution.
+"""
         },
         "nor_dev_hist": {
             "data": [
@@ -458,5 +467,10 @@ def normal_probability_plot(data):
                 "xaxis": {"anchor": "y", "title": "Normalised deviation"},
                 "yaxis": {"anchor": "x", "title": "Number of reflections"},
             },
+            "help": """\
+This plot shows the distribution of normalised devations (of each reflection
+from the group-weighted mean), for the reflections used to minimise the error
+model. A true normal distribution is indicated.
+"""
         },
     }

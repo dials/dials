@@ -133,6 +133,15 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
                 "xaxis": {"title": "log I"},
                 "yaxis": {"title": "I/sig(I)"},
             },
+            "help" : """\
+This plot shows the distribution of I/sigma as a function of I, which can
+give indication of the errors within the dataset. The I/sigma asymptotic
+limit can be seen at the plateau in the top-right of the plot, if the measured
+data are strong enough.
+
+[1] Diederichs, K. (2010). Acta Cryst. D, 66(6), 733-740.
+https://doi.org/10.1107/S0907444910014836
+"""
         },
         "i_over_sig_isq_vs_i": {
             "data": [
