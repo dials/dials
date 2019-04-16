@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 import pytest
-
+from dials.command_line.stills_detector_hybrid_refine import run as run_hybrid_refine
 
 @pytest.mark.parametrize("averaged_reference_detector", [True, False])
 def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
@@ -62,7 +62,7 @@ def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
         "idx-20140615231416694_indexed.pickle",
     ]
 
-    cmd = ["dev.dials.stills_detector_hybrid_refine"]
+    cmd = []
     for exp in experiments_paths:
         exp = os.path.join(data_dir, exp)
         cmd.append("experiments={0}".format(exp))
@@ -81,7 +81,7 @@ def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
         cmd.append(
             "detector_phase.refinement.parameterisation.detector.hierarchy_level=1"
         )
-
-    result = procrunner.run(cmd)
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    result = run_hybrid_refine(args=cmd)
+    # TODO: Test used to assert empty stderr. Should do this again once
+    #       we have access to contextlib.redirect_stderr
+    assert not result
