@@ -62,8 +62,8 @@ def test_simple(dials_data, model, tmpdir):
 
     from dials.array_family import flex
 
-    reflections1 = flex.reflection_table.from_msgpack_file(reflns_simple.strpath)
-    reflections3 = flex.reflection_table.from_msgpack_file(reflns_g_simple.strpath)
+    reflections1 = flex.reflection_table.from_file(reflns_simple.strpath)
+    reflections3 = flex.reflection_table.from_file(reflns_g_simple.strpath)
     assert len(reflections1) == len(reflections3)
 
     flag = flex.reflection_table.flags.integrated_sum
@@ -121,8 +121,8 @@ def test_robust(dials_data, model, tmpdir):
 
     from dials.array_family import flex
 
-    reflections2 = flex.reflection_table.from_msgpack_file(reflns_robust.strpath)
-    reflections4 = flex.reflection_table.from_msgpack_file(reflns_g_robust.strpath)
+    reflections2 = flex.reflection_table.from_file(reflns_robust.strpath)
+    reflections4 = flex.reflection_table.from_file(reflns_g_robust.strpath)
     assert len(reflections2) == len(reflections4)
 
     flag = flex.reflection_table.flags.integrated_sum

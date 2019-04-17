@@ -54,7 +54,7 @@ if __name__ == "__main__":
         raise Sorry("exactly 1 reflection table must be specified")
 
     try:
-        table = flex.reflection_table.from_msgpack_file(sys.argv[1])
+        table = flex.reflection_table.from_file(sys.argv[1])
     except Exception:
         raise Sorry("Error loading reflection table")
 

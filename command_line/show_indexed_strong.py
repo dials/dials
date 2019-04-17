@@ -42,7 +42,7 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise RuntimeError("%s indexed.mpack" % sys.argv[0])
 
-    data = flex.reflection_table.from_msgpack_file(sys.argv[1])
+    data = flex.reflection_table.from_file(sys.argv[1])
 
     if "miller_index" in data:
         show_indexed_strong(data)

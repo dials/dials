@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     from dials.array_family import flex
 
-    strong_spots = flex.reflection_table.from_msgpack_file(sys.argv[1])
+    strong_spots = flex.reflection_table.from_file(sys.argv[1])
     try:
         show_spots(strong_spots)
     except KeyError:

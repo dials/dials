@@ -19,7 +19,7 @@ import sys
 if __name__ == "__main__":
 
     experiments = ExperimentListFactory.from_json_file(sys.argv[1])
-    reflections = flex.reflection_table.from_msgpack_file(sys.argv[2])
+    reflections = flex.reflection_table.from_file(sys.argv[2])
 
     if len(sys.argv) == 4:
         outfile_template = sys.argv[3]

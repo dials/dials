@@ -38,7 +38,7 @@ def test_spots_xds(tmpdir):
 
     from dials.array_family import flex
 
-    reflections = flex.reflection_table.from_msgpack_file(tmpdir.join(output_pickle).strpath)
+    reflections = flex.reflection_table.from_file(tmpdir.join(output_pickle).strpath)
     assert len(reflections) == 5
 
     tmpdir.join(xds_input).remove()

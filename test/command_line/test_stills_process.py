@@ -63,7 +63,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
 
     result = "idx-20130301060858801_integrated.mpack"
     n_refls = range(140, 152)  # large ranges to handle platform-specific differences
-    table = flex.reflection_table.from_msgpack_file(result)
+    table = flex.reflection_table.from_file(result)
     assert len(table) in n_refls, len(table)
     assert "id" in table
     assert (table["id"] == 0).count(False) == 0
@@ -137,7 +137,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
         ],
         [range(212, 225), range(565, 580), range(475, 500)],
     ):  # large ranges to handle platform-specific differences
-        table = flex.reflection_table.from_msgpack_file(result_filename)
+        table = flex.reflection_table.from_file(result_filename)
         assert len(table) in n_refls, (result_filename, len(table))
         assert "id" in table
         assert (table["id"] == 0).count(False) == 0

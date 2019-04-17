@@ -10,5 +10,5 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise RuntimeError("%s integrated.mpack")
 
-    integrated_data = flex.reflection_table.from_msgpack_file(sys.argv[1])
+    integrated_data = flex.reflection_table.from_file(sys.argv[1])
     export_text(integrated_data)

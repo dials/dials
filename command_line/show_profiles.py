@@ -18,7 +18,7 @@ def show_profiles(integrated_reflections, isig_limit=None):
     from dials.array_family import flex
     import math
 
-    integrated_data = flex.reflection_table.from_msgpack_file(integrated_reflections)
+    integrated_data = flex.reflection_table.from_file(integrated_reflections)
 
     for j, r in enumerate(integrated_data):
         if isig_limit is not None:

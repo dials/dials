@@ -339,7 +339,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     results = []
     for mode in "kapton", "nokapton":
         result = os.path.join(loc, "idx-20161021225550223_integrated_%s.mpack" % mode)
-        table = flex.reflection_table.from_msgpack_file(result)
+        table = flex.reflection_table.from_file(result)
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
         test_rows = {k: millers.first_index(v) for k, v in test_indices.iteritems()}
