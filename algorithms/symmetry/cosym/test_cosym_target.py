@@ -13,7 +13,8 @@ from dials.algorithms.symmetry.cosym import target
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"])
 def test_cosym_target(space_group):
     datasets, expected_reindexing_ops = generate_test_data(
-        space_group=sgtbx.space_group_info(symbol=space_group).group()
+        space_group=sgtbx.space_group_info(symbol=space_group).group(),
+        sample_size=50,
     )
 
     intensities = datasets[0]
@@ -37,7 +38,7 @@ def test_cosym_target(space_group):
 
         c = t.curvatures(x)
         c_fd = t.curvatures_fd(x, eps=1e-3)
-        assert list(c) == pytest.approx(c_fd, rel=0.5e-1)
+        assert list(c) == pytest.approx(c_fd, rel=0.8e-1)
 
         M = engine.lbfgs_with_curvs(target=t, coords=x)
         t.compute_functional(x)

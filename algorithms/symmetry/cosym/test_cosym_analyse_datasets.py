@@ -11,9 +11,9 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
-    ("space_group", "dimensions"), [("P2", None), ("P3", None), ("I23", libtbx.Auto)]
+    ("space_group", "dimensions", "sample_size"), [("P2", None, 10), ("P3", None, 20), ("I23", libtbx.Auto, 10)]
 )
-def test_cosym(space_group, dimensions, run_in_tmpdir):
+def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -23,7 +23,7 @@ def test_cosym(space_group, dimensions, run_in_tmpdir):
         unit_cell_volume=10000,
         d_min=1.5,
         map_to_p1=True,
-        sample_size=20,
+        sample_size=sample_size,
     )
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
