@@ -62,7 +62,8 @@ namespace dials { namespace algorithms {
     std::size_t width = data.accessor()[1];
 
     // Compute the manhattan distance transform of the mask
-    af::versa< int, af::c_grid<2> > distance = manhattan_distance(mask);
+    af::versa< int, af::c_grid<2> > distance(mask.accessor());
+    manhattan_distance(mask, true, distance.ref());
 
     // Get a list of the pixels to fill
     std::vector<detail::SimpleFillNode> pixels;
