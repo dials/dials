@@ -61,7 +61,7 @@ def generate_phil_scope():
                 "to be accepted by the filtering algorithm."
         .type = int(value_min=1)
 
-      max_spot_size = 100
+      max_spot_size = 1000
         .help = "The maximum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
         .type = int(value_min=1, allow_none=False)
