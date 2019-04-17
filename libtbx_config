@@ -8,7 +8,7 @@
     "mock>=2.0",
     "msgpack",
     "orderedset",
-    "procrunner>=0.9.1",
+    "procrunner>=1.0.0",
     "pytest>=3.6,<5.0",
     "scikit_learn[alldeps]<0.21",
     "scipy",

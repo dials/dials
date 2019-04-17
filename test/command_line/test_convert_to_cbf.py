@@ -1,32 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
-import glob
-import os
+import procrunner
 import pytest
 
-import procrunner
 
-pytestmark = pytest.mark.skipif(
-    not os.access("/dls/i04/data/2019/cm23004-1/20190109/Eiger", os.R_OK),
-    reason="Test images not available",
-)
+@pytest.mark.parametrize("filename", ["image_15799_master.h5", "image_15799.nxs"])
+def test_convert_to_cbf(dials_data, filename, tmpdir):
+    result = procrunner.run(
+        ["dials.import", dials_data("vmxi_thaumatin") / filename, "image_range=1,10"],
+        working_directory=tmpdir,
+    )
+    result.check_returncode()
+    assert not result.stderr
+    assert tmpdir.join("imported_experiments.json").check()
 
+    result = procrunner.run(
+        ["dials.convert_to_cbf", "imported_experiments.json"], working_directory=tmpdir
+    )
+    result.check_returncode()
+    assert not result.stderr
 
-@pytest.mark.parametrize(
-    "master_h5",
-    [
-        "/dls/i04/data/2019/cm23004-1/20190109/Eiger/gw/Thaum/Thau_4/Thau_4_1_master.h5",
-        "/dls/i04/data/2019/cm23004-1/20190109/Eiger/gw/Thaum/Thau_4/Thau_4_1.nxs",
-    ],
-)
-def test_convert_to_cbf(master_h5):
-    result = procrunner.run(["dials.import", master_h5, "image_range=1,10"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("imported_experiments.json")
-
-    result = procrunner.run(["dials.convert_to_cbf", "imported_experiments.json"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    g = glob.glob("as_cbf_*.cbf")
-    assert len(g) == 10
+    assert len(tmpdir.listdir("as_cbf_*.cbf")) == 10
