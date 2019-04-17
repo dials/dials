@@ -8,14 +8,26 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-
-from dials.util import Sorry
+from __future__ import absolute_import, division, print_function
 
 import logging
+import math
+import os
+
+from dials.util import Sorry
+import libtbx
 
 logger = logging.getLogger(__name__)
+
+_no_multiprocessing_on_windows = (
+    "\n"
+    + "*" * 80
+    + "\n"
+    + "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
+    + "\n"
+    + "*" * 80
+    + "\n"
+)
 
 
 class Result(object):
@@ -26,13 +38,11 @@ class Result(object):
     each thread as it comes in instead of waiting for all results.
     The purpose of this class is to allow us to set the pixel list
     to None after each image to lower memory usage.
-
     """
 
     def __init__(self, pixel_list):
         """
         Set the pixel list
-
         """
         self.pixel_list = pixel_list
 
@@ -40,7 +50,6 @@ class Result(object):
 class ExtractPixelsFromImage(object):
     """
     A class to extract pixels from a single image
-
     """
 
     def __init__(
@@ -60,7 +69,6 @@ class ExtractPixelsFromImage(object):
         :param mask: The image mask
         :param region_of_interest: A region of interest to process
         :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
-
         """
         self.threshold_function = threshold_function
         self.imageset = imageset
@@ -78,12 +86,10 @@ class ExtractPixelsFromImage(object):
         Extract strong pixels from an image
 
         :param index: The index of the image
-
         """
         from dials.model.data import PixelList
         from dxtbx.imageset import ImageSweep
         from dials.array_family import flex
-        from math import ceil
 
         # Parallel reading of HDF5 from the same handle is not allowed. Python
         # multiprocessing is a bit messed up and used fork on linux so need to
@@ -160,7 +166,7 @@ class ExtractPixelsFromImage(object):
             num_image = 0
             for im in image:
                 num_image += len(im)
-            max_strong = int(ceil(self.max_strong_pixel_fraction * num_image))
+            max_strong = int(math.ceil(self.max_strong_pixel_fraction * num_image))
             if num_strong > max_strong:
                 raise RuntimeError(
                     """
@@ -186,7 +192,6 @@ class ExtractPixelsFromImage(object):
 class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
     """
     A class to extract pixels from a single image
-
     """
 
     def __init__(
@@ -209,7 +214,6 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         :param mask: The image mask
         :param region_of_interest: A region of interest to process
         :param max_strong_pixel_fraction: The maximum fraction of pixels allowed
-
         """
         super(ExtractPixelsFromImage2DNoShoeboxes, self).__init__(
             imageset,
@@ -230,7 +234,6 @@ class ExtractPixelsFromImage2DNoShoeboxes(ExtractPixelsFromImage):
         Extract strong pixels from an image
 
         :param index: The index of the image
-
         """
         from dials.model.data import PixelListLabeller
 
@@ -264,23 +267,19 @@ class ExtractSpotsParallelTask(object):
     Execute the spot finder task in parallel
 
     We need this external class so that we can pickle it for cluster jobs
-
     """
 
     def __init__(self, function):
         """
         Initialise with the function to call
-
         """
         self.function = function
 
     def __call__(self, task):
         """
         Call the function with th task and save the IO
-
         """
         from dials.util import log
-        import logging
 
         log.config_simple_cached()
         result = self.function(task)
@@ -292,13 +291,11 @@ class ExtractSpotsParallelTask(object):
 class PixelListToShoeboxes(object):
     """
     A helper class to convert pixel list to shoeboxes
-
     """
 
     def __init__(self, min_spot_size, max_spot_size, write_hot_pixel_mask):
         """
         Initialize
-
         """
         self.min_spot_size = min_spot_size
         self.max_spot_size = max_spot_size
@@ -307,7 +304,6 @@ class PixelListToShoeboxes(object):
     def __call__(self, imageset, pixel_labeller):
         """
         Convert the pixel list to shoeboxes
-
         """
         from dxtbx.imageset import ImageSweep
         from dials.array_family import flex
@@ -357,20 +353,17 @@ class PixelListToShoeboxes(object):
 class ShoeboxesToReflectionTable(object):
     """
     A class to filter shoeboxes and create reflection table
-
     """
 
     def __init__(self, filter_spots):
         """
         Initialise the reflection table creator
-
         """
         self.filter_spots = filter_spots
 
     def __call__(self, imageset, shoeboxes):
         """
         Filter shoeboxes and create reflection table
-
         """
         from dials.array_family import flex
 
@@ -399,7 +392,6 @@ class ShoeboxesToReflectionTable(object):
 class PixelListToReflectionTable(object):
     """
     Helper class to convert the pixel list to reflection table
-
     """
 
     def __init__(
@@ -407,7 +399,6 @@ class PixelListToReflectionTable(object):
     ):
         """
         Initialise the converter
-
         """
 
         # Setup the pixel list to shoebox converter
@@ -421,7 +412,6 @@ class PixelListToReflectionTable(object):
     def __call__(self, imageset, pixel_labeller):
         """
         Convert to reflection table
-
         """
         shoeboxes, hot_pixels = self.pixel_list_to_shoeboxes(imageset, pixel_labeller)
 
@@ -431,7 +421,6 @@ class PixelListToReflectionTable(object):
 class ExtractSpots(object):
     """
     Class to find spots in an image and extract them into shoeboxes.
-
     """
 
     def __init__(
@@ -460,7 +449,6 @@ class ExtractSpots(object):
         :param mp_method: The multi processing method
         :param nproc: The number of processors
         :param max_strong_pixel_fraction: The maximum number of strong pixels
-
         """
         # Set the required strategies
         self.threshold_function = threshold_function
@@ -485,7 +473,6 @@ class ExtractSpots(object):
 
         :param imageset: The imageset to process
         :return: The list of spot shoeboxes
-
         """
         if not self.no_shoeboxes_2d:
             return self._find_spots(imageset)
@@ -495,11 +482,8 @@ class ExtractSpots(object):
     def _compute_chunksize(self, nimg, nproc, min_chunksize):
         """
         Compute the chunk size for a given number of images and processes
-
         """
-        from math import ceil
-
-        chunksize = int(ceil(nimg / nproc))
+        chunksize = int(math.ceil(nimg / nproc))
         remainder = nimg % (chunksize * nproc)
         test_chunksize = chunksize - 1
         while test_chunksize >= min_chunksize:
@@ -516,38 +500,23 @@ class ExtractSpots(object):
 
         :param imageset: The imageset to process
         :return: The list of spot shoeboxes
-
         """
-        from dials.array_family import flex
-        from dxtbx.imageset import ImageSweep
         from dials.model.data import PixelListLabeller
         from dials.util.mp import batch_multi_node_parallel_map
-        from math import floor, ceil
-        import platform
 
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
-        if (
-            mp_nproc > 1 or mp_njobs > 1
-        ) and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warn("")
-            logger.warn("*" * 80)
-            logger.warn(
-                "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-            )
-            logger.warn("*" * 80)
-            logger.warn("")
+        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
+            logger.warn(_no_multiprocessing_on_windows)
             mp_nproc = 1
             mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
-            mp_njobs = int(ceil(len(imageset) / mp_nproc))
+            mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
 
         mp_method = self.mp_method
         mp_chunksize = self.mp_chunksize
-
-        import libtbx
 
         if mp_chunksize == libtbx.Auto:
             mp_chunksize = self._compute_chunksize(
@@ -555,7 +524,7 @@ class ExtractSpots(object):
             )
             logger.info("Setting chunksize=%i" % mp_chunksize)
 
-        len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
+        len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
             mp_chunksize = len_by_nproc
         if mp_chunksize == 0:
@@ -637,38 +606,23 @@ class ExtractSpots(object):
 
         :param imageset: The imageset to process
         :return: The list of spot shoeboxes
-
         """
         from dials.array_family import flex
-        from dxtbx.imageset import ImageSweep
-        from dials.model.data import PixelListLabeller
         from dials.util.mp import batch_multi_node_parallel_map
-        from math import floor, ceil
-        import platform
 
         # Change the number of processors if necessary
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
-        if (
-            mp_nproc > 1 or mp_njobs > 1
-        ) and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warn("")
-            logger.warn("*" * 80)
-            logger.warn(
-                "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-            )
-            logger.warn("*" * 80)
-            logger.warn("")
+        if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
+            logger.warn(_no_multiprocessing_on_windows)
             mp_nproc = 1
             mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
             mp_nproc = min(mp_nproc, len(imageset))
-            mp_njobs = int(ceil(len(imageset) / mp_nproc))
+            mp_njobs = int(math.ceil(len(imageset) / mp_nproc))
 
         mp_method = self.mp_method
         mp_chunksize = self.mp_chunksize
-
-        import libtbx
 
         if mp_chunksize == libtbx.Auto:
             mp_chunksize = self._compute_chunksize(
@@ -676,7 +630,7 @@ class ExtractSpots(object):
             )
             logger.info("Setting chunksize=%i" % mp_chunksize)
 
-        len_by_nproc = int(floor(len(imageset) / (mp_njobs * mp_nproc)))
+        len_by_nproc = int(math.floor(len(imageset) / (mp_njobs * mp_nproc)))
         if mp_chunksize > len_by_nproc:
             mp_chunksize = len_by_nproc
         assert mp_nproc > 0, "Invalid number of processors"
@@ -740,7 +694,6 @@ class ExtractSpots(object):
 class SpotFinder(object):
     """
     A class to do spot finding and filtering.
-
     """
 
     def __init__(
@@ -770,7 +723,6 @@ class SpotFinder(object):
         :param find_spots: The spot finding algorithm
         :param filter_spots: The spot filtering algorithm
         :param scan_range: The scan range to find spots over
-
         """
 
         # Set the filter and some other stuff
@@ -799,7 +751,6 @@ class SpotFinder(object):
 
         :param experiments: The experiments to process
         :return: The observed spots
-
         """
         from dials.array_family import flex
         import six.moves.cPickle as pickle
@@ -854,7 +805,6 @@ class SpotFinder(object):
 
         :param imageset: The imageset to process
         :return: The observed spots
-
         """
         from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
@@ -929,7 +879,6 @@ class SpotFinder(object):
     def _create_hot_mask(self, imageset, hot_pixels):
         """
         Find hot pixels in images
-
         """
         from dials.array_family import flex
 
