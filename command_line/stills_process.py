@@ -941,10 +941,15 @@ class Processor(object):
 
         # correct integrated intensities for absorption correction, if necessary
         for abs_params in self.params.integration.absorption_correction:
-            if abs_params.apply and abs_params.algorithm == "fuller_kapton":
-                from dials.algorithms.integration.kapton_correction import (
-                    multi_kapton_correction,
-                )
+            if abs_params.apply:
+                if abs_params.algorithm == "fuller_kapton":
+                    from dials.algorithms.integration.kapton_correction import (
+                        multi_kapton_correction,
+                    )
+                elif abs_params.algorithm == "kapton_2019":
+                    from dials.algorithms.integration.kapton_2019_correction import (
+                        multi_kapton_correction,
+                    )
 
                 experiments, integrated = multi_kapton_correction(
                     experiments, integrated, abs_params.fuller_kapton, logger=logger
