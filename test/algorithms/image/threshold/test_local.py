@@ -154,3 +154,4 @@ class Test:
         algorithm(self.image, self.mask, self.gain, result4)
         assert result1 == result3
         assert result2 == result4
+    

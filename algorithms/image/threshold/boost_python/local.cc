@@ -118,6 +118,51 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("value_mask", &DispersionThresholdDebug::value_mask)
       .def("final_mask", &DispersionThresholdDebug::final_mask)
       ;
+    
+    class_<DispersionExtendedThresholdDebug>("DispersionExtendedThresholdDebug", no_init)
+      .def(init<const af::const_ref<double, af::c_grid<2> > &,
+                const af::const_ref<bool, af::c_grid<2> > &,
+                int2, double, double, double, int>((
+                    arg("image"),
+                    arg("mask"),
+                    arg("size"),
+                    arg("n_sigma_b"),
+                    arg("n_sigma_s"),
+                    arg("threshold"),
+                    arg("min_count"))))
+      .def(init<const af::const_ref<double, af::c_grid<2> > &,
+                const af::const_ref<bool, af::c_grid<2> > &,
+                const af::const_ref<double, af::c_grid<2> > &,
+                int2, double, double, double, int>((
+                    arg("image"),
+                    arg("mask"),
+                    arg("gain"),
+                    arg("size"),
+                    arg("n_sigma_b"),
+                    arg("n_sigma_s"),
+                    arg("threshold"),
+                    arg("min_count"))))
+      .def("mean", &DispersionExtendedThresholdDebug::mean)
+      .def("variance", &DispersionExtendedThresholdDebug::variance)
+      .def("index_of_dispersion", &DispersionExtendedThresholdDebug::index_of_dispersion)
+      .def("global_mask", &DispersionExtendedThresholdDebug::global_mask)
+      .def("cv_mask", &DispersionExtendedThresholdDebug::cv_mask)
+      .def("value_mask", &DispersionExtendedThresholdDebug::value_mask)
+      .def("final_mask", &DispersionExtendedThresholdDebug::final_mask)
+      ;
+    
+    class_<DispersionExtendedThreshold>("DispersionExtendedThreshold", no_init)
+      .def(init< int2,
+                 int2,
+                 double,
+                 double,
+                 double,
+                 int >())
+      /* .def("__call__", &DispersionExtendedThreshold::threshold<int>) */
+      .def("__call__", &DispersionExtendedThreshold::threshold<double>)
+      /* .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<int>) */
+      .def("__call__", &DispersionExtendedThreshold::threshold_w_gain<double>)
+      ;
 
   }
 

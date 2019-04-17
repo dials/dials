@@ -19,6 +19,7 @@
 #include <dials/error.h>
 #include <dials/algorithms/image/filter/mean_and_variance.h>
 #include <dials/algorithms/image/filter/index_of_dispersion_filter.h>
+#include <dials/algorithms/image/filter/distance.h>
 
 namespace dials { namespace algorithms {
 
@@ -788,6 +789,265 @@ namespace dials { namespace algorithms {
     af::versa< bool, af::c_grid<2> > value_mask_;
     af::versa< bool, af::c_grid<2> > final_mask_;
   };
+  
+
+  /**
+   * A class to help debug spot finding by exposing the results of various bits
+   * of processing.
+   */
+  class DispersionExtendedThresholdDebug {
+  public:
+
+    /**
+     * Do the processing.
+     * @param image The image array
+     * @param mask The mask array
+     * @param size The size of the local window
+     * @param nsig_b The background threshold.
+     * @param nsig_s The strong pixel threshold
+     * @param threshold The global threshold value
+     * @param min_count The minimum number of pixels in the local area
+     */
+    DispersionExtendedThresholdDebug(
+                const af::const_ref<double, af::c_grid<2> > &image,
+                const af::const_ref<bool, af::c_grid<2> > &mask,
+                int2 size,
+                double nsig_b,
+                double nsig_s,
+                double threshold,
+                int min_count) {
+      af::versa< double, af::c_grid<2> > gain(image.accessor(), 1.0);
+      init(image, mask, gain.const_ref(), size, nsig_b, nsig_s, threshold, min_count);
+    }
+
+    /**
+     * Do the processing.
+     * @param image The image array
+     * @param mask The mask array
+     * @param size The size of the local window
+     * @param nsig_b The background threshold.
+     * @param nsig_s The strong pixel threshold
+     * @param threshold The global threshold value
+     * @param min_count The minimum number of pixels in the local area
+     */
+    DispersionExtendedThresholdDebug(
+                const af::const_ref<double, af::c_grid<2> > &image,
+                const af::const_ref<bool, af::c_grid<2> > &mask,
+                const af::const_ref<double, af::c_grid<2> > &gain,
+                int2 size,
+                double nsig_b,
+                double nsig_s,
+                double threshold,
+                int min_count) {
+      init(image, mask, gain, size, nsig_b, nsig_s, threshold, min_count);
+    }
+
+    /** @returns The mean map */
+    af::versa<double, af::c_grid<2> > mean() const {
+      return mean_;
+    }
+
+    /** @returns The variance map. */
+    af::versa<double, af::c_grid<2> > variance() const {
+      return variance_;
+    }
+
+    /** @returns The index of dispersion map */
+    af::versa<double, af::c_grid<2> > index_of_dispersion() const {
+      return cv_;
+    }
+
+    /** @returns The thresholded index of dispersion mask */
+    af::versa<bool, af::c_grid<2> > cv_mask() const {
+      return cv_mask_;
+    }
+
+    /** @returns The global mask */
+    af::versa<bool, af::c_grid<2> > global_mask() const {
+      return global_mask_;
+    }
+
+    /** @returns The thresholded value mask */
+    af::versa<bool, af::c_grid<2> > value_mask() const {
+      return value_mask_;
+    }
+
+    /** @returns The final mask of strong pixels. */
+    af::versa<bool, af::c_grid<2> > final_mask() const {
+      return final_mask_;
+    }
+
+  private:
+
+    void init(const af::const_ref<double, af::c_grid<2> > &image,
+              const af::const_ref<bool, af::c_grid<2> > &mask,
+              const af::const_ref<double, af::c_grid<2> > &gain,
+              int2 size,
+              double nsig_b,
+              double nsig_s,
+              double threshold,
+              int min_count) {
+
+      // Check the input
+      DIALS_ASSERT(threshold >= 0);
+      DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_eq(gain.accessor()));
+
+      // Copy the mask into a temp variable
+      af::versa< int, af::c_grid<2> > temp(mask.accessor());
+      for (std::size_t i = 0; i < temp.size(); ++i) {
+        temp[i] = mask[i] ? 1 : 0;
+      }
+
+      // Calculate the masked index_of_dispersion filtered image
+      IndexOfDispersionFilterMasked<double> filter(image, temp.const_ref(), size, min_count);
+      mean_ = filter.mean();
+      variance_ = filter.sample_variance();
+      cv_ = filter.index_of_dispersion();
+      af::versa< int, af::c_grid<2> > count = filter.count();
+      temp = filter.mask();
+
+      // Assign pixels to object or background
+      cv_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      value_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      final_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      global_mask_ = af::versa< bool, af::c_grid<2> >(image.accessor(), false);
+      for (std::size_t i = 0; i < image.size(); ++i) {
+        if (temp[i]) {
+          double bnd_b = gain[i] + nsig_b * gain[i] * std::sqrt(2.0 / (count[i] - 1));
+          cv_mask_[i] = cv_[i] > bnd_b;
+          global_mask_[i] = image[i] > threshold;
+        }
+      }
+   
+      // Compute the chebyshev distance to the background (for morphological erosion)
+      af::versa< int, af::c_grid<2> > distance(image.accessor(), 0);
+      chebyshev_distance(cv_mask_.const_ref(), false, distance.ref());
+
+      // Erode the strong pixel mask and set a mask containing only strong pixels
+      std::size_t erosion_distance = std::min(size[0], size[1]);
+      af::versa< int, af::c_grid<2> > temp_mask(image.accessor(), 0);
+      for (std::size_t i = 0; i < image.size(); ++i) {
+        if (mask[i]) {
+          value_mask_[i] = distance[i] >= erosion_distance;
+          temp_mask[i] = !(cv_mask_[i] && value_mask_[i]);
+        }
+      }
+
+      // Widen the kernel slightly and compute the mean image without strong pixels
+      size[0] += 2;
+      size[1] += 2;
+      mean_ = mean_filter_masked(image, temp_mask.ref(), size, 2);
+
+      // Compute the final thresholds
+      for (std::size_t i = 0; i < image.size(); ++i) {
+        if (temp[i]) {
+          double bnd_s = mean_[i] + nsig_s * std::sqrt(gain[i] * mean_[i]);
+          value_mask_[i] = (distance[i] >= nsig_s) && (image[i] >= bnd_s);
+          final_mask_[i] = cv_mask_[i] && value_mask_[i] & global_mask_[i];
+        }
+        global_mask_[i] = temp_mask[i];
+      }
+      
+    }
+
+    af::versa< double, af::c_grid<2> > mean_;
+    af::versa< double, af::c_grid<2> > variance_;
+    af::versa< double, af::c_grid<2> > cv_;
+    af::versa< bool, af::c_grid<2> > global_mask_;
+    af::versa< bool, af::c_grid<2> > cv_mask_;
+    af::versa< bool, af::c_grid<2> > value_mask_;
+    af::versa< bool, af::c_grid<2> > final_mask_;
+  };
+  
+  /**
+   * A class to compute the threshold using index of dispersion
+   */
+  class DispersionExtendedThreshold {
+  public:
+
+    DispersionExtendedThreshold(
+              int2 image_size,
+              int2 kernel_size,
+              double nsig_b,
+              double nsig_s,
+              double threshold,
+              int min_count)
+        : image_size_(image_size),
+          kernel_size_(kernel_size),
+          nsig_b_(nsig_b),
+          nsig_s_(nsig_s),
+          threshold_(threshold),
+          min_count_(min_count) {}
+
+
+    /**
+     * Compute the threshold for the given image and mask.
+     * @param src - The input image array.
+     * @param mask - The mask array.
+     * @param dst - The destination array.
+     */
+    template <typename T>
+    void threshold(
+        const af::const_ref< T, af::c_grid<2> > &src,
+        const af::const_ref< bool, af::c_grid<2> > &mask,
+        af::ref< bool, af::c_grid<2> > dst) {
+    
+      DispersionExtendedThresholdDebug debug(
+          src,
+          mask,
+          kernel_size_,
+          nsig_b_,
+          nsig_s_,
+          threshold_,
+          min_count_);
+      
+      DIALS_ASSERT(dst.accessor().all_eq(src.accessor()));
+      af::versa<bool, af::c_grid<2> > final_mask = debug.final_mask();
+      std::copy(final_mask.begin(), final_mask.end(), dst.begin());
+    }
+
+    /**
+     *
+     * Compute the threshold for the given image and mask.
+     * @param src - The input image array.
+     * @param mask - The mask array.
+     * @param gain - The gain array
+     * @param dst - The destination array.
+     */
+    template<typename T>
+    void threshold_w_gain(
+        const af::const_ref< T, af::c_grid<2> > &src,
+        const af::const_ref< bool, af::c_grid<2> > &mask,
+        const af::const_ref< double, af::c_grid<2> > &gain,
+        af::ref< bool, af::c_grid<2> > dst) {
+
+      DispersionExtendedThresholdDebug debug(
+          src,
+          mask,
+          gain,
+          kernel_size_,
+          nsig_b_,
+          nsig_s_,
+          threshold_,
+          min_count_);
+      
+      DIALS_ASSERT(dst.accessor().all_eq(src.accessor()));
+      af::versa<bool, af::c_grid<2> > final_mask = debug.final_mask();
+      std::copy(final_mask.begin(), final_mask.end(), dst.begin());
+
+    }
+
+    int2 image_size_;
+    int2 kernel_size_;
+    double nsig_b_;
+    double nsig_s_;
+    double threshold_;
+    int min_count_;
+
+  };
+
 
 }} // namespace dials::algorithms
 

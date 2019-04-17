@@ -3,67 +3,21 @@ from __future__ import print_function
 
 import logging
 
-logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext")
+logger = logging.getLogger("dials.extensions.dispersion_extended_spotfinder_threshold_ext")
 
 
-class DispersionSpotFinderThresholdExt(object):
+class DispersionExtendedSpotFinderThresholdExt(object):
     """ Extensions to do dispersion threshold. """
 
-    name = "dispersion"
+    name = "dispersion_extended"
+
+    default = True
 
     @classmethod
     def phil(cls):
         from libtbx.phil import parse
 
-        phil = parse(
-            """
-      gain = None
-        .type = float(value_min=0.0)
-        .help = "Use a flat gain map for the entire detector to act as a"
-                "multiplier for the gain set by the format. Cannot be used"
-                "in conjunction with lookup.gain_map parameter."
-
-      kernel_size = 3 3
-        .help = "The size of the local area around the spot in which"
-                "to calculate the mean and variance. The kernel is"
-                "given as a box of size (2 * nx + 1, 2 * ny + 1) centred"
-                "at the pixel."
-        .type = ints(size=2)
-        .expert_level = 1
-
-      sigma_background = 6
-        .help = "The number of standard deviations of the index of dispersion"
-                "(variance / mean) in the local area below"
-                "which the pixel will be classified as background."
-        .type = float
-        .expert_level = 1
-
-      sigma_strong = 3
-        .help = "The number of standard deviations above the mean in the"
-                "local area above which the pixel will be classified as"
-                "strong."
-        .type = float
-        .expert_level = 1
-
-      min_local = 2
-        .help = "The minimum number of pixels under the image processing kernel"
-                "that are need to do the thresholding operation. Setting the"
-                "value between 2 and the total number of pixels under the"
-                "kernel will force the algorithm to use that number as the"
-                "minimum. If the value is less than or equal to zero, then"
-                "the algorithm will use all pixels under the kernel. In"
-                "effect this will add a border of pixels which are always"
-                "classed as background around the edge of the image and around"
-                "any masked out pixels."
-        .type = int
-        .expert_level = 1
-
-      global_threshold = 0
-        .type = float
-        .help = "The global threshold value. Consider all pixels less than this"
-                "value to be part of the background."
-    """
-        )
+        phil = parse("")
         return phil
 
     def __init__(self, params):
@@ -97,9 +51,9 @@ class DispersionSpotFinderThresholdExt(object):
                 % (params.spotfinder.threshold.dispersion.global_threshold)
             )
 
-        from dials.algorithms.spot_finding.threshold import DispersionThresholdStrategy
+        from dials.algorithms.spot_finding.threshold import DispersionExtendedThresholdStrategy
 
-        self._algorithm = DispersionThresholdStrategy(
+        self._algorithm = DispersionExtendedThresholdStrategy(
             kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
             gain=params.spotfinder.threshold.dispersion.gain,
             mask=params.spotfinder.lookup.mask,
