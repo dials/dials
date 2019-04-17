@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import copy
-from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
 from dxtbx.model import Crystal
