@@ -381,7 +381,6 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
             list(old_harmonic_values.col(i).as_dense_vector()), abs=0.01
         )
 
-    # assert 0
     experiment.scaling_model.components["absorption"].parameters = flex.double(
         [0.1, -0.1, 0.05, 0.02, 0.01, -0.05, 0.12, -0.035]
     )
