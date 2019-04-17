@@ -14,9 +14,11 @@ absorption_defs = """
     apply = False
       .type = bool
       .help = must be supplied as a user-defined function with a specific interface (not documented)
-    algorithm = fuller_kapton other
+    algorithm = fuller_kapton kapton_2019 other
       .type = choice
-      .help = a specific absorption correction, or implementation thereof
+      .help = a specific absorption correction, or implementation thereof \ 
+              kapton_2019 is a more general implementation of fuller_kapton \
+              for use on single/multi-panel detectors
     fuller_kapton {
       xtal_height_above_kapton_mm {
         value = 0.02

@@ -35,3 +35,8 @@ env.SharedLibrary(
     source=["bayes/boost_python/ext.cc"],
     LIBS=env["LIBS"],
 )
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_integration_kapton_ext",
+    source=["boost_python/kapton_ext.cc"],
+    LIBS=env["LIBS"],
+)
