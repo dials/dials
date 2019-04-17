@@ -155,3 +155,36 @@ class Test:
         assert result1 == result3
         assert result2 == result4
     
+    def test_dispersion_extended_threshold(self):
+        from dials.algorithms.image.threshold import DispersionExtendedThreshold
+        from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
+        from dials.array_family import flex
+
+        nsig_b = 3
+        nsig_s = 3
+        algorithm = DispersionExtendedThreshold(
+            self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result1 = flex.bool(flex.grid(self.image.all()))
+        result2 = flex.bool(flex.grid(self.image.all()))
+        algorithm(self.image, self.mask, result1)
+        algorithm(self.image, self.mask, self.gain, result2)
+
+        debug = DispersionExtendedThresholdDebug(
+            self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result3 = debug.final_mask()
+        assert result1.all_eq(result3)
+
+        debug = DispersionExtendedThresholdDebug(
+            self.image,
+            self.mask,
+            self.gain,
+            self.size,
+            nsig_b,
+            nsig_s,
+            0,
+            self.min_count,
+        )
+        result4 = debug.final_mask()
+        assert result2 == result4
