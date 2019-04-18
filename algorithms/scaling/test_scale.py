@@ -4,8 +4,10 @@ Test the command line script dials.scale, for successful completion.
 
 from __future__ import absolute_import, division, print_function
 
+import json
 import os
 import pytest
+
 from libtbx import easy_run, phil
 from dials.util import Sorry
 from dxtbx.serialize import load
@@ -15,6 +17,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+import procrunner
 
 
 class run_delta_cchalf(object):
@@ -375,9 +378,6 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
 
 
-import procrunner
-
-
 def test_scale_and_filter(dials_data, run_in_tmpdir):
     location = dials_data("multi_crystal_proteinase_k")
 
@@ -397,7 +397,7 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
-        command.append(location.join("reflections_" + str(i) + ".mpack").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command)
     assert result["exitcode"] == 0
@@ -415,10 +415,8 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert result.overall.n_obs > 54700  # 19/02/19 was 54794
     # for this dataset, expect to have two regions excluded - last 5 images of
     # datasets _4 & _5
-    f = open("analysis_results.json")
-    import json
-
-    analysis_results = json.load(f)
+    with open("analysis_results.json") as f:
+        analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
         [[21, 25], 4]
     ]
@@ -443,7 +441,7 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
-        command.append(location.join("reflections_" + str(i) + ".mpack").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command)
     assert result["exitcode"] == 0
@@ -455,8 +453,8 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert os.path.exists("reduced_image_ranges.png")
     assert os.path.exists("merging_stats.png")
     assert os.path.exists("cc_half_histograms.png")
-    f = open("analysis_results.json")
-    analysis_results = json.load(f)
+    with open("analysis_results.json") as f:
+        analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
 
