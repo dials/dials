@@ -83,14 +83,7 @@ class ReflectionTableConverters(object):
         if s not in self.cache:
             if not exists(s):
                 raise Sorry("File %s does not exist" % s)
-            try:
-                self.cache[s] = FilenameDataWrapper(
-                    s, flex.reflection_table.from_file(s)
-                )
-            except Exception:
-                self.cache[s] = FilenameDataWrapper(
-                    s, flex.reflection_table.from_pickle(s)
-                )
+            self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
         return self.cache[s]
 
     def from_words(self, words, master):
