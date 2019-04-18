@@ -1,12 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import json
 import math
 import os
 import shutil
 
-from dials.array_family import flex  # import dependency
+from dials.array_family import flex
 import procrunner
 
 
@@ -15,17 +14,17 @@ def test2(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask.count(True) == 1666
@@ -62,12 +61,12 @@ def test2(dials_data, tmpdir):
             "integration.integrator=3d",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask1.count(True) == 1666
@@ -96,46 +95,43 @@ def test2(dials_data, tmpdir):
 
 
 def test_integration_with_sampling(dials_data, tmpdir):
-    # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
     assert len(table) == 1000
 
 
 def test_integration_with_sample_size(dials_data, tmpdir):
-    # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "sampling.minimum_sample_size=500",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
     assert len(table) == 500
 
 
 def test_multi_sweep(dials_regression, run_in_tmpdir):
-    # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
@@ -180,8 +176,7 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
     assert flex.abs(I1 - I2) < 1e-6
 
 
-def test_multi_lattice(dials_regression, run_in_tmpdir):
-    # Call dials.integrate
+def test_multi_lattice(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
@@ -198,13 +193,14 @@ def test_multi_lattice(dials_regression, run_in_tmpdir):
                 "indexed.pickle",
             ),
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.mpack")
+    assert tmpdir.join("integrated.mpack").check()
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
     assert len(table) == 5605
 
     # Check output contains from two lattices
@@ -222,10 +218,10 @@ def test_output_rubbish(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.index",
-            dials_data("centroid_test_data").join("datablock.json").strpath,
-            dials_data("centroid_test_data").join("strong.pickle").strpath,
+            dials_data("centroid_test_data").join("datablock.json"),
+            dials_data("centroid_test_data").join("strong.pickle"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
@@ -241,13 +237,13 @@ def test_output_rubbish(dials_data, tmpdir):
             "profile.fitting=False",
             "prediction.padding=0",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert tmpdir.join("integrated.mpack").check(file=1)
 
-    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrated.mpack"))
 
     assert table.get_flags(table.flags.bad_reference) > 0
     assert "id" in table

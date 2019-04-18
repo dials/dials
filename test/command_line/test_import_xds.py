@@ -1,25 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import procrunner
+
+from dials.array_family import flex
 
 
 def test_import_integrate_hkl(dials_data, tmpdir):
-    from dials.array_family import flex  # noqa: F401 import dependency
-
     result = procrunner.run(
         [
             "dials.import_xds",
             "input.method=reflections",
-            dials_data("centroid_test_data").join("INTEGRATE.HKL").strpath,
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("INTEGRATE.HKL"),
+            dials_data("centroid_test_data").join("experiments.json"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("integrate_hkl.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("integrate_hkl.mpack"))
 
     assert "miller_index" in table
     assert "id" in table
@@ -36,14 +35,14 @@ def test_import_spot_xds(dials_data, tmpdir):
         [
             "dials.import_xds",
             "input.method=reflections",
-            dials_data("centroid_test_data").join("SPOT.XDS").strpath,
+            dials_data("centroid_test_data").join("SPOT.XDS"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("spot_xds.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("spot_xds.mpack"))
 
     assert "miller_index" in table
     assert "id" in table
@@ -58,15 +57,15 @@ def test_import_spot_xds_with_filtering(dials_data, tmpdir):
         [
             "dials.import_xds",
             "input.method=reflections",
-            dials_data("centroid_test_data").join("SPOT.XDS").strpath,
+            dials_data("centroid_test_data").join("SPOT.XDS"),
             "remove_invalid=True",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_msgpack_file("spot_xds.mpack")
+    table = flex.reflection_table.from_msgpack_file(tmpdir.join("spot_xds.mpack"))
 
     assert "miller_index" in table
     assert "id" in table
@@ -83,9 +82,9 @@ def test_from_xds_files(dials_data, tmpdir):
             "dials.import_xds",
             "input.method=experiment",
             "output.filename=import_experiments.json",
-            dials_data("centroid_test_data").strpath,
+            dials_data("centroid_test_data"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
