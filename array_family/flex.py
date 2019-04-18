@@ -246,12 +246,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         """
         from libtbx import smart_open
-        import blosc
+        import blosc.blosc_extension
 
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with smart_open.for_reading(filename, "rb") as infile:
-            return reflection_table.from_msgpack(blosc.decompress(infile.read()))
+            try:
+                return reflection_table.from_msgpack(blosc.decompress(infile.read()))
+            except blosc.blosc_extension.error as e:
+                # translate extension error to RuntimeError.
+                # should be removed once .pickle support is dropped
+                raise RuntimeError("blosc decompression error: %s" % str(e))
 
     @staticmethod
     def from_h5(filename):
