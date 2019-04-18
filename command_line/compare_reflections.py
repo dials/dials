@@ -85,7 +85,7 @@ if __name__ == "__main__":
     import libtbx.load_env
 
     usage = (
-        "usage: %s [options] reflections1.pickle reflections2.pickle"
+        "usage: %s [options] reflections1.mpack reflections2.mpack"
         % libtbx.env.dispatcher_name
     )
     parser = OptionParser(usage)
@@ -100,14 +100,14 @@ if __name__ == "__main__":
 
     # Read the first batch of reflections
     Command.start("Reading reflections from %s" % args[0])
-    refl1 = flex.reflection_table.from_pickle(args[0])
+    refl1 = flex.reflection_table.from_file(args[0])
     mask = flex.bool(xyz == (0, 0, 0) for xyz in refl1["xyzobs.px.value"])
     refl1.del_selected(mask)
     Command.end("Read %d reflections from %s" % (len(refl1), args[0]))
 
     # Read the second batch of reflections
     Command.start("Reading reflections from %s" % args[1])
-    refl2 = flex.reflection_table.from_pickle(args[1])
+    refl2 = flex.reflection_table.from_file(args[1])
     mask = refl2["intensity.sum.value"] <= 0.0
     refl2.del_selected(mask)
     mask = refl2["intensity.sum.value"] ** 2 < refl2["intensity.sum.variance"]

@@ -11,7 +11,7 @@ logger = logging.getLogger("dials.command_line.extract_background_signal")
 
 help_message = (
     """
-%s experiments.json reflections.pickle
+%s experiments.json reflections.mpack
 """
     % libtbx.env.dispatcher_name
 )
@@ -38,7 +38,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiment.json reflections.pickle"
+            "usage: %s [options] experiment.json reflections.mpack"
             % libtbx.env.dispatcher_name
         )
 

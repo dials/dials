@@ -14,7 +14,7 @@ Examples::
 
   dials.show image_*.cbf
 
-  dials.show reflections.pickle
+  dials.show reflections.mpack
 
 """
 

@@ -30,11 +30,11 @@ the diffraction pattern, possibly as a result of an incorrect beam centre.
 
 Examples::
 
-  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+  dials.check_indexing_symmetry experiment.json indexed.mpack \\
     grid=1 symop_threshold=0.7
 
 
-  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+  dials.check_indexing_symmetry experiment.json indexed.mpack \\
     grid_l=3 symop_threshold=0.7
 
 """
@@ -327,10 +327,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
     if params.reference:
         from dials.array_family import flex  # implicit dependency
-        import six.moves.cPickle as pickle
-
-        with open(params.reference, "rb") as fh:
-            reference = pickle.load(fh)
+        reference = flex.reflection_table.from_file(params.reference)
     else:
         reference = None
 
@@ -361,7 +358,7 @@ def run(args):
     from dials.util import log
     from dials.util.version import dials_version
 
-    usage = "%s [options] experiment.json indexed.pickle" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiment.json indexed.mpack" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

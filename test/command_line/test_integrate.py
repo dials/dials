@@ -25,8 +25,7 @@ def test2(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask.count(True) == 1666
@@ -36,7 +35,7 @@ def test2(dials_data, tmpdir):
 
     originaltable = table
 
-    tmpdir.join("integrated.pickle").remove()
+    tmpdir.join("integrated.mpack").remove()
 
     for i in range(1, 10):
         source = dials_data("centroid_test_data").join("centroid_000%d.cbf" % i)
@@ -68,8 +67,7 @@ def test2(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask1.count(True) == 1666
@@ -112,8 +110,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     assert len(table) == 1000
 
 
@@ -133,8 +130,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     assert len(table) == 500
 
 
@@ -160,10 +156,9 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.pickle")
+    assert os.path.exists("integrated.mpack")
 
-    with open("integrated.pickle", "rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     assert len(table) == 4020
 
     # Check the results
@@ -207,10 +202,9 @@ def test_multi_lattice(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("integrated.pickle")
+    assert os.path.exists("integrated.mpack")
 
-    with open("integrated.pickle", "rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
     assert len(table) == 5605
 
     # Check output contains from two lattices
@@ -236,14 +230,14 @@ def test_output_rubbish(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert tmpdir.join("indexed_experiments.json").check(file=1)
-    assert tmpdir.join("indexed.pickle").check(file=1)
+    assert tmpdir.join("indexed.mpack").check(file=1)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
             "indexed_experiments.json",
-            "indexed.pickle",
+            "indexed.mpack",
             "profile.fitting=False",
             "prediction.padding=0",
         ],
@@ -251,10 +245,9 @@ def test_output_rubbish(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("integrated.pickle").check(file=1)
+    assert tmpdir.join("integrated.mpack").check(file=1)
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrated.mpack")
 
     assert table.get_flags(table.flags.bad_reference) > 0
     assert "id" in table
@@ -290,7 +283,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     templ_phil = """
       output {
         experiments = 'idx-20161021225550223_integrated_experiments_%s.json'
-        reflections = 'idx-20161021225550223_integrated_%s.pickle'
+        reflections = 'idx-20161021225550223_integrated_%s.mpack'
       }
       integration {
         lookup.mask = '%s'
@@ -345,9 +338,8 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     results = []
     for mode in "kapton", "nokapton":
-        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.pickle" % mode)
-        with open(result, "rb") as f:
-            table = pickle.load(f)
+        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.mpack" % mode)
+        table = flex.reflection_table.from_file(result)
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
         test_rows = {k: millers.first_index(v) for k, v in test_indices.iteritems()}

@@ -17,7 +17,7 @@ from dials.array_family import flex
 help_message = """
 
 This program takes as input the output of dials.index, i.e. experiments.json
-and indexed.pickle files. Full refinement of the crystal and experimental
+and indexed.mpack files. Full refinement of the crystal and experimental
 geometry parameters will be performed (by default) in all Bravais settings
 that are consistent with the input primitive unit cell. A table is printed
 containing various information for each potential Bravais setting, including
@@ -31,15 +31,15 @@ The program also generates a .json file for each Bravais setting, e.g.
 bravais_setting_1.json, which is equivalent to the input experiments.json, but
 with the crystal model refined in the chosen Bravais setting. These
 bravais_setting_*.json files are suitable as input to dials.refine or
-dials.integrate, although the indexed.pickle file will need to be re-indexed
+dials.integrate, although the indexed.mpack file will need to be re-indexed
 using dials.reindex if the change of basis operator (cb_op) for the chosen
 Bravais setting is not the identity operator (a,b,c).
 
 Examples::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings experiments.json indexed.mpack
 
-  dials.refine_bravais_settings experiments.json indexed.pickle nproc=4
+  dials.refine_bravais_settings experiments.json indexed.mpack nproc=4
 
 """
 
@@ -135,7 +135,7 @@ def run(args=None):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s experiments.json indexed.pickle [options]" % libtbx.env.dispatcher_name
+    usage = "%s experiments.json indexed.mpack [options]" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

@@ -25,5 +25,5 @@ if __name__ == "__main__":
 
     pick_name = sys.argv[1]
 
-    table = flex.reflection_table.from_pickle(pick_name)
+    table = flex.reflection_table.from_file(pick_name)
     extract_n_show(table)

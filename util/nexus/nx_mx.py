@@ -458,7 +458,7 @@ def dump_details(entry):
     nx_note["date"] = strftime("%Y-%m-%dT%H:%M:%S")
     nx_note["type"] = "text/plain"
     nx_note["description"] = "Indexing parameters"
-    nx_note["data"] = "dials.index experiments.json strong.pickle"
+    nx_note["data"] = "dials.index experiments.json strong.mpack"
     nx_note["sequence_index"] = 1
 
     nx_note = get_nx_note(nx_process, "refinement")
@@ -466,7 +466,7 @@ def dump_details(entry):
     nx_note["date"] = strftime("%Y-%m-%dT%H:%M:%S")
     nx_note["type"] = "text/plain"
     nx_note["description"] = "Refinement parameters"
-    nx_note["data"] = "dials.refine experiments.json indexed.pickle"
+    nx_note["data"] = "dials.refine experiments.json indexed.mpack"
     nx_note["sequence_index"] = 2
 
     nx_note = get_nx_note(nx_process, "integration")
@@ -474,7 +474,7 @@ def dump_details(entry):
     nx_note["date"] = strftime("%Y-%m-%dT%H:%M:%S")
     nx_note["type"] = "text/plain"
     nx_note["description"] = "Integration parameters"
-    nx_note["data"] = "dials.integrate refined_experiments.json indexed.pickle"
+    nx_note["data"] = "dials.integrate refined_experiments.json indexed.mpack"
     nx_note["sequence_index"] = 3
 
 

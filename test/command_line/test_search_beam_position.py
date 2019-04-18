@@ -97,10 +97,10 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("strong.pickle")
+    assert os.path.exists("strong.mpack")
 
     # actually run the beam centre search
-    args = ["dials.search_beam_position", "imported_experiments.json", "strong.pickle"]
+    args = ["dials.search_beam_position", "imported_experiments.json", "strong.mpack"]
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
@@ -131,7 +131,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     expected_rmsds = (0.06, 0.05, 0.001)
     expected_hall_symbol = " P 1"
     run_one_indexing(
-        run_in_tmpdir.join("strong.pickle").strpath,
+        run_in_tmpdir.join("strong.mpack").strpath,
         run_in_tmpdir.join("optimized_experiments.json").strpath,
         [],
         expected_unit_cell,

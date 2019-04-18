@@ -32,9 +32,9 @@ reflections used in refinement.
 
 Examples::
 
-  dials.refine experiments.json indexed.pickle
+  dials.refine experiments.json indexed.mpack
 
-  dials.refine experiments.json indexed.pickle scan_varying=True
+  dials.refine experiments.json indexed.mpack scan_varying=True
 
 """
 
@@ -49,7 +49,7 @@ phil_scope = parse(
       .type = str
       .help = "The filename for refined experimental models"
 
-    reflections = refined.pickle
+    reflections = refined.mpack
       .type = str
       .help = "The filename for reflections with updated predictions"
 
@@ -151,7 +151,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "experiments.json reflections.mpack" % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -427,10 +427,10 @@ class Script(object):
                 )
             )
             if params.output.include_unused_reflections:
-                reflections.as_pickle(params.output.reflections)
+                reflections.as_msgpack_file(params.output.reflections)
             else:
                 sel = reflections.get_flags(reflections.flags.used_in_refinement)
-                reflections.select(sel).as_pickle(params.output.reflections)
+                reflections.select(sel).as_msgpack_file(params.output.reflections)
 
         # For debugging, if requested save matches to file
         if params.output.matches:
@@ -440,7 +440,7 @@ class Script(object):
                     params.output.matches
                 )
             )
-            matches.as_pickle(params.output.matches)
+            matches.as_msgpack_file(params.output.matches)
 
         # Correlation plot
         if params.output.correlation_plot.filename is not None:

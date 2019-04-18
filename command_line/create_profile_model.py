@@ -26,7 +26,7 @@ occasions it may be desirable to compute the profile model independently.
 
 Examples::
 
-  dials.create_profile_model experiments.json reflections.pickle
+  dials.create_profile_model experiments.json reflections.mpack
 
 """
 
@@ -57,7 +57,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiments.json spots.pickle"
+            "usage: %s [options] experiments.json spots.mpack"
             % libtbx.env.dispatcher_name
         )
         self.parser = OptionParser(

@@ -19,8 +19,7 @@ def test_import_integrate_hkl(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrate_hkl.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("integrate_hkl.mpack")
 
     assert "miller_index" in table
     assert "id" in table
@@ -44,8 +43,7 @@ def test_import_spot_xds(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("spot_xds.mpack")
 
     assert "miller_index" in table
     assert "id" in table
@@ -68,8 +66,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_msgpack_file("spot_xds.mpack")
 
     assert "miller_index" in table
     assert "id" in table

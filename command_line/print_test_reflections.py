@@ -46,7 +46,6 @@ def print_refl(row):
 
 
 if __name__ == "__main__":
-    import six.moves.cPickle as pickle
     import sys
     from dials.array_family import flex  # import dependency
     from dials.util import Sorry
@@ -55,8 +54,7 @@ if __name__ == "__main__":
         raise Sorry("exactly 1 reflection table must be specified")
 
     try:
-        with open(sys.argv[1], "rb") as fh:
-            table = pickle.load(fh)
+        table = flex.reflection_table.from_file(sys.argv[1])
     except Exception:
         raise Sorry("Error loading reflection table")
 

@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import os
 
 import procrunner
@@ -33,8 +32,7 @@ def test_static_prediction(dials_regression, run_in_tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("predicted.pickle", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_msgpack_file("predicted.mpack")
     assert len(table) == 1996
     assert plausible(table)
 
@@ -53,8 +51,7 @@ def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("predicted.pickle", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_msgpack_file("predicted.mpack")
     assert len(table) == 1934
     assert plausible(table)
 
@@ -74,7 +71,6 @@ def test_force_static_prediction(dials_regression, run_in_tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with open("predicted.pickle", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_msgpack_file("predicted.mpack")
     assert len(table) == 1996
     assert plausible(table)

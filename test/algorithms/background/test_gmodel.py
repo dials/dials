@@ -26,8 +26,8 @@ def test_simple(dials_data, model, tmpdir):
     path = dials_data("centroid_test_data")
     experiments = path.join("experiments.json")
 
-    reflns_simple = tmpdir.join("simple").join("reflections.pickle")
-    reflns_g_simple = tmpdir.join("gmodel_simple").join("reflections.pickle")
+    reflns_simple = tmpdir.join("simple").join("reflections.mpack")
+    reflns_g_simple = tmpdir.join("gmodel_simple").join("reflections.mpack")
     reflns_simple.dirpath().ensure(dir=1)
     reflns_g_simple.dirpath().ensure(dir=1)
 
@@ -62,8 +62,8 @@ def test_simple(dials_data, model, tmpdir):
 
     from dials.array_family import flex
 
-    reflections1 = flex.reflection_table.from_pickle(reflns_simple.strpath)
-    reflections3 = flex.reflection_table.from_pickle(reflns_g_simple.strpath)
+    reflections1 = flex.reflection_table.from_file(reflns_simple.strpath)
+    reflections3 = flex.reflection_table.from_file(reflns_g_simple.strpath)
     assert len(reflections1) == len(reflections3)
 
     flag = flex.reflection_table.flags.integrated_sum
@@ -86,8 +86,8 @@ def test_robust(dials_data, model, tmpdir):
     path = dials_data("centroid_test_data")
     experiments = path.join("experiments.json")
 
-    reflns_robust = tmpdir.join("robust").join("reflections.pickle")
-    reflns_g_robust = tmpdir.join("gmodel_robust").join("reflections.pickle")
+    reflns_robust = tmpdir.join("robust").join("reflections.mpack")
+    reflns_g_robust = tmpdir.join("gmodel_robust").join("reflections.mpack")
     reflns_robust.dirpath().ensure(dir=1)
     reflns_g_robust.dirpath().ensure(dir=1)
 
@@ -121,8 +121,8 @@ def test_robust(dials_data, model, tmpdir):
 
     from dials.array_family import flex
 
-    reflections2 = flex.reflection_table.from_pickle(reflns_robust.strpath)
-    reflections4 = flex.reflection_table.from_pickle(reflns_g_robust.strpath)
+    reflections2 = flex.reflection_table.from_file(reflns_robust.strpath)
+    reflections4 = flex.reflection_table.from_file(reflns_g_robust.strpath)
     assert len(reflections2) == len(reflections4)
 
     flag = flex.reflection_table.flags.integrated_sum

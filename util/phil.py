@@ -85,7 +85,7 @@ class ReflectionTableConverters(object):
                 raise Sorry("File %s does not exist" % s)
             try:
                 self.cache[s] = FilenameDataWrapper(
-                    s, flex.reflection_table.from_msgpack_file(s)
+                    s, flex.reflection_table.from_file(s)
                 )
             except Exception:
                 self.cache[s] = FilenameDataWrapper(

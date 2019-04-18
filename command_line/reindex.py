@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import copy
-from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
 from dxtbx.model import Crystal
@@ -30,14 +29,14 @@ from dials.util.filter_reflections import integrated_data_to_filtered_miller_arr
 
 help_message = """
 
-This program can be used to re-index an experiments.json and/or indexed.pickle
+This program can be used to re-index an experiments.json and/or indexed.mpack
 file from one setting to another. The change of basis operator can be
 provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
 basis operator will also be applied to the space group in the experiments.json
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
 Alternatively, to reindex an integated dataset in the case of indexing abiguity,
-a reference dataset (experiments.json and reflection.pickle) in the same space
+a reference dataset (experiments.json and reflection.mpack) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
 with the reference dataset.
@@ -46,12 +45,12 @@ Examples::
 
   dials.reindex experiments.json change_of_basis_op=b+c,a+c,a+b
 
-  dials.reindex indexed.pickle change_of_basis_op=-b,a+b+2*c,-a
+  dials.reindex indexed.mpack change_of_basis_op=-b,a+b+2*c,-a
 
-  dials.reindex experiments.json index.pickle change_of_basis_op=l,h,k
+  dials.reindex experiments.json index.mpack change_of_basis_op=l,h,k
 
-  dials.reindex experiments.json index.pickle reference.experiments=ref_experiments.json
-    reference.reflections=ref_reflections.pickle
+  dials.reindex experiments.json index.mpack reference.experiments=ref_experiments.json
+    reference.reflections=ref_reflections.mpack
 
 """
 
@@ -78,7 +77,7 @@ output {
     .type = str
     .help = "The filename for reindexed experimental models"
 
-  reflections = reindexed_reflections.pickle
+  reflections = reindexed_reflections.mpack
     .type = str
     .help = "The filename for reindexed reflections"
 }
@@ -138,7 +137,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] experiments.json indexed.pickle" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiments.json indexed.mpack" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,
@@ -182,7 +181,7 @@ experiments file must also be specified with the option: reference= """
         if len(experiments) != 1 or len(reflections) != 1:
             raise Sorry("Only one dataset can be reindexed to a reference at a time")
 
-        reference_reflections = flex.reflection_table().from_pickle(
+        reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
         )
 
@@ -343,7 +342,7 @@ experiments file must also be specified with the option: reference= """
         reflections["miller_index"].set_selected(~sel, (0, 0, 0))
 
         print("Saving reindexed reflections to %s" % params.output.reflections)
-        easy_pickle.dump(params.output.reflections, reflections)
+        reflections.as_msgpack_file(params.output.reflections)
 
 
 if __name__ == "__main__":

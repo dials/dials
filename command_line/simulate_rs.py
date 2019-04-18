@@ -25,9 +25,9 @@ class Script(object):
         phil_scope = parse(
             """
 
-      output = simulated.pickle
+      output = simulated.mpack
         .type = str
-        .help = "The output pickle file"
+        .help = "The output mpack file"
 
       num = 1000
         .type = int
@@ -110,7 +110,7 @@ class Script(object):
 
         # Save the reflections to file
         print("Writing reflections to %s" % params.output)
-        refl.as_pickle(params.output)
+        refl.as_msgpack_file(params.output)
 
 
 if __name__ == "__main__":

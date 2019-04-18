@@ -339,12 +339,31 @@ namespace adaptor {
       typedef dials::af::reflection_table::const_iterator iterator;
       std::string filetype = "dials::af::reflection_table";
       std::size_t version = 1;
+
+      // Pack the:
+      //  filetype
+      //  version
+      //  contents map
       o.pack_array(3);
       o.pack(filetype);
       o.pack(version);
-      o.pack_map(2);
+      o.pack_map(3);
+
+      // Pack the experiment identifiers
+      o.pack("identifiers");
+      o.pack_map(v.experiment_identifiers()->size());
+      for (dials::af::reflection_table::experiment_map_type::const_iterator
+          it = v.experiment_identifiers()->begin();
+          it != v.experiment_identifiers()->end(); ++it) {
+        o.pack(it->first);
+        o.pack(it->second);
+      }
+
+      // Pack the number of rows
       o.pack("nrows");
       o.pack(v.nrows());
+
+      // Pack the data
       o.pack("data");
       o.pack_map(v.ncols());
       for (iterator it = v.begin(); it != v.end(); ++it) {
@@ -702,6 +721,7 @@ namespace adaptor {
 
       // Set the the column map object to NULL
       msgpack::object *map_object = NULL;
+      msgpack::object *identifier_object = NULL;
 
       // Required colulmns
       bool found_nrows = false;
@@ -725,6 +745,11 @@ namespace adaptor {
           // nrows is required
           found_nrows = true;
 
+        } else if (name == "identifiers") {
+          
+          // Get the identifier ptr
+          identifier_object = &it->val;
+
         } else if (name == "data") {
 
           // Get the data ptr
@@ -732,6 +757,24 @@ namespace adaptor {
 
         } else {
           throw DIALS_ERROR("unknown key in reflection file");
+        }
+      }
+      
+      // Check the identifiers
+      if (identifier_object == NULL || identifier_object->type != msgpack::type::MAP) {
+        throw DIALS_ERROR("Identifier data not found");
+      }
+
+      // Read the identifiers from the map
+      if (identifier_object->via.map.size != 0) {
+        msgpack::object_kv* first = identifier_object->via.map.ptr;
+        msgpack::object_kv* last = first + identifier_object->via.map.size;
+        for (msgpack::object_kv *it = first; it != last; ++it) {
+          dials::af::reflection_table::experiment_map_type::key_type key = -1;
+          dials::af::reflection_table::experiment_map_type::mapped_type value;
+          it->key.convert(key);
+          it->val.convert(value);
+          (*v.experiment_identifiers())[key] = value;
         }
       }
 

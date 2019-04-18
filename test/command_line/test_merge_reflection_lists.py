@@ -10,33 +10,33 @@ def test(run_in_tmpdir):
     table["hkl"] = flex.miller_index(360)
     table["id"] = flex.int(360)
     table["intensity.sum.value"] = flex.double(360)
-    table.as_pickle("temp1.pickle")
-    table.as_pickle("temp2.pickle")
+    table.as_msgpack_file("temp1.mpack")
+    table.as_msgpack_file("temp2.mpack")
 
     result = procrunner.run(
         [
             "dev.dials.merge_reflection_lists",
-            "temp1.pickle",
-            "temp2.pickle",
+            "temp1.mpack",
+            "temp2.mpack",
             "method=update",
         ]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_pickle("merged.pickle")
+    table = flex.reflection_table.from_msgpack_file("merged.mpack")
     assert len(table) == 360
 
     result = procrunner.run(
         [
             "dev.dials.merge_reflection_lists",
-            "temp1.pickle",
-            "temp2.pickle",
+            "temp1.mpack",
+            "temp2.mpack",
             "method=extend",
         ]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    table = flex.reflection_table.from_pickle("merged.pickle")
+    table = flex.reflection_table.from_msgpack_file("merged.mpack")
     assert len(table) == 720
