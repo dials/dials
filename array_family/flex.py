@@ -7,8 +7,11 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
+from collections import OrderedDict
+import logging
+
 import boost.python
 from dials.model import data
 from dials_array_family_flex_ext import *
@@ -18,9 +21,6 @@ import cctbx
 from cctbx import miller, crystal
 from dials.util import Sorry
 from scitbx import matrix
-
-from collections import OrderedDict
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +219,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         import six.moves.cPickle as pickle
         from libtbx import smart_open
 
+        if filename and hasattr(filename, "__fspath__"):
+            filename = filename.__fspath__()
         with smart_open.for_reading(filename, "rb") as infile:
             result = pickle.load(infile)
             assert isinstance(result, reflection_table)
@@ -232,6 +234,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         from libtbx import smart_open
         import blosc
 
+        if filename and hasattr(filename, "__fspath__"):
+            filename = filename.__fspath__()
         with smart_open.for_writing(filename, "wb") as outfile:
             outfile.write(blosc.compress(self.as_msgpack()))
 
@@ -244,6 +248,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         from libtbx import smart_open
         import blosc
 
+        if filename and hasattr(filename, "__fspath__"):
+            filename = filename.__fspath__()
         with smart_open.for_reading(filename, "rb") as infile:
             return reflection_table.from_msgpack(blosc.decompress(infile.read()))
 
@@ -262,7 +268,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         self = handle.get_reflections()
         handle.close()
         return self
-    
+
     @staticmethod
     def from_file(filename):
         """
