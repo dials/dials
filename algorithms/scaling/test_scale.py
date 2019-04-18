@@ -5,8 +5,6 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
-import cPickle as pickle
 import pytest
 from libtbx import easy_run, phil
 from dials.util import Sorry
@@ -14,15 +12,9 @@ from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
-from cctbx import uctbx
-from mock import Mock
-import mock
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
-from dials.algorithms.scaling.scaling_library import (
-    create_scaling_model,
-    scaled_data_as_miller_array,
-)
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 
 
 class run_delta_cchalf(object):
@@ -523,8 +515,11 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     print(result.overall.cc_one_half)
 
     # run again, optimising errors, and continuing from where last run left off.
-    extra_args = ["optimise_errors=True", "unmerged_mtz=unmerged.mtz",
-        "check_consistent_indexing=True"]
+    extra_args = [
+        "optimise_errors=True",
+        "unmerged_mtz=unmerged.mtz",
+        "check_consistent_indexing=True",
+    ]
     _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
@@ -697,7 +692,7 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
     # test order also - first new file before scaled
     pickle_path = os.path.join(data_dir, "25_integrated.pickle")
@@ -706,39 +701,39 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
         ["dials.cosym"]
         + [pickle_path]
         + [sweep_path]
-        + ["scaled.pickle", "scaled_experiments.json"]
+        + ["scaled.mpack", "scaled_experiments.json"]
     )
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("reindexed_experiments.json")
-    assert os.path.exists("reindexed_reflections.pickle")
+    assert os.path.exists("reindexed_reflections.mpack")
 
-    args = ["dials.scale", "reindexed_reflections.pickle", "reindexed_experiments.json"]
+    args = ["dials.scale", "reindexed_reflections.mpack", "reindexed_experiments.json"]
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
     # test order also - first scaled file then new file
     pickle_path = os.path.join(data_dir, "30_integrated.pickle")
     sweep_path = os.path.join(data_dir, "30_integrated_experiments.json")
     args = (
         ["dials.cosym"]
-        + ["scaled.pickle", "scaled_experiments.json"]
+        + ["scaled.mpack", "scaled_experiments.json"]
         + [pickle_path]
         + [sweep_path]
-        + ["output.reflections=reindexed.pickle", "output.experiments=reindexed.json"]
+        + ["output.reflections=reindexed.mpack", "output.experiments=reindexed.json"]
     )
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("reindexed_experiments.json")
-    assert os.path.exists("reindexed_reflections.pickle")
+    assert os.path.exists("reindexed_reflections.mpack")
 
-    args = ["dials.scale", "reindexed_reflections.pickle", "reindexed_experiments.json"]
+    args = ["dials.scale", "reindexed_reflections.mpack", "reindexed_experiments.json"]
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.json")
-    assert os.path.exists("scaled.pickle")
+    assert os.path.exists("scaled.mpack")
 
 
 @pytest.mark.dataset_test
