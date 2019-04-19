@@ -1,11 +1,5 @@
+Import("env")
 
-Import('env')
+sources = ["boost_python/RGB_2d.cc", "boost_python/RGB_2d_ext.cc"]
 
-sources = [
-    'boost_python/RGB_2d.cc',
-    'boost_python/RGB_2d_ext.cc']
-
-env.SharedLibrary(
-    target='#/lib/dials_viewer_ext',
-    source=sources,
-    LIBS=env["LIBS"])
+env.SharedLibrary(target="#/lib/dials_viewer_ext", source=sources, LIBS=env["LIBS"])

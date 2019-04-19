@@ -1,5 +1,7 @@
+Import("env")
 
-Import('env')
-
-env.SharedLibrary(target='#/lib/dials_algorithms_filter_ext', 
-    source=['boost_python/filter_ext.cc'], LIBS=env["LIBS"])    
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_filter_ext",
+    source=["boost_python/filter_ext.cc"],
+    LIBS=env["LIBS"],
+)

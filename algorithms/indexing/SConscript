@@ -1,5 +1,4 @@
-
-Import('env')
+Import("env")
 
 
 Import("env_base", "env_etc")
@@ -9,32 +8,29 @@ import libtbx, os
 env_etc.dials_indexing_dist = libtbx.env.dist_path("dials")
 env_etc.dials_indexing_include = os.path.dirname(env_etc.dials_indexing_dist)
 env_etc.dials_indexing_common_includes = [
-  env_etc.boost_include,
-  env_etc.annlib_dist,
-  env_etc.annlib_include[0],
-  env_etc.annlib_include[1],
-  env_etc.annlib_adaptbx_include[0],
-  env_etc.annlib_adaptbx_include[1],
+    env_etc.boost_include,
+    env_etc.annlib_dist,
+    env_etc.annlib_include[0],
+    env_etc.annlib_include[1],
+    env_etc.annlib_adaptbx_include[0],
+    env_etc.annlib_adaptbx_include[1],
 ]
 
-env_etc.include_registry.append(
-  env=env,
-  paths=env_etc.dials_indexing_common_includes)
+env_etc.include_registry.append(env=env, paths=env_etc.dials_indexing_common_includes)
 
-sources = [
-    'boost_python/fft3d.cc',
-    'boost_python/indexing_ext.cc'
-    ]
+sources = ["boost_python/fft3d.cc", "boost_python/indexing_ext.cc"]
 
 # Since this code is not using OpenMP a bug in the Microsoft VS2008 compiler means that
 # any /openmp flag must be removed in order to avoid creating a broken library
 if env_etc.compiler == "win32_cl" and "/openmp" in env["SHCCFLAGS"]:
-  ccflags_without_omp = []
-  for f in env["SHCCFLAGS"]:
-    if "/openmp" != f:
-      ccflags_without_omp.append( f )
-  env["SHCCFLAGS"] = ccflags_without_omp
+    ccflags_without_omp = []
+    for f in env["SHCCFLAGS"]:
+        if "/openmp" != f:
+            ccflags_without_omp.append(f)
+    env["SHCCFLAGS"] = ccflags_without_omp
 
-env.SharedLibrary(target='#/lib/dials_algorithms_indexing_ext',
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_indexing_ext",
     source=sources,
-    LIBS=['ann']+env["LIBS"])
+    LIBS=["ann"] + env["LIBS"],
+)

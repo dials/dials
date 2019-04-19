@@ -1,9 +1,5 @@
+Import("env")
 
-Import('env')
+sources = ["boost_python/ext.cc"]
 
-sources = [
-    'boost_python/ext.cc']
-
-env.SharedLibrary(target='#/lib/dials_util_ext', 
-    source=sources,
-    LIBS=env["LIBS"])
+env.SharedLibrary(target="#/lib/dials_util_ext", source=sources, LIBS=env["LIBS"])

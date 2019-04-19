@@ -1,9 +1,9 @@
+Import("env")
 
-Import('env')
-
-sources = ['boost_python/connected_components_ext.cc']
+sources = ["boost_python/connected_components_ext.cc"]
 
 env.SharedLibrary(
-    target='#/lib/dials_algorithms_image_connected_components_ext', 
+    target="#/lib/dials_algorithms_image_connected_components_ext",
     source=sources,
-    LIBS=env["LIBS"])
+    LIBS=env["LIBS"],
+)

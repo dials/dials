@@ -1,5 +1,4 @@
-
-Import('env')
+Import("env")
 
 
 Import("env_base", "env_etc")
@@ -9,15 +8,10 @@ import libtbx, os
 env_etc.dials_rs_mapper_dist = libtbx.env.dist_path("dials")
 env_etc.dials_rs_mapper_include = os.path.dirname(env_etc.dials_rs_mapper_dist)
 env_etc.dials_rs_mapper_common_includes = [
-  env_etc.boost_adaptbx_include,
-  env_etc.boost_include,
+    env_etc.boost_adaptbx_include,
+    env_etc.boost_include,
 ]
 
-env_etc.include_registry.append(
-  env=env,
-  paths=env_etc.dials_rs_mapper_common_includes)
+env_etc.include_registry.append(env=env, paths=env_etc.dials_rs_mapper_common_includes)
 
-env.SharedLibrary(
-  target="#lib/recviewer_ext",
-  source=["ext.cpp"],
-  LIBS=env["LIBS"])
+env.SharedLibrary(target="#lib/recviewer_ext", source=["ext.cpp"], LIBS=env["LIBS"])

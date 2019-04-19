@@ -1,10 +1,7 @@
+Import("env")
 
-Import('env')
-
-sources = [
-    'boost_python/serialize_ext.cc']
+sources = ["boost_python/serialize_ext.cc"]
 
 env.SharedLibrary(
-  target='#/lib/dials_model_serialize_ext', 
-  source=sources,
-  LIBS=env["LIBS"])
+    target="#/lib/dials_model_serialize_ext", source=sources, LIBS=env["LIBS"]
+)

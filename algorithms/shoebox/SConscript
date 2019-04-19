@@ -1,5 +1,4 @@
-
-Import('env')
+Import("env")
 
 Import("env_base", "env_etc")
 
@@ -8,29 +7,29 @@ import libtbx, os
 env_etc.dials_shoebox_dist = libtbx.env.dist_path("dials")
 env_etc.dials_shoebox_include = os.path.dirname(env_etc.dials_shoebox_dist)
 env_etc.dials_shoebox_common_includes = [
-  env_etc.boost_include,
-  env_etc.annlib_dist,
-  env_etc.annlib_include[0],
-  env_etc.annlib_include[1],
-  env_etc.annlib_adaptbx_include[0],
-  env_etc.annlib_adaptbx_include[1],
+    env_etc.boost_include,
+    env_etc.annlib_dist,
+    env_etc.annlib_include[0],
+    env_etc.annlib_include[1],
+    env_etc.annlib_adaptbx_include[0],
+    env_etc.annlib_adaptbx_include[1],
 ]
 
-env_etc.include_registry.append(
-  env=env,
-  paths=env_etc.dials_shoebox_common_includes)
+env_etc.include_registry.append(env=env, paths=env_etc.dials_shoebox_common_includes)
 
 
 sources = [
-    'boost_python/mask_code.cc',
-    'boost_python/find_overlapping.cc',
-    'boost_python/overload_checker.cc',
-    'boost_python/mask_empirical.cc',
-    'boost_python/mask_overlapping.cc',
-    'boost_python/mask_builder.cc',
-    'boost_python/shoebox_ext.cc']
+    "boost_python/mask_code.cc",
+    "boost_python/find_overlapping.cc",
+    "boost_python/overload_checker.cc",
+    "boost_python/mask_empirical.cc",
+    "boost_python/mask_overlapping.cc",
+    "boost_python/mask_builder.cc",
+    "boost_python/shoebox_ext.cc",
+]
 
 env.SharedLibrary(
-    target='#/lib/dials_algorithms_shoebox_ext',
+    target="#/lib/dials_algorithms_shoebox_ext",
     source=sources,
-    LIBS=['ann']+env["LIBS"])
+    LIBS=["ann"] + env["LIBS"],
+)

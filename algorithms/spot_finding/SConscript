@@ -1,15 +1,13 @@
+Import("env")
 
-Import('env')
+sources = ["boost_python/spot_finding_ext.cc"]
 
-sources = [
-    'boost_python/spot_finding_ext.cc']
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_spot_finding_ext", source=sources, LIBS=env["LIBS"]
+)
 
-env.SharedLibrary(target='#/lib/dials_algorithms_spot_finding_ext',
-    source=sources,
-    LIBS=env["LIBS"])
-
-env.SharedLibrary(target='#/lib/dials_algorithms_spot_finding_helen_ext',
-    source=[
-      'helen/boost_python/ext.cc'
-    ],
-    LIBS=env["LIBS"])
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_spot_finding_helen_ext",
+    source=["helen/boost_python/ext.cc"],
+    LIBS=env["LIBS"],
+)

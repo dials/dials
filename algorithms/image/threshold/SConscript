@@ -1,11 +1,13 @@
-
-Import('env')
+Import("env")
 
 sources = [
-    'boost_python/unimodal.cc',
-    'boost_python/local.cc',
-    'boost_python/threshold_ext.cc']
+    "boost_python/unimodal.cc",
+    "boost_python/local.cc",
+    "boost_python/threshold_ext.cc",
+]
 
-env.SharedLibrary(target='#/lib/dials_algorithms_image_threshold_ext', 
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_image_threshold_ext",
     source=sources,
-    LIBS=env["LIBS"])
+    LIBS=env["LIBS"],
+)

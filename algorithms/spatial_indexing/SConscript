@@ -1,12 +1,13 @@
-
-Import('env')
+Import("env")
 
 sources = [
-    'boost_python/quadtree.cc',
-    'boost_python/octree.cc',
-    'boost_python/spatial_indexing_ext.cc']
+    "boost_python/quadtree.cc",
+    "boost_python/octree.cc",
+    "boost_python/spatial_indexing_ext.cc",
+]
 
 env.SharedLibrary(
-  target='#/lib/dials_algorithms_spatial_indexing_ext',
-  source=sources, 
-  LIBS=env["LIBS"])
+    target="#/lib/dials_algorithms_spatial_indexing_ext",
+    source=sources,
+    LIBS=env["LIBS"],
+)

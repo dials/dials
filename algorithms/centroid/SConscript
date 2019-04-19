@@ -1,9 +1,7 @@
-
-Import('env')
+Import("env")
 
 env.SharedLibrary(
-  target='#/lib/dials_algorithms_centroid_simple_ext', 
-  source=[
-    'simple/boost_python/simple_ext.cc'
-  ],
-  LIBS=env["LIBS"])
+    target="#/lib/dials_algorithms_centroid_simple_ext",
+    source=["simple/boost_python/simple_ext.cc"],
+    LIBS=env["LIBS"],
+)

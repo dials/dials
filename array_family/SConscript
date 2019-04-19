@@ -1,24 +1,23 @@
-
-Import('env', 'env_etc')
+Import("env", "env_etc")
 
 if env_etc.clang_version:
-  wd = ["-Wno-unused-variable"]
-  env.Append(CCFLAGS=wd)
+    wd = ["-Wno-unused-variable"]
+    env.Append(CCFLAGS=wd)
 
 sources = [
-    'boost_python/flex_int6.cc',
-    'boost_python/flex_shoebox.cc',
-    'boost_python/flex_centroid.cc',
-    'boost_python/flex_intensity.cc',
-    'boost_python/flex_observation.cc',
-    'boost_python/flex_prediction.cc',
-    'boost_python/flex_reflection_table.cc',
-    'boost_python/flex_unit_cell.cc',
-    'boost_python/flex_shoebox_extractor.cc',
-    'boost_python/flex_binner.cc',
-    'boost_python/flex_ext.cc']
+    "boost_python/flex_int6.cc",
+    "boost_python/flex_shoebox.cc",
+    "boost_python/flex_centroid.cc",
+    "boost_python/flex_intensity.cc",
+    "boost_python/flex_observation.cc",
+    "boost_python/flex_prediction.cc",
+    "boost_python/flex_reflection_table.cc",
+    "boost_python/flex_unit_cell.cc",
+    "boost_python/flex_shoebox_extractor.cc",
+    "boost_python/flex_binner.cc",
+    "boost_python/flex_ext.cc",
+]
 
 env.SharedLibrary(
-    target='#/lib/dials_array_family_flex_ext', 
-    source=sources,
-    LIBS=env["LIBS"])
+    target="#/lib/dials_array_family_flex_ext", source=sources, LIBS=env["LIBS"]
+)

@@ -1,21 +1,22 @@
-
-Import('env')
+Import("env")
 
 sources = [
-    'boost_python/index_generator.cc',
-    'boost_python/reeke_index_generator.cc',
-    'boost_python/scan_varying_helpers.cc',
-    'boost_python/rotation_angles.cc',
-    'boost_python/ray_predictor.cc',
-    'boost_python/scan_varying_ray_predictor.cc',
-    'boost_python/stills_ray_predictor.cc',
-    'boost_python/ray_intersection.cc',
-    'boost_python/reflection_predictor.cc',
-    'boost_python/pixel_labeller.cc',
-    'boost_python/pixel_to_miller_index.cc',
-    'boost_python/spot_prediction_ext.cc']
+    "boost_python/index_generator.cc",
+    "boost_python/reeke_index_generator.cc",
+    "boost_python/scan_varying_helpers.cc",
+    "boost_python/rotation_angles.cc",
+    "boost_python/ray_predictor.cc",
+    "boost_python/scan_varying_ray_predictor.cc",
+    "boost_python/stills_ray_predictor.cc",
+    "boost_python/ray_intersection.cc",
+    "boost_python/reflection_predictor.cc",
+    "boost_python/pixel_labeller.cc",
+    "boost_python/pixel_to_miller_index.cc",
+    "boost_python/spot_prediction_ext.cc",
+]
 
 env.SharedLibrary(
-  target='#/lib/dials_algorithms_spot_prediction_ext',
-  source=sources, 
-  LIBS=env["LIBS"])
+    target="#/lib/dials_algorithms_spot_prediction_ext",
+    source=sources,
+    LIBS=env["LIBS"],
+)

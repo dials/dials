@@ -1,17 +1,20 @@
-
-Import('env')
+Import("env")
 
 env.Replace(LIBS=[])
 
 env.Program(
-    target="algorithms/spot_prediction/tst_reeke_model", 
-    source="algorithms/spot_prediction/tst_reeke_model.cc")
+    target="algorithms/spot_prediction/tst_reeke_model",
+    source="algorithms/spot_prediction/tst_reeke_model.cc",
+)
 env.Program(
-    target="algorithms/spatial_indexing/tst_quadtree", 
-    source="algorithms/spatial_indexing/tst_quadtree.cc")
+    target="algorithms/spatial_indexing/tst_quadtree",
+    source="algorithms/spatial_indexing/tst_quadtree.cc",
+)
 env.Program(
-    target="algorithms/spatial_indexing/tst_octree", 
-    source="algorithms/spatial_indexing/tst_octree.cc")
+    target="algorithms/spatial_indexing/tst_octree",
+    source="algorithms/spatial_indexing/tst_octree.cc",
+)
 env.Program(
-    target="algorithms/spatial_indexing/tst_collision_detection", 
-    source="algorithms/spatial_indexing/tst_collision_detection.cc")
+    target="algorithms/spatial_indexing/tst_collision_detection",
+    source="algorithms/spatial_indexing/tst_collision_detection.cc",
+)
