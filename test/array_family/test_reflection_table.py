@@ -1267,7 +1267,7 @@ def test_experiment_identifiers():
     other_table["id"] = flex.int([3, 4])
 
     table.assert_experiment_identifiers_are_consistent()
-    
+
     packed = table.as_msgpack()
     table2 = table.from_msgpack(packed)
 

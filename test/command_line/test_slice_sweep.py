@@ -29,7 +29,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_
     sliced_exp = ExperimentListFactory.from_json_file(
         "experiments_1_20.json", check_format=False
     )[0]
-    
+
     sliced_refs = flex.reflection_table.from_msgpack_file("indexed_strong_1_20.mpack")
 
     # simple test of results

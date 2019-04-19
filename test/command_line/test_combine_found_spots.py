@@ -20,11 +20,7 @@ def test_combining_spots(dials_data, tmpdir):
     assert tmpdir.join("experiments-1.json").check()
 
     result = procrunner.run(
-        [
-            "dials.find_spots",
-            "experiments-1.json",
-            "output.reflections=strong-1.mpack",
-        ],
+        ["dials.find_spots", "experiments-1.json", "output.reflections=strong-1.mpack"],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
@@ -38,11 +34,7 @@ def test_combining_spots(dials_data, tmpdir):
     assert tmpdir.join("experiments-2.json").check()
 
     result = procrunner.run(
-        [
-            "dials.find_spots",
-            "experiments-2.json",
-            "output.reflections=strong-2.mpack",
-        ],
+        ["dials.find_spots", "experiments-2.json", "output.reflections=strong-2.mpack"],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]

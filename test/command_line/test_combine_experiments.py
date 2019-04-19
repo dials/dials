@@ -90,7 +90,9 @@ def test(dials_regression, run_in_tmpdir):
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_msgpack_file("reflections_%03d.mpack" % i)
+        ref_single = flex.reflection_table.from_msgpack_file(
+            "reflections_%03d.mpack" % i
+        )
 
         assert len(exp_single) == 1
         assert exp_single[0].crystal == e.crystal
@@ -145,7 +147,9 @@ def test(dials_regression, run_in_tmpdir):
     assert not os.path.exists("test_by_detector_%03d.mpack" % 2)
 
     # Now do test when input has identifiers set
-    reflections = flex.reflection_table().from_msgpack_file("combined_reflections.mpack")
+    reflections = flex.reflection_table().from_msgpack_file(
+        "combined_reflections.mpack"
+    )
     explist = ExperimentListFactory.from_json_file(
         "combined_experiments.json", check_format=False
     )
@@ -174,7 +178,9 @@ def test(dials_regression, run_in_tmpdir):
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_msgpack_file("reflections_%03d.mpack" % i)
+        ref_single = flex.reflection_table.from_msgpack_file(
+            "reflections_%03d.mpack" % i
+        )
 
         assert len(exp_single) == 1
         # resets all ids to 0, but keeps mapping to unique identifier.
@@ -213,7 +219,9 @@ def test(dials_regression, run_in_tmpdir):
         explist = ExperimentListFactory.from_json_file(
             "test_by_detector_%03d.json" % i, check_format=False
         )
-        refl = flex.reflection_table.from_msgpack_file("test_by_detector_%03d.mpack" % i)
+        refl = flex.reflection_table.from_msgpack_file(
+            "test_by_detector_%03d.mpack" % i
+        )
 
         for k in range(len(explist)):
             assert refl.experiment_identifiers()[k] == str(current_exp_id)

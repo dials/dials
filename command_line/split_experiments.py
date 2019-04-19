@@ -198,7 +198,9 @@ class Script(object):
                         "Saving reflections for experiment %d to %s"
                         % (i, reflections_filename)
                     )
-                    split_data[detector]["reflections"].as_msgpack_file(reflections_filename)
+                    split_data[detector]["reflections"].as_msgpack_file(
+                        reflections_filename
+                    )
         elif params.output.chunk_size or params.output.chunk_sizes:
             from dxtbx.model.experiment_list import ExperimentList
             from dxtbx.serialize import dump

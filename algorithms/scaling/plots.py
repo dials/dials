@@ -445,7 +445,7 @@ would give the straight line indicated. If the errors are well described by
 this model, the ordered responses should closely fit the straight line to
 high absolute values of x (>3), where there is typically a deviation away from
 the line due to wide tails of the distribution.
-"""
+""",
         },
         "nor_dev_hist": {
             "data": [
@@ -471,6 +471,6 @@ the line due to wide tails of the distribution.
 This plot shows the distribution of normalised devations (of each reflection
 from the group-weighted mean), for the reflections used to minimise the error
 model. A true normal distribution is indicated.
-"""
+""",
         },
     }

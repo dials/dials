@@ -60,7 +60,9 @@ class run_one_indexing(object):
         )
         assert os.path.exists("indexed.mpack")
 
-        self.indexed_reflections = flex.reflection_table.from_msgpack_file("indexed.mpack")
+        self.indexed_reflections = flex.reflection_table.from_msgpack_file(
+            "indexed.mpack"
+        )
 
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]

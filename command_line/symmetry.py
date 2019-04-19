@@ -160,9 +160,7 @@ class symmetry(object):
             )
             intensities = miller.array(miller_set, data=data, sigmas=sigmas)
             intensities.set_observation_type_xray_intensity()
-            intensities.set_info(
-                miller.array_info(source="DIALS", source_type="mpack")
-            )
+            intensities.set_info(miller.array_info(source="DIALS", source_type="mpack"))
             miller_arrays.append(intensities)
 
         return miller_arrays

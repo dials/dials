@@ -11,7 +11,8 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
-    ("space_group", "dimensions", "sample_size"), [("P2", None, 10), ("P3", None, 20), ("I23", libtbx.Auto, 10)]
+    ("space_group", "dimensions", "sample_size"),
+    [("P2", None, 10), ("P3", None, 20), ("I23", libtbx.Auto, 10)],
 )
 def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
     import matplotlib

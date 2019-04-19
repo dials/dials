@@ -26,7 +26,9 @@ def test_reindex(dials_regression, run_in_tmpdir):
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
     assert os.path.exists("reindexed_reflections.mpack")
-    new_reflections = flex.reflection_table.from_msgpack_file("reindexed_reflections.mpack")
+    new_reflections = flex.reflection_table.from_msgpack_file(
+        "reindexed_reflections.mpack"
+    )
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert os.path.exists("reindexed_experiments.json")
     new_experiments = load.experiment_list(
@@ -105,7 +107,9 @@ def test_reindex_multi_sweep(dials_regression, run_in_tmpdir):
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
     assert os.path.exists("reindexed_reflections.mpack")
-    new_reflections = flex.reflection_table.from_msgpack_file("reindexed_reflections.mpack")
+    new_reflections = flex.reflection_table.from_msgpack_file(
+        "reindexed_reflections.mpack"
+    )
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert os.path.exists("reindexed_experiments.json")
     new_experiments = load.experiment_list(
@@ -182,7 +186,9 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = flex.reflection_table.from_msgpack_file("reindexed_reflections.mpack")
+    reindexed_reflections = flex.reflection_table.from_msgpack_file(
+        "reindexed_reflections.mpack"
+    )
     P4_reindexed = flex.reflection_table.from_msgpack_file("P4_reindexed.mpack")
     P4_reflections = flex.reflection_table.from_msgpack_file("P4_reflections.mpack")
 

@@ -9,6 +9,7 @@ import procrunner
 import pytest
 from dials.command_line.stills_detector_hybrid_refine import run as run_hybrid_refine
 
+
 @pytest.mark.parametrize("averaged_reference_detector", [True, False])
 def test(dials_regression, run_in_tmpdir, averaged_reference_detector):
     # use 20 indexed pickles from CXI for this test

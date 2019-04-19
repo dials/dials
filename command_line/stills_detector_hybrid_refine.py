@@ -28,17 +28,19 @@ from math import sqrt
 import dials.util
 import libtbx.load_env
 from dials.algorithms.refinement import RefinerFactory
-from dials.algorithms.refinement.refinement_helpers import (get_panel_groups_at_depth,
-                                                            get_panel_ids_at_root)
-from dials.algorithms.refinement.stills_detector_metrology import \
-    StillsDetectorRefinerFactory
+from dials.algorithms.refinement.refinement_helpers import (
+    get_panel_groups_at_depth,
+    get_panel_ids_at_root,
+)
+from dials.algorithms.refinement.stills_detector_metrology import (
+    StillsDetectorRefinerFactory,
+)
 from dials.algorithms.spot_prediction import StillsReflectionPredictor
 from dials.array_family import flex
 from dials.util import Sorry, log
 from dials.util.options import OptionParser
 from dxtbx.model import Detector
-from dxtbx.model.experiment_list import (Experiment, ExperimentList,
-                                         ExperimentListDumper)
+from dxtbx.model.experiment_list import Experiment, ExperimentList, ExperimentListDumper
 from libtbx import easy_mp
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
@@ -565,7 +567,7 @@ detector_phase.refinement {
         read_reflections=True,
         read_experiments=True,
         check_format=False,
-        epilog=__doc__
+        epilog=__doc__,
     )
 
     params, options = parser.parse_args(args=args, show_diff_phil=True)

@@ -327,6 +327,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
     if params.reference:
         from dials.array_family import flex  # implicit dependency
+
         reference = flex.reflection_table.from_file(params.reference)
     else:
         reference = None
