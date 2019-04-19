@@ -47,13 +47,7 @@ jobs:
       cache: false
       script:
          - python -m compileall -q *
-
-    - name: "Syntax validation - Python 3.4"
-      addons: false
-      cache: false
-      python: 3.4
-      script:
-         - python3 -m compileall -q *
+         - .travis/run-flake8
 
     - name: "Syntax validation - Python 3.7"
       addons: false
@@ -62,6 +56,7 @@ jobs:
       python: 3.7
       script:
          - python3 -m compileall -q *
+         - .travis/run-flake8
 
     - stage: test
       before_script:
