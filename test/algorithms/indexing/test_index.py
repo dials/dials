@@ -113,7 +113,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
         "image_range=250,270",
         "image_range=520,540",
     ]
-    expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
+    expected_unit_cell = uctbx.unit_cell((57.7, 57.7, 149.8, 90, 90, 90))
     expected_rmsds = (0.05, 0.04, 0.0005)
     expected_hall_symbol = " P 1"
 
@@ -588,7 +588,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
     args = ["dials.find_spots", experiments_json]
     command = " ".join(args)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.pickle"
+    pickle_path = "strong.mpack"
     assert os.path.exists(pickle_path)
 
     expected_unit_cell = uctbx.unit_cell(
