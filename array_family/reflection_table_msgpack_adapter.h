@@ -761,20 +761,22 @@ namespace adaptor {
       }
       
       // Check the identifiers
-      if (identifier_object == NULL || identifier_object->type != msgpack::type::MAP) {
-        throw DIALS_ERROR("Identifier data not found");
-      }
+      if (identifier_object != NULL) {
+        if (identifier_object->type != msgpack::type::MAP) {
+          throw DIALS_ERROR("Identifier data not found");
+        }
 
-      // Read the identifiers from the map
-      if (identifier_object->via.map.size != 0) {
-        msgpack::object_kv* first = identifier_object->via.map.ptr;
-        msgpack::object_kv* last = first + identifier_object->via.map.size;
-        for (msgpack::object_kv *it = first; it != last; ++it) {
-          dials::af::reflection_table::experiment_map_type::key_type key = -1;
-          dials::af::reflection_table::experiment_map_type::mapped_type value;
-          it->key.convert(key);
-          it->val.convert(value);
-          (*v.experiment_identifiers())[key] = value;
+        // Read the identifiers from the map
+        if (identifier_object->via.map.size != 0) {
+          msgpack::object_kv* first = identifier_object->via.map.ptr;
+          msgpack::object_kv* last = first + identifier_object->via.map.size;
+          for (msgpack::object_kv *it = first; it != last; ++it) {
+            dials::af::reflection_table::experiment_map_type::key_type key = -1;
+            dials::af::reflection_table::experiment_map_type::mapped_type value;
+            it->key.convert(key);
+            it->val.convert(value);
+            (*v.experiment_identifiers())[key] = value;
+          }
         }
       }
 
