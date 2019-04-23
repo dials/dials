@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 # this import required early to avoid seg fault on some systems
 try:
-    import scipy.linalg  # import dependency
+    import scipy.linalg  # noqa: F401 - import dependency
 except ImportError:
     pass
 
