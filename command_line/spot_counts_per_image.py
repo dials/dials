@@ -71,9 +71,9 @@ def run(args):
         return
 
     if len(reflections) != 1:
-        raise Sorry("exactly 1 reflection table must be specified")
+        sys.exit("exactly 1 reflection table must be specified")
     if len(experiments.imagesets()) != 1:
-        raise Sorry("exactly 1 experiment must be specified")
+        sys.exit("exactly 1 experiment must be specified")
     imageset = experiments.imagesets()[0]
 
     reflections = reflections[0]
