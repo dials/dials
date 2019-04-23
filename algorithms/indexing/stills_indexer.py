@@ -19,7 +19,6 @@ from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.known_orientation import indexer_known_orientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch
 from dials.algorithms.indexing.nave_parameters import nave_parameters
-from dials.algorithms.indexing.indexer import master_params
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 
@@ -111,10 +110,6 @@ class stills_indexer(indexer_base):
     def from_parameters(
         reflections, experiments, known_crystal_models=None, params=None
     ):
-
-        if params is None:
-            params = master_params
-
         if known_crystal_models is not None:
             idxr = stills_indexer_known_orientation(
                 reflections, experiments, params, known_crystal_models
