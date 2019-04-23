@@ -1664,7 +1664,7 @@ class indexer_base(object):
 
         from cctbx.crystal_orientation import crystal_orientation
         from cctbx.sgtbx.bravais_types import bravais_lattice
-        from rstbx import dps_core  # import dependency
+        from rstbx import dps_core  # noqa: F401 - Import dependency
         from rstbx.dps_core.lepage import iotbx_converter
 
         max_delta = self.params.known_symmetry.max_delta
@@ -1812,7 +1812,7 @@ class indexer_base(object):
 
     def debug_plot_candidate_basis_vectors(self):
         from matplotlib import pyplot
-        from mpl_toolkits.mplot3d import Axes3D  # import dependency
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 - Import dependency
 
         fig = pyplot.figure()
         ax = fig.add_subplot(111, projection="3d")
