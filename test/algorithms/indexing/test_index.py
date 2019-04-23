@@ -109,9 +109,9 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     sweep_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "bin_size_fraction=0.25",
-        "scan_range=1,20",
-        "scan_range=250,270",
-        "scan_range=520,540",
+        "image_range=1,20",
+        "image_range=250,270",
+        "image_range=520,540",
     ]
     expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
     expected_rmsds = (0.05, 0.04, 0.0005)
@@ -215,9 +215,9 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
         "n_macro_cycles=3",
         "reciprocal_space_grid.d_min=4",
         "filter_overlaps=False",  # P1_X6_1.pickle does not contain bbox!
-        "scan_range=0,50",
-        "scan_range=450,500",
-        "scan_range=850,900",
+        "image_range=0,50",
+        "image_range=450,500",
+        "image_range=850,900",
     ]
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
     expected_rmsds = (0.061, 0.06, 0.00042)
@@ -250,9 +250,9 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
         "n_macro_cycles=2",
         "reciprocal_space_grid.d_min=4",
         "max_cell=70",
-        "scan_range=0,50",
-        "scan_range=450,500",
-        "scan_range=850,900",
+        "image_range=0,50",
+        "image_range=450,500",
+        "image_range=850,900",
         "max_lattices=2",
     ]
     expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
@@ -359,7 +359,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
         "n_macro_cycles=5",
         "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
         "known_symmetry.space_group=P212121",
-        "scan_range=0,10",
+        "image_range=0,10",
         "beam.fix=all",
         "detector.fix=all",
         "max_cell=70",
@@ -392,9 +392,9 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
         "n_macro_cycles=2",
         "indexing.method=fft1d",
         "bin_size_fraction=0.25",
-        "scan_range=1,20",
-        "scan_range=250,270",
-        "scan_range=520,540",
+        "image_range=1,20",
+        "image_range=250,270",
+        "image_range=520,540",
     ]
     expected_unit_cell = uctbx.unit_cell((58, 58, 150, 90, 90, 90))
     expected_rmsds = (0.06, 0.05, 0.0005)
@@ -422,7 +422,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
         "n_macro_cycles=3",
         "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
         "known_symmetry.space_group=P212121",
-        "scan_range=0,10",
+        "image_range=0,10",
         "beam.fix=all",
         "detector.fix=all",
         "max_lattices=3",
