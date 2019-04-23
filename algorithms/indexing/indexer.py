@@ -1162,14 +1162,17 @@ class indexer_base(object):
 
         indexed_flags = reflections.get_flags(reflections.flags.indexed)
         imageset_id = reflections["imageset_id"]
-        rows = [["Imageset", "#indexed", "#unindexed"]]
+        rows = [["Imageset", "# indexed", "# unindexed", "% indexed"]]
         for i in range(flex.max(imageset_id) + 1):
             imageset_indexed_flags = indexed_flags.select(imageset_id == i)
+            indexed_count = imageset_indexed_flags.count(True)
+            unindexed_count = imageset_indexed_flags.count(False)
             rows.append(
                 [
                     str(i),
-                    str(imageset_indexed_flags.count(True)),
-                    str(imageset_indexed_flags.count(False)),
+                    str(indexed_count),
+                    str(unindexed_count),
+                    "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
                 ]
             )
         from libtbx import table_utils
