@@ -181,7 +181,7 @@ class Index(object):
 
     def export_reflections(self, filename):
         logger.info("Saving refined reflections to %s" % filename)
-        self._indexed_reflections.as_pickle(filename=filename)
+        self._indexed_reflections.as_msgpack_file(filename=filename)
 
 
 def run(phil=working_phil, args=None):
