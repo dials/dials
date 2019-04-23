@@ -208,8 +208,9 @@ class cosym(object):
             sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
             if sel.count(True):
                 logger.info(
-                    "Elminating %i systematic absences for experiment %s"
-                    % (sel.count(True), expt.identifier)
+                    "Eliminating %i systematic absences for experiment %s",
+                    sel.count(True),
+                    expt.identifier,
                 )
                 refl = refl.select(sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
