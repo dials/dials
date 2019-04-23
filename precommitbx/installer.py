@@ -211,7 +211,7 @@ def download_openssl():
     return archive
 
 
-def build_openssl():
+def install_openssl():
     markerfile = precommit_home.join(".valid.openssl")
     if markerfile.check():
         return
@@ -278,7 +278,7 @@ def install_python(check_only=False):
         return python3
     if check_only:
         return False
-    openssl = build_openssl()
+    install_openssl()
     sourcedir = precommit_home / "Python-{}".format(python_source_version)
     targz = download_python()
     with Progress("Unpacking Python", 4174) as bar:
@@ -315,7 +315,8 @@ def install_python(check_only=False):
     if sys.platform == "darwin":
         compiled_python = sourcedir.join("python.exe")
     if not compiled_python.check():
-        for x in trange(
+        # in a parallel build 'make' might terminate before the build is complete
+        for _ in trange(
             100,
             desc="Waiting for build results to appear...",
             bar_format="{l_bar}{bar}| [{remaining}]",
