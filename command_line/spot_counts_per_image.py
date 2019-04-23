@@ -70,27 +70,46 @@ def run(args):
         parser.print_help()
         return
 
+    # FIXME may want to change this to allow many to be passed i.e.
+    # from parallel runs
     if len(reflections) != 1:
-        sys.exit("exactly 1 reflection table must be specified")
-    if len(experiments.imagesets()) != 1:
-        sys.exit("exactly 1 experiment must be specified")
-    imageset = experiments.imagesets()[0]
-
+        sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
+    expts = set(reflections["id"])
+    if max(expts) >= len(experiments.imagesets()):
+        sys.exit("Unknown experiments in reflection list")
 
     if params.id is not None:
         reflections = reflections.select(reflections["id"] == params.id)
 
-    stats = per_image_analysis.stats_imageset(
-        imageset,
-        reflections,
-        resolution_analysis=params.resolution_analysis,
-        plot=params.individual_plots,
-    )
-    per_image_analysis.print_table(stats)
+    all_stats = []
+    for j, imageset in enumerate(experiments.imagesets()):
+        refl = reflections.select(reflections["id"] == j)
+        stats = per_image_analysis.stats_imageset(
+            imageset,
+            refl,
+            resolution_analysis=params.resolution_analysis,
+            plot=params.individual_plots,
+        )
+        all_stats.append(stats)
 
+    # transpose stats
+    class empty(object):
+        pass
+
+    e = empty()
+    for s in all_stats:
+        for k in dir(s):
+            if k.startswith("_") or k in ["merge", "next"]:
+                continue
+            if not hasattr(e, k):
+                setattr(e, k, [])
+            getattr(e, k).extend(getattr(s, k))
+
+    per_image_analysis.print_table(e)
     from libtbx import table_utils
 
+    # FIXME this is now probably nonsense...
     overall_stats = per_image_analysis.stats_single_image(
         imageset, reflections, resolution_analysis=params.resolution_analysis
     )
