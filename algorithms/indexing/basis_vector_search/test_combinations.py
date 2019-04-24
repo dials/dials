@@ -20,9 +20,12 @@ def test_combinations(setup_rlp):
         setup_rlp["crystal_symmetry"]
         .primitive_setting()
         .customized_copy(unit_cell=None),
+        setup_rlp["crystal_symmetry"].as_reference_setting(),
     ):
 
-        crystal_models = combinations.candidate_orientation_matrices(basis_vectors)
+        crystal_models = combinations.candidate_orientation_matrices(
+            basis_vectors, max_combinations=50
+        )
         filtered_crystal_models = combinations.filter_known_symmetry(
             crystal_models, target_symmetry=target_symmetry
         )
