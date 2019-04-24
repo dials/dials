@@ -314,10 +314,10 @@ def extract_last_indexed_spot_count(path):
     with open(path) as f:
         lines = f.readlines()
 
-    # Find the last entry for #unindexed
-    next_ui = len(lines) - find_in_line("#unindexed", list(reversed(lines))) - 1
+    # Find the last entry for '# unindexed'
+    next_ui = len(lines) - find_in_line("# unindexed", list(reversed(lines))) - 1
 
-    # We now have the last entry for #unindexed. Find the end of the table
+    # We now have the last entry for '# unindexed'. Find the end of the table
     end_ui = find_in_line("---", lines, next_ui + 2)
     # Range to extract = (next_ui, end_ui)
     dest = os.path.dirname(path)
