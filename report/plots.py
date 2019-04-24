@@ -91,9 +91,11 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
 
 def i_over_sig_i_vs_i_plot(intensities, sigmas):
     """Plot unscaled I / sigma_adjusted vs unscaled I."""
-    sel = intensities > 0
-    x = flex.log10(intensities.select(sel))
-    y = (intensities / sigmas).select(sel)
+    sel = (intensities > 0) & (sigmas > 0)
+    intensities = intensities.select(sel)
+    sigmas = sigmas.select(sel)
+    x = flex.log10(intensities)
+    y = intensities / sigmas
 
     H, xedges, yedges = np.histogram2d(
         x.as_numpy_array(), y.as_numpy_array(), bins=(200, 200)
@@ -103,7 +105,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
-    y2 = (intensities / sigmas ** 2).select(sel)
+    y2 = intensities / (sigmas ** 2)
     H2, x2edges, y2edges = np.histogram2d(
         x.as_numpy_array(), y2.as_numpy_array(), bins=(200, 200)
     )

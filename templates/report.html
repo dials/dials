@@ -58,11 +58,12 @@
             <p><b>Merging statistics by resolution bin</b></p>
             {{ macros.table(scaling_tables[1]) }}
         </div>
+    {{ macros.panel('Scaling model plots',
+        'scaling_model', scaling_model_graphs) }}
     {{ macros.panel('Analysis by resolution', 'cc_one_half', resolution_plots) }}
     {{ macros.panel('Analysis by image number', 'batch', batch_graphs) }}
     {{ macros.panel('Miscellanous plots', 'misc_plots', misc_plots) }}
-    {{ macros.panel('Scaling model plots',
-                    'scaling_model', scaling_model_graphs) }}
+    {{ macros.panel('Scaled intensity plots', 'scaled_intensity_plots', scaled_intensity_plots) }}
     </div>
 
 </div>

@@ -33,6 +33,7 @@ from dials.report.plots import (
     IntensityStatisticsPlots,
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
+    i_over_sig_i_vs_i_plot,
 )
 from dials.util.command_line import Command
 from dials.util.batch_handling import batch_manager
@@ -2105,14 +2106,15 @@ def merging_stats_results(reflections, experiments):
 
 def intensity_statistics(reflections, experiments):
     if not "inverse_scale_factor" in reflections:
-        return {}, {}
+        return {}, {}, {}
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
     plotter = IntensityStatisticsPlots(scaled_array)
     resolution_plots = plotter.generate_resolution_dependent_plots()
     misc_plots = plotter.generate_miscellanous_plots()
-    return resolution_plots, misc_plots
+    intensity_plots = i_over_sig_i_vs_i_plot(scaled_array.data(), scaled_array.sigmas())
+    return resolution_plots, misc_plots, intensity_plots
 
 
 class Analyser(object):
@@ -2161,7 +2163,7 @@ class Analyser(object):
             summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
-            rplots, misc_plots = intensity_statistics(rlist, experiments)
+            rplots, misc_plots, scaled_intensity_plots = intensity_statistics(rlist, experiments)
             resolution_plots.update(rplots)
 
         if self.params.output.html is not None:
@@ -2195,6 +2197,7 @@ class Analyser(object):
                 resolution_plots=resolution_plots,
                 batch_graphs=batch_plots,
                 misc_plots=misc_plots,
+                scaled_intensity_plots=scaled_intensity_plots,
                 strong_graphs=graphs["strong"],
                 centroid_graphs=graphs["centroid"],
                 intensity_graphs=graphs["intensity"],
