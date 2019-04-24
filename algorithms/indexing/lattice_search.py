@@ -174,9 +174,6 @@ class BasisVectorSearch(indexer.indexer_base):
             )
 
         self.debug_show_candidate_basis_vectors()
-        if self.params.debug_plots:
-            self.debug_plot_candidate_basis_vectors()
-
         return self.candidate_basis_vectors
 
     def find_lattices(self):
@@ -454,55 +451,3 @@ class BasisVectorSearch(indexer.indexer_base):
                 print(file=s)
 
             logger.debug(s.getvalue())
-
-    def debug_plot_candidate_basis_vectors(self):
-        from matplotlib import pyplot
-        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(111, projection="3d")
-        ax.scatter([0], [0], [0], marker="+", s=50)
-
-        # http://stackoverflow.com/questions/11140163/python-matplotlib-plotting-a-3d-cube-a-sphere-and-a-vector
-        # draw a vector
-        from matplotlib.patches import FancyArrowPatch
-        from mpl_toolkits.mplot3d import proj3d
-
-        class Arrow3D(FancyArrowPatch):
-            def __init__(self, xs, ys, zs, *args, **kwargs):
-                FancyArrowPatch.__init__(self, (0, 0), (0, 0), *args, **kwargs)
-                self._verts3d = xs, ys, zs
-
-            def draw(self, renderer):
-                xs3d, ys3d, zs3d = self._verts3d
-                xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-                self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-                FancyArrowPatch.draw(self, renderer)
-
-        for v in self.candidate_basis_vectors:
-            x, y, z = v.elems
-            a = Arrow3D(
-                [0, x],
-                [0, y],
-                [0, z],
-                mutation_scale=10,
-                lw=1,
-                arrowstyle="-|>",
-                color="k",
-            )
-            ax.add_artist(a)
-            a = Arrow3D(
-                [0, -x],
-                [0, -y],
-                [0, -z],
-                mutation_scale=10,
-                lw=1,
-                arrowstyle="-|>",
-                color="k",
-            )
-            ax.add_artist(a)
-
-        x, y, z = zip(*self.candidate_basis_vectors)
-        ax.scatter(x, y, z, marker=".", s=1)
-        ax.scatter([-i for i in x], [-i for i in y], [-i for i in z], marker=".", s=1)
-        pyplot.show()
