@@ -61,13 +61,11 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
         alpha = b.angle(c, deg=True)
         if alpha < half_pi:
             c = -c
-        # beta = c.angle(a, deg=True)
         if a_cross_b.dot(c) < 0:
             # we want right-handed basis set, therefore invert all vectors
             a = -a
             b = -b
             c = -c
-            # assert a.cross(b).dot(c) > 0
         model = Crystal(a, b, c, space_group_symbol="P 1")
         uc = model.get_unit_cell()
         best_model = None
@@ -88,17 +86,19 @@ def filter_known_symmetry(
     absolute_angle_tolerance=5,
     max_delta=5,
 ):
+    """Filter crystal models for known symmetry.
 
-    # relative_length_tolerance = 0.1
-    # .type = float
-    # .help = "Relative tolerance for unit cell lengths in unit cell comparision."
-    # absolute_angle_tolerance = 5
-    # .type = float
-    # .help = "Angular tolerance (in degrees) in unit cell comparison."
-    # max_delta = 5
-    # .type = float(value_min=0)
-    # .help = "Maximum allowed Le Page delta used in searching for basis vector"
-    # "combinations that are consistent with the given symmetry."
+    Args:
+        crystal_models (list): A list of :class:`dxtbx.model.Crystal` objects.
+        target_symmetry (cctbx.crystal.symmetry): The target symmetry for filtering.
+        relative_length_tolerance (float): Relative tolerance for unit cell lengths in
+            unit cell comparision (default value is 0.1).
+        absolute_angle_tolerance (float): Angular tolerance (in degrees) in unit cell
+            comparison (default value is 5).
+        max_delta (float): Maximum allowed Le Page delta used in searching for basis
+            vector combinations that are consistent with the given symmetry (default
+            value is 5).
+    """
 
     cb_op_ref_to_primitive = target_symmetry.change_of_basis_op_to_primitive_setting()
 
