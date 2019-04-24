@@ -38,12 +38,20 @@ def setup(request):
     return d
 
 
-def test_max_cell(setup):
+@pytest.mark.parametrize(
+    "histogram_binning,nearest_neighbor_percentile", [("linear", None), ("log", 0.99)]
+)
+def test_max_cell(setup, histogram_binning, nearest_neighbor_percentile):
     reflections = setup["reflections"]
     crystal_symmetry = setup["crystal_symmetry"]
 
     max_cell_multiplier = 1.3
-    max_cell = find_max_cell(reflections, max_cell_multiplier=max_cell_multiplier)
+    max_cell = find_max_cell(
+        reflections,
+        max_cell_multiplier=max_cell_multiplier,
+        histogram_binning=histogram_binning,
+        nearest_neighbor_percentile=nearest_neighbor_percentile,
+    )
 
     known_max_cell = max(
         crystal_symmetry.primitive_setting().unit_cell().parameters()[:3]
