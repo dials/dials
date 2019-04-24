@@ -216,6 +216,7 @@ class Script(object):
                     self.reflections[0],
                     ids_to_remove,
                     statistics.image_group_to_expid_and_range,
+                    statistics.expid_to_image_groups,
                     self.results_summary,
                 )
             self.reflections = [filtered_reflections]
@@ -374,6 +375,7 @@ class Script(object):
         reflections,
         ids_to_remove,
         image_group_to_expid_and_range,
+        expid_to_image_groups,
         results_summary,
     ):
         """Remove image ranges from the datasets."""
@@ -384,15 +386,43 @@ class Script(object):
         experiments_to_delete = []
         exclude_images = []
         image_ranges_removed = []  # track for results summary
-        for id_ in sorted(ids_to_remove):
-            exp_id, image_range = image_group_to_expid_and_range[id_]  # numerical id
+        n_removed_this_cycle = 1
+        while n_removed_this_cycle != 0:
+            other_potential_ids_to_remove = []
+            n_removed_this_cycle = 0
+            for id_ in sorted(ids_to_remove):
+                exp_id, image_range = image_group_to_expid_and_range[
+                    id_
+                ]  # numerical id
+                identifier = reflections.experiment_identifiers()[exp_id]
+                if expid_to_image_groups[exp_id][-1] == id_:  # is last group
+                    image_ranges_removed.append([image_range, exp_id])
+                    logger.info(
+                        "Removing image range %s from experiment %s",
+                        image_range,
+                        identifier,
+                    )
+                    exclude_images.append(
+                        [
+                            identifier
+                            + ":"
+                            + str(image_range[0])
+                            + ":"
+                            + str(image_range[1])
+                        ]
+                    )
+                    del expid_to_image_groups[exp_id][-1]
+                    n_removed_this_cycle += 1
+                else:
+                    other_potential_ids_to_remove.append(id_)
+            ids_to_remove = other_potential_ids_to_remove
+        for id_ in other_potential_ids_to_remove:
+            exp_id, image_range = image_group_to_expid_and_range[id_]
             identifier = reflections.experiment_identifiers()[exp_id]
-            image_ranges_removed.append([image_range, exp_id])
             logger.info(
-                "Removing image range %s from experiment %s", image_range, identifier
-            )
-            exclude_images.append(
-                [identifier + ":" + str(image_range[0]) + ":" + str(image_range[1])]
+                """Image range %s from experiment %s is below the cutoff, but not at the end of a sweep.""",
+                image_range,
+                identifier,
             )
 
         # Now remove individual batches

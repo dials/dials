@@ -266,9 +266,15 @@ def test_compute_delta_cchalf_returned_results():
         2: (1, (1, 5)),
         3: (1, (6, 10)),
     }
+    expids_to_image_groups = {0: [0, 1], 1: [2, 3]}
     results_summary = {"dataset_removal": {}}
     _ = DeltaCCHalfScript.remove_image_ranges_below_cutoff(
-        exp, refls, ids_to_remove, image_group_to_expid_and_range, results_summary
+        exp,
+        refls,
+        ids_to_remove,
+        image_group_to_expid_and_range,
+        expids_to_image_groups,
+        results_summary,
     )
     assert "experiments_fully_removed" in results_summary["dataset_removal"]
     assert "n_reflections_removed" in results_summary["dataset_removal"]
@@ -276,6 +282,6 @@ def test_compute_delta_cchalf_returned_results():
     assert results_summary["dataset_removal"]["experiments_fully_removed"] == ["0"]
     assert results_summary["dataset_removal"]["n_reflections_removed"] == 10
     assert results_summary["dataset_removal"]["image_ranges_removed"] == [
-        [(1, 5), 0],
         [(6, 10), 0],
+        [(1, 5), 0],
     ]

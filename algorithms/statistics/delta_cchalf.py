@@ -291,9 +291,11 @@ class PerImageCChalfStatistics(object):
         logger.info("CC 1/2 mean: %.3f" % (100 * self._cchalf_mean))
 
         # override dataset here with a batched-dependent
+        self.expid_to_image_groups = {id_: [] for id_ in set(dataset)}
         if mode == "image_group":
             image_groups = flex.int(dataset.size(), 0)
             self.image_group_to_expid_and_range = {}
+
             counter = 0
             for id_ in set(dataset):
                 sel = dataset == id_
@@ -311,6 +313,7 @@ class PerImageCChalfStatistics(object):
                         id_,
                         (i, i + image_group - 1),
                     )
+                    self.expid_to_image_groups[id_].append(counter)
                     counter += 1
             self._cchalf = self._compute_cchalf_excluding_each_dataset(
                 reflection_sums, binner, miller_index, image_groups, intensity

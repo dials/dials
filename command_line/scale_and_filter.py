@@ -30,6 +30,7 @@ import dials.util
 from dials.command_line.scale import Script as ScalingScript
 from dials.command_line.compute_delta_cchalf import Script as FilterScript
 from dials.util.exclude_images import get_valid_image_ranges
+from dials.util.version import dials_version
 from dials.algorithms.scaling.observers import register_merging_stats_observers
 
 matplotlib.use("Agg")
@@ -602,7 +603,7 @@ def run(args=None, phil=phil_scope):
     params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
     dials.util.log.config(info=params.output.log, debug=params.output.debug.log)
-
+    logger.info(dials_version())
     diff_phil = parser.diff_phil.as_str()
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
