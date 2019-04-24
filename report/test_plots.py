@@ -96,6 +96,7 @@ def test_IntensityStatisticsPlots(iobs):
     d = plotter.generate_miscellanous_plots()
     assert "cumulative_intensity_distribution" in d
     assert "l_test" in d
+    assert "multiplicities" in d
 
 
 def test_ResolutionPlotsAndStats(iobs):

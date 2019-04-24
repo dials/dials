@@ -192,7 +192,9 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         if anomalous:
             intensities = intensities.as_anomalous_array()
         intensities.setup_binner(n_bins=self.n_bins)
-        self.merged_intensities = intensities.merge_equivalents().array()
+        merged = intensities.merge_equivalents()
+        self.merged_intensities = merged.array()
+        self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
         if not self._xanalysis:
             # imports needed here or won't work, unsure why.
             from mmtbx.scaling.xtriage import xtriage_analyses
@@ -218,7 +220,52 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         d = OrderedDict()
         d.update(self.cumulative_intensity_distribution_plot())
         d.update(self.l_test_plot())
+        d.update(self.multiplicity_histogram())
         return d
+
+    def multiplicity_histogram(self):
+        """Generate histogram data for acentric and centric multiplicities."""
+        mult_acentric = self.multiplicities.select_acentric().data()
+        mult_centric = self.multiplicities.select_centric().data()
+
+        multiplicities_acentric = {}
+        multiplicities_centric = {}
+
+        for x in sorted(set(mult_acentric)):
+            multiplicities_acentric[x] = mult_acentric.count(x)
+        for x in sorted(set(mult_centric)):
+            multiplicities_centric[x] = mult_centric.count(x)
+
+        return {
+            "multiplicities": {
+                "data": [
+                    {
+                        "x": multiplicities_acentric.keys(),
+                        "y": multiplicities_acentric.values(),
+                        "type": "bar",
+                        "name": "Acentric",
+                        "opacity": 0.75,
+                    },
+                    {
+                        "x": multiplicities_centric.keys(),
+                        "y": multiplicities_centric.values(),
+                        "type": "bar",
+                        "name": "Centric",
+                        "opacity": 0.75,
+                    },
+                ],
+                "layout": {
+                    "title": "Distribution of multiplicities",
+                    "xaxis": {"title": "Multiplicity"},
+                    "yaxis": {
+                        "title": "Frequency",
+                        #'rangemode': 'tozero'
+                    },
+                    "bargap": 0,
+                    "barmode": "overlay",
+                },
+            }
+        }
 
     def wilson_plot(self):
         if not self._xanalysis or not self._xanalysis.wilson_scaling:
