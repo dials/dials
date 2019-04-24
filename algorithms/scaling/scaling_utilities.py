@@ -84,6 +84,12 @@ def save_experiments(experiments, filename):
 def save_reflections(reflection_table, filename):
     """Save the scaled reflections."""
     st = time()
+    to_del = ['variance', 'intensity', 's0', 's0c', 's1c', 'prescaling_correction', 'batch']
+    for col in to_del:
+        try:
+            del reflection_table[col]
+        except KeyError:
+            pass
     logger.info("Saving the scaled reflections to %s", filename)
     reflection_table.as_msgpack_file(filename)
     logger.info("Time taken: %g", (time() - st))
