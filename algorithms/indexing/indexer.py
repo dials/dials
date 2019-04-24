@@ -169,10 +169,6 @@ indexing {
   debug = False
     .type = bool
     .expert_level = 1
-  debug_plots = False
-    .type = bool
-    .help = "Requires matplotlib"
-    .expert_level = 1
   combine_scans = False
     .type = bool
     .expert_level = 1
@@ -914,7 +910,6 @@ class indexer_base(object):
             reflections,
             experiments,
             verbosity=self.params.refinement_protocol.verbosity,
-            debug_plots=self.params.debug_plots,
         )
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
