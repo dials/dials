@@ -20,8 +20,9 @@ def test_optimise_basis_vectors(setup_rlp):
         assert list(g) == pytest.approx(g_fd, rel=1)
 
         minimised = optimise.basis_vector_minimser(rlp, v)
-        # check that the minimised vectors are similar to the starting vectors
-        assert v.elems == pytest.approx(minimised.x, abs=5e-1)
+        # check that the minimised vectors are broadly similar to the starting vectors
+        assert v.length() == pytest.approx(minimised.x.norm(), rel=2e-2)
+        assert v.elems == pytest.approx(minimised.x, abs=1.2)
 
     optimised = optimise.optimise_basis_vectors(rlp, basis_vectors)
     assert len(optimised) == len(basis_vectors)
