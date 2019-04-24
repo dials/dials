@@ -302,6 +302,7 @@ class PerImageCChalfStatistics(object):
                 images_in_dataset = images.select(sel)
                 unique_images = set(images_in_dataset)
                 min_img, max_img = (min(unique_images), max(unique_images))
+                min_img = (int(floor(min_img / image_group)) * image_group) + 1
                 for i in range(min_img, max_img + 1, image_group):
                     group_sel = (images_in_dataset >= i) & (
                         images_in_dataset < i + image_group
