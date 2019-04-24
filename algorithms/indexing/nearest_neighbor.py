@@ -109,25 +109,6 @@ class neighbor_analysis(object):
         self.relative_frequency = hst.slots().as_double() / self.slot_width
         highest_bin_height = flex.max(self.relative_frequency)
 
-        if False:  # to print out the histogramming analysis
-            smin, smax = flex.min(direct), flex.max(direct)
-            stats = flex.mean_and_variance(direct)
-            import sys
-
-            out = sys.stdout
-            print("     range:     %6.2f - %.2f" % (smin, smax), file=out)
-            print(
-                "     mean:      %6.2f +/- %6.2f on N = %d"
-                % (
-                    stats.mean(),
-                    stats.unweighted_sample_standard_deviation(),
-                    direct.size(),
-                ),
-                file=out,
-            )
-            hst.show(f=out, prefix="    ", format_cutoffs="%6.2f")
-            print("", file=out)
-
         if percentile is not None:
             # determine the nth-percentile direct-space distance
             perm = flex.sort_permutation(direct, reverse=True)
