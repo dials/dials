@@ -9,7 +9,7 @@ except ImportError:
 import os
 import pytest
 from cctbx import uctbx
-from dials.test.algorithms.indexing.test_index import run_one_indexing
+from dials.algorithms.indexing.test_index import run_one_indexing
 
 
 def test_run(dials_regression, run_in_tmpdir):
