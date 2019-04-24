@@ -670,7 +670,6 @@ class indexer_base(object):
                                 "Rotation of %.3f degrees" % angle
                                 + " about axis (%.3f, %.3f, %.3f)" % axis
                             )
-                            # show_rotation_matrix_differences([cryst_a, cryst_b])
                             have_similar_crystal_models = True
                             del experiments[-1]
                             break

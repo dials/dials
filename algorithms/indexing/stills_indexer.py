@@ -267,7 +267,6 @@ class stills_indexer(indexer_base):
                             "Rotation of %.3f degrees" % angle
                             + " about axis (%.3f, %.3f, %.3f)" % axis
                         )
-                        # show_rotation_matrix_differences([cryst_a, cryst_b])
                         have_similar_crystal_models = True
                         del experiments[-1]
                         break
@@ -551,11 +550,11 @@ class stills_indexer(indexer_base):
 
         if len(self.refined_experiments) > 1:
             from dials.algorithms.indexing.compare_orientation_matrices import (
-                show_rotation_matrix_differences,
+                rotation_matrix_differences,
             )
 
-            show_rotation_matrix_differences(
-                self.refined_experiments.crystals(), out=info_handle
+            logger.info(
+                rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
         logger.info("Final refined crystal models:")

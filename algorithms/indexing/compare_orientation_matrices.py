@@ -42,26 +42,6 @@ def difference_rotation_matrix_axis_angle(crystal_a, crystal_b, target_angle=0):
     return best_R_ab, best_axis, best_angle, best_cb_op
 
 
-def show_rotation_matrix_differences(
-    crystal_models, out=None, miller_indices=None, comparison="pairwise"
-):
-    if out is None:
-        import sys
-
-        out = sys.stdout
-    print(
-        "Warning: Use of the .show_rotation_matrix_differences() method is deprecated.\n"
-        "Use print(rotation_matrix_differences()) instead.",
-        file=out,
-    )
-    print(
-        rotation_matrix_differences(
-            crystal_models, miller_indices=miller_indices, comparison=comparison
-        ),
-        file=out,
-    )
-
-
 def rotation_matrix_differences(
     crystal_models, miller_indices=None, comparison="pairwise"
 ):
