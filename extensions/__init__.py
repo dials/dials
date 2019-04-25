@@ -29,7 +29,7 @@ class _Extension(object):
 
         if cls == _Extension:
             raise RuntimeError("Extension has no phil parameters")
-        doc = "\n".join('"%s"' % d for d in cls.__doc__)
+        doc = "\n".join('"%s"' % d for d in cls.__doc__.strip().splitlines())
         master_scope = parse("%s .help=%s {}" % (cls.name, doc))
         main_scope = master_scope.get_without_substitution(cls.name)
         assert len(main_scope) == 1
