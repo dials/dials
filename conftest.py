@@ -48,9 +48,23 @@ def dials_regression():
     Skip the test if dials_regression is not installed."""
     try:
         import dials_regression as dr
+
+        return os.path.dirname(dr.__file__)
     except ImportError:
-        pytest.skip("dials_regression required for this test")
-    return os.path.dirname(dr.__file__)
+        pass  # dials_regression not configured
+    try:
+        import socket
+
+        reference_copy = "/dls/science/groups/scisoft/DIALS/repositories/git-reference/dials_regression"
+        if (
+            os.name == "posix"
+            and "diamond.ac.uk" in socket.gethostname()
+            and os.path.exists(reference_copy)
+        ):
+            return reference_copy
+    except ImportError:
+        pass  # can not tell whether in DLS network or not
+    pytest.skip("dials_regression required for this test")
 
 
 @pytest.fixture
