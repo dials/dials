@@ -1093,7 +1093,7 @@ def test_find_overlapping():
             assert is_overlap(b0, b1, i)
 
 
-def test_to_from_msgpack():
+def test_to_from_msgpack(tmpdir):
     from dials.model.data import Shoebox
     from dials.array_family import flex
 
@@ -1166,8 +1166,10 @@ def test_to_from_msgpack():
     assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
 
-    table.as_msgpack_file("reflections.mpack")
-    new_table = flex.reflection_table.from_msgpack_file("reflections.mpack")
+    table.as_msgpack_file(tmpdir.join("reflections.mpack").strpath)
+    new_table = flex.reflection_table.from_msgpack_file(
+        tmpdir.join("reflections.mpack").strpath
+    )
     assert new_table.is_consistent()
     assert new_table.nrows() == 10
     assert new_table.ncols() == 11
