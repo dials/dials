@@ -277,11 +277,16 @@ def test_MergingStatisticsObserver():
         """A Mock class for ResolutionPlotsAndStats and IntensityStatisticsPlots."""
 
         def __init__(self, *_, **__):
-            pass
+            self.binner = mock.Mock()
+            self.binner.limits.return_value = flex.double([2.0, 2.0, 2.0])
 
         def make_all_plots(self, *_):
             """Mock resolution dependent plots method."""
             return {"return_plots": []}
+
+        def make_plots(self, *_):
+            """Mock anomalous plots method."""
+            return {"anom_plots": []}
 
         def statistics_tables(self, *_):
             """Mock statistics tables method."""
@@ -302,10 +307,15 @@ def test_MergingStatisticsObserver():
             "dials.algorithms.scaling.observers.IntensityStatisticsPlots",
             new=MockResolution,
         ):
-            r = observer.make_plots()
-            assert r["scaling_tables"] == "return_tables"
-            assert r["resolution_plots"] == OrderedDict(
-                {"return_plots": [], "resolution_plots": []}
-            )
-            assert "batch_plots" in r
-            assert r["misc_plots"] == {"misc_plots": []}
+            with mock.patch(
+                "dials.algorithms.scaling.observers.AnomalousPlotter",
+                new=MockResolution,
+            ):
+                r = observer.make_plots()
+                assert r["scaling_tables"] == "return_tables"
+                assert r["resolution_plots"] == OrderedDict(
+                    {"return_plots": [], "resolution_plots": []}
+                )
+                assert "batch_plots" in r
+                assert r["misc_plots"] == {"misc_plots": []}
+                assert "anom_plots" in r

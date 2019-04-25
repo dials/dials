@@ -6,7 +6,7 @@ import random
 import pytest
 import mock as mock
 from cctbx import miller, crystal
-from scitbx.array_family import flex
+from cctbx.array_family import flex
 from iotbx.merging_statistics import dataset_statistics
 from dials.util.batch_handling import batch_manager
 from dials.report.plots import (
@@ -15,6 +15,7 @@ from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     IntensityStatisticsPlots,
     i_over_sig_i_vs_i_plot,
+    AnomalousPlotter,
 )
 
 
@@ -34,6 +35,37 @@ def iobs():
     iobs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
     iobs.set_observation_type_xray_intensity()
     return iobs
+
+
+def test_AnomalousPlotter():
+
+    "Make a larger array to allow all plots to be made"
+    cs = crystal.symmetry(space_group_symbol="P1", unit_cell=(6, 6, 6, 90, 90, 90))
+    ms = miller.build_set(cs, anomalous_flag=True, d_min=1.0)
+    indices = ms.indices()
+    new_indices = flex.miller_index(list(indices) * 10)
+    new_ms = miller.set(crystal_symmetry=cs, indices=new_indices, anomalous_flag=True)
+    data = flex.double(float(random.randrange(1, 100)) for _ in range(new_ms.size()))
+    iobs = miller.array(new_ms, data, sigmas=data)
+    iobs.change_symmetry(space_group_symbol="P222", merge_non_unique=False)
+    iobs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
+    iobs.set_observation_type_xray_intensity()
+
+    plotter = AnomalousPlotter(iobs)
+    d = plotter.make_plots()
+    expected = ["normal_distribution_plot_highres", "anom_correl_plot"]
+    keys = d.keys()
+    for k in expected:
+        assert k in keys
+        assert d[k]["data"][0]["x"]  # check some data there
+
+    plotter = AnomalousPlotter(iobs, strong_cutoff=3.0)
+    d = plotter.make_plots()
+    expected += ["anom_correl_plot", "anom_scatter_plot_lowres"]
+    keys = d.keys()
+    for k in expected:
+        assert k in keys
+        assert d[k]["data"][0]["x"]  # check some data there
 
 
 def test_IntensityStatisticsPlots(iobs):

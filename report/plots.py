@@ -8,6 +8,7 @@ from collections import OrderedDict
 import numpy as np
 from cctbx import uctbx
 from scitbx.array_family import flex
+from scitbx.math import distributions
 
 
 def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
@@ -200,6 +201,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             intensities = intensities.as_anomalous_array()
         intensities.setup_binner(n_bins=self.n_bins)
         merged = intensities.merge_equivalents()
+        self.binner = intensities.binner()
         self.merged_intensities = merged.array()
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
         if not self._xanalysis and run_xtraige_analysis:
@@ -822,3 +824,296 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
     def statistics_tables(self):
         """Generate the overall and by-resolution tables."""
         return (self.overall_statistics_table(), self.merging_statistics_table())
+
+
+class AnomalousPlotter(ResolutionPlotterMixin):
+    def __init__(self, anomalous_array, strong_cutoff=0.0, n_bins=10):
+        self.intensities_anom = anomalous_array.map_to_asu()
+        self.merged = self.intensities_anom.merge_equivalents(
+            use_internal_variance=False
+        ).array()
+        self.n_bins = n_bins
+        self.strong_cutoff = strong_cutoff
+        if strong_cutoff > 0.0:
+            self.low_res_intensities_anom = self.intensities_anom.resolution_filter(
+                d_min=strong_cutoff
+            )
+            self.strong_merged = self.low_res_intensities_anom.merge_equivalents(
+                use_internal_variance=False
+            ).array()
+
+    def make_plots(self):
+        d = OrderedDict()
+        if self.strong_cutoff > 0.0:
+            d.update(self.del_anom_normal_plot(self.strong_merged, self.strong_cutoff))
+            d.update(
+                self.del_anom_scatter_plot(
+                    self.low_res_intensities_anom, self.strong_cutoff
+                )
+            )
+        d.update(self.del_anom_normal_plot(self.merged))
+        d.update(self.del_anom_correlation_ratio(self.intensities_anom))
+        return d
+
+    def del_anom_correlation_ratio(self, unmerged_intensities):
+
+        acentric = unmerged_intensities.select_acentric()
+        centric = unmerged_intensities.select_centric()
+        correl_ratios_acentric, correl_ratios_centric = ([], [])
+
+        def calc_correl_ratios(data):
+            correl_ratios = []
+            data.setup_binner(n_bins=self.n_bins)
+            for i_bin in data.binner().range_used():
+                sel = data.binner().selection(i_bin)
+                data_sel = data.select(sel)
+                if data_sel.size() > 0:
+                    arr1, arr2 = data_sel.half_dataset_anomalous_correlation(
+                        return_split_datasets=1
+                    )
+                    dano1 = arr1.anomalous_differences().data()
+                    dano2 = arr2.anomalous_differences().data()
+                    if dano1.size() > 0:
+                        rmsd_11 = (
+                            flex.sum((dano1 - dano2) ** 2) / (2.0 * dano1.size())
+                        ) ** 0.5
+                        rmsd_1min1 = (
+                            flex.sum((dano1 + dano2) ** 2) / (2.0 * dano1.size())
+                        ) ** 0.5
+                        correl_ratios.append(rmsd_1min1 / rmsd_11)
+                    else:
+                        correl_ratios.append(0.0)
+                else:
+                    correl_ratios.append(0.0)
+            return correl_ratios
+
+        if acentric.size() > 0:
+            correl_ratios_acentric = calc_correl_ratios(acentric)
+            if all(list(flex.double(correl_ratios_acentric) == 0.0)):
+                correl_ratios_acentric = []
+            else:
+                d_star_sq_acentric = acentric.binner().bin_centers(2)
+                actickvals, acticktext = self._d_star_sq_to_d_ticks(
+                    d_star_sq_acentric, nticks=5
+                )
+        if centric.size() > 0:
+            correl_ratios_centric = calc_correl_ratios(centric)
+            if all(list(flex.double(correl_ratios_centric) == 0.0)):
+                correl_ratios_centric = []
+            else:
+                d_star_sq_centric = centric.binner().bin_centers(2)
+                ctickvals, cticktext = self._d_star_sq_to_d_ticks(
+                    d_star_sq_acentric, nticks=5
+                )
+
+        if not (correl_ratios_acentric or correl_ratios_acentric):
+            return {}
+        if correl_ratios_acentric:
+            tickvals = actickvals
+            ticktext = acticktext
+        else:
+            tickvals = ctickvals
+            ticktext = cticktext
+        return {
+            "anom_correl_plot": {
+                "data": [
+                    (
+                        {
+                            "x": list(d_star_sq_acentric),
+                            "y": correl_ratios_acentric,
+                            "type": "lines",
+                            "name": "Anomalous correlation ratio (acentric)",
+                        }
+                        if correl_ratios_acentric
+                        else {}
+                    ),
+                    (
+                        {
+                            "x": list(d_star_sq_centric),
+                            "y": correl_ratios_centric,
+                            "type": "lines",
+                            "name": "Anomalous correlation ratio (centric)",
+                        }
+                        if correl_ratios_centric
+                        else {}
+                    ),
+                ],
+                "layout": {
+                    "title": "Anomalous R.M.S. correlation ratio (acentric reflections)",
+                    "xaxis": {
+                        "title": u"Resolution (Å)",
+                        "tickvals": tickvals,
+                        "ticktext": ticktext,
+                    },
+                    "yaxis": {"anchor": "x", "title": "rms correlation ratio"},
+                },
+                "help": """\
+This plot shows the significance of the anomalous signal, as shown in the
+anomalous scatter plot, by calculating the ratio of the width of the signal along
+the diagonal (a measure of the anomalous signal) over the width of the signal
+perpendicular to the diagonal (a measure of the error).
+
+[1] P. Evans, Acta Cryst. (2006). D62, 72-82
+https://doi.org/10.1107/S0907444905036693
+""",
+            }
+        }
+
+    def del_anom_scatter_plot(self, unmerged_intensities, strong_cutoff=0.0):
+        """Make a scatter plot of the anomalous differences of half sets."""
+
+        acentric = unmerged_intensities.select_acentric()
+        if acentric.size() == 0:
+            return {}
+        arr1, arr2 = acentric.half_dataset_anomalous_correlation(
+            return_split_datasets=1
+        )
+        dano1 = arr1.anomalous_differences()
+        dano2 = arr2.anomalous_differences()
+        assert dano1.indices().all_eq(dano2.indices())
+        if dano1.size() == 0:
+            return {}
+        max_val = max(flex.max(dano1.data()), flex.max(dano2.data()))
+        min_val = min(flex.min(dano1.data()), flex.min(dano2.data()))
+
+        title = "Correlation of half-set differences"
+        plotname = "anom_scatter_plot"
+        if strong_cutoff > 0.0:
+            title += " (d > %.2f)" % strong_cutoff
+            plotname += "_lowres"
+        else:
+            title += " (all data)"
+        return {
+            plotname: {
+                "data": [
+                    {
+                        "x": list(dano1.data()),
+                        "y": list(dano2.data()),
+                        "type": "scatter",
+                        "mode": "markers",
+                        "size": 1,
+                        "name": "half-set anomalous differences (acentrics)",
+                    },
+                    {
+                        "x": [min_val - 1, max_val + 1],
+                        "y": [min_val - 1, max_val + 1],
+                        "type": "scatter",
+                        "mode": "lines",
+                        "name": "D1 = D2",
+                        "color": "rgb(0,0,0)",
+                    },
+                ],
+                "layout": {
+                    "title": title,
+                    "xaxis": {"anchor": "y", "title": "Delta I1"},
+                    "yaxis": {"anchor": "x", "title": "Delta I2"},
+                },
+                "help": """\
+This plot shows the correlation of the anomalous differences for the data divided
+into two half sets. For each reflection, the I+ and I- observations are divided
+into two sets, and two differences are calculated; Delta I1 = I+(1) - I-(1),
+Delta I2 = I+(2) - I-(2). Perfect data would therefore have all points along
+the diagonal, in reality an elliptical distribution is seen in the presence of
+anomalous signal, or a spherical distribution for data with no anomalous signal.
+
+[1] P. Evans, Acta Cryst. (2006). D62, 72-82
+https://doi.org/10.1107/S0907444905036693
+""",
+            }
+        }
+
+    @staticmethod
+    def del_anom_normal_plot(intensities, strong_cutoff=0.0):
+        """Make a normal probability plot of the normalised anomalous differences."""
+        diff_array = intensities.anomalous_differences()
+        if not diff_array.data().size():
+            return {}
+        delta = diff_array.data() / diff_array.sigmas()
+
+        norm = distributions.normal_distribution()
+
+        n = len(delta)
+        if n <= 10:
+            a = 3 / 8
+        else:
+            a = 0.5
+
+        y = flex.sorted(delta)
+        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+
+        H, xedges, yedges = np.histogram2d(
+            np.array(x), y.as_numpy_array(), bins=(200, 200)
+        )
+        nonzeros = np.nonzero(H)
+        z = np.empty(H.shape)
+        z[:] = np.NAN
+        z[nonzeros] = H[nonzeros]
+
+        # also make a histogram
+        histy = flex.histogram(y, n_slots=100)
+        # make a gaussian for reference also
+        n = y.size()
+        width = histy.slot_centers()[1] - histy.slot_centers()[0]
+        gaussian = []
+        from math import exp, pi
+
+        for x in histy.slot_centers():
+            gaussian.append(n * width * exp(-(x ** 2) / 2.0) / ((2.0 * pi) ** 0.5))
+
+        title = "Normal probability plot of anomalous differences"
+        plotname = "normal_distribution_plot"
+        if strong_cutoff > 0.0:
+            title += " (d > %.2f)" % strong_cutoff
+            plotname += "_lowres"
+        else:
+            title += " (all data)"
+            plotname += "_highres"
+        return {
+            plotname: {
+                "data": [
+                    {
+                        "x": xedges.tolist(),
+                        "y": yedges.tolist(),
+                        "z": z.transpose().tolist(),
+                        "type": "heatmap",
+                        "name": "normalised deviations",
+                        "colorbar": {
+                            "title": "Number of reflections",
+                            "titleside": "right",
+                        },
+                        "colorscale": "Jet",
+                    },
+                    {
+                        "x": [-5, 5],
+                        "y": [-5, 5],
+                        "type": "scatter",
+                        "mode": "lines",
+                        "name": "z = m",
+                        "color": "rgb(0,0,0)",
+                    },
+                ],
+                "layout": {
+                    "title": title,
+                    "xaxis": {
+                        "anchor": "y",
+                        "title": "expected delta",
+                        "range": [-4, 4],
+                    },
+                    "yaxis": {
+                        "anchor": "x",
+                        "title": "observed delta",
+                        "range": [-5, 5],
+                    },
+                },
+                "help": """\
+    This plot shows the normalised anomalous differences, sorted in order and
+    plotted against the expected order based on a normal distribution model.
+    A true normal distribution of deviations would give the straight line indicated.
+
+    [1] P. L. Howell and G. D. Smith, J. Appl. Cryst. (1992). 25, 81-86
+    https://doi.org/10.1107/S0021889891010385
+    [2] P. Evans, Acta Cryst. (2006). D62, 72-82
+    https://doi.org/10.1107/S0907444905036693
+    """,
+            }
+        }

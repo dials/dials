@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 import logging
 from scitbx.array_family import flex
+from cctbx import uctbx
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -18,6 +19,7 @@ from dials.report.plots import (
     i_over_sig_i_vs_i_plot,
     ResolutionPlotsAndStats,
     IntensityStatisticsPlots,
+    AnomalousPlotter,
 )
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
@@ -130,6 +132,7 @@ class ScalingHTMLGenerator(Observer):
             resolution_plots=self.data["resolution_plots"],
             scaling_outlier_graphs=self.data["outlier_plots"],
             error_model_plots=self.data["error_model_plots"],
+            anom_plots=self.data["anom_plots"],
             batch_plots=self.data["batch_plots"],
             misc_plots=self.data["misc_plots"],
         )
@@ -307,6 +310,7 @@ class MergingStatisticsObserver(Observer):
             "resolution_plots": OrderedDict(),
             "batch_plots": OrderedDict(),
             "misc_plots": OrderedDict(),
+            "anom_plots": OrderedDict(),
         }
         if "statistics" in self.data:
             plotter = ResolutionPlotsAndStats(
@@ -329,8 +333,16 @@ class MergingStatisticsObserver(Observer):
             plotter = IntensityStatisticsPlots(
                 self.data["scaled_miller_array"], run_xtraige_analysis=False
             )
+            d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[2]
             d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
             d["misc_plots"].update(plotter.generate_miscellanous_plots())
+
+            intensities_anom = self.data["scaled_miller_array"].as_anomalous_array()
+            intensities_anom = intensities_anom.map_to_asu().customized_copy(
+                info=self.data["scaled_miller_array"].info()
+            )
+            anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
+            d["anom_plots"].update(anom_plotter.make_plots())
         return d
 
     def make_statistics_summary(self):

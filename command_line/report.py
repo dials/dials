@@ -31,6 +31,7 @@ from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
     ResolutionPlotsAndStats,
     IntensityStatisticsPlots,
+    AnomalousPlotter,
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
     i_over_sig_i_vs_i_plot,
@@ -2112,9 +2113,13 @@ def intensity_statistics(reflections, experiments):
     print("Generating intensity statistics plots")
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
     plotter = IntensityStatisticsPlots(scaled_array)
+    d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[2]
     resolution_plots = plotter.generate_resolution_dependent_plots()
     misc_plots = plotter.generate_miscellanous_plots()
     intensity_plots = i_over_sig_i_vs_i_plot(scaled_array.data(), scaled_array.sigmas())
+    scaled_array = scaled_data_as_miller_array([reflections], experiments, anomalous_flag=True)
+    anom_plotter = AnomalousPlotter(scaled_array, strong_cutoff=d_min)
+    intensity_plots.update(anom_plotter.make_plots())
     return resolution_plots, misc_plots, intensity_plots
 
 
