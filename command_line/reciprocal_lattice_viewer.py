@@ -13,7 +13,6 @@ from scitbx.math import minimum_covering_sphere
 from dials.array_family import flex
 from scitbx import matrix
 import libtbx.phil
-import dials.util.banner
 
 WX3 = wx.VERSION[0] == 3
 
@@ -52,7 +51,7 @@ phil_scope = libtbx.phil.parse(
   n_min = 0
     .type = int
     .help = "Minimum size of spot in pixels"
-  n_max = 1000
+  n_max = 1000000
     .type = int
     .help = "Maximum size of spot in pixels"
   partiality_min = None
