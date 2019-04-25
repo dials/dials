@@ -3,21 +3,33 @@
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
-from dials.util import wx_viewer
-import copy
-import wx
-import wxtbx.utils
-from gltbx.gl import *
-import gltbx
-from scitbx.math import minimum_covering_sphere
-from dials.array_family import flex
-from scitbx import matrix
-import libtbx.phil
 
-WX3 = wx.VERSION[0] == 3
+import copy
+import sys
+
+import wx
+from wx.lib.agw import floatspin
+
+import gltbx
+import libtbx.load_env
+import libtbx.phil
+import wxtbx.app
+import wxtbx.utils
+from dials.array_family import flex
+from dials.util import wx_viewer
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from gltbx.gl import *
+from scitbx import matrix
+from scitbx.math import minimum_covering_sphere
+from wxtbx.segmentedctrl import (
+    SEGBTN_HORIZONTAL,
+    SegmentedRadioControl,
+    SegmentedToggleControl,
+)
+
+import dials.util.banner  # noqa: F401; prints banner as side effect
 
 help_message = """
-
 Visualise the strong spots from spotfinding in reciprocal space.
 
 Examples::
@@ -25,8 +37,9 @@ Examples::
   dials.reciprocal_lattice_viewer experiments.json strong.mpack
 
   dials.reciprocal_lattice_viewer experiments.json indexed.mpack
-
 """
+
+WX3 = wx.VERSION[0] == 3
 
 phil_scope = libtbx.phil.parse(
     """
@@ -90,13 +103,11 @@ if not WX3:
         return _wrapp
 
     # HACK: Monkeypatch wxtbx so that we don't use old interfaces
-    from wxtbx import segmentedctrl
-
-    segmentedctrl.SegmentedControl.HitTest = _rewrite_event(
-        segmentedctrl.SegmentedControl.HitTest
+    wxtbx.segmentedctrl.SegmentedControl.HitTest = _rewrite_event(
+        wxtbx.segmentedctrl.SegmentedControl.HitTest
     )
-    segmentedctrl.SegmentedControl.OnMotion = _rewrite_event(
-        segmentedctrl.SegmentedControl.OnMotion
+    wxtbx.segmentedctrl.SegmentedControl.OnMotion = _rewrite_event(
+        wxtbx.segmentedctrl.SegmentedControl.OnMotion
     )
 
 
@@ -465,7 +476,6 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
             pass
         else:
             # code copied from: dials.command_line.dials_import.PixelBeamCenterUpdater
-
             beam_f, beam_s = self.settings.beam_centre
 
             try:
@@ -497,7 +507,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
 
     def add_controls(self):
         # d_min control
-        from wx.lib.agw import floatspin
 
         self.d_min_ctrl = floatspin.FloatSpin(parent=self, increment=0.05, digits=2)
         self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
@@ -638,8 +647,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
         box.Add(self.marker_size_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.marker_size_ctrl)
 
-        from wxtbx.segmentedctrl import SegmentedRadioControl, SEGBTN_HORIZONTAL
-
         self.btn = SegmentedRadioControl(self, style=SEGBTN_HORIZONTAL)
         self.btn.AddSegment("all")
         self.btn.AddSegment("indexed")
@@ -684,8 +691,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
         label = wx.StaticText(self, -1, "Experiment ids:")
         box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
-        from wxtbx.segmentedctrl import SegmentedToggleControl, SEGBTN_HORIZONTAL
-
         self.expt_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
         for i in range(-1, n + 1):
             self.expt_btn.AddSegment(str(i))
@@ -712,8 +717,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
         self.panel_sizer.Add(box)
         label = wx.StaticText(self, -1, "Imageset ids:")
         box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-
-        from wxtbx.segmentedctrl import SegmentedToggleControl, SEGBTN_HORIZONTAL
 
         self.imgset_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
         for i in range(n + 1):
@@ -948,13 +951,6 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
 
 
 def run(args):
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
-    import libtbx.load_env
-
     usage = "%s [options] experiments.json reflections.mpack" % (
         libtbx.env.dispatcher_name
     )
@@ -991,8 +987,6 @@ def run(args):
 
     reflections = reflections[0]
 
-    import wxtbx.app
-
     a = wxtbx.app.CCTBXApp(0)
     a.settings = params
     f = ReciprocalLatticeViewer(None, -1, "Reflection data viewer", size=(1024, 768))
@@ -1004,6 +998,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
