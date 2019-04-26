@@ -1,16 +1,38 @@
 from __future__ import absolute_import, division, print_function
+from numpy.random import poisson
+from random import randint
+from math import exp
 
 
 class Test:
     def setup_class(self):
         from scitbx.array_family import flex
 
+        spot = flex.double(flex.grid(11, 11))
+        for j in range(11):
+            for i in range(11):
+                spot[j, i] = exp(-((j - 5) ** 2 + (i - 5) ** 2) / 2 ** 2)
+
+        self.image = flex.double(flex.grid(2000, 2000))
+        for n in range(200):
+            x = randint(0, 2000)
+            y = randint(0, 2000)
+            for j in range(0, 11):
+                for i in range(0, 11):
+                    xx = x + i - 5
+                    yy = y + j - 5
+                    if xx >= 0 and yy >= 0 and xx < 2000 and yy < 2000:
+                        self.image[yy, xx] = poisson(100 * spot[j, i])
+
+        background = flex.double(list(poisson(5, 2000 * 2000)))
+        background.reshape(flex.grid(2000, 2000))
+
+        self.image += background
+
         # Create an image
-        self.image = flex.random_double(2000 * 2000, 10)
-        self.image.reshape(flex.grid(2000, 2000))
         self.mask = flex.random_bool(2000 * 2000, 0.99)
         self.mask.reshape(flex.grid(2000, 2000))
-        self.gain = flex.random_double(2000 * 2000) + 0.5
+        self.gain = flex.random_double(2000 * 2000) + 1.0
         self.gain.reshape(flex.grid(2000, 2000))
         self.size = (3, 3)
         self.min_count = 2
@@ -154,7 +176,7 @@ class Test:
         algorithm(self.image, self.mask, self.gain, result4)
         assert result1 == result3
         assert result2 == result4
-    
+
     def test_dispersion_extended_threshold(self):
         from dials.algorithms.image.threshold import DispersionExtendedThreshold
         from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
@@ -174,6 +196,7 @@ class Test:
             self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
         )
         result3 = debug.final_mask()
+
         assert result1.all_eq(result3)
 
         debug = DispersionExtendedThresholdDebug(
