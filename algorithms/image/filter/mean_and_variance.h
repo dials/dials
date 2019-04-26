@@ -102,7 +102,7 @@ namespace dials { namespace algorithms {
 
     // Calculate the mean filtered image
     for (std::size_t i = 0; i < image.size(); ++i) {
-      if ((ignore_masked && mask[i]) || summed_mask[i] >= min_count) {
+      if ((!ignore_masked || mask[i]) && summed_mask[i] >= min_count) {
         summed_image[i] /= (FloatType)summed_mask[i];
       } else {
         summed_image[i] = 0.0;
