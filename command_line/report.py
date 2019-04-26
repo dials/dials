@@ -2109,6 +2109,7 @@ def intensity_statistics(reflections, experiments):
         return {}, {}, {}
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
+    print("Generating intensity statistics plots")
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
     plotter = IntensityStatisticsPlots(scaled_array)
     resolution_plots = plotter.generate_resolution_dependent_plots()
@@ -2160,6 +2161,7 @@ class Analyser(object):
             crystal_table, expt_geom_table = self.experiments_table(experiments)
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
+            print("Calculating and generating merging statistics plots")
             summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
