@@ -192,7 +192,7 @@ def test_combine_intensities_multi_dataset(test_exp_P1):
     multiscaler = Mock()
     multiscaler.active_scalers = [scaler1, scaler2]
     multiscaler.experiment = test_exp_P1
-    #multiscaler.space_group = test_exp_P1.crystal.get_space_group()
+    # multiscaler.space_group = test_exp_P1.crystal.get_space_group()
     multiscaler.params.reflection_selection.combine.Imid = None
 
     combiner = MultiDatasetIntensityCombiner(multiscaler)

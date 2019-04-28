@@ -2165,7 +2165,9 @@ class Analyser(object):
             summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
                 rlist, experiments
             )
-            rplots, misc_plots, scaled_intensity_plots = intensity_statistics(rlist, experiments)
+            rplots, misc_plots, scaled_intensity_plots = intensity_statistics(
+                rlist, experiments
+            )
             resolution_plots.update(rplots)
 
         if self.params.output.html is not None:

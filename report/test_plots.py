@@ -99,11 +99,13 @@ def test_IntensityStatisticsPlots(iobs):
     assert "l_test" in d
     assert "multiplicities" in d
 
+
 def test_i_over_sig_i_vs_i_plot(iobs):
     """Test the generation of 2d heatmap plots for intensity dist."""
     d = i_over_sig_i_vs_i_plot(iobs.data(), iobs.sigmas())
-    assert 'i_over_sig_isq_vs_i' in d
-    assert 'i_over_sig_isq_vs_i' in d
+    assert "i_over_sig_isq_vs_i" in d
+    assert "i_over_sig_isq_vs_i" in d
+
 
 def test_ResolutionPlotsAndStats(iobs):
     i_obs_anom = iobs.as_anomalous_array()

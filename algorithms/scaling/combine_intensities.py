@@ -26,14 +26,12 @@ def fast_merging_stats(array):
     array = array.select(positive_sel)
     array = array.sort("packed_indices")
     merge_ext = miller_ext.merge_equivalents_obs(
-        array.indices(),
-        array.data(),
-        array.sigmas(),
-        use_internal_variance=True,
+        array.indices(), array.data(), array.sigmas(), use_internal_variance=True
     )
     r_meas = merge_ext.r_meas
     cc_one_half = miller.compute_cc_one_half(unmerged=array, return_n_refl=False)
     return r_meas, cc_one_half
+
 
 def map_indices_to_asu(miller_indices, space_group):
     """Map the indices to the asymmetric unit."""
@@ -43,6 +41,7 @@ def map_indices_to_asu(miller_indices, space_group):
     )
     miller_set_in_asu = miller_set.map_to_asu()
     return miller_set_in_asu.indices()
+
 
 def _make_reflection_table_from_scaler(scaler):
     """Copy across required columns and filter data."""
@@ -69,9 +68,8 @@ def _make_reflection_table_from_scaler(scaler):
     not_outliers = flex.bool(reflections.size(), True)
     not_outliers.set_selected(outlier_isel, False)
     reflections = reflections.select(sel & not_outliers)
-    reflections['miller_index'] = map_indices_to_asu(
-        reflections['miller_index'],
-        scaler.space_group,
+    reflections["miller_index"] = map_indices_to_asu(
+        reflections["miller_index"], scaler.space_group
     )
     logger.debug("Reflection table size for combining: %s", reflections.size())
     return reflections
