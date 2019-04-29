@@ -11,6 +11,7 @@ from __future__ import absolute_import, division, print_function
 
 from collections import OrderedDict
 import logging
+import warnings
 
 import boost.python
 from dials.model import data
@@ -20,6 +21,7 @@ from cctbx.array_family import flex
 import cctbx
 from cctbx import miller, crystal
 from dials.util import Sorry
+import libtbx
 from scitbx import matrix
 
 logger = logging.getLogger(__name__)
@@ -217,11 +219,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         """
         import six.moves.cPickle as pickle
-        from libtbx import smart_open
 
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
-        with smart_open.for_reading(filename, "rb") as infile:
+        with libtbx.smart_open.for_reading(filename, "rb") as infile:
             result = pickle.load(infile)
             assert isinstance(result, reflection_table)
             return result
@@ -229,34 +230,32 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     def as_msgpack_file(self, filename):
         """
         Write the reflection table to file in msgpack format
-
         """
-        from libtbx import smart_open
-        import blosc
-
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
-        with smart_open.for_writing(filename, "wb") as outfile:
-            outfile.write(blosc.compress(self.as_msgpack()))
+        with libtbx.smart_open.for_writing(filename, "wb") as outfile:
+            outfile.write(self.as_msgpack())
 
     @staticmethod
     def from_msgpack_file(filename):
         """
         Read the reflection table from file in msgpack format
-
         """
-        from libtbx import smart_open
         import blosc.blosc_extension
 
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
-        with smart_open.for_reading(filename, "rb") as infile:
-            try:
-                return reflection_table.from_msgpack(blosc.decompress(infile.read()))
-            except blosc.blosc_extension.error as e:
-                # translate extension error to RuntimeError.
-                # should be removed once .pickle support is dropped
-                raise RuntimeError("blosc decompression error: %s" % str(e))
+        with libtbx.smart_open.for_reading(filename, "rb") as infile:
+            infile_data = infile.read()
+        try:  # remove in DIALS 2.1
+            infile_data = blosc.decompress(infile_data)
+            warnings.warn(
+                "blosc compression is deprecated", DeprecationWarning, stacklevel=2
+            )
+        except blosc.blosc_extension.error as e:
+            # We now accept uncompressed data
+            pass
+        return reflection_table.from_msgpack(infile_data)
 
     @staticmethod
     def from_h5(filename):
@@ -395,12 +394,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         """
         import six.moves.cPickle as pickle
-        from libtbx import smart_open
 
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
 
-        with smart_open.for_writing(filename, "wb") as outfile:
+        with libtbx.smart_open.for_writing(filename, "wb") as outfile:
             pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
     def as_h5(self, filename):
