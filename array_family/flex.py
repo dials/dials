@@ -21,7 +21,7 @@ from cctbx.array_family import flex
 import cctbx
 from cctbx import miller, crystal
 from dials.util import Sorry
-import libtbx
+import libtbx.smart_open
 from scitbx import matrix
 
 logger = logging.getLogger(__name__)
