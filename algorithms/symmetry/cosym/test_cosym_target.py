@@ -23,7 +23,7 @@ def test_cosym_target(space_group):
         dataset_ids.extend(flex.double(d.size(), i + 1))
 
     for weights in [None, "count", "standard_error"]:
-
+        print(weights)
         t = target.Target(intensities, dataset_ids, weights=weights)
         m = len(t.get_sym_ops())
         n = len(datasets)
@@ -33,7 +33,8 @@ def test_cosym_target(space_group):
         x_orig = x.deep_copy()
         f0, g = t.compute_functional_and_gradients(x)
         g_fd = t.compute_gradients_fd(x)
-        assert list(g) == pytest.approx(g_fd, rel=1e-3)
+        for n, value in enumerate(zip(g, g_fd)):
+            assert value[0] == pytest.approx(value[1], rel=1e-3), n
 
         c = t.curvatures(x)
         c_fd = t.curvatures_fd(x, eps=1e-3)
