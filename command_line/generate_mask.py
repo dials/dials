@@ -73,6 +73,14 @@ phil_scope = phil.parse(
             .help = "The log filename."
     }
 
+    apply_mask = None
+        .type = path
+        .help = "Name of pre-existing mask files to combine with the generated mask.  "
+                "You should specify one mask file for each imageset (sweep).  The "
+                "order in which the masks are specified should match the order of "
+                "imagesets in the experiment list JSON file."
+        .multiple = True
+
     include scope dials.util.masking.phil_scope
 
     verbosity = 1
@@ -110,6 +118,21 @@ def generate_mask(experiments, params):
         A copy of :param:`experiments` with the masks applied (optional,
         only returned if :attr:`params.output.experiments` is set).
     """
+
+    # Check length of apply_mask is sane
+    n_expts = len(experiments)
+    n_masks = len(params.apply_mask)
+    if params.apply_mask and not n_masks == n_expts:
+        raise dials.util.Sorry(
+            "If using the option 'apply_mask', you must specify exactly one "
+            "pre-existing mask for each imageset (sweep).\n"
+            "You have provided an experiment list containing {} imageset(s).\n"
+            "You have provided {} mask file(s).".format(n_expts, n_masks)
+        )
+
+    if not params.apply_mask:
+        params.apply_mask = [None] * len(experiments)
+
     imagesets = experiments.imagesets()
     masks = []
 
@@ -129,8 +152,16 @@ def generate_mask(experiments, params):
     # Generate the mask
     generator = MaskGenerator(params)
 
-    for imageset, filename in zip(imagesets, filenames):
+    for imageset, filename, old_mask in zip(imagesets, filenames, params.apply_mask):
+        # First generate a new mask, according to the input parameters
         mask = generator.generate(imageset)
+        # Then optionally combine with an existing mask
+        if old_mask:
+            with open(old_mask, "rb") as f:
+                old_mask = pickle.load(f)
+            # The image mask is a tuple of flex.bool panel masks
+            # Combine each panel mask with its counterpart
+            mask = tuple(new & old for new, old in zip(mask, old_mask))
         masks.append(mask)
 
         # Save the mask to file
