@@ -20,41 +20,39 @@ from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 import procrunner
 
 
-class run_delta_cchalf(object):
-    def __init__(self, pickle_path_list, sweep_path_list, extra_args):
-        args = (
-            ["dials.compute_delta_cchalf"]
-            + pickle_path_list
-            + sweep_path_list
-            + extra_args
-            + [
-                "output.reflections=filtered_reflections.mpack",
-                "output.experiments=filtered_experiments.json",
-            ]
-        )
-        command = " ".join(args)
-        print(command)
-        _ = easy_run.fully_buffered(command=command).raise_if_errors()
-        assert os.path.exists("filtered_experiments.json")
-        assert os.path.exists("filtered_reflections.mpack")
+def run_delta_cchalf(pickle_path_list, sweep_path_list, extra_args):
+    """Run dials.compute_delta_cchalf"""
+    args = (
+        ["dials.compute_delta_cchalf"]
+        + pickle_path_list
+        + sweep_path_list
+        + extra_args
+        + [
+            "output.reflections=filtered_reflections.mpack",
+            "output.experiments=filtered_experiments.json",
+        ]
+    )
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("filtered_experiments.json")
+    assert os.path.exists("filtered_reflections.mpack")
 
 
-class run_one_scaling(object):
-    """Class to run the dials.scale algorithm."""
+def run_one_scaling(pickle_path_list, sweep_path_list, extra_args):
+    """Run the dials.scale algorithm."""
+    args = ["dials.scale"] + pickle_path_list + sweep_path_list + extra_args
+    command = " ".join(args)
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    assert os.path.exists("scaled_experiments.json")
+    assert os.path.exists("scaled.mpack")
+    assert os.path.exists("scaling.html")
 
-    def __init__(self, pickle_path_list, sweep_path_list, extra_args):
-        args = ["dials.scale"] + pickle_path_list + sweep_path_list + extra_args
-        command = " ".join(args)
-        print(command)
-        _ = easy_run.fully_buffered(command=command).raise_if_errors()
-        assert os.path.exists("scaled_experiments.json")
-        assert os.path.exists("scaled.mpack")
-        assert os.path.exists("scaling.html")
+    table = flex.reflection_table.from_msgpack_file("scaled.mpack")
 
-        table = flex.reflection_table.from_msgpack_file("scaled.mpack")
-
-        assert "inverse_scale_factor" in table
-        assert "inverse_scale_factor_variance" in table
+    assert "inverse_scale_factor" in table
+    assert "inverse_scale_factor_variance" in table
 
 
 def get_merging_stats(
@@ -326,7 +324,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
         "outlier_rejection=simple",
     ]
 
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    run_one_scaling([pickle_path], [sweep_path], extra_args)
     assert os.path.exists("unmerged.mtz")
     assert os.path.exists("merged.mtz")
 
@@ -340,7 +338,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     # Try running again with the merged.mtz as a target, to trigger the
     # target_mtz option
     extra_args.append("target_mtz=merged.mtz")
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    run_one_scaling([pickle_path], [sweep_path], extra_args)
     result = get_merging_stats("unmerged.mtz")
     assert (
         result.overall.r_pim < 0.0245
@@ -361,7 +359,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
         "concurrent=False",
         "intensity_choice=combine",
     ]
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    run_one_scaling([pickle_path], [sweep_path], extra_args)
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
@@ -375,7 +373,15 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     assert result.overall.n_obs > 2320  # at 07/01/19, was 2336, at 30/01/19 was 2334
     # test the 'stats_only' option
     extra_args = ["stats_only=True"]
-    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
+    run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
+
+    # Check that dials-report and dials.show work on the output
+    command = " ".join(["dials.show", "scaled.mpack", "scaled_experiments.json"])
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
+    command = " ".join(["dials.report", "scaled.mpack", "scaled_experiments.json"])
+    print(command)
+    _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
 
 def test_scale_and_filter(dials_data, run_in_tmpdir):
@@ -465,7 +471,7 @@ def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
     pickle_path = os.path.join(data_dir, "20_integrated.pickle")
     sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
     extra_args = ["model=physical", "optimise_errors=True"]
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
 @pytest.mark.dataset_test
@@ -479,7 +485,7 @@ def test_scale_array(dials_regression, run_in_tmpdir):
     sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
     extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
 
-    _ = run_one_scaling([pickle_path], [sweep_path], extra_args)
+    run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
 @pytest.mark.dataset_test
@@ -498,7 +504,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
         "outlier_rejection=simple",
     ]
 
-    _ = run_one_scaling(
+    run_one_scaling(
         [pickle_path_1, pickle_path_2], [sweep_path_1, sweep_path_2], extra_args
     )
 
@@ -518,7 +524,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
         "unmerged_mtz=unmerged.mtz",
         "check_consistent_indexing=True",
     ]
-    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
+    run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
@@ -532,7 +538,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
 
     # until scaled data is available in dials_regression, test the command
     # line script dials.compute_delta_cchalf here
-    _ = run_delta_cchalf(
+    run_delta_cchalf(
         ["scaled.mpack"], ["scaled_experiments.json"], extra_args=["stdcutoff=0.0"]
     )  # set 0.0 to force one to be 'rejected'
 
@@ -555,7 +561,7 @@ def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
         "exclude_images=1:1501:1700",
     ]
 
-    _ = run_one_scaling(
+    run_one_scaling(
         [pickle_path_1, pickle_path_2], [sweep_path_1, sweep_path_2], extra_args
     )
 
@@ -584,7 +590,7 @@ def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
         "outlier_rejection=simple",
         "exclude_images=0:1401:1600",
     ]
-    _ = run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
+    run_one_scaling(["scaled.mpack"], ["scaled_experiments.json"], extra_args)
     experiments_list = load.experiment_list(
         "scaled_experiments.json", check_format=False
     )
