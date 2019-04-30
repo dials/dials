@@ -34,7 +34,7 @@ def test_cosym_target(space_group):
         f0, g = t.compute_functional_and_gradients(x)
         g_fd = t.compute_gradients_fd(x)
         for n, value in enumerate(zip(g, g_fd)):
-            assert value[0] == pytest.approx(value[1], rel=1e-3), n
+            assert value[0] == pytest.approx(value[1], rel=2e-3), n
 
         c = t.curvatures(x)
         c_fd = t.curvatures_fd(x, eps=1e-3)
