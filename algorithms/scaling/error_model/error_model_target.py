@@ -5,7 +5,9 @@ Definition of the target function for error model minimisation.
 from __future__ import division
 from __future__ import absolute_import, print_function
 from dials.array_family import flex
+import logging
 
+logger = logging.getLogger('dials.scale')
 
 class ErrorModelTarget(object):
     """Target function for a basic two parameter error model."""
@@ -16,7 +18,7 @@ class ErrorModelTarget(object):
 
     def __init__(self, error_model, starting_values=None):
         if not starting_values:
-            starting_values = [1.4, 0.4]
+            starting_values = [1.01, 0.02]
         # Note - don't initialise with b = 0.0 or it gets stuck on 0.0!!
         self.error_model = error_model
         self.x = starting_values
@@ -64,6 +66,8 @@ class ErrorModelTarget(object):
             + (1.0 / bin_vars)
             - flex.double(bin_vars.size(), 1.25)
         )
+        logger.debug("Intensity-bin variances: %s", list(bin_vars))
+        logger.debug("Residuals: %s", list(R))
         return R
 
     def calculate_gradients(self):

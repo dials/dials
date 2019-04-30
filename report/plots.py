@@ -827,7 +827,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
 
 
 class AnomalousPlotter(ResolutionPlotterMixin):
-    def __init__(self, anomalous_array, strong_cutoff=0.0, n_bins=10):
+    def __init__(self, anomalous_array, strong_cutoff=0.0, n_bins=20):
         self.intensities_anom = anomalous_array.map_to_asu()
         self.merged = self.intensities_anom.merge_equivalents(
             use_internal_variance=False

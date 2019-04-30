@@ -134,10 +134,11 @@ class BasicErrorModel(object):
         sel2 = scaled_Ih > min_Ih
         # can't calculate a true deviation for groups of 1
         sel3 = self.n_h > 1.0
+        sel4 = self.Ih_table.intensities > 0.001
         # don't want to include weaker reflections where the background adds
         # significantly to the variances, as these would no longer be normally
         # distributed and skew the fit.
-        self.Ih_table = self.Ih_table.select(sel2 & sel3)
+        self.Ih_table = self.Ih_table.select(sel2 & sel3 & sel4)
         n = self.Ih_table.size
         if n < self.min_reflections_required:
             raise ValueError(
