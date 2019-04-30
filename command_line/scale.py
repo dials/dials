@@ -10,34 +10,34 @@ with scale, decay and absorption components. If multiple input files have been
 specified, the datasets will be jointly scaled against a common target of
 unique reflection intensities.
 
-The program outputs one scaled.mpack and scaled_experiments.json file, which
+The program outputs one scaled.pickle and scaled_experiments.json file, which
 contains reflection data and scale models, from one or more experiments.
-The output mpack file contains intensity.scale.value, the unscaled intensity
+The output pickle file contains intensity.scale.value, the unscaled intensity
 values used to determine the scaling model, and a inverse scale factor per
 reflection. These values can then be used to merge the data for downstream
 structural solution. Alternatively, the scaled_experiments.json and
-scaled.mpack files can be passed back to dials.scale, and further scaling will
+scaled.pickle files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
 The scaling models determined by this program can be plotted with::
 
-  dials.plot_scaling_models scaled.mpack scaled_experiments.json
+  dials.plot_scaling_models scaled.pickle scaled_experiments.json
 
 Example use cases
 
 Regular single-sweep scaling, with no absorption correction::
 
-  dials.scale integrated.mpack integrated_experiments.json absorption_term=False
+  dials.scale integrated.pickle integrated_experiments.json absorption_term=False
 
 Scaling multiple datasets, specifying scale parameter interval::
 
-  dials.scale 1_integrated.mpack 1_integrated_experiments.json 2_integrated.mpack 2_integrated_experiments.json scale_interval=10.0
+  dials.scale 1_integrated.pickle 1_integrated_experiments.json 2_integrated.pickle 2_integrated_experiments.json scale_interval=10.0
 
 Incremental scaling (with different options per dataset)::
 
-  dials.scale integrated.mpack integrated_experiments.json scale_interval=10.0
+  dials.scale integrated.pickle integrated_experiments.json scale_interval=10.0
 
-  dials.scale integrated_2.mpack integrated_experiments_2.json scaled.mpack scaled_experiments.json scale_interval=15.0
+  dials.scale integrated_2.pickle integrated_experiments_2.json scaled.pickle scaled_experiments.json scale_interval=15.0
 
 """
 import time
@@ -109,9 +109,9 @@ phil_scope = phil.parse(
     experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
-    reflections = "scaled.mpack"
+    reflections = "scaled.pickle"
       .type = str
-      .help = "Option to set filepath for output mpack file of scaled
+      .help = "Option to set filepath for output pickle file of scaled
                intensities."
     html = "scaling.html"
       .type = str
@@ -390,7 +390,7 @@ class Script(Subject):
         gc.collect()
 
     def export(self):
-        """Save the experiments json and scaled mpack file."""
+        """Save the experiments json and scaled pickle file."""
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
         save_experiments(self.experiments, self.params.output.experiments)
@@ -549,8 +549,8 @@ def run_scaling(params, experiments, reflections):
 
 def run(args=None):
     """Run the scaling from the command-line."""
-    usage = """Usage: dials.scale integrated.mpack integrated_experiments.json
-[integrated.mpack(2) integrated_experiments.json(2) ....] [options]"""
+    usage = """Usage: dials.scale integrated.pickle integrated_experiments.json
+[integrated.pickle(2) integrated_experiments.json(2) ....] [options]"""
 
     parser = OptionParser(
         usage=usage,

@@ -45,21 +45,21 @@ RAD2DEG = 180 / math.pi
 help_message = """
 
 Generates a html report given the output of various DIALS programs
-(reflections.mpack and/or experiments.json).
+(reflections.pickle and/or experiments.json).
 
 Examples::
 
-  dials.report strong.mpack
+  dials.report strong.pickle
 
-  dials.report indexed.mpack
+  dials.report indexed.pickle
 
-  dials.report refined.mpack
+  dials.report refined.pickle
 
-  dials.report integrated.mpack
+  dials.report integrated.pickle
 
   dials.report refined_experiments.json
 
-  dials.report integrated.mpack integrated_experiments.json
+  dials.report integrated.pickle integrated_experiments.json
 
 """
 
@@ -2117,7 +2117,9 @@ def intensity_statistics(reflections, experiments):
     resolution_plots = plotter.generate_resolution_dependent_plots()
     misc_plots = plotter.generate_miscellanous_plots()
     intensity_plots = i_over_sig_i_vs_i_plot(scaled_array.data(), scaled_array.sigmas())
-    scaled_array = scaled_data_as_miller_array([reflections], experiments, anomalous_flag=True)
+    scaled_array = scaled_data_as_miller_array(
+        [reflections], experiments, anomalous_flag=True
+    )
     anom_plotter = AnomalousPlotter(scaled_array, strong_cutoff=d_min)
     intensity_plots.update(anom_plotter.make_plots())
     return resolution_plots, misc_plots, intensity_plots
@@ -2404,7 +2406,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] reflections.mpack" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

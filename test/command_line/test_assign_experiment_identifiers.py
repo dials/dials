@@ -22,7 +22,7 @@ class run_assign_identifiers(object):
         print(command)
         _ = easy_run.fully_buffered(command=command).raise_if_errors()
         assert os.path.exists("assigned_experiments.json")
-        assert os.path.exists("assigned_reflections.mpack")
+        assert os.path.exists("assigned_reflections.pickle")
 
 
 def test_assign_identifiers(dials_regression, run_in_tmpdir):
@@ -38,7 +38,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
 
     run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
 
-    r = flex.reflection_table.from_msgpack_file("assigned_reflections.mpack")
+    r = flex.reflection_table.from_pickle("assigned_reflections.pickle")
     e = load.experiment_list("assigned_experiments.json", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "1"]
@@ -46,11 +46,11 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
     assert list(e.identifiers()) == ["0", "1"]
 
     # now run again, with already assigned data
-    pickle_path_list = ["assigned_reflections.mpack"]
+    pickle_path_list = ["assigned_reflections.pickle"]
     sweep_path_list = ["assigned_experiments.json"]
     run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
 
-    r = flex.reflection_table.from_msgpack_file("assigned_reflections.mpack")
+    r = flex.reflection_table.from_pickle("assigned_reflections.pickle")
     e = load.experiment_list("assigned_experiments.json", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "1"]
@@ -58,7 +58,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
     assert list(e.identifiers()) == ["0", "1"]
 
     # now run again, with adding more data
-    pickle_path_list = ["assigned_reflections.mpack"]
+    pickle_path_list = ["assigned_reflections.pickle"]
     sweep_path_list = ["assigned_experiments.json"]
     for i in [30, 35]:
         pickle_path_list.append(os.path.join(data_dir, str(i) + "_integrated.pickle"))
@@ -70,7 +70,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
         pickle_path_list, sweep_path_list, extra_args=['identifiers="0 5 10 15"']
     )
 
-    r = flex.reflection_table.from_msgpack_file("assigned_reflections.mpack")
+    r = flex.reflection_table.from_pickle("assigned_reflections.pickle")
     e = load.experiment_list("assigned_experiments.json", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "5", "10", "15"]

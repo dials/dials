@@ -30,11 +30,11 @@ the diffraction pattern, possibly as a result of an incorrect beam centre.
 
 Examples::
 
-  dials.check_indexing_symmetry experiment.json indexed.mpack \\
+  dials.check_indexing_symmetry experiment.json indexed.pickle \\
     grid=1 symop_threshold=0.7
 
 
-  dials.check_indexing_symmetry experiment.json indexed.mpack \\
+  dials.check_indexing_symmetry experiment.json indexed.pickle \\
     grid_l=3 symop_threshold=0.7
 
 """
@@ -359,7 +359,7 @@ def run(args):
     from dials.util import log
     from dials.util.version import dials_version
 
-    usage = "%s [options] experiment.json indexed.mpack" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiment.json indexed.pickle" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

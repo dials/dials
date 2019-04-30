@@ -115,7 +115,7 @@ def test2(dials_regression, run_in_tmpdir):
     assert approx_equal(history["rmsd"], expected_rmsds)
 
     # check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_msgpack_file("refined.mpack")
+    rt = flex.reflection_table.from_pickle("refined.pickle")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
 

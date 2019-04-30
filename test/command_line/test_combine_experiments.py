@@ -58,7 +58,7 @@ def test(dials_regression, run_in_tmpdir):
     exp = ExperimentListFactory.from_json_file(
         "combined_experiments.json", check_format=False
     )
-    ref = flex.reflection_table.from_msgpack_file("combined_reflections.mpack")
+    ref = flex.reflection_table.from_pickle("combined_reflections.pickle")
 
     # test the experiments
     assert len(exp) == 103
@@ -77,7 +77,7 @@ def test(dials_regression, run_in_tmpdir):
         [
             "dials.split_experiments",
             "combined_experiments.json",
-            "combined_reflections.mpack",
+            "combined_reflections.pickle",
         ]
     )
     assert result["exitcode"] == 0
@@ -85,14 +85,12 @@ def test(dials_regression, run_in_tmpdir):
 
     for i, e in enumerate(exp):
         assert os.path.exists("experiments_%03d.json" % i)
-        assert os.path.exists("reflections_%03d.mpack" % i)
+        assert os.path.exists("reflections_%03d.pickle" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_msgpack_file(
-            "reflections_%03d.mpack" % i
-        )
+        ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" % i)
 
         assert len(exp_single) == 1
         assert exp_single[0].crystal == e.crystal
@@ -131,7 +129,7 @@ def test(dials_regression, run_in_tmpdir):
         [
             "dials.split_experiments",
             "modded_experiments.json",
-            "combined_reflections.mpack",
+            "combined_reflections.pickle",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
@@ -142,14 +140,12 @@ def test(dials_regression, run_in_tmpdir):
 
     for i in range(2):
         assert os.path.exists("test_by_detector_%03d.json" % i)
-        assert os.path.exists("test_by_detector_%03d.mpack" % i)
+        assert os.path.exists("test_by_detector_%03d.pickle" % i)
     assert not os.path.exists("test_by_detector_%03d.json" % 2)
-    assert not os.path.exists("test_by_detector_%03d.mpack" % 2)
+    assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
 
     # Now do test when input has identifiers set
-    reflections = flex.reflection_table().from_msgpack_file(
-        "combined_reflections.mpack"
-    )
+    reflections = flex.reflection_table().from_pickle("combined_reflections.pickle")
     explist = ExperimentListFactory.from_json_file(
         "combined_experiments.json", check_format=False
     )
@@ -158,14 +154,14 @@ def test(dials_regression, run_in_tmpdir):
         assert i in reflections["id"]
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
-    reflections.as_msgpack_file("assigned_reflections.mpack")
+    reflections.as_pickle("assigned_reflections.pickle")
     dump.experiment_list(explist, "assigned_experiments.json")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
             "assigned_experiments.json",
-            "assigned_reflections.mpack",
+            "assigned_reflections.pickle",
         ]
     )
     assert result["exitcode"] == 0
@@ -173,14 +169,12 @@ def test(dials_regression, run_in_tmpdir):
 
     for i in range(len(explist)):
         assert os.path.exists("experiments_%03d.json" % i)
-        assert os.path.exists("reflections_%03d.mpack" % i)
+        assert os.path.exists("reflections_%03d.pickle" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_msgpack_file(
-            "reflections_%03d.mpack" % i
-        )
+        ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" % i)
 
         assert len(exp_single) == 1
         # resets all ids to 0, but keeps mapping to unique identifier.
@@ -201,7 +195,7 @@ def test(dials_regression, run_in_tmpdir):
         [
             "dials.split_experiments",
             "modded_experiments.json",
-            "assigned_reflections.mpack",
+            "assigned_reflections.pickle",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
@@ -215,20 +209,18 @@ def test(dials_regression, run_in_tmpdir):
     current_exp_id = 0
     for i in range(2):
         assert os.path.exists("test_by_detector_%03d.json" % i)
-        assert os.path.exists("test_by_detector_%03d.mpack" % i)
+        assert os.path.exists("test_by_detector_%03d.pickle" % i)
         explist = ExperimentListFactory.from_json_file(
             "test_by_detector_%03d.json" % i, check_format=False
         )
-        refl = flex.reflection_table.from_msgpack_file(
-            "test_by_detector_%03d.mpack" % i
-        )
+        refl = flex.reflection_table.from_pickle("test_by_detector_%03d.pickle" % i)
 
         for k in range(len(explist)):
             assert refl.experiment_identifiers()[k] == str(current_exp_id)
             current_exp_id += 2
 
     assert not os.path.exists("test_by_detector_%03d.json" % 2)
-    assert not os.path.exists("test_by_detector_%03d.mpack" % 2)
+    assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
 
 
 def test_failed_tolerance_error(dials_regression, monkeypatch):

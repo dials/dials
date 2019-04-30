@@ -34,7 +34,7 @@ class CentroidAnalyser(object):
         reflections = reflections.select(~(reflections["miller_index"] == (0, 0, 0)))
 
         # FIXME - better way to recognise non-predictions. Can't rely on flags
-        # in e.g. indexed.mpack I think.
+        # in e.g. indexed.pickle I think.
         x, y, z = reflections["xyzcal.mm"].parts()
         sel = (x == 0) & (y == 0)
         reflections = reflections.select(~sel)
@@ -121,7 +121,7 @@ class CentroidAnalyser(object):
 
         # for debugging, write out reflections used
         if debug:
-            self._reflections.as_msgpack_file("centroid_analysis_reflections.mpack")
+            self._reflections.as_pickle("centroid_analysis_reflections.pickle")
 
     def __call__(
         self, calc_average_residuals=True, calc_periodograms=True, spans=(4, 4)

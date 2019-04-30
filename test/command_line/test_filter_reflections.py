@@ -17,8 +17,8 @@ def test_filter_reflections(run_in_tmpdir):
     mask2 = flex.bool([True, False] * 3)
     rt.set_flags(mask1, rt.flags.integrated)
     rt.set_flags(mask2, rt.flags.reference_spot)
-    rt_name = "test_refs.mpack"
-    rt.as_msgpack_file(rt_name)
+    rt_name = "test_refs.pickle"
+    rt.as_pickle(rt_name)
 
     # Test flag expression
     cmd = (
@@ -26,7 +26,7 @@ def test_filter_reflections(run_in_tmpdir):
         "'integrated & ~reference_spot'"
     )
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    ref = flex.reflection_table.from_msgpack_file("filtered.mpack")
+    ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the 2nd reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [1]
@@ -34,7 +34,7 @@ def test_filter_reflections(run_in_tmpdir):
     # Test filter by experiment id
     cmd = "dials.filter_reflections " + rt_name + " id=0"
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    ref = flex.reflection_table.from_msgpack_file("filtered.mpack")
+    ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the first five reflections
     assert len(ref) == 5
     assert list(ref["iobs"]) == [0, 1, 2, 3, 4]
@@ -42,7 +42,7 @@ def test_filter_reflections(run_in_tmpdir):
     # Test filter by panel
     cmd = "dials.filter_reflections " + rt_name + " panel=5"
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    ref = flex.reflection_table.from_msgpack_file("filtered.mpack")
+    ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the last reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [5]
@@ -50,7 +50,7 @@ def test_filter_reflections(run_in_tmpdir):
     # Test filter by resolution
     cmd = "dials.filter_reflections " + rt_name + " d_max=3.0 d_min=2.0"
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    ref = flex.reflection_table.from_msgpack_file("filtered.mpack")
+    ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the 3rd, 4th and 5th reflections
     assert len(ref) == 3
     assert list(ref["iobs"]) == [2, 3, 4]

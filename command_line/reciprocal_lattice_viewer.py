@@ -34,9 +34,10 @@ Visualise the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.reciprocal_lattice_viewer experiments.json strong.mpack
+  dials.reciprocal_lattice_viewer experiments.json strong.pickle
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.mpack
+  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+
 """
 
 WX3 = wx.VERSION[0] == 3
@@ -951,7 +952,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
 
 
 def run(args):
-    usage = "%s [options] experiments.json reflections.mpack" % (
+    usage = "%s [options] experiments.json reflections.pickle" % (
         libtbx.env.dispatcher_name
     )
 

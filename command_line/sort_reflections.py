@@ -23,7 +23,7 @@ Utility script to sort reflection tables by the values in a column.
 
 Example::
 
-  %s key=miller_index output=sorted.mpack
+  %s key=miller_index output=sorted.pickle
 
 """
     % libtbx.env.dispatcher_name
@@ -50,7 +50,7 @@ class Sort(object):
         .type = bool
         .help = "Reverse the sort direction"
 
-      output = sorted.mpack
+      output = sorted.pickle
         .type = str
         .help = "The output reflection filename"
 
@@ -60,7 +60,7 @@ class Sort(object):
         # The script usage
         usage = (
             """
-      usage: %s [options] reflections.mpack
+      usage: %s [options] reflections.pickle
 
     """
             % libtbx.env.dispatcher_name
@@ -110,7 +110,7 @@ class Sort(object):
         # Save sorted reflections to file
         if params.output:
             print("Saving reflections to {0}".format(params.output))
-            reflections.as_msgpack_file(params.output)
+            reflections.as_pickle(params.output)
 
         return
 

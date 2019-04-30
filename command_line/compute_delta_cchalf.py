@@ -62,7 +62,7 @@ phil_scope = parse(
       .type = str
       .help = "The filtered experiments file"
 
-    reflections = "filtered_reflections.mpack"
+    reflections = "filtered_reflections.pickle"
       .type = str
       .help = "The filtered reflections file"
 
@@ -509,7 +509,7 @@ class Script(object):
                 len(self.reflections[0]),
                 self.params.output.reflections,
             )
-            self.reflections[0].as_msgpack_file(self.params.output.reflections)
+            self.reflections[0].as_pickle(self.params.output.reflections)
             from dxtbx.model.experiment_list import ExperimentListDumper
 
             logger.info("Saving the experiments to %s", self.params.output.experiments)
@@ -540,7 +540,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = "dials.compute_delta_cchalf [options] scaled_experiments.json scaled.mpack"
+    usage = "dials.compute_delta_cchalf [options] scaled_experiments.json scaled.pickle"
 
     parser = OptionParser(
         usage=usage,

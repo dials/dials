@@ -160,11 +160,11 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # concatenate reflections and write out
     rt.extend(rt2)
-    rt.as_msgpack_file("foo_reflections.mpack")
+    rt.as_pickle("foo_reflections.pickle")
 
     # set up refinement, constraining the distance parameter
     cmd = (
-        "dials.refine foo_experiments.json foo_reflections.mpack "
+        "dials.refine foo_experiments.json foo_reflections.pickle "
         "history=history.pickle refinement.parameterisation.detector."
         "constraints.parameter=Dist"
     )

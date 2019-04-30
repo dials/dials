@@ -30,7 +30,7 @@ phil_scope = parse(
     """
 
   output {
-    reflections = 'combined_strong.mpack'
+    reflections = 'combined_strong.pickle'
       .type = str
       .help = "The output filename"
 
@@ -289,7 +289,7 @@ class Script(object):
 
         # Save the reflections to file
         logger.info("\n" + "-" * 80)
-        reflections.as_msgpack_file(params.output.reflections)
+        reflections.as_pickle(params.output.reflections)
         logger.info(
             "Saved {0} reflections to {1}".format(
                 len(reflections), params.output.reflections

@@ -31,11 +31,11 @@ Generate a number of analysis plots from input integrated or indexed reflections
 
 Examples::
 
-  dials.analyse_output indexed.mpack
+  dials.analyse_output indexed.pickle
 
-  dials.analyse_output refined.mpack
+  dials.analyse_output refined.pickle
 
-  dials.analyse_output integrated.mpack
+  dials.analyse_output integrated.pickle
 
 """
 
@@ -1488,7 +1488,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] reflections.mpack" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
         )

@@ -40,7 +40,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s indexed.mpack" % sys.argv[0])
+        raise RuntimeError("%s indexed.pickle" % sys.argv[0])
 
     data = flex.reflection_table.from_file(sys.argv[1])
 

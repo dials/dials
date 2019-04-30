@@ -54,7 +54,7 @@ output {
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
-  reflections = "reindexed_reflections.mpack"
+  reflections = "reindexed_reflections.pickle"
     .type = path
   json = dials.cosym.json
     .type = path
@@ -173,7 +173,7 @@ class cosym(Subject):
         logger.info(
             "Saving reindexed reflections to %s", self.params.output.reflections
         )
-        reindexed_reflections.as_msgpack_file(self.params.output.reflections)
+        reindexed_reflections.as_pickle(self.params.output.reflections)
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
@@ -237,7 +237,9 @@ class cosym(Subject):
             )
             intensities = miller.array(miller_set, data=data, sigmas=sigmas)
             intensities.set_observation_type_xray_intensity()
-            intensities.set_info(miller.array_info(source="DIALS", source_type="mpack"))
+            intensities.set_info(
+                miller.array_info(source="DIALS", source_type="pickle")
+            )
             miller_arrays.append(intensities)
 
         return miller_arrays
@@ -338,18 +340,18 @@ the presence of an indexing ambiguity.
 
 The program takes as input a set of integrated experiments and reflections,
 either in one file per experiment, or with all experiments combined in a single
-experiments.json and reflections.mpack file. It will perform analysis of the
+experiments.json and reflections.pickle file. It will perform analysis of the
 symmetry elements present in the datasets and, if necessary, reindex experiments
 and reflections as necessary to ensure that all output experiments and
 reflections are indexed consistently.
 
 Examples::
 
-  dials.cosym experiments.json reflections.mpack
+  dials.cosym experiments.json reflections.pickle
 
-  dials.cosym experiments.json reflections.mpack space_group=I23
+  dials.cosym experiments.json reflections.pickle space_group=I23
 
-  dials.cosym experiments.json reflections.mpack space_group=I23 lattice_group=I23
+  dials.cosym experiments.json reflections.pickle space_group=I23 lattice_group=I23
 
 """
 
@@ -358,7 +360,7 @@ def run(args):
     from dials.util import log
     from dials.util.options import OptionParser
 
-    usage = "dials.cosym [options] experiments.json reflections.mpack"
+    usage = "dials.cosym [options] experiments.json reflections.pickle"
 
     parser = OptionParser(
         usage=usage,

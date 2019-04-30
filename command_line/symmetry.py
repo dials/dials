@@ -67,7 +67,7 @@ output {
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
-  reflections = "reindexed_reflections.mpack"
+  reflections = "reindexed_reflections.pickle"
     .type = path
   json = dials.symmetry.json
     .type = path
@@ -160,7 +160,9 @@ class symmetry(object):
             )
             intensities = miller.array(miller_set, data=data, sigmas=sigmas)
             intensities.set_observation_type_xray_intensity()
-            intensities.set_info(miller.array_info(source="DIALS", source_type="mpack"))
+            intensities.set_info(
+                miller.array_info(source="DIALS", source_type="pickle")
+            )
             miller_arrays.append(intensities)
 
         return miller_arrays
@@ -203,7 +205,7 @@ class symmetry(object):
             "Saving %s reindexed reflections to %s"
             % (len(reindexed_reflections), self._params.output.reflections)
         )
-        reindexed_reflections.as_msgpack_file(self._params.output.reflections)
+        reindexed_reflections.as_pickle(self._params.output.reflections)
 
 
 help_message = """
@@ -218,13 +220,13 @@ reflections.
 
 Examples::
 
-  dials.symmetry experiments.json reflections.mpack
+  dials.symmetry experiments.json reflections.pickle
 
 """
 
 
 def run(args):
-    usage = "dials.cosym [options] experiments.json reflections.mpack"
+    usage = "dials.cosym [options] experiments.json reflections.pickle"
 
     parser = OptionParser(
         usage=usage,

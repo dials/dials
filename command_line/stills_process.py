@@ -72,16 +72,16 @@ control_phil_str = """
     experiments_filename = %s_experiments.json
       .type = str
       .help = The filename for output experiments
-    strong_filename = %s_strong.mpack
+    strong_filename = %s_strong.pickle
       .type = str
       .help = The filename for strong reflections from spot finder output.
-    indexed_filename = %s_indexed.mpack
+    indexed_filename = %s_indexed.pickle
       .type = str
       .help = The filename for indexed reflections.
     refined_experiments_filename = %s_refined_experiments.json
       .type = str
       .help = The filename for saving refined experimental models
-    integrated_filename = %s_integrated.mpack
+    integrated_filename = %s_integrated.pickle
       .type = str
       .help = The filename for final integrated reflections.
     integrated_experiments_filename = %s_integrated_experiments.json
@@ -1184,7 +1184,7 @@ class Processor(object):
 
         st = time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
-        reflections.as_msgpack_file(filename)
+        reflections.as_pickle(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def finalize(self):

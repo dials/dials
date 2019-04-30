@@ -22,7 +22,7 @@ def test_export_best(dials_data, tmpdir):
         [
             "dials.index",
             "imported_experiments.json",
-            "strong.mpack",
+            "strong.pickle",
             "space_group=P422",
         ],
         working_directory=tmpdir.strpath,
@@ -32,7 +32,7 @@ def test_export_best(dials_data, tmpdir):
         [
             "dials.integrate",
             "indexed_experiments.json",
-            "indexed.mpack",
+            "indexed.pickle",
             "prediction.padding=0",
             "sigma_m_algorithm=basic",
         ],
@@ -43,7 +43,7 @@ def test_export_best(dials_data, tmpdir):
         [
             "dials.export",
             "integrated_experiments.json",
-            "integrated.mpack",
+            "integrated.pickle",
             "format=best",
         ],
         working_directory=tmpdir.strpath,

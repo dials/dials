@@ -10,7 +10,7 @@ def test(dials_data, tmpdir):
         [
             "dials.find_spots",
             "output.experiments=experiments.json",
-            "output.reflections=spotfinder.mpack",
+            "output.reflections=spotfinder.pickle",
             "output.shoeboxes=True",
         ]
         + [f.strpath for f in images],
@@ -18,13 +18,13 @@ def test(dials_data, tmpdir):
     )
     assert not result["exitcode"] and not result["stderr"]
     assert tmpdir.join("experiments.json").check()
-    assert tmpdir.join("spotfinder.mpack").check()
+    assert tmpdir.join("spotfinder.pickle").check()
 
     result = procrunner.run(
         [
             "dials.find_hot_pixels",
             "input.experiments=experiments.json",
-            "input.reflections=spotfinder.mpack",
+            "input.reflections=spotfinder.pickle",
             "output.mask=hot_mask.pickle",
         ],
         working_directory=tmpdir.strpath,

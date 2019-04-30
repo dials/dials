@@ -27,15 +27,15 @@ The output formats currently supported are:
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is an experiments.json file and an
-integrated.mpack file. For exporting scaled data, the required input is an
-experiments.json file and a scaled.mpack file, also passing the option
+integrated.pickle file. For exporting scaled data, the required input is an
+experiments.json file and a scaled.pickle file, also passing the option
 intensity=scale.
 
 NXS format exports the files as an NXmx file. The required input is an
-experiments.json file and an integrated.mpack file.
+experiments.json file and an integrated.pickle file.
 
 MMCIF format exports the files as an mmcif file. The required input is an
-experiments.json file and an integrated.mpack file.
+experiments.json file and an integrated.pickle file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -50,31 +50,31 @@ mosflm.in file containing basic instructions for input to mosflm. The required
 input is an experiments.json file.
 
 XDS format exports an experiments.json file as XDS.INP and XPARM.XDS files. If a
-reflection file is given it will be exported as a SPOT.XDS file.
+reflection pickle is given it will be exported as a SPOT.XDS file.
 
 Examples::
 
   # Export to mtz
-  dials.export experiments.json integrated.mpack
-  dials.export experiments.json integrated.mpack mtz.hklout=integrated.mtz
-  dials.export experiments.json scaled.mpack intensity=scale mtz.hklout=scaled.mtz
+  dials.export experiments.json integrated.pickle
+  dials.export experiments.json integrated.pickle mtz.hklout=integrated.mtz
+  dials.export experiments.json scaled.pickle intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export experiments.json integrated.mpack format=nxs
-  dials.export experiments.json integrated.mpack format=nxs nxs.hklout=integrated.nxs
+  dials.export experiments.json integrated.pickle format=nxs
+  dials.export experiments.json integrated.pickle format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export experiments.json integrated.mpack format=mmcif
-  dials.export experiments.json integrated.mpack format=mmcif mmcif.hklout=integrated.mmcif
+  dials.export experiments.json integrated.pickle format=mmcif
+  dials.export experiments.json integrated.pickle format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to mosflm
-  dials.export experiments.json integrated.mpack format=mosflm
+  dials.export experiments.json integrated.pickle format=mosflm
 
   # Export to xds
-  dials.export strong.mpack format=xds
-  dials.export indexed.mpack format=xds
+  dials.export strong.pickle format=xds
+  dials.export indexed.pickle format=xds
   dials.export experiments.json format=xds
-  dials.export experiments.json indexed.mpack format=xds
+  dials.export experiments.json indexed.pickle format=xds
 
 """
 
@@ -645,7 +645,7 @@ if __name__ == "__main__":
     from dials.util import Sorry
     import os
 
-    usage = "%s experiments.json reflections.mpack [options]" % (
+    usage = "%s experiments.json reflections.pickle [options]" % (
         libtbx.env.dispatcher_name
     )
 
