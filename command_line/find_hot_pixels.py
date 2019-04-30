@@ -37,7 +37,7 @@ help_message = """
   with True pixels being OK and False pixels being "hot" pixels.
 
   Examples::
-    dials.find_hot_pixels experiments.json strong.mpack
+    dials.find_hot_pixels experiments.json strong.pickle
 
 """
 
@@ -48,7 +48,7 @@ def run(args):
     from dials.util import log
     import six.moves.cPickle as pickle
 
-    usage = "%s [options] experiments.json strong.mpack" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
     # Create the option parser
     parser = OptionParser(

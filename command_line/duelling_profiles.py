@@ -48,7 +48,7 @@ help_message = """
 
 Examples::
 
-  dev.dials.duelling_profiles experiments.json integrated.mpack
+  dev.dials.duelling_profiles experiments.json integrated.pickle
 
 """
 
@@ -563,7 +563,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] integrated.mpack experiments.json" % (
+    usage = "%s [options] integrated.pickle experiments.json" % (
         libtbx.env.dispatcher_name
     )
 
@@ -585,7 +585,7 @@ def run(args):
         exit()
 
     if not "shoebox" in reflections[0]:
-        print("Please add shoeboxes to reflection mpack")
+        print("Please add shoeboxes to reflection pickle")
         exit()
 
     results = main(reflections[0], experiments[0], params)

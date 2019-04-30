@@ -34,9 +34,9 @@ estimated standard deviation.
 
 Examples::
 
-  dials.two_theta_refine integrated_experiments.json integrated.mpack
+  dials.two_theta_refine integrated_experiments.json integrated.pickle
 
-  dials.two_theta_refine integrated_experiments.json integrated.mpack \
+  dials.two_theta_refine integrated_experiments.json integrated.pickle \
     correlation_plot.filename=corrplot.png cif=refined_cell.cif
 """
 
@@ -144,7 +144,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.mpack" % libtbx.env.dispatcher_name
+            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

@@ -20,11 +20,15 @@ def test_combining_spots(dials_data, tmpdir):
     assert tmpdir.join("experiments-1.json").check()
 
     result = procrunner.run(
-        ["dials.find_spots", "experiments-1.json", "output.reflections=strong-1.mpack"],
+        [
+            "dials.find_spots",
+            "experiments-1.json",
+            "output.reflections=strong-1.pickle",
+        ],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("strong-1.mpack").check()
+    assert tmpdir.join("strong-1.pickle").check()
 
     result = procrunner.run(
         ["dials.import", "output.experiments=experiments-2.json"] + images_2,
@@ -34,27 +38,31 @@ def test_combining_spots(dials_data, tmpdir):
     assert tmpdir.join("experiments-2.json").check()
 
     result = procrunner.run(
-        ["dials.find_spots", "experiments-2.json", "output.reflections=strong-2.mpack"],
+        [
+            "dials.find_spots",
+            "experiments-2.json",
+            "output.reflections=strong-2.pickle",
+        ],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("strong-2.mpack").check()
+    assert tmpdir.join("strong-2.pickle").check()
 
     result = procrunner.run(
         [
             "dials.combine_found_spots",
             "experiments-1.json",
             "experiments-2.json",
-            "strong-1.mpack",
-            "strong-2.mpack",
-            "output.reflections=combined.mpack",
+            "strong-1.pickle",
+            "strong-2.pickle",
+            "output.reflections=combined.pickle",
             "output.experiments=combined.json",
         ],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
     assert tmpdir.join("combined.json").check()
-    assert tmpdir.join("combined.mpack").check()
+    assert tmpdir.join("combined.pickle").check()
 
-    r = flex.reflection_table.from_msgpack_file(tmpdir.join("combined.mpack").strpath)
+    r = flex.reflection_table.from_pickle(tmpdir.join("combined.pickle").strpath)
     assert r["id"].all_eq(0)

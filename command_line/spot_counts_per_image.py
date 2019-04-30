@@ -22,9 +22,9 @@ generates a plot of the per-image statistics (plot=image.png).
 
 Examples::
 
-  dials.spot_counts_per_image experiments.json strong.mpack
+  dials.spot_counts_per_image experiments.json strong.pickle
 
-  dials.spot_counts_per_image experiments.json strong.mpack plot=per_image.png
+  dials.spot_counts_per_image experiments.json strong.pickle plot=per_image.png
 
 """
 
@@ -51,7 +51,7 @@ id = None
 def run(args):
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json strong.mpack" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

@@ -29,9 +29,9 @@ Examples::
 
   dials.image_viewer experiments.json
 
-  dials.image_viewer experiments.json strong.mpack
+  dials.image_viewer experiments.json strong.pickle
 
-  dials.image_viewer experiments.json integrated.mpack
+  dials.image_viewer experiments.json integrated.pickle
 
 """
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     usage_message = (
         """
-    %s experiments.json [reflections.mpack]
+    %s experiments.json [reflections.pickle]
   """
         % libtbx.env.dispatcher_name
     )

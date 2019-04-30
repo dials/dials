@@ -30,13 +30,13 @@ dials.integate.
 
 Examples::
 
-  dials.integrate experiments.json indexed.mpack
+  dials.integrate experiments.json indexed.pickle
 
-  dials.integrate experiments.json indexed.mpack output.reflections=integrated.mpack
+  dials.integrate experiments.json indexed.pickle output.reflections=integrated.pickle
 
-  dials.integrate experiments.json indexed.mpack profile.fitting=False
+  dials.integrate experiments.json indexed.pickle profile.fitting=False
 
-  dials.integrate experiments.json indexed.mpack background.algorithm=glm
+  dials.integrate experiments.json indexed.pickle background.algorithm=glm
 
 """
 
@@ -51,7 +51,7 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    reflections = 'integrated.mpack'
+    reflections = 'integrated.pickle'
       .type = str
       .help = "The integrated output filename"
 
@@ -522,7 +522,7 @@ class Script(object):
 
         st = time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
-        reflections.as_msgpack_file(filename)
+        reflections.as_pickle(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def save_experiments(self, experiments, filename):

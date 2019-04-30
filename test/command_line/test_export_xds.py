@@ -5,7 +5,7 @@ import procrunner
 
 def test_spots_xds(tmpdir):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.mpack"
+    output_pickle = "spot.pickle"
 
     tmpdir.join(xds_input).write(
         """\
@@ -77,14 +77,14 @@ def test_export_xds(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("strong.mpack").check(file=1)
+    assert tmpdir.join("strong.pickle").check(file=1)
 
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
             dials_data("centroid_test_data").join("experiments.json").strpath,
-            "strong.mpack",
+            "strong.pickle",
         ],
         working_directory=tmpdir.strpath,
     )

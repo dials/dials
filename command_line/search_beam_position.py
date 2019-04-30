@@ -27,7 +27,7 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  dials.search_beam_position experiments.json strong.mpack
+  dials.search_beam_position experiments.json strong.pickle
 
 """
 
@@ -545,7 +545,7 @@ def discover_better_experimental_model(
 def run(args):
     from dials.util import log
 
-    usage = "dials.search_beam_position [options] experiments.json strong.mpack"
+    usage = "dials.search_beam_position [options] experiments.json strong.pickle"
 
     parser = OptionParser(
         usage=usage,

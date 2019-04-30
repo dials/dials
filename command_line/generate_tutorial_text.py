@@ -92,31 +92,31 @@ class Processing_Tutorial(object):
         cmd = "dials.find_spots imported_experiments.json nproc=4"
 
     class dials_index(Job):
-        cmd = "dials.index imported_experiments.json strong.mpack"
+        cmd = "dials.index imported_experiments.json strong.pickle"
 
     class dials_refine_bravais_settings(Job):
-        cmd = "dials.refine_bravais_settings indexed_experiments.json indexed.mpack"
+        cmd = "dials.refine_bravais_settings indexed_experiments.json indexed.pickle"
 
     class dials_reindex(Job):
-        cmd = "dials.reindex indexed.mpack change_of_basis_op=a,b,c"
+        cmd = "dials.reindex indexed.pickle change_of_basis_op=a,b,c"
 
     class dials_refine(Job):
-        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.mpack"
+        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle"
 
     class dials_sv_refine(Job):
-        cmd = "dials.refine refined_experiments.json refined.mpack scan_varying=true"
+        cmd = "dials.refine refined_experiments.json refined.pickle scan_varying=true"
 
     class dials_integrate(Job):
-        cmd = "dials.integrate refined_experiments.json refined.mpack nproc=4"
+        cmd = "dials.integrate refined_experiments.json refined.pickle nproc=4"
 
     class dials_report(Job):
-        cmd = "dials.report integrated_experiments.json integrated.mpack"
+        cmd = "dials.report integrated_experiments.json integrated.pickle"
 
         def mangle_result(self):
             self.result["stdout"] = open("dials-report.html").read()
 
     class dials_export(Job):
-        cmd = "dials.export integrated.mpack integrated_experiments.json"
+        cmd = "dials.export integrated.pickle integrated_experiments.json"
 
 
 def generate_processing_detail_text_thaumatin():
@@ -228,26 +228,26 @@ def generate_processing_detail_text_betalactamase():
     commands = [
         ("dials.import", "dials.import {}".format(DATA_PATH)),
         ("dials.find_spots", "dials.find_spots imported_experiments.json nproc=4"),
-        ("dials.index", "dials.index imported_experiments.json strong.mpack"),
+        ("dials.index", "dials.index imported_experiments.json strong.pickle"),
         (
             "dials.refine_bravais_settings",
-            "dials.refine_bravais_settings indexed_experiments.json indexed.mpack",
+            "dials.refine_bravais_settings indexed_experiments.json indexed.pickle",
         ),
-        ("dials.reindex", "dials.reindex indexed.mpack change_of_basis_op=a+b,-a+b,c"),
+        ("dials.reindex", "dials.reindex indexed.pickle change_of_basis_op=a+b,-a+b,c"),
         (
             "dials.refine",
-            "dials.refine bravais_setting_2.json reindexed_reflections.mpack",
+            "dials.refine bravais_setting_2.json reindexed_reflections.pickle",
         ),
         (
             "dials.sv_refine",
-            "dials.refine refined_experiments.json refined.mpack scan_varying=true",
+            "dials.refine refined_experiments.json refined.pickle scan_varying=true",
         ),
         (
             "dials.integrate",
-            "dials.integrate refined_experiments.json refined.mpack nproc=4",
+            "dials.integrate refined_experiments.json refined.pickle nproc=4",
         ),
-        ("dials.report", "dials.report integrated_experiments.json integrated.mpack"),
-        ("dials.export", "dials.export integrated.mpack integrated_experiments.json"),
+        ("dials.report", "dials.report integrated_experiments.json integrated.pickle"),
+        ("dials.export", "dials.export integrated.pickle integrated_experiments.json"),
     ]
 
     job_writer = JobWriter(OUTPUT_DIR)

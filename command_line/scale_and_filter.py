@@ -66,9 +66,9 @@ output {
     experiments = "scaled_experiments.json"
       .type = str
       .help = "Option to set filepath for output json."
-    reflections = "scaled.mpack"
+    reflections = "scaled.pickle"
       .type = str
-      .help = "Option to set filepath for output mpack file of scaled
+      .help = "Option to set filepath for output pickle file of scaled
                intensities."
     analysis_results = "analysis_results.json"
       .type = str
@@ -589,7 +589,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_experiments
 
     usage = (
-        "dials.scale_and_filter [options] integrated_experiments.json integrated.mpack"
+        "dials.scale_and_filter [options] integrated_experiments.json integrated.pickle"
     )
 
     parser = OptionParser(
