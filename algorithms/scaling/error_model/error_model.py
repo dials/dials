@@ -125,7 +125,7 @@ class BasicErrorModel(object):
         ) * self.Ih_table.h_index_matrix
         n_per_group = flex.double(n, 1) * self.Ih_table.h_index_matrix
         avg_I_over_var = sum_I_over_var / n_per_group
-        sel = avg_I_over_var > 0.8
+        sel = avg_I_over_var > 0.85
         self.Ih_table = self.Ih_table.select_on_groups(sel)
         self.n_h = self.Ih_table.calc_nh()
         scaled_Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
