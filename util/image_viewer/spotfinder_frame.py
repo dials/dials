@@ -17,6 +17,7 @@ from dials.util.image_viewer.mask_frame import MaskSettingsFrame
 from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import group_args
 from libtbx.utils import flat_list, time_log
 from rstbx.slip_viewer import pyslip
@@ -589,9 +590,9 @@ class SpotFrame(XrayFrame):
             # dxtbx/Boost cannot currently handle unicode here
             if isinstance(file_name_or_data, unicode):
                 file_name_or_data = file_name_or_data.encode("utf-8")
-            importer = ExperimentsFilenameImporter([file_name_or_data])
-            assert len(importer.experiments) == 1
-            imagesets = importer.experiments.imagesets()
+            experiments = ExperimentListFactory.from_filenames([file_name_or_data])
+            assert len(experiments) == 1
+            imagesets = experiments.imagesets()
             imageset = imagesets[0]
             file_name_or_data = chooser_wrapper(imageset, imageset.indices()[0])
             self.add_file_name_or_data(file_name_or_data)
