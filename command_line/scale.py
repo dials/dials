@@ -81,8 +81,10 @@ from dials.algorithms.scaling.algorithm import (
     scaling_algorithm,
 )
 from dials.util.observer import Subject
-from dials.algorithms.scaling.observers import register_default_scaling_observers
-
+from dials.algorithms.scaling.observers import (
+    register_default_scaling_observers,
+    register_merging_stats_observers,
+)
 
 logger = logging.getLogger("dials")
 info_handle = log.info_handle(logger)
@@ -550,7 +552,10 @@ def run_scaling(params, experiments, reflections):
     else:
         script = Script(params, experiments, reflections)
         # Register the observers at the highest level
-        register_default_scaling_observers(script)
+        if params.output.html:
+            register_default_scaling_observers(script)
+        else:
+            register_merging_stats_observers(script)
         script.run()
 
 def run():
