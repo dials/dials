@@ -120,6 +120,7 @@ function _dials_autocomplete ()
   COMPREPLY=( $(compgen -W "${_dials_autocomplete_values}" -- "${cur}") \
               $(compgen -f -X "!*.json" -- "${cur}") \
               $(compgen -f -X "!*.pickle" -- "${cur}") \
+              $(compgen -f -X "!*.mpack" -- "${cur}") \
               $(compgen -f -X "!*.phil" -- "${cur}") \
               $(compgen -d -S"/" -- "${cur}" ) )
   unset -f _dials_autocomplete_values
