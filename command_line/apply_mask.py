@@ -11,36 +11,43 @@
 
 from __future__ import absolute_import, division, print_function
 
+import cPickle as pickle
+
+from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
 
 help_message = """
 
-This program augments a datablock or experiment list file with a mask specified
-by the user.
+This program augments a datablock or experiement list .json file with one or more masks specified by the
+user.  Its only function is to input the mask file paths to the .json file,
+but means that the user does not have to edit the file by hand.
+
+Crucially, the mask files must be provided in the same order as their corresponding
+imagesets (sweeps) appear in the .json file.
 
 Examples::
 
-  dials.apply_mask datablock.json input.mask=mask.pickle
+    dials.apply_mask datablock.json input.mask=mask.pickle
 
-  dials.apply_mask expriments.json input.mask=mask.pickle
+    dials.apply_mask experiments.json input.mask=mask1.pickle input.mask=mask2.pickle
 
 """
 
 phil_scope = parse(
     """
-
-  input {
-    mask = None
-      .type = str
-      .help = "The mask filename"
-  }
+        input {
+            mask = None
+                .multiple = True
+                .type = str
+                .help = "The mask filenames, one mask per imageset"
+        }
 
   output {
-    datablock = datablock_with_mask.json
+    datablock = masked_datablock.json
       .type = str
       .help = "Name of output datablock file"
 
-    experiments = experiments_with_mask.json
+    experiments = masked_experiments.json
       .type = str
       .help = "Name of output experiments file"
   }
@@ -58,7 +65,10 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] datablock.json" % libtbx.env.dispatcher_name
+        usage = (
+            "usage: %s datablock_or_experiments.json input.mask=mask.pickle"
+            % libtbx.env.dispatcher_name
+        )
         self.parser = OptionParser(
             usage=usage,
             epilog=help_message,
@@ -77,41 +87,59 @@ class Script(object):
 
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)
+        experiments = flatten_experiments(params.input.experiments)
+        datablocks = flatten_datablocks(params.input.datablock)
 
-        # Check the mask file is given
-        if params.input.mask is None:
+        # Check that a valid JSON file and at least one mask file have been provided
+        if not ((experiments or datablocks) and params.input.mask):
             self.parser.print_help()
             return
 
-        experiments = flatten_experiments(params.input.experiments)
-        datablocks = flatten_datablocks(params.input.datablock)
-        do_experiments = len(experiments) > 0
-        if do_experiments and datablocks:
+        if experiments and datablocks:
             self.parser.print_help()
             raise Sorry(
-                "Either a datablock or an experiment list may be provided"
-                " but not both together."
+                "Either a datablock or an experiment list may be provided "
+                "but not both together."
             )
 
         if datablocks:
             if len(datablocks) != 1:
                 raise Sorry("exactly 1 datablock must be specified")
+            # Check number of datablocks matches the number of masks
+            n_dblocks = len(datablocks)
+            n_masks = len(params.input.mask)
+            if n_dblocks != n_masks:
+                raise Sorry(
+                    "The number of masks provided must match the number of imagesets "
+                    "(sweeps).\n"
+                    "You have provided a datablock containing {} imageset(s).\n"
+                    "You have provided {} mask file(s).".format(n_dblocks, n_masks)
+                )
             datablock = datablocks[0]
             imagesets = datablock.extract_imagesets()
-        elif do_experiments:
+        elif experiments:
+            # Check number of experiments matches the number of masks
+            n_expts = len(experiments)
+            n_masks = len(params.input.mask)
+            if n_expts != n_masks:
+                raise Sorry(
+                    "The number of masks provided must match the number of imagesets "
+                    "(sweeps).\n"
+                    "You have provided an experiment list containing {} imageset(s).\n"
+                    "You have provided {} mask file(s).".format(n_expts, n_masks)
+                )
             imagesets = experiments.imagesets()
         else:
-            raise Sorry("Either a datablock or an experiment list may be provided")
+            raise Sorry("Either a datablock or an experiment list must be provided")
 
-        # Get the imageset
-        if len(imagesets) != 1:
-            raise Sorry("A mask can be applied only to a single imageset")
-        imageset = imagesets[0]
+        for i, imageset in enumerate(imagesets):
+            # Set the lookup
+            with open(params.input.mask[i]) as f:
+                mask = pickle.load(f)
+            imageset.external_lookup.mask.filename = params.input.mask[i]
+            imageset.external_lookup.mask.data = ImageBool(mask)
 
-        # Set the lookup
-        imageset.external_lookup.mask.filename = params.input.mask
-
-        # Dump the datablock
+        # Dump the datablock or experiment list
         if datablocks:
             print("Writing datablock to %s" % params.output.datablock)
             dump = DataBlockDumper(datablock)
