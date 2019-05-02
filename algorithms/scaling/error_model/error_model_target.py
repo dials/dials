@@ -7,7 +7,8 @@ from __future__ import absolute_import, print_function
 from dials.array_family import flex
 import logging
 
-logger = logging.getLogger('dials.scale')
+logger = logging.getLogger("dials.scale")
+
 
 class ErrorModelTarget(object):
     """Target function for a basic two parameter error model."""
