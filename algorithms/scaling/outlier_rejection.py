@@ -7,8 +7,7 @@ reject_outliers, to reject outlier and set flags given a reflection table
 and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 import abc
 import logging
 from dials.util import Sorry

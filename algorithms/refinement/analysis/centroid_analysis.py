@@ -10,8 +10,7 @@
 """Analysis of centroid residuals for determining suitable refinement and
 outlier rejection parameters automatically"""
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 from math import pi
 

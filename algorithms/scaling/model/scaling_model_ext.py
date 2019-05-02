@@ -2,8 +2,7 @@
 """
 Definitions of scaling model extensions.
 """
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 
 class ScalingModelIface(object):

@@ -4,8 +4,7 @@ To add a new scaling model, one must define a new extension
 in dials.extensions.scaling_model_ext, create a new factory
 in this file and create a new model in dials.algorithms.scaling.model.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 from dials.array_family import flex
 import dials.algorithms.scaling.model.model as Model

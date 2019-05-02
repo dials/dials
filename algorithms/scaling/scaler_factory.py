@@ -1,8 +1,7 @@
 """
 Collection of factories for creating the scalers.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 import logging
 from libtbx import Auto
 from dials.util import Sorry

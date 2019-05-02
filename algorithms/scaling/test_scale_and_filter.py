@@ -1,5 +1,4 @@
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 # test that compute_delta_cchalf returns required values
 import pytest

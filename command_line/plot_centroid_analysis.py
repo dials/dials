@@ -11,8 +11,7 @@
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.plot_centroid_analysis
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from dials.util import Sorry
 from libtbx.phil import parse
 from dials.array_family import flex

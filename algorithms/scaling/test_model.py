@@ -1,8 +1,7 @@
 """
 Tests for the scaling model classes.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 import copy
 import pytest
 from mock import Mock, MagicMock

@@ -10,8 +10,7 @@ The SingleScaler is defined, for scaling of a single dataset, a MultiScaler is
 defined for scaling multiple datasets simultaneously and a TargetScaler is
 defined for targeted scaling.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import abc
 import logging

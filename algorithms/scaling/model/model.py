@@ -4,9 +4,7 @@ Definitions of scaling models.
 A scaling model is a collection of scaling model components with appropriate
 methods to define how these are composed into one model.
 """
-from __future__ import print_function
-from __future__ import division
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import abc
 import logging

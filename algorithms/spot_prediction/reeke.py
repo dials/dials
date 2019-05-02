@@ -10,8 +10,7 @@
 """Provides a class for producing efficient looping limits for reflection
 prediction based on the Reeke algorithm (see Mosflm)"""
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from scitbx import matrix
 from math import sqrt, sin, asin, fabs
 

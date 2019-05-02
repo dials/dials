@@ -1,8 +1,7 @@
 """
 Functions to help with calculating batch properties for experiments objects.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 import logging
 from dials.array_family import flex
 

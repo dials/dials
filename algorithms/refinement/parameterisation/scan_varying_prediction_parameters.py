@@ -7,8 +7,7 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from math import floor
 from scitbx import matrix
 from dials.array_family import flex

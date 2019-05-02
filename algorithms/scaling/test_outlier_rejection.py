@@ -1,8 +1,7 @@
 """
 Tests for outlier rejection.
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 import pytest
 from mock import Mock
 from dials.util import Sorry

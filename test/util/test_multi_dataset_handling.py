@@ -1,8 +1,7 @@
 """
 Tests for dials.util.multi_dataset_handling functions
 """
-from __future__ import division
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import pytest
 from dials.util import Sorry

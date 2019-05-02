@@ -12,8 +12,7 @@
 # Analysis of the origin of the diffraction pattern based on indexed and
 # measured intensities.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 
 def cctbx_crystal_from_dials(crystal):
