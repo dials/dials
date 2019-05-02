@@ -380,7 +380,11 @@ def export_mtz(integrated_data, experiment_list, params):
     if len(set(unique_offsets)) <= 1:
         logger.debug("Calculating new batches")
         batch_offsets = calculate_batch_offsets(experiment_list)
-        unique_offsets = set(batch_offsets)
+        batch_starts = [
+            e.scan.get_image_range()[0] if e.scan else 0 for e in experiment_list
+        ]
+        effective_offsets = [o + s for o, s in zip(batch_offsets, batch_starts)]
+        unique_offsets = set(effective_offsets)
     else:
         logger.debug("Keeping existing batches")
     image_ranges = get_image_ranges(experiment_list)
