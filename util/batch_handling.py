@@ -3,11 +3,8 @@ Functions to help with calculating batch properties for experiments objects.
 """
 from __future__ import division
 from __future__ import absolute_import, print_function
-from math import ceil, floor, log
 import logging
-import copy as copy
 from dials.array_family import flex
-from dials.util import Sorry
 
 logger = logging.getLogger("dials")
 
@@ -162,7 +159,7 @@ def _calculate_batch_offsets(image_ranges):
         if ilow == 0:
             ilow, ihigh = ilow + 1, ihigh + 1
         # If we overlap with anything, then process later
-        if any(ilow <= high + 1 and ihigh >= low - 1 for low, high in existing_ranges):
+        if any(ilow < high + 1 and ihigh >= low - 1 for low, high in existing_ranges):
             experiments_to_shift.append((i, image_range))
         else:
             batch_offsets[i] = ilow - image_range[0]
