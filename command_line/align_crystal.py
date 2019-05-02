@@ -27,11 +27,11 @@ principle goniometer axis.
 
 Examples::
 
-dials.align_crystal experiments.json
+  dials.align_crystal experiments.json
 
-dials.align_crystal experiments.json vector=0,0,1 vector=0,1,0
+  dials.align_crystal experiments.json vector=0,0,1 vector=0,1,0
 
-dials.align_crystal experiments.json frame=direct
+  dials.align_crystal experiments.json frame=direct
 
 """
 
