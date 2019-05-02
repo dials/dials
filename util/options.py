@@ -282,9 +282,7 @@ class Importer(object):
         )
         if len(experiments) > 0:
             filename = "<image files>"
-            obj = FilenameDataWrapper(filename, experiments)
-            ExperimentListConverters.cache[filename] = obj
-            self.experiments.append(obj)
+            self.experiments.append(FilenameDataWrapper(filename, experiments))
         return unhandled
 
     def try_read_experiments(self, args, check_format, verbose):
