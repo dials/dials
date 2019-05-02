@@ -10,6 +10,9 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
+import os.path
+import re
+
 import libtbx.phil
 
 
@@ -26,8 +29,6 @@ class ExperimentListConverters(object):
 
     phil_type = "experiment_list"
 
-    cache = {}
-
     def __init__(self, check_format=True):
         self._check_format = check_format
 
@@ -36,21 +37,15 @@ class ExperimentListConverters(object):
 
     def from_string(self, s):
         from dxtbx.model.experiment_list import ExperimentListFactory
-        from os.path import exists
         from libtbx.utils import Sorry
 
         if s is None:
             return None
-        if s not in self.cache:
-            if not exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(
-                s,
-                ExperimentListFactory.from_json_file(
-                    s, check_format=self._check_format
-                ),
-            )
-        return self.cache[s]
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(
+            s, ExperimentListFactory.from_json_file(s, check_format=self._check_format)
+        )
 
     def from_words(self, words, master):
         return self.from_string(libtbx.phil.str_from_words(words=words))
@@ -68,23 +63,18 @@ class ReflectionTableConverters(object):
 
     phil_type = "reflection_table"
 
-    cache = {}
-
     def __str__(self):
         return self.phil_type
 
     def from_string(self, s):
         from dials.array_family import flex
-        from os.path import exists
         from libtbx.utils import Sorry
 
         if s is None:
             return None
-        if s not in self.cache:
-            if not exists(s):
-                raise Sorry("File %s does not exist" % s)
-            self.cache[s] = FilenameDataWrapper(s, flex.reflection_table.from_file(s))
-        return self.cache[s]
+        if not os.path.exists(s):
+            raise Sorry("File %s does not exist" % s)
+        return FilenameDataWrapper(s, flex.reflection_table.from_file(s))
 
     def from_words(self, words, master):
         return self.from_string(libtbx.phil.str_from_words(words=words))
@@ -102,8 +92,6 @@ class ReflectionTableSelectorConverters(object):
 
     phil_type = "reflection_table_selector"
 
-    cache = {}
-
     def __str__(self):
         return self.phil_type
 
@@ -112,11 +100,10 @@ class ReflectionTableSelectorConverters(object):
 
         if s is None:
             return None
-        import re
 
         regex = r"^\s*([\w\.]+)\s*(<=|!=|==|>=|<|>|&)\s*(.+)\s*$"
         matches = re.findall(regex, s)
-        if len(matches) == 0:
+        if not matches:
             raise RuntimeError("%s is not a valid selection" % s)
         elif len(matches) > 1:
             raise RuntimeError("%s is not a single selection" % s)
