@@ -353,6 +353,32 @@ def install_precommit(python):
         )
 
 
+def list_all_repository_candidates():
+    repositories = {}
+    for module in sorted(libtbx.env.module_dict):
+        module_paths = [
+            py.path.local(abs(path))
+            for path in libtbx.env.module_dict[module].dist_paths
+            if path and (path / ".git").exists()
+        ]
+        if not module_paths:
+            continue
+        if len(module_paths) == 1:
+            repositories[module] = module_paths[0]
+        else:
+            for path in module_paths:
+                repositories[module + ":" + str(path)] = path
+    import pkg_resources
+
+    for ep in pkg_resources.iter_entry_points("libtbx.precommit"):
+        path = py.path.local(ep.load().__path__[0])
+        if path.join(".git").check():
+            repositories[ep.name] = path
+        elif path.dirpath().join(".git").check():
+            repositories[ep.name] = path.dirpath()
+    return repositories
+
+
 def main():
     changes_required = False
     python = install_python(check_only=True)
@@ -390,39 +416,24 @@ def main():
 
     print()
     print("Repositories:")
-    for module in sorted(libtbx.env.module_dict):
-        module_paths = [
-            py.path.local(abs(path))
-            for path in libtbx.env.module_dict[module].dist_paths
-            if path and (path / ".git").exists()
-        ]
-        if not module_paths:
-            continue
-        module_paths = [
-            path
-            for path in module_paths
-            if path.join(".pre-commit-config.yaml").check()
-        ]
-        if not module_paths:
+    repositories = list_all_repository_candidates()
+    for module in sorted(repositories):
+        if not repositories[module].join(".pre-commit-config.yaml").check():
             print(repo_prefix.format(module), repo_no_precommit)
             continue
-        if len(module_paths) == 1:
-            module_names = [module]
-        else:
-            module_names = [module + ":" + str(path) for path in module_paths]
-        for moddirname, moddirpath in zip(module_names, module_paths):
+        message = (
+            check_precommitbx_hook(repositories[module], python)
+            or repo_precommit_available
+        )
+        if message != repo_precommit_installed and fix_things:
+            install_precommitbx_hook(repositories[module], python)
             message = (
-                check_precommitbx_hook(moddirpath, python) or repo_precommit_available
+                check_precommitbx_hook(repositories[module], python)
+                or repo_precommit_available
             )
-            if message != repo_precommit_installed and fix_things:
-                install_precommitbx_hook(moddirpath, python)
-                message = (
-                    check_precommitbx_hook(moddirpath, python)
-                    or repo_precommit_available
-                )
-            print(repo_prefix.format(moddirname), message)
-            if message != repo_precommit_installed:
-                changes_required = True
+        print(repo_prefix.format(module), message)
+        if message != repo_precommit_installed:
+            changes_required = True
 
     if changes_required:
         print()
