@@ -39,8 +39,8 @@ class reader:
 
         # Check the type of the element to ensure it's a binary
         # otherwise raise an exception
-        type = self.cbf_handle.get_typeofvalue()
-        if type.find("bnry") > -1:
+        dtype = self.cbf_handle.get_typeofvalue()
+        if dtype.find("bnry") > -1:
 
             # Read the image data into an array
             image_string = self.cbf_handle.get_integerarray_as_string()
@@ -62,7 +62,7 @@ class reader:
 
 if __name__ == "__main__":
     import sys
-    import numpy
+    import numpy  # noqa: F401
 
     handle = reader()
     handle.read_file(sys.argv[1])
