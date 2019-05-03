@@ -110,7 +110,7 @@ def determine_reflection_selection_parameters(params, experiments, reflections):
             n_params = experiments[0].scaling_model.n_params
             num = 100 * n_params  # want at least this
             two_percent = 0.02 * n_suitable_refl
-            n_to_use = min([max(10000, num, two_percent), 50000])  # in reality,
+            n_to_use = max(10000, num, two_percent)  # in reality,
             # allows up to ~100K due to overfilling effect?
             # but with 12 areas x 20 res bins = 240
             n_resolution_bins = 20
@@ -129,7 +129,7 @@ min_per_area : %s, n_resolution_bins: %s""",
         else:
             # this attempts to get ~ 100-200 refl per param
             n_params = [exp.scaling_model.n_params for exp in experiments]
-            min_per_class = 40 * sum(n_params) / len(n_params)
+            min_per_class = 120 * sum(n_params) / len(n_params)
             total_target = 2.0 * 80 * sum(n_params) + (min_per_class * len(n_params))
             # extra factor of 2 as set min, max limits of 1.5 to 3.0 - so get 40/160 split
             min_per_area = []
