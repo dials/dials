@@ -39,39 +39,46 @@ def _install_dials_autocompletion():
     except OSError:
         pass
 
+    # Build a list of autocompleteable commands
     commands_dir = os.path.join(dist_path, "command_line")
     command_list = []
-    print("Identifying autocompletable commands:", end=" ")
     for filename in sorted(os.listdir(commands_dir)):
         if not filename.startswith("_") and filename.endswith(".py"):
-            if (
-                "DIALS_ENABLE_COMMAND_LINE_COMPLETION"
-                in open(os.path.join(commands_dir, filename)).read()
-            ):
-                command_name = "dials.%s" % filename[:-3]
-                print(command_name, end=" ")
-                command_list.append(command_name)
-    print()
+            # Check if this file marks itself as completable
+            with open(os.path.join(commands_dir, filename)) as f:
+                if "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in f.read():
+                    command_name = "dials.%s" % filename[:-3]
+                    command_list.append(command_name)
+    print("Identified autocompletable commands: " + " ".join(command_list))
 
     # Generate the autocompletion SConscript.
     with open(os.path.join(output_directory, "SConscript"), "w") as builder:
         builder.write(
-            """Import("env")
-import os.path
-import libtbx.load_env
+            """import os.path
+import libtbx.load_env\n
+Import("env")\n\n
 def dispatcher_outer(name):
-  return os.path.join(libtbx.env.under_build('bin'), name)
+    return os.path.join(libtbx.env.under_build("bin"), name)\n\n
 def dispatcher_inner(name):
-  return os.path.join(libtbx.env.dist_path('dials'), 'command_line', '%%s.py' %% name.partition('.')[2])
-env.Append( BUILDERS={'AutoComplete': Builder(action='-$SOURCE --export-autocomplete-hints > $TARGET')} )
-env['ENV']['DIALS_NOBANNER'] = '1'
-for cmd in [%s]:
-  ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
-  Requires(ac, Dir(libtbx.env.under_build('lib')))
-  Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'options.py'))
-  Depends(ac, os.path.join(libtbx.env.dist_path('dials'), 'util', 'autocomplete.sh'))
-"""
-            % ", ".join(["'%s'" % cmd for cmd in command_list])
+    return os.path.join(
+        libtbx.env.dist_path("dials"), "command_line", "%s.py" % name.partition(".")[2]
+    )\n\n
+env.Append(
+    BUILDERS={{
+        "AutoComplete": Builder(action="-$SOURCE --export-autocomplete-hints > $TARGET")
+    }}
+)
+env["ENV"]["DIALS_NOBANNER"] = "1"
+for cmd in [
+{}
+]:
+    ac = env.AutoComplete(cmd, [dispatcher_outer(cmd), dispatcher_inner(cmd)])
+    Requires(ac, Dir(libtbx.env.under_build("lib")))
+    Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "options.py"))
+    Depends(ac, os.path.join(libtbx.env.dist_path("dials"), "util", "autocomplete.sh"))
+""".format(
+                "\n".join(['    "{}",'.format(cmd) for cmd in command_list])
+            )
         )
 
     # Generate a bash script activating command line completion for each relevant command
@@ -92,7 +99,8 @@ for cmd in [%s]:
     print("Installing autocompletion script into:", end=" ")
     for filename in os.listdir(build_path):
         if filename.startswith("setpath") and filename.endswith(".sh"):
-            original_file = open(os.path.join(build_path, filename)).read()
+            with open(os.path.join(build_path, filename)) as f:
+                original_file = f.read()
             if not "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in original_file:
                 marker = "\nexport PATH\n"
                 original_position = original_file.find(marker)
