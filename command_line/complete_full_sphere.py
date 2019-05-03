@@ -106,7 +106,7 @@ class Script(object):
         from cctbx import miller
         from cctbx import crystal
 
-        all = miller.build_set(
+        all_idx = miller.build_set(
             crystal_symmetry=crystal.symmetry(
                 space_group=expt.crystal.get_space_group(),
                 unit_cell=expt.crystal.get_unit_cell(),
@@ -122,10 +122,10 @@ class Script(object):
 
         logger.info(
             "Fraction of unique observations at datum: %.1f%%"
-            % (100.0 * len(obs.indices()) / len(all.indices()))
+            % (100.0 * len(obs.indices()) / len(all_idx.indices()))
         )
 
-        missing = all.lone_set(other=obs)
+        missing = all_idx.lone_set(other=obs)
 
         logger.info("%d unique reflections in blind region" % len(missing.indices()))
 

@@ -146,8 +146,8 @@ class MultiPowderRingFilter:
         from dials.array_family import flex
 
         result = flex.bool(len(d), False)
-        for filter in self:
-            result = result | filter(d)
+        for _filter in self:
+            result = result | _filter(d)
         return result
 
     def __len__(self):
