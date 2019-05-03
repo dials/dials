@@ -64,8 +64,8 @@ class TestBatchRangeCalculations(object):
 
     def _run_ranges(self, ranges):
         """Convenience method to run the routine with a minimal experiment, and return the result as ranges of batch number"""
-        input = [self.MockExperiment(x) for x in ranges]
-        return offset_ranges(calculate_batch_offsets(input), ranges)
+        input_data = [self.MockExperiment(x) for x in ranges]
+        return offset_ranges(calculate_batch_offsets(input_data), ranges)
 
     def _run_ranges_to_set(self, ranges):
         """Runs a list of ranges and returns a set of individual batch numbers"""
@@ -79,7 +79,7 @@ class TestBatchRangeCalculations(object):
             [x > 0 for x in self._run_ranges_to_set([(0, 0)])]
         ), "Should be no zeroth/negative batch"
 
-        input = [self.MockExperiment(x) for x in [(1, 1), (1, 1)]]
+        input_data = [self.MockExperiment(x) for x in [(1, 1), (1, 1)]]
         assert not set(self._run_ranges([(1, 1), (1, 1)])) == {
             (1, 1)
         }, "Overlapping simple ranges"
