@@ -128,8 +128,7 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
 
     # Check the type of the element to ensure it's a binary
     # otherwise raise an exception
-    dtype = cbf_handle.get_typeofvalue()
-    if dtype.find("bnry") > -1:
+    if "bnry" in cbf_handle.get_typeofvalue():
 
         # Read the image data into an array
         image_string = cbf_handle.get_integerarray_as_string()

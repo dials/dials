@@ -42,13 +42,13 @@ def _install_dials_autocompletion():
     commands_dir = os.path.join(dist_path, "command_line")
     command_list = []
     print("Identifying autocompletable commands:", end=" ")
-    for f in sorted(os.listdir(commands_dir)):
-        if not f.startswith("_") and f.endswith(".py"):
+    for filename in sorted(os.listdir(commands_dir)):
+        if not filename.startswith("_") and filename.endswith(".py"):
             if (
                 "DIALS_ENABLE_COMMAND_LINE_COMPLETION"
-                in open(os.path.join(commands_dir, f)).read()
+                in open(os.path.join(commands_dir, filename)).read()
             ):
-                command_name = "dials.%s" % f[:-3]
+                command_name = "dials.%s" % filename[:-3]
                 print(command_name, end=" ")
                 command_list.append(command_name)
     print()
@@ -90,14 +90,14 @@ for cmd in [%s]:
 
     # Permanently install the autocompletion script into setpaths-scripts.
     print("Installing autocompletion script into:", end=" ")
-    for f in os.listdir(build_path):
-        if f.startswith("setpath") and f.endswith(".sh"):
-            original_file = open(os.path.join(build_path, f)).read()
+    for filename in os.listdir(build_path):
+        if filename.startswith("setpath") and filename.endswith(".sh"):
+            original_file = open(os.path.join(build_path, filename)).read()
             if not "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in original_file:
                 marker = "\nexport PATH\n"
                 original_position = original_file.find(marker)
                 if original_position >= 0:
-                    print(f, end=" ")
+                    print(filename, end=" ")
                     insert_position = original_position + len(marker)
                     added_script = (
                         "# DIALS_ENABLE_COMMAND_LINE_COMPLETION\n"
@@ -110,7 +110,7 @@ for cmd in [%s]:
                             )
                         )
                     )
-                    with open(os.path.join(build_path, f), "w") as script:
+                    with open(os.path.join(build_path, filename), "w") as script:
                         script.write(
                             original_file[:insert_position]
                             + added_script

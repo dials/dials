@@ -1142,25 +1142,25 @@ class App(wx.App):
         self.frame.Destroy()
 
     def OnToolClick(self, event):
-        _id = event.GetId()
-        if _id == self.mcs_center_id:
+        eid = event.GetId()
+        if eid == self.mcs_center_id:
             self.view_objects.move_rotation_center_to_mcs_center()
-        elif _id == self.center_on_screen_id:
+        elif eid == self.center_on_screen_id:
             self.view_objects.move_to_center_of_viewport(
                 self.view_objects.rotation_center
             )
-        elif _id == self.fit_on_screen_id:
+        elif eid == self.fit_on_screen_id:
             self.view_objects.fit_into_viewport()
-        elif _id == self.mark_snap_back_id:
+        elif eid == self.mark_snap_back_id:
             self.view_objects.mark_rotation()
-        elif _id == self.snap_back_id:
+        elif eid == self.snap_back_id:
             self.view_objects.snap_back_rotation()
-        elif _id == self.toggle_spin_id:
+        elif eid == self.toggle_spin_id:
             self.view_objects.autospin_allowed = not self.view_objects.autospin_allowed
             self.view_objects.autospin = False
             self.update_status_bar()
         else:
-            raise RuntimeError("Unknown event Id: %d" % _id)
+            raise RuntimeError("Unknown event Id: %d" % eid)
 
     def update_status_bar(self):
         self.frame.SetStatusText(
