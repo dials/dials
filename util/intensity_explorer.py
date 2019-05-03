@@ -392,10 +392,10 @@ def data_from_unmerged_mtz(filename):
     rtable["id"] = flex.int(rtable.size(), 0)
 
     # Now generate a corresponding experiment list.
-    id = flex.vec3_double([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
+    _id = flex.vec3_double([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
     # Each Crystal object needs to be constructed from xyz unit cell
     # parameters and a space group.
-    abc = [m[0].unit_cell().orthogonalize(vec) for vec in id]
+    abc = [m[0].unit_cell().orthogonalize(vec) for vec in _id]
     space_group = m[0].crystal_symmetry().space_group()
     crystal_params = abc + [space_group]
 
