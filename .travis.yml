@@ -45,18 +45,18 @@ jobs:
     - name: "Syntax validation - Python 2.7"
       addons: false
       cache: false
+      before_cache: false
       script:
          - python -m compileall -q *
-         - .travis/run-flake8
 
     - name: "Syntax validation - Python 3.7"
       addons: false
       cache: false
+      before_cache: false
       dist: xenial
       python: 3.7
       script:
          - python3 -m compileall -q *
-         - .travis/run-flake8
 
     - stage: test
       before_script:
@@ -75,6 +75,22 @@ jobs:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
          - BOOST_ADAPTBX_FPE_DEFAULT=1 pytest -ra -n 2 --runslow
+
+    - name: "Flake8 - Python 2.7"
+      addons: false
+      cache: false
+      before_cache: false
+      script:
+         - .travis/run-flake8
+
+    - name: "Flake8 - Python 3.7"
+      addons: false
+      cache: false
+      before_cache: false
+      dist: xenial
+      python: 3.7
+      script:
+         - .travis/run-flake8
 
 before_cache:
   - $HOME/build_dials/modules/dials/.travis/clean-cctbx
