@@ -1780,9 +1780,9 @@ class ReferenceProfileAnalyser(object):
         binner = binner_d_star_cubed(d_spacings)
         bin_centres = flex.double()
         ccs = flex.double()
-        for bin in binner.bins:
-            d_min = bin.d_min
-            d_max = bin.d_max
+        for d_bin in binner.bins:
+            d_min = d_bin.d_min
+            d_max = d_bin.d_max
             ds3_min = 1 / d_min ** 3
             ds3_max = 1 / d_max ** 3
             ds3_centre = (ds3_max - ds3_min) / 2 + ds3_min

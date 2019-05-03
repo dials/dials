@@ -39,9 +39,7 @@ class reader:
 
         # Check the type of the element to ensure it's a binary
         # otherwise raise an exception
-        type = self.cbf_handle.get_typeofvalue()
-        if type.find("bnry") > -1:
-
+        if "bnry" in self.cbf_handle.get_typeofvalue():
             # Read the image data into an array
             image_string = self.cbf_handle.get_integerarray_as_string()
             image = flex.int(numpy.fromstring(image_string, numpy.int32))
@@ -52,7 +50,6 @@ class reader:
 
             # Resize the image
             image.reshape(flex.grid(*image_size))
-
         else:
             raise TypeError("Can't find image")
 
