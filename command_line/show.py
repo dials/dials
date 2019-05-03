@@ -168,7 +168,6 @@ def run(args):
     import dials.util.banner  # noqa: F401 - Importing means that it prints
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
