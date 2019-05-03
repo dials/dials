@@ -192,6 +192,10 @@ def run(args):
         exit()
 
     if len(experiments):
+        if not all([e.detector for e in experiments]):
+            sys.exit("Error: experiment has no detector")
+        if not all([e.beam for e in experiments]):
+            sys.exit("Error: experiment has no beam")
         print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
 
     if len(reflections):

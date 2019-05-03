@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division, print_function
+import sys
 
 import dials.util.banner  # noqa: F401 - Importing means that it prints
 import iotbx.phil
@@ -164,6 +165,8 @@ if __name__ == "__main__":
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_reflections
+    from dials.util.options import flatten_experiments
+
     import libtbx.load_env
 
     usage_message = (
@@ -187,6 +190,12 @@ if __name__ == "__main__":
     if len(experiments) == 0:
         parser.print_help()
         exit(0)
+
+    flat_expts = flatten_experiments(params.input.experiments)
+    if not all([e.detector for e in flat_expts]):
+        sys.exit("Error: experiment has no detector")
+    if not all([e.beam for e in flat_expts]):
+        sys.exit("Error: experiment has no beam")
 
     if params.mask is not None:
         from libtbx import easy_pickle
