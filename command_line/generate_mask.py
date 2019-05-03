@@ -84,8 +84,8 @@ phil_scope = phil.parse(
 
 
 def generate_mask(
-        experiments,  # type: ExperimentList
-        params,  # type: phil.scope_extract
+    experiments,  # type: ExperimentList
+    params,  # type: phil.scope_extract
 ):
     # type: (...) -> Tuple[Masks, Optional[ExperimentList]]
     """
@@ -158,7 +158,7 @@ def generate_mask(
 
 
 def run(phil=phil_scope, args=None):
-    # type: (phil.scope, List[str]) -> None
+    # type: (phil.scope, List[str, ...]) -> None
     """
     Parse command-line arguments, run the script.
 
