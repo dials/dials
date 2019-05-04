@@ -4,6 +4,7 @@ Collection of factories for creating the scalers.
 from __future__ import division
 from __future__ import absolute_import, print_function
 import logging
+from libtbx import Auto
 from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler, SingleScaler
@@ -11,6 +12,7 @@ from dials.algorithms.scaling.scaling_utilities import (
     quasi_normalisation,
     Reasons,
     BadDatasetForScalingException,
+    calc_crystal_frame_vectors,
 )
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.reflection_selection import (
@@ -142,6 +144,21 @@ class SingleScalerFactory(ScalerFactory):
             )
         if params.reflection_selection.method == "intensity_ranges":
             reflection_table = quasi_normalisation(reflection_table, experiment)
+        if (
+            params.reflection_selection.method in (None, Auto, "auto", "quasi_random")
+        ) or (
+            experiment.scaling_model.id_ == "physical"
+            and "absorption" in experiment.scaling_model.components
+        ):
+            if experiment.scan:
+                # calc theta and phi cryst
+                reflection_table["phi"] = (
+                    reflection_table["xyzobs.px.value"].parts()[2]
+                    * experiment.scan.get_oscillation()[1]
+                )
+                reflection_table = calc_crystal_frame_vectors(
+                    reflection_table, experiment
+                )
 
         return SingleScaler(params, experiment, reflection_table, for_multi)
 
@@ -214,9 +231,11 @@ class MultiScalerFactory(object):
             # scaler.select_reflections_for_scaling(for_multi=True)
             single_scalers.append(scaler)
         single_scalers.extend(targetscaler.single_scalers)
-        return MultiScaler(
+        multiscaler = MultiScaler(
             targetscaler.params, [targetscaler.experiment], single_scalers
         )
+        multiscaler.observers = targetscaler.observers
+        return multiscaler
 
 
 class TargetScalerFactory(object):

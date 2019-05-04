@@ -126,6 +126,8 @@ class SmoothMixin(object):
 class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     """A smoothly varying scale component in one dimension."""
 
+    null_parameter_value = 1.0
+
     def __init__(self, initial_values, parameter_esds=None):
         super(SmoothScaleComponent1D, self).__init__(initial_values, parameter_esds)
         self._normalised_values = []
@@ -215,6 +217,8 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
     """Subclass of SmoothScaleComponent1D to implement a smoothly
     varying B-factor correction."""
 
+    null_parameter_value = 0.0
+
     def __init__(self, initial_values, parameter_esds=None):
         super(SmoothBScaleComponent1D, self).__init__(initial_values, parameter_esds)
         self._d_values = []
@@ -278,6 +282,8 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     the nearby parameters as calculated in the GaussianSmoother2D. The
     initial values are passed as a 1D array, and shape is a 2-tuple
     indicating the number of parameters in each dimension."""
+
+    null_parameter_value = 1.0
 
     def __init__(self, initial_values, shape, parameter_esds=None):
         assert len(initial_values) == (
@@ -414,6 +420,8 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
     the nearby parameters as calculated in the GaussianSmoother3D. The
     initial values are passed as a 1D array, and shape is a 3-tuple
     indicating the number of parameters in each dimension."""
+
+    null_parameter_value = 1.0
 
     def __init__(self, initial_values, shape, parameter_esds=None):
         assert len(initial_values) == (

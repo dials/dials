@@ -24,10 +24,7 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
     SmoothScaleComponent2D,
     SmoothScaleComponent3D,
 )
-from dials.algorithms.scaling.scaling_utilities import (
-    sph_harm_table,
-    calc_crystal_frame_vectors,
-)
+from dials.algorithms.scaling.scaling_utilities import sph_harm_table
 from dials_scaling_ext import (
     calc_theta_phi,
     calc_lookup_index,
@@ -130,6 +127,7 @@ class ScalingModelBase(object):
                         [
                             ("n_parameters", self._components[key].n_params),
                             ("parameters", list(self._components[key].parameters)),
+                            ("null_parameter_value", self._components[key].null_parameter_value)
                         ]
                     )
                 }
@@ -254,14 +252,8 @@ class PhysicalScalingModel(ScalingModelBase):
         if "absorption" in self.components:
             lmax = self._configdict["lmax"]
             if reflection_table.size() > 100000:
-                reflection_table["phi"] = (
-                    reflection_table["xyzobs.px.value"].parts()[2]
-                    * experiment.scan.get_oscillation()[1]
-                )
-                reflection_table = calc_crystal_frame_vectors(
-                    reflection_table, experiment
-                )
-                # n_params = 24
+                assert "s0c" in reflection_table
+                assert "s1c" in reflection_table
                 theta_phi_0 = calc_theta_phi(
                     reflection_table["s0c"]
                 )  # array of tuples in radians
@@ -284,7 +276,7 @@ class PhysicalScalingModel(ScalingModelBase):
             # here just pass in good reflections
             else:
                 self.components["absorption"].data = {
-                    "sph_harm_table": sph_harm_table(reflection_table, experiment, lmax)
+                    "sph_harm_table": sph_harm_table(reflection_table, lmax)
                 }
             surface_weight = self._configdict["abs_surface_weight"]
             parameter_restraints = flex.double([])

@@ -49,11 +49,12 @@ from dials.algorithms.scaling.reflection_selection import (
     select_highly_connected_reflections,
     select_connected_reflections_across_datasets,
 )
+from dials.util.observer import Subject
 
 logger = logging.getLogger("dials")
 
 
-class ScalerBase(object):
+class ScalerBase(Subject):
     """
     Abstract base class for all scalers (single and multiple).
     """
@@ -62,6 +63,13 @@ class ScalerBase(object):
 
     def __init__(self):
         """Define the properties of a scaler."""
+        super(ScalerBase, self).__init__(
+            events=[
+                "performed_scaling",
+                "performed_error_analysis",
+                "performed_outlier_rejection",
+            ]
+        )
         self._experiment = None
         self._space_group = None
         self._params = None
@@ -169,6 +177,7 @@ class ScalerBase(object):
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
         """Expand scales from a subset to all reflections."""
 
+    @Subject.notify_event(event="performed_scaling")
     def perform_scaling(
         self, target_type=ScalingTarget, engine=None, max_iterations=None
     ):
@@ -197,6 +206,7 @@ class ScalerBase(object):
             refinery.return_scaler()
             logger.info(("\n" + "=" * 80 + "\n"))
 
+    @Subject.notify_event(event="performed_error_analysis")
     def perform_error_optimisation(
         self, update_Ih=True, apply_to_reflection_table=False
     ):
@@ -528,11 +538,15 @@ class SingleScaler(ScalerBase):
             n_resolution_bins = self.params.reflection_selection.quasi_random.n_resolution_bins[
                 0
             ]
-            overall_scaling_selection = calculate_scaling_subset_connected(
-                self.reflection_table, self.experiment, min_per_area, n_resolution_bins
+            block = self.global_Ih_table.Ih_table_blocks[0]
+            loc_indices = block.Ih_table["loc_indices"]
+            block.Ih_table["s1c"] = (
+                self.reflection_table["s1c"]
+                .select(self.suitable_refl_for_scaling_sel)
+                .select(loc_indices)
             )
-            self.scaling_selection = overall_scaling_selection.select(
-                self.suitable_refl_for_scaling_sel
+            self.scaling_selection = calculate_scaling_subset_connected(
+                block, self.experiment, min_per_area, n_resolution_bins
             )
         elif self.params.reflection_selection.method == "intensity_ranges":
             overall_scaling_selection = calculate_scaling_subset(
@@ -597,6 +611,7 @@ class SingleScaler(ScalerBase):
         logger.info("The following corrections will be applied to this dataset: \n")
         logger.info(st.format())
 
+    @Subject.notify_event(event="performed_outlier_rejection")
     def round_of_outlier_rejection(self):
         """Perform a round of outlier rejection, set a new outliers array."""
         assert self.global_Ih_table is not None
@@ -856,6 +871,7 @@ class MultiScalerBase(ScalerBase):
         self._create_Ih_table()
         self._update_model_data()
 
+    @Subject.notify_event(event="performed_outlier_rejection")
     def round_of_outlier_rejection(self, target=None):
         """
         Perform a round of outlier rejection across all datasets.
@@ -902,10 +918,19 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
                 scaler.scaling_selection.set_selected(indices_for_dataset, True)
                 # now find good ones from resolution method.
+                sel = (
+                    self.global_Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"] == i
+                )
+                indiv_Ih_block = self.global_Ih_table.Ih_table_blocks[0].select(sel)
+                loc_indices = indiv_Ih_block.Ih_table["loc_indices"]
+                indiv_Ih_block.Ih_table["s1c"] = (
+                    scaler.reflection_table["s1c"]
+                    .select(scaler.suitable_refl_for_scaling_sel)
+                    .select(loc_indices)
+                )
+
                 indiv_indices = select_highly_connected_reflections(
-                    scaler.reflection_table.select(
-                        scaler.suitable_refl_for_scaling_sel
-                    ),
+                    indiv_Ih_block,
                     scaler.experiment,
                     qr.min_per_area[i],
                     qr.n_resolution_bins[i],
