@@ -6,10 +6,7 @@ from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
 from dials.util import Sorry
-from dials.algorithms.scaling.error_model.error_model import (
-    get_error_model,
-    BasicErrorModel,
-)
+from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_refiner import error_model_refinery
@@ -101,17 +98,17 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
 
 
 test_input = [
-    [1, 100, [0.01, 1e-5], 0.0],  # no background var, no systematic error
-    [5, 100, [0.01, 1e-5], 0.0],  # low background var
-    [50, 100, [0.01, 1e-5], 0.0],  # high background var
+    [1, 100, [0.01, 2e-4], 0.0],  # no background var, no systematic error
+    [5, 100, [0.01, 2e-4], 0.0],  # low background var
+    [50, 100, [0.01, 2e-4], 0.0],  # high background var
     [1, 100, [0.01, 0.005], 0.05],  # no background var, signficant systematic error
     [5, 100, [0.01, 0.005], 0.05],  # low background var
     [50, 100, [0.01, 0.005], 0.05],  # high background var
     [1, 100, [0.01, 0.0025], 0.025],  # no background var, lower systematic error
     [5, 100, [0.01, 0.0025], 0.025],  # low background var
     [50, 100, [0.01, 0.0025], 0.025],  # high background var
-    [50, 10, [0.02, 0.01], 0.05],  # low mult, high background, high system. error
-    [50, 10, [0.02, 0.005], 0.025],  # low mult, high background, low systematic error
+    [50, 20, [0.02, 0.01], 0.05],  # low mult, high background, high system. error
+    [50, 20, [0.02, 0.005], 0.025],  # low mult, high background, low systematic error
 ]
 # Note, it appears that the b-parameter is usually slightly underestimated
 # compared to the simulated data.
@@ -157,14 +154,13 @@ def test_error_model_on_simulated_data(
     em = get_error_model("basic")
     block = Ih_table.blocked_data_list[0]
     em.min_reflections_required = 250
-    error_model = em(block, n_bins=10, min_Ih=10.0)
+    error_model = em(block, n_bins=10)
     assert error_model.summation_matrix.n_rows > 400
     refinery = error_model_refinery(
         engine="SimpleLBFGS", target=ErrorModelTarget(error_model), max_iterations=100
     )
     refinery.run()
     error_model = refinery.return_error_model()
-    print(list(error_model.refined_parameters))
     assert error_model.refined_parameters[0] == pytest.approx(
         1.00, abs=abs_tolerances[0]
     )

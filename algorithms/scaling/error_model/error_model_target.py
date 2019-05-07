@@ -61,10 +61,15 @@ class ErrorModelTarget(object):
     def calculate_residuals(self):
         """Return the residual vector"""
         bin_vars = self.error_model.bin_variances
+        weights = self.error_model.weights
         R = (
-            (flex.double(bin_vars.size(), 0.5) - bin_vars) ** 2
-            + (1.0 / bin_vars)
-            - flex.double(bin_vars.size(), 1.25)
+            (
+                (flex.double(bin_vars.size(), 0.5) - bin_vars) ** 2
+                + (1.0 / bin_vars)
+                - flex.double(bin_vars.size(), 1.25)
+            )
+            * weights
+            / flex.sum(weights)
         )
         logger.debug("Intensity-bin variances: %s", list(bin_vars))
         logger.debug("Residuals: %s", list(R))
@@ -74,6 +79,7 @@ class ErrorModelTarget(object):
         "calculate the gradient vector"
         I_hl = self.error_model.Ih_table.intensities
         g_hl = self.error_model.Ih_table.inverse_scale_factors
+        weights = self.error_model.weights
         bin_vars = self.error_model.bin_variances
         sum_matrix = self.error_model.summation_matrix
         bin_counts = self.error_model.bin_counts
@@ -99,7 +105,7 @@ class ErrorModelTarget(object):
             grad = dphi_by_dvar * (
                 (term1 / bin_counts) - (2.0 * term2a * term2b / (bin_counts ** 2))
             )
-            gradient.append(flex.sum(grad))
+            gradient.append(flex.sum(grad * weights) / flex.sum(weights))
         return gradient
 
     # The following methods are for adaptlbfgs.
@@ -116,7 +122,7 @@ class ErrorModelTarget(object):
 
         This is applicable to the basic error model so should be refactored."""
         R1 = 200.0
-        R2 = 100.0
+        R2 = 50.0
         residual_restraint = (R1 * ((1.0 - self.x[0]) ** 2)) + (
             R2 * ((0.0001 - self.x[1]) ** 2)
         )

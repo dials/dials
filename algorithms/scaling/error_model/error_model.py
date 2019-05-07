@@ -27,7 +27,7 @@ class BasicErrorModel(object):
 
     min_reflections_required = 250
 
-    def __init__(self, Ih_table, n_bins=10, min_Ih=10.0):
+    def __init__(self, Ih_table, n_bins=10, min_Ih=25.0):
         logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
@@ -40,6 +40,7 @@ class BasicErrorModel(object):
         self.bin_variances = None
         self._summation_matrix = self.create_summation_matrix()
         self._bin_counts = flex.double(self.Ih_table.size, 1.0) * self.summation_matrix
+        self.weights = self._bin_counts ** 0.5
         self.refined_parameters = [1.0, 0.0]
 
     def __str__(self):
@@ -127,8 +128,8 @@ class BasicErrorModel(object):
         self.Ih_table = self.Ih_table.select_on_groups(sel)
         self.n_h = self.Ih_table.calc_nh()
         scaled_Ih = self.Ih_table.Ih_values * self.Ih_table.inverse_scale_factors
-        # need a scaled min_Ih, below which wouldn't expect norm distribution
-        # on the order of 3 sigma (so use min_Ih=10 by default, sigma ~ 3)
+        # need a scaled min_Ih, where can reasonably expect norm distribution
+        # (use min_Ih=25 by default, sigma ~ 5)
         sel2 = scaled_Ih > min_Ih
         # can't calculate a true deviation for groups of 1
         sel3 = self.n_h > 1.0
@@ -199,6 +200,8 @@ class BasicErrorModel(object):
         self.binning_info["refl_per_bin"] = []
 
         n_cumul = 0
+        if Ih.size() > 100 * self.min_reflections_required:
+            self.min_reflections_required = int(Ih.size() / 100.0)
         min_per_bin = min(self.min_reflections_required, int(n / (3.0 * self.n_bins)))
         for i in range(len(boundaries) - 1):
             maximum = boundaries[i]
