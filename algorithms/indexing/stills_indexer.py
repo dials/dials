@@ -198,80 +198,13 @@ class stills_indexer(indexer_base):
                 not self.params.stills.refine_candidates_with_known_symmetry
                 and self.params.known_symmetry.space_group is not None
             ):
-                # now apply the space group symmetry only after the first indexing
-                # need to make sure that the symmetrized orientation is similar to the P1 model
-                for i_cryst, cryst in enumerate(experiments.crystals()):
-                    if i_cryst >= n_lattices_previous_cycle:
-                        new_cryst, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
-                            cryst
-                        )
-                        if self._symmetry_handler.cb_op_primitive_inp is not None:
-                            new_cryst = new_cryst.change_basis(
-                                self._symmetry_handler.cb_op_primitive_inp
-                            )
-                            logger.info(new_cryst.get_space_group().info())
-                        cryst.update(new_cryst)
-                        cryst.set_space_group(
-                            self.params.known_symmetry.space_group.group()
-                        )
-                        for i_expt, expt in enumerate(experiments):
-                            if expt.crystal is not cryst:
-                                continue
-                            if not cb_op_to_primitive.is_identity_op():
-                                miller_indices = self.reflections[
-                                    "miller_index"
-                                ].select(self.reflections["id"] == i_expt)
-                                miller_indices = cb_op_to_primitive.apply(
-                                    miller_indices
-                                )
-                                self.reflections["miller_index"].set_selected(
-                                    self.reflections["id"] == i_expt, miller_indices
-                                )
-                            if self._symmetry_handler.cb_op_primitive_inp is not None:
-                                miller_indices = self.reflections[
-                                    "miller_index"
-                                ].select(self.reflections["id"] == i_expt)
-                                miller_indices = self._symmetry_handler.cb_op_primitive_inp.apply(
-                                    miller_indices
-                                )
-                                self.reflections["miller_index"].set_selected(
-                                    self.reflections["id"] == i_expt, miller_indices
-                                )
-
-            # discard nearly overlapping lattices on the same shot
-            if len(experiments) > 1:
-                from dials.algorithms.indexing.compare_orientation_matrices import (
-                    difference_rotation_matrix_axis_angle,
+                self._apply_symmetry_post_indexing(
+                    experiments, self.reflections, n_lattices_previous_cycle
                 )
 
-                cryst_b = experiments.crystals()[-1]
-                have_similar_crystal_models = False
-                for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
-                    R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
-                        cryst_a, cryst_b
-                    )
-                    min_angle = (
-                        self.params.multiple_lattice_search.minimum_angular_separation
-                    )
-                    if abs(angle) < min_angle:  # degrees
-                        logger.info(
-                            "Crystal models too similar, rejecting crystal %i:"
-                            % (len(experiments))
-                        )
-                        logger.info(
-                            "Rotation matrix to transform crystal %i to crystal %i"
-                            % (i_a + 1, len(experiments))
-                        )
-                        logger.info(R_ab)
-                        logger.info(
-                            "Rotation of %.3f degrees" % angle
-                            + " about axis (%.3f, %.3f, %.3f)" % axis
-                        )
-                        have_similar_crystal_models = True
-                        del experiments[-1]
-                        break
-                if have_similar_crystal_models:
-                    break
+            # discard nearly overlapping lattices on the same shot
+            if self._check_have_similar_crystal_models(experiments):
+                break
 
             self.indexed_reflections = self.reflections["id"] > -1
             if self.d_min is None:
@@ -470,28 +403,7 @@ class stills_indexer(indexer_base):
                     del experiments[-1]
                     break
 
-            # sanity check for unrealistic unit cell volume increase during refinement
-            # usually this indicates too many parameters are being refined given the
-            # number of observations provided.
-            if (
-                not self.params.refinement_protocol.disable_unit_cell_volume_sanity_check
-            ):
-                for orig_expt, refined_expt in zip(experiments, refined_experiments):
-                    uc1 = orig_expt.crystal.get_unit_cell()
-                    uc2 = refined_expt.crystal.get_unit_cell()
-                    volume_change = abs(uc1.volume() - uc2.volume()) / uc1.volume()
-                    cutoff = 0.5
-                    if volume_change > cutoff:
-                        msg = "\n".join(
-                            (
-                                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                                "Please try refining fewer parameters, either by enforcing symmetry",
-                                "constraints (space_group=) and/or disabling experimental geometry",
-                                "refinement (detector.fix=all and beam.fix=all). To disable this",
-                                "sanity check set disable_unit_cell_volume_sanity_check=True.",
-                            )
-                        ) % (100 * volume_change)
-                        raise Sorry(msg)
+            self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
             self.refined_reflections = refined_reflections.select(
                 refined_reflections["id"] > -1
@@ -516,15 +428,9 @@ class stills_indexer(indexer_base):
             ):
                 # Experimental geometry may have changed - re-map centroids to
                 # reciprocal space
-
-                spots_mm = self.reflections
-                self.reflections = flex.reflection_table()
-                for i, expt in enumerate(self.experiments):
-                    spots_sel = spots_mm.select(spots_mm["imageset_id"] == i)
-                    spots_sel.map_centroids_to_reciprocal_space(
-                        expt.detector, expt.beam, expt.goniometer
-                    )
-                    self.reflections.extend(spots_sel)
+                self.reflections = self._map_centroids_to_reciprocal_space(
+                    self.experiments, self.reflections
+                )
 
             # update for next cycle
             experiments = refined_experiments
@@ -568,37 +474,8 @@ class stills_indexer(indexer_base):
         if (
             "xyzcal.mm" in self.refined_reflections
         ):  # won't be there if refine_all_candidates = False and no isoforms
-            self.refined_reflections["xyzcal.px"] = flex.vec3_double(
-                len(self.refined_reflections)
-            )
-            for i, imageset in enumerate(self.experiments.imagesets()):
-                imgset_sel = self.refined_reflections["imageset_id"] == i
-                # set xyzcal.px field in self.refined_reflections
-                refined_reflections = self.refined_reflections.select(imgset_sel)
-                panel_numbers = flex.size_t(refined_reflections["panel"])
-                xyzcal_mm = refined_reflections["xyzcal.mm"]
-                x_mm, y_mm, z_rad = xyzcal_mm.parts()
-                xy_cal_mm = flex.vec2_double(x_mm, y_mm)
-                xy_cal_px = flex.vec2_double(len(xy_cal_mm))
-                for i_panel in range(len(imageset.get_detector())):
-                    panel = imageset.get_detector()[i_panel]
-                    sel = panel_numbers == i_panel
-                    isel = sel.iselection()
-                    ref_panel = refined_reflections.select(panel_numbers == i_panel)
-                    xy_cal_px.set_selected(
-                        sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
-                    )
-                x_px, y_px = xy_cal_px.parts()
-                scan = imageset.get_scan()
-                if scan is not None:
-                    z_px = scan.get_array_index_from_angle(z_rad, deg=False)
-                else:
-                    # must be a still image, z centroid not meaningful
-                    z_px = z_rad
-                xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
-                self.refined_reflections["xyzcal.px"].set_selected(
-                    imgset_sel, xyzcal_px
-                )
+
+            self._xyzcal_mm_to_px(self.experiments, self.refined_reflections)
 
     def experiment_list_for_crystal(self, crystal):
         experiments = ExperimentList()
