@@ -1,7 +1,6 @@
 import copy
 import glob
 import os
-import pytest
 
 from dxtbx.model import Experiment, ExperimentList
 from dxtbx.model import Scan
@@ -22,7 +21,6 @@ def test_slice_experiments():
     copy.deepcopy(sliced_experiments)
 
 
-@pytest.mark.xfail
 def test_slice_experiments_centroid_test_data(dials_regression):
     filenames = sorted(
         glob.glob(os.path.join(dials_regression, "centroid_test_data", "*.cbf"))

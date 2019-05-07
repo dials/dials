@@ -31,6 +31,8 @@ def slice_experiments(experiments, image_ranges):
         beg = sr[0] - 1 - arr_start
         end = sr[1] - arr_start
         exp.scan.swap(exp.scan[beg:end])
+        if exp.imageset is not None:
+            exp.imageset = exp.imageset[beg:end]
 
     return experiments
 
