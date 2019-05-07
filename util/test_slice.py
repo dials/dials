@@ -39,12 +39,9 @@ def test_slice_reflections():
     r = flex.reflection_table()
     r["id"] = flex.int([0, 0, 0, 1, 1, 1, 2, 2, 2])
     image_number = [0, 1, 2, 0, 1, 2, 0, 1, 2]
-    print((0 * len(r), 0 * len(r), image_number))
-    print(zip([0] * len(r), [0] * len(r), image_number))
-
     r["xyzobs.px.value"] = flex.vec3_double(
         zip([0] * len(r), [0] * len(r), image_number)
     )
     sliced_r = slice_reflections(r, [(1, 2), (1, 1), (2, 3)])
-    print(list(sliced_r["id"]))
-    print(list(sliced_r["xyzobs.px.value"].parts()[2]))
+    assert list(sliced_r["id"]) == [0, 0, 1, 2, 2]
+    assert list(sliced_r["xyzobs.px.value"].parts()[2]) == [0.0, 1.0, 0.0, 1.0, 2.0]
