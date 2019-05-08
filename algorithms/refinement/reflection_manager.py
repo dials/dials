@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 import libtbx
 from scitbx import matrix
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -170,15 +169,6 @@ class BlockCalculator(object):
         self._reflections["block_centre"] = flex.double(len(self._reflections))
         return
 
-    @staticmethod
-    def _check_scan_range(exp_phi, start, stop):
-        """Check that the observed reflections fill the scan-range"""
-
-        # Allow up to 2 degrees between the observed phi extrema and the
-        # scan edges
-        if min(exp_phi) - start > 0.03491 or stop - max(exp_phi) > 0.03491:
-            raise Sorry("The reflections do not fill the scan range.")
-
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
@@ -207,8 +197,6 @@ class BlockCalculator(object):
                 exp.scan.get_array_index_from_angle(e + half_width, deg=False)
                 for e in block_starts
             ]
-
-            self._check_scan_range(exp_phi, start, stop)
 
             for b_num, (b_start, b_cent) in enumerate(zip(block_starts, block_centres)):
                 sub_isel = isel.select(
@@ -239,8 +227,6 @@ class BlockCalculator(object):
 
             start, stop = flex.min(frames), flex.max(frames)
             frame_range = range(start, stop + 1)
-
-            self._check_scan_range(exp_phi, start, stop)
 
             for f_num, f in enumerate(frame_range):
                 sub_isel = isel.select(frames == f)
@@ -616,6 +602,8 @@ class ReflectionManager(object):
 
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
+                from dials.util import Sorry
+
                 raise Sorry(
                     "Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp)
