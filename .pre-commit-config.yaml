@@ -14,3 +14,4 @@ repos:
   - id: check-ast
   - id: flake8
     args: ['--max-line-length=88', '--select=W291,W292,W293,F401']
+  - id: check-merge-conflict
