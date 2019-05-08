@@ -84,8 +84,8 @@ class CrossValidator(object):
         assert len(keys) == len(values)
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, v in e.iteritems():
-                self.results_dict[i]["configuration"].append(str(k) + "=" + str(v))
+            for k, val in e.iteritems():
+                self.results_dict[i]["configuration"].append(str(k) + "=" + str(val))
 
     def add_results_to_results_dict(self, config_no, results):
         """Add the results to the correct place in the dict"""

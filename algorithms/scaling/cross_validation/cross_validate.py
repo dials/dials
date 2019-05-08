@@ -149,8 +149,8 @@ def cross_validate(params, cross_validator):
 
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, v in e.iteritems():
-                params = cross_validator.set_parameter(params, k, v)
+            for k, val in e.iteritems():
+                params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):
                 if n < 100.0 / free_set_percentage:
                     params = cross_validator.set_free_set_offset(params, n)

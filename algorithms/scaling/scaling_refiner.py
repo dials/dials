@@ -13,7 +13,6 @@ from dials.algorithms.refinement.engine import (
 )
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
-from libtbx import easy_mp
 from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
 from iotbx import merging_statistics

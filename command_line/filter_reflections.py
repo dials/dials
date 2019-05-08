@@ -455,11 +455,6 @@ def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0
     m2 = goniometer.get_rotation_axis()
     s0 = beam.get_s0()
 
-    from dials.array_family import flex
-
-    phi1 = flex.double()
-    phi2 = flex.double()
-
     phi_range = reflections.compute_phi_range(
         goniometer.get_rotation_axis(),
         beam.get_s0(),

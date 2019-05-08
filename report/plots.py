@@ -907,7 +907,7 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                     d_star_sq_acentric, nticks=5
                 )
 
-        if not (correl_ratios_acentric or correl_ratios_acentric):
+        if not (correl_ratios_acentric or correl_ratios_centric):
             return {}
         if correl_ratios_acentric:
             tickvals = actickvals

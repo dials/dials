@@ -131,7 +131,6 @@ class ScalerBase(Subject):
             self._space_group = crystal_symmetry.space_group()
         elif isinstance(new_sg, sgtbx.space_group):
             self._space_group = new_sg
-            new_sg = new_sg.info()
         else:
             raise AssertionError(
                 """Space group not recognised as a space group symbol
@@ -458,12 +457,12 @@ class SingleScaler(ScalerBase):
             all_scales.extend(scales)
             if calc_cov and self.var_cov_matrix.non_zeroes > 0:
                 n_cumulative_param = 0
-                for i, component in enumerate(self.components):
-                    d_block = derivs_list[i]
+                for j, component in enumerate(self.components):
+                    d_block = derivs_list[j]
                     n_param = self.components[component].n_params
-                    for i, component_2 in enumerate(self.components):
+                    for k, component_2 in enumerate(self.components):
                         if component_2 != component:
-                            d_block = row_multiply(d_block, scales_list[i])
+                            d_block = row_multiply(d_block, scales_list[k])
                     jacobian.assign_block(d_block, 0, n_cumulative_param)
                     n_cumulative_param += n_param
                 all_invsfvars.extend(
@@ -1182,9 +1181,9 @@ def calc_sf_variances(components, var_cov):
     for i, component in enumerate(components):
         d_block = derivs_list[i]
         n_param = components[component].n_params
-        for i, component_2 in enumerate(components):
+        for j, component_2 in enumerate(components):
             if component_2 != component:
-                d_block = row_multiply(d_block, scales_list[i])
+                d_block = row_multiply(d_block, scales_list[j])
         jacobian.assign_block(d_block, 0, n_cumulative_param)
         n_cumulative_param += n_param
     return cpp_calc_sigmasq(jacobian.transpose(), var_cov)

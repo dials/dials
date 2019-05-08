@@ -370,8 +370,8 @@ def integrate_3d_summation(rlist):
 def main(params):
     # first generate the reflections - this could be called from elsewhere
     rlist = simple_gaussian_spots(params)
-    correct_intensities = [r["intensity.sum.value"] for r in rlist]
-    del r["intensity.sum.value"]
+    correct_intensities = list(rlist["intensity.sum.value"])
+    del rlist["intensity.sum.value"]
 
     # now integrate those reflections using code from elsewhere
     if params.background_method == "xds":
@@ -382,7 +382,7 @@ def main(params):
 
     integrate_3d_summation(rlist)
 
-    integrated_intensities = [r["intensity.sum.value"] for r in rlist]
+    integrated_intensities = list(rlist["intensity.sum.value"])
 
     # now scan through the reflection list and find those where the integration
     # gave an apparently duff answer i.e. outside of 3 sigma from correct value

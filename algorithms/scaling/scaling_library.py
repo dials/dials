@@ -13,19 +13,17 @@ from copy import deepcopy
 import logging
 import pkg_resources
 from libtbx import phil
-from dials.util import Sorry
 from mock import Mock
 import iotbx.merging_statistics
 from iotbx import cif, mtz
 from cctbx import miller, crystal, uctbx
+from dxtbx.model import Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
+from dials.util import Sorry
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_utilities import (
-    calculate_prescaling_correction,
-    BadDatasetForScalingException,
-)
+from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -128,10 +126,8 @@ def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
     else:
         varstr = intstr.rstrip("value") + "variance"
         logger.info(
-            (
-                "{0} intensities will be used for scaling (and mtz \n"
-                "output if applicable). \n"
-            ).format(intstr)
+            """%s intensities will be used for scaling (and mtz output if applicable). \n""",
+            intstr,
         )
 
     # prf partial intensities are the 'full' intensity values but sum are not
@@ -391,8 +387,8 @@ def scaled_data_as_miller_array(
     if pos_scales.count(False) > 0:
         logger.info(
             """There are %s reflections with non-positive scale factors which
-will not be used for calculating merging statistics"""
-            % pos_scales.count(False)
+will not be used for calculating merging statistics""",
+            pos_scales.count(False),
         )
         joint_table = joint_table.select(pos_scales)
 
@@ -540,9 +536,6 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
         .data()
     )
     r_t.set_flags(flex.bool(r_t.size(), True), r_t.flags.integrated)
-    exp = deepcopy(experiments[0])  # copy exp for space group -
-    # any other necessary reason or can this attribute be added?
-    from dxtbx.model import Experiment
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
