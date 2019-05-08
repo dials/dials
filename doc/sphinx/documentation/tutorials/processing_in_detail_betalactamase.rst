@@ -450,8 +450,8 @@ Then the symmetry operations are combined to score potential space groups::
   ---------------------------------------------------------------------------------------------
   Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
   ---------------------------------------------------------------------------------------------
-  C 1 2/m 1        ***  0.909        9.72    9.72   0.00   0.97   0.00  0.0    -a,b,-c
-  P -1                  0.091        0.11    9.77   9.66   0.98   0.97  0.0    -x-y,-x+y,-z
+  C 1 2/m 1        ***  0.913        9.76    9.76   0.00   0.98   0.00  0.0    -a,b,-c
+  P -1                  0.087        0.09    9.81   9.72   0.98   0.97  0.0    -x-y,-x+y,-z
   ---------------------------------------------------------------------------------------------
   Best solution: C 1 2/m 1
 
@@ -497,24 +497,15 @@ of the quality of the scaled dataset::
 
              ----------Overall merging statistics (non-anomalous)----------
 
-  Resolution: 69.19 - 1.40
-
-  Observations: 274799
-
-  Unique reflections: 41140
-
+  Resolution: 35.33 - 1.40
+  Observations: 276800
+  Unique reflections: 41135
   Redundancy: 6.7
-
   Completeness: 94.11%
-
-  Mean intensity: 80.7
-
-  Mean I/sigma(I): 15.4
-
+  Mean intensity: 82.6
+  Mean I/sigma(I): 13.8
   R-merge: 0.065
-
   R-meas:  0.071
-
   R-pim:   0.027
 
 To see what the scaling is telling us about the dataset, plots of the scaling
@@ -528,15 +519,13 @@ the utility program :samp:`dials.plot_scaling_models`::
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
 and troughs 90° apart. This indicates that the illumated volume was changing
-significantly during the experiment: a reflection would be measured as twice as
-intense if it was measured at rotation angle of ~120° compared to at ~210°.
+significantly during the experiment: a reflection would be measured as almost
+twice as intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.
-What is less clear is the form of the relative B-factor, which also has a
-periodic nature. As a B-factor can be understood to represent radiation damage,
-this would not be expected to be periodic, and it is likely that this model
-component is accounting for variation that could be described only by a scale
-and absorption term. To test this, we can repeat the scaling process but turn
-off the :samp:`decay_term`::
+The form of the relative B-factor is less well defined, although is does show some
+periodicity similar to the scale term. There is certainly no strong B-factor
+reduction as a function of rotation angle, which would have suggested radiation
+damage. The scaling can be repeated, omitting the :samp:`decay_term`::
 
   dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4 decay_term=False
 
@@ -544,32 +533,21 @@ off the :samp:`decay_term`::
 
              ----------Overall merging statistics (non-anomalous)----------
 
-  Resolution: 69.19 - 1.40
-
-  Observations: 274578
-
-  Unique reflections: 41140
-
+  Resolution: 35.33 - 1.40
+  Observations: 276792
+  Unique reflections: 41135
   Redundancy: 6.7
-
   Completeness: 94.11%
-
-  Mean intensity: 76.6
-
-  Mean I/sigma(I): 16.0
-
+  Mean intensity: 75.9
+  Mean I/sigma(I): 14.3
   R-merge: 0.064
-
-  R-meas:  0.070
-
-  R-pim:   0.027
+  R-meas:  0.069
+  R-pim:   0.026
 
 
 By inspecting the statistics in the output, we can see that removing the decay
-term has had the effect of causing around 200 more reflections to be marked as
-outliers (taking the outlier count from 0.72% to 0.80% of the data), while
-improving some of the R-factors and mean I/sigma(I). Therefore it is probably
-best to exclude the decay correction for this dataset.
+term has slightly improved some of the R-factors and mean I/sigma(I). Therefore
+it is probably best to exclude the decay correction for this dataset.
 
 .. _betalactamase-html-report:
 
