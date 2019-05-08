@@ -79,7 +79,7 @@ fft1d
     characteristic_grid = None
         .help = Sampling frequency in radians. See Steller 1997. If None, \
                 determine a grid sampling automatically using the input \
-    reflections, using at most 0.029 radians.
+                reflections, using at most 0.029 radians.
         .type = float(value_min=0)
 }
 

@@ -1,3 +1,5 @@
+"""Basis vector search strategies."""
+
 from __future__ import absolute_import, division
 from __future__ import print_function
 
@@ -18,18 +20,37 @@ logger = logging.getLogger(__name__)
 
 
 class strategy(object):
+    """A base class for basis vector search strategies."""
 
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, max_cell):
+        """Construct the strategy.
+
+        Args:
+            max_cell (float): An estimate of the maximum cell dimension of the primitive
+                cell.
+
+        """
         self._max_cell = max_cell
 
     @abc.abstractmethod
     def find_basis_vectors(self, reciprocal_lattice_vectors):
+        """Find a list of likely basis vectors.
+
+        Args:
+            reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
+                The list of reciprocal lattice vectors to search for periodicity.
+
+        Returns:
+            A tuple containing the list of basis vectors and a flex.bool array
+            identifying which reflections were used in indexing.
+
+        """
         pass
 
 
-class vector_group(object):
+class _vector_group(object):
     def __init__(self):
         self.vectors = []
         self.lengths = []
@@ -58,7 +79,7 @@ class vector_group(object):
         return matrix.col((sum_x, sum_y, sum_z)) / len(self.vectors)
 
 
-def is_approximate_integer_multiple(
+def _is_approximate_integer_multiple(
     vec_a, vec_b, relative_tolerance=0.2, angular_tolerance=5.0
 ):
     length_a = vec_a.length()
@@ -76,11 +97,40 @@ def is_approximate_integer_multiple(
 
 
 class fft1d(strategy):
+    """Basis vector search using an 1d FFT.
+
+    See:
+        Steller, I., Bolotovsky, R. & Rossmann, M. G. (1997). J. Appl. Cryst. 30, 1036-1040.
+        Sauter, N. K., Grosse-Kunstleve, R. W. & Adams, P. D. (2004). J. Appl. Cryst. 37, 399-409.
+
+    """
+
     def __init__(self, max_cell, characteristic_grid=None):
+        """Construct an fft1d object.
+
+        Args:
+            max_cell (float): An estimate of the maximum cell dimension of the primitive
+                cell.
+            characteristic_grid (float): Sampling frequency in radians. See Steller 1997.
+                If None, determine a grid sampling automatically using the input
+                reflections, using at most 0.029 radians.
+
+        """
         super(fft1d, self).__init__(max_cell)
         self._characteristic_grid = characteristic_grid
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
+        """Find a list of likely basis vectors.
+
+        Args:
+            reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
+                The list of reciprocal lattice vectors to search for periodicity.
+
+        Returns:
+            A tuple containing the list of basis vectors and a flex.bool array
+            identifying which reflections were used in indexing.
+
+        """
         from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil
 
@@ -114,6 +164,14 @@ class fft1d(strategy):
 
 
 class fft3d(strategy):
+    """Basis vector search using an 1d FFT.
+
+    See:
+        Bricogne, G. (1986). Proceedings of the EEC Cooperative Workshop on Position-Sensitive Detector Software (Phase III), p. 28. Paris: LURE.
+        Campbell, J. W. (1998). J. Appl. Cryst. 31, 407-413.
+
+    """
+
     def __init__(
         self,
         max_cell,
@@ -124,6 +182,26 @@ class fft3d(strategy):
         peak_volume_cutoff=0.15,
         min_cell=3,
     ):
+        """Construct an fft3d object.
+
+        Args:
+            max_cell (float): An estimate of the maximum cell dimension of the primitive
+                cell.
+            n_points (int): The size of the fft3d grid.
+            d_min (float): The high resolution limit in Angstrom for spots to include in
+                the initial indexing. If `Auto` then calculated as
+                `d_min = 5 * max_cell/n_points`.
+            b_iso (float): Apply an isotropic b_factor weight to the points when doing
+                the FFT. If `Auto` then calculated as
+                `b_iso = -4 * d_min ** 2 * math.log(0.05)`.
+            rmsd_cutoff (float): RMSD cutoff applied to the transformed real-space map
+                prior to performing the peak search.
+            peak_volume_cutoff (float): Only include peaks that are larger than this
+                fraction of the volume of the largest peak in the transformed real-space
+                map.
+            min_cell (float): A conservative lower bound on the minimum possible
+                primitive unit cell dimension.
+        """
         super(fft3d, self).__init__(max_cell)
         self._n_points = n_points
         self._gridding = fftpack.adjust_gridding_triple(
@@ -137,7 +215,17 @@ class fft3d(strategy):
         self._min_cell = min_cell
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
+        """Find a list of likely basis vectors.
 
+        Args:
+            reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
+                The list of reciprocal lattice vectors to search for periodicity.
+
+        Returns:
+            A tuple containing the list of basis vectors and a flex.bool array
+            identifying which reflections were used in indexing.
+
+        """
         if self._d_min is libtbx.Auto:
             # rough calculation of suitable d_min based on max cell
             # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
@@ -158,7 +246,7 @@ class fft3d(strategy):
             d_min = self._d_min
 
         grid_real, used_in_indexing = self._fft(reciprocal_lattice_vectors, d_min)
-        self.sites, self.volumes = self.find_peaks(grid_real, d_min)
+        self.sites, self.volumes = self._find_peaks(grid_real, d_min)
 
         # hijack the xray.structure class to facilitate calculation of distances
 
@@ -214,7 +302,7 @@ class fft3d(strategy):
                         matched_group = True
                         break
             if not matched_group:
-                group = vector_group()
+                group = _vector_group()
                 group.append(v, length, volume)
                 vector_groups.append(group)
 
@@ -241,9 +329,9 @@ class fft3d(strategy):
             v = vectors[p]
             is_unique = True
             for i, v_u in enumerate(unique_vectors):
-                if (unique_volumes[i] > volumes[p]) and is_approximate_integer_multiple(
-                    v_u, v
-                ):
+                if (
+                    unique_volumes[i] > volumes[p]
+                ) and _is_approximate_integer_multiple(v_u, v):
                     logger.debug(
                         "rejecting %s: integer multiple of %s"
                         % (v.length(), v_u.length())
@@ -319,7 +407,7 @@ class fft3d(strategy):
         )
         return grid, used_in_indexing
 
-    def find_peaks(self, grid_real, d_min):
+    def _find_peaks(self, grid_real, d_min):
         grid_real_binary = grid_real.deep_copy()
         rmsd = math.sqrt(
             flex.mean(
@@ -370,13 +458,35 @@ class fft3d(strategy):
 
 
 class real_space_grid_search(strategy):
+    """Basis vector search using a real space grid search.
+
+    See:
+        Gildea, R. J., Waterman, D. G., Parkhurst, J. M., Axford, D., Sutton, G., Stuart, D. I., Sauter, N. K., Evans, G. & Winter, G. (2014). Acta Cryst. D70, 2652-2666.
+
+    """
+
     def __init__(self, max_cell, target_unit_cell, characteristic_grid=0.02):
+        """Construct a real_space_grid_search object.
+
+        Args:
+            max_cell (float): An estimate of the maximum cell dimension of the primitive
+                cell.
+            target_unit_cell (cctbx.uctbx.unit_cell): The target unit cell.
+            characteristic_grid (float): Sampling frequency in radians.
+
+        """
         super(real_space_grid_search, self).__init__(max_cell)
         self._target_unit_cell = target_unit_cell
         self._characteristic_grid = characteristic_grid
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
+        """Find a list of likely basis vectors.
 
+        Args:
+            reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
+                The list of reciprocal lattice vectors to search for periodicity.
+
+        """
         from rstbx.array_family import (
             flex,
         )  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
@@ -420,10 +530,10 @@ class real_space_grid_search(strategy):
             if i > 0:
                 for v_u in unique_vectors:
                     if v.length() < v_u.length():
-                        if is_approximate_integer_multiple(v, v_u):
+                        if _is_approximate_integer_multiple(v, v_u):
                             is_unique = False
                             break
-                    elif is_approximate_integer_multiple(v_u, v):
+                    elif _is_approximate_integer_multiple(v_u, v):
                         is_unique = False
                         break
             if is_unique:
