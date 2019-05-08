@@ -60,7 +60,7 @@ class run_one_indexing(object):
         )
         assert os.path.exists("indexed.pickle")
 
-        self.indexed_reflections = flex.reflection_table.from_pickle("indexed.pickle")
+        self.indexed_reflections = flex.reflection_table.from_file("indexed.pickle")
 
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]
@@ -588,7 +588,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
     args = ["dials.find_spots", experiments_json]
     command = " ".join(args)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.mpack"
+    pickle_path = "strong.pickle"
     assert os.path.exists(pickle_path)
 
     expected_unit_cell = uctbx.unit_cell(
