@@ -140,22 +140,22 @@ Let's try running :samp:`dials.symmetry` again on the output of the first scalin
   ---------------------------------------------------------------------------------------------
   Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
   ---------------------------------------------------------------------------------------------
-  P 4/m m m        ***  0.995        9.35    9.35   0.00   0.93   0.00  0.0    a,b,c
+  P 4/m m m        ***  0.995        9.34    9.34   0.00   0.93   0.00  0.0    a,b,c
   C m m m               0.002        0.06    9.37   9.31   0.94   0.93  0.0    -a+b,a+b,-c
   P m m m               0.002        0.09    9.38   9.29   0.94   0.93  0.0    a,b,c
   P 4/m                 0.000        0.10    9.40   9.30   0.94   0.93  0.0    a,b,c
   C 1 2/m 1             0.000        0.16    9.46   9.30   0.95   0.93  0.0    -a+b,a+b,-c
-  P 1 2/m 1             0.000        0.14    9.45   9.30   0.95   0.93  0.0    a,c,-b
-  C 1 2/m 1             0.000        0.14    9.45   9.30   0.95   0.93  0.0    -a-b,-a+b,-c
-  P 1 2/m 1             0.000        0.11    9.43   9.31   0.94   0.93  0.0    -b,a,c
-  P 1 2/m 1             0.000        0.23    9.51   9.28   0.95   0.93  0.0    a,b,c
+  P 1 2/m 1             0.000        0.15    9.45   9.30   0.95   0.93  0.0    a,c,-b
+  C 1 2/m 1             0.000        0.14    9.44   9.30   0.95   0.93  0.0    -a-b,-a+b,-c
+  P 1 2/m 1             0.000        0.11    9.42   9.31   0.94   0.93  0.0    -b,a,c
+  P 1 2/m 1             0.000        0.23    9.50   9.28   0.95   0.93  0.0    a,b,c
   P -1                  0.000        0.31    9.61   9.30   0.96   0.93  0.0    a,b,c
   ---------------------------------------------------------------------------------------------
   Best solution: P 4/m m m
   Unit cell: (68.3815, 68.3815, 103.974, 90, 90, 90)
   Reindex operator: a,b,c
   Laue group probability: 0.995
-  Laue group confidence: 0.995
+  Laue group confidence: 0.994
 
 If scale factors from scaling are present, these will be applied before the symmetry
 analysis. Now the correct solution is easily found with a very high likelihood,
@@ -192,15 +192,15 @@ a version of the algorithms described in Assmann_ *et al.* ::
   # Datasets: 4
   # Reflections: 222934
   # Unique: 26478
-  CC 1/2 mean: 94.896
-  CC 1/2 excluding dataset 0: 92.111
-  CC 1/2 excluding dataset 1: 92.086
-  CC 1/2 excluding dataset 2: 92.022
+  CC 1/2 mean: 94.912
+  CC 1/2 excluding dataset 0: 92.132
+  CC 1/2 excluding dataset 1: 92.107
+  CC 1/2 excluding dataset 2: 92.042
   CC 1/2 excluding dataset 3: 99.327
-  Dataset: 3, Delta CC 1/2: -4.431
-  Dataset: 0, Delta CC 1/2: 2.785
-  Dataset: 1, Delta CC 1/2: 2.810
-  Dataset: 2, Delta CC 1/2: 2.874
+  Dataset: 3, Delta CC 1/2: -4.416
+  Dataset: 0, Delta CC 1/2: 2.780
+  Dataset: 1, Delta CC 1/2: 2.805
+  Dataset: 2, Delta CC 1/2: 2.869
 
 It looks like we could get a significantly better CC 1/2 by excluding the final
 dataset - it has a negative Delta CC 1/2. But how bad is too bad that it warrants
@@ -226,9 +226,8 @@ through the measurement.
 
 Looking at the output from :samp:`dials.scale`, the merging statistics have
 significantly improved again, and although the multiplicity has reduced, we
-have not sacrificed much completeness. The anomalous correlation has only now
-become apparant, so maybe it would be best to proceed with only these three
-datasets for structure solution.
+have not sacrificed much completeness, so maybe it would be best to proceed
+with only these three datasets for structure solution.
 
 .. _Pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _`Gildea and Winter`: https://doi.org/10.1107/S2059798318002978
