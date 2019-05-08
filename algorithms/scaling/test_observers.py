@@ -282,7 +282,7 @@ def test_MergingStatisticsObserver():
 
         def make_all_plots(self, *_):
             """Mock resolution dependent plots method."""
-            return {"return_plots": []}
+            return {"return_plots": {}}
 
         def make_plots(self, *_):
             """Mock anomalous plots method."""
@@ -294,7 +294,7 @@ def test_MergingStatisticsObserver():
 
         def generate_resolution_dependent_plots(self, *_):
             """Mock method for namesake in IntensityStatisticsPlots"""
-            return {"resolution_plots": []}
+            return {"cc_one_half": {"data": [{}, {}, {}, {}]}}
 
         def generate_miscellanous_plots(self, *_):
             """Mock method for namesake in IntensityStatisticsPlots"""
@@ -313,9 +313,8 @@ def test_MergingStatisticsObserver():
             ):
                 r = observer.make_plots()
                 assert r["scaling_tables"] == "return_tables"
-                assert r["resolution_plots"] == OrderedDict(
-                    {"return_plots": [], "resolution_plots": []}
-                )
+                assert "return_plots" in r["resolution_plots"]
+                assert "cc_one_half" in r["resolution_plots"]
                 assert "batch_plots" in r
                 assert r["misc_plots"] == {"misc_plots": []}
                 assert "anom_plots" in r

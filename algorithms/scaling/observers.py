@@ -334,7 +334,7 @@ class MergingStatisticsObserver(Observer):
                 self.data["scaled_miller_array"], run_xtraige_analysis=False
             )
             d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
-            if len(d["resolution_plots"]["cc_one_half"]["data"]) == 4:
+            if d["resolution_plots"]["cc_one_half"]["data"][2]:
                 cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
                 significance = d["resolution_plots"]["cc_one_half"]["data"][3]["y"]
                 sig = flex.double(cc_anom) / flex.double(significance) > 1
