@@ -96,17 +96,18 @@ def determine_reflection_selection_parameters(params, experiments, reflections):
           else use 20 resolution bins (to get at least 2 refl per area).
     """
     if params.reflection_selection.method in (None, libtbx.Auto, "auto"):
-        if sum([r.size() for r in reflections]) < 20000:
-            params.reflection_selection.method = "use_all"
-            logger.info(
-                "Using all reflections for minimisation as less than 25000 suitable reflections."
-            )
-        elif len(experiments) == 1:
+        if len(experiments) == 1:
             n_suitable_refl = (
                 reflections[0]
                 .get_flags(reflections[0].flags.bad_for_scaling, all=False)
                 .count(False)
             )
+            if n_suitable_refl < 20000:
+                params.reflection_selection.method = "use_all"
+                logger.info(
+                    "Using all reflections for minimisation as less than 20000 suitable reflections."
+                )
+                return
             n_params = experiments[0].scaling_model.n_params
             num = 100 * n_params  # want at least this
             two_percent = 0.02 * n_suitable_refl
@@ -127,6 +128,12 @@ min_per_area : %s, n_resolution_bins: %s""",
                 n_resolution_bins,
             )
         else:
+            if sum([r.size() for r in reflections]) < 40000:
+                params.reflection_selection.method = "use_all"
+                logger.info(
+                    "Using all reflections for minimisation as less than 40000 reflections in total."
+                )
+                return
             # this attempts to get ~ 100-200 refl per param
             n_params = [exp.scaling_model.n_params for exp in experiments]
             min_per_class = 120 * sum(n_params) / len(n_params)
