@@ -333,10 +333,21 @@ class MergingStatisticsObserver(Observer):
             plotter = IntensityStatisticsPlots(
                 self.data["scaled_miller_array"], run_xtraige_analysis=False
             )
-            d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[2]
             d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
+            if len(d["resolution_plots"]["cc_one_half"]["data"]) == 4:
+                cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
+                significance = d["resolution_plots"]["cc_one_half"]["data"][3]["y"]
+                sig = flex.double(cc_anom) / flex.double(significance) > 1
+                max_anom = 0
+                for i, v in enumerate(sig):
+                    if v:
+                        max_anom = i
+                    else:
+                        break
+                d_min = uctbx.d_star_sq_as_d(plotter.binner.limits())[max_anom + 1]
+            else:
+                d_min = 0.0
             d["misc_plots"].update(plotter.generate_miscellanous_plots())
-
             intensities_anom = self.data["scaled_miller_array"].as_anomalous_array()
             intensities_anom = intensities_anom.map_to_asu().customized_copy(
                 info=self.data["scaled_miller_array"].info()

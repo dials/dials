@@ -851,7 +851,8 @@ class AnomalousPlotter(ResolutionPlotterMixin):
                     self.low_res_intensities_anom, self.strong_cutoff
                 )
             )
-        d.update(self.del_anom_normal_plot(self.merged))
+        else:
+            d.update(self.del_anom_normal_plot(self.merged))
         d.update(self.del_anom_correlation_ratio(self.intensities_anom))
         return d
 
