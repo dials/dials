@@ -337,7 +337,7 @@ class MergingStatisticsObserver(Observer):
             if d["resolution_plots"]["cc_one_half"]["data"][2]:
                 cc_anom = d["resolution_plots"]["cc_one_half"]["data"][2]["y"]
                 significance = d["resolution_plots"]["cc_one_half"]["data"][3]["y"]
-                sig = flex.double(cc_anom) / flex.double(significance) > 1
+                sig = flex.double(cc_anom) > flex.double(significance)
                 max_anom = 0
                 for i, v in enumerate(sig):
                     if v:
