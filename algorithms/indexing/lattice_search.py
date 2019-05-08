@@ -22,11 +22,9 @@ import scitbx.matrix
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 from dials.algorithms.indexing.basis_vector_search import strategies
-from dials.algorithms.indexing.compare_orientation_matrices import (
-    difference_rotation_matrix_axis_angle,
-)
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import optimise
+from dials.algorithms.indexing.basis_vector_search import combinations
 
 logger = logging.getLogger(__name__)
 
@@ -206,7 +204,6 @@ class BasisVectorSearch(indexer.indexer_base):
         return experiments
 
     def find_candidate_orientation_matrices(self, candidate_basis_vectors):
-        from dials.algorithms.indexing.basis_vector_search import combinations
 
         candidate_crystal_models = combinations.candidate_orientation_matrices(
             candidate_basis_vectors,
@@ -227,9 +224,12 @@ class BasisVectorSearch(indexer.indexer_base):
                 max_delta=self.params.known_symmetry.max_delta,
             )
 
-        candidate_crystal_models = self.filter_similar_orientations(
-            candidate_crystal_models
-        )
+        if self.refined_experiments is not None and len(self.refined_experiments) > 0:
+            candidate_crystal_models = combinations.filter_similar_orientations(
+                candidate_crystal_models,
+                self.refined_experiments.crystals(),
+                minimum_angular_separation=self.params.multiple_lattice_search.minimum_angular_separation,
+            )
 
         return candidate_crystal_models
 
@@ -377,31 +377,6 @@ class BasisVectorSearch(indexer.indexer_base):
             return best_model.crystal, best_model.n_indexed
         else:
             return None, None
-
-    def filter_similar_orientations(self, crystal_models):
-
-        for cryst in crystal_models:
-
-            if (
-                self.refined_experiments is not None
-                and len(self.refined_experiments) > 0
-            ):
-
-                orientation_too_similar = False
-                for i_a, cryst_a in enumerate(self.refined_experiments.crystals()):
-                    R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
-                        cryst_a, cryst
-                    )
-                    min_angle = (
-                        self.params.multiple_lattice_search.minimum_angular_separation
-                    )
-                    if abs(angle) < min_angle:  # degrees
-                        orientation_too_similar = True
-                        break
-                if orientation_too_similar:
-                    logger.debug("skipping crystal: too similar to other crystals")
-                    continue
-            yield cryst
 
     def optimise_basis_vectors(self):
 

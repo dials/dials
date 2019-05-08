@@ -12,6 +12,9 @@ from rstbx.indexing_api import tools
 from dxtbx.model import Crystal
 
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
+from dials.algorithms.indexing.compare_orientation_matrices import (
+    difference_rotation_matrix_axis_angle,
+)
 
 
 def candidate_orientation_matrices(basis_vectors, max_combinations=None):
@@ -187,3 +190,21 @@ def filter_known_symmetry(
 
         if best_model is not None:
             yield best_model
+
+
+def filter_similar_orientations(
+    crystal_models, other_crystal_models, minimum_angular_separation=5
+):
+    for cryst in crystal_models:
+        orientation_too_similar = False
+        for i_a, cryst_a in enumerate(other_crystal_models):
+            R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
+                cryst_a, cryst
+            )
+            if abs(angle) < minimum_angular_separation:  # degrees
+                orientation_too_similar = True
+                break
+        if orientation_too_similar:
+            logger.debug("skipping crystal: too similar to other crystals")
+            continue
+        yield cryst
