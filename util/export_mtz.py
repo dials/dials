@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import time
+from collections import OrderedDict, Counter
 
 from dials.array_family import flex
 from dials.util.version import dials_version
@@ -30,7 +31,15 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
+def _add_batch(
+    mtz,
+    experiment,
+    wavelength,
+    dataset_id,
+    batch_number,
+    image_number,
+    force_static_model,
+):
     """Add a single image's metadata to an mtz file.
 
     Returns the batch object.
@@ -38,7 +47,6 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
     assert batch_number > 0
 
     # Recalculate useful numbers and references here
-    wavelength = experiment.beam.get_wavelength()
     # We ignore panels beyond the first one, at the moment
     panel = experiment.detector[0]
 
@@ -54,7 +62,7 @@ def _add_batch(mtz, experiment, batch_number, image_number, force_static_model):
         F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
     # Create the batch object and start configuring it
-    o = mtz.add_batch().set_num(batch_number).set_nbsetid(1).set_ncryst(1)
+    o = mtz.add_batch().set_num(batch_number).set_nbsetid(dataset_id).set_ncryst(1)
     o.set_time1(0.0).set_time2(0.0).set_title("Batch {}".format(batch_number))
     o.set_ndet(1).set_theta(flex.float((0.0, 0.0))).set_lbmflg(0)
     o.set_alambd(wavelength).set_delamb(0.0).set_delcor(0.0)
@@ -339,21 +347,18 @@ def export_mtz(integrated_data, experiment_list, params):
                 "Warning: Experiment crystals differ. Using first experiment crystal for file-level data."
             )
 
-        # We must match wavelengths (until multiple datasets supported)
-        if not all(
-            isclose(
-                x.beam.get_wavelength(),
-                experiment_list[0].beam.get_wavelength(),
-                rel_tol=1e-4,
+        wavelengths = match_wavelengths(experiment_list)
+        if len(wavelengths.keys()) > 1:
+            logger.info(
+                "Multiple wavelengths found: \n%s",
+                "\n".join(
+                    "  Wavlength: %.5f, experiment numbers: %s "
+                    % (k, ",".join(map(str, v)))
+                    for k, v in wavelengths.iteritems()
+                ),
             )
-            for x in experiment_list[1:]
-        ):
-            data = [x.beam.get_wavelength() for x in experiment_list]
-            raise Sorry(
-                "Cannot export multiple experiments with different beam wavelengths ({})".format(
-                    data
-                )
-            )
+    else:
+        wavelengths = OrderedDict({experiment_list[0].beam.get_wavelength(): [0]})
 
     # also only work correctly with one panel (for the moment)
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
@@ -389,14 +394,11 @@ def export_mtz(integrated_data, experiment_list, params):
         logger.debug("Keeping existing batches")
     image_ranges = get_image_ranges(experiment_list)
     if len(unique_offsets) != len(batch_offsets):
-        import collections
 
         raise Sorry(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
-                str(item)
-                for item, count in collections.Counter(batch_offsets).items()
-                if count > 1
+                str(item) for item, count in Counter(batch_offsets).items() if count > 1
             )
         )
 
@@ -415,13 +417,21 @@ def export_mtz(integrated_data, experiment_list, params):
     #   integrated at the same time
     # ✓ decide a sensible BATCH increment to apply to the BATCH value between
     #   experiments and add this
-
     for id_ in expids_in_table.keys():
         # Grab our subset of the data
         loc = expids_in_list.index(
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
+        if len(wavelengths.keys()) > 1:
+            for i, (wl, exps) in enumerate(wavelengths.iteritems()):
+                if loc in exps:
+                    wavelength = wl
+                    dataset_id = i + 1
+                    break
+        else:
+            wavelength = wavelengths.keys()[0]
+            dataset_id = 1
         reflections = integrated_data.select(integrated_data["id"] == id_)
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
@@ -447,6 +457,8 @@ def export_mtz(integrated_data, experiment_list, params):
             _add_batch(
                 mtz_file,
                 experiment,
+                wavelength,
+                dataset_id,
                 batch_number=i + batch_offset,
                 image_number=i,
                 force_static_model=params.mtz.force_static_model,
@@ -471,29 +483,44 @@ def export_mtz(integrated_data, experiment_list, params):
     mtz_crystal = mtz_file.add_crystal(
         params.mtz.crystal_name, "DIALS", unit_cell.parameters()
     )
-    mtz_dataset = mtz_crystal.add_dataset(
-        "FROMDIALS", experiment_list[0].beam.get_wavelength()
-    )
+    for wavelength in wavelengths.iterkeys():
+        mtz_dataset = mtz_crystal.add_dataset("FROMDIALS", wavelength)
 
     # Combine all of the experiment data columns before writing
-    merged_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
+    combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
     for experiment in experiment_list[1:]:
         for k, v in experiment.data.items():
-            merged_data[k].extend(v)
+            combined_data[k].extend(v)
     # ALL columns must be the same length
-    assert len(set(len(v) for v in merged_data.values())) == 1, "Column length mismatch"
-    assert len(merged_data["id"]) == len(
+    assert (
+        len(set(len(v) for v in combined_data.values())) == 1
+    ), "Column length mismatch"
+    assert len(combined_data["id"]) == len(
         integrated_data["id"]
     ), "Lost rows in split/combine"
 
     # Write all the data and columns to the mtz file
-    _write_columns(mtz_file, mtz_dataset, merged_data)
+    _write_columns(mtz_file, mtz_dataset, combined_data)
 
     logger.info(
         "Saving {} integrated reflections to {}".format(
-            len(merged_data["id"]), params.mtz.hklout
+            len(combined_data["id"]), params.mtz.hklout
         )
     )
     mtz_file.write(params.mtz.hklout)
 
     return mtz_file
+
+
+def match_wavelengths(experiments):
+    """Create a dictionary matching wavelength to experiments (index in list)"""
+    wavelengths = OrderedDict()
+    for i, x in enumerate(experiments):
+        w = x.beam.get_wavelength()
+        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths.keys()]
+        if not any(matches):
+            wavelengths[w] = [i]
+        else:
+            match_w = wavelengths.keys()[matches.index(True)]
+            wavelengths[match_w].append(i)
+    return wavelengths
