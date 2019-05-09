@@ -186,7 +186,11 @@ class cosym(Subject):
                 refl = self._reflections[dataset_id]
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 if subgroup is not None:
-                    expt.crystal.set_space_group(subgroup["best_subsym"].space_group())
+                    expt.crystal.set_space_group(
+                        subgroup["best_subsym"]
+                        .space_group()
+                        .build_derived_acentric_group()
+                    )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
