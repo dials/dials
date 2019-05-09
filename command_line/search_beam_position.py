@@ -3,20 +3,32 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
+import cmath
 import copy
 import logging
 import math
+import random
+import sys
 
-import iotbx.phil
+from libtbx import adopt_init_args
+from libtbx import easy_mp
+from libtbx.test_utils import approx_equal
+from libtbx.utils import plural_s
 from scitbx import matrix
-from cctbx.array_family import flex
+from scitbx.simplex import simplex_opt
+from scitbx.array_family import flex
+import iotbx.phil
+from rstbx.indexing_api import dps_extended
+from rstbx.indexing_api.lattice import DPS_primitive_lattice
+from rstbx.dps_core import Direction, Directional_FFT
+
+from dxtbx.serialize import dump
+from dials.algorithms.indexing.indexer import find_max_cell
+from dials.util import log
 from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments, flatten_reflections
-from dials.algorithms.indexing.indexer import (
-    indexer_base,
-    filter_reflections_by_scan_range,
-)
+from dials.util.slice import slice_reflections
 
 logger = logging.getLogger("dials.command_line.search_beam_position")
 
@@ -40,7 +52,7 @@ plot_search_scope = False
 max_cell = None
   .type = float
   .help = "Known max cell (otherwise will compute from spot positions)"
-scan_range = None
+image_range = None
   .help = "The range of images to use in indexing. Number of arguments"
     "must be a factor of two. Specifying \"0 0\" will use all images"
     "by default. The given range follows C conventions"
@@ -78,9 +90,6 @@ output {
 
 master_params = phil_scope.fetch().extract()
 
-
-from rstbx.phil.phil_preferences import indexing_api_defs
-
 dps_phil_scope = iotbx.phil.parse(
     """
 include scope rstbx.phil.phil_preferences.indexing_api_defs
@@ -101,16 +110,11 @@ class better_experimental_model_discovery(object):
         horizon_phil,
         wide_search_binning=1,
     ):
-        from libtbx import adopt_init_args
-
         adopt_init_args(self, locals())
 
     def optimize_origin_offset_local_scope(self):
         """Local scope: find the optimal origin-offset closest to the current overall detector position
         (local minimum, simple minimization)"""
-
-        from libtbx.test_utils import approx_equal
-        from rstbx.indexing_api import dps_extended
 
         detector = self.imagesets[0].get_detector()
         beam = self.imagesets[0].get_beam()
@@ -176,7 +180,6 @@ class better_experimental_model_discovery(object):
             wide_search_offset = None
 
         # DO A SIMPLEX MINIMIZATION
-        from scitbx.simplex import simplex_opt
 
         class test_simplex_method(object):
             def __init__(selfOO, wide_search_offset=None):
@@ -285,9 +288,6 @@ class better_experimental_model_discovery(object):
     def get_origin_offset_score(
         self, trial_origin_offset, solutions, amax, spots_mm, imageset
     ):
-        from rstbx.indexing_api import lattice  # import dependency
-        from rstbx.indexing_api import dps_extended
-
         trial_detector = dps_extended.get_new_detector(
             imageset.get_detector(), trial_origin_offset
         )
@@ -295,7 +295,6 @@ class better_experimental_model_discovery(object):
         # Key point for this is that the spots must correspond to detector
         # positions not to the correct RS position => reset any fixed rotation
         # to identity - copy in case called from elsewhere
-        import copy
 
         gonio = copy.deepcopy(imageset.get_goniometer())
         gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
@@ -313,8 +312,6 @@ class better_experimental_model_discovery(object):
         reciprocal space vectors, and the current estimate comes through the short list of
         DPS solutions. Actual return value is a sum of NH terms, one for each DPS solution, each ranging
         from -1.0 to 1.0"""
-        import cmath
-        from rstbx.dps_core import Direction, Directional_FFT
 
         nh = min(solutions.size(), 20)  # extended API
         sum_score = 0.0
@@ -357,16 +354,12 @@ def run_dps(args):
     goniometer = imageset.get_goniometer()
     scan = imageset.get_scan()
 
-    from rstbx.indexing_api.lattice import DPS_primitive_lattice
-
     # max_cell: max possible cell in Angstroms; set to None, determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
     DPS = DPS_primitive_lattice(
         max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=params
     )
-
-    from scitbx import matrix
 
     DPS.S0_vector = matrix.col(beam.get_s0())
     DPS.inv_wave = 1.0 / beam.get_wavelength()
@@ -389,24 +382,18 @@ def run_dps(args):
             )
         )
 
-    # from matplotlib import pyplot as plt
-    # plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
-    # plt.show()
-
     logger.info("Running DPS using %i reflections" % len(data))
 
     DPS.index(
         raw_spot_input=data, panel_addresses=flex.int([s["panel"] for s in spots_mm])
     )
     solutions = DPS.getSolutions()
-    from libtbx.utils import plural_s
 
     logger.info(
         "Found %i solution%s with max unit cell %.2f Angstroms."
         % (len(solutions), plural_s(len(solutions))[1], DPS.amax)
     )
     if len(solutions) < 3:
-        from dials.util import Sorry
 
         raise Sorry(
             "Not enough solutions: found %i, need at least 3" % (len(solutions))
@@ -420,7 +407,6 @@ def discover_better_experimental_model(
     assert len(imagesets) == len(spot_lists)
     assert len(imagesets) > 0
     # XXX should check that all the detector and beam objects are the same
-    from dials.algorithms.indexing.indexer import indexer_base
 
     spot_lists_mm = []
     max_cell_list = []
@@ -431,7 +417,6 @@ def discover_better_experimental_model(
     beam_panel = detector.get_panel_intersection(beam.get_s0())
 
     if beam_panel == -1:
-        from dials.util import Sorry
 
         raise Sorry("input beam does not intersect detector")
 
@@ -456,8 +441,6 @@ def discover_better_experimental_model(
         # derive a max_cell from mm spots
 
         if params.max_cell is None:
-            from dials.algorithms.indexing.indexer import find_max_cell
-
             max_cell = find_max_cell(
                 spots_mm, max_cell_multiplier=1.3, step_size=45
             ).max_cell
@@ -485,8 +468,6 @@ def discover_better_experimental_model(
         (imageset, spots, max_cell, dps_params)
         for imageset, spots in zip(imagesets, spot_lists_mm)
     ]
-
-    from libtbx import easy_mp
 
     results = easy_mp.parallel_map(
         func=run_dps,
@@ -543,8 +524,6 @@ def discover_better_experimental_model(
 
 
 def run(args):
-    from dials.util import log
-
     usage = "dials.search_beam_position [options] experiments.json strong.pickle"
 
     parser = OptionParser(
@@ -574,8 +553,6 @@ def run(args):
         logger.info(diff_phil)
 
     if params.seed is not None:
-        import random
-
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
 
@@ -590,10 +567,9 @@ def run(args):
     assert len(imagesets) > 0
     assert len(reflections) == len(imagesets)
 
-    if params.scan_range is not None and len(params.scan_range) > 0:
+    if params.image_range is not None and len(params.image_range) > 0:
         reflections = [
-            filter_reflections_by_scan_range(refl, params.scan_range)
-            for refl in reflections
+            slice_reflections(refl, params.image_range) for refl in reflections
         ]
 
     dps_params = dps_phil_scope.extract()
@@ -617,13 +593,9 @@ def run(args):
             experiment.detector = new_detector
         logger.info("")
 
-    from dxtbx.serialize import dump
-
     logger.info("Saving optimized experiments to %s" % params.output.experiments)
     dump.experiment_list(experiments, params.output.experiments)
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

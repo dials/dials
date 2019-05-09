@@ -20,7 +20,7 @@ import iotbx.phil
 from dxtbx.serialize import dump
 from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing import indexer
-from dials.command_line.slice_sweep import slice_reflections
+from dials.util.slice import slice_reflections
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
