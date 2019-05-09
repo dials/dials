@@ -143,7 +143,11 @@ class cosym(object):
                 refl_reindexed = copy.deepcopy(refl)
                 expt.crystal = expt.crystal.change_basis(cb_op)
                 if subgroup is not None:
-                    expt.crystal.set_space_group(subgroup["best_subsym"].space_group())
+                    expt.crystal.set_space_group(
+                        subgroup["best_subsym"]
+                        .space_group()
+                        .build_derived_acentric_group()
+                    )
                 refl_reindexed["miller_index"] = cb_op.apply(
                     refl_reindexed["miller_index"]
                 )
