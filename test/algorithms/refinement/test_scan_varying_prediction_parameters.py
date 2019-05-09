@@ -54,9 +54,9 @@ geometry.parameters.crystal.c.length.range = 10 50"""
         self.crystal = models.crystal
         self.beam = models.beam
 
-        # Make a scan of 1-360 * 0.5 deg images
+        # Make a scan of 1-20 * 0.5 deg images
         sf = ScanFactory()
-        self.scan = sf.make_scan((1, 360), 0.5, (0, 0.5), range(360))
+        self.scan = sf.make_scan((1, 20), 0.5, (0, 0.5), range(20))
 
         # Generate an ExperimentList
         self.experiments = ExperimentList()
@@ -74,21 +74,21 @@ geometry.parameters.crystal.c.length.range = 10 50"""
         # Create a reflection predictor for the experiments
         self.ref_predictor = ScansExperimentsPredictor(self.experiments)
 
-        # Create scan-varying parameterisations of these models, with 5 samples
+        # Create scan-varying parameterisations of these models, with 3 samples
         self.det_param = ScanVaryingDetectorParameterisationSinglePanel(
-            self.detector, self.scan.get_array_range(), 5
+            self.detector, self.scan.get_array_range(), 3
         )
         self.s0_param = ScanVaryingBeamParameterisation(
-            self.beam, self.scan.get_array_range(), 5, self.goniometer
+            self.beam, self.scan.get_array_range(), 3, self.goniometer
         )
         self.xlo_param = ScanVaryingCrystalOrientationParameterisation(
-            self.crystal, self.scan.get_array_range(), 5
+            self.crystal, self.scan.get_array_range(), 3
         )
         self.xluc_param = ScanVaryingCrystalUnitCellParameterisation(
-            self.crystal, self.scan.get_array_range(), 5
+            self.crystal, self.scan.get_array_range(), 3
         )
         self.gon_param = ScanVaryingGoniometerParameterisation(
-            self.goniometer, self.scan.get_array_range(), 5, self.beam
+            self.goniometer, self.scan.get_array_range(), 3, self.beam
         )
 
     def generate_reflections(self):
@@ -131,8 +131,8 @@ geometry.parameters.crystal.c.length.range = 10 50"""
         # set the flex random seed to an 'uninteresting' number
         flex.set_random_seed(12407)
 
-        # take 5 random reflections for speed
-        reflections = obs_refs.select(flex.random_selection(len(obs_refs), 5))
+        # take 10 random reflections for speed
+        reflections = obs_refs.select(flex.random_selection(len(obs_refs), 10))
 
         # use a BlockCalculator to calculate the blocks per image
         from dials.algorithms.refinement.reflection_manager import BlockCalculator

@@ -169,6 +169,16 @@ class BlockCalculator(object):
         self._reflections["block_centre"] = flex.double(len(self._reflections))
         return
 
+    @staticmethod
+    def _check_scan_range(exp_phi, scan):
+        """Check that the observed reflections fill the scan-range"""
+
+        # Allow up to 5 degrees between the observed phi extrema and the
+        # scan edges
+        start, stop = scan.get_oscillation_range(deg=False)
+        if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
+            raise Sorry("The reflections do not fill the scan range.")
+
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
@@ -184,6 +194,7 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
+            self._check_scan_range(exp_phi, exp.scan)
 
             start, stop = exp.scan.get_oscillation_range(deg=False)
             nblocks = int(abs(stop - start) / width) + 1
@@ -220,6 +231,7 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
+            self._check_scan_range(exp_phi, exp.scan)
 
             # convert phi to integer frames
             frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
