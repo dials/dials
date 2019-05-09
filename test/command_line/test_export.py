@@ -1,9 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 import json
+import os
 import procrunner
 import pytest
 from dxtbx.serialize.load import _decode_dict
+from dxtbx.serialize import load, dump
+from dials.array_family import flex
+from dials.util.multi_dataset_handling import assign_unique_identifiers
+from iotbx import mtz
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
@@ -39,6 +44,60 @@ def test_mtz(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert tmpdir.join("integrated.mtz").check(file=1)
+
+
+def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
+    """Test multi-wavelength mtz export"""
+    # First make suitable input - multi datasets experiment list and reflection
+    # table with different wavelengths
+    mcp = dials_data("multi_crystal_proteinase_k")
+    exp_1 = load.experiment_list(
+        mcp.join("experiments_1.json").strpath, check_format=False
+    )
+    exp_2 = load.experiment_list(
+        mcp.join("experiments_2.json").strpath, check_format=False
+    )
+    refl_1 = flex.reflection_table.from_pickle(mcp.join("reflections_1.pickle").strpath)
+    refl_2 = flex.reflection_table.from_pickle(mcp.join("reflections_2.pickle").strpath)
+
+    exp_1[0].beam.set_wavelength(0.5)
+    exp_2[0].beam.set_wavelength(1.0)
+
+    exp_1.extend(exp_2)
+    reflection_list = [refl_1, refl_2]
+    exps, refls = assign_unique_identifiers(exp_1, reflection_list)
+    joint_refl = flex.reflection_table()
+    for r in refls:
+        joint_refl.extend(r)
+    dump.experiment_list(exps, "tmp_exp.json")
+    joint_refl.as_pickle("tmp_refl.pickle")
+
+    # Now run
+    os.environ["DIALS_EXPORT_DO_NOT_CHECK_FORMAT"] = "True"
+    result = procrunner.run(
+        [
+            "dials.export",
+            "experiments=tmp_exp.json",
+            "reflections=tmp_refl.pickle",
+            "format=mtz",
+            "mtz.hklout=unmerged.mtz",
+        ],
+        working_directory=run_in_tmpdir.strpath,
+    )
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
+    assert os.path.exists("unmerged.mtz")
+
+    # Inspect output
+    m = mtz.object("unmerged.mtz").crystals()
+    n_batches = []
+    wavelengths = []
+    for crystal in m:
+        for dataset in crystal.datasets():
+            wavelengths.append(dataset.wavelength())
+            n_batches.append(dataset.n_batches())
+    assert n_batches == [0, 25, 25]  # base, dataset1, dataset2
+    assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
 
 
 def test_mmcif(dials_data, tmpdir):
@@ -88,7 +147,7 @@ def test_xds_ascii(dials_data, tmpdir):
                 continue
             tokens = record.split()
             hkl = tuple(map(int, tokens[:3]))
-            if not hkl in psi_values:
+            if hkl not in psi_values:
                 continue
             psi = float(tokens[-1])
             assert psi == pytest.approx(psi_values[hkl], abs=0.1)
@@ -124,7 +183,7 @@ def test_sadabs(dials_data, tmpdir):
             tokens = record.split()
             hkl = tuple(map(int, tokens[:3]))
             cosines = tuple(map(float, tokens[6:12]))
-            if not hkl in direction_cosines:
+            if hkl not in direction_cosines:
                 continue
             assert cosines == pytest.approx(direction_cosines[hkl], abs=0.001)
 
