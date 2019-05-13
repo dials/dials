@@ -10,7 +10,7 @@ import pytest
 
 from libtbx import easy_run, phil
 from dials.util import Sorry
-from dxtbx.serialize import load
+from dxtbx.serialize import load, dump
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
@@ -214,7 +214,7 @@ def test_scale_script_prepare_input():
     params.dataset_selection.use_datasets = None
     params.dataset_selection.exclude_datasets = ["0"]
     with pytest.raises(Sorry):
-        script = Script(params, exp, reflections)
+        _ = Script(params, exp, reflections)
 
     # Now make two experiments with identifiers and select on them
     params, exp, reflections = generate_test_input(n=2)
@@ -374,6 +374,15 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     # test the 'stats_only' option
     extra_args = ["stats_only=True"]
     run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
+    # test the 'export_mtz_only' option
+    extra_args = [
+        "export_mtz_only=True",
+        "unmerged_mtz=test_1.mtz",
+        "merged_mtz=test_2.mtz",
+    ]
+    run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
+    assert os.path.exists("test_1.mtz")
+    assert os.path.exists("test_2.mtz")
 
     # Check that dials-report and dials.show work on the output
     command = " ".join(["dials.show", "scaled.pickle", "scaled_experiments.json"])
@@ -535,6 +544,23 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     assert abs(result.overall.n_obs - expected_nobs) < 100
     assert result.overall.r_pim < 0.023  # at 07/08/18, value was 0.022722
     assert result.overall.cc_one_half > 0.9965  # at 07/08/18, value was 0.996925
+
+    # test multi-wavelength export option
+    exps = load.experiment_list("scaled_experiments.json", check_format=False)
+    # fake a multi-wavelength case
+    exps[0].beam.set_wavelength(0.5)
+    exps[1].beam.set_wavelength(1.0)
+    dump.experiment_list(exps, "tmp_exp.json")
+    extra_args = [
+        "export_mtz_only=True",
+        "unmerged_mtz='unmerged_1.mtz unmerged_2.mtz'",
+        "merged_mtz='merged_1.mtz merged_2.mtz'",
+    ]
+    run_one_scaling(["scaled.pickle"], ["tmp_exp.json"], extra_args)
+    assert os.path.exists("unmerged_1.mtz")
+    assert os.path.exists("unmerged_2.mtz")
+    assert os.path.exists("merged_1.mtz")
+    assert os.path.exists("merged_2.mtz")
 
     # until scaled data is available in dials_regression, test the command
     # line script dials.compute_delta_cchalf here
