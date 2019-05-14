@@ -191,18 +191,18 @@ namespace adaptor {
   };
 
   /**
-   * Pack a const_ref<Shoebox<>> into a msgpack array.
+   * Pack a shared<Shoebox<>> into a msgpack array.
    *
    * Shoebox arrays are treated differently because they are themselves
    * structs with multiple items.
    */
   template <typename T>
-  struct pack< scitbx::af::const_ref< dials::af::Shoebox<T> > > {
+  struct pack< scitbx::af::shared< dials::af::Shoebox<T> > > {
     template <typename Stream>
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
-        const scitbx::af::const_ref< dials::af::Shoebox<T> >& v) const {
-      typedef typename scitbx::af::const_ref< dials::af::Shoebox<T> >::const_iterator iterator;
+        const scitbx::af::shared< dials::af::Shoebox<T> >& v) const {
+      typedef typename scitbx::af::shared< dials::af::Shoebox<T> >::const_iterator iterator;
       o.pack_array(v.size());
       for (iterator it = v.begin(); it != v.end(); ++it) {
         o.pack(*it);
@@ -220,6 +220,8 @@ namespace adaptor {
     msgpack::packer<Stream>& operator()(
         msgpack::packer<Stream>& o,
         const scitbx::af::shared<T>& v) const {
+      o.pack_array(2);
+      o.pack(v.size());
       o.pack(v.const_ref());
       return o;
     }
@@ -386,7 +388,7 @@ namespace adaptor {
 
       // Ensure the type is an array
       if (o.type != msgpack::type::BIN) {
-        throw DIALS_ERROR("msgpack type is not BIN");
+        throw DIALS_ERROR("scitbx::af::ref: msgpack type is not BIN");
       }
 
       // Compute the element and binary sizes
@@ -396,12 +398,12 @@ namespace adaptor {
 
       // Check the sizes are consistent
       if (num_elements * element_size != binary_size) {
-        throw DIALS_ERROR("msgpack bin data does not have correct size");
+        throw DIALS_ERROR("scitbx::af::ref: msgpack bin data does not have correct size");
       }
 
       // Ensure it is of the correct size
       if (num_elements != v.size()) {
-        throw DIALS_ERROR("msgpack bin data does not have correct size");
+        throw DIALS_ERROR("scitbx::af::ref: msgpack bin data does not have correct size");
       }
 
       // Copy the binary data
@@ -420,30 +422,27 @@ namespace adaptor {
     msgpack::object const& operator()(
         msgpack::object const& o,
         scitbx::af::shared<T>& v) const {
-      typedef typename scitbx::af::shared<T>::iterator iterator;
-
-      // Ensure the type is an array
-      if (o.type != msgpack::type::BIN) {
-        throw DIALS_ERROR("msgpack type is not BIN");
+      
+      // Ensure type is an array
+      if (o.type != msgpack::type::ARRAY) {
+        throw DIALS_ERROR("scitbx::af::shared: msgpack type is not an array");
       }
 
-      // Compute the element and binary sizes
-      std::size_t element_size = element_size_helper<T>::size();
-      std::size_t binary_size = o.via.bin.size;
-      std::size_t num_elements = binary_size / element_size;
-
-      // Check the sizes are consistent
-      if (num_elements * element_size != binary_size) {
-        throw DIALS_ERROR("msgpack bin data does not have correct size");
+      // Ensure that we have an accessor and data element
+      if (o.via.array.size != 2) {
+        throw DIALS_ERROR("scitbx::af::shared: msgpack array does not have correct dimensions");
       }
 
-      // Resize the array
-      v.resize(num_elements);
+      // Read the accessor element
+      std::size_t size = 0;
+      o.via.array.ptr[0].convert(size);
 
-      // Copy the binary data
-      const T *first = reinterpret_cast<const T*>(o.via.bin.ptr);
-      const T *last = first + num_elements;
-      std::copy(first, last, v.begin());
+      // Resize the versa
+      v = scitbx::af::shared<T>(size);
+
+      // Read the data
+      scitbx::af::ref<T> data_ref = v.ref();
+      o.via.array.ptr[1].convert(data_ref);
       return o;
     }
   };
@@ -463,7 +462,7 @@ namespace adaptor {
 
       // Ensure the type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw msgpack::type_error();
+        throw DIALS_ERROR("scitbx::af::shared<Shoebox>: msgpack type is not an array");
       }
 
       // Ensure it is of the correct size
@@ -493,12 +492,12 @@ namespace adaptor {
 
       // Ensure type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("scitbx::af::versa: msgpack type is not an array");
       }
 
       // Ensure that we have an accessor and data element
       if (o.via.array.size != 2) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("scitbx::af::versa: msgpack array does not have correct dimensions");
       }
 
       // Read the accessor element
@@ -526,12 +525,12 @@ namespace adaptor {
 
       // Ensure type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("scitbx::af::c_grid: msgpack type is not an array");
       }
 
       // Ensure that we have an accessor and data element
       if (o.via.array.size != N) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("scitbx::af::c_grid: msgpack array does not have correct dimensions");
       }
 
       // Convert the elements
@@ -554,12 +553,12 @@ namespace adaptor {
 
       // Ensure type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("scitbx::af::tiny: msgpack type is not an array");
       }
 
       // Ensure that we have an accessor and data element
       if (o.via.array.size != N) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("scitbx::af::tiny: msgpack array does not have correct dimensions");
       }
 
       // Convert the elements
@@ -584,12 +583,12 @@ namespace adaptor {
 
       // Check the type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("scitbx::af::Shoebox: msgpack type is not an array");
       }
 
       // Check the size is 5
       if (o.via.array.size != 5) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("scitbx::af::Shoebox: msgpack array does not have correct dimensions");
       }
 
       // Read the shoebox structure.
@@ -614,12 +613,12 @@ namespace adaptor {
 
       // Check the type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("dials::af::reflection_table::mapped_type: msgpack type is not an array");
       }
 
       // Check there are 2 elements
       if (o.via.array.size != 2) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("dials::af::reflection_table::mapped_type: msgpack array does not have correct dimensions");
       }
 
       // Read the type name from the first element
@@ -650,7 +649,7 @@ namespace adaptor {
       } else if (name == "Shoebox<>") {
         v = extract< dials::af::Shoebox<> >(o.via.array.ptr[1]);
       } else {
-        throw DIALS_ERROR("Unexpected column type");
+        throw DIALS_ERROR("dials::af::reflection_table::mapped_type: unexpected column type");
       }
       return o;
     }
@@ -689,26 +688,26 @@ namespace adaptor {
 
       // Check the type is an array
       if (o.type != msgpack::type::ARRAY) {
-        throw DIALS_ERROR("msgpack type is not an array");
+        throw DIALS_ERROR("dials::af::reflection_table: msgpack type is not an array");
       }
 
       // Check there are 4 elements
       if (o.via.array.size != 3) {
-        throw DIALS_ERROR("msgpack array does not have correct dimensions");
+        throw DIALS_ERROR("dials::af::reflection_table: msgpack array does not have correct dimensions");
       }
 
       // Check the file type
       std::string filetype;
       o.via.array.ptr[0].convert(filetype);
       if (filetype != "dials::af::reflection_table") {
-        throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
+        throw DIALS_ERROR("dials::af::reflection_table: expected dials::af::reflection_table, got something else");
       }
 
       // Check the version
       std::size_t version;
       o.via.array.ptr[1].convert(version);
       if (version != 1) {
-        throw DIALS_ERROR("Expected version 1, got something else");
+        throw DIALS_ERROR("dials::af::reflection_table: expected version 1, got something else");
       }
 
       // Get the header object
@@ -716,7 +715,7 @@ namespace adaptor {
 
       // Check the type is an array
       if (header_object->type != msgpack::type::MAP) {
-        throw DIALS_ERROR("msgpack type is not an map");
+        throw DIALS_ERROR("dials::af::reflection_table: header msgpack type is not an map");
       }
 
       // Set the the column map object to NULL
@@ -756,14 +755,14 @@ namespace adaptor {
           map_object = &it->val;
 
         } else {
-          throw DIALS_ERROR("unknown key in reflection file");
+          throw DIALS_ERROR("dials::af::reflection_table: unknown key in reflection file");
         }
       }
       
       // Check the identifiers
       if (identifier_object != NULL) {
         if (identifier_object->type != msgpack::type::MAP) {
-          throw DIALS_ERROR("Identifier data not found");
+          throw DIALS_ERROR("dials::af::reflection_table: identifier data not found");
         }
 
         // Read the identifiers from the map
@@ -782,12 +781,12 @@ namespace adaptor {
 
       // Check the number of rows has been found
       if (!found_nrows) {
-        throw DIALS_ERROR("Number of rows not found");
+        throw DIALS_ERROR("dials::af::reflection_table: number of rows not found");
       }
 
       // Check the table data
       if (map_object == NULL || map_object->type != msgpack::type::MAP) {
-        throw DIALS_ERROR("Table data not found");
+        throw DIALS_ERROR("dials::af::reflection_table: table data not found");
       }
 
       // Read the columns from the map
