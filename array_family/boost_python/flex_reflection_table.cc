@@ -852,14 +852,26 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Override default reference func to avoid copying
+   */
+  bool reflection_table_reference_func(
+      msgpack::type::object_type type, 
+      std::size_t length, 
+      void* user_data) {
+    return true;
+  }
+
+  /**
    * Unpack the reflection table from msgpack format
    * @param the msgpack string
    * @returns The reflection table
    */
-  reflection_table reflection_table_from_msgpack(std::string packed) {
+  reflection_table reflection_table_from_msgpack(boost::python::object packed) {
+    const char *data = PyBytes_AsString(packed.ptr());
+    std::size_t size = PyBytes_Size(packed.ptr());
     msgpack::unpacked result;
     std::size_t off = 0;
-    msgpack::unpack(result, packed.data(), packed.size(), off);
+    msgpack::unpack(result, data, size, off, reflection_table_reference_func);
     reflection_table r = result.get().as<reflection_table>();
     return r;
   }
