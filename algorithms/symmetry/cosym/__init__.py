@@ -145,6 +145,8 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.cb_op_inp_min
             ).info()
         )
+        if self.params.lattice_group is not None:
+            self.intensities = self.intensities.as_reference_setting().primitive_setting()
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
