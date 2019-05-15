@@ -6,6 +6,7 @@ from collections import OrderedDict
 import logging
 from scitbx.array_family import flex
 from cctbx import uctbx
+from libtbx.table_utils import simple_table
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -93,6 +94,40 @@ class ScalingSummaryGenerator(Observer):
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
             logger.info("\n".join(msg))
+
+        # report on partiality of dataset
+        partials = flex.double()
+        for r in scaling_script.reflections:
+            if "partiality" in r:
+                partials.extend(r["partiality"])
+        not_full_sel = partials < 0.99
+        not_zero_sel = partials > 0.01
+        gt_half = partials > 0.5
+        lt_half = partials < 0.5
+        partial_gt_half_sel = not_full_sel & gt_half
+        partial_lt_half_sel = not_zero_sel & lt_half
+        logger.info("Summary of dataset partialities")
+        header = ["Partiality (p)", "n_refl"]
+        rows = [
+            ["all reflections", str(partials.size())],
+            ["p > 0.99", str(not_full_sel.count(False))],
+            ["0.5 < p < 0.99", str(partial_gt_half_sel.count(True))],
+            ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
+            ["p < 0.01", str(not_zero_sel.count(False))],
+        ]
+        st = simple_table(rows, header)
+        logger.info(st.format())
+        logger.info(
+            """
+Reflections below a partiality_cutoff of %s are not considered for any
+part of the scaling analysis or for the reporting of merging statistics.
+Additionally, if applicable, only reflections with a min_partiality > %s
+were considered for use when refining the scaling model.
+""",
+            scaling_script.params.cut_data.partiality_cutoff,
+            scaling_script.params.reflection_selection.min_partiality,
+        )
+
         if MergingStatisticsObserver().data:
             logger.info(
                 "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
