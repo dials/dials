@@ -1103,9 +1103,9 @@ def test_to_from_msgpack(tmpdir):
         for k in range(1):
             for j in range(3):
                 for i in range(4):
-                    shoebox.data[k, j, i] = i + j + k
+                    shoebox.data[k, j, i] = i + j + k + 0.1
                     shoebox.mask[k, j, i] = i % 2
-                    shoebox.background[k, j, i] = i * j
+                    shoebox.background[k, j, i] = i * j + 0.2
         return shoebox
 
     def compare(a, b):
