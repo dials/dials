@@ -495,9 +495,9 @@ namespace adaptor {
 
           // Create the accessor
           scitbx::af::c_grid<3> accessor(
-              it->bbox[1] - it->bbox[0],
+              it->bbox[5] - it->bbox[4],
               it->bbox[3] - it->bbox[2],
-              it->bbox[5] - it->bbox[4]);
+              it->bbox[1] - it->bbox[0]);
 
           // Allocate the array
           it->data = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);

@@ -1109,6 +1109,8 @@ def test_to_from_msgpack(tmpdir):
         return shoebox
 
     def compare(a, b):
+        assert a.is_consistent()
+        assert b.is_consistent()
         assert a.panel == b.panel
         assert a.bbox == b.bbox
         for aa, bb in zip(a.data, b.data):
