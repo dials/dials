@@ -523,41 +523,12 @@ namespace adaptor {
               (char *) &it->background[0],
               it->background.size() * element_size_helper<T>::size());
 
+          // Check to ensure consistency
+          DIALS_ASSERT(it->is_consistent());
         }
       }
 
       return o;
-      /* // Compute the element and binary sizes */
-      /* std::size_t element_size = element_size_helper<T>::size(); */
-      /* std::size_t binary_size = o.via.bin.size; */
-      /* std::size_t num_elements = binary_size / element_size; */
-
-      /* // Check the sizes are consistent */
-      /* if (num_elements * element_size != binary_size) { */
-      /*   throw DIALS_ERROR("scitbx::af::ref: msgpack bin data does not have correct size"); */
-      /* } */
-
-      /* // Ensure it is of the correct size */
-      /* if (num_elements != v.size()) { */
-      /*   throw DIALS_ERROR("scitbx::af::ref: msgpack bin data does not have correct size"); */
-      /* } */
-
-      /* // Copy the binary data */
-      /* const T *first = reinterpret_cast<const T*>(o.via.bin.ptr); */
-      /* const T *last = first + num_elements; */
-      /* std::copy(first, last, v.begin()); */
-      /* return o; */
-
-      /* // Convert the values in the array */
-      /* if (o.via.array.size > 0) { */
-      /*   msgpack::object* first = o.via.array.ptr; */
-      /*   msgpack::object* last = first + o.via.array.size; */
-      /*   iterator out = v.begin(); */
-      /*   for (msgpack::object *it = first; it != last; ++it) { */
-      /*     it->convert(*out++); */
-      /*   } */
-      /* } */
-      /* return o; */
     }
 
     template <typename ValueType, typename Stream>
