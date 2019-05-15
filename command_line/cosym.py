@@ -255,7 +255,6 @@ class cosym(Subject):
             cb_op_to_primitive = (
                 expt.crystal.get_crystal_symmetry().change_of_basis_op_to_primitive_setting()
             )
-            expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
             sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
             if sel.count(True):
                 logger.info(
@@ -263,8 +262,9 @@ class cosym(Subject):
                     sel.count(True),
                     expt.identifier,
                 )
-                refl = refl.select(sel)
+                refl = refl.select(~sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
+            expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
 
             if self.params.space_group is not None:
                 space_group_info = self.params.space_group.primitive_setting()
