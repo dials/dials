@@ -20,6 +20,7 @@ import iotbx.phil
 from dxtbx.serialize import dump
 from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing import indexer
+from dials.array_family import flex
 from dials.util.slice import slice_reflections
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
@@ -75,6 +76,9 @@ indexing {
               "reflections by observed centroid."
       .type = ints(size=2)
       .multiple = True
+
+    joint_indexing = True
+      .type = bool
 
 }
 
@@ -132,15 +136,14 @@ class Index(object):
 
         if len(reflections) == 0:
             raise Sorry("No reflection lists found in input")
-        if len(reflections) > 1:
+        elif len(reflections) == 1:
+            reflections[0]["imageset_id"] = reflections[0]["id"]
+        elif len(reflections) > 1:
             assert len(reflections) == len(experiments)
-            from scitbx.array_family import flex
-
             for i in range(len(reflections)):
                 reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
                 if i > 0:
                     reflections[0].extend(reflections[i])
-
         reflections = reflections[0]
 
         for expt in experiments:
@@ -157,16 +160,43 @@ class Index(object):
                 reflections, self._params.indexing.image_range
             )
 
-        idxr = indexer.indexer_base.from_parameters(
-            reflections,
-            experiments,
-            known_crystal_models=known_crystal_models,
-            params=params,
-        )
-        idxr.index()
-        self._indexed_experiments = idxr.refined_experiments
-        self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
-        self._indexed_reflections.extend(idxr.unindexed_reflections)
+        if self._params.indexing.joint_indexing:
+            idxr = indexer.indexer_base.from_parameters(
+                reflections,
+                experiments,
+                known_crystal_models=known_crystal_models,
+                params=params,
+            )
+            idxr.index()
+            self._indexed_experiments = idxr.refined_experiments
+            self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
+            self._indexed_reflections.extend(idxr.unindexed_reflections)
+        else:
+            self._indexed_experiments = ExperimentList()
+            self._indexed_reflections = flex.reflection_table()
+            for i_expt, expt in enumerate(experiments):
+                refl = reflections.select(reflections["imageset_id"] == i_expt)
+                refl["imageset_id"] = flex.size_t(len(refl), 0)
+                try:
+                    idxr = indexer.indexer_base.from_parameters(
+                        refl,
+                        ExperimentList([expt]),
+                        known_crystal_models=known_crystal_models,
+                        params=copy.deepcopy(params),
+                    )
+                    idxr.index()
+                except Exception as e:
+                    logger.info("Experiment %i failed to index: %s" % (i_expt, e))
+                else:
+                    idx_refl = copy.deepcopy(idxr.refined_reflections)
+                    for j_expt, _ in enumerate(idxr.refined_experiments):
+                        idx_refl["id"] = flex.int(
+                            len(idx_refl), len(self._indexed_experiments) + j_expt
+                        )
+                    idx_refl.extend(idxr.unindexed_reflections)
+                    idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
+                    self._indexed_reflections.extend(idx_refl)
+                    self._indexed_experiments.extend(idxr.refined_experiments)
 
     def export_experiments(self, filename):
         experiments = self._indexed_experiments
