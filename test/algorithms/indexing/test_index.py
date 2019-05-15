@@ -60,7 +60,7 @@ class run_one_indexing(object):
         )
         assert os.path.exists("indexed.pickle")
 
-        self.indexed_reflections = flex.reflection_table.from_pickle("indexed.pickle")
+        self.indexed_reflections = flex.reflection_table.from_file("indexed.pickle")
 
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]

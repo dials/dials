@@ -723,7 +723,7 @@ class Script(object):
         dump = ExperimentListDumper(experiments)
         dump.as_json(exp_name)
         print("Saving combined reflections to {0}".format(refl_name))
-        reflections.as_pickle(refl_name)
+        reflections.as_file(refl_name)
 
 
 if __name__ == "__main__":

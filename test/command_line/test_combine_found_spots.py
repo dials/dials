@@ -64,5 +64,5 @@ def test_combining_spots(dials_data, tmpdir):
     assert tmpdir.join("combined.json").check()
     assert tmpdir.join("combined.pickle").check()
 
-    r = flex.reflection_table.from_pickle(tmpdir.join("combined.pickle").strpath)
+    r = flex.reflection_table.from_file(tmpdir.join("combined.pickle").strpath)
     assert r["id"].all_eq(0)

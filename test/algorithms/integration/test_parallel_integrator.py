@@ -22,7 +22,7 @@ def data(dials_regression):  # read experiments and reflections
     experiments = ExperimentListFactory.from_json_file(
         experiments_filename, check_format=False
     )
-    reflections = flex.reflection_table.from_pickle(reflections_filename)
+    reflections = flex.reflection_table.from_file(reflections_filename)
     with open(reference_filename, "rb") as fh:
         reference = pickle.load(fh)
 

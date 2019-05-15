@@ -1393,7 +1393,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     pickle_path = os.path.join(data_dir, "full.pickle")
     sweep_path = os.path.join(data_dir, "datablock_orig.json")
 
-    refl = flex.reflection_table.from_pickle(pickle_path)
+    refl = flex.reflection_table.from_file(pickle_path)
     datablock = load.datablock(sweep_path, check_format=False)[0]
     imageset = datablock.extract_imagesets()[0]
     detector = imageset.get_detector()

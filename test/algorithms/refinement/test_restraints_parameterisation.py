@@ -346,7 +346,7 @@ def test_10_crystals_with_stills_parameterisation(dials_regression):
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False
     )
-    reflections = flex.reflection_table.from_pickle(pickle_path)
+    reflections = flex.reflection_table.from_file(pickle_path)
 
     refiner = RefinerFactory.from_parameters_data_experiments(
         working_params, reflections, experiments
@@ -439,7 +439,7 @@ def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regre
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False
     )
-    reflections = flex.reflection_table.from_pickle(pickle_path)
+    reflections = flex.reflection_table.from_file(pickle_path)
 
     refiner = RefinerFactory.from_parameters_data_experiments(
         working_params, reflections, experiments

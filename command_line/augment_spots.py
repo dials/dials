@@ -126,7 +126,7 @@ def run(args):
         raise Sorry("0, 1 experiments required")
 
     stronger = augment_reflections(reflections[0], params, experiments=experiments)
-    stronger.as_pickle(params.output.reflections)
+    stronger.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":

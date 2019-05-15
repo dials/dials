@@ -19,7 +19,7 @@ def test_sort_intensities(dials_data, tmpdir):
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_pickle(tmpdir.join("sorted1.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted1.pickle").strpath)
     assert_sorted(data["intensity.sum.value"])
 
 
@@ -40,7 +40,7 @@ def test_reverse_sort_intensities(dials_data, tmpdir):
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_pickle(tmpdir.join("sorted2.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted2.pickle").strpath)
     assert_sorted(data["intensity.sum.value"], reverse=True)
 
 
@@ -59,9 +59,9 @@ def test_default_sort_on_miller_index(dials_data, tmpdir):
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_pickle(tmpdir.join("sorted3.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted3.pickle").strpath)
     mi1 = data["miller_index"]
-    orig = flex.reflection_table.from_pickle(
+    orig = flex.reflection_table.from_file(
         dials_data("centroid_test_data").join("integrated.pickle").strpath
     )
     mi2 = flex.miller_index(sorted(orig["miller_index"]))

@@ -24,7 +24,7 @@ class Data(object):
 
         from dials.array_family import flex
 
-        self.reflections = flex.reflection_table.from_pickle(reflection_filename)
+        self.reflections = flex.reflection_table.from_file(reflection_filename)
 
     def predict_new(self, experiment=None, hkl=None, panel=None):
         from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor

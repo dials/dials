@@ -198,7 +198,7 @@ class Script(object):
                         "Saving reflections for experiment %d to %s"
                         % (i, reflections_filename)
                     )
-                    split_data[detector]["reflections"].as_pickle(reflections_filename)
+                    split_data[detector]["reflections"].as_file(reflections_filename)
         elif params.output.chunk_size or params.output.chunk_sizes:
             from dxtbx.model.experiment_list import ExperimentList
             from dxtbx.serialize import dump
@@ -213,7 +213,7 @@ class Script(object):
                         "Saving reflections for chunk %d to %s"
                         % (chunk_id, reflections_filename)
                     )
-                    refls.as_pickle(reflections_filename)
+                    refls.as_file(reflections_filename)
 
             chunk_counter = 0
             chunk_expts = ExperimentList()
@@ -285,7 +285,7 @@ class Script(object):
                         ref_sel.experiment_identifiers()[0] = identifier
                     else:
                         ref_sel["id"] = flex.int(len(ref_sel), 0)
-                    ref_sel.as_pickle(reflections_filename)
+                    ref_sel.as_file(reflections_filename)
 
         return
 

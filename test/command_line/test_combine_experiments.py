@@ -58,7 +58,7 @@ def test(dials_regression, run_in_tmpdir):
     exp = ExperimentListFactory.from_json_file(
         "combined_experiments.json", check_format=False
     )
-    ref = flex.reflection_table.from_pickle("combined_reflections.pickle")
+    ref = flex.reflection_table.from_file("combined_reflections.pickle")
 
     # test the experiments
     assert len(exp) == 103
@@ -90,7 +90,7 @@ def test(dials_regression, run_in_tmpdir):
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" % i)
+        ref_single = flex.reflection_table.from_file("reflections_%03d.pickle" % i)
 
         assert len(exp_single) == 1
         assert exp_single[0].crystal == e.crystal
@@ -145,7 +145,7 @@ def test(dials_regression, run_in_tmpdir):
     assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
 
     # Now do test when input has identifiers set
-    reflections = flex.reflection_table().from_pickle("combined_reflections.pickle")
+    reflections = flex.reflection_table().from_file("combined_reflections.pickle")
     explist = ExperimentListFactory.from_json_file(
         "combined_experiments.json", check_format=False
     )
@@ -154,7 +154,7 @@ def test(dials_regression, run_in_tmpdir):
         assert i in reflections["id"]
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
-    reflections.as_pickle("assigned_reflections.pickle")
+    reflections.as_file("assigned_reflections.pickle")
     dump.experiment_list(explist, "assigned_experiments.json")
 
     result = procrunner.run(
@@ -174,7 +174,7 @@ def test(dials_regression, run_in_tmpdir):
         exp_single = ExperimentListFactory.from_json_file(
             "experiments_%03d.json" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_pickle("reflections_%03d.pickle" % i)
+        ref_single = flex.reflection_table.from_file("reflections_%03d.pickle" % i)
 
         assert len(exp_single) == 1
         # resets all ids to 0, but keeps mapping to unique identifier.
@@ -213,7 +213,7 @@ def test(dials_regression, run_in_tmpdir):
         explist = ExperimentListFactory.from_json_file(
             "test_by_detector_%03d.json" % i, check_format=False
         )
-        refl = flex.reflection_table.from_pickle("test_by_detector_%03d.pickle" % i)
+        refl = flex.reflection_table.from_file("test_by_detector_%03d.pickle" % i)
 
         for k in range(len(explist)):
             assert refl.experiment_identifiers()[k] == str(current_exp_id)

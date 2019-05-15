@@ -173,7 +173,7 @@ class cosym(Subject):
         logger.info(
             "Saving reindexed reflections to %s", self.params.output.reflections
         )
-        reindexed_reflections.as_pickle(self.params.output.reflections)
+        reindexed_reflections.as_file(self.params.output.reflections)
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""

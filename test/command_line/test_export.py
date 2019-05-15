@@ -57,8 +57,8 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     exp_2 = load.experiment_list(
         mcp.join("experiments_2.json").strpath, check_format=False
     )
-    refl_1 = flex.reflection_table.from_pickle(mcp.join("reflections_1.pickle").strpath)
-    refl_2 = flex.reflection_table.from_pickle(mcp.join("reflections_2.pickle").strpath)
+    refl_1 = flex.reflection_table.from_file(mcp.join("reflections_1.pickle").strpath)
+    refl_2 = flex.reflection_table.from_file(mcp.join("reflections_2.pickle").strpath)
 
     exp_1[0].beam.set_wavelength(0.5)
     exp_2[0].beam.set_wavelength(1.0)
@@ -70,7 +70,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     for r in refls:
         joint_refl.extend(r)
     dump.experiment_list(exps, "tmp_exp.json")
-    joint_refl.as_pickle("tmp_refl.pickle")
+    joint_refl.as_file("tmp_refl.pickle")
 
     # Now run
     os.environ["DIALS_EXPORT_DO_NOT_CHECK_FORMAT"] = "True"

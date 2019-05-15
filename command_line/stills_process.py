@@ -1184,7 +1184,7 @@ class Processor(object):
 
         st = time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
-        reflections.as_pickle(filename)
+        reflections.as_file(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def finalize(self):

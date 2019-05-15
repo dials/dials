@@ -427,10 +427,10 @@ class Script(object):
                 )
             )
             if params.output.include_unused_reflections:
-                reflections.as_pickle(params.output.reflections)
+                reflections.as_file(params.output.reflections)
             else:
                 sel = reflections.get_flags(reflections.flags.used_in_refinement)
-                reflections.select(sel).as_pickle(params.output.reflections)
+                reflections.select(sel).as_file(params.output.reflections)
 
         # For debugging, if requested save matches to file
         if params.output.matches:
@@ -440,7 +440,7 @@ class Script(object):
                     params.output.matches
                 )
             )
-            matches.as_pickle(params.output.matches)
+            matches.as_file(params.output.matches)
 
         # Correlation plot
         if params.output.correlation_plot.filename is not None:

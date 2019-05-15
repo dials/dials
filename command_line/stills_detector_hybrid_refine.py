@@ -499,7 +499,7 @@ def stills_detector_hybrid_refine(experiments, reflections, params):
                 params.output.reflections_filename
             )
         )
-        reflections.as_pickle(params.output.reflections_filename)
+        reflections.as_file(params.output.reflections_filename)
 
 
 def run(args=None, phil=phil_scope):

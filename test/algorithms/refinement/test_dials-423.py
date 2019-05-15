@@ -23,7 +23,7 @@ def test_run(dials_regression):
     exp_file = os.path.join(data_dir, "experiments.json")
     ref_file = os.path.join(data_dir, "subset.pickle")
 
-    reflections = flex.reflection_table.from_pickle(ref_file)
+    reflections = flex.reflection_table.from_file(ref_file)
     experiments = ExperimentListFactory.from_json_file(exp_file, check_format=False)
 
     """Test that the detector remains similar after refiner construction"""

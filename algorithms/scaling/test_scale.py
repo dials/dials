@@ -49,7 +49,7 @@ def run_one_scaling(pickle_path_list, sweep_path_list, extra_args):
     assert os.path.exists("scaled.pickle")
     assert os.path.exists("scaling.html")
 
-    table = flex.reflection_table.from_pickle("scaled.pickle")
+    table = flex.reflection_table.from_file("scaled.pickle")
 
     assert "inverse_scale_factor" in table
     assert "inverse_scale_factor_variance" in table

@@ -110,7 +110,7 @@ class Script(object):
 
         # Save the reflections to file
         print("Writing reflections to %s" % params.output)
-        refl.as_pickle(params.output)
+        refl.as_file(params.output)
 
 
 if __name__ == "__main__":
