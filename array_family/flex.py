@@ -1473,6 +1473,12 @@ Found %s"""
                 self["rlp"].set_selected(sel, S)
 
 
+try:
+    boost.python.inject_into(reflection_table)(reflection_table_aux)
+except AttributeError:
+    pass
+
+
 class reflection_table_selector(object):
     """
     A class to select columns from reflection table.
