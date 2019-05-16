@@ -500,7 +500,7 @@ class indexer_base(object):
             )
 
         if self.params.debug:
-            self.debug_write_reciprocal_lattice_points_as_pdb()
+            self._debug_write_reciprocal_lattice_points_as_pdb()
 
         self.reflections["id"] = flex.int(len(self.reflections), -1)
 
@@ -938,7 +938,7 @@ class indexer_base(object):
         )
         return refiner.get_experiments(), reflections
 
-    def debug_write_reciprocal_lattice_points_as_pdb(
+    def _debug_write_reciprocal_lattice_points_as_pdb(
         self, file_name="reciprocal_lattice.pdb"
     ):
         from cctbx import crystal, xray
