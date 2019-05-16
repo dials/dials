@@ -11,7 +11,7 @@ from collections import defaultdict, namedtuple
 from orderedset import OrderedSet
 
 try:
-    import cPickle
+    import cPickle  # deliberately not using six.moves
 
     pickle_errors = pickle.UnpicklingError, cPickle.UnpicklingError
 except ImportError:

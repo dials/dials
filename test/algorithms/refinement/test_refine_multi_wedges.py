@@ -7,10 +7,9 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import procrunner
-from libtbx.test_utils import open_tmp_directory
 from scitbx import matrix
 from dxtbx.model.experiment_list import ExperimentListFactory
-import cPickle as pickle
+from six.moves import cPickle as pickle
 from dials.array_family import flex
 import pytest
 

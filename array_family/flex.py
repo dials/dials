@@ -9,8 +9,14 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
-from collections import OrderedDict
+try:
+    import __builtin__
+except ImportError:
+    import builtins as __builtin__
+
+import collections
 import logging
+import operator
 import warnings
 
 import boost.python
@@ -483,7 +489,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :param order: For multi element items specify order
 
         """
-        import __builtin__
 
         if type(self[name]) in [
             vec2_double,
@@ -563,9 +568,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :return: The matches
 
         """
-        from collections import defaultdict
-        import __builtin__
-
         logger.info("Matching reference spots with predicted reflections")
         logger.info(" %d observed reflections input" % len(other))
         logger.info(" %d reflections predicted" % len(self))
@@ -590,7 +592,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 self.b = []
 
         # Create the match lookup
-        lookup = defaultdict(Match)
+        lookup = collections.defaultdict(Match)
         for i in range(len(self)):
             item = h1[i] + (e1[i], i1[i], p1[i])
             lookup[item].a.append(i)
@@ -681,9 +683,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :return: The matches
 
         """
-        from collections import defaultdict
-        import __builtin__
-
         logger.info("Matching reference spots with predicted reflections")
         logger.info(" %d observed reflections input" % len(other))
         logger.info(" %d reflections predicted" % len(self))
@@ -708,7 +707,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 self.b = []
 
         # Create the match lookup
-        lookup = defaultdict(Match)
+        lookup = collections.defaultdict(Match)
         for i in range(len(self)):
             item = h1[i] + (e1[i], i1[i], p1[i])
             lookup[item].a.append(i)
@@ -1380,7 +1379,9 @@ Found %s"""
         Reset the 'id' column such that the experiment identifiers are
         numbered 0 .. n-1.
         """
-        reverse_map = OrderedDict((v, k) for k, v in self.experiment_identifiers())
+        reverse_map = collections.OrderedDict(
+            (v, k) for k, v in self.experiment_identifiers()
+        )
         orig_id = self["id"].deep_copy()
         for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
@@ -1496,8 +1497,6 @@ class reflection_table_selector(object):
         :param value: The value
 
         """
-        import operator
-
         # Set the column and value
         self.column = column
         self.value = value
@@ -1527,9 +1526,7 @@ class reflection_table_selector(object):
     def op_string(self):
         """
         Return the operator as a string
-
         """
-        import operator
 
         if self.op == operator.lt:
             string = "<"
@@ -1558,8 +1555,6 @@ class reflection_table_selector(object):
         :return: The selection as a mask
 
         """
-        import __builtin__
-
         if self.column == "intensity.sum.i_over_sigma":
             I = reflections["intensity.sum.value"]
             V = reflections["intensity.sum.variance"]
