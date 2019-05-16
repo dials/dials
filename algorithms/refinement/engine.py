@@ -491,11 +491,9 @@ class AdaptLbfgs(Refinery):
             max_iterations=self._max_iterations
         )
 
-        import cStringIO
+        from six.moves import cStringIO as StringIO
 
-        self._log_string = cStringIO.StringIO
-
-        return
+        self._log_string = StringIO
 
     def compute_functional_and_gradients(self):
         L, dL_dp, _ = self.compute_functional_gradients_and_curvatures()

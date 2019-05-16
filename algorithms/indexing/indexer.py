@@ -1784,8 +1784,7 @@ class indexer_base(object):
 
         if self.params.debug:
             # print a table of the angles between each pair of vectors
-
-            from cStringIO import StringIO
+            from six.moves import cStringIO as StringIO
 
             s = StringIO()
 

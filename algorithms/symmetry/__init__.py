@@ -8,7 +8,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from cStringIO import StringIO
+from six.moves import cStringIO as StringIO
 
 import libtbx
 from scitbx.array_family import flex

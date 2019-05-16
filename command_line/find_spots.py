@@ -120,7 +120,6 @@ class Script(object):
         from dials.util.options import flatten_experiments
         from time import time
         from dials.util import log
-        from dials.util import Sorry
 
         start_time = time()
 
@@ -191,7 +190,7 @@ class Script(object):
         # Print some per image statistics
         if params.per_image_statistics:
             from dials.algorithms.spot_finding import per_image_analysis
-            from cStringIO import StringIO
+            from six.moves import cStringIO as StringIO
 
             s = StringIO()
             for i, experiment in enumerate(experiments):

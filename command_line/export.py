@@ -289,7 +289,7 @@ class MTZExporter(object):
         from dials.util.export_mtz import export_mtz
 
         m = export_mtz(self.reflections, self.experiments, self.params)
-        from cStringIO import StringIO
+        from six.moves import cStringIO as StringIO
 
         summary = StringIO()
         m.show_summary(out=summary)

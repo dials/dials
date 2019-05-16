@@ -236,7 +236,7 @@ def show_experiments(experiments, show_scan_varying=False):
             text.append(str(expt.scan))
         if expt.goniometer is not None:
             text.append(show_goniometer(expt.goniometer))
-        from cStringIO import StringIO
+        from six.moves import cStringIO as StringIO
 
         s = StringIO()
         if expt.crystal is not None:
