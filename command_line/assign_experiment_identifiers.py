@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.assign_experiment_identifiers
+# LIBTBX_SET_DISPATCHER_NAME dials.assign_experiment_identifiers
 # coding: utf-8
 from __future__ import absolute_import, division, print_function
 
