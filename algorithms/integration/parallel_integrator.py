@@ -587,7 +587,7 @@ class IntegrationManager(object):
         reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warn("*** WARNING: no reflections in job %d ***" % index)
+            logger.warning("*** WARNING: no reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = IntegrationJob(
@@ -697,8 +697,12 @@ class IntegrationManager(object):
             cutoff = int(block.threshold * len(nframes))
             block_size = nframes[cutoff] * 2
             if block_size > max_block_size:
-                logger.warn("Computed block size (%s) > maximum block size (%s).")
-                logger.warn(
+                logger.warning(
+                    "Computed block size (%s) > maximum block size (%s).",
+                    block_size,
+                    max_block_size,
+                )
+                logger.warning(
                     "Setting block size to maximum; some reflections may be partial"
                 )
                 block_size = max_block_size
@@ -1096,7 +1100,7 @@ class ReferenceCalculatorManager(object):
         reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warn("*** WARNING: no reflections in job %d ***" % index)
+            logger.warning("*** WARNING: no reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = ReferenceCalculatorJob(
@@ -1214,8 +1218,12 @@ class ReferenceCalculatorManager(object):
             cutoff = int(block.threshold * len(nframes))
             block_size = nframes[cutoff] * 2
             if block_size > max_block_size:
-                logger.warn("Computed block size (%s) > maximum block size (%s).")
-                logger.warn(
+                logger.warning(
+                    "Computed block size (%s) > maximum block size (%s).",
+                    block_size,
+                    max_block_size,
+                )
+                logger.warning(
                     "Setting block size to maximum; some reflections may be partial"
                 )
                 block_size = max_block_size

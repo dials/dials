@@ -180,7 +180,7 @@ min_per_area: \n%s\nn_resolution_bins: \n%s\nmin_per_class %s""",
             params.reflection_selection.quasi_random.min_per_area = [inital] * len(
                 reflections
             )
-            logger.warn(
+            logger.warning(
                 """Warning:
 Using quasi-random reflection selection with manual parameters, but length
 of min_per_area list (%s) not equal to number of reflection tables (%s).
@@ -195,7 +195,7 @@ Using first min_per_area value for all datasets.\n""",
             params.reflection_selection.quasi_random.n_resolution_bins = [
                 initial
             ] * len(reflections)
-            logger.warn(
+            logger.warning(
                 """Warning:
 Using quasi-random reflection selection with manual parameters, but length
 of n_resolution_bins list (%s) not equal to number of reflection tables (%s).
@@ -316,7 +316,7 @@ def select_connected_reflections_across_datasets(
                 "Could not find any cross-dataset connected reflections with min_multiplicity >= %s."
                 % min_multiplicity
             )
-        logger.warn(
+        logger.warning(
             """Warning:
 Could not select any reflections for <I/sI> > %s and min_multiplicity >= %s.
 Reducing Isigma_cutoff to zero to attempt continuation.""",

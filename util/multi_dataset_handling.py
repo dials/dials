@@ -66,7 +66,7 @@ def parse_multiple_datasets(reflections):
         else:
             single_reflection_tables.append(refl_table)
     if len(dataset_id_list) != len(set(dataset_id_list)):  # need to reset some ids
-        logger.warn(
+        logger.warning(
             "Duplicate dataset ids found in different reflection tables. \n"
             "These will be treated as coming from separate datasets, and \n"
             "new dataset ids will be assigned for the whole dataset. \n"
@@ -203,7 +203,7 @@ def select_datasets_on_ids(
             "The options use_datasets and exclude_datasets cannot be used in conjuction."
         )
     if experiments.identifiers().count("") > 0:
-        logger.warn(
+        logger.warning(
             "\nERROR: Attempting to choose datasets based on unique identifier,\n"
             "but not all datasets currently have a unique identifier! Please make\n"
             "sure all identifiers are set before attempting to select datasets.\n"

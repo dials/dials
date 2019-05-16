@@ -104,7 +104,7 @@ def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
             )
             == 0
         ):
-            logger.warn(
+            logger.warning(
                 "No profile fitted reflections in this dataset, using summation intensities"
             )
             intensity_choice = "sum"

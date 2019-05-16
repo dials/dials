@@ -79,7 +79,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
     try:
         reflection_table = reducer.filter_for_export(reflection_table, *args, **kwargs)
     except NoProfilesException as e:
-        logger.warn(e)
+        logger.warning(e, exc_info=True)
         intensity_choice.remove("profile")
         logger.info(
             "Attempting to reprocess with intensity choice: %s"
