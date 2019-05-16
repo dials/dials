@@ -17,6 +17,7 @@ import logging
 import time
 import copy as copy
 from collections import OrderedDict
+
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
@@ -49,6 +50,7 @@ from dials.algorithms.scaling.reflection_selection import (
     select_connected_reflections_across_datasets,
 )
 from dials.util.observer import Subject
+import six
 
 logger = logging.getLogger("dials")
 
@@ -358,7 +360,7 @@ class SingleScaler(ScalerBase):
             # first work out the order in self._var_cov
             cumul_pos_dict = {}
             n_cumul_params = 0
-            for name, component in self.components.iteritems():
+            for name, component in six.iteritems(self.components):
                 cumul_pos_dict[name] = n_cumul_params
                 n_cumul_params += component.n_params
             # now get a var_cov_matrix subblock for pairs of parameters
@@ -613,9 +615,7 @@ class SingleScaler(ScalerBase):
             sel_reflections, self.experiment, self.params
         )
         self._global_Ih_table = IhTable([sel_reflections], self.space_group, nblocks=1)
-        rows = []
-        for key, val in self.components.iteritems():
-            rows.append([key, str(val.n_params)])
+        rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
         st = simple_table(rows, ["correction", "n_parameters"])
         logger.info("The following corrections will be applied to this dataset: \n")
         logger.info(st.format())

@@ -3,10 +3,12 @@ Module of utility functions for scaling.
 """
 
 from __future__ import absolute_import, division, print_function
-import logging
-from time import time
+
 import copy
+import logging
 from math import pi, acos
+from time import time
+
 from dials.array_family import flex
 from cctbx import miller
 from cctbx import uctbx
@@ -63,7 +65,7 @@ class Reasons(object):
     def __repr__(self):
         reasonlist = [
             "criterion: %s, reflections: %s\n" % (k, v)
-            for (k, v) in self.reasons.iteritems()
+            for (k, v) in self.reasons.items()
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)

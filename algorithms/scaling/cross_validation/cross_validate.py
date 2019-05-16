@@ -35,12 +35,15 @@ cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
 from __future__ import absolute_import, division, print_function
+
 import logging
 import itertools
 import time
+
 from libtbx import phil
 from dials.util import Sorry
 from dials.util import log
+import six
 
 logger = logging.getLogger("dials")
 info_handle = log.info_handle(logger)
@@ -149,7 +152,7 @@ def cross_validate(params, cross_validator):
 
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, val in e.iteritems():
+            for k, val in six.iteritems(e):
                 params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):
                 if n < 100.0 / free_set_percentage:

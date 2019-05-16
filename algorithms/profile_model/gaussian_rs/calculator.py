@@ -21,6 +21,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 
+import six
+
 logger = logging.getLogger(__name__)
 
 
@@ -659,10 +661,10 @@ class ScanVaryingProfileModelCalculator(object):
         for i, (x0, x1, y0, y1, z0, z1) in enumerate(bbox):
             assert z1 == z0 + 1
             index_list[z0].append(i)
-        reflection_list = dict(
-            (key, reflections.select(flex.size_t(value)))
-            for key, value in index_list.iteritems()
-        )
+        reflection_list = {
+            key: reflections.select(flex.size_t(value))
+            for key, value in six.iteritems(index_list)
+        }
 
         # The range of frames
         z0, z1 = scan.get_array_range()

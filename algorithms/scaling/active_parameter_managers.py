@@ -6,8 +6,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import OrderedDict
+
 from dials.array_family import flex
 from dials.util import Sorry
+import six
 
 logger = logging.getLogger("dials")
 
@@ -33,7 +35,7 @@ class active_parameter_manager(object):
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
         n_cumul_params = 0
-        for component, obj in components.iteritems():
+        for component, obj in six.iteritems(components):
             if component in selection_list:
                 assert hasattr(
                     obj, "parameters"

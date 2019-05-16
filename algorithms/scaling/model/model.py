@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import abc
 import logging
 from collections import OrderedDict
+
 import numpy as np
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import (
@@ -28,6 +29,7 @@ from dials_scaling_ext import (
     calc_lookup_index,
     create_sph_harm_lookup_table,
 )
+import six
 
 logger = logging.getLogger("dials")
 
@@ -170,7 +172,7 @@ class ScalingModelBase(object):
         """:obj:`str`: Return a string representation of a scaling model."""
         msg = ["Scaling model:"]
         msg.append("  type : " + str(self.id_))
-        for name, component in self.components.iteritems():
+        for name, component in six.iteritems(self.components):
             msg.append("  " + str(name).capitalize() + " component:")
             if component.parameter_esds:
                 msg.append("    parameters (sigma)")

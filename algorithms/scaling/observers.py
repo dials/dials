@@ -2,8 +2,10 @@
 Observers for the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
-from collections import OrderedDict
+
 import logging
+from collections import OrderedDict
+
 from scitbx.array_family import flex
 from cctbx import uctbx
 from libtbx.table_utils import simple_table
@@ -24,8 +26,8 @@ from dials.report.plots import (
 )
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
-
 from jinja2 import Environment, ChoiceLoader, PackageLoader
+import six
 
 logger = logging.getLogger("dials")
 
@@ -196,7 +198,7 @@ class ScalingModelObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
-            for name, plot in scaling_model_plots.iteritems():
+            for name, plot in six.iteritems(scaling_model_plots):
                 d.update({name + "_" + str(key): plot})
         graphs = {"scaling_model": d}
         return graphs
