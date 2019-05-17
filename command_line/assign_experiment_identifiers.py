@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.assign_experiment_identifiers
-# LIBTBX_SET_DISPATCHER_NAME dials.assign_experiment_identifiers
 # coding: utf-8
 from __future__ import absolute_import, division, print_function
 
 import sys
+
 from libtbx import phil
 from dials.util import halraiser
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
@@ -40,7 +39,7 @@ phil_scope = phil.parse(
 if __name__ == "__main__":
     try:
         # Parse the command line and flatten reflections, experiments
-        usage = """Usage: dev.dials.assign_experiment_identifiers reflections.pickle
+        usage = """Usage: dials.assign_experiment_identifiers reflections.pickle
 experiments.json"""
         optionparser = OptionParser(
             usage=usage,

@@ -1,32 +1,30 @@
 """
-Test for dev.dials.assign_experiment_identifiers
+Test for dials.assign_experiment_identifiers
 """
 from __future__ import absolute_import, division, print_function
 
 import os
-import pytest
-from libtbx import easy_run
+
+import procrunner
 from dials.array_family import flex
 from dxtbx.serialize import load
 
 
-class run_assign_identifiers(object):
-    def __init__(self, pickle_path_list, sweep_path_list, extra_args):
-        args = (
-            ["dev.dials.assign_experiment_identifiers"]
-            + pickle_path_list
-            + sweep_path_list
-            + extra_args
-        )
-        command = " ".join(args)
-        print(command)
-        _ = easy_run.fully_buffered(command=command).raise_if_errors()
-        assert os.path.exists("assigned_experiments.json")
-        assert os.path.exists("assigned_reflections.pickle")
+def run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args):
+    command = (
+        ["dials.assign_experiment_identifiers"]
+        + pickle_path_list
+        + sweep_path_list
+        + extra_args
+    )
+    print(command)
+    procrunner.run(command).check_returncode()
+    assert os.path.exists("assigned_experiments.json")
+    assert os.path.exists("assigned_reflections.pickle")
 
 
 def test_assign_identifiers(dials_regression, run_in_tmpdir):
-    """Test for dev.dials.assign_experiment_identifiers"""
+    """Test for dials.assign_experiment_identifiers"""
     pickle_path_list = []
     sweep_path_list = []
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -67,7 +65,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
         )
 
     run_assign_identifiers(
-        pickle_path_list, sweep_path_list, extra_args=['identifiers="0 5 10 15"']
+        pickle_path_list, sweep_path_list, extra_args=["identifiers=0 5 10 15"]
     )
 
     r = flex.reflection_table.from_pickle("assigned_reflections.pickle")
