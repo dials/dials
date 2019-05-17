@@ -132,10 +132,10 @@ phil_scope = iotbx.phil.parse(
       .help = "Minimum and maximum - values used to subset of reflections
               to determine the scaling model."
       .expert_level = 1
-    min_partiality = 0.6
+    min_partiality = 0.95
       .type = float
-      .help = "Minimum partiality to use when selecting subset of reflections
-               to determine the scaling model."
+      .help = "Minimum partiality to use when selecting reflections to use
+               to determine the scaling model and error model."
       .expert_level = 2
     intensity_choice = profile sum *combine
       .type = choice
@@ -207,7 +207,7 @@ phil_scope = iotbx.phil.parse(
       .help = "Option to apply a low resolution cutoff for the dataset (i.e.
                the chosen reflections have d < d_max)."
       .expert_level = 1
-    partiality_cutoff = 0.2
+    partiality_cutoff = 0.4
       .type = float
       .help = "Value below which reflections are removed from the dataset due
                to low partiality."
