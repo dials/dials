@@ -75,6 +75,7 @@ class IhTable(object):
         nblocks=1,
         free_set_percentage=0,
         free_set_offset=0,
+        additional_cols=None,
     ):
         """
         Distribute the input data into the required structure.
@@ -108,9 +109,11 @@ class IhTable(object):
         self._create_empty_Ih_table_blocks()
         for i, table in enumerate(reflection_tables):
             if indices_lists:
-                self._add_dataset_to_blocks(i, table, indices_lists[i])
+                self._add_dataset_to_blocks(
+                    i, table, indices_lists[i], additional_cols=additional_cols
+                )
             else:
-                self._add_dataset_to_blocks(i, table)
+                self._add_dataset_to_blocks(i, table, additional_cols=additional_cols)
         self.generate_block_selections()
         self.free_Ih_table = None
         if free_set_percentage > 0:
@@ -277,7 +280,9 @@ class IhTable(object):
                 )
             )
 
-    def _add_dataset_to_blocks(self, dataset_id, reflections, indices_array=None):
+    def _add_dataset_to_blocks(
+        self, dataset_id, reflections, indices_array=None, additional_cols=None
+    ):
         sorted_asu_indices, perm = get_sorted_asu_indices(
             reflections["asu_miller_index"], self.space_group
         )
@@ -286,6 +291,10 @@ class IhTable(object):
         r["asu_miller_index"] = reflections["asu_miller_index"]
         r["variance"] = reflections["variance"]
         r["inverse_scale_factor"] = reflections["inverse_scale_factor"]
+        if isinstance(additional_cols, list):
+            for col in additional_cols:
+                if col in reflections:
+                    r[col] = reflections[col]
         if indices_array:
             r["loc_indices"] = indices_array
         else:

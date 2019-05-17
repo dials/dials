@@ -223,6 +223,7 @@ class ScalerBase(Subject):
                         Ih_table.blocked_data_list[0],
                         self.params.weighting.error_model.n_bins,
                         self.params.weighting.error_model.min_Ih,
+                        self.params.reflection_selection.min_partiality,
                     )
                 ),
                 max_iterations=100,
@@ -836,7 +837,9 @@ class MultiScalerBase(ScalerBase):
             s.reflection_table.select(s.suitable_refl_for_scaling_sel)
             for s in self.active_scalers
         ]
-        self._global_Ih_table = IhTable(tables, self.space_group, nblocks=1)
+        self._global_Ih_table = IhTable(
+            tables, self.space_group, nblocks=1, additional_cols=["partiality"]
+        )
 
     def _create_Ih_table(self):
         """Create a new Ih table from the reflection tables."""
