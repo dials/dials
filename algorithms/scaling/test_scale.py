@@ -425,9 +425,9 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert os.path.exists("merging_stats.png")
     assert os.path.exists("cc_half_histograms.png")
     result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.17  # 19/02/19 was 0.1640
-    assert result.overall.cc_one_half > 0.96  # 19/02/19 was 0.9684
-    assert result.overall.n_obs > 54700  # 19/02/19 was 54794
+    assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
+    assert result.overall.cc_one_half > 0.96  # 17/05/19 was 0.9722
+    assert result.overall.n_obs > 51540  # 17/05/19 was 51560
     # for this dataset, expect to have two regions excluded - last 5 images of
     # datasets _4 & _5
     with open("analysis_results.json") as f:
@@ -438,8 +438,7 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
         [[21, 25], 3]
     ]
-    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == []
-    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert analysis_results["termination_reason"] == "max_percent_removed"
 
     command = [
         "dials.scale_and_filter",
