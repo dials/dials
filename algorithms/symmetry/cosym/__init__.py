@@ -344,7 +344,9 @@ class CosymAnalysis(symmetry_base, Subject):
                             cb_op = sgtbx.change_of_basis_op(
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
-                            reindexing_ops[i_cluster] = cb_op.as_xyz()
+                            reindexing_ops[i_cluster] = (
+                                cb_op * self.cb_op_inp_min
+                            ).as_xyz()
 
         return reindexing_ops
 
