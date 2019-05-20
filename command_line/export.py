@@ -650,7 +650,7 @@ if __name__ == "__main__":
     )
 
     # Create the option parser
-    if "DIALS_EXPORT_DO_NOT_CHECK_FORMAT" in os.environ:
+    if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):
         parser = OptionParser(
             usage=usage,
             read_experiments=True,
@@ -676,6 +676,8 @@ if __name__ == "__main__":
 
     # Print the version number
     logger.info(dials_version())
+    if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):
+        logger.info("(format checks disabled due to environment variable)")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
