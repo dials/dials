@@ -129,12 +129,15 @@ were considered for use when refining the scaling model.
             scaling_script.params.cut_data.partiality_cutoff,
             scaling_script.params.reflection_selection.min_partiality,
         )
-
         if MergingStatisticsObserver().data:
             logger.info(
                 "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
             )
-            logger.info(MergingStatisticsObserver().make_statistics_summary())
+            logger.info(
+                MergingStatisticsObserver().make_statistics_summary(
+                    MergingStatisticsObserver().data["statistics"]
+                )
+            )
 
 
 @singleton
@@ -393,9 +396,9 @@ class MergingStatisticsObserver(Observer):
             d["anom_plots"].update(anom_plotter.make_plots())
         return d
 
-    def make_statistics_summary(self):
+    @staticmethod
+    def make_statistics_summary(result):
         """Format merging statistics information into an output string."""
-        result = self.data["statistics"]
         overall = result.overall
         # First make overall summary
         msg = (
@@ -436,9 +439,9 @@ class MergingStatisticsObserver(Observer):
             " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
             + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
         )
-        for bin_stats in self.data["statistics"].bins:
+        for bin_stats in result.bins:
             msg += bin_stats.format() + "\n"
-        msg += self.data["statistics"].overall.format() + "\n"
+        msg += result.overall.format() + "\n"
 
         # Now show estimated cutoffs, based on iotbx code
         def format_d_min(value):

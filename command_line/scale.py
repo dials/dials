@@ -81,6 +81,7 @@ from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
     register_merging_stats_observers,
+    MergingStatisticsObserver,
 )
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
@@ -335,7 +336,8 @@ class Script(Subject):
             reflections, experiments, best_unit_cell=best_unit_cell
         )
         try:
-            _ = Script.merging_stats_from_scaled_array(scaled_miller_array, params)
+            res, _ = Script.merging_stats_from_scaled_array(scaled_miller_array, params)
+            logger.info(MergingStatisticsObserver().make_statistics_summary(res))
         except DialsMergingStatisticsError as e:
             logger.info(e)
 
