@@ -55,7 +55,7 @@ def run(args):
 
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
-        self.parser.print_help()
+        parser.print_help()
         print("Please pass an experiment list\n")
         return
 
