@@ -296,6 +296,11 @@ class cosym(Subject):
                 expt.crystal.set_space_group(
                     self.params.space_group.primitive_setting().group()
                 )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
+                )
             else:
                 expt.crystal.set_space_group(sgtbx.space_group())
         return experiments, reflections
