@@ -24,9 +24,6 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 phil_scope = iotbx.phil.parse(
     """\
-space_group = None
-  .type = space_group
-
 partiality_threshold = 0.99
   .type = float
   .help = "Use reflections with a partiality above the threshold."

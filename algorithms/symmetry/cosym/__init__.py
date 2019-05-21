@@ -45,6 +45,9 @@ min_cc_half = 0.6
 lattice_group = None
   .type = space_group
 
+space_group = None
+  .type = space_group
+
 dimensions = Auto
   .type = int(value_min=2)
 
@@ -124,7 +127,6 @@ class CosymAnalysis(symmetry_base, Subject):
           params (libtbx.phil.scope_extract): Parameters for the analysis.
 
         """
-        self.input_space_group = intensities[0].space_group()
         super(CosymAnalysis, self).__init__(
             intensities,
             normalisation=params.normalisation,
@@ -140,6 +142,10 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
         self.params = params
+        if self.params.space_group is not None:
+            self.input_space_group = self.params.space_group.group()
+        else:
+            self.input_space_group = None
         if self.params.lattice_group is not None:
             self.intensities = (
                 self.intensities.as_reference_setting().primitive_setting()
@@ -286,7 +292,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
-        if self.input_space_group.type().number() > 1:
+        if self.input_space_group is not None:
             self.best_solution = None
             self._symmetry_analysis = None
             return
@@ -306,7 +312,10 @@ class CosymAnalysis(symmetry_base, Subject):
         self.params.cluster.n_clusters = len(cosets.partitions)
 
     def _space_group_for_dataset(self, dataset_id, sym_ops):
-        sg = copy.deepcopy(self.input_space_group)
+        if self.input_space_group is not None:
+            sg = copy.deepcopy(self.input_space_group)
+        else:
+            sg = sgtbx.space_group()
         ref_sym_op_id = None
         ref_cluster_id = None
         for sym_op_id in range(len(sym_ops)):
@@ -358,12 +367,9 @@ class CosymAnalysis(symmetry_base, Subject):
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
 
-        space_groups = []
-
         sym_ops = [
             sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
         ]
-        self.space_groups = space_groups
 
         reindexing_ops = {}
         space_groups = {}
