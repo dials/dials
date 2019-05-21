@@ -144,6 +144,11 @@ class CosymAnalysis(symmetry_base, Subject):
         self.params = params
         if self.params.space_group is not None:
             self.input_space_group = self.params.space_group.group()
+            self.intensities = self.intensities.customized_copy(
+                space_group_info=self.params.space_group.change_basis(
+                    self.cb_op_inp_min
+                )
+            )
         else:
             self.input_space_group = None
         if self.params.lattice_group is not None:
