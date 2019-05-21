@@ -21,7 +21,7 @@ def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
 
     datasets, expected_reindexing_ops = generate_test_data(
         space_group=sgtbx.space_group_info(symbol=space_group).group(),
-        unit_cell_volume=10000,
+        unit_cell_volume=9999,
         d_min=1.5,
         map_to_p1=True,
         sample_size=sample_size,
