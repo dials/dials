@@ -21,12 +21,21 @@ def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
 
     datasets, expected_reindexing_ops = generate_test_data(
         space_group=sgtbx.space_group_info(symbol=space_group).group(),
-        unit_cell_volume=9999,
+        unit_cell_volume=10000,
         d_min=1.5,
         map_to_p1=True,
         sample_size=sample_size,
     )
     expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
+
+    # Workaround fact that the minimum cell reduction can occassionally be unstable
+    # The input *should* be already the minimum cell, but for some combinations of unit
+    # cell parameters the change_of_basis_op_to_minimum_cell is never the identity.
+    # Therefore apply this cb_op to the expected_reindexing_ops prior to the comparison.
+    cb_op_inp_min = datasets[0].crystal_symmetry().change_of_basis_op_to_minimum_cell()
+    expected_reindexing_ops = dict(
+        ((sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min).as_xyz(), dataset_ids)
+        for cb_op, dataset_ids in expected_reindexing_ops.items())
 
     params = phil_scope.extract()
     params.cluster.n_clusters = len(expected_reindexing_ops)
