@@ -6,16 +6,7 @@ import procrunner
 from dxtbx.serialize import load
 
 
-@pytest.mark.parametrize(
-    "space_group",
-    [
-        None,
-        pytest.param(
-            "P 1", marks=pytest.mark.xfail(reason="cosym bug if setting space_group=P1")
-        ),
-        "P 4",
-    ],
-)
+@pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
 def test_cosym(dials_data, tmpdir, space_group):
     mcp = dials_data("multi_crystal_proteinase_k")
     command = ["dials.cosym", "space_group=" + str(space_group)]
