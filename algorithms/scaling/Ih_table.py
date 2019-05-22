@@ -136,9 +136,10 @@ class IhTable(object):
             data_for_block = data.select(block.block_selections[dataset_id])
             start = block.dataset_info[dataset_id]["start_index"]
             end = block.dataset_info[dataset_id]["end_index"]
-            block.Ih_table[column].set_selected(
-                flex.size_t(range(start, end)), data_for_block
-            )
+            sel = flex.size_t(range(start, end))
+            block.Ih_table[column].set_selected(sel, data_for_block)
+            if column == "variance":
+                block.Ih_table["weights"].set_selected(sel, 1.0 / data_for_block)
 
     def get_block_selections_for_dataset(self, dataset):
         """Generate the block selection list for a given dataset."""

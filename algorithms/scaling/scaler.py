@@ -421,6 +421,7 @@ class SingleScaler(ScalerBase):
             # now set in global_Ih_table
             self.global_Ih_table.update_data_in_blocks(intensity, 0, column="intensity")
             self.global_Ih_table.update_data_in_blocks(variance, 0, column="variance")
+            self.global_Ih_table.calc_Ih()
             self.experiment.scaling_model.record_intensity_combination_Imid(
                 combiner.max_key
             )
@@ -487,6 +488,7 @@ class SingleScaler(ScalerBase):
                 dataset_id=0,
                 column="inverse_scale_factor",
             )
+            self.global_Ih_table.calc_Ih()
         if self.verbosity > 1:
             logger.info(
                 "Scale factors determined during minimisation have now been\n"
@@ -729,6 +731,7 @@ class MultiScalerBase(ScalerBase):
                 dataset_id=i,
                 column="inverse_scale_factor",
             )
+        self.global_Ih_table.calc_Ih()
         if self.verbosity <= 1:
             logger.info(
                 (
@@ -1043,6 +1046,7 @@ class MultiScaler(MultiScalerBase):
                     scaler.experiment.scaling_model.record_intensity_combination_Imid(
                         combiner.max_key
                     )
+                self.global_Ih_table.calc_Ih()
         else:
             for scaler in self.single_scalers:
                 scaler.combine_intensities()
