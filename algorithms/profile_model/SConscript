@@ -23,3 +23,9 @@ env.SharedLibrary(
     source=["gaussian_rs/transform/boost_python/transform_ext.cc"],
     LIBS=env["LIBS"],
 )
+
+env.SharedLibrary(
+    target="#/lib/dials_algorithms_profile_model_potato_ext",
+    source=["potato/boost_python/ext.cc"],
+    LIBS=env["LIBS"],
+)
