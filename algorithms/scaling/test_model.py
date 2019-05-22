@@ -213,10 +213,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     physicalmodel.components["decay"].calculate_scales_and_derivatives()
     physicalmodel.normalise_components()
     assert list(physicalmodel.components["scale"].parameters) == pytest.approx(
-        [1.007195, 0.923262], 1e-4
-    )
-    assert list(physicalmodel.components["decay"].parameters) == pytest.approx(
-        [-0.0130847, 0.0869153], 1e-4
+        [1.0091065, 0.925014], 1e-4
     )
 
     # Test from_dict initialisation method.
