@@ -17,6 +17,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 import procrunner
 
 
@@ -187,10 +188,8 @@ def test_scale_merging_stats():
         [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
     )
     scaled_array = scaled_data_as_miller_array([reflections], exp)
-    merging_statistics_result = Script.merging_stats_from_scaled_array(
-        scaled_array, params
-    )
-    assert merging_statistics_result is None
+    with pytest.raises(DialsMergingStatisticsError):
+        _ = Script.merging_stats_from_scaled_array(scaled_array, params)
 
 
 def test_scale_script_prepare_input():

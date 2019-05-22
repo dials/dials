@@ -365,23 +365,21 @@ class Script(Subject):
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
-        self.merging_statistics_result, self.anom_merging_statistics_result = self.merging_stats_from_scaled_array(
-            self.scaled_miller_array, self.params
-        )
+        try:
+            self.merging_statistics_result, self.anom_merging_statistics_result = self.merging_stats_from_scaled_array(
+                self.scaled_miller_array, self.params
+            )
+        except DialsMergingStatisticsError as e:
+            logger.info(e)
 
     @staticmethod
     def merging_stats_from_scaled_array(scaled_miller_array, params):
         """Calculate and print the merging statistics."""
 
         if scaled_miller_array.is_unique_set_under_symmetry():
-            logger.info(
-                (
-                    "Dataset doesn't contain any equivalent reflections, \n"
-                    "no merging statistics can be calculated."
-                )
+            raise DialsMergingStatisticsError(
+                "Dataset contains no equivalent reflections, merging statistics cannot be calculated."
             )
-            return None
-
         try:
             result = iotbx.merging_statistics.dataset_statistics(
                 i_obs=scaled_miller_array,
