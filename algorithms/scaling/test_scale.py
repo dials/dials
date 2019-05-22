@@ -369,7 +369,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     assert (
         result.overall.cc_one_half > 0.995
     )  # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
-    assert result.overall.n_obs > 2320  # at 07/01/19, was 2336, at 30/01/19 was 2334
+    assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
     # test the 'stats_only' option
     extra_args = ["stats_only=True"]
     run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
@@ -536,7 +536,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
     result = get_merging_stats("unmerged.mtz")
-    expected_nobs = 5520
+    expected_nobs = 5411
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
     assert abs(result.overall.n_obs - expected_nobs) < 100

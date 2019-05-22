@@ -370,7 +370,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
 
         assert w_sel.all_gt(0)  # guard against division by zero
         norm_dev = (I_sel - (g_sel * wgIsum_others_sel / wg2sum_others_sel)) / (
-            ((1.0 / w_sel) + ((g_sel / wg2sum_others_sel) ** 2)) ** 0.5
+            ((1.0 / w_sel) + (g_sel ** 2 / wg2sum_others_sel)) ** 0.5
         )
         norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
         z_score = flex.abs(norm_dev)
