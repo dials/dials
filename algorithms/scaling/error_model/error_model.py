@@ -48,6 +48,7 @@ class BasicErrorModel(object):
     def __str__(self):
         a = abs(self.refined_parameters[0])
         b = abs(self.refined_parameters[1])
+        ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
         return "\n".join(
             (
                 "",
@@ -63,7 +64,7 @@ class BasicErrorModel(object):
                 + "("
                 + u"\u03C3\xb2"
                 " + (bI)" + u"\xb2" + ")",
-                "  estimated I/sigma asymptotic limit: %.3f" % (1.0 / (b * a)),
+                "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
             )
         )
