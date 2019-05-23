@@ -188,6 +188,11 @@ class cosym(Subject):
                         .space_group()
                         .build_derived_acentric_group()
                     )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
+                )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
     def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
