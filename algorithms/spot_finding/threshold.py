@@ -146,6 +146,7 @@ class DispersionThresholdStrategy(ThresholdStrategy):
         # Return the result
         return result
 
+
 class DispersionExtendedThresholdStrategy(ThresholdStrategy):
     """
     A class implementing a 'gain' threshold.

@@ -3,7 +3,9 @@ from __future__ import print_function
 
 import logging
 
-logger = logging.getLogger("dials.extensions.dispersion_extended_spotfinder_threshold_ext")
+logger = logging.getLogger(
+    "dials.extensions.dispersion_extended_spotfinder_threshold_ext"
+)
 
 
 class DispersionExtendedSpotFinderThresholdExt(object):
@@ -51,7 +53,9 @@ class DispersionExtendedSpotFinderThresholdExt(object):
                 % (params.spotfinder.threshold.dispersion.global_threshold)
             )
 
-        from dials.algorithms.spot_finding.threshold import DispersionExtendedThresholdStrategy
+        from dials.algorithms.spot_finding.threshold import (
+            DispersionExtendedThresholdStrategy,
+        )
 
         self._algorithm = DispersionExtendedThresholdStrategy(
             kernel_size=params.spotfinder.threshold.dispersion.kernel_size,

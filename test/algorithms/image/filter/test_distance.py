@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
+
 def test_manhattan():
     from dials.algorithms.image.filter import manhattan_distance
     from scitbx.array_family import flex
@@ -60,16 +61,16 @@ def test_chebyshev():
     D = data[1:-1, 1:-1]
     selection = D.as_1d().select(M.as_1d() == 0)
     assert selection.all_eq(True)
-    
+
     while True:
         N = data[0:-2, 1:-1]
         S = data[2:, 1:-1]
         E = data[1:-1, 0:-2]
         W = data[1:-1, 2:]
-        NE = data[0:-2,0:-2]
-        NW = data[0:-2,2:]
-        SE = data[2:,0:-2]
-        SW = data[2:,2:]
+        NE = data[0:-2, 0:-2]
+        NW = data[0:-2, 2:]
+        SE = data[2:, 0:-2]
+        SW = data[2:, 2:]
         selection = M.as_1d() == 1
         neighbours = (
             N.select(selection)
