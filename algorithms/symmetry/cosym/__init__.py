@@ -162,14 +162,13 @@ class CosymAnalysis(symmetry_base, Subject):
         else:
             dimensions = self.params.dimensions
         if self.params.lattice_group is not None:
-            lattice_group = (
+            self.lattice_group = (
                 self.params.lattice_group.group()
                 .build_derived_patterson_group()
                 .info()
                 .primitive_setting()
                 .group()
             )
-            self.lattice_group = self.params.lattice_group
         self.target = target.Target(
             self.intensities,
             self.dataset_ids,
