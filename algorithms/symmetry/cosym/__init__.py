@@ -169,13 +169,12 @@ class CosymAnalysis(symmetry_base, Subject):
                 .primitive_setting()
                 .group()
             )
-        else:
-            lattice_group = None
+            self.lattice_group = self.params.lattice_group
         self.target = target.Target(
             self.intensities,
             self.dataset_ids,
             min_pairs=self.params.min_pairs,
-            lattice_group=lattice_group,
+            lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
             nproc=self.params.nproc,
