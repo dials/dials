@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import dials.precommitbx.nagger
 import libtbx.pkg_utils
 
 libtbx.pkg_utils.define_entry_points(
@@ -22,6 +23,8 @@ try:
     print(dials_version())
 except Exception:
     pass
+
+dials.precommitbx.nagger.nag()
 
 
 def _install_dials_autocompletion():
