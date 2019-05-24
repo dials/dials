@@ -107,12 +107,12 @@ def estimate_global_threshold(image, mask=None, plot=False):
 
     # more conservative, choose point 2 left of the elbow point
     x_g = x[p_g + p_m - 2]
-    y_g = y[p_g + p_m - 2]
+    # y_g = y[p_g + p_m - 2]
 
     if plot:
         from matplotlib import pyplot
 
-        f = pyplot.figure(figsize=(16, 12))
+        pyplot.figure(figsize=(16, 12))
         pyplot.scatter(threshold, n_above_threshold, marker="+")
         # for i in range(len(threshold)-1):
         #  pyplot.plot([threshold[i], threshold[-1]],
