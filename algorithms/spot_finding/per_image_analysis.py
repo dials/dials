@@ -274,8 +274,10 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
 
     if plot_filename is not None:
         import matplotlib
+
         matplotlib.use("Agg")
         from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(d_star_sq, log_i_over_sigi, marker="+")
@@ -428,8 +430,10 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
 
     if plot_filename is not None:
         import matplotlib
+
         matplotlib.use("Agg")
         from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(ds3_subset)), ds3_subset)
@@ -492,8 +496,10 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
 
     if plot_filename is not None:
         import matplotlib
+
         matplotlib.use("Agg")
         from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(bin_counts)), bin_counts)
@@ -569,8 +575,10 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
 
     if plot_filename is not None:
         import matplotlib
+
         matplotlib.use("Agg")
         from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.bar(
@@ -618,8 +626,10 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
 
     if plot_filename is not None:
         import matplotlib
+
         matplotlib.use("Agg")
         from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         # ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
@@ -649,6 +659,7 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
 
 def plot_ordered_d_star_sq(reflections, imageset):
     from matplotlib import pyplot
+
     d_star_sq = flex.pow2(reflections["rlp"].norms())
 
     perm = flex.sort_permutation(d_star_sq)
@@ -881,8 +892,10 @@ def plot_stats(stats, filename="per_image_analysis.png"):
 
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
     import matplotlib
+
     matplotlib.use("Agg")
     from matplotlib import pyplot
+
     _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
     ax1.scatter(
         list(i_image),
