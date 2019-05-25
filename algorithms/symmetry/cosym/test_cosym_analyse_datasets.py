@@ -35,7 +35,8 @@ def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
     cb_op_inp_min = datasets[0].crystal_symmetry().change_of_basis_op_to_minimum_cell()
     expected_reindexing_ops = dict(
         ((sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min).as_xyz(), dataset_ids)
-        for cb_op, dataset_ids in expected_reindexing_ops.items())
+        for cb_op, dataset_ids in expected_reindexing_ops.items()
+    )
 
     params = phil_scope.extract()
     params.cluster.n_clusters = len(expected_reindexing_ops)
