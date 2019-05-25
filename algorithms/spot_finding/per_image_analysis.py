@@ -273,9 +273,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     # resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
     if plot_filename is not None:
-        import matplotlib
-
-        matplotlib.use("Agg")
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -429,9 +426,6 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     noisiness /= (n - 1) * (n - 2) / 2
 
     if plot_filename is not None:
-        import matplotlib
-
-        matplotlib.use("Agg")
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -495,9 +489,6 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
     noisiness /= 0.5 * m * (m - 1)
 
     if plot_filename is not None:
-        import matplotlib
-
-        matplotlib.use("Agg")
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -574,9 +565,6 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     hist = get_histogram(d_star_sq)
 
     if plot_filename is not None:
-        import matplotlib
-
-        matplotlib.use("Agg")
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -625,9 +613,6 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
             slots.append(0)
 
     if plot_filename is not None:
-        import matplotlib
-
-        matplotlib.use("Agg")
         from matplotlib import pyplot
 
         fig = pyplot.figure()
@@ -882,6 +867,8 @@ def print_table(stats, perm=None, n_rows=None, out=None):
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):
+    from matplotlib import pyplot
+
     n_spots_total = flex.int(stats.n_spots_total)
     n_spots_no_ice = stats.n_spots_no_ice
     n_spots_4A = stats.n_spots_4A
@@ -891,10 +878,6 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     total_intensity = stats.total_intensity
 
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
-    import matplotlib
-
-    matplotlib.use("Agg")
-    from matplotlib import pyplot
 
     _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
     ax1.scatter(

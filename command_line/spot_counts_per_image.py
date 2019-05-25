@@ -143,6 +143,9 @@ def run(args):
             with open(params.json, "wb") as fp:
                 json.dump(stats.__dict__, fp)
     if params.plot:
+        import matplotlib
+
+        matplotlib.use("Agg")
         per_image_analysis.plot_stats(stats, filename=params.plot)
 
 
