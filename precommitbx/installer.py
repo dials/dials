@@ -5,13 +5,13 @@ import os
 import stat
 import sys
 import time
-import urllib2
 
 import dials.precommitbx._precommitbx
 import libtbx.introspection
 import libtbx.load_env
 import procrunner
 import py
+from future.moves.urllib.request import urlopen, Request
 from tqdm import tqdm, trange
 
 BOLD = "\033[1m"
@@ -185,8 +185,8 @@ def download(name, url, size, target):
         unit_scale=True,
     ) as bar:
         with target.open("wb", ensure=True) as fh:
-            url_request = urllib2.Request(url)
-            with contextlib.closing(urllib2.urlopen(url_request)) as socket:
+            url_request = Request(url)
+            with contextlib.closing(urlopen(url_request)) as socket:
                 while True:
                     block = socket.read(4096)
                     if not block:
