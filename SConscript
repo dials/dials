@@ -36,6 +36,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     env.SConscript("model/SConscript", exports={"env": env})
     env.SConscript("array_family/SConscript", exports={"env": env})
     env.SConscript("algorithms/SConscript", exports={"env": env})
+    env.SConscript("pychef/SConscript", exports={"env": env})
     env.SConscript("viewer/SConscript", exports={"env": env})
     # env.SConscript('nexus/SConscript', exports={ 'env' : env })
     env.SConscript("util/SConscript", exports={"env": env})
