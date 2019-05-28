@@ -7,6 +7,10 @@ __pycache__/
 .cache
 .pytest_cache
 
+# Python packaging
+/dist
+/dials.egg-info
+
 # Ignored Mathematica files shall be prefixed by _
 _*.nb
 *.fdb_latexmk
