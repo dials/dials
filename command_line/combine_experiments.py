@@ -536,7 +536,7 @@ class Script(object):
         # print number of reflections per experiment
         from libtbx.table_utils import simple_table
 
-        header = ["Experiment", "Nref"]
+        header = ["Experiment", "Number of reflections"]
         rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
         st = simple_table(rows, header)
         print(st.format())
