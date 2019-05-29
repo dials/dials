@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from xia2_pychef_ext import *
+from dials_pychef_ext import *
 
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
