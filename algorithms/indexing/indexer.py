@@ -706,7 +706,7 @@ class indexer_base(object):
                     logger.info("Target d_min_final reached: finished with refinement")
                     break
 
-        if not "refined_experiments" in locals():
+        if self.refined_experiments is None:
             raise Sorry("None of the experiments could refine.")
 
         if len(self.refined_experiments) > 1:

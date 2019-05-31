@@ -436,7 +436,7 @@ class stills_indexer(indexer_base):
             experiments = refined_experiments
             self.refined_experiments = refined_experiments
 
-        if not "refined_experiments" in locals():
+        if self.refined_experiments is None:
             raise Sorry("None of the experiments could refine.")
 
         # discard experiments with zero reflections after refinement
