@@ -517,26 +517,39 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
 
     def cc_one_half_plot(self, method=None):
         """Make a plot of cc half against resolution."""
+
         if method == "sigma_tau":
             cc_one_half_bins = [
                 bin_stats.cc_one_half_sigma_tau
+                if bin_stats.cc_one_half_sigma_tau
+                else 0.0
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
                 bin_stats.cc_one_half_sigma_tau_critical_value
+                if bin_stats.cc_one_half_sigma_tau_critical_value
+                else 0.0
                 for bin_stats in self.dataset_statistics.bins
             ]
         else:
             cc_one_half_bins = [
-                bin_stats.cc_one_half for bin_stats in self.dataset_statistics.bins
+                bin_stats.cc_one_half if bin_stats.cc_one_half else 0.0
+                for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
                 bin_stats.cc_one_half_critical_value
+                if bin_stats.cc_one_half_critical_value
+                else 0.0
                 for bin_stats in self.dataset_statistics.bins
             ]
-        cc_anom_bins = [bin_stats.cc_anom for bin_stats in self.dataset_statistics.bins]
+        cc_anom_bins = [
+            bin_stats.cc_anom if bin_stats.cc_anom else 0.0
+            for bin_stats in self.dataset_statistics.bins
+        ]
         cc_anom_critical_value_bins = [
             bin_stats.cc_anom_critical_value
+            if bin_stats.cc_anom_critical_value
+            else 0.0
             for bin_stats in self.dataset_statistics.bins
         ]
 
