@@ -64,17 +64,16 @@ class run_one_indexing(object):
 
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]
-            self.crystal_model = experiment.crystal
             assert unit_cells_are_similar(
-                self.crystal_model.get_unit_cell(),
+                experiment.crystal.get_unit_cell(),
                 expected_unit_cell,
                 relative_length_tolerance=relative_length_tolerance,
                 absolute_angle_tolerance=absolute_angle_tolerance,
             ), (
-                self.crystal_model.get_unit_cell().parameters(),
+                experiment.crystal.get_unit_cell().parameters(),
                 expected_unit_cell.parameters(),
             )
-            sg = self.crystal_model.get_space_group()
+            sg = experiment.crystal.get_space_group()
             assert sg.type().hall_symbol() == expected_hall_symbol, (
                 sg.type().hall_symbol(),
                 expected_hall_symbol,
@@ -612,6 +611,34 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
         expected_unit_cell,
         expected_rmsds,
         expected_hall_symbol,
+    )
+
+
+def test_multiple_experiments(dials_regression, tmpdir):
+    # Test indexing 4 lysozyme still shots in a single dials.index job
+    #   - the first image doesn't index
+    #   - the last three images do index
+    data_dir = os.path.join(
+        dials_regression, "indexing_test_data", "i24_lysozyme_stills"
+    )
+    pickle_path = os.path.join(data_dir, "strong.pickle")
+    experiments_json = os.path.join(data_dir, "imported_experiments.json")
+
+    expected_unit_cell = uctbx.unit_cell((38.06, 78.78, 78.91, 90, 90, 90))
+    expected_hall_symbol = " P 1"
+    expected_rmsds = (0.1, 0.07, 0.0)
+
+    extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
+
+    result = run_one_indexing(
+        pickle_path,
+        experiments_json,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=3,
+        relative_length_tolerance=0.01,
     )
 
 
