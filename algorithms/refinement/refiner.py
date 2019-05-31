@@ -1100,28 +1100,29 @@ class ScanVaryingRefiner(Refiner):
             if A_list is not None:
                 exp.crystal.set_A_at_scan_points(A_list)
 
-            # Return early if not calculating scan-varying errors
-            if not self._pred_param.set_scan_varying_errors:
-                return
+            # Calculate scan-varying errors if requested
+            if self._pred_param.set_scan_varying_errors:
 
-            # get state covariance matrices the whole range of images. We select
-            # the first element of this at each image because crystal scan-varying
-            # parameterisations are not multi-state
-            state_cov_list = [
-                self._pred_param.calculate_model_state_uncertainties(
-                    obs_image_number=t, experiment_id=iexp
+                # get state covariance matrices the whole range of images. We select
+                # the first element of this at each image because crystal scan-varying
+                # parameterisations are not multi-state
+                state_cov_list = [
+                    self._pred_param.calculate_model_state_uncertainties(
+                        obs_image_number=t, experiment_id=iexp
+                    )
+                    for t in range(ar_range[0], ar_range[1] + 1)
+                ]
+                if "U_cov" in state_cov_list[0]:
+                    u_cov_list = [e["U_cov"] for e in state_cov_list]
+                else:
+                    u_cov_list = None
+
+                if "B_cov" in state_cov_list[0]:
+                    b_cov_list = [e["B_cov"] for e in state_cov_list]
+                else:
+                    b_cov_list = None
+
+                # return these to the model parameterisations to be set in the models
+                self._pred_param.set_model_state_uncertainties(
+                    u_cov_list, b_cov_list, iexp
                 )
-                for t in range(ar_range[0], ar_range[1] + 1)
-            ]
-            if "U_cov" in state_cov_list[0]:
-                u_cov_list = [e["U_cov"] for e in state_cov_list]
-            else:
-                u_cov_list = None
-
-            if "B_cov" in state_cov_list[0]:
-                b_cov_list = [e["B_cov"] for e in state_cov_list]
-            else:
-                b_cov_list = None
-
-            # return these to the model parameterisations to be set in the models
-            self._pred_param.set_model_state_uncertainties(u_cov_list, b_cov_list, iexp)
