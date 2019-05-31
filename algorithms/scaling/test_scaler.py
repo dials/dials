@@ -1,11 +1,9 @@
 from __future__ import absolute_import, division, print_function
 import pytest
-import mock
-from mock import Mock, MagicMock, call
+from mock import Mock, MagicMock
 from scitbx import sparse
 from libtbx import phil
 from libtbx.test_utils import approx_equal
-from cctbx.sgtbx import space_group
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
@@ -13,17 +11,11 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import basis_function
-from dials.algorithms.scaling.parameter_handler import (
-    scaling_active_parameter_manager,
-    create_apm_factory,
-)
+from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
-from dials.algorithms.scaling.target_function import ScalingTargetFixedIH
 from dials.algorithms.scaling.scaler import (
     SingleScaler,
     calc_sf_variances,
-    ScalerBase,
-    MultiScalerBase,
     MultiScaler,
     TargetScaler,
     NullScaler,
@@ -109,7 +101,6 @@ def generated_param():
         args=[], quick_parse=True, show_diff_phil=False
     )
     parameters.__inject__("model", "KB")
-    parameters.scaling_options.space_group = "P2"
     return parameters
 
 

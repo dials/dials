@@ -124,10 +124,6 @@ class ScalerBase(Subject):
 
     @space_group.setter
     def space_group(self, new_sg):
-        if self._space_group:
-            current_sg = self._space_group
-        else:
-            current_sg = None
         if isinstance(new_sg, str):
             crystal_symmetry = crystal.symmetry(space_group_symbol=new_sg)
             self._space_group = crystal_symmetry.space_group()
@@ -140,14 +136,6 @@ class ScalerBase(Subject):
             )
         if self.experiment:
             self.experiment.crystal.set_space_group(self._space_group)
-        if current_sg != self._space_group:
-            logger.info(
-                (
-                    "WARNING: Manually overriding space group from {0} to {1}. {sep}"
-                    "If the reflection indexing in these space groups is different, {sep}"
-                    "bad things may happen!!! {sep}"
-                ).format(current_sg.info(), self._space_group.info(), sep="\n")
-            )
 
     @property
     def reflection_table(self):
@@ -274,8 +262,6 @@ class SingleScaler(ScalerBase):
         self.active_scalers = [self]
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
-        if self._params.scaling_options.space_group:
-            self.space_group = self._params.scaling_options.space_group
         n_model_params = sum([val.n_params for val in self.components.itervalues()])
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
         self._initial_keys = [key for key in reflection_table.keys()]
@@ -1133,8 +1119,6 @@ class NullScaler(ScalerBase):
         self._params = params
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
-        if self._params.scaling_options.space_group:
-            self._space_group = self._params.scaling_options.space_group
         self._reflection_table = reflection
         self._initial_keys = [key for key in self._reflection_table.keys()]
         self.n_suitable_refl = self._reflection_table.size()

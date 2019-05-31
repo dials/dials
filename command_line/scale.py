@@ -47,7 +47,6 @@ import gc
 import libtbx
 from libtbx import phil
 from dials.util import Sorry
-from cctbx import crystal
 import iotbx.merging_statistics
 from dials.util import log, show_mail_on_error
 from dials.array_family import flex
@@ -217,6 +216,14 @@ class Script(Subject):
     def prepare_input(params, experiments, reflections):
         """Perform checks on the data and prepare the data for scaling."""
 
+        if params.scaling_options.space_group:
+            logger.warning(
+                """
+Warning: the command line option space_group has been deprecated,
+please use dials.reindex, dials.symmetry or dials.cosym to
+prepare the data in the correct space group.\n"""
+            )
+
         #### First exclude any datasets, before the dataset is split into
         #### individual reflection tables and expids set.
         experiments, reflections = prepare_multiple_datasets_for_scaling(
@@ -230,6 +237,8 @@ class Script(Subject):
             reflections, experiments, params.exclude_images
         )
 
+        #### Allow checking of consistent indexing, useful for
+        #### targeted / incremental scaling.
         if params.scaling_options.check_consistent_indexing:
             logger.info("Running dials.cosym to check consistent indexing:\n")
             cosym_params = cosym_phil_scope.extract()
@@ -239,9 +248,22 @@ class Script(Subject):
             experiments = cosym_instance.experiments
             reflections = cosym_instance.reflections
             logger.info("Finished running dials.cosym, continuing with scaling.\n")
-        else:
-            #### Ensure all space groups are the same
-            experiments = ensure_consistent_space_groups(experiments, params)
+
+        #### Make sure all experiments in same space group
+        sgs = [e.crystal.get_space_group().type().number() for e in experiments]
+        if len(set(sgs)) > 1:
+            raise Sorry(
+                """The experiments have different space groups:
+                space group numbers found: %s
+                Please reanalyse the data so that space groups are consistent,
+                (consider using dials.reindex, dials.symmetry or dials.cosym)
+                or remove incompatible experiments (using the option exclude_datasets=)""",
+                set(sgs),
+            )
+        logger.info(
+            "Space group being used during scaling is %s",
+            experiments[0].crystal.get_space_group().info(),
+        )
 
         #### If doing targeted scaling, extract data and append an experiment
         #### and reflection table to the lists
@@ -560,43 +582,6 @@ def _write_scaled_data_to_merged_mtz(
     date_str = time.strftime("%d/%m/%Y at %H:%M:%S", time.gmtime())
     mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
     mtz_file.write(filename)
-
-
-def ensure_consistent_space_groups(experiments, params):
-    """Make all space groups the same, and raise an error if not."""
-    if params.scaling_options.space_group:
-        s_g_symbol = params.scaling_options.space_group
-        for experiment in experiments:
-            sg_from_file = experiment.crystal.get_space_group()
-            user_sg = crystal.symmetry(space_group_symbol=s_g_symbol).space_group()
-            if user_sg != sg_from_file:
-                logger.info(
-                    (
-                        "WARNING: Manually overriding space group from {0} to {1}. {sep}"
-                        "If the reflection indexing in these space groups is different, {sep}"
-                        "bad things may happen!!! {sep}"
-                    ).format(sg_from_file.info(), user_sg.info(), sep="\n")
-                )
-                experiment.crystal.set_space_group(user_sg)
-    else:
-        sgs = [e.crystal.get_space_group().type().number() for e in experiments]
-        if len(set(sgs)) > 1:
-            logger.info(
-                """The space groups are not the same for all datasets;
-space groups numbers found: %s""",
-                set(sgs),
-            )
-            raise Sorry(
-                "experiments have different space groups and cannot be "
-                "scaled together, please reanalyse the data so that the space groups "
-                "are consistent or manually specify a space group. Alternatively, "
-                "some datasets can be excluded using the option exclude_datasets="
-            )
-    logger.info(
-        "Space group being used during scaling is %s",
-        experiments[0].crystal.get_space_group().info(),
-    )
-    return experiments
 
 
 def run_scaling(params, experiments, reflections):

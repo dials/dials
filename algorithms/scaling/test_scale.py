@@ -242,14 +242,6 @@ def test_scale_script_prepare_input():
     assert len(script_reflections) == 1
     assert script_reflections[0] is reflections[1]
 
-    # Try setting space group
-    params, exp, reflections = generate_test_input(n=1)
-    params.scaling_options.space_group = "P1"
-    params, script_exp, script_reflections = Script.prepare_input(
-        params, exp, reflections
-    )
-    assert script_exp[0].crystal.get_space_group().type().number() == 1
-
     # Try having two unequal space groups
     params, exp, reflections = generate_test_input(n=2)
     exp_dict = {
