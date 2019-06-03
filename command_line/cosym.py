@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import logging
+import sys
 
 logger = logging.getLogger("dials.command_line.cosym")
 
@@ -11,7 +12,7 @@ from cctbx import crystal, miller
 from cctbx import sgtbx
 from dxtbx.serialize import dump
 from dials.array_family import flex
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -19,6 +20,7 @@ from dials.util.multi_dataset_handling import (
     select_datasets_on_ids,
 )
 from dials.util.observer import Subject
+from dials.util.filter_reflections import filter_reflection_table
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 
@@ -198,14 +200,13 @@ class cosym(Subject):
 
     def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
         miller_arrays = []
+        ids_to_del = []
 
-        for expt, refl in zip(experiments, reflections):
+        for idx, (expt, refl) in enumerate(zip(experiments, reflections)):
             crystal_symmetry = crystal.symmetry(
                 unit_cell=expt.crystal.get_unit_cell(),
                 space_group=expt.crystal.get_space_group(),
             )
-
-            from dials.util.filter_reflections import filter_reflection_table
 
             if "intensity.scale.value" in refl:
                 intensity_choice = ["scale"]
@@ -227,27 +228,44 @@ class cosym(Subject):
                 combine_partials=True,
                 partiality_threshold=self.params.partiality_threshold,
             )
-            assert refl.size() > 0
-            try:
-                data = refl["intensity." + intensity_to_use + ".value"]
-                variances = refl["intensity." + intensity_to_use + ".variance"]
-            except RuntimeError:
-                data = refl["intensity.sum.value"]
-                variances = refl["intensity.sum.variance"]
+            if refl.size():
+                try:
+                    data = refl["intensity." + intensity_to_use + ".value"]
+                    variances = refl["intensity." + intensity_to_use + ".variance"]
+                except RuntimeError:
+                    data = refl["intensity.sum.value"]
+                    variances = refl["intensity.sum.variance"]
 
-            miller_indices = refl["miller_index"]
-            assert variances.all_gt(0)
-            sigmas = flex.sqrt(variances)
+                miller_indices = refl["miller_index"]
+                assert variances.all_gt(0)
+                sigmas = flex.sqrt(variances)
 
-            miller_set = miller.set(
-                crystal_symmetry, miller_indices, anomalous_flag=False
+                miller_set = miller.set(
+                    crystal_symmetry, miller_indices, anomalous_flag=False
+                )
+                intensities = miller.array(miller_set, data=data, sigmas=sigmas)
+                intensities.set_observation_type_xray_intensity()
+                intensities.set_info(
+                    miller.array_info(source="DIALS", source_type="pickle")
+                )
+                miller_arrays.append(intensities)
+            else:
+                logger.info(
+                    "Dataset %s removed as no reflections left after filtering", idx
+                )
+                ids_to_del.append(idx)
+
+        if not miller_arrays:
+            raise Sorry(
+                """
+No datasets remain after pre-filtering. Please check input data.
+The datasets may not contain any full reflections; the command line
+option partiality_threshold can be lowered to include partials."""
             )
-            intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-            intensities.set_observation_type_xray_intensity()
-            intensities.set_info(
-                miller.array_info(source="DIALS", source_type="pickle")
-            )
-            miller_arrays.append(intensities)
+
+        for id_ in ids_to_del[::-1]:
+            del experiments[id_]
+            del reflections[id_]
 
         return miller_arrays
 
@@ -434,6 +452,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    with show_mail_on_error():
+        run(sys.argv[1:])
