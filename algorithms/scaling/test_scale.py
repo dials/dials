@@ -298,7 +298,6 @@ def test_scale_script_prepare_input():
     ]
 
 
-@pytest.mark.dataset_test
 def test_scale_physical(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset."""
 
@@ -464,7 +463,6 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
 
-@pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset with error optimisation."""
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -474,7 +472,6 @@ def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
     run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
-@pytest.mark.dataset_test
 def test_scale_array(dials_regression, run_in_tmpdir):
     """Test a standard dataset - ideally needs a large dataset or full matrix
     round may fail. Currently turning off absorption term to avoid
@@ -488,7 +485,6 @@ def test_scale_array(dials_regression, run_in_tmpdir):
     run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
-@pytest.mark.dataset_test
 def test_multi_scale(dials_regression, run_in_tmpdir):
     """Test standard scaling of two datasets."""
 
@@ -560,7 +556,6 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     )  # set 0.0 to force one to be 'rejected'
 
 
-@pytest.mark.dataset_test
 def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
 
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -628,7 +623,6 @@ def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
     )
 
 
-@pytest.mark.dataset_test
 def test_targeted_scaling(dials_regression, run_in_tmpdir):
     """Test the targeted scaling workflow."""
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -757,7 +751,6 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
     assert os.path.exists("scaled.pickle")
 
 
-@pytest.mark.dataset_test
 def test_scale_cross_validate(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset."""
 
