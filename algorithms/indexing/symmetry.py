@@ -11,9 +11,9 @@ from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
 import scitbx.matrix
 
-logger = logging.getLogger(__name__)
+from dials.util import log, Sorry
 
-from dials.util import log
+logger = logging.getLogger(__name__)
 
 debug_handle = log.debug_handle(logger)
 

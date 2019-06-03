@@ -15,8 +15,6 @@ from math import pi
 from math import ceil
 import logging
 
-logger = logging.getLogger(__name__)
-
 import libtbx
 from scitbx import matrix
 from dials.array_family import flex
@@ -26,17 +24,20 @@ from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
+from dials.util import Sorry
+
+from libtbx.phil import parse
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_str as outlier_phil_str,
+)
+
+logger = logging.getLogger(__name__)
 
 # constants
 RAD2DEG = 180.0 / pi
 DEG2RAD = pi / 180.0
 
 # PHIL
-from libtbx.phil import parse
-from dials.algorithms.refinement.outlier_detection.outlier_base import (
-    phil_str as outlier_phil_str,
-)
-
 format_data = {"outlier_phil": outlier_phil_str}
 phil_str = (
     """
@@ -585,8 +586,6 @@ class ReflectionManager(object):
 
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
-                from dials.util import Sorry
-
                 raise Sorry(
                     "Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp)
