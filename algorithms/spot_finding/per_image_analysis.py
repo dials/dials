@@ -7,12 +7,11 @@ from dials.array_family import flex
 
 try:
     import matplotlib
-
-    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-    matplotlib.use("Agg")  # use a non-interactive backend
-    from matplotlib import pyplot
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+    from matplotlib.gridspec import GridSpec
 except ImportError:
-    pyplot = None
+    matplotlib = None
 
 
 class slot(object):
@@ -282,9 +281,11 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     # resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
-        fig = pyplot.figure()
+        if not matplotlib:
+            raise ImportError("Could not import matplotlib")
+        fig = Figure()
+        FigureCanvasAgg(fig)
+
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(d_star_sq, log_i_over_sigi, marker="+")
         ax.scatter(
@@ -313,7 +314,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
                 [intersection[0]], [intersection[1]], marker="x", s=50, color="b"
             )
         # ax.hexbin(d_star_sq, log_i_over_sigi, gridsize=30)
-        xlim = pyplot.xlim()
+        xlim = ax.get_xlim()
         ax.plot(xlim, [(m * x + c) for x in xlim])
         ax.plot(xlim, [(m_upper * x + c_upper) for x in xlim], color="red")
         ax.plot(xlim, [(m_lower * x + c_lower) for x in xlim], color="red")
@@ -348,9 +349,8 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        # pyplot.show()
-        pyplot.savefig(plot_filename)
-        pyplot.close()
+        fig.savefig(plot_filename)
+        fig.close()
 
     return resolution_estimate
 
@@ -436,20 +436,21 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     noisiness /= (n - 1) * (n - 2) / 2
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
-        fig = pyplot.figure()
+        if not matplotlib:
+            raise ImportError("Could not import matplotlib")
+        fig = Figure()
+        FigureCanvasAgg(fig)
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(ds3_subset)), ds3_subset)
         # ax.set_xlabel('')
         ax.set_ylabel("D^-3")
-        xlim = pyplot.xlim()
-        ylim = pyplot.ylim()
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
         ax.vlines(p_g, ylim[0], ylim[1], colors="red")
-        pyplot.xlim(0, xlim[1])
-        pyplot.ylim(0, ylim[1])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
+        ax.set_xlim(0, xlim[1])
+        ax.set_ylim(0, ylim[1])
+        fig.savefig(plot_filename)
+        fig.close()
 
     return d_g, noisiness
 
@@ -500,20 +501,21 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
     noisiness /= 0.5 * m * (m - 1)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
-        fig = pyplot.figure()
+        if not matplotlib:
+            raise ImportError("Could not import matplotlib")
+        fig = Figure()
+        FigureCanvasAgg(fig)
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(bin_counts)), bin_counts)
         # ax.set_xlabel('')
         ax.set_ylabel("number of spots in shell")
-        xlim = pyplot.xlim()
-        ylim = pyplot.ylim()
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
         ax.vlines(i, ylim[0], ylim[1], colors="red")
-        pyplot.xlim(0, xlim[1])
-        pyplot.ylim(0, ylim[1])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
+        ax.set_xlim(0, xlim[1])
+        ax.set_ylim(0, ylim[1])
+        fig.savefig(plot_filename)
+        fig.close()
 
     return d_min, noisiness
 
@@ -577,9 +579,10 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     hist = get_histogram(d_star_sq)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
-        fig = pyplot.figure()
+        if not matplotlib:
+            raise ImportError("Could not import matplotlib")
+        fig = Figure()
+        FigureCanvasAgg(fig)
         ax = fig.add_subplot(1, 1, 1)
         ax.bar(
             hist.slot_centers() - 0.5 * hist.slot_width(),
@@ -599,8 +602,8 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
         # pyplot.show()
-        pyplot.savefig(plot_filename)
-        pyplot.close()
+        fig.savefig(plot_filename)
+        fig.close()
 
 
 def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
@@ -626,9 +629,10 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
             slots.append(0)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
-        fig = pyplot.figure()
+        if not matplotlib:
+            raise ImportError("Could not import matplotlib")
+        fig = Figure()
+        FigureCanvasAgg(fig)
         ax = fig.add_subplot(1, 1, 1)
         # ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
         ax.scatter(
@@ -651,19 +655,18 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        # pyplot.show()
-        pyplot.savefig(plot_filename)
-        pyplot.close()
+        fig.savefig(plot_filename)
+        fig.close()
 
 
 def plot_ordered_d_star_sq(reflections, imageset):
-    if pyplot is None:
-        raise Sorry("matplotlib must be installed to generate a plot.")
+    if not matplotlib:
+        raise ImportError("Could not import matplotlib")
     d_star_sq = flex.pow2(reflections["rlp"].norms())
-
+    fig = Figure()
     perm = flex.sort_permutation(d_star_sq)
-    pyplot.scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker="+")
-    pyplot.show()
+    fig.gca().scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker="+")
+    fig.show()
 
 
 def stats_single_image(
@@ -881,6 +884,8 @@ def print_table(stats, perm=None, n_rows=None, out=None):
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):
+    if not matplotlib:
+        raise ImportError("Could not import matplotlib")
     n_spots_total = flex.int(stats.n_spots_total)
     n_spots_no_ice = stats.n_spots_no_ice
     n_spots_4A = stats.n_spots_4A
@@ -890,9 +895,15 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     total_intensity = stats.total_intensity
 
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
-    if pyplot is None:
-        raise Sorry("matplotlib must be installed to generate a plot.")
-    _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
+    fig = Figure()
+    FigureCanvasAgg(fig)
+    # Do this here because fig.subplots not added until matplotlib 2.1.0 (2015)
+    # ax1, ax2, ax3 = fig.subplots(nrows=3)
+    gs = GridSpec(3, 1)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[2, 0])
+    # end of version workaround
     ax1.scatter(
         list(i_image),
         list(n_spots_total),
@@ -976,4 +987,4 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     ax3.set_xlabel("Image #")
     ax3.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0.0)
 
-    pyplot.savefig(filename, dpi=600, bbox_inches="tight")
+    fig.savefig(filename, dpi=600, bbox_inches="tight")
