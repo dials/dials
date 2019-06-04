@@ -61,6 +61,7 @@ def test_compare_orientation_matrices():
     s = compare_orientation_matrices.rotation_matrix_differences(
         [crystal_a, crystal_b, crystal_c], comparison="pairwise"
     )
+    s = "\n".join(s.splitlines()[:-1]).replace("-0.000", "0.000")
     print(s)
     assert (
         s
@@ -81,16 +82,15 @@ Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
 
 Change of basis op: c,-a,-b
 Rotation matrix to transform crystal 2 to crystal 3:
-{{1.000, 0.000, -0.000},
- {-0.000, 1.000, 0.000},
- {-0.000, 0.000, 1.000}}
-Rotation of -0.000 degrees about axis (-0.537, 0.591, 0.603)
-"""
+{{1.000, 0.000, 0.000},
+ {0.000, 1.000, 0.000},
+ {0.000, 0.000, 1.000}}"""
     )
 
     s = compare_orientation_matrices.rotation_matrix_differences(
         [crystal_a, crystal_b, crystal_c], comparison="sequential"
     )
+    s = "\n".join(s.splitlines()[:-1]).replace("-0.000", "0.000")
     print(s)
     assert (
         s
@@ -104,11 +104,9 @@ Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
 
 Change of basis op: c,-a,-b
 Rotation matrix to transform crystal 2 to crystal 3:
-{{1.000, 0.000, -0.000},
- {-0.000, 1.000, 0.000},
- {-0.000, 0.000, 1.000}}
-Rotation of -0.000 degrees about axis (-0.537, 0.591, 0.603)
-"""
+{{1.000, 0.000, 0.000},
+ {0.000, 1.000, 0.000},
+ {0.000, 0.000, 1.000}}"""
     )
 
     s = compare_orientation_matrices.rotation_matrix_differences(
