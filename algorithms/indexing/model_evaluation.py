@@ -16,6 +16,10 @@ from scitbx.array_family import flex
 
 from dxtbx.model import Crystal
 
+from dials.algorithms.indexing.compare_orientation_matrices import (
+    difference_rotation_matrix_axis_angle,
+)
+
 
 class Result(group_args):
     pass

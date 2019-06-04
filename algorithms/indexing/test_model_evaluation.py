@@ -4,6 +4,7 @@ import copy
 import os
 import pytest
 
+from cctbx import sgtbx, uctbx
 from dxtbx.model import Crystal
 from dxtbx.serialize import load
 from dials.array_family import flex
@@ -252,3 +253,39 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     assert result.rmsds == pytest.approx(
         (0.10215787570953785, 0.12954412140128563, 0.0010980583382102509)
     )
+
+
+def test_filter_doubled_cell():
+    import scitbx.matrix
+
+    sgi = sgtbx.space_group_info("P1")
+    uc1 = sgi.any_compatible_unit_cell(volume=1000)
+    params = uc1.parameters()
+    for (m1, m2, m3) in (
+        (2, 1, 1),
+        (1, 2, 1),
+        (1, 1, 2),
+        (2, 2, 1),
+        (2, 1, 2),
+        (1, 2, 2),
+        (2, 2, 2),
+    ):
+        uc2 = uctbx.unit_cell(
+            (
+                params[0] * m1,
+                params[1] * m2,
+                params[2] * m3,
+                params[3],
+                params[4],
+                params[5],
+            )
+        )
+        B1 = scitbx.matrix.sqr(uc1.fractionalization_matrix()).transpose()
+        B2 = scitbx.matrix.sqr(uc2.fractionalization_matrix()).transpose()
+        solutions = [
+            model_evaluation.Result(crystal=Crystal(B1, sgi.group()), n_indexed=100),
+            model_evaluation.Result(crystal=Crystal(B2, sgi.group()), n_indexed=100),
+        ]
+        filtered = model_evaluation.filter_doubled_cell(solutions)
+        assert len(filtered) == 1
+        assert filtered[0].crystal == solutions[0].crystal
