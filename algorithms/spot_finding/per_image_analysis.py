@@ -255,16 +255,16 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
 
     else:
         # http://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_the_equations_of_the_lines
+        # with:
+        # a_ = m_upper
+        # b_ = m_lower
+        # c_ = c_upper
+        # d_ = c_lower
+        # intersection == ((d_ - c_) / (a_ - b_), (a_ * d_ - b_ * c_) / (a_ - b_))
         intersection = (
             (c_lower - c_upper) / (m_upper - m_lower),
             (m_upper * c_lower - m_lower * c_upper) / (m_upper - m_lower),
         )
-
-        a = m_upper
-        c_ = c_upper
-        b = m_lower
-        d = c_lower
-        assert intersection == ((d - c_) / (a - b), (a * d - b * c_) / (a - b))
 
         # inside = points_inside_envelope(
         # d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
