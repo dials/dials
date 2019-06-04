@@ -62,6 +62,7 @@ class run_one_indexing(object):
 
         self.indexed_reflections = flex.reflection_table.from_file("indexed.pickle")
 
+        self.experiments = experiments_list
         for i in range(len(experiments_list)):
             experiment = experiments_list[i]
             assert unit_cells_are_similar(

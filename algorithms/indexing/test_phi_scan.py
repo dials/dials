@@ -98,8 +98,10 @@ def test_run(dials_regression, run_in_tmpdir):
     )
 
     assert result_old.rmsds == pytest.approx(result_new.rmsds, abs=1e-6)
-    assert result_old.crystal_model.get_unit_cell().parameters() == pytest.approx(
-        result_new.crystal_model.get_unit_cell().parameters(), abs=1e-6
+    assert result_old.experiments[
+        0
+    ].crystal.get_unit_cell().parameters() == pytest.approx(
+        result_new.experiments[0].crystal.get_unit_cell().parameters(), abs=1e-6
     )
 
     # Now test refinement gradients are correct
@@ -112,7 +114,7 @@ def test_run(dials_regression, run_in_tmpdir):
                 detector=imageset_old.get_detector(),
                 goniometer=gonio_old,
                 scan=imageset_old.get_scan(),
-                crystal=result_old.crystal_model,
+                crystal=result_old.experiments[0].crystal,
                 imageset=None,
             )
         ]
@@ -124,7 +126,7 @@ def test_run(dials_regression, run_in_tmpdir):
                 detector=imageset_new.get_detector(),
                 goniometer=gonio_new,
                 scan=imageset_new.get_scan(),
-                crystal=result_new.crystal_model,
+                crystal=result_new.experiments[0].crystal,
                 imageset=None,
             )
         ]
