@@ -19,7 +19,6 @@ def setup_rlp(request):
     space_group = request.param
     # setup symmetry information
     sgi = sgtbx.space_group_info(symbol=space_group)
-    sg = sgi.group()
     cs = sgi.any_compatible_crystal_symmetry(volume=10000)
     cs = cs.best_cell()
     cs = cs.minimum_cell()

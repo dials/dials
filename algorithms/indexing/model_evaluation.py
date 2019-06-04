@@ -344,7 +344,7 @@ class ModelEvaluation(Strategy):
                 self._params, indexed_reflections, experiments
             )
             refiner.run()
-        except (RuntimeError, ValueError, Sorry) as e:
+        except (RuntimeError, ValueError, Sorry):
             return
         else:
             rmsds = refiner.rmsds()

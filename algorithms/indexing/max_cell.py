@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,18 +51,6 @@ def find_max_cell(
     assert (
         len(reflections) > 0
     ), "Too few spots remaining for nearest neighbour analysis (%d)" % len(reflections)
-    # The nearest neighbour analysis gets fooled when the same part of
-    # reciprocal space has been measured twice as this introduced small
-    # random differences in position between reflections measured twice.
-    # Therefore repeat the nearest neighbour analysis several times in small
-    # wedges where there shouldn't be any overlap in reciprocal space
-    # from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
-    if "entering" in reflections:
-        entering_flags = reflections["entering"]
-    else:
-        entering_flags = flex.bool(len(reflections), False)
-
-    phi_deg = reflections["xyzobs.mm.value"].parts()[2] * (180 / math.pi)
 
     NN = neighbor_analysis(
         reflections,

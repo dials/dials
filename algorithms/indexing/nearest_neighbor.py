@@ -93,7 +93,6 @@ class neighbor_analysis(object):
             )
         else:
             hst = flex.histogram(direct, n_slots=int(len(direct) / self.NNBIN))
-        centers = hst.slot_centers()
         if self.histogram_binning == "log":
             self.slot_start = flex.double(
                 [10 ** (s - 0.5 * hst.slot_width()) for s in hst.slot_centers()]
@@ -135,7 +134,7 @@ class neighbor_analysis(object):
     def plot_histogram(self, filename="nn_hist.png", figsize=(12, 8)):
         import matplotlib.pyplot as plt
 
-        fig = plt.figure(figsize=figsize)
+        plt.figure(figsize=figsize)
         plt.bar(
             self.slot_start,
             self.relative_frequency,

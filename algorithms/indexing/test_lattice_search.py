@@ -55,7 +55,6 @@ def test_BasisVectorSearch_i04_weak_data(
     idxr.index()
 
     indexed_experiments = idxr.refined_experiments
-    indexed_reflections = idxr.refined_reflections
     assert len(indexed_experiments) == 1
     assert indexed_experiments[0].crystal.get_unit_cell().parameters() == pytest.approx(
         (57.752, 57.776, 150.013, 90.0101, 89.976, 90.008), rel=1e-3
@@ -96,7 +95,6 @@ def test_stills_indexer_BasisVectorSearch_i04_weak_data(
     idxr.index()
 
     indexed_experiments = idxr.refined_experiments
-    indexed_reflections = idxr.refined_reflections
     assert len(indexed_experiments) == 1
     assert indexed_experiments[0].crystal.get_unit_cell().parameters() == pytest.approx(
         (57.752, 57.776, 150.013, 90.0101, 89.976, 90.008), rel=1e-3

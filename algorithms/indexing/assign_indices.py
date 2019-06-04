@@ -37,10 +37,6 @@ class assign_indices_global(assign_indices_strategy):
         refs = reflections.select(isel)
         phi = refs["xyzobs.mm.value"].parts()[2]
 
-        diffs = []
-        norms = []
-        hkl_ints = []
-
         UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
         imgset_ids = reflections["imageset_id"].select(sel)
 
@@ -109,10 +105,6 @@ class assign_indices_local(assign_indices_strategy):
                 % len(rlps)
             )
 
-        diffs = []
-        norms = []
-        hkl_ints = []
-
         UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
         result = AssignIndicesLocal(
@@ -138,7 +130,6 @@ class assign_indices_local(assign_indices_strategy):
             A_inv = A.inverse()
 
             cryst_sel = crystal_ids == i_cryst
-            ref_sel = refs.select(cryst_sel)
             rlp_sel = rlps.select(cryst_sel)
             hkl_sel = hkl.select(cryst_sel).as_vec3_double()
 

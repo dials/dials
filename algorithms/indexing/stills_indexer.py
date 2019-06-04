@@ -41,7 +41,7 @@ def plot_displacements(reflections, predictions, experiments):
     if True:  # params.refinement.plot_residual_scatter:
         from matplotlib import pyplot as plt
 
-        fig = plt.figure()
+        plt.figure()
         for cv in displacements:
             plt.plot([cv[0]], [-cv[1]], "r.")
         plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
@@ -52,8 +52,7 @@ def plot_displacements(reflections, predictions, experiments):
     if True:  # params.refinement.plot_residual_map:
         from matplotlib import pyplot as plt
 
-        PX = reflections["xyzobs.px.value"]
-        fig = plt.figure()
+        plt.figure()
         sz1, sz2 = experiments[0].detector[0].get_image_size()
         for item, cv in zip(predictions, displacements):
             plt.plot([item["xyzcal.px"][0]], [sz1 - item["xyzcal.px"][1]], "r.")
@@ -89,7 +88,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
         params, reflections, experiments, verbosity=1
     )
 
-    history = refiner.run()
+    refiner.run()
 
     ref_sel = refiner.selection_used_for_refinement()
     assert ref_sel.count(True) == len(reflections)
@@ -568,7 +567,7 @@ class stills_indexer(indexer_base):
                         refinery=R,
                         graph_verbose=False,
                     )
-                    crystal_model_nv0 = nv0()
+                    nv0()
                     acceptance_flags_nv0 = nv0.nv_acceptance_flags
                     indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
@@ -771,7 +770,7 @@ class stills_indexer(indexer_base):
             refinery=R,
             graph_verbose=False,
         )
-        crystal_model_nv0 = nv0()
+        nv0()
         acceptance_flags_nv0 = nv0.nv_acceptance_flags
         reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
 

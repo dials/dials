@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import copy
 
-from cctbx import crystal, sgtbx
+from cctbx import sgtbx
 import scitbx.matrix
 from scitbx.math import euler_angles_as_matrix
 from dxtbx.model import Crystal
@@ -66,7 +66,6 @@ def test_combinations(setup_rlp):
 def test_filter_similar_orientations():
     space_group = sgtbx.space_group()
     unit_cell = space_group.info().any_compatible_unit_cell(volume=1000)
-    crystal_symmetry = crystal.symmetry(unit_cell=unit_cell, space_group=space_group)
 
     crystal_models = []
     # the reciprocal matrix

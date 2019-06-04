@@ -25,9 +25,7 @@ def correct(experiments, reflections, assign_indices, threshold=0.9):
         direct_matrix = scitbx.matrix.sqr(crystal_model.get_A()).inverse()
         M = T.inverse().transpose()
         new_direct_matrix = M * direct_matrix
-        import copy
 
-        cryst_orig = copy.deepcopy(crystal_model)
         crystal_model.set_A(new_direct_matrix.inverse())
 
         unit_cell_too_small(crystal_model.get_unit_cell())

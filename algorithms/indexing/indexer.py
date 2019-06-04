@@ -828,8 +828,6 @@ class indexer_base(object):
             for i_panel in range(len(expt.detector)):
                 panel = expt.detector[i_panel]
                 sel = panel_numbers == i_panel
-                isel = sel.iselection()
-                ref_panel = refined_reflections.select(panel_numbers == i_panel)
                 xy_cal_px.set_selected(
                     sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
                 )
@@ -919,7 +917,6 @@ class indexer_base(object):
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
         predicted = refiner.predict_for_indexed()
-        verbosity = self.params.refinement_protocol.verbosity
         reflections["xyzcal.mm"] = predicted["xyzcal.mm"]
         reflections["entering"] = predicted["entering"]
         reflections.unset_flags(

@@ -264,7 +264,6 @@ class fft3d(strategy):
         xs = xs.select(perm)
         volumes = self.volumes.select(perm)
 
-        sites_frac = xs.sites_frac()
         vectors = xs.sites_cart()
         norms = vectors.norms()
         sel = (norms > self._min_cell) & (norms < (2 * self._max_cell))
@@ -279,7 +278,6 @@ class fft3d(strategy):
         relative_length_tolerance = 0.1
         angle_tolerance = 5  # degrees
 
-        orth = self._fft_cell.orthogonalize
         for v, volume in zip(vectors, volumes):
             length = v.length()
             if length < self._min_cell or length > (2 * self._max_cell):
@@ -386,9 +384,6 @@ class fft3d(strategy):
     def _map_centroids_to_reciprocal_space_grid(
         self, reciprocal_lattice_vectors, d_min
     ):
-        n_points = self._gridding[0]
-        rlgrid = 2 / (d_min * n_points)
-
         logger.info("FFT gridding: (%i,%i,%i)" % self._gridding)
 
         grid = flex.double(flex.grid(self._gridding), 0)

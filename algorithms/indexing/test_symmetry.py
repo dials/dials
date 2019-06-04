@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 
 from cctbx import crystal, sgtbx, uctbx
-from cctbx.sgtbx import bravais_types, lattice_symmetry
+from cctbx.sgtbx import bravais_types
 import scitbx.matrix
 from dxtbx.model import Crystal
 from dials.algorithms.indexing import symmetry
@@ -41,7 +41,7 @@ def test_SymmetryHandler(space_group_symbol):
     ).transpose()
     crystal = Crystal(B, sgtbx.space_group())
     crystal_new, cb_op = handler.apply_symmetry(crystal)
-    cs_new = crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
+    crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
     # test apply_symmetry on the minimum cell setting
     cs_min_cell = cs.minimum_cell()
@@ -50,7 +50,7 @@ def test_SymmetryHandler(space_group_symbol):
     ).transpose()
     crystal = Crystal(B, sgtbx.space_group())
     crystal_new, cb_op = handler.apply_symmetry(crystal)
-    cs_new = crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
+    crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
     handler = symmetry.SymmetryHandler(space_group=sg)
     assert handler.target_symmetry_primitive.unit_cell() is None
@@ -71,7 +71,7 @@ def test_SymmetryHandler(space_group_symbol):
     ).transpose()
     crystal = Crystal(B, sgtbx.space_group())
     crystal_new, cb_op = handler.apply_symmetry(crystal)
-    cs_new = crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
+    crystal_new.get_crystal_symmetry(assert_is_compatible_unit_cell=True)
 
     handler = symmetry.SymmetryHandler(unit_cell=cs.minimum_cell().unit_cell())
     assert handler.target_symmetry_primitive.unit_cell().parameters() == pytest.approx(
@@ -116,8 +116,6 @@ def test_find_matching_symmetry(crystal_symmetry):
 
     cs = crystal_symmetry
     cs.show_summary()
-
-    subgroups = lattice_symmetry.metric_subgroups(cs, max_delta=5)
 
     for op in ("x,y,z", "z,x,y", "y,z,x", "-x,z,y", "y,x,-z", "z,-y,x")[:]:
         cb_op = sgtbx.change_of_basis_op(op)

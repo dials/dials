@@ -50,7 +50,6 @@ class nave_parameters(object):
             miller_indices, beam.get_wavelength(), deg=True
         )
         dspacings = crystal.get_unit_cell().d(miller_indices)
-        dspace_sq = dspacings * dspacings
 
         #  First -- try to get a reasonable envelope for the observed excursions.
         ## minimum of three regions; maximum of 50 measurements in each bin
@@ -80,14 +79,11 @@ class nave_parameters(object):
         s_ang = 1.0 / (2 * solution[0])
         print("Best LSQ fit Scheerer domain size is %9.2f ang" % (s_ang))
 
-        tan_phi_rad = dspacings / (2.0 * s_ang)
-        tan_phi_deg = tan_phi_rad * 180.0 / math.pi
         k_degrees = solution[1] * 180.0 / math.pi
         print(
             "The LSQ full mosaicity is %8.5f deg; half-mosaicity %9.5f"
             % (2 * k_degrees, k_degrees)
         )
-        tan_outer_deg = tan_phi_deg + k_degrees
 
         from xfel.mono_simulation.max_like import minimizer
 

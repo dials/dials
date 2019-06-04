@@ -7,7 +7,6 @@ from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
 import scitbx.matrix
 
-from dxtbx.model import Crystal, Experiment, ExperimentList
 from dials.array_family import flex
 from dials.algorithms.indexing.max_cell import find_max_cell
 
@@ -21,8 +20,6 @@ def setup(request):
 
     # the reciprocal matrix
     B = scitbx.matrix.sqr(cs.unit_cell().fractionalization_matrix()).transpose()
-    crystal = Crystal(B, sgtbx.space_group())
-    expts = ExperimentList([Experiment(crystal=crystal)])
 
     # randomly select 25% of reflections
     ms = ms.select(flex.random_permutation(ms.size())[: int(0.25 * ms.size())])

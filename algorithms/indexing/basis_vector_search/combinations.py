@@ -71,7 +71,6 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
             c = -c
         model = Crystal(a, b, c, space_group_symbol="P 1")
         uc = model.get_unit_cell()
-        best_model = None
         cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
         model = model.change_basis(cb_op_to_niggli)
 

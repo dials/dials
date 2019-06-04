@@ -5,7 +5,7 @@ import os
 import random
 
 import pytest
-from cctbx import crystal, miller, sgtbx
+from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
 from scitbx import matrix
 from scitbx.math import euler_angles_as_matrix
@@ -77,7 +77,6 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
     predicted_reflections = predicted_reflections.select(use_sel)
     miller_indices = predicted_reflections["miller_index"]
-    miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=True)
     predicted_reflections["xyzobs.mm.value"] = predicted_reflections["xyzcal.mm"]
     predicted_reflections["id"] = flex.int(len(predicted_reflections), 0)
     predicted_reflections.map_centroids_to_reciprocal_space(

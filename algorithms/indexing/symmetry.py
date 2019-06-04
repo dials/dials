@@ -158,9 +158,7 @@ def refined_settings_factory_from_refined_triclinic(
     for item in iotbx_converter(UC, lepage_max_delta):
         Lfat.append(bravais_setting(item))
 
-    supergroup = Lfat.supergroup()
     triclinic = Lfat.triclinic()
-    triclinic_miller = used_reflections["miller_index"]
 
     # assert no transformation between indexing and bravais list
     assert str(triclinic["cb_op_inp_best"]) == "a,b,c"
@@ -619,7 +617,6 @@ class SymmetryHandler(object):
         target_sg_best = target_sg_ref.change_basis(cb_op_best_ref.inverse())
         ref_subsym = best_subsym.change_basis(cb_op_best_ref)
         cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-        primitive_subsym = ref_subsym.change_basis(cb_op_ref_primitive)
         cb_op_best_primitive = cb_op_ref_primitive * cb_op_best_ref
         cb_op_inp_primitive = cb_op_ref_primitive * cb_op_best_ref * cb_op_inp_best
 

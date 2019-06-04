@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 def refine(params, reflections, experiments, verbosity=0):
-    detector = experiments.detectors()[0]
     if params.refinement.parameterisation.scan_varying:
         logger.warning(
             "scan_varying=True not supported in indexing: setting scan_varying=False"

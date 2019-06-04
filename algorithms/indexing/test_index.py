@@ -49,7 +49,7 @@ class run_one_indexing(object):
         args = ["dials.index", pickle_path, sweep_path] + extra_args
         command = " ".join(args)
         print(command)
-        result = easy_run.fully_buffered(command=command).raise_if_errors()
+        easy_run.fully_buffered(command=command).raise_if_errors()
         assert os.path.exists("indexed_experiments.json")
         experiments_list = load.experiment_list(
             "indexed_experiments.json", check_format=False
@@ -117,7 +117,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -148,7 +148,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -191,7 +191,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
             expected_hall_symbol,
         )
 
-    a, b, c = map(matrix.col, result.crystal_model.get_real_space_vectors())
+    a, b, c = map(matrix.col, result.experiments[0].crystal.get_real_space_vectors())
     assert a.length() == pytest.approx(b.length())
     assert c.length() > b.length()
     assert a.angle(b, deg=True) == pytest.approx(90)
@@ -223,7 +223,7 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -260,7 +260,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
     n_expected_lattices = 2
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -297,7 +297,7 @@ def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, t
     n_expected_lattices = 3
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -334,7 +334,7 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
     n_expected_lattices = 4
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -369,7 +369,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     n_expected_lattices = 1
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -400,7 +400,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -435,7 +435,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     n_expected_lattices = 3
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -473,7 +473,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
     expected_hall_symbol = " P 4"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        run_one_indexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -512,7 +512,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
         expected_rmsds = (0.08, 0.11, 0.004)
 
         with tmpdir.as_cwd():
-            result = run_one_indexing(
+            run_one_indexing(
                 pickle_path,
                 sweep_path,
                 extra_args,
@@ -534,7 +534,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
 
     command = " ".join(args)
     # print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
 
     experiments_json = "imported_experiments.json"
 
@@ -542,7 +542,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
 
     command = " ".join(args)
     print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     pickle_path = "strong.pickle"
     assert os.path.exists(pickle_path)
 
@@ -560,7 +560,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     extra_args.append("indexing.method=%s" % method)
     extra_args.append("treat_single_image_as_still=False")
 
-    result = run_one_indexing(
+    run_one_indexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -581,12 +581,12 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
     ]
     command = " ".join(args)
     # print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
 
     experiments_json = "imported_experiments.json"
     args = ["dials.find_spots", experiments_json]
     command = " ".join(args)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     pickle_path = "strong.pickle"
     assert os.path.exists(pickle_path)
 
@@ -604,7 +604,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
         "indexing.method=%s" % method,
     ]
 
-    result = run_one_indexing(
+    run_one_indexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -630,7 +630,7 @@ def test_multiple_experiments(dials_regression, tmpdir):
 
     extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
 
-    result = run_one_indexing(
+    run_one_indexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -777,3 +777,4 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir)
     experiments_list = load.experiment_list(
         "indexed_experiments.json", check_format=False
     )
+    assert len(experiments_list) == 2
