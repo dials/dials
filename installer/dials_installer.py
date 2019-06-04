@@ -173,6 +173,9 @@ class installer(install_distribution.installer):
         rmdir("build/regression_data")
         rmdir("build/xia2_regression/blend_tutorial")
         rmdir("build/xia2_regression/test_data")
+        for f in ("setpaths", "setpaths_debug", "setpaths_all", "unsetpaths"):
+            for ext in (".sh", ".csh"):
+                rmfile(os.path.join("build", f + ext))
         for p in [
             "date_time",
             "detail",
