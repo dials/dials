@@ -106,25 +106,6 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
 class stills_indexer(indexer_base):
     """ Class for indexing stills """
 
-    @staticmethod
-    def from_parameters(
-        reflections, experiments, known_crystal_models=None, params=None
-    ):
-        if known_crystal_models is not None:
-            idxr = stills_indexer_known_orientation(
-                reflections, experiments, params, known_crystal_models
-            )
-        elif params.indexing.method == "fft3d":
-            idxr = stills_indexer_fft3d(reflections, experiments, params=params)
-        elif params.indexing.method == "fft1d":
-            idxr = stills_indexer_fft1d(reflections, experiments, params=params)
-        elif params.indexing.method == "real_space_grid_search":
-            idxr = stills_indexer_real_space_grid_search(
-                reflections, experiments, params=params
-            )
-
-        return idxr
-
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
             # The stills_indexer provides its own outlier rejection
