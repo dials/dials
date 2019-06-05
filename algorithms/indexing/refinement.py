@@ -1,8 +1,5 @@
-from __future__ import absolute_import, division, print_function
-
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
 # dials.algorithms.indexing.refinement.py
 #
 #  Copyright (C) 2014 Diamond Light Source
@@ -11,6 +8,9 @@ from __future__ import absolute_import, division, print_function
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import absolute_import, division, print_function
+
 
 import logging
 

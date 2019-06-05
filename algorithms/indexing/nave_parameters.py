@@ -51,8 +51,8 @@ class NaveParameters(object):
         )
         dspacings = crystal.get_unit_cell().d(miller_indices)
 
-        #  First -- try to get a reasonable envelope for the observed excursions.
-        ## minimum of three regions; maximum of 50 measurements in each bin
+        # First -- try to get a reasonable envelope for the observed excursions.
+        # minimum of three regions; maximum of 50 measurements in each bin
         print("fitting parameters on %d spots" % len(excursion_rad))
         n_bins = min(max(3, len(excursion_rad) // 25), 50)
         bin_sz = len(excursion_rad) // n_bins
@@ -67,8 +67,8 @@ class NaveParameters(object):
             dspacings_env.append(flex.mean(dspacings.select(subset)))
             excursion_rads_env.append(flex.max(flex.abs(excursion_rad.select(subset))))
 
-        #  Second -- parameter fit
-        ## solve the normal equations
+        # Second -- parameter fit
+        # solve the normal equations
         sum_inv_u_sq = flex.sum(dspacings_env * dspacings_env)
         sum_inv_u = flex.sum(dspacings_env)
         sum_te_u = flex.sum(dspacings_env * excursion_rads_env)
