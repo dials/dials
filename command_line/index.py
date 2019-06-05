@@ -20,6 +20,7 @@ import iotbx.phil
 from dxtbx.serialize import dump
 from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing import indexer
+from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
 from dials.util.slice import slice_reflections
 from dials.util.options import OptionParser
@@ -167,10 +168,14 @@ class Index(object):
                 known_crystal_models=known_crystal_models,
                 params=params,
             )
-            idxr.index()
-            self._indexed_experiments = idxr.refined_experiments
-            self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
-            self._indexed_reflections.extend(idxr.unindexed_reflections)
+            try:
+                idxr.index()
+            except DialsIndexError as e:
+                raise Sorry(e.message)
+            else:
+                self._indexed_experiments = idxr.refined_experiments
+                self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
+                self._indexed_reflections.extend(idxr.unindexed_reflections)
         else:
             self._indexed_experiments = ExperimentList()
             self._indexed_reflections = flex.reflection_table()
