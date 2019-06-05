@@ -125,6 +125,18 @@ refinement {
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
+def index_experiments(experiments, reflections, params, known_crystal_models=None):
+    idxr = indexer.indexer_base.from_parameters(
+        reflections,
+        experiments,
+        known_crystal_models=known_crystal_models,
+        params=params,
+    )
+    idxr.index()
+    idx_refl = copy.deepcopy(idxr.refined_reflections)
+    return idxr.refined_experiments, idx_refl
+
+
 class Index(object):
     def __init__(self, experiments, reflections, params):
 
@@ -161,47 +173,54 @@ class Index(object):
                 reflections, self._params.indexing.image_range
             )
 
-        if self._params.indexing.joint_indexing:
-            idxr = indexer.indexer_base.from_parameters(
-                reflections,
-                experiments,
-                known_crystal_models=known_crystal_models,
-                params=params,
-            )
+        if len(experiments) == 1 or self._params.indexing.joint_indexing:
             try:
-                idxr.index()
+                self._indexed_experiments, self._indexed_reflections = index_experiments(
+                    experiments,
+                    reflections,
+                    copy.deepcopy(params),
+                    known_crystal_models=known_crystal_models,
+                )
             except DialsIndexError as e:
                 raise Sorry(e.message)
-            else:
-                self._indexed_experiments = idxr.refined_experiments
-                self._indexed_reflections = copy.deepcopy(idxr.refined_reflections)
-                self._indexed_reflections.extend(idxr.unindexed_reflections)
         else:
             self._indexed_experiments = ExperimentList()
             self._indexed_reflections = flex.reflection_table()
-            for i_expt, expt in enumerate(experiments):
-                refl = reflections.select(reflections["imageset_id"] == i_expt)
-                refl["imageset_id"] = flex.size_t(len(refl), 0)
-                try:
-                    idxr = indexer.indexer_base.from_parameters(
-                        refl,
-                        ExperimentList([expt]),
-                        known_crystal_models=known_crystal_models,
-                        params=copy.deepcopy(params),
-                    )
-                    idxr.index()
-                except Exception as e:
-                    logger.info("Experiment %i failed to index: %s" % (i_expt, e))
-                else:
-                    idx_refl = copy.deepcopy(idxr.refined_reflections)
-                    for j_expt, _ in enumerate(idxr.refined_experiments):
-                        idx_refl["id"] = flex.int(
-                            len(idx_refl), len(self._indexed_experiments) + j_expt
+
+            import concurrent.futures
+
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=params.indexing.nproc
+            ) as pool:
+                futures = []
+                for i_expt, expt in enumerate(experiments):
+                    refl = reflections.select(reflections["imageset_id"] == i_expt)
+                    refl["imageset_id"] = flex.size_t(len(refl), 0)
+                    futures.append(
+                        pool.submit(
+                            index_experiments,
+                            ExperimentList([expt]),
+                            refl,
+                            copy.deepcopy(params),
+                            known_crystal_models=known_crystal_models,
                         )
-                    idx_refl.extend(idxr.unindexed_reflections)
-                    idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
-                    self._indexed_reflections.extend(idx_refl)
-                    self._indexed_experiments.extend(idxr.refined_experiments)
+                    )
+
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        idx_expts, idx_refl = future.result()
+                    except Exception as e:
+                        print(e)
+                    else:
+                        if idx_expts is None:
+                            continue
+                        for j_expt, _ in enumerate(idx_expts):
+                            idx_refl["id"] = flex.int(
+                                len(idx_refl), len(self._indexed_experiments) + j_expt
+                            )
+                        idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
+                        self._indexed_reflections.extend(idx_refl)
+                        self._indexed_experiments.extend(idx_expts)
 
     def export_experiments(self, filename):
         experiments = self._indexed_experiments
