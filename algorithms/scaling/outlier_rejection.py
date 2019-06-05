@@ -10,7 +10,6 @@ Ih_table and returns flex.size_t index arrays of the outlier positions.
 from __future__ import absolute_import, division, print_function
 import abc
 import logging
-from dials.util import Sorry
 from scitbx.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials_scaling_ext import determine_outlier_indices
@@ -43,15 +42,9 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
     Returns:
         reflection_table: The input table with the outlier_in_scaling flag set.
 
-    Raises:
-        Sorry: if the reflection table does not contain intensity and variance.
-
     """
-    if not "intensity" in reflection_table or not "variance" in reflection_table:
-        raise Sorry(
-            """The reflection table does not contain columns with the names
-      'intensity' and 'variance'"""
-        )
+    assert "intensity" in reflection_table, "reflection table has no 'intensity' column"
+    assert "variance" in reflection_table, "reflection table has no 'variance' column"
 
     if not "inverse_scale_factor" in reflection_table:
         reflection_table["inverse_scale_factor"] = flex.double(
@@ -98,7 +91,7 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
             data in the Ih_table.
 
     Raises:
-        Sorry: if an invalid choice is made for the method.
+        ValueError: if an invalid choice is made for the method.
 
     """
     if method == "standard":
@@ -117,7 +110,7 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
     elif method is None:
         return [flex.size_t([]) for _ in range(Ih_table.n_datasets)]
     else:
-        raise Sorry("Invalid choice of outlier rejection method.")
+        raise ValueError("Invalid choice of outlier rejection method: %s" % method)
     if Ih_table.n_datasets > 1:
         msg = (
             "Combined outlier rejection has been performed across multiple datasets, \n"

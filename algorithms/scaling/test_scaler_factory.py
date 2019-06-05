@@ -2,10 +2,8 @@
 Tests for the scaler factory classes and helper functions.
 """
 from __future__ import absolute_import, division, print_function
-from copy import deepcopy
 import pytest
 from libtbx import phil
-from dials.util import Sorry
 from dxtbx.model import Crystal
 from mock import Mock, MagicMock
 from dials.array_family import flex
@@ -344,7 +342,7 @@ def test_scaler_factory_helper_functions(
     assert isinstance(scaler, TargetScaler)
 
     # If no reflections passed in.
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         scaler = create_scaler(
             generated_param, mock_explist_3exp(mock_scaling_component), []
         )

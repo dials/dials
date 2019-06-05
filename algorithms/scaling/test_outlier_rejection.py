@@ -4,7 +4,6 @@ Tests for outlier rejection.
 from __future__ import absolute_import, division, print_function
 import pytest
 from mock import Mock
-from dials.util import Sorry
 from cctbx.sgtbx import space_group
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -301,7 +300,7 @@ def test_reject_outliers(mock_exp_with_sg):
 
     # Test for suitable error raising if intensity column not present
     del refls["intensity"]
-    with pytest.raises(Sorry):
+    with pytest.raises(AssertionError):
         refls = reject_outliers(refls, exp)
 
 
@@ -322,5 +321,5 @@ def test_determine_outlier_index_arrays(generated_Ih_table, outlier_target_table
     outliers = determine_outlier_index_arrays(generated_Ih_table, method=None)
     assert len(outliers) == 1
     assert not outliers[0]
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         _ = determine_outlier_index_arrays(generated_Ih_table, "badchoice")[0]

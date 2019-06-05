@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import mock
-from mock import Mock, MagicMock
+from mock import MagicMock
 from libtbx import phil
-from dials.util import Sorry
 import pytest
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.cross_validation.crossvalidator import (
@@ -192,7 +191,7 @@ def test_cross_validate_script():
 
     # test expected error raise due to unspecified parameter
     param.cross_validation.cross_validation_mode = "multi"
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         cross_validate(param, crossvalidator)
 
     # test single mode
@@ -226,7 +225,7 @@ def test_cross_validate_script():
             assert mock_interpret.call_count == 1
 
             param.cross_validation.parameter = "decay_interval"
-            with pytest.raises(Sorry):
+            with pytest.raises(ValueError):
                 cross_validate(param, crossvalidator)
 
             param.cross_validation.parameter = "absorption_term"
@@ -254,9 +253,9 @@ def test_cross_validate_script():
             assert mock_interpret.call_count == 5
 
             param.cross_validation.parameter = "bad_interval"
-            with pytest.raises(Sorry):
+            with pytest.raises(ValueError):
                 cross_validate(param, crossvalidator)
 
             param.cross_validation.cross_validation_mode = "bad"
-            with pytest.raises(Sorry):
+            with pytest.raises(ValueError):
                 cross_validate(param, crossvalidator)
