@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from dials.array_family import flex
-from dials.util import Sorry
 
 logger = logging.getLogger("dials")
 
@@ -71,9 +70,8 @@ def parse_multiple_datasets(reflections):
             "These will be treated as coming from separate datasets, and \n"
             "new dataset ids will be assigned for the whole dataset. \n"
         )
-        new_id_list = range(len(dataset_id_list))
-        for r, old_id, new_id in zip(
-            single_reflection_tables, dataset_id_list, new_id_list
+        for new_id, (r, old_id) in enumerate(
+            zip(single_reflection_tables, dataset_id_list)
         ):
             r["id"] = flex.int(r.size(), new_id)
             if list(r.experiment_identifiers()):  # if identifiers, need to update
@@ -118,21 +116,20 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
             reflections (list): A list of the updated reflection tables
 
     Raises:
-        Sorry: If the number of reflection tables and experiments are unequal,
-            after attempted parsing of multi-dataset reflection tables.
+        ValueError: If the number of reflection tables and experiments are
+            unequal (and identifiers if specified). Also raised if the existing
+            identifiers are corrupted.
     """
     if len(experiments) != len(reflections):
-        reflections = parse_multiple_datasets(reflections)
-        if len(reflections) != len(experiments):
-            raise Sorry(
-                """Unable to split a list of reflection tables to be the same
-length as the experiments list. Please check the input data."""
-            )
+        raise ValueError(
+            "The experiments and reflections lists are unequal in length: %s & %s"
+            % (len(experiments), len(reflections))
+        )
+    # if identifiers given, use these to set the identifiers
     if identifiers:
         if len(identifiers) != len(reflections):
-            raise Sorry(
-                """Number of provided identifiers (%s) not the same length as
-number of datasets (%s)"""
+            raise ValueError(
+                "The identifiers and reflections lists are unequal in length: %s & %s"
                 % (len(identifiers), len(reflections))
             )
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
@@ -141,18 +138,20 @@ number of datasets (%s)"""
                 del refl.experiment_identifiers()[k]
             refl.experiment_identifiers()[i] = identifiers[i]
             refl["id"] = flex.int(refl.size(), i)
+    # Validate the existing identifiers, or the ones just set
     used_str_ids = []
     for exp, refl in zip(experiments, reflections):
         if exp.identifier != "":
             if list(refl.experiment_identifiers().values()) != [exp.identifier]:
                 raise ValueError(
-                    "Corrupted identifiers: in reflections: %s, in experiment: %s"
+                    "Corrupted identifiers, please check input: in reflections: %s, in experiment: %s"
                     % (list(refl.experiment_identifiers().values()), exp.identifier)
                 )
             used_str_ids.append(exp.identifier)
-    if len(set(used_str_ids)) == len(reflections):  # all set, don't do anything
-        pass
-    else:  # keep identifiers if set, reset table id column from 0..n-1
+
+    if len(set(used_str_ids)) != len(reflections):
+        # if not all set, then need to fill in the rest. Keep the identifier if
+        # it is already set, and reset table id column from 0..n-1
         unique_id = 0
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             if exp.identifier == "":
@@ -178,7 +177,9 @@ def select_datasets_on_ids(
 
     This performs a similar function to the select/remove_on_experiment_identifiers
     methods of ExperimentList and reflection_table, with additional logic to handle
-    the case of a list of reflection tables, rather than a single one.
+    the case of a list of reflection tables, rather than a single one and to catch
+    bad input. Does not require reflection tables containing data from multiple
+    experiments to be split.
 
     Args:
         experiments: An ExperimentList
@@ -192,24 +193,23 @@ def select_datasets_on_ids(
             list_of_reflections (list): A list of the updated reflection tables
 
     Raises:
-        Sorry: If both use_datasets and exclude datasets are used, if not all
+        ValueError: If both use_datasets and exclude datasets are used, if not all
             experiment identifiers are set, if an identifier in exclude_datasets
             or use_datasets is not in the list.
     """
     if not use_datasets and not exclude_datasets:
         return experiments, reflection_table_list
     if use_datasets and exclude_datasets:
-        raise Sorry(
+        raise ValueError(
             "The options use_datasets and exclude_datasets cannot be used in conjuction."
         )
     if experiments.identifiers().count("") > 0:
-        logger.warning(
-            "\nERROR: Attempting to choose datasets based on unique identifier,\n"
-            "but not all datasets currently have a unique identifier! Please make\n"
-            "sure all identifiers are set before attempting to select datasets.\n"
+        raise ValueError(
+            """
+            Not all experiment identifiers set in the ExperimentList.
+            Current identifiers set as: %s"""
+            % list(experiments.identifiers())
         )
-        logger.info("Current identifiers set as: %s", list(experiments.identifiers()))
-        raise Sorry("Not all experiment identifiers set in the ExperimentList")
     list_of_reflections = []
     if use_datasets:
         total_found = 0
@@ -224,7 +224,7 @@ def select_datasets_on_ids(
                     )
                 )
         if total_found != len(use_datasets):
-            raise Sorry(
+            raise ValueError(
                 """Attempting to select datasets based on identifiers that
 are not found in the experiment list / reflection tables."""
             )
@@ -233,7 +233,7 @@ are not found in the experiment list / reflection tables."""
         if len(
             set(exclude_datasets).intersection(set(experiments.identifiers()))
         ) != len(set(exclude_datasets)):
-            raise Sorry(
+            raise ValueError(
                 """Attempting to exclude datasets based on identifiers that
 are not found in the experiment list / reflection tables."""
             )

@@ -56,14 +56,17 @@ from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
     create_datastructures_for_structural_model,
     create_datastructures_for_target_mtz,
-    prepare_multiple_datasets_for_scaling,
     create_auto_scaling_model,
     set_image_ranges_in_scaling_models,
     scaled_data_as_miller_array,
     determine_best_unit_cell,
 )
 from dials.algorithms.scaling.scaler_factory import create_scaler, MultiScalerFactory
-from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.util.multi_dataset_handling import (
+    select_datasets_on_ids,
+    parse_multiple_datasets,
+    assign_unique_identifiers,
+)
 from dials.util.export_mtz import match_wavelengths
 from dials.algorithms.scaling.scaling_utilities import (
     save_experiments,
@@ -226,16 +229,56 @@ prepare the data in the correct space group.\n"""
 
         #### First exclude any datasets, before the dataset is split into
         #### individual reflection tables and expids set.
-        experiments, reflections = prepare_multiple_datasets_for_scaling(
-            experiments,
-            reflections,
-            params.dataset_selection.exclude_datasets,
-            params.dataset_selection.use_datasets,
+        if (
+            params.dataset_selection.exclude_datasets
+            or params.dataset_selection.use_datasets
+        ):
+            try:
+                experiments, reflections = select_datasets_on_ids(
+                    experiments,
+                    reflections,
+                    params.dataset_selection.exclude_datasets,
+                    params.dataset_selection.use_datasets,
+                )
+                logger.info(
+                    "\nDataset unique identifiers for retained datasets are %s \n",
+                    list(experiments.identifiers()),
+                )
+            except ValueError as e:
+                raise Sorry(e)
+
+        #### Split the reflections tables into a list of reflection tables,
+        #### with one table per experiment.
+        logger.info(
+            "Checking for the existence of a reflection table \n"
+            "containing multiple datasets \n"
+        )
+        reflections = parse_multiple_datasets(reflections)
+        logger.info(
+            "Found %s reflection tables & %s experiments in total.",
+            len(reflections),
+            len(experiments),
         )
 
-        reflections, experiments = exclude_image_ranges_for_scaling(
-            reflections, experiments, params.exclude_images
+        if len(experiments) != len(reflections):
+            raise Sorry("Mismatched number of experiments and reflection tables found.")
+
+        #### Assign experiment identifiers.
+        try:
+            experiments, reflections = assign_unique_identifiers(
+                experiments, reflections
+            )
+        except ValueError as e:
+            raise Sorry(e)
+        logger.info(
+            "\nDataset unique identifiers are %s \n", list(experiments.identifiers())
         )
+        try:
+            reflections, experiments = exclude_image_ranges_for_scaling(
+                reflections, experiments, params.exclude_images
+            )
+        except ValueError as e:
+            raise Sorry(e)
 
         #### Allow checking of consistent indexing, useful for
         #### targeted / incremental scaling.
@@ -607,7 +650,10 @@ def run_scaling(params, experiments, reflections):
         )
 
         cross_validator = DialsScaleCrossValidator(experiments, reflections)
-        cross_validate(params, cross_validator)
+        try:
+            cross_validate(params, cross_validator)
+        except ValueError as e:
+            raise Sorry(e)
 
         logger.info(
             "Cross validation analysis does not produce scaling output files, rather\n"

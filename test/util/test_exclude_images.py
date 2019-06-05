@@ -4,7 +4,6 @@ tests for functions in dials.util.exclude_images.py
 from __future__ import absolute_import, division, print_function
 import copy
 import pytest
-from dials.util import Sorry
 from dxtbx.model import Experiment, Scan, ExperimentList
 from dials.array_family import flex
 from dials.util.exclude_images import (
@@ -32,9 +31,9 @@ def test_parse_exclude_images_commands():
     commands = [["1:101:200"], ["0:201:300"]]
     ranges = _parse_exclude_images_commands(commands)
     assert ranges == [("1", (101, 200)), ("0", (201, 300))]
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101-200"]])
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101"]])
     with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101:a"]])
@@ -65,7 +64,7 @@ def test_exclude_image_ranges_from_scans():
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
     assert list(explist[1].scan.get_valid_image_ranges("1")) == [(1, 60), (81, 100)]
     scanlessexplist = ExperimentList([make_scanless_experiment()])
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         _ = exclude_image_ranges_from_scans(scanlessexplist, [["0:1:100"]])
     # Now try excluding everything, should set an empty array
     explist = exclude_image_ranges_from_scans(explist, [["1:1:100"]])

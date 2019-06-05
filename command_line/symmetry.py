@@ -12,9 +12,8 @@ from cctbx import sgtbx
 import iotbx.phil
 
 from dials.array_family import flex
-from dials.util import log
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util import log, Sorry
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -237,7 +236,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options, args = parser.parse_args(
+    params, _, args = parser.parse_args(
         args=args, show_diff_phil=False, return_unhandled=True
     )
 
@@ -260,16 +259,23 @@ def run(args):
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
 
-    datasets = []
+    if not params.input.experiments or not params.input.reflections:
+        parser.print_help()
+        sys.exit()
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
-    reflections = parse_multiple_datasets(reflections)
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
 
-    if len(experiments) == 0 and len(reflections) == 0:
-        parser.print_help()
-        return
+    reflections = parse_multiple_datasets(reflections)
+    if len(experiments) != len(reflections):
+        raise Sorry(
+            "Mismatched number of experiments and reflection tables found: %s & %s."
+            % (len(experiments), len(reflections))
+        )
+    try:
+        experiments, reflections = assign_unique_identifiers(experiments, reflections)
+    except ValueError as e:
+        raise Sorry(e)
 
     symmetry(experiments, reflections, params=params)
 

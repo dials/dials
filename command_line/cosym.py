@@ -11,6 +11,7 @@ from cctbx import crystal, miller
 from cctbx import sgtbx
 from dxtbx.serialize import dump
 from dials.array_family import flex
+from dials.util import Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -411,8 +412,17 @@ def run(args):
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
     reflections = parse_multiple_datasets(reflections)
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
+    if len(experiments) != len(reflections):
+        raise Sorry(
+            "Mismatched number of experiments and reflection tables found: %s & %s."
+            % (len(experiments), len(reflections))
+        )
+    try:
+        experiments, reflections = assign_unique_identifiers(experiments, reflections)
+    except ValueError as e:
+        raise Sorry(e)
 
     cosym_instance = cosym(
         experiments=experiments, reflections=reflections, params=params
