@@ -1,10 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-try:
-    import scipy.linalg  # noqa: F401 - import dependency
-except ImportError:
-    pass
-
 import glob
 import os
 import pytest

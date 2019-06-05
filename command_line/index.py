@@ -5,14 +5,6 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 
-try:
-    # try importing scipy.linalg before any cctbx modules, otherwise we
-    # sometimes get a segmentation fault/core dump if it is imported after
-    # scipy.linalg is a dependency of sklearn.cluster.DBSCAN
-    import scipy.linalg  # noqa: F401
-except ImportError:
-    pass
-
 import iotbx.phil
 from dxtbx.serialize import dump
 from dxtbx.model.experiment_list import ExperimentList

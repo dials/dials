@@ -1,11 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-# this import required early to avoid seg fault on some systems
-try:
-    import scipy.linalg  # noqa: F401 - import dependency
-except ImportError:
-    pass
-
 import os
 import pytest
 from cctbx import uctbx
