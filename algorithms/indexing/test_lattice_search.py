@@ -97,5 +97,5 @@ def test_stills_indexer_BasisVectorSearch_i04_weak_data(
     indexed_experiments = idxr.refined_experiments
     assert len(indexed_experiments) == 1
     assert indexed_experiments[0].crystal.get_unit_cell().parameters() == pytest.approx(
-        (57.752, 57.776, 150.013, 90.0101, 89.976, 90.008), rel=1e-3
+        (57.752, 57.776, 150.013, 90.0101, 89.976, 90.008), rel=1e-2
     )
