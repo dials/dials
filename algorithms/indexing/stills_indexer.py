@@ -493,7 +493,7 @@ class StillsIndexer(Indexer):
         candidate_orientation_matrices = list(candidate_orientation_matrices)
 
         for icm, cm in enumerate(candidate_orientation_matrices):
-            if icm > self.params.basis_vector_combinations.max_refine:
+            if icm >= self.params.basis_vector_combinations.max_refine:
                 break
             # Index reflections in P1
             sel = self.reflections["id"] == -1
