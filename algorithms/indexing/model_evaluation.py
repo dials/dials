@@ -1,24 +1,21 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import abc
 import copy
 import logging
 import math
 
-logger = logging.getLogger(__name__)
-
 import libtbx
 from libtbx import group_args
-from dials.util import Sorry
 from scitbx import matrix
 from scitbx.array_family import flex
-
 from dxtbx.model import Crystal
-
+from dials.util import Sorry
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Result(group_args):

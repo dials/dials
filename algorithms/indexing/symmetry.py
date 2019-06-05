@@ -4,18 +4,24 @@ import copy
 import logging
 import math
 
+from libtbx import easy_mp
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
-from libtbx import easy_mp
+from cctbx.crystal_orientation import crystal_orientation
+from cctbx.sgtbx.bravais_types import bravais_lattice
+from cctbx.sgtbx import lattice_symmetry
 from rstbx.symmetry.subgroup import MetricSubgroup
+from rstbx import dps_core  # noqa: F401
+from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
 import scitbx.matrix
+
+from dxtbx.model import Crystal
 
 from dials.util import log
 from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
-
 debug_handle = log.debug_handle(logger)
 
 
@@ -437,14 +443,6 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
 
     if best_subgroup is not None:
         return best_subgroup
-
-
-from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx.bravais_types import bravais_lattice
-from cctbx.sgtbx import lattice_symmetry
-from rstbx import dps_core  # noqa: F401
-from rstbx.dps_core.lepage import iotbx_converter
-from dxtbx.model import Crystal
 
 
 class SymmetryHandler(object):

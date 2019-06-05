@@ -10,20 +10,14 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+
 import math
 import logging
 
-logger = logging.getLogger(__name__)
-
-from dials.util import log
-
-debug_handle = log.debug_handle(logger)
-
 import libtbx
-from dials.util import Sorry
 import iotbx.phil
+from dxtbx.model import ExperimentList
 
 from dials.array_family import flex
 from dials.algorithms.indexing import assign_indices
@@ -32,10 +26,12 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 )
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
-
-from dxtbx.model import ExperimentList
-
 from dials.algorithms.indexing.max_cell import find_max_cell
+from dials.util import log
+from dials.util import Sorry
+
+logger = logging.getLogger(__name__)
+debug_handle = log.debug_handle(logger)
 
 
 max_cell_phil_str = """\

@@ -3,23 +3,23 @@
 #
 
 from __future__ import absolute_import, division, print_function
+
+import math
 import logging
 
-logger = logging.getLogger(__name__)
-import math
-
+import libtbx
+from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util import log
-
-debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
-import libtbx
 from dials.algorithms.indexing.indexer import Indexer
 from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
-from dxtbx.model.experiment_list import Experiment, ExperimentList
+
+logger = logging.getLogger(__name__)
+debug_handle = log.debug_handle(logger)
+info_handle = log.info_handle(logger)
 
 
 def calc_2D_rmsd_and_displacements(reflections):

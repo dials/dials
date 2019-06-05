@@ -2,8 +2,6 @@ from __future__ import absolute_import, division
 from __future__ import print_function
 import logging
 
-logger = logging.getLogger(__name__)
-
 import math
 
 from scitbx.array_family import flex
@@ -15,6 +13,8 @@ from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def candidate_orientation_matrices(basis_vectors, max_combinations=None):

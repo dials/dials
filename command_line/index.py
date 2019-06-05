@@ -2,9 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+import copy
 import logging
-
-logger = logging.getLogger("dials.command_line.index")
 
 try:
     # try importing scipy.linalg before any cctbx modules, otherwise we
@@ -13,8 +12,6 @@ try:
     import scipy.linalg  # noqa: F401
 except ImportError:
     pass
-
-import copy
 
 import iotbx.phil
 from dxtbx.serialize import dump
@@ -27,6 +24,8 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
 from dials.util import Sorry
+
+logger = logging.getLogger("dials.command_line.index")
 
 
 help_message = """

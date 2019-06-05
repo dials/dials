@@ -2,12 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 from scitbx.array_family import flex
 from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
 from dials.algorithms.indexing.nearest_neighbor import NeighborAnalysis
 from dials.algorithms.indexing import DialsIndexError
+
+logger = logging.getLogger(__name__)
 
 
 def find_max_cell(
