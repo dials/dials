@@ -80,8 +80,6 @@ phil_scope = libtbx.phil.parse(
     .type = int(value_min=1)
   experiment_ids = None
     .type = ints(value_min=-1)
-  imageset_ids = None
-    .type = ints(value_min=0)
   autospin = False
     .type = bool
   model_view_matrix = None
@@ -121,25 +119,26 @@ class render_3d(object):
         self.reflections = None
         self.goniometer_orig = None
 
-    def load_models(self, imagesets, reflections, crystals):
-        self.imagesets = imagesets
+    def load_models(self, experiments, reflections):
+        self.experiments = experiments
         self.reflections_input = reflections
-        if self.imagesets[0].get_goniometer() is not None:
+        if self.experiments[0].goniometer is not None:
             self.viewer.set_rotation_axis(
-                self.imagesets[0].get_goniometer().get_rotation_axis()
+                self.experiments[0].goniometer.get_rotation_axis()
             )
-        self.viewer.set_beam_vector(self.imagesets[0].get_beam().get_s0())
-        detector = self.imagesets[0].get_detector()
-        beam = self.imagesets[0].get_beam()
+        self.viewer.set_beam_vector(self.experiments[0].beam.get_s0())
         if self.settings.beam_centre is None:
             try:
-                panel_id, self.settings.beam_centre = detector.get_ray_intersection(
-                    beam.get_s0()
-                )
+                panel_id, self.settings.beam_centre = self.experiments[
+                    0
+                ].detector.get_ray_intersection(self.experiments[0].beam.get_s0())
             except RuntimeError:
                 pass
         else:
             self.set_beam_centre(self.settings.beam_centre)
+        crystals = [
+            expt.crystal for expt in self.experiments if expt.crystal is not None
+        ]
         if crystals:
             vecs = [
                 matrix.sqr(c.get_A()).transpose().as_list_of_lists() for c in crystals
@@ -150,7 +149,7 @@ class render_3d(object):
 
     def map_points_to_reciprocal_space(self):
         reflections = flex.reflection_table()
-        for i, imageset in enumerate(self.imagesets):
+        for i, expt in enumerate(self.experiments):
             if "imageset_id" in self.reflections_input:
                 sel = self.reflections_input["imageset_id"] == i
             else:
@@ -160,33 +159,30 @@ class render_3d(object):
 
             # 155 handle data from predictions *only* if that is what we have
             if "xyzobs.px.value" in self.reflections_input:
-                refl = copy.deepcopy(self.reflections_input.select(sel))
-                refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
+                refl = self.reflections_input.select(sel)
+                refl.centroid_px_to_mm(expt.detector, expt.scan)
 
-                goniometer = copy.deepcopy(imageset.get_goniometer())
+                goniometer = copy.deepcopy(expt.goniometer)
                 if self.settings.reverse_phi:
                     goniometer.set_rotation_axis(
                         [-i for i in goniometer.get_rotation_axis()]
                     )
                 refl.map_centroids_to_reciprocal_space(
-                    imageset.get_detector(), imageset.get_beam(), goniometer
+                    expt.detector, expt.beam, goniometer
                 )
 
             else:
                 # work on xyzcal.mm
                 refl = self.reflections_input.select(sel)
 
-                goniometer = copy.deepcopy(imageset.get_goniometer())
+                goniometer = copy.deepcopy(expt.goniometer)
                 if self.settings.reverse_phi:
                     goniometer.set_rotation_axis(
                         [-i for i in goniometer.get_rotation_axis()]
                     )
 
                 refl.map_centroids_to_reciprocal_space(
-                    imageset.get_detector(),
-                    imageset.get_beam(),
-                    goniometer,
-                    calculated=True,
+                    expt.detector, expt.beam, goniometer, calculated=True
                 )
 
             reflections.extend(refl)
@@ -237,12 +233,6 @@ class render_3d(object):
                 for i in self.settings.experiment_ids:
                     sel.set_selected(reflections["id"] == i, True)
                 reflections = reflections.select(sel)
-
-        if self.settings.imageset_ids and "imageset_id" in reflections:
-            sel = flex.bool(len(reflections), False)
-            for i in self.settings.imageset_ids:
-                sel.set_selected(reflections["imageset_id"] == i, True)
-            reflections = reflections.select(sel)
 
         d_spacings = 1 / reflections["rlp"].norms()
 
@@ -366,14 +356,13 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
         self.viewer.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.viewer.SetFocus()
 
-    def load_models(self, imagesets, reflections, crystals):
-        render_3d.load_models(self, imagesets, reflections, crystals)
+    def load_models(self, experiments, reflections):
+        render_3d.load_models(self, experiments, reflections)
         if self.settings.beam_centre is not None:
             self.settings_panel.beam_fast_ctrl.SetValue(self.settings.beam_centre[0])
             self.settings_panel.beam_slow_ctrl.SetValue(self.settings.beam_centre[1])
         self.settings_panel.marker_size_ctrl.SetValue(self.settings.marker_size)
         self.settings_panel.add_experiments_buttons()
-        self.settings_panel.add_imagesets_buttons()
 
     def OnActive(self, event):
         if self.IsShown() and type(self.viewer).__name__ != "_wxPyDeadObject":
@@ -446,10 +435,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
             )
 
     def update_settings(self, *args, **kwds):
-
-        imageset = self.imagesets[0]
-        detector = imageset.get_detector()
-        beam = imageset.get_beam()
+        detector = self.experiments[0].detector
+        beam = self.experiments[0].beam
 
         try:
             panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
@@ -465,10 +452,8 @@ class ReciprocalLatticeViewer(wx.Frame, render_3d):
         self.viewer.update_settings(*args, **kwds)
 
     def set_beam_centre(self, beam_centre):
-
-        imageset = self.imagesets[0]
-        detector = imageset.get_detector()
-        beam = imageset.get_beam()
+        detector = self.experiments[0].detector
+        beam = self.experiments[0].beam
 
         try:
             panel_id, beam_centre = detector.get_ray_intersection(beam.get_s0())
@@ -705,33 +690,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
         self.Bind(wx.EVT_TOGGLEBUTTON, self.OnChangeSettings, self.expt_btn)
         box.Add(self.expt_btn, 0, wx.ALL, 5)
 
-    def add_imagesets_buttons(self):
-        if "imageset_id" not in self.parent.reflections_input:
-            self.imgset_btn = None
-            return
-        n = flex.max(self.parent.reflections_input["imageset_id"])
-        if n <= 0:
-            self.imgset_btn = None
-            return
-
-        box = wx.BoxSizer(wx.VERTICAL)
-        self.panel_sizer.Add(box)
-        label = wx.StaticText(self, -1, "Imageset ids:")
-        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-
-        self.imgset_btn = SegmentedToggleControl(self, style=SEGBTN_HORIZONTAL)
-        for i in range(n + 1):
-            self.imgset_btn.AddSegment(str(i))
-            if (
-                self.settings.imageset_ids is not None
-                and i in self.settings.imageset_ids
-            ):
-                self.imgset_btn.SetValue(i + 1, True)
-
-        self.imgset_btn.Realize()
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.OnChangeSettings, self.imgset_btn)
-        box.Add(self.imgset_btn, 0, wx.ALL, 5)
-
     def OnChangeSettings(self, event):
         self.settings.d_min = self.d_min_ctrl.GetValue()
         self.settings.z_min = self.z_min_ctrl.GetValue()
@@ -762,13 +720,6 @@ class settings_window(wxtbx.utils.SettingsPanel):
                 if self.expt_btn.GetValue(i):
                     expt_ids.append(i - 1)
             self.settings.experiment_ids = expt_ids
-
-        if self.imgset_btn is not None:
-            imgset_ids = []
-            for i in range(len(self.imgset_btn.segments)):
-                if self.imgset_btn.GetValue(i):
-                    imgset_ids.append(i)
-            self.settings.imageset_ids = imgset_ids
 
         self.parent.update_settings()
 
@@ -973,11 +924,8 @@ def run(args):
         parser.print_help()
         exit(0)
 
-    imagesets = experiments.imagesets()
-    crystals = [c for c in experiments.crystals() if c is not None]
-
     if len(reflections) > 1:
-        assert len(reflections) == len(imagesets)
+        assert len(reflections) == len(experiments)
         for i in range(len(reflections)):
             reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
             if i > 0:
@@ -991,7 +939,7 @@ def run(args):
     a = wxtbx.app.CCTBXApp(0)
     a.settings = params
     f = ReciprocalLatticeViewer(None, -1, "Reflection data viewer", size=(1024, 768))
-    f.load_models(imagesets, reflections, crystals)
+    f.load_models(experiments, reflections)
     f.Show()
     a.SetTopWindow(f)
     # a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
