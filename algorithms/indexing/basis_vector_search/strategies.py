@@ -19,7 +19,7 @@ from dials.algorithms.indexing import DialsIndexError
 logger = logging.getLogger(__name__)
 
 
-class strategy(object):
+class Strategy(object):
     """A base class for basis vector search strategies."""
 
     __metaclass__ = abc.ABCMeta
@@ -96,8 +96,8 @@ def _is_approximate_integer_multiple(
     return False
 
 
-class fft1d(strategy):
-    """Basis vector search using an 1d FFT.
+class FFT1D(Strategy):
+    """Basis vector search using a 1D FFT.
 
     See:
         Steller, I., Bolotovsky, R. & Rossmann, M. G. (1997). J. Appl. Cryst. 30, 1036-1040.
@@ -106,7 +106,7 @@ class fft1d(strategy):
     """
 
     def __init__(self, max_cell, characteristic_grid=None):
-        """Construct an fft1d object.
+        """Construct an FFT1D object.
 
         Args:
             max_cell (float): An estimate of the maximum cell dimension of the primitive
@@ -116,7 +116,7 @@ class fft1d(strategy):
                 reflections, using at most 0.029 radians.
 
         """
-        super(fft1d, self).__init__(max_cell)
+        super(FFT1D, self).__init__(max_cell)
         self._characteristic_grid = characteristic_grid
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
@@ -163,8 +163,8 @@ class fft1d(strategy):
         return candidate_basis_vectors, used_in_indexing
 
 
-class fft3d(strategy):
-    """Basis vector search using an 1d FFT.
+class FFT3D(Strategy):
+    """Basis vector search using a 3D FFT.
 
     See:
         Bricogne, G. (1986). Proceedings of the EEC Cooperative Workshop on Position-Sensitive Detector Software (Phase III), p. 28. Paris: LURE.
@@ -182,7 +182,7 @@ class fft3d(strategy):
         peak_volume_cutoff=0.15,
         min_cell=3,
     ):
-        """Construct an fft3d object.
+        """Construct an FFT3D object.
 
         Args:
             max_cell (float): An estimate of the maximum cell dimension of the primitive
@@ -202,7 +202,7 @@ class fft3d(strategy):
             min_cell (float): A conservative lower bound on the minimum possible
                 primitive unit cell dimension.
         """
-        super(fft3d, self).__init__(max_cell)
+        super(FFT3D, self).__init__(max_cell)
         self._n_points = n_points
         self._gridding = fftpack.adjust_gridding_triple(
             (self._n_points, self._n_points, self._n_points), max_prime=5
@@ -452,7 +452,7 @@ class fft3d(strategy):
         return sites, volumes
 
 
-class real_space_grid_search(strategy):
+class RealSpaceGridSearch(Strategy):
     """Basis vector search using a real space grid search.
 
     See:
@@ -470,7 +470,7 @@ class real_space_grid_search(strategy):
             characteristic_grid (float): Sampling frequency in radians.
 
         """
-        super(real_space_grid_search, self).__init__(max_cell)
+        super(RealSpaceGridSearch, self).__init__(max_cell)
         self._target_unit_cell = target_unit_cell
         self._characteristic_grid = characteristic_grid
 

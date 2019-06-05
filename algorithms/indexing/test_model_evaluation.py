@@ -9,7 +9,7 @@ from dxtbx.model import Crystal
 from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.algorithms.indexing import model_evaluation
-from dials.algorithms.indexing.assign_indices import assign_indices_global
+from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 
 
@@ -244,7 +244,7 @@ def test_ModelEvaluation(dials_regression, tmpdir):
         )
     )
 
-    assign_indices = assign_indices_global()
+    assign_indices = AssignIndicesGlobal()
     assign_indices(reflections, experiments)
     result = evaluator.evaluate(experiments, reflections)
     assert result is not None

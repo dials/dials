@@ -14,10 +14,10 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
 import libtbx
-from dials.algorithms.indexing.indexer import indexer_base
-from dials.algorithms.indexing.known_orientation import indexer_known_orientation
+from dials.algorithms.indexing.indexer import Indexer
+from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch
-from dials.algorithms.indexing.nave_parameters import nave_parameters
+from dials.algorithms.indexing.nave_parameters import NaveParameters
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
@@ -102,14 +102,14 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     return refiner
 
 
-class stills_indexer(indexer_base):
+class StillsIndexer(Indexer):
     """ Class for indexing stills """
 
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
-        super(stills_indexer, self).__init__(reflections, experiments, params)
+        super(StillsIndexer, self).__init__(reflections, experiments, params)
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -333,7 +333,7 @@ class stills_indexer(indexer_base):
 
             if self.params.refinement_protocol.mode == "repredict_only":
 
-                from dials.algorithms.indexing.nave_parameters import nave_parameters
+                from dials.algorithms.indexing.nave_parameters import NaveParameters
                 from dials.algorithms.refinement.prediction.managed_predictors import (
                     ExperimentsPredictorFactory,
                 )
@@ -355,7 +355,7 @@ class stills_indexer(indexer_base):
                     refls = refined_reflections.select(
                         refined_reflections["id"] == expt_id
                     )
-                    nv = nave_parameters(
+                    nv = NaveParameters(
                         params=self.all_params,
                         experiments=refined_experiments[expt_id : expt_id + 1],
                         reflections=refls,
@@ -483,7 +483,7 @@ class stills_indexer(indexer_base):
 
         from libtbx import group_args
 
-        class candidate_info(group_args):
+        class CandidateInfo(group_args):
             pass
 
         candidates = []
@@ -562,7 +562,7 @@ class stills_indexer(indexer_base):
                     )
 
                     # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-                    nv0 = nave_parameters(
+                    nv0 = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
@@ -585,7 +585,7 @@ class stills_indexer(indexer_base):
                     )
                     ref_experiments = R.get_experiments()
 
-                    nv = nave_parameters(
+                    nv = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
@@ -620,7 +620,7 @@ class stills_indexer(indexer_base):
                         % (icm)
                     )
                     candidates.append(
-                        candidate_info(
+                        CandidateInfo(
                             crystal=crystal_model,
                             green_curve_area=nv.green_curve_area,
                             ewald_proximal_volume=nv.ewald_proximal_volume(),
@@ -642,7 +642,7 @@ class stills_indexer(indexer_base):
                 )
                 rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
                 candidates.append(
-                    candidate_info(
+                    CandidateInfo(
                         crystal=cm,
                         n_indexed=len(indexed),
                         rmsd=rmsd,
@@ -702,12 +702,12 @@ class stills_indexer(indexer_base):
 
         px_sz = experiments[0].detector[0].get_pixel_size()
 
-        class match:
+        class Match(object):
             pass
 
         matches = []
         for item in RR:
-            m = match()
+            m = Match()
             m.x_obs = item["xyzobs.px.value"][0] * px_sz[0]
             m.y_obs = item["xyzobs.px.value"][1] * px_sz[1]
             m.x_calc = item["xyzcal.px"][0] * px_sz[0]
@@ -765,7 +765,7 @@ class stills_indexer(indexer_base):
         )
 
         # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-        nv0 = nave_parameters(
+        nv0 = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
@@ -784,7 +784,7 @@ class stills_indexer(indexer_base):
         )
         ref_experiments = R.get_experiments()
 
-        nv = nave_parameters(
+        nv = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
@@ -808,9 +808,9 @@ class stills_indexer(indexer_base):
 """ Mixin class definitions that override the dials indexing class methods specific to stills """
 
 
-class stills_indexer_known_orientation(indexer_known_orientation, stills_indexer):
+class StillsIndexerKnownOrientation(IndexerKnownOrientation, StillsIndexer):
     pass
 
 
-class stills_indexer_basis_vector_search(stills_indexer, BasisVectorSearch):
+class StillsIndexerBasisVectorSearch(StillsIndexer, BasisVectorSearch):
     pass

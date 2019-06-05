@@ -155,7 +155,7 @@ indexing_min_spots = 10
             imageset.set_scan(None)
 
         try:
-            idxr = indexer.indexer_base.from_parameters(
+            idxr = indexer.Indexer.from_parameters(
                 reflections, experiments, params=params
             )
             indexing_results = []

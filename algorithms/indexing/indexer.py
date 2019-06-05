@@ -306,7 +306,7 @@ indexing {
 phil_scope = iotbx.phil.parse(phil_str, process_includes=True)
 
 
-class indexer_base(object):
+class Indexer(object):
     def __init__(self, reflections, experiments, params=None):
         self.reflections = reflections
         self.experiments = experiments
@@ -317,14 +317,14 @@ class indexer_base(object):
         self.hkl_offset = None
 
         if self.params.index_assignment.method == "local":
-            self._assign_indices = assign_indices.assign_indices_local(
+            self._assign_indices = assign_indices.AssignIndicesLocal(
                 epsilon=self.params.index_assignment.local.epsilon,
                 delta=self.params.index_assignment.local.delta,
                 l_min=self.params.index_assignment.local.l_min,
                 nearest_neighbours=self.params.index_assignment.local.nearest_neighbours,
             )
         else:
-            self._assign_indices = assign_indices.assign_indices_global(
+            self._assign_indices = assign_indices.AssignIndicesGlobal(
                 tolerance=self.params.index_assignment.simple.hkl_tolerance
             )
 
@@ -374,14 +374,14 @@ class indexer_base(object):
 
         if known_crystal_models is not None:
             from dials.algorithms.indexing.known_orientation import (
-                indexer_known_orientation,
+                IndexerKnownOrientation,
             )
 
             if params.indexing.known_symmetry.space_group is None:
                 params.indexing.known_symmetry.space_group = (
                     known_crystal_models[0].get_space_group().info()
                 )
-            idxr = indexer_known_orientation(
+            idxr = IndexerKnownOrientation(
                 reflections, experiments, params, known_crystal_models
             )
         else:
@@ -446,7 +446,7 @@ class indexer_base(object):
                 if use_stills_indexer:
                     # do something
                     from dials.algorithms.indexing.stills_indexer import (
-                        stills_indexer_basis_vector_search as BasisVectorSearch,
+                        StillsIndexerBasisVectorSearch as BasisVectorSearch,
                     )
                 else:
                     from dials.algorithms.indexing.lattice_search import (

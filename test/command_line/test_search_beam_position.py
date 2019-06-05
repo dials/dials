@@ -157,14 +157,14 @@ def test_index_after_search(dials_data, run_in_tmpdir):
 
     # check we can actually index the resulting optimized experiments
     from cctbx import uctbx
-    from dials.algorithms.indexing.test_index import run_one_indexing
+    from dials.algorithms.indexing.test_index import RunOneIndexing
 
     expected_unit_cell = uctbx.unit_cell(
         (57.780, 57.800, 150.017, 89.991, 89.990, 90.007)
     )
     expected_rmsds = (0.06, 0.05, 0.001)
     expected_hall_symbol = " P 1"
-    run_one_indexing(
+    RunOneIndexing(
         run_in_tmpdir.join("strong.pickle").strpath,
         run_in_tmpdir.join("optimized_experiments.json").strpath,
         [],

@@ -14,8 +14,8 @@ from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.model import Crystal
 from dials.array_family import flex
 from dials.algorithms.indexing.assign_indices import (
-    assign_indices_global,
-    assign_indices_local,
+    AssignIndicesGlobal,
+    AssignIndicesLocal,
 )
 
 
@@ -84,7 +84,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
 
     # check that local and global indexing worked equally well in absence of errors
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
     assert result.misindexed_local == 0
     assert result.misindexed_global == 0
 
@@ -97,7 +97,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     cryst_model2 = Crystal(a, b, c, space_group=space_group)
     experiment.crystal = cryst_model2
 
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
 
     # check that the local indexing did a better job given the errors in the basis vectors
     # assert result.misindexed_local < result.misindexed_global
@@ -119,7 +119,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
     experiment.crystal = cryst_model2
 
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
 
     # check that the local indexing did a better job given the errors in the basis vectors
     assert result.misindexed_local <= result.misindexed_global, (
@@ -132,11 +132,11 @@ def test_assign_indices(dials_regression, space_group_symbol):
     assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
 
-class compare_global_local(object):
+class CompareGlobalLocal(object):
     def __init__(self, experiment, reflections, expected_miller_indices):
 
-        index_reflections_global = assign_indices_global()
-        index_reflections_local = assign_indices_local()
+        index_reflections_global = AssignIndicesGlobal()
+        index_reflections_local = AssignIndicesLocal()
 
         # index reflections using simple "global" method
         self.reflections_global = copy.deepcopy(reflections)

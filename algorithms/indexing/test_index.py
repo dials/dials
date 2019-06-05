@@ -32,7 +32,7 @@ def unit_cells_are_similar(
     return True
 
 
-class run_one_indexing(object):
+class RunOneIndexing(object):
     def __init__(
         self,
         pickle_path,
@@ -118,7 +118,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -149,7 +149,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -183,7 +183,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
     expected_hall_symbol = " P 4"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        result = RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -224,7 +224,7 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -261,7 +261,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
     n_expected_lattices = 2
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -298,7 +298,7 @@ def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, t
     n_expected_lattices = 3
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -335,7 +335,7 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
     n_expected_lattices = 4
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -370,7 +370,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     n_expected_lattices = 1
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -401,7 +401,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -436,7 +436,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     n_expected_lattices = 3
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -474,7 +474,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
     expected_hall_symbol = " P 4"
 
     with tmpdir.as_cwd():
-        run_one_indexing(
+        RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -513,7 +513,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
         expected_rmsds = (0.08, 0.11, 0.004)
 
         with tmpdir.as_cwd():
-            run_one_indexing(
+            RunOneIndexing(
                 pickle_path,
                 sweep_path,
                 extra_args,
@@ -561,7 +561,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     extra_args.append("indexing.method=%s" % method)
     extra_args.append("treat_single_image_as_still=False")
 
-    run_one_indexing(
+    RunOneIndexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -605,7 +605,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
         "indexing.method=%s" % method,
     ]
 
-    run_one_indexing(
+    RunOneIndexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -631,7 +631,7 @@ def test_multiple_experiments(dials_regression, tmpdir):
 
     extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
 
-    run_one_indexing(
+    RunOneIndexing(
         pickle_path,
         experiments_json,
         extra_args,
@@ -658,7 +658,7 @@ def test_index_4rotation(dials_regression, tmpdir):
     expected_hall_symbol = " R 3"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        result = RunOneIndexing(
             pickle_path,
             sweep_path,
             extra_args,
@@ -691,7 +691,7 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
     expected_hall_symbol = " I 4"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        result = RunOneIndexing(
             " ".join(pickle_paths),
             " ".join(sweep_paths),
             extra_args,
@@ -722,7 +722,7 @@ def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        result = RunOneIndexing(
             " ".join(pickle_paths),
             " ".join(sweep_paths),
             extra_args,
@@ -748,7 +748,7 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
 
     with tmpdir.as_cwd():
-        result = run_one_indexing(
+        result = RunOneIndexing(
             pickle_path,
             experiments,
             extra_args,

@@ -126,7 +126,7 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def index_experiments(experiments, reflections, params, known_crystal_models=None):
-    idxr = indexer.indexer_base.from_parameters(
+    idxr = indexer.Indexer.from_parameters(
         reflections,
         experiments,
         known_crystal_models=known_crystal_models,

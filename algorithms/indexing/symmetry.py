@@ -33,12 +33,12 @@ def dials_crystal_from_orientation(crystal_orientation, space_group):
     return cryst
 
 
-class bravais_setting(MetricSubgroup):  # inherits from dictionary
+class BravaisSetting(MetricSubgroup):  # inherits from dictionary
     def __init__(self, other):
         self.update(other)
 
 
-class refined_settings_list(list):
+class RefinedSettingsList(list):
     def supergroup(self):
         return self[0]
 
@@ -155,9 +155,9 @@ def refined_settings_factory_from_refined_triclinic(
 
     from rstbx.dps_core.lepage import iotbx_converter
 
-    Lfat = refined_settings_list()
+    Lfat = RefinedSettingsList()
     for item in iotbx_converter(UC, lepage_max_delta):
-        Lfat.append(bravais_setting(item))
+        Lfat.append(BravaisSetting(item))
 
     triclinic = Lfat.triclinic()
 

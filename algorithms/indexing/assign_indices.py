@@ -3,12 +3,12 @@ from __future__ import absolute_import, division
 import abc
 
 from cctbx.array_family import flex
-from dials_algorithms_indexing_ext import AssignIndices, AssignIndicesLocal
+import dials_algorithms_indexing_ext as ext
 
 from dials.algorithms.indexing import DialsIndexError
 
 
-class assign_indices_strategy(object):
+class AssignIndicesStrategy(object):
 
     __metaclass__ = abc.ABCMeta
 
@@ -20,9 +20,9 @@ class assign_indices_strategy(object):
         pass
 
 
-class assign_indices_global(assign_indices_strategy):
+class AssignIndicesGlobal(AssignIndicesStrategy):
     def __init__(self, tolerance=0.3):
-        super(assign_indices_global, self).__init__()
+        super(AssignIndicesGlobal, self).__init__()
         self._tolerance = tolerance
 
     def __call__(self, reflections, experiments, d_min=None):
@@ -45,7 +45,7 @@ class assign_indices_global(assign_indices_strategy):
         for i_imgset, imgset in enumerate(experiments.imagesets()):
             sel_imgset = imgset_ids == i_imgset
 
-            result = AssignIndices(
+            result = ext.AssignIndices(
                 rlps.select(sel_imgset),
                 phi.select(sel_imgset),
                 UB_matrices,
@@ -71,11 +71,11 @@ class assign_indices_global(assign_indices_strategy):
             reflections["id"].set_selected(reflections["miller_index"] == (0, 0, 0), -1)
 
 
-class assign_indices_local(assign_indices_strategy):
+class AssignIndicesLocal(AssignIndicesStrategy):
     def __init__(
         self, d_min=None, epsilon=0.05, delta=8, l_min=0.8, nearest_neighbours=20
     ):
-        super(assign_indices_local, self).__init__()
+        super(AssignIndicesLocal, self).__init__()
         self._epsilon = epsilon
         self._delta = delta
         self._l_min = l_min
@@ -107,7 +107,7 @@ class assign_indices_local(assign_indices_strategy):
 
         UB_matrices = flex.mat3_double([cm.get_A() for cm in experiments.crystals()])
 
-        result = AssignIndicesLocal(
+        result = ext.AssignIndicesLocal(
             rlps,
             phi,
             UB_matrices,

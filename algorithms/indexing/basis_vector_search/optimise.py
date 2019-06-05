@@ -10,7 +10,7 @@ from scitbx import lbfgs
 def optimise_basis_vectors(reciprocal_lattice_points, vectors):
     optimised = flex.vec3_double()
     for vector in vectors:
-        minimised = basis_vector_minimser(reciprocal_lattice_points, vector)
+        minimised = BasisVectorMinimiser(reciprocal_lattice_points, vector)
         optimised.append(tuple(minimised.x))
     functionals = flex.double(minimised.target.compute_functional(v) for v in vectors)
     perm = flex.sort_permutation(functionals)
@@ -20,7 +20,7 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
 
 # Optimise the initial basis vectors as per equation 11.4.3.4 of
 # Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
-class basis_vector_target(object):
+class BasisVectorTarget(object):
     def __init__(self, reciprocal_lattice_points):
         self.reciprocal_lattice_points = reciprocal_lattice_points
         self._xyz_parts = self.reciprocal_lattice_points.parts()
@@ -40,7 +40,7 @@ class basis_vector_target(object):
         return f, g
 
 
-class basis_vector_minimser(object):
+class BasisVectorMinimiser(object):
     def __init__(
         self,
         reciprocal_lattice_points,
@@ -55,7 +55,7 @@ class basis_vector_minimser(object):
             self.x = vector.deep_copy()
         self.n = len(self.x)
         assert self.n == 3
-        self.target = basis_vector_target(self.reciprocal_lattice_points)
+        self.target = BasisVectorTarget(self.reciprocal_lattice_points)
         self.minimizer = lbfgs.run(
             target_evaluator=self,
             termination_params=lbfgs_termination_params,

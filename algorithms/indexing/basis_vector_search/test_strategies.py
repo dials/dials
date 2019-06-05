@@ -17,19 +17,19 @@ class TestStrategies(object):
 
     def test_fft1d(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.fft1d(max_cell)
+        strategy = strategies.FFT1D(max_cell)
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
         self.check_results(setup_rlp["crystal_symmetry"].unit_cell(), basis_vectors)
 
     def test_fft3d(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.fft3d(max_cell, n_points=256)
+        strategy = strategies.FFT3D(max_cell, n_points=256)
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
         self.check_results(setup_rlp["crystal_symmetry"].unit_cell(), basis_vectors)
 
     def test_real_space_grid_search(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.real_space_grid_search(
+        strategy = strategies.RealSpaceGridSearch(
             max_cell, target_unit_cell=setup_rlp["crystal_symmetry"].unit_cell()
         )
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])

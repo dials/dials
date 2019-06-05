@@ -43,7 +43,7 @@ def test_correct(space_group_symbol):
     refl["imageset_id"] = flex.int(len(refl))
     refl["xyzobs.mm.value"] = flex.vec3_double(len(refl))
 
-    non_primitive_basis.correct(expts, refl, assign_indices.assign_indices_global())
+    non_primitive_basis.correct(expts, refl, assign_indices.AssignIndicesGlobal())
 
     cs_corrected = expts.crystals()[0].get_crystal_symmetry()
     assert cs_corrected.change_of_basis_op_to_primitive_setting().is_identity_op()

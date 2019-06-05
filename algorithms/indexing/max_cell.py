@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 from scitbx.array_family import flex
 from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
-from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
+from dials.algorithms.indexing.nearest_neighbor import NeighborAnalysis
 from dials.algorithms.indexing import DialsIndexError
 
 
@@ -55,7 +55,7 @@ def find_max_cell(
             % len(reflections)
         )
 
-    NN = neighbor_analysis(
+    NN = NeighborAnalysis(
         reflections,
         step_size=step_size,
         max_height_fraction=max_height_fraction,

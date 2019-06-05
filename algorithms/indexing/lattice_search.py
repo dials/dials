@@ -125,16 +125,16 @@ optimise_initial_basis_vectors = False
 basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
 
 
-class BasisVectorSearch(indexer.indexer_base):
+class BasisVectorSearch(indexer.Indexer):
     def __init__(self, reflections, experiments, params=None):
         super(BasisVectorSearch, self).__init__(reflections, experiments, params)
         if params.indexing.method == "fft1d":
-            self._basis_vector_search_strategy = strategies.fft1d(
+            self._basis_vector_search_strategy = strategies.FFT1D(
                 max_cell=self.params.max_cell,
                 characteristic_grid=self.params.fft1d.characteristic_grid,
             )
         elif params.indexing.method == "fft3d":
-            self._basis_vector_search_strategy = strategies.fft3d(
+            self._basis_vector_search_strategy = strategies.FFT3D(
                 self.params.max_cell,
                 self.params.fft3d.reciprocal_space_grid.n_points,
                 d_min=self.params.fft3d.reciprocal_space_grid.d_min,
@@ -148,7 +148,7 @@ class BasisVectorSearch(indexer.indexer_base):
             assert (
                 self._symmetry_handler.target_symmetry_primitive.unit_cell() is not None
             )
-            self._basis_vector_search_strategy = strategies.real_space_grid_search(
+            self._basis_vector_search_strategy = strategies.RealSpaceGridSearch(
                 max_cell=self.params.max_cell,
                 target_unit_cell=self._symmetry_handler.target_symmetry_primitive.unit_cell(),
                 characteristic_grid=self.params.real_space_grid_search.characteristic_grid,

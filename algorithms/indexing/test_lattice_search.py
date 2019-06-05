@@ -89,7 +89,7 @@ def test_stills_indexer_BasisVectorSearch_i04_weak_data(
         params.indexing.known_symmetry.unit_cell = uctbx.unit_cell(unit_cell)
     if space_group is not None:
         params.indexing.known_symmetry.space_group = sgtbx.space_group_info(space_group)
-    idxr = stills_indexer.stills_indexer_basis_vector_search(
+    idxr = stills_indexer.StillsIndexerBasisVectorSearch(
         reflections, experiments, params
     )
     idxr.index()

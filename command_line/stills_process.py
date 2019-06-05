@@ -755,7 +755,7 @@ class Processor(object):
         return observed
 
     def index(self, experiments, reflections):
-        from dials.algorithms.indexing.indexer import indexer_base
+        from dials.algorithms.indexing.indexer import Indexer
         from time import time
         import copy
 
@@ -775,7 +775,7 @@ class Processor(object):
             known_crystal_models = None
 
         if params.indexing.stills.method_list is None:
-            idxr = indexer_base.from_parameters(
+            idxr = Indexer.from_parameters(
                 reflections,
                 experiments,
                 known_crystal_models=known_crystal_models,
@@ -787,7 +787,7 @@ class Processor(object):
             for method in params.indexing.stills.method_list:
                 params.indexing.method = method
                 try:
-                    idxr = indexer_base.from_parameters(
+                    idxr = Indexer.from_parameters(
                         reflections, experiments, params=params
                     )
                     idxr.index()
@@ -850,9 +850,9 @@ class Processor(object):
             centroids = centroids.select(refiner.selection_used_for_refinement())
 
             # Re-estimate mosaic estimates
-            from dials.algorithms.indexing.nave_parameters import nave_parameters
+            from dials.algorithms.indexing.nave_parameters import NaveParameters
 
-            nv = nave_parameters(
+            nv = NaveParameters(
                 params=self.params,
                 experiments=experiments,
                 reflections=centroids,

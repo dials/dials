@@ -9,7 +9,7 @@ except ImportError:
 import os
 import pytest
 from cctbx import uctbx
-from dials.algorithms.indexing.test_index import run_one_indexing
+from dials.algorithms.indexing.test_index import RunOneIndexing
 
 
 def test_run(dials_regression, run_in_tmpdir):
@@ -79,7 +79,7 @@ def test_run(dials_regression, run_in_tmpdir):
         (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
     )
 
-    result_old = run_one_indexing(
+    result_old = RunOneIndexing(
         pickle_path=strong_pickle,
         sweep_path=experiments_old,
         extra_args=[],
@@ -88,7 +88,7 @@ def test_run(dials_regression, run_in_tmpdir):
         expected_hall_symbol=" P 1",
     )
 
-    result_new = run_one_indexing(
+    result_new = RunOneIndexing(
         pickle_path=strong_pickle,
         sweep_path=experiments_new,
         extra_args=[],

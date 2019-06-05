@@ -14,7 +14,7 @@ Class to determine mosaicity and effective domain size for a crystal given a set
 """
 
 
-class nave_parameters(object):
+class NaveParameters(object):
     def __init__(self, params, experiments, reflections, refinery, graph_verbose=True):
         self.params = params
         self.experiments = experiments
