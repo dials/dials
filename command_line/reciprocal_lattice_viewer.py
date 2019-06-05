@@ -160,7 +160,7 @@ class render_3d(object):
 
             # 155 handle data from predictions *only* if that is what we have
             if "xyzobs.px.value" in self.reflections_input:
-                refl = copy.deepcopy(self.reflections_input)
+                refl = copy.deepcopy(self.reflections_input.select(sel))
                 refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
 
                 goniometer = copy.deepcopy(imageset.get_goniometer())
