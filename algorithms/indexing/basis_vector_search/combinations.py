@@ -56,7 +56,6 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
         if gamma < half_pi:
             # all angles obtuse if possible please
             b = -b
-            gamma = math.pi - gamma
             a_cross_b = -a_cross_b
         c = basis_vectors[k]
         if abs(half_pi - a_cross_b.angle(c)) < min_angle:

@@ -305,7 +305,7 @@ class Strategy(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def evaluate(self, reciprocal_lattice_vectors):
+    def evaluate(self, experiments, reflections):
         pass
 
 
