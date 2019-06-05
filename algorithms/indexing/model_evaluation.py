@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 import libtbx
 from libtbx import group_args
-from libtbx.utils import Sorry
+from dials.util import Sorry
 from scitbx import matrix
 from scitbx.array_family import flex
 

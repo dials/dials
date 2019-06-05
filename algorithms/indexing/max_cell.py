@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 from scitbx.array_family import flex
 from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
 from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
+from dials.algorithms.indexing import DialsIndexError
 
 
 def find_max_cell(
@@ -48,9 +49,11 @@ def find_max_cell(
         reflections = reflections.select(~overlap_sel)
     logger.debug("%i reflections remain for max_cell identification" % len(reflections))
 
-    assert (
-        len(reflections) > 0
-    ), "Too few spots remaining for nearest neighbour analysis (%d)" % len(reflections)
+    if not len(reflections):
+        raise DialsIndexError(
+            "Too few spots remaining for nearest neighbour analysis (%d)"
+            % len(reflections)
+        )
 
     NN = neighbor_analysis(
         reflections,

@@ -31,10 +31,12 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
 from dials.algorithms.indexing.symmetry import SymmetryHandler
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 
 from dxtbx.model import ExperimentList
 
 from dials.algorithms.indexing.max_cell import find_max_cell
+
 
 max_cell_phil_str = """\
 max_cell_estimation
@@ -477,18 +479,14 @@ class indexer_base(object):
             refl.centroid_px_to_mm(expt.detector, expt.scan)
             self.reflections.extend(refl)
         if len(self.reflections) == 0:
-            raise Sorry("No reflections left to index!")
+            raise DialsIndexError("No reflections left to index!")
 
         self.reflections = self._map_centroids_to_reciprocal_space(
             self.experiments, self.reflections
         )
         self.reflections.calculate_entering_flags(self.experiments)
 
-        try:
-            self.find_max_cell()
-        except AssertionError as e:
-            if "too few spots" in str(e).lower():
-                raise Sorry(e)
+        self.find_max_cell()
 
         if self.params.sigma_phi_deg is not None:
             var_x, var_y, _ = self.reflections["xyzobs.mm.variance"].parts()
@@ -575,7 +573,7 @@ class indexer_base(object):
                     )
 
             if len(experiments) == 0:
-                raise Sorry("No suitable lattice could be found.")
+                raise DialsIndexError("No suitable lattice could be found.")
             elif len(experiments) == n_lattices_previous_cycle:
                 # no more lattices found
                 break
@@ -651,7 +649,7 @@ class indexer_base(object):
                         )
                     except Sorry as e:
                         if len(experiments) == 1:
-                            raise
+                            raise DialsIndexRefineError(e.message)
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)
@@ -707,7 +705,7 @@ class indexer_base(object):
                     break
 
         if self.refined_experiments is None:
-            raise Sorry("None of the experiments could refine.")
+            raise DialsIndexRefineError("None of the experiments could refine.")
 
         if len(self.refined_experiments) > 1:
             from dials.algorithms.indexing.compare_orientation_matrices import (
@@ -742,7 +740,7 @@ class indexer_base(object):
                             "sanity check set disable_unit_cell_volume_sanity_check=True.",
                         )
                     ) % (100 * volume_change)
-                    raise Sorry(msg)
+                    raise DialsIndexError(msg)
                 print("OK")
 
     def _apply_symmetry_post_indexing(

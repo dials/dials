@@ -8,13 +8,13 @@ import math
 import logging
 
 import libtbx
-from libtbx.utils import Sorry
 from scitbx.array_family import flex
 from scitbx import fftpack
 from scitbx import matrix
 from cctbx import crystal, uctbx, xray
 
 from dials_algorithms_indexing_ext import map_centroids_to_reciprocal_space_grid
+from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
 
@@ -423,7 +423,7 @@ class fft3d(strategy):
         flood_fill = masks.flood_fill(grid_real_binary, self._fft_cell)
         if flood_fill.n_voids() < 4:
             # Require at least peak at origin and one peak for each basis vector
-            raise Sorry(
+            raise DialsIndexError(
                 "Indexing failed: fft3d peak search failed to find sufficient number of peaks."
             )
 

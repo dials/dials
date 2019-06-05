@@ -5,6 +5,8 @@ import abc
 from cctbx.array_family import flex
 from dials_algorithms_indexing_ext import AssignIndices, AssignIndicesLocal
 
+from dials.algorithms.indexing import DialsIndexError
+
 
 class assign_indices_strategy(object):
 
@@ -98,9 +100,7 @@ class assign_indices_local(assign_indices_strategy):
         phi = refs["xyzobs.mm.value"].parts()[2]
 
         if len(rlps) <= self._nearest_neighbours:
-            from libtbx.utils import Sorry
-
-            raise Sorry(
+            raise DialsIndexError(
                 "index_assignment.local.nearest_neighbour must be smaller than the number of accepted reflections (%d)"
                 % len(rlps)
             )

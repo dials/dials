@@ -14,11 +14,11 @@ from dials.util import log
 debug_handle = log.debug_handle(logger)
 info_handle = log.info_handle(logger)
 import libtbx
-from dials.util import Sorry
 from dials.algorithms.indexing.indexer import indexer_base
 from dials.algorithms.indexing.known_orientation import indexer_known_orientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch
 from dials.algorithms.indexing.nave_parameters import nave_parameters
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 
@@ -152,7 +152,7 @@ class stills_indexer(indexer_base):
             if len(experiments) == 0:
                 experiments.extend(self.find_lattices())
                 if len(experiments) == 0:
-                    raise Sorry("No suitable lattice could be found.")
+                    raise DialsIndexError("No suitable lattice could be found.")
             else:
                 try:
                     new = self.find_lattices()
@@ -254,7 +254,9 @@ class stills_indexer(indexer_base):
                         )
 
                     if len(refiners) == 0:
-                        raise Sorry("No isoforms had a lookup symbol that matched")
+                        raise DialsIndexError(
+                            "No isoforms had a lookup symbol that matched"
+                        )
                     positional_rmsds = [
                         math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2)
                         for P in refiners
@@ -376,7 +378,7 @@ class stills_indexer(indexer_base):
                 except Exception as e:
                     s = str(e)
                     if len(experiments) == 1:
-                        raise Sorry(e)
+                        raise DialsIndexRefineError(e.message)
                     had_refinement_error = True
                     logger.info("Refinement failed:")
                     logger.info(s)
@@ -417,7 +419,7 @@ class stills_indexer(indexer_base):
             self.refined_experiments = refined_experiments
 
         if self.refined_experiments is None:
-            raise Sorry("None of the experiments could refine.")
+            raise DialsIndexRefineError("None of the experiments could refine.")
 
         # discard experiments with zero reflections after refinement
         id_set = set(self.refined_reflections["id"])
@@ -649,7 +651,7 @@ class stills_indexer(indexer_base):
                     )
                 )
         if len(candidates) == 0:
-            raise Sorry("No suitable indexing solution found")
+            raise DialsIndexError("No suitable indexing solution found")
 
         print("**** ALL CANDIDATES:")
         for i, XX in enumerate(candidates):
@@ -666,13 +668,13 @@ class stills_indexer(indexer_base):
 
         if params.indexing.stills.refine_all_candidates:
             if best.rmsd > params.indexing.stills.rmsd_min_px:
-                raise Sorry("RMSD too high, %f" % best.rmsd)
+                raise DialsIndexError("RMSD too high, %f" % best.rmsd)
 
             if (
                 best.ewald_proximal_volume
                 > params.indexing.stills.ewald_proximal_volume_max
             ):
-                raise Sorry(
+                raise DialsIndexError(
                     "Ewald proximity volume too high, %f" % best.ewald_proximal_volume
                 )
 

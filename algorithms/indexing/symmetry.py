@@ -11,7 +11,8 @@ from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
 import scitbx.matrix
 
-from dials.util import log, Sorry
+from dials.util import log
+from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
 
@@ -566,7 +567,7 @@ class SymmetryHandler(object):
                         best_angular_difference = subgroup["max_angular_difference"]
 
         if best_subgroup is None:
-            raise Sorry("Unit cell incompatible with space group")
+            raise DialsIndexError("Unit cell incompatible with space group")
 
         cb_op_inp_best = best_subgroup["cb_op_inp_best"]
         best_subsym = best_subgroup["best_subsym"]
