@@ -625,12 +625,12 @@ class JsonExporter(object):
         settings.__inject__("reverse_phi", None)
 
         exporter = export_json.ReciprocalLatticeJson(settings=self.params)
-        exporter.load_models(imagesets, reflections)
+        exporter.load_models(self.experiments, reflections)
         exporter.as_json(
             filename=params.json.filename,
             compact=params.json.compact,
             n_digits=params.json.n_digits,
-            experiments=experiments,
+            experiments=self.experiments,
         )
 
 
@@ -681,13 +681,11 @@ if __name__ == "__main__":
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
     # Get the experiments and reflections
-    experiments = flatten_experiments(params.input.experiments)
-
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
     if len(reflections) == 0 and len(experiments) == 0:

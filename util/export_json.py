@@ -23,8 +23,8 @@ class ReciprocalLatticeJson(render_3d):
 
             self.settings = settings()
 
-    def load_models(self, imagesets, reflections):
-        self.imagesets = imagesets
+    def load_models(self, experiments, reflections):
+        self.experiments = experiments
         self.reflections_input = reflections
         self.map_points_to_reciprocal_space()
 
