@@ -21,7 +21,7 @@ from dials.algorithms.indexing import index_reflections
 
 
 def random_rotation(angle_min=0, angle_max=360):
-    angles = [random.uniform(angle_min, angle_max) for i in xrange(3)]
+    angles = [random.uniform(angle_min, angle_max) for i in range(3)]
     print("Rotation: ", angles)
     return euler_angles_as_matrix(angles, deg=True)
 

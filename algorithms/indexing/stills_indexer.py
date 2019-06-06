@@ -419,7 +419,7 @@ class StillsIndexer(Indexer):
         id_set = set(self.refined_reflections["id"])
         if len(id_set) < len(self.refined_experiments):
             filtered_refined_reflections = flex.reflection_table()
-            for i in xrange(len(self.refined_experiments)):
+            for i in range(len(self.refined_experiments)):
                 if i not in id_set:
                     del self.refined_experiments[i]
             for old, new in zip(sorted(id_set), range(len(id_set))):
@@ -673,7 +673,7 @@ class StillsIndexer(Indexer):
                 )
 
             if len(candidates) > 1:
-                for i in xrange(len(candidates)):
+                for i in range(len(candidates)):
                     if i == flex.min_index(results):
                         continue
                     if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:

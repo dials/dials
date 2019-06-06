@@ -61,7 +61,7 @@ class NaveParameters(object):
         two_thetas_env = flex.double()
         dspacings_env = flex.double()
         excursion_rads_env = flex.double()
-        for x in xrange(0, n_bins):
+        for x in range(0, n_bins):
             subset = order[x * bin_sz : (x + 1) * bin_sz]
             two_thetas_env.append(flex.mean(two_thetas.select(subset)))
             dspacings_env.append(flex.mean(dspacings.select(subset)))
@@ -186,7 +186,7 @@ class NaveParameters(object):
         # compicated integral for mosaic spread volume, must be calculated numerically
         summation = 0.0
         N_terms = 100
-        for x in xrange(N_terms):
+        for x in range(N_terms):
             phi = (x / N_terms) * TT
             # inner integral over radius r
             integral = math.pow(

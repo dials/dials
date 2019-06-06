@@ -171,13 +171,13 @@ def refined_settings_factory_from_refined_triclinic(
     assert str(triclinic["cb_op_inp_best"]) == "a,b,c"
 
     Nset = len(Lfat)
-    for j in xrange(Nset):
+    for j in range(Nset):
         Lfat[j].setting_number = Nset - j
 
     from cctbx.crystal_orientation import crystal_orientation
     from cctbx import sgtbx
 
-    for j in xrange(Nset):
+    for j in range(Nset):
         cb_op = Lfat[j]["cb_op_inp_best"].c().as_double_array()[0:9]
         orient = crystal_orientation(crystal.get_A(), True)
         orient_best = orient.change_basis(scitbx.matrix.sqr(cb_op).transpose())

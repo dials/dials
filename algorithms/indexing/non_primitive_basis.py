@@ -43,7 +43,7 @@ def detect(miller_indices, threshold=0.9):
 
     for test in tools.R:
         cum = tools.cpp_absence_test(miller_indices, test["mod"], test["vec"])
-        for counter in xrange(test["mod"]):
+        for counter in range(test["mod"]):
             if float(cum[counter]) / miller_indices.size() > threshold and counter == 0:
                 # (if counter != 0 there is no obvious way to correct this)
                 logger.debug(
