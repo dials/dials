@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from dials.util import Sorry
 from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
@@ -24,6 +23,11 @@ def export_sadabs(integrated_data, experiment_list, params):
 
     integrated_data = integrated_data.select(integrated_data["id"] >= 0)
     assert max(integrated_data["id"]) == 0
+
+    # export for sadabs should only be for non-scaled reflections
+    assert any(
+        [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
+    )
 
     integrated_data = filter_reflection_table(
         integrated_data,
@@ -93,8 +97,8 @@ def export_sadabs(integrated_data, experiment_list, params):
 
     image_range = experiment.scan.get_image_range()
 
-    from cctbx.array_family import flex as cflex  # implicit import
-    from cctbx.miller import map_to_asu_isym  # implicit import
+    from cctbx.array_family import flex as cflex  # implicit import # noqa: F401
+    from cctbx.miller import map_to_asu_isym  # implicit import # noqa: F401
 
     # gather the required information for the reflection file
 
@@ -108,13 +112,11 @@ def export_sadabs(integrated_data, experiment_list, params):
         V = integrated_data["intensity.sum.variance"]
         assert V.all_gt(0)
         sigI = flex.sqrt(V)
-    elif "intensity.prf.value" in integrated_data:
+    else:
         I = integrated_data["intensity.prf.value"]
         V = integrated_data["intensity.prf.variance"]
         assert V.all_gt(0)
         sigI = flex.sqrt(V)
-    else:
-        raise Sorry("""Data does not contain sum or prf reflections.""")
 
     # figure out scaling to make sure data fit into format 2F8.2 i.e. Imax < 1e5
 
