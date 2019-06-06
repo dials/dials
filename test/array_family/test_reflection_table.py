@@ -43,7 +43,7 @@ def test_init():
     assert not table.empty()
 
     # test with invalid columns
-    try:
+    with pytest.raises(RuntimeError):
         table = flex.reflection_table(
             [
                 ("col1", flex.int(10)),
@@ -51,9 +51,6 @@ def test_init():
                 ("col3", flex.std_string(10)),
             ]
         )
-        assert false
-    except Exception:
-        pass
 
 
 def test_resizing():
@@ -79,11 +76,8 @@ def test_resizing():
     assert table.ncols() == 2
 
     # Add an extra column with the wrong size (throw)
-    try:
+    with pytest.raises(RuntimeError):
         table["col3"] = flex.std_string(20)
-        assert False
-    except Exception:
-        pass
     assert table.nrows() == 10
     assert table.ncols() == 2
     assert table.is_consistent()
@@ -399,11 +393,8 @@ def test_updating():
     # Create a table with some elements
     table2 = flex.reflection_table()
     table2["col3"] = flex.std_string(c3)
-    try:
+    with pytest.raises(RuntimeError):
         table1.update(table2)
-        assert False
-    except Exception:
-        pass
 
     assert table1.is_consistent()
     assert table1.nrows() == 10
