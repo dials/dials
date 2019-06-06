@@ -116,7 +116,6 @@ class better_experimental_model_discovery(object):
         """Local scope: find the optimal origin-offset closest to the current overall detector position
         (local minimum, simple minimization)"""
 
-        detector = self.imagesets[0].get_detector()
         beam = self.imagesets[0].get_beam()
         s0 = matrix.col(beam.get_s0())
         # construct two vectors that are perpendicular to the beam.  Gives a basis for refining beam
@@ -171,10 +170,6 @@ class better_experimental_model_discovery(object):
             wide_search_offset = matrix.col(
                 potential_offsets[flex.min_index(potential_offsets.norms())]
             )
-
-            # plot_max = flex.max(scores)
-            # idx_max = flex.max_index(scores)
-            # wide_search_offset = (idxs[idx_max%widegrid])*beamr1 + (idxs[idx_max//widegrid])*beamr2
 
         else:
             wide_search_offset = None
@@ -242,7 +237,6 @@ class better_experimental_model_discovery(object):
 
             def show_plot(widegrid, excursi):
                 excursi.reshape(flex.grid(widegrid, widegrid))
-                plot_max = flex.max(excursi)
                 idx_max = flex.max_index(excursi)
 
                 def igrid(x):
@@ -352,7 +346,6 @@ def run_dps(args):
     detector = imageset.get_detector()
     beam = imageset.get_beam()
     goniometer = imageset.get_goniometer()
-    scan = imageset.get_scan()
 
     # max_cell: max possible cell in Angstroms; set to None, determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
@@ -548,7 +541,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 

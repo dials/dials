@@ -312,7 +312,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -547,7 +547,7 @@ class Processor(object):
         if not os.path.exists(debug_dir):
             try:
                 os.makedirs(debug_dir)
-            except OSError as e:
+            except OSError:
                 pass  # due to multiprocessing, makedirs can sometimes fail
         assert os.path.exists(debug_dir)
         self.debug_file_path = os.path.join(debug_dir, "debug_%d.txt" % rank)
@@ -1070,9 +1070,7 @@ class Processor(object):
         def functionname(params, outfile, frame), where params is the phil scope, outfile is the path
         to the pickle that will be saved, and frame is the python dictionary to be serialized.
         """
-        try:
-            picklefilename = self.params.output.integration_pickle
-        except AttributeError:
+        if not hasattr(self.params.output, "integration_pickle"):
             return
 
         if self.params.output.integration_pickle is not None:

@@ -257,7 +257,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             warnings.warn(
                 "blosc compression is deprecated", DeprecationWarning, stacklevel=2
             )
-        except blosc.blosc_extension.error as e:
+        except blosc.blosc_extension.error:
             # We now accept uncompressed data
             pass
         return reflection_table.from_msgpack(infile_data)
@@ -1160,7 +1160,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Get the panel and id
         panel = self["panel"]
-        exp_id = self["id"]
 
         # Group according to imageset
         if experiments is not None:
@@ -1409,7 +1408,7 @@ Found %s"""
         self["xyzobs.mm.variance"] = flex.vec3_double(len(self))
         # e.g. data imported from XDS; no variance known then; since is used
         # only for weights assign as 1 => uniform weights
-        if not "xyzobs.px.variance" in self:
+        if "xyzobs.px.variance" not in self:
             self["xyzobs.px.variance"] = flex.vec3_double(len(self), (1, 1, 1))
         panel_numbers = flex.size_t(self["panel"])
         for i_panel in range(len(detector)):

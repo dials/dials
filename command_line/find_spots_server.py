@@ -10,6 +10,8 @@ from multiprocessing import Process
 import libtbx.load_env
 import libtbx.phil
 
+from dials.util import Sorry
+
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
 help_message = """\
