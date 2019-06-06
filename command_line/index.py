@@ -125,6 +125,7 @@ def index_experiments(experiments, reflections, params, known_crystal_models=Non
     )
     idxr.index()
     idx_refl = copy.deepcopy(idxr.refined_reflections)
+    idx_refl.extend(idxr.unindexed_reflections)
     return idxr.refined_experiments, idx_refl
 
 
@@ -206,8 +207,9 @@ class Index(object):
                         if idx_expts is None:
                             continue
                         for j_expt, _ in enumerate(idx_expts):
-                            idx_refl["id"] = flex.int(
-                                len(idx_refl), len(self._indexed_experiments) + j_expt
+                            sel = idx_refl["id"] == j_expt
+                            idx_refl["id"].set_selected(
+                                sel, len(self._indexed_experiments) + j_expt
                             )
                         idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
                         self._indexed_reflections.extend(idx_refl)
