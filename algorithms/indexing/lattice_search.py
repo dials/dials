@@ -336,16 +336,6 @@ class BasisVectorSearch(indexer.Indexer):
                     miller_indices = refl["miller_index"].select(sel)
                     miller_indices = cb_op_to_primitive.apply(miller_indices)
                     refl["miller_index"].set_selected(sel, miller_indices)
-                if 0 and self.cb_op_primitive_to_given is not None:
-                    sel = refl["id"] > -1
-                    experiments[0].crystal.update(
-                        experiments[0].crystal.change_basis(
-                            self.cb_op_primitive_to_given
-                        )
-                    )
-                    miller_indices = refl["miller_index"].select(sel)
-                    miller_indices = self.cb_op_primitive_to_given.apply(miller_indices)
-                    refl["miller_index"].set_selected(sel, miller_indices)
 
             args.append((experiments, refl))
             if len(args) == self.params.basis_vector_combinations.max_refine:
