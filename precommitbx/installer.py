@@ -25,9 +25,11 @@ precommit_home = py.path.local(abs(libtbx.env.build_path)).join("precommitbx")
 
 python_source_version = "3.7.3"
 python_source_size = 22973527
-openssl_source_version = "1.0.2r"
-openssl_source_size = 5348369
-openssl_API_version = "(1, 0, 2, 18, 15)"  # import ssl; print(ssl._OPENSSL_API_VERSION)
+libffi_source_version = "3.2.1"
+libffi_source_size = 940837
+openssl_source_version = "1.0.2s"
+openssl_source_size = 5349149
+openssl_API_version = "(1, 0, 2, 19, 15)"  # import ssl; print(ssl._OPENSSL_API_VERSION)
 precommitbx_version = dials.precommitbx._precommitbx.__version__
 
 environment_override = {
@@ -261,6 +263,54 @@ def install_openssl():
     markerfile.ensure()
 
 
+def download_libffi():
+    archive = precommit_home / "libffi-{}.tar.gz".format(libffi_source_version)
+    if archive.check() and archive.size() == libffi_source_size:
+        return archive
+    url = "ftp://sourceware.org/pub/libffi/libffi-{0}.tar.gz".format(
+        libffi_source_version
+    )
+    download("Downloading libffi", url, libffi_source_size, archive)
+    return archive
+
+
+def install_libffi():
+    markerfile = precommit_home.join(".valid.libffi")
+    if markerfile.check():
+        return
+    sourcedir = precommit_home / "libffi-{}".format(libffi_source_version)
+    targz = download_libffi()
+    with Progress("Unpacking libffi", 358) as bar:
+        clean_run(
+            ["tar", "xvfz", targz],
+            working_directory=precommit_home,
+            callback_stdout=bar.increment,
+            stop_on_error="Error unpacking libffi sources",
+        )
+    with Progress("Configuring libffi", 156) as bar:
+        clean_run(
+            [sourcedir.join("configure"), "--prefix=%s" % precommit_home],
+            callback_stdout=bar.increment,
+            stop_on_error="Error configuring libffi",
+            working_directory=sourcedir,
+        )
+    with Progress("Building libffi", 76) as bar:
+        clean_run(
+            ["make"],
+            callback_stdout=bar.increment,
+            stop_on_error="Error building libffi",
+            working_directory=sourcedir,
+        )
+    with Progress("Installing libffi", 63) as bar:
+        clean_run(
+            ["make", "install"],
+            callback_stdout=bar.increment,
+            stop_on_error="Error installing libffi",
+            working_directory=sourcedir,
+        )
+    markerfile.ensure()
+
+
 def download_python():
     archive = precommit_home / "Python-{}.tgz".format(python_source_version)
     if archive.check() and archive.size() == python_source_size:
@@ -279,6 +329,7 @@ def install_python(check_only=False):
     if check_only:
         return False
     install_openssl()
+    install_libffi()
     sourcedir = precommit_home / "Python-{}".format(python_source_version)
     targz = download_python()
     with Progress("Unpacking Python", 4174) as bar:
