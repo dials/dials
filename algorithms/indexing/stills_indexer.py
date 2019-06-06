@@ -119,13 +119,8 @@ class StillsIndexer(Indexer):
 
         experiments = ExperimentList()
 
-        had_refinement_error = False
-        have_similar_crystal_models = False
-
         while True:
             self.d_min = self.params.refinement_protocol.d_min_start
-            if had_refinement_error or have_similar_crystal_models:
-                break
             max_lattices = self.params.multiple_lattice_search.max_lattices
             if max_lattices is not None and len(experiments) >= max_lattices:
                 break
@@ -379,7 +374,6 @@ class StillsIndexer(Indexer):
                     s = str(e)
                     if len(experiments) == 1:
                         raise DialsIndexRefineError(e.message)
-                    had_refinement_error = True
                     logger.info("Refinement failed:")
                     logger.info(s)
                     del experiments[-1]
