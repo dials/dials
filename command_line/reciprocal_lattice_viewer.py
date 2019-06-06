@@ -1,5 +1,4 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
@@ -775,10 +774,10 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.beam_vector = beam
 
     def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
-        self.recip_latt_vectors = []
         # the points are scaled by 100 so must do that here too
-        for vec_set in vectors_per_crystal:
-            self.recip_latt_vectors.append([100.0 * matrix.col(vec) for vec in vec_set])
+        self.recip_latt_vectors = [
+            [100.0 * matrix.col(vec) for vec in vectors_per_crystal]
+        ]
 
     # --- user input and settings
     def update_settings(self):
