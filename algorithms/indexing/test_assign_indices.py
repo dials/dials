@@ -17,6 +17,7 @@ from dials.algorithms.indexing.assign_indices import (
     AssignIndicesGlobal,
     AssignIndicesLocal,
 )
+from dials.algorithms.indexing import index_reflections
 
 
 def random_rotation(angle_min=0, angle_max=360):
@@ -183,3 +184,29 @@ class CompareGlobalLocal(object):
             " Local misindexed: %d, correct: %d, total: %d"
             % (self.misindexed_local, self.correct_local, len(self.reflections_local))
         )
+
+
+def test_index_reflections(dials_regression):
+    experiments_json = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "experiments.json"
+    )
+    experiments = load.experiment_list(experiments_json, check_format=False)
+    reflections = flex.reflection_table.from_file(
+        os.path.join(
+            dials_regression, "indexing_test_data", "i04_weak_data", "full.pickle"
+        )
+    )
+    reflections.centroid_px_to_mm(experiments[0].detector, scan=experiments[0].scan)
+    reflections.map_centroids_to_reciprocal_space(
+        experiments[0].detector,
+        experiments[0].beam,
+        goniometer=experiments[0].goniometer,
+    )
+    reflections["imageset_id"] = flex.int(len(reflections), 0)
+    reflections["id"] = flex.int(len(reflections), -1)
+    with pytest.deprecated_call():
+        index_reflections(reflections, experiments)
+    assert "miller_index" in reflections
+    counts = reflections["id"].counts()
+    assert counts.values() == [1390, 114692]
+    assert counts.keys() == [-1, 0]
