@@ -913,7 +913,7 @@ class OptionParser(OptionParserBase):
             if valid and (not non_valid or verbosity):
                 msg.append(
                     "  {} did not appear to conform to any{} expected format:".format(
-                        arg, " other" if non_valid else " "
+                        arg, " other" if non_valid else ""
                     )
                 )
                 slen = max(len(x.type) for x in valid)
@@ -1113,7 +1113,6 @@ def flatten_reflections(filename_object_list):
         new_id_ = 0
         for table in tables:
             table_id_values = sorted(list(set(table["id"]).difference(set([-1]))))
-            n_prev = new_id_
             highest_new_id = new_id_ + len(table_id_values) - 1
             expt_ids_dict = table.experiment_identifiers()
             new_ids_dict = {}
