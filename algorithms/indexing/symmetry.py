@@ -11,7 +11,6 @@ from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx import lattice_symmetry
 from rstbx.symmetry.subgroup import MetricSubgroup
-from rstbx import dps_core  # noqa: F401
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
 import scitbx.matrix
