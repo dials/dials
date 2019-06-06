@@ -65,7 +65,9 @@ experiments.json"""
             % (len(experiments), len(reflections))
         )
     try:
-        experiments, reflections = assign_unique_identifiers(experiments, reflections)
+        experiments, reflections = assign_unique_identifiers(
+            experiments, reflections, params.identifiers
+        )
     except ValueError as e:
         raise Sorry(e)
     print("assigned identifiers: %s" % list(experiments.identifiers()))
