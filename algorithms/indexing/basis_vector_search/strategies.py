@@ -342,13 +342,7 @@ class FFT3D(Strategy):
 
         # re-sort by peak volume
         perm = flex.sort_permutation(unique_volumes, reverse=True)
-        vectors = [unique_vectors[i] for i in perm]
-        volumes = unique_volumes.select(perm)
-
-        # for i, (v, volume) in enumerate(zip(vectors, volumes)):
-        # logger.debug("%s %s %s" %(i, v.length(), volume))
-
-        self.candidate_basis_vectors = vectors
+        self.candidate_basis_vectors = [unique_vectors[i] for i in perm]
         return self.candidate_basis_vectors, used_in_indexing
 
     def _fft(self, reciprocal_lattice_vectors, d_min):
