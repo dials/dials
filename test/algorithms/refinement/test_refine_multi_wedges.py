@@ -10,7 +10,7 @@ import procrunner
 from scitbx import matrix
 from dxtbx.model.experiment_list import ExperimentListFactory
 from six.moves import cPickle as pickle
-from dials.array_family import flex
+from dials.array_family import flex  # noqa: F401
 import pytest
 
 

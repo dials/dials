@@ -177,6 +177,8 @@ class BlockCalculator(object):
         # scan edges
         start, stop = scan.get_oscillation_range(deg=False)
         if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
+            from dials.util import Sorry
+
             raise Sorry("The reflections do not fill the scan range.")
 
     def per_width(self, width, deg=True):
@@ -278,6 +280,8 @@ class ReflectionManagerFactory(object):
             refman = StillsReflectionManager
             # check incompatible weighting strategy
             if params.weighting_strategy.override == "statistical":
+                from dials.util import Sorry
+
                 raise Sorry(
                     'The "statistical" weighting strategy is not compatible '
                     "with stills refinement"
@@ -290,6 +294,8 @@ class ReflectionManagerFactory(object):
                     'The "{0}" weighting strategy is not compatible with '
                     "scan refinement"
                 ).format(params.weighting_strategy.override)
+                from dials.util import Sorry
+
                 raise Sorry(msg)
 
         # set automatic outlier rejection options
@@ -384,7 +390,7 @@ class ReflectionManager(object):
     sampling to form the working subset."""
 
     _weighting_strategy = weighting_strategies.StatisticalWeightingStrategy()
-    experiment_type = 'scans'
+    experiment_type = "scans"
 
     def __init__(
         self,
@@ -898,7 +904,7 @@ class StillsReflectionManager(ReflectionManager):
     about X, Y, DelPsi residuals"""
 
     _weighting_strategy = weighting_strategies.StillsWeightingStrategy()
-    experiment_type = 'stills'
+    experiment_type = "stills"
 
     def _id_refs_to_keep(self, obs_data):
         """Create a selection of observations that pass certain conditions.

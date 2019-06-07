@@ -37,7 +37,7 @@ def test1(dials_regression, run_in_tmpdir):
         + pickle_path
     )
 
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
@@ -91,8 +91,8 @@ def test2(dials_regression, run_in_tmpdir):
         " set_scan_varying_errors=True"
     )
 
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
+    easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    easy_run.fully_buffered(command=cmd2).raise_if_errors()
 
     # load and check results
     with open("history.pickle", "rb") as fh:
@@ -141,7 +141,7 @@ def test3(dials_regression, run_in_tmpdir):
         "crystal.orientation.smoother.interval_width_degrees=auto "
         "crystal.unit_cell.smoother.interval_width_degrees=auto"
     )
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    easy_run.fully_buffered(command=cmd1).raise_if_errors()
 
     # load and check results
     with open("history.pickle", "rb") as fh:
@@ -174,7 +174,6 @@ def test4():
     from dials_refinement_helpers_ext import surpl_iter as surpl
 
     # Borrowed from tst_reflection_table function tst_find_overlapping
-    from random import randint, uniform
 
     N = 110
     r = flex.reflection_table.empty_standard(N)

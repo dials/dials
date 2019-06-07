@@ -724,7 +724,7 @@ class Refiner(object):
             col_select = range(len(all_labels))
         sel = string_sel(col_select, all_labels)
         labels = [e for e, s in zip(all_labels, sel) if s]
-        num_cols = num_rows = len(labels)
+        num_cols = len(labels)
         if num_cols == 0:
             return None, None
 
@@ -793,7 +793,7 @@ class Refiner(object):
         rad2deg = 180 / pi
 
         # check if it makes sense to proceed
-        if not "out_of_sample_rmsd" in self._refinery.history:
+        if "out_of_sample_rmsd" not in self._refinery.history:
             return
         nref = len(self.get_free_reflections())
         if nref < 10:

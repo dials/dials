@@ -341,9 +341,9 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # As a quick development hack, add option for only the newer process
-    if not "--beta" in sys.argv:
+    if "--beta" not in sys.argv:
         print("Generating thaumatin tutorial")
         generate_processing_detail_text_thaumatin()
-    if not "--thaum" in sys.argv:
+    if "--thaum" not in sys.argv:
         print("Generating betalactamase tutorial")
         generate_processing_detail_text_betalactamase()
