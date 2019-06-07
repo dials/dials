@@ -867,7 +867,6 @@ class Refiner(object):
 
             scan = exp.scan
             try:
-                temp = scan.get_oscillation(deg=False)
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
             except (AttributeError, ZeroDivisionError):
                 images_per_rad = None
@@ -921,7 +920,6 @@ class Refiner(object):
             )
         scan = self._experiments.scans()[0]
         try:
-            temp = scan.get_oscillation(deg=False)
             images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
         except AttributeError:
             images_per_rad = None
