@@ -15,6 +15,6 @@
     "scipy",
     "tqdm==4.23.4",
     "networkx",
-    "futures"
+    "futures;python_version<=\"2.7\"",
   ],
 }
