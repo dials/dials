@@ -1,7 +1,9 @@
 """
-Module defining methods for filtering reflection tables, which are combined
-into functions to perform the relevant filtering on a reflection table, to
-produce a filtered reflection table ready for export or further processing.
+Methods for filtering reflection tables for bad data.
+
+The filtering methods are combined into functions to perform the relevant
+filtering on a reflection table(s), to produce a filtered reflection table
+ready for export or further processing.
 
 The set of classes defined in this module have filtering methods implemented as
 classmethods/staticmethods, to allow easy use of individual methods. The
@@ -45,6 +47,7 @@ from collections import defaultdict
 from cctbx import crystal, miller
 from libtbx.table_utils import simple_table
 from dials.array_family import flex
+from dials.algorithms.scaling.outlier_rejection import reject_outliers
 
 logger = logging.getLogger("dials")
 
@@ -132,46 +135,102 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
     return reflection_table
 
 
-def integrated_data_to_filtered_miller_array(reflections, exp_crystal):
-    crystal_symmetry = crystal.symmetry(
-        unit_cell=exp_crystal.get_unit_cell(), space_group=exp_crystal.get_space_group()
-    )
+def filtered_arrays_from_experiments_reflections(
+    experiments,
+    reflections,
+    outlier_rejection_after_filter=False,
+    partiality_threshold=0.99,
+):
+    """Create a list of filtered arrays from experiments and reflections.
 
-    if "intensity.scale.value" in reflections:
-        intensity_choice = ["scale"]
-        intensity_to_use = "scale"
-    else:
-        assert "intensity.sum.value" in reflections
-        intensity_choice = ["sum"]
-        if "intensity.prf.value" in reflections:
-            intensity_choice.append("profile")
-            intensity_to_use = "prf"
+    A partiality threshold can be set, and if outlier_rejection_after_filter
+    is True, and intensity.scale values are not present, then a round of
+    outlier rejection will take place.
+
+    Raises:
+        ValueError: if no datasets remain after filtering.
+
+    """
+    miller_arrays = []
+    ids_to_del = []
+
+    for idx, (expt, refl) in enumerate(zip(experiments, reflections)):
+        crystal_symmetry = crystal.symmetry(
+            unit_cell=expt.crystal.get_unit_cell(),
+            space_group=expt.crystal.get_space_group(),
+        )
+
+        # want to use scale intensities if present, else sum + prf (if available)
+        if "intensity.scale.value" in refl:
+            intensity_choice = ["scale"]
+            intensity_to_use = "intensity.scale"
         else:
-            intensity_to_use = "sum"
+            assert "intensity.sum.value" in refl
+            intensity_to_use = "intensity.sum"
+            intensity_choice = ["sum"]
+            if "intensity.prf.value" in refl:
+                intensity_choice.append("profile")
+                intensity_to_use = "intensity.prf"
 
-    reflections = filter_reflection_table(
-        reflections,
-        intensity_choice,
-        min_isigi=-5,
-        filter_ice_rings=False,
-        combine_partials=True,
-        partiality_threshold=0.2,
-    )
-    data = reflections["intensity." + intensity_to_use + ".value"]
-    variances = reflections["intensity." + intensity_to_use + ".variance"]
+        try:
+            logger.info(
+                "Filtering reflections for dataset %s"
+                % (expt.identifier if expt.identifier else idx)
+            )
+            refl = filter_reflection_table(
+                refl,
+                intensity_choice,
+                min_isigi=-5,
+                filter_ice_rings=False,
+                combine_partials=True,
+                partiality_threshold=partiality_threshold,
+            )
+        except ValueError:
+            logger.info(
+                "Dataset %s removed as no reflections left after filtering", idx
+            )
+            ids_to_del.append(idx)
+        else:
+            # If scale was chosen - will return scale or have raised ValueError
+            # If prf or sum, possible was no prf but want to continue.
+            try:
+                refl["intensity"] = refl[intensity_to_use + ".value"]
+                refl["variance"] = refl[intensity_to_use + ".variance"]
+            except RuntimeError:  # catch case where prf were removed.
+                refl["intensity"] = refl["intensity.sum.value"]
+                refl["variance"] = refl["intensity.sum.variance"]
+            if outlier_rejection_after_filter and intensity_to_use != "intensity.scale":
+                refl = reject_outliers(refl, expt, method="simple", zmax=12.0)
+                refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
 
-    miller_indices = reflections["miller_index"]
-    assert variances.all_gt(0)
-    sigmas = flex.sqrt(variances)
+            miller_set = miller.set(
+                crystal_symmetry, refl["miller_index"], anomalous_flag=False
+            )
+            intensities = miller.array(
+                miller_set, data=refl["intensity"], sigmas=flex.sqrt(refl["variance"])
+            )
+            intensities.set_observation_type_xray_intensity()
+            intensities.set_info(
+                miller.array_info(source="DIALS", source_type="pickle")
+            )
+            miller_arrays.append(intensities)
 
-    miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=True)
-    intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-    intensities.set_observation_type_xray_intensity()
-    return intensities
+    if not miller_arrays:
+        raise ValueError(
+            """No datasets remain after pre-filtering. Please check input data.
+The datasets may not contain any full reflections; the command line
+option partiality_threshold can be lowered to include partials."""
+        )
+
+    for id_ in ids_to_del[::-1]:
+        del experiments[id_]
+        del reflections[id_]
+
+    return miller_arrays
 
 
 def checkdataremains(func):
-    """Decorator for a filtering method, to raise a ValueError if all data filtered."""
+    """Decorate a filtering method, to raise a ValueError if all data filtered."""
 
     def wrapper(*args, **kwargs):
 
@@ -185,12 +244,13 @@ def checkdataremains(func):
 
 
 class FilteringReductionMethods(object):
+    """A collection of methods for filtering.
 
-    """A collection of methods for filtering. Some internal methods require an
-    'intensity' string, which indicates which column to filter on. These
-    methods can be called multiple times to filter on multiple intensity
-    choices. All methods may reduce the size of the reflection table by deleting
-    data."""
+    Some internal methods require an 'intensity' string, which indicates which
+    column to filter on. These methods can be called multiple times to filter
+    on multiple intensity choices. All methods may reduce the size of the
+    reflection table by deleting data.
+    """
 
     @staticmethod
     @checkdataremains
@@ -202,7 +262,7 @@ class FilteringReductionMethods(object):
             ) < min_isigi
             reflection_table.del_selected(selection)
             logger.info(
-                "Removing %d %s reflections with I/Sig(I) < %s"
+                "Removed %d %s reflections with I/Sig(I) < %s"
                 % (
                     selection.count(True),
                     "intensity." + intensity + ".value",
@@ -214,11 +274,12 @@ class FilteringReductionMethods(object):
     @staticmethod
     @checkdataremains
     def _filter_bad_variances(reflection_table, intensity):
+        """Filter reflections with a variance <= 0."""
         selection = reflection_table["intensity." + intensity + ".variance"] <= 0
         if selection.count(True) > 0:
             reflection_table.del_selected(selection)
             logger.info(
-                "Removing %d %s reflections with negative variance"
+                "Removed %d %s reflections with negative variance"
                 % (selection.count(True), "intensity." + intensity + ".value")
             )
         return reflection_table
@@ -226,6 +287,7 @@ class FilteringReductionMethods(object):
     @staticmethod
     @checkdataremains
     def calculate_lp_qe_correction_and_filter(reflection_table):
+        """Calculate the lp, qe combined correction and filter bad values."""
         # FIXME errors in e.g. LP correction need to be propagated here?
         nref = reflection_table.size()
         qe = None
@@ -251,19 +313,21 @@ class FilteringReductionMethods(object):
     @staticmethod
     @checkdataremains
     def filter_ice_rings(reflection_table):
+        """Filter reflections with the in_powder_ring flag."""
         selection = reflection_table.get_flags(reflection_table.flags.in_powder_ring)
         reflection_table.del_selected(selection)
         logger.info(
-            "Removing %d reflections in ice ring resolutions" % selection.count(True)
+            "Removed %d reflections in ice ring resolutions" % selection.count(True)
         )
         return reflection_table
 
     @staticmethod
     @checkdataremains
     def filter_on_d_min(reflection_table, d_min):
+        """Filter reflections below a d-value."""
         selection = reflection_table["d"] < d_min
         logger.info(
-            "Removing %d reflections with a d-value below %s"
+            "Removed %d reflections with a d-value below %s"
             % (selection.count(True), d_min)
         )
         reflection_table.del_selected(selection)
@@ -272,10 +336,7 @@ class FilteringReductionMethods(object):
     @staticmethod
     @checkdataremains
     def filter_unassigned_reflections(reflection_table):
-        """"Select reflections that are assigned to an experiment (i.e.
-        non-negative id). This step will need to be looked at again once UIDS
-        are used. This should currently only affect output before the scaling step,
-        as scaling assigns an id."""
+        """Remove reflections that are not assigned to an experiment."""
         reflection_table = reflection_table.select(reflection_table["id"] >= 0)
         logger.info("Read %s predicted reflections" % reflection_table.size())
         return reflection_table
@@ -285,6 +346,7 @@ class FilteringReductionMethods(object):
     def combine_and_filter_partials(
         reflection_table, partiality_threshold, combine_partials=True
     ):
+        """Combine partials and filter those below the threshold."""
         if "partiality" in reflection_table:
             reflection_table["fractioncalc"] = reflection_table["partiality"]
             if combine_partials and "partial_id" in reflection_table:
@@ -307,7 +369,7 @@ class FilteringReductionMethods(object):
             if selection.count(True) > 0:
                 reflection_table.del_selected(selection)
                 logger.info(
-                    "Removing %d reflections below partiality threshold"
+                    "Removed %d reflections below partiality threshold"
                     % selection.count(True)
                 )
         else:
@@ -316,9 +378,11 @@ class FilteringReductionMethods(object):
 
 
 class FilterForExportAlgorithm(FilteringReductionMethods):
+    """Definition of the filter_for_export algorithm.
 
-    """An abstract class that defines the filter_for_export algorithm and
-    abstract methods which must be implemented in a subclass."""
+    An abstract class, from which reduction methods for particular intensity
+    types can be implemented in a subclass.
+    """
 
     __metaclass__ = abc.ABCMeta
 
@@ -336,6 +400,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         partiality_threshold=0.99,
         d_min=None,
     ):
+        """Apply the filtering methods to reflection table."""
         assert (
             reflection_table.size() > 0
         ), """Empty reflection table given to reduce_data_for_export function"""
@@ -373,8 +438,7 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     @staticmethod
     @abc.abstractmethod
     def reduce_on_intensities(reflection_table):
-        """Reduce the reflection table to contain only the desired reflections
-        based on intensity choice."""
+        """Select reflections successfully processed by the relevant method."""
 
     @classmethod
     def filter_bad_variances(cls, reflection_table):
@@ -399,16 +463,20 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
 
 
 class PrfIntensityReducer(FilterForExportAlgorithm):
-
-    """A class to implement methods to reduce prf intensity data and to
-    implement filtering for export"""
+    """Reduction methods for data with profile intensities."""
 
     intensities = ["prf"]
 
     @staticmethod
     @checkdataremains
     def reduce_on_intensities(reflection_table):
-        """Select profile fitted reflectons and remove bad variances"""
+        """Select reflections successfully integrated by profile fitting.
+
+        Raises:
+            NoProfilesException: Custom Exception to indicate no reflections
+                with the integrated_prf flag.
+
+        """
         selection = reflection_table.get_flags(reflection_table.flags.integrated_prf)
         if selection.count(True) == 0:
             raise NoProfilesException(
@@ -422,6 +490,7 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
+        """Apply corrections to the intensities and variances (partiality, lp, qe)."""
         if "partiality" in reflection_table:
             reflection_table = reflection_table.select(
                 reflection_table["partiality"] > 0.0
@@ -437,16 +506,14 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
 
 
 class SumIntensityReducer(FilterForExportAlgorithm):
-
-    """A class to implement methods to reduce sum intensity data and to
-    implement filtering for export"""
+    """Reduction methods for data with sum intensities."""
 
     intensities = ["sum"]
 
     @staticmethod
     @checkdataremains
     def reduce_on_intensities(reflection_table):
-        """Select integrated summation reflectons and remove bad variances"""
+        """Select reflections successfully integrated by summation method."""
         selection = reflection_table.get_flags(reflection_table.flags.integrated_sum)
         reflection_table = reflection_table.select(selection)
         logger.info(
@@ -456,7 +523,7 @@ class SumIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
-
+        """Apply corrections to the intensities and variances (partiality, lp, qe)."""
         reflection_table, conversion = cls.calculate_lp_qe_correction_and_filter(
             reflection_table
         )
@@ -473,18 +540,17 @@ class SumIntensityReducer(FilterForExportAlgorithm):
 
 
 class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
+    """Reduction methods for data with sum and profile intensities.
 
-    """A class to implement methods to reduce sum and prf intensity data and to
-    implement filtering for export. Reflections are kept both a prf and
-    sum intensity is defined."""
+    Only reflections with valid values for all intensity types are retained.
+    """
 
     intensities = ["sum", "prf"]
 
     @staticmethod
     @checkdataremains
     def reduce_on_intensities(reflection_table):
-        """First select the reflections which have successfully been integrated by
-        both methods"""
+        """Select reflections successfully integrated by sum and prf methods."""
         if (
             reflection_table.get_flags(reflection_table.flags.integrated_prf).count(
                 True
@@ -506,7 +572,7 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
-
+        """Apply corrections to the intensities and variances (partiality, lp, qe)."""
         reflection_table, conversion = cls.calculate_lp_qe_correction_and_filter(
             reflection_table
         )
@@ -526,16 +592,14 @@ class SumAndPrfIntensityReducer(FilterForExportAlgorithm):
 
 
 class ScaleIntensityReducer(FilterForExportAlgorithm):
-
-    """A class to implement methods to reduce scale intensity data and to
-    implement filtering for export"""
+    """Reduction methods for data with sum intensities."""
 
     intensities = ["scale"]
 
     @staticmethod
     @checkdataremains
     def reduce_on_intensities(reflection_table):
-        """Select intensities used for scaling and remove scaling outliers"""
+        """Select intensities used for scaling and remove scaling outliers."""
         selection = ~(
             reflection_table.get_flags(
                 reflection_table.flags.bad_for_scaling, all=False
@@ -556,7 +620,7 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
-        """Apply the inverse scale factor."""
+        """Apply the inverse scale factor to the scale intensities."""
         if "partiality" in reflection_table:
             reflection_table = reflection_table.select(
                 reflection_table["partiality"] > 0.0
@@ -573,10 +637,10 @@ class ScaleIntensityReducer(FilterForExportAlgorithm):
 
 
 class AllSumPrfScaleIntensityReducer(FilterForExportAlgorithm):
+    """Reduction methods for data with sum, profile and scale intensities.
 
-    """A class to implement methods to reduce data where both prf, sum and scale
-    intensities are defined. Only reflections with valid values for all intensity
-    types are retained."""
+    Only reflections with valid values for all intensity types are retained.
+    """
 
     intensities = ["sum", "prf", "scale"]
 
@@ -591,6 +655,7 @@ class AllSumPrfScaleIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
+        """Apply corrections to the intensities and variances."""
         reflection_table = SumAndPrfIntensityReducer.apply_scaling_factors(
             reflection_table
         )
@@ -599,10 +664,10 @@ class AllSumPrfScaleIntensityReducer(FilterForExportAlgorithm):
 
 
 class SumAndScaleIntensityReducer(FilterForExportAlgorithm):
+    """Reduction methods for data with sum and scale intensities.
 
-    """A class to implement methods to reduce data where both prf, sum and scale
-    intensities are defined. Only reflections with valid values for all intensity
-    types are retained."""
+    Only reflections with valid values for all intensity types are retained.
+    """
 
     intensities = ["sum", "scale"]
 
@@ -615,15 +680,19 @@ class SumAndScaleIntensityReducer(FilterForExportAlgorithm):
 
     @classmethod
     def apply_scaling_factors(cls, reflection_table):
+        """Apply corrections to the intensities and variances."""
         reflection_table = SumIntensityReducer.apply_scaling_factors(reflection_table)
         reflection_table = ScaleIntensityReducer.apply_scaling_factors(reflection_table)
         return reflection_table
 
 
 def sum_partial_reflections(reflection_table):
-    """Sum partial reflections; weighted sum for summation integration; weighted
-    average for profile fitted reflections. N.B. this will report total
-    partiality for the summed reflection."""
+    """Sum partial reflections if more than one recording of a reflection present.
+
+    This is a weighted sum for summation integration; weighted average for
+    profile fitted reflections. N.B. this will report total partiality for
+    the summed reflection.
+    """
     nrefl = reflection_table.size()
     intensities = []
     for intensity in ["prf", "scale", "sum"]:
@@ -693,7 +762,7 @@ def sum_partial_reflections(reflection_table):
     reflection_table.del_selected(delete)
     if nrefl > reflection_table.size():
         logger.info(
-            "%s partial reflections combined with existing reflections"
+            "Combined %s partial reflections with other partial reflections"
             % (nrefl - reflection_table.size())
         )
     logger.debug("\nSummary of combination of partial reflections")
@@ -707,7 +776,7 @@ def sum_partial_reflections(reflection_table):
 
 
 def _sum_prf_partials(reflection_table, partials_isel_for_pid):
-    """Sum prf partials and set the updated value in the first entry"""
+    """Sum prf partials and set the updated value in the first entry."""
     j = partials_isel_for_pid
     value = reflection_table["intensity.prf.value"][j[0]]
     variance = reflection_table["intensity.prf.variance"][j[0]]
@@ -729,7 +798,7 @@ def _sum_prf_partials(reflection_table, partials_isel_for_pid):
 
 
 def _sum_sum_partials(reflection_table, partials_isel_for_pid):
-    """Sum sum partials and set the updated value in the first entry"""
+    """Sum sum partials and set the updated value in the first entry."""
     j = partials_isel_for_pid
     value = reflection_table["intensity.sum.value"][j[0]]
     variance = reflection_table["intensity.sum.variance"][j[0]]

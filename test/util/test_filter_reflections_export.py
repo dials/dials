@@ -31,7 +31,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 import mock
 from dials.array_family import flex
-from dxtbx.model import Crystal
+from dxtbx.model import Crystal, Experiment, ExperimentList
 from cctbx import miller
 from dials.util.filter_reflections import (
     FilteringReductionMethods,
@@ -46,7 +46,7 @@ from dials.util.filter_reflections import (
     _sum_sum_partials,
     _sum_scale_partials,
     AllSumPrfScaleIntensityReducer,
-    integrated_data_to_filtered_miller_array,
+    filtered_arrays_from_experiments_reflections,
     NoProfilesException,
 )
 
@@ -119,12 +119,13 @@ def generate_test_reflections_for_scaling():
 fpath = "dials.util.filter_reflections"
 
 
-def test_integrated_data_to_filtered_miller_array():
+def test_filtered_arrays_from_experiments_reflections():
     """Test the creating of a miller array from crystal and reflection table."""
     refl = generate_integrated_test_reflections()
     refl["miller_index"] = flex.miller_index(
         [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (5, 0, 0), (6, 0, 0)]
     )
+    experiments = ExperimentList()
     exp_dict = {
         "__id__": "crystal",
         "real_space_a": [1.0, 0.0, 0.0],
@@ -133,23 +134,51 @@ def test_integrated_data_to_filtered_miller_array():
         "space_group_hall_symbol": " C 2y",
     }
     crystal = Crystal.from_dict(exp_dict)
+    experiments.append(Experiment(crystal=crystal))
 
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [4.6, 2.4, 2.5]  # same as calling filter
     # for export on scale intensity reducer.
     # now try for prf
     del refl["intensity.scale.value"]
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [1.0, 2.0, 3.0]  # same as calling filter
     # for export on prf + sum intensity reducer.
     # now just for sum
     del refl["intensity.prf.value"]
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [11.0, 12.0, 13.0, 14.0]  # same as calling
     # filter for export on prf intensity reducer.
+
+    # Now try with a bad dataset - should be filtered.
+    refl = generate_integrated_test_reflections()
+    refl["miller_index"] = flex.miller_index(
+        [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (5, 0, 0), (6, 0, 0)]
+    )
+    # Trigger filtering on prf/sum, but when prf is bad - should proceed with sum
+    refl.unset_flags(flex.bool(6, True), refl.flags.integrated_prf)
+    del refl["intensity.scale.value"]
+    refl2 = generate_integrated_test_reflections()
+    refl2["partiality"] = flex.double(6, 0.0)
+    experiments = ExperimentList()
+    experiments.append(Experiment(crystal=crystal))
+    experiments.append(Experiment(crystal=crystal))
+    miller_sets = filtered_arrays_from_experiments_reflections(
+        experiments, [refl, refl2], outlier_rejection_after_filter=True
+    )
+    assert len(miller_sets) == 1
+
+    experiments = ExperimentList()
+    experiments.append(Experiment(crystal=crystal))
+    experiments.append(Experiment(crystal=crystal))
+    refl2 = generate_integrated_test_reflections()
+    refl2["partiality"] = flex.double(6, 0.0)
+    with pytest.raises(ValueError):
+        refl["partiality"] = flex.double(6, 0.0)
+        _ = filtered_arrays_from_experiments_reflections(experiments, [refl, refl2])
 
 
 def test_IntensityReducer_instantiations():

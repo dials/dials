@@ -8,7 +8,6 @@ import sys
 logger = logging.getLogger("dials.command_line.cosym")
 
 import iotbx.phil
-from cctbx import crystal, miller
 from cctbx import sgtbx
 from dxtbx.serialize import dump
 from dials.array_family import flex
@@ -20,7 +19,7 @@ from dials.util.multi_dataset_handling import (
     select_datasets_on_ids,
 )
 from dials.util.observer import Subject
-from dials.util.filter_reflections import filter_reflection_table
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 
@@ -102,8 +101,11 @@ class cosym(Subject):
         )
 
         # transform models into miller arrays
-        datasets = self._miller_arrays_from_experiments_reflections(
-            self._experiments, self._reflections
+        datasets = filtered_arrays_from_experiments_reflections(
+            self.experiments,
+            self.reflections,
+            outlier_rejection_after_filter=False,
+            partiality_threshold=params.partiality_threshold,
         )
 
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
@@ -197,77 +199,6 @@ class cosym(Subject):
                     )
                 )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-
-    def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
-        miller_arrays = []
-        ids_to_del = []
-
-        for idx, (expt, refl) in enumerate(zip(experiments, reflections)):
-            crystal_symmetry = crystal.symmetry(
-                unit_cell=expt.crystal.get_unit_cell(),
-                space_group=expt.crystal.get_space_group(),
-            )
-
-            if "intensity.scale.value" in refl:
-                intensity_choice = ["scale"]
-                intensity_to_use = "scale"
-            else:
-                assert "intensity.sum.value" in refl
-                intensity_choice = ["sum"]
-                if "intensity.prf.value" in refl:
-                    intensity_choice.append("profile")
-                    intensity_to_use = "prf"
-                else:
-                    intensity_to_use = "sum"
-
-            refl = filter_reflection_table(
-                refl,
-                intensity_choice,
-                min_isigi=-5,
-                filter_ice_rings=False,
-                combine_partials=True,
-                partiality_threshold=self.params.partiality_threshold,
-            )
-            if refl.size():
-                try:
-                    data = refl["intensity." + intensity_to_use + ".value"]
-                    variances = refl["intensity." + intensity_to_use + ".variance"]
-                except RuntimeError:
-                    data = refl["intensity.sum.value"]
-                    variances = refl["intensity.sum.variance"]
-
-                miller_indices = refl["miller_index"]
-                assert variances.all_gt(0)
-                sigmas = flex.sqrt(variances)
-
-                miller_set = miller.set(
-                    crystal_symmetry, miller_indices, anomalous_flag=False
-                )
-                intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-                intensities.set_observation_type_xray_intensity()
-                intensities.set_info(
-                    miller.array_info(source="DIALS", source_type="pickle")
-                )
-                miller_arrays.append(intensities)
-            else:
-                logger.info(
-                    "Dataset %s removed as no reflections left after filtering", idx
-                )
-                ids_to_del.append(idx)
-
-        if not miller_arrays:
-            raise Sorry(
-                """
-No datasets remain after pre-filtering. Please check input data.
-The datasets may not contain any full reflections; the command line
-option partiality_threshold can be lowered to include partials."""
-            )
-
-        for id_ in ids_to_del[::-1]:
-            del experiments[id_]
-            del reflections[id_]
-
-        return miller_arrays
 
     def _map_to_primitive(self, experiments, reflections):
         identifiers = []
@@ -439,12 +370,12 @@ def run(args):
         )
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
+        cosym_instance = cosym(
+            experiments=experiments, reflections=reflections, params=params
+        )
     except ValueError as e:
         raise Sorry(e)
 
-    cosym_instance = cosym(
-        experiments=experiments, reflections=reflections, params=params
-    )
     if params.output.html:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()

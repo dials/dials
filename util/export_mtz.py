@@ -370,8 +370,6 @@ def export_mtz(integrated_data, experiment_list, params):
         filter_ice_rings=params.mtz.filter_ice_rings,
         d_min=params.mtz.d_min,
     )
-    if not integrated_data:
-        raise ValueError("No data remains after filtering.")
 
     # get batch offsets and image ranges - even for scanless experiments
     batch_offsets = [

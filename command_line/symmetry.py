@@ -6,8 +6,6 @@ logger = logging.getLogger("dials.command_line.symmetry")
 
 import copy
 
-from cctbx import crystal
-from cctbx import miller
 from cctbx import sgtbx
 import iotbx.phil
 
@@ -18,8 +16,8 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry.determine_space_group import determine_space_group
-from dials.algorithms.scaling.outlier_rejection import reject_outliers
 
 
 phil_scope = iotbx.phil.parse(
@@ -84,9 +82,18 @@ class symmetry(object):
         self._params = params
 
         # transform models into miller arrays
-        datasets = self._miller_arrays_from_experiments_reflections(
-            experiments, reflections
+        n_datasets = len(experiments)
+        datasets = filtered_arrays_from_experiments_reflections(
+            experiments,
+            reflections,
+            outlier_rejection_after_filter=True,
+            partiality_threshold=params.partiality_threshold,
         )
+        if len(datasets) != n_datasets:
+            raise ValueError(
+                """Some datasets have no reflection after prefiltering, please check
+input data and filtering settings e.g partiality_threshold"""
+            )
 
         result = determine_space_group(
             datasets,
@@ -102,69 +109,6 @@ class symmetry(object):
             result.as_json(filename=params.output.json)
 
         self._export_experiments_reflections(experiments, reflections, result)
-
-    def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
-        miller_arrays = []
-
-        for expt, refl in zip(experiments, reflections):
-            crystal_symmetry = crystal.symmetry(
-                unit_cell=expt.crystal.get_unit_cell(),
-                space_group=expt.crystal.get_space_group(),
-            )
-
-            from dials.util.filter_reflections import filter_reflection_table
-
-            if "intensity.scale.value" in refl:
-                intensity_choice = ["scale"]
-                intensity_to_use = "scale"
-            else:
-                assert "intensity.sum.value" in refl
-                intensity_choice = ["sum"]
-                if "intensity.prf.value" in refl:
-                    intensity_choice.append("profile")
-                    intensity_to_use = "prf"
-                else:
-                    intensity_to_use = "sum"
-
-            refl = filter_reflection_table(
-                refl,
-                intensity_choice,
-                min_isigi=-5,
-                filter_ice_rings=False,
-                combine_partials=True,
-                partiality_threshold=self._params.partiality_threshold,
-            )
-            assert refl.size() > 0
-            if intensity_to_use != "scale":
-                try:
-                    refl["intensity"] = refl["intensity." + intensity_to_use + ".value"]
-                    refl["variance"] = refl[
-                        "intensity." + intensity_to_use + ".variance"
-                    ]
-                except RuntimeError:
-                    intensity_to_use = "sum"
-                    refl["intensity"] = refl["intensity.sum.value"]
-                    refl["variance"] = refl["intensity.sum.variance"]
-                refl = reject_outliers(refl, expt, method="simple", zmax=12.0)
-                refl = refl.select(~refl.get_flags(refl.flags.outlier_in_scaling))
-            data = refl["intensity." + intensity_to_use + ".value"]
-            variances = refl["intensity." + intensity_to_use + ".variance"]
-
-            miller_indices = refl["miller_index"]
-            assert variances.all_gt(0)
-            sigmas = flex.sqrt(variances)
-
-            miller_set = miller.set(
-                crystal_symmetry, miller_indices, anomalous_flag=False
-            )
-            intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-            intensities.set_observation_type_xray_intensity()
-            intensities.set_info(
-                miller.array_info(source="DIALS", source_type="pickle")
-            )
-            miller_arrays.append(intensities)
-
-        return miller_arrays
 
     def _export_experiments_reflections(self, experiments, reflections, result):
         from dxtbx.serialize import dump
@@ -274,10 +218,9 @@ def run(args):
         )
     try:
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
+        symmetry(experiments, reflections, params=params)
     except ValueError as e:
         raise Sorry(e)
-
-    symmetry(experiments, reflections, params=params)
 
 
 if __name__ == "__main__":

@@ -346,8 +346,10 @@ export to sadabs format."""
                 """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
 columns in reflection table."""
             )
-
-        export_sadabs(self.reflections, self.experiments, self.params)
+        try:
+            export_sadabs(self.reflections, self.experiments, self.params)
+        except ValueError as e:
+            raise Sorry(e)
 
 
 class XDSASCIIExporter(object):
@@ -395,8 +397,10 @@ export to xds_ascii format."""
                 """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
 columns in reflection table."""
             )
-
-        export_xds_ascii(self.reflections, self.experiments, self.params)
+        try:
+            export_xds_ascii(self.reflections, self.experiments, self.params)
+        except ValueError as e:
+            raise Sorry(e)
 
 
 class NexusExporter(object):
@@ -471,7 +475,10 @@ class MMCIFExporter(object):
         from dials.util.export_mmcif import MMCIFOutputFile
 
         outfile = MMCIFOutputFile(self.params)
-        outfile.write(self.experiments, self.reflections)
+        try:
+            outfile.write(self.experiments, self.reflections)
+        except ValueError as e:
+            raise Sorry(e)
 
 
 class MosflmExporter(object):
