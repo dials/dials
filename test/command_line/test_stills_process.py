@@ -135,7 +135,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             "idx-run266702-0-subset_00001_integrated.pickle",
             "idx-run266702-0-subset_00003_integrated.pickle",
         ],
-        [range(212, 225), range(565, 580), range(475, 500)],
+        [range(205, 225), range(565, 580), range(475, 500)],
     ):  # large ranges to handle platform-specific differences
         table = flex.reflection_table.from_file(result_filename)
         assert len(table) in n_refls, (result_filename, len(table))
