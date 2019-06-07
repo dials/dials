@@ -10,7 +10,6 @@ import logging
 import libtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dials.array_family import flex
-from dials.util import log
 from dials.algorithms.indexing.indexer import Indexer
 from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch
@@ -18,8 +17,6 @@ from dials.algorithms.indexing.nave_parameters import NaveParameters
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 
 logger = logging.getLogger(__name__)
-debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 
 
 def calc_2D_rmsd_and_displacements(reflections):
@@ -505,7 +502,7 @@ class StillsIndexer(Indexer):
                     cm
                 )
                 if new_crystal is None:
-                    print("Cannot convert to target symmetry, candidate %d" % (icm))
+                    logger.info("Cannot convert to target symmetry, candidate %d", icm)
                     continue
                 new_crystal = new_crystal.change_basis(
                     self._symmetry_handler.cb_op_primitive_inp
@@ -526,9 +523,9 @@ class StillsIndexer(Indexer):
 
             if params.indexing.stills.refine_all_candidates:
                 try:
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification"
-                        % (icm)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification",
+                        icm,
                     )
                     acceptance_flags = self.identify_outliers(
                         params, experiments, indexed
@@ -536,9 +533,9 @@ class StillsIndexer(Indexer):
                     # create a new "indexed" list with outliers thrown out:
                     indexed = indexed.select(acceptance_flags)
 
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection"
-                        % (icm)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection",
+                        icm,
                     )
                     R = e_refine(
                         params=params,
@@ -565,9 +562,9 @@ class StillsIndexer(Indexer):
                     acceptance_flags_nv0 = nv0.nv_acceptance_flags
                     indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection"
-                        % (icm)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection",
+                        icm,
                     )
                     R = e_refine(
                         params=params,
@@ -595,9 +592,9 @@ class StillsIndexer(Indexer):
                             crystal_model
                         )
                         if new_crystal is None:
-                            print(
-                                "P1 refinement yielded model diverged from target, candidate %d"
-                                % (icm)
+                            logger.info(
+                                "P1 refinement yielded model diverged from target, candidate %d",
+                                icm,
                             )
                             continue
 
@@ -605,11 +602,11 @@ class StillsIndexer(Indexer):
                         R.predict_for_reflection_table(indexed)
                     )
                 except Exception as e:
-                    print("Couldn't refine candiate %d, %s" % (icm, str(e)))
+                    logger.info("Couldn't refine candiate %d, %s", icm, str(e))
                 else:
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done"
-                        % (icm)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done",
+                        icm,
                     )
                     candidates.append(
                         CandidateInfo(
@@ -645,18 +642,20 @@ class StillsIndexer(Indexer):
         if len(candidates) == 0:
             raise DialsIndexError("No suitable indexing solution found")
 
-        print("**** ALL CANDIDATES:")
+        logger.info("**** ALL CANDIDATES:")
         for i, XX in enumerate(candidates):
-            print("\n****Candidate %d" % i, XX)
+            logger.info("\n****Candidate %d %s", i, XX)
             cc = XX.crystal
             if hasattr(cc, "get_half_mosaicity_deg"):
-                print("  half mosaicity %5.2f deg." % (cc.get_half_mosaicity_deg()))
-                print("  domain size %.0f Ang." % (cc.get_domain_size_ang()))
-        print("\n**** BEST CANDIDATE:")
+                logger.info(
+                    "  half mosaicity %5.2f deg.", (cc.get_half_mosaicity_deg())
+                )
+                logger.info("  domain size %.0f Ang.", (cc.get_domain_size_ang()))
+        logger.info("\n**** BEST CANDIDATE:")
 
         results = flex.double([c.rmsd for c in candidates])
         best = candidates[flex.min_index(results)]
-        print(best)
+        logger.info(best)
 
         if params.indexing.stills.refine_all_candidates:
             if best.rmsd > params.indexing.stills.rmsd_min_px:
@@ -675,7 +674,7 @@ class StillsIndexer(Indexer):
                     if i == flex.min_index(results):
                         continue
                     if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:
-                        print(
+                        logger.info(
                             "Couldn't figure out which candidate is best; picked the one with the best RMSD."
                         )
 
@@ -687,7 +686,7 @@ class StillsIndexer(Indexer):
         if not params.indexing.stills.candidate_outlier_rejection:
             return flex.bool(len(indexed), True)
 
-        print("$$$ stills_indexer::identify_outliers")
+        logger.info("$$$ stills_indexer::identify_outliers")
         refiner = e_refine(params, experiments, indexed, graph_verbose=False)
 
         RR = refiner.predict_for_reflection_table(indexed)

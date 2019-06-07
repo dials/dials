@@ -737,7 +737,6 @@ class Indexer(object):
                         )
                     ) % (100 * volume_change)
                     raise DialsIndexError(msg)
-                print("OK")
 
     def _apply_symmetry_post_indexing(
         self, experiments, reflections, n_lattices_previous_cycle
