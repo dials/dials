@@ -236,6 +236,15 @@ class RefinerFactory(object):
             raise Sorry("Cannot refine a mixture of stills and scans")
         do_stills = exps_are_stills[0]
 
+        # If experiments are stills, ensure scan-varying refinement won't be attempted
+        if do_stills:
+            params.refinement.parameterisation.scan_varying = False
+
+        # Refiner does not accept scan_varying=Auto. This is a special case for
+        # doing macrocycles of refinement in dials.refine.
+        if params.refinement.parameterisation.scan_varying is libtbx.Auto:
+            params.refinement.parameterisation.scan_varying = False
+
         # calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
@@ -656,6 +665,9 @@ class Refiner(object):
 
         self._verbosity = verbosity
 
+        # Keep track of whether this is stills or scans type refinement
+        self.experiment_type = refman.experiment_type
+
         return
 
     def get_experiments(self):
@@ -712,15 +724,13 @@ class Refiner(object):
             col_select = range(len(all_labels))
         sel = string_sel(col_select, all_labels)
         labels = [e for e, s in zip(all_labels, sel) if s]
-        num_cols = num_rows = len(labels)
+        num_cols = len(labels)
         if num_cols == 0:
             return None, None
 
         for k, corrmat in corrmats.items():
 
             assert corrmat.is_square_matrix()
-
-            from scitbx.array_family import flex
 
             idx = flex.bool(sel).iselection()
             sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
@@ -781,7 +791,7 @@ class Refiner(object):
         rad2deg = 180 / pi
 
         # check if it makes sense to proceed
-        if not "out_of_sample_rmsd" in self._refinery.history:
+        if "out_of_sample_rmsd" not in self._refinery.history:
             return
         nref = len(self.get_free_reflections())
         if nref < 10:
@@ -857,7 +867,6 @@ class Refiner(object):
 
             scan = exp.scan
             try:
-                temp = scan.get_oscillation(deg=False)
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
             except (AttributeError, ZeroDivisionError):
                 images_per_rad = None
@@ -911,7 +920,6 @@ class Refiner(object):
             )
         scan = self._experiments.scans()[0]
         try:
-            temp = scan.get_oscillation(deg=False)
             images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
         except AttributeError:
             images_per_rad = None

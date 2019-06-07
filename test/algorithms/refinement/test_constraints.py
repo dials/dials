@@ -15,7 +15,7 @@ Tests for the constraints system used in refinement
 from __future__ import absolute_import, division, print_function
 import os
 from copy import deepcopy
-from libtbx.test_utils import open_tmp_directory, approx_equal
+from libtbx.test_utils import approx_equal
 from libtbx import easy_run
 from scitbx import sparse
 from dials.array_family import flex
@@ -166,9 +166,9 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     cmd = (
         "dials.refine foo_experiments.json foo_reflections.pickle "
         "history=history.pickle refinement.parameterisation.detector."
-        "constraints.parameter=Dist"
+        "constraints.parameter=Dist scan_varying=False"
     )
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load refinement history
     import six.moves.cPickle as pickle
 

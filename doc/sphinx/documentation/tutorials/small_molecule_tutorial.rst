@@ -81,7 +81,7 @@ Prior to integration we want to refine the experimental geometry and the scan va
 
 .. code-block:: bash
 
-   dials.refine indexed.pickle experiments.json output.reflections=static.pickle output.experiments=static.json
+   dials.refine indexed.pickle experiments.json output.reflections=static.pickle output.experiments=static.json scan_varying=false
    dials.refine static.pickle static.json scan_varying=True
 
 At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sweeps:

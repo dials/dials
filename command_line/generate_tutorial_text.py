@@ -101,7 +101,7 @@ class Processing_Tutorial(object):
         cmd = "dials.reindex indexed.pickle change_of_basis_op=a,b,c"
 
     class dials_refine(Job):
-        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle"
+        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.pickle scan_varying=false"
 
     class dials_sv_refine(Job):
         cmd = "dials.refine refined_experiments.json refined.pickle scan_varying=true"
@@ -236,7 +236,7 @@ def generate_processing_detail_text_betalactamase():
         ("dials.reindex", "dials.reindex indexed.pickle change_of_basis_op=a+b,-a+b,c"),
         (
             "dials.refine",
-            "dials.refine bravais_setting_2.json reindexed_reflections.pickle",
+            "dials.refine bravais_setting_2.json reindexed_reflections.pickle scan_varying=false",
         ),
         (
             "dials.sv_refine",
@@ -341,9 +341,9 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # As a quick development hack, add option for only the newer process
-    if not "--beta" in sys.argv:
+    if "--beta" not in sys.argv:
         print("Generating thaumatin tutorial")
         generate_processing_detail_text_thaumatin()
-    if not "--thaum" in sys.argv:
+    if "--thaum" not in sys.argv:
         print("Generating betalactamase tutorial")
         generate_processing_detail_text_betalactamase()

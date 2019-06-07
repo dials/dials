@@ -75,8 +75,9 @@ phil_str = (
     }
 
     scan_varying = False
-      .help = "Allow models that are not forced to be static to vary during the"
-              "scan"
+      .help = "Allow models that are not forced to be static to vary during"
+              "the scan, Auto will run one macrocycle with static then"
+              "scan varying refinement for the crystal"
       .type = bool
       .short_caption = "Scan-varying refinement"
 
