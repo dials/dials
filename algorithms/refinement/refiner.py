@@ -732,8 +732,6 @@ class Refiner(object):
 
             assert corrmat.is_square_matrix()
 
-            from scitbx.array_family import flex
-
             idx = flex.bool(sel).iselection()
             sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
 
