@@ -24,7 +24,7 @@ Examples::
 
   dials.refine experiments.json indexed.pickle
 
-  dials.refine experiments.json indexed.pickle scan_varying=True
+  dials.refine experiments.json indexed.pickle scan_varying=(False/True/Auto)
 
 """
 
