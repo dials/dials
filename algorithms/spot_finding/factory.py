@@ -421,7 +421,7 @@ class SpotDensityFilter(object):
             pyplot.xlim((0, pyplot.xlim()[1]))
             pyplot.ylim((0, pyplot.ylim()[1]))
             pyplot.gca().invert_yaxis()
-            cbar1 = pyplot.colorbar(plot1)
+            pyplot.colorbar(plot1)
             pyplot.axes().set_aspect("equal")
             pyplot.show()
 
@@ -442,7 +442,7 @@ class SpotDensityFilter(object):
             pyplot.xlim((0, pyplot.xlim()[1]))
             pyplot.ylim((0, pyplot.ylim()[1]))
             pyplot.gca().invert_yaxis()
-            cbar1 = pyplot.colorbar(plot1)
+            pyplot.colorbar(plot1)
             pyplot.axes().set_aspect("equal")
             pyplot.show()
 

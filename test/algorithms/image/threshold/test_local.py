@@ -41,26 +41,26 @@ class Test:
         from dials.algorithms.image.threshold import niblack
 
         n_sigma = 3
-        result = niblack(self.image, self.size, n_sigma)
+        niblack(self.image, self.size, n_sigma)
 
     def test_sauvola(self):
         from dials.algorithms.image.threshold import sauvola
 
         k = 3
         r = 3
-        result = sauvola(self.image, self.size, k, r)
+        sauvola(self.image, self.size, k, r)
 
     def test_index_of_dispersion(self):
         from dials.algorithms.image.threshold import index_of_dispersion
 
         n_sigma = 3
-        result = index_of_dispersion(self.image, self.size, n_sigma)
+        index_of_dispersion(self.image, self.size, n_sigma)
 
     def test_index_of_dispersion_masked(self):
         from dials.algorithms.image.threshold import index_of_dispersion_masked
 
         n_sigma = 3
-        result = index_of_dispersion_masked(
+        index_of_dispersion_masked(
             self.image, self.mask, self.size, self.min_count, n_sigma
         )
 
@@ -68,7 +68,7 @@ class Test:
         from dials.algorithms.image.threshold import gain
 
         n_sigma = 3
-        result = gain(
+        gain(
             self.image, self.mask, self.gain, self.size, self.min_count, n_sigma
         )
 
@@ -77,7 +77,7 @@ class Test:
 
         nsig_b = 3
         nsig_s = 3
-        result = dispersion(
+        dispersion(
             self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count
         )
 
