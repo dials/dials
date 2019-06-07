@@ -13,6 +13,11 @@ libtbx.pkg_utils.define_entry_points(
             "KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt",
             "array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt",
         ],
+        "dials.index.basis_vector_search_strategy": [
+            "fft1d = dials.algorithms.indexing.basis_vector_search.strategies:FFT1D",
+            "fft3d = dials.algorithms.indexing.basis_vector_search.strategies:FFT3D",
+            "real_space_grid_search = dials.algorithms.indexing.basis_vector_search.strategies:RealSpaceGridSearch",
+        ],
     }
 )
 
@@ -104,7 +109,7 @@ for cmd in [
         if filename.startswith("setpath") and filename.endswith(".sh"):
             with open(os.path.join(build_path, filename)) as f:
                 original_file = f.read()
-            if not "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in original_file:
+            if "DIALS_ENABLE_COMMAND_LINE_COMPLETION" not in original_file:
                 marker = "\nexport PATH\n"
                 original_position = original_file.find(marker)
                 if original_position >= 0:

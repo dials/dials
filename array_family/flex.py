@@ -20,12 +20,11 @@ import operator
 import warnings
 
 import boost.python
-from dials.model import data
 from dials_array_family_flex_ext import *
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
 import cctbx
-from cctbx import miller, crystal
+from cctbx import miller
 from dials.util import Sorry
 import libtbx.smart_open
 from scitbx import matrix
@@ -258,7 +257,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             warnings.warn(
                 "blosc compression is deprecated", DeprecationWarning, stacklevel=2
             )
-        except blosc.blosc_extension.error as e:
+        except blosc.blosc_extension.error:
             # We now accept uncompressed data
             pass
         return reflection_table.from_msgpack(infile_data)
@@ -1095,7 +1094,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :return: True/False overloaded for each reflection
 
         """
-        from dxtbx.model.experiment_list import ExperimentList
         from dials.algorithms.shoebox import OverloadChecker
 
         assert "shoebox" in self
@@ -1162,7 +1160,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Get the panel and id
         panel = self["panel"]
-        exp_id = self["id"]
 
         # Group according to imageset
         if experiments is not None:
@@ -1411,7 +1408,7 @@ Found %s"""
         self["xyzobs.mm.variance"] = flex.vec3_double(len(self))
         # e.g. data imported from XDS; no variance known then; since is used
         # only for weights assign as 1 => uniform weights
-        if not "xyzobs.px.variance" in self:
+        if "xyzobs.px.variance" not in self:
             self["xyzobs.px.variance"] = flex.vec3_double(len(self), (1, 1, 1))
         panel_numbers = flex.size_t(self["panel"])
         for i_panel in range(len(detector)):
@@ -1472,6 +1469,41 @@ Found %s"""
                 )
             else:
                 self["rlp"].set_selected(sel, S)
+
+    def calculate_entering_flags(self, experiments):
+        """Calculate the entering flags for the reflections.
+
+        Calculate a unit vector normal to the spindle-beam plane for this experiment,
+        such that the vector placed at the centre of the Ewald sphere points to the
+        hemispere in which reflections cross from inside to outside of the sphere
+        (reflections are exiting). Adds the array of boolean entering flags to self
+        as the "entering" column.
+
+        Note:
+            NB this vector is in +ve Y direction when using imgCIF coordinate frame.
+
+        Args:
+
+            experiments: The experiment list to use in calculating the entering flags.
+
+        """
+
+        assert "s1" in self
+
+        # Init entering flags. These are always False for experiments that have no
+        # rotation axis.
+        enterings = flex.bool(len(self), False)
+
+        for iexp, exp in enumerate(experiments):
+            if not exp.goniometer:
+                continue
+            axis = matrix.col(exp.goniometer.get_rotation_axis())
+            s0 = matrix.col(exp.beam.get_s0())
+            vec = s0.cross(axis)
+            sel = self["id"] == iexp
+            enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
+
+        self["entering"] = enterings
 
 
 try:

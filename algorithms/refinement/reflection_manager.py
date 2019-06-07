@@ -15,8 +15,6 @@ from math import pi
 from math import ceil
 import logging
 
-logger = logging.getLogger(__name__)
-
 import libtbx
 from scitbx import matrix
 from dials.array_family import flex
@@ -26,17 +24,20 @@ from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
+from dials.util import Sorry
+
+from libtbx.phil import parse
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_str as outlier_phil_str,
+)
+
+logger = logging.getLogger(__name__)
 
 # constants
 RAD2DEG = 180.0 / pi
 DEG2RAD = pi / 180.0
 
 # PHIL
-from libtbx.phil import parse
-from dials.algorithms.refinement.outlier_detection.outlier_base import (
-    phil_str as outlier_phil_str,
-)
-
 format_data = {"outlier_phil": outlier_phil_str}
 phil_str = (
     """
@@ -115,33 +116,6 @@ phil_str = (
     % format_data
 )
 phil_scope = parse(phil_str)
-
-# helper functions
-def calculate_entering_flags(reflections, experiments):
-    """calculate entering flags for all reflections, and set them as a column
-    of the reflection table."""
-
-    # Init entering flags. These are always False for experiments that have no
-    # rotation axis.
-    enterings = flex.bool(len(reflections), False)
-
-    for iexp, exp in enumerate(experiments):
-        gonio = exp.goniometer
-        if not gonio:
-            continue
-        axis = matrix.col(gonio.get_rotation_axis())
-        s0 = matrix.col(exp.beam.get_s0())
-        # calculate a unit vector normal to the spindle-beam plane for this
-        # experiment, such that the vector placed at the centre of the Ewald sphere
-        # points to the hemisphere in which reflections cross from inside to outside
-        # of the sphere (reflections are exiting). NB this vector is in +ve Y
-        # direction when using imgCIF coordinate frame.
-        vec = s0.cross(axis)
-        sel = reflections["id"] == iexp
-        to_update = reflections["s1"].select(sel).dot(vec) < 0.0
-        enterings.set_selected(sel, to_update)
-
-    return enterings
 
 
 class BlockCalculator(object):
@@ -462,9 +436,7 @@ class ReflectionManager(object):
         self._accepted_refs_size = len(refs_to_keep)
 
         # set entering flags for all reflections
-        reflections["entering"] = calculate_entering_flags(
-            reflections, self._experiments
-        )
+        reflections.calculate_entering_flags(self._experiments)
 
         # set observed frame numbers for all reflections if not already present
         calculate_frame_numbers(reflections, self._experiments)
@@ -621,8 +593,6 @@ class ReflectionManager(object):
 
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
-                from dials.util import Sorry
-
                 raise Sorry(
                     "Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp)

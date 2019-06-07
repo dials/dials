@@ -40,14 +40,13 @@ def test_compare_orientation_matrices():
     crystal_a = Crystal(
         real_space_a, real_space_b, real_space_c, space_group=sgtbx.space_group("I 2 3")
     )
+    cb_op = sgtbx.change_of_basis_op("z,x,y")
     crystal_b = Crystal(
         R * real_space_a,
         R * real_space_b,
         R * real_space_c,
         space_group=sgtbx.space_group("I 2 3"),
-    )
-    cb_op = sgtbx.change_of_basis_op("z,x,y")
-    crystal_b = crystal_b.change_basis(cb_op)
+    ).change_basis(cb_op)
     best_R_ab, best_axis, best_angle, best_cb_op = compare_orientation_matrices.difference_rotation_matrix_axis_angle(
         crystal_a, crystal_b
     )
@@ -55,3 +54,74 @@ def test_compare_orientation_matrices():
     assert best_euler_angles == pytest.approx(euler_angles)
     assert best_cb_op.c() == cb_op.inverse().c()
     assert best_R_ab.elems == pytest.approx(R.elems)
+
+    crystal_c = crystal_b.change_basis(sgtbx.change_of_basis_op("-y,-z,x"))
+    assert crystal_c != crystal_b
+
+    s = compare_orientation_matrices.rotation_matrix_differences(
+        [crystal_a, crystal_b, crystal_c], comparison="pairwise"
+    )
+    s = "\n".join(s.splitlines()[:-1]).replace("-0.000", "0.000")
+    print(s)
+    assert (
+        s
+        == """\
+Change of basis op: b,c,a
+Rotation matrix to transform crystal 1 to crystal 2:
+{{0.986, -0.135, 0.098},
+ {0.138, 0.990, -0.023},
+ {-0.094, 0.036, 0.995}}
+Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
+
+Change of basis op: -a,-b,c
+Rotation matrix to transform crystal 1 to crystal 3:
+{{0.986, -0.135, 0.098},
+ {0.138, 0.990, -0.023},
+ {-0.094, 0.036, 0.995}}
+Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
+
+Change of basis op: c,-a,-b
+Rotation matrix to transform crystal 2 to crystal 3:
+{{1.000, 0.000, 0.000},
+ {0.000, 1.000, 0.000},
+ {0.000, 0.000, 1.000}}"""
+    )
+
+    s = compare_orientation_matrices.rotation_matrix_differences(
+        [crystal_a, crystal_b, crystal_c], comparison="sequential"
+    )
+    s = "\n".join(s.splitlines()[:-1]).replace("-0.000", "0.000")
+    print(s)
+    assert (
+        s
+        == """\
+Change of basis op: b,c,a
+Rotation matrix to transform crystal 1 to crystal 2:
+{{0.986, -0.135, 0.098},
+ {0.138, 0.990, -0.023},
+ {-0.094, 0.036, 0.995}}
+Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
+
+Change of basis op: c,-a,-b
+Rotation matrix to transform crystal 2 to crystal 3:
+{{1.000, 0.000, 0.000},
+ {0.000, 1.000, 0.000},
+ {0.000, 0.000, 1.000}}"""
+    )
+
+    s = compare_orientation_matrices.rotation_matrix_differences(
+        (crystal_a, crystal_b), miller_indices=((1, 0, 0), (1, 1, 0))
+    )
+    assert (
+        s
+        == """\
+Change of basis op: b,c,a
+Rotation matrix to transform crystal 1 to crystal 2:
+{{0.986, -0.135, 0.098},
+ {0.138, 0.990, -0.023},
+ {-0.094, 0.036, 0.995}}
+Rotation of 9.738 degrees about axis (0.172, 0.565, 0.807)
+(1,0,0): 15.26 deg
+(1,1,0): 9.12 deg
+"""
+    )

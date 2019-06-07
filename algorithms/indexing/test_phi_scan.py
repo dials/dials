@@ -1,15 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-# this import required early to avoid seg fault on some systems
-try:
-    import scipy.linalg  # import dependency
-except ImportError:
-    pass
-
 import os
 import pytest
 from cctbx import uctbx
-from dials.test.algorithms.indexing.test_index import run_one_indexing
+from dials.algorithms.indexing.test_index import RunOneIndexing
 
 
 def test_run(dials_regression, run_in_tmpdir):
@@ -79,7 +73,7 @@ def test_run(dials_regression, run_in_tmpdir):
         (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
     )
 
-    result_old = run_one_indexing(
+    result_old = RunOneIndexing(
         pickle_path=strong_pickle,
         sweep_path=experiments_old,
         extra_args=[],
@@ -88,7 +82,7 @@ def test_run(dials_regression, run_in_tmpdir):
         expected_hall_symbol=" P 1",
     )
 
-    result_new = run_one_indexing(
+    result_new = RunOneIndexing(
         pickle_path=strong_pickle,
         sweep_path=experiments_new,
         extra_args=[],
@@ -98,8 +92,10 @@ def test_run(dials_regression, run_in_tmpdir):
     )
 
     assert result_old.rmsds == pytest.approx(result_new.rmsds, abs=1e-6)
-    assert result_old.crystal_model.get_unit_cell().parameters() == pytest.approx(
-        result_new.crystal_model.get_unit_cell().parameters(), abs=1e-6
+    assert result_old.experiments[
+        0
+    ].crystal.get_unit_cell().parameters() == pytest.approx(
+        result_new.experiments[0].crystal.get_unit_cell().parameters(), abs=1e-6
     )
 
     # Now test refinement gradients are correct
@@ -112,7 +108,7 @@ def test_run(dials_regression, run_in_tmpdir):
                 detector=imageset_old.get_detector(),
                 goniometer=gonio_old,
                 scan=imageset_old.get_scan(),
-                crystal=result_old.crystal_model,
+                crystal=result_old.experiments[0].crystal,
                 imageset=None,
             )
         ]
@@ -124,7 +120,7 @@ def test_run(dials_regression, run_in_tmpdir):
                 detector=imageset_new.get_detector(),
                 goniometer=gonio_new,
                 scan=imageset_new.get_scan(),
-                crystal=result_new.crystal_model,
+                crystal=result_new.experiments[0].crystal,
                 imageset=None,
             )
         ]

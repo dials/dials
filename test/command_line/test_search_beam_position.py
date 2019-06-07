@@ -6,6 +6,42 @@ import procrunner
 import pytest
 import scitbx
 
+from dxtbx.serialize import load
+
+
+def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
+    """Perform a beam-centre search and check that the output is sane."""
+
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    reflection_file = os.path.join(data_dir, "full.pickle")
+    experiments_file = os.path.join(data_dir, "experiments_import.json")
+
+    args = [
+        "dials.search_beam_position",
+        experiments_file,
+        reflection_file,
+        "image_range=1,10",
+        "image_range=251,260",
+        "image_range=531,540",
+    ]
+
+    print(args)
+    result = procrunner.run(args)
+    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert os.path.exists("optimized_experiments.json")
+
+    experiments = load.experiment_list(experiments_file, check_format=False)
+    original_imageset = experiments.imagesets()[0]
+    optimized_experiments = load.experiment_list(
+        "optimized_experiments.json", check_format=False
+    )
+    detector_1 = original_imageset.get_detector()
+    detector_2 = optimized_experiments.detectors()[0]
+    shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
+        detector_2[0].get_origin()
+    )
+    assert shift.elems == pytest.approx((0.27, -0.12, 0.0), abs=1e-1)
+
 
 def test_search_multiple(run_in_tmpdir, dials_regression):
     """Perform a beam-centre search and check that the output is sane.
@@ -37,8 +73,6 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
     assert os.path.exists("optimized_experiments.json")
-
-    from dxtbx.serialize import load
 
     experiments = load.experiment_list(experiments_path1, check_format=False)
     original_imageset = experiments.imagesets()[0]
@@ -123,14 +157,14 @@ def test_index_after_search(dials_data, run_in_tmpdir):
 
     # check we can actually index the resulting optimized experiments
     from cctbx import uctbx
-    from dials.test.algorithms.indexing.test_index import run_one_indexing
+    from dials.algorithms.indexing.test_index import RunOneIndexing
 
     expected_unit_cell = uctbx.unit_cell(
         (57.780, 57.800, 150.017, 89.991, 89.990, 90.007)
     )
     expected_rmsds = (0.06, 0.05, 0.001)
     expected_hall_symbol = " P 1"
-    run_one_indexing(
+    RunOneIndexing(
         run_in_tmpdir.join("strong.pickle").strpath,
         run_in_tmpdir.join("optimized_experiments.json").strpath,
         [],

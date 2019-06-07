@@ -5,7 +5,7 @@ import os
 import random
 
 import pytest
-from cctbx import crystal, miller, sgtbx
+from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
 from scitbx import matrix
 from scitbx.math import euler_angles_as_matrix
@@ -13,11 +13,15 @@ from dxtbx.serialize import load
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from dxtbx.model import Crystal
 from dials.array_family import flex
-from dials.algorithms.indexing import index_reflections, index_reflections_local
+from dials.algorithms.indexing.assign_indices import (
+    AssignIndicesGlobal,
+    AssignIndicesLocal,
+)
+from dials.algorithms.indexing import index_reflections
 
 
 def random_rotation(angle_min=0, angle_max=360):
-    angles = [random.uniform(angle_min, angle_max) for i in xrange(3)]
+    angles = [random.uniform(angle_min, angle_max) for i in range(3)]
     print("Rotation: ", angles)
     return euler_angles_as_matrix(angles, deg=True)
 
@@ -74,7 +78,6 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
     predicted_reflections = predicted_reflections.select(use_sel)
     miller_indices = predicted_reflections["miller_index"]
-    miller_set = miller.set(crystal_symmetry, miller_indices, anomalous_flag=True)
     predicted_reflections["xyzobs.mm.value"] = predicted_reflections["xyzcal.mm"]
     predicted_reflections["id"] = flex.int(len(predicted_reflections), 0)
     predicted_reflections.map_centroids_to_reciprocal_space(
@@ -82,7 +85,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
 
     # check that local and global indexing worked equally well in absence of errors
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
     assert result.misindexed_local == 0
     assert result.misindexed_global == 0
 
@@ -95,7 +98,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     cryst_model2 = Crystal(a, b, c, space_group=space_group)
     experiment.crystal = cryst_model2
 
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
 
     # check that the local indexing did a better job given the errors in the basis vectors
     # assert result.misindexed_local < result.misindexed_global
@@ -117,7 +120,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     )
     experiment.crystal = cryst_model2
 
-    result = compare_global_local(experiment, predicted_reflections, miller_indices)
+    result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
 
     # check that the local indexing did a better job given the errors in the basis vectors
     assert result.misindexed_local <= result.misindexed_global, (
@@ -130,8 +133,11 @@ def test_assign_indices(dials_regression, space_group_symbol):
     assert result.misindexed_local < (0.001 * len(result.reflections_local))
 
 
-class compare_global_local(object):
+class CompareGlobalLocal(object):
     def __init__(self, experiment, reflections, expected_miller_indices):
+
+        index_reflections_global = AssignIndicesGlobal()
+        index_reflections_local = AssignIndicesLocal()
 
         # index reflections using simple "global" method
         self.reflections_global = copy.deepcopy(reflections)
@@ -139,7 +145,7 @@ class compare_global_local(object):
         self.reflections_global["imageset_id"] = flex.int(
             len(self.reflections_global), 0
         )
-        index_reflections(self.reflections_global, ExperimentList([experiment]))
+        index_reflections_global(self.reflections_global, ExperimentList([experiment]))
         non_zero_sel = self.reflections_global["miller_index"] != (0, 0, 0)
         assert self.reflections_global["id"].select(~non_zero_sel).all_eq(-1)
         self.misindexed_global = (
@@ -178,3 +184,29 @@ class compare_global_local(object):
             " Local misindexed: %d, correct: %d, total: %d"
             % (self.misindexed_local, self.correct_local, len(self.reflections_local))
         )
+
+
+def test_index_reflections(dials_regression):
+    experiments_json = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "experiments.json"
+    )
+    experiments = load.experiment_list(experiments_json, check_format=False)
+    reflections = flex.reflection_table.from_file(
+        os.path.join(
+            dials_regression, "indexing_test_data", "i04_weak_data", "full.pickle"
+        )
+    )
+    reflections.centroid_px_to_mm(experiments[0].detector, scan=experiments[0].scan)
+    reflections.map_centroids_to_reciprocal_space(
+        experiments[0].detector,
+        experiments[0].beam,
+        goniometer=experiments[0].goniometer,
+    )
+    reflections["imageset_id"] = flex.int(len(reflections), 0)
+    reflections["id"] = flex.int(len(reflections), -1)
+    with pytest.deprecated_call():
+        index_reflections(reflections, experiments)
+    assert "miller_index" in reflections
+    counts = reflections["id"].counts()
+    assert counts.values() == [1390, 114692]
+    assert counts.keys() == [-1, 0]
