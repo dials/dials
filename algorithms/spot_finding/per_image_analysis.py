@@ -322,7 +322,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
 
         ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
         xticks = ax.get_xticks()
-        xlim = ax.get_xlim()
         xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
         ax_.set_xticks(xticks)
         ax_.set_xlim(ax.get_xlim())

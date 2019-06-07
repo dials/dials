@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import collections
 import logging
 
 logger = logging.getLogger(__name__)
@@ -252,22 +251,6 @@ class BackgroundGradientFilter(object):
         modeller = Linear2dModeller()
         detector = sweep.get_detector()
 
-        class image_data_cache(object):
-            def __init__(self, imageset, size=10):
-                self.imageset = imageset
-                self.size = size
-                self._image_data = collections.OrderedDict()
-
-            def __getitem__(self, i):
-                image_data = self._image_data.get(i)
-                if image_data is None:
-                    image_data = self.imageset.get_raw_data(i)
-                    if len(self._image_data) >= self.size:
-                        # remove the oldest entry in the cache
-                        del self._image_data[self._image_data.keys()[0]]
-                    self._image_data[i] = image_data
-                return image_data
-
         # sort shoeboxes by centroid z
         frame = shoeboxes.centroid_all().position_frame()
         perm = flex.sort_permutation(frame)
@@ -399,7 +382,6 @@ class SpotDensityFilter(object):
             ):
                 cutoff = hist.slot_centers()[i - 1] - 0.5 * hist.slot_width()
 
-        H_flex = flex.double(np.ascontiguousarray(H))
         sel = np.column_stack(np.where(H > cutoff))
         for (ix, iy) in sel:
             flags.set_selected(

@@ -119,68 +119,6 @@ class SBSettingsPanel(wx.Panel):
         print("Not implemented")
         return
 
-        dialog = wx.FileDialog(
-            self,
-            defaultDir="",
-            message="Restore metrology file",
-            style=wx.FD_OPEN,
-            wildcard="Phil files (*.eff; *.def)|*.eff;*.def",
-        )
-        if dialog.ShowModal() == wx.ID_OK:
-            path = dialog.GetPath()
-            if path != "":
-                from xfel.cftbx.detector.metrology import (
-                    master_phil,
-                    metrology_as_transformation_matrices,
-                )
-                from libtbx import phil
-
-                frame = self.GetParent().GetParent()
-                stream = open(path)
-                metrology_phil = master_phil.fetch(sources=[phil.parse(stream.read())])
-                stream.close()
-
-                # Merge restored metrology into the raw image
-                from libtbx.phil import experimental
-
-                experimental.merge_params_by_key(
-                    frame.pyslip.tiles.raw_image._metrology_params,
-                    metrology_phil.extract(),
-                    "serial",
-                )
-
-                img = frame.pyslip.tiles.raw_image
-                img.apply_metrology_from_matrices(
-                    metrology_as_transformation_matrices(metrology_phil.extract())
-                )
-
-                # Update the view, trigger redraw.  XXX Duplication
-                # w.r.t. OnUpdateQuad().
-                tiles = frame.pyslip.tiles
-                tiles.flex_image = frame.pyslip.tiles.raw_image.get_flex_image(
-                    brightness=tiles.current_brightness / 100
-                )
-                tiles.flex_image.adjust(color_scheme=tiles.current_color_scheme)
-
-                tiles.reset_the_cache()
-                tiles.tile_cache = tiles.cache[tiles.zoom_level]
-                tiles.tile_list = tiles.lru[tiles.zoom_level]
-                frame.pyslip.Update()
-
-                # Update the controls, remember to reset the default values
-                # for the spinners.
-                for serial in range(4):
-                    fast, slow = img.get_panel_fast_slow(serial)
-                    name_quadrant = ["Q0", "Q1", "Q2", "Q3"][serial]
-
-                    spinner = getattr(self, "_" + name_quadrant + "_fast_ctrl")
-                    spinner.SetDefaultValue(fast)
-                    spinner.SetValue(fast)
-
-                    spinner = getattr(self, "_" + name_quadrant + "_slow_ctrl")
-                    spinner.SetDefaultValue(slow)
-                    spinner.SetValue(slow)
-
     def OnSaveMetrology(self, event):
         import pycbf, os
 

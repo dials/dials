@@ -114,7 +114,6 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None):
     icoord = ddict["icoord"]
     color_list = ddict["color_list"]
     ivl = ddict["ivl"]
-    leaves = ddict["leaves"]
 
     data = []
     xticktext = []

@@ -789,22 +789,14 @@ class SpotFrame(XrayFrame):
                 dp1 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
                     p_id, dp1[1], dp1[0]
                 )[::-1]
-                dp2 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p_id, dp2[1], dp2[0]
-                )[::-1]
                 dp3 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
                     p_id, dp3[1], dp3[0]
-                )[::-1]
-                dp4 = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-                    p_id, dp4[1], dp4[0]
                 )[::-1]
 
             # translate ellipse centre and four points to map coordinates
             centre = self.pyslip.tiles.picture_fast_slow_to_map_relative(*centre)
             dp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp1[0], dp1[1])
-            dp2 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp2[0], dp2[1])
             dp3 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp3[0], dp3[1])
-            dp4 = self.pyslip.tiles.picture_fast_slow_to_map_relative(dp4[0], dp4[1])
 
             # Determine eccentricity, cf. https://en.wikipedia.org/wiki/Eccentricity_(mathematics)
             ecc = math.sin(matrix.col(pan.get_normal()).angle(beamvec)) / math.sin(
@@ -945,7 +937,7 @@ class SpotFrame(XrayFrame):
 
         if self.settings.display != "image":
 
-            mask = self.get_mask(image)
+            image_mask = self.get_mask(image)
             gain_value = self.settings.gain
             assert gain_value > 0
             gain_map = [
@@ -963,7 +955,7 @@ class SpotFrame(XrayFrame):
                 kabsch_debug_list.append(
                     DispersionThresholdDebug(
                         raw_data[i_panel].as_double(),
-                        mask[i_panel],
+                        image_mask[i_panel],
                         gain_map[i_panel],
                         size,
                         nsigma_b,

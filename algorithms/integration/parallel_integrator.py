@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from time import time
 
 from dials_algorithms_integration_parallel_integrator_ext import *
 
@@ -353,11 +352,7 @@ class IntegrationJob(object):
         :return: The processed data
 
         """
-        from dials.array_family import flex
         from dials.algorithms.integration.processor import job
-
-        # Get the start time
-        start_time = time()
 
         # Set the global process ID
         job.index = self.index
@@ -554,9 +549,6 @@ class IntegrationManager(object):
         Initialise the processing
 
         """
-        # Get the start time
-        start_time = time()
-
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
@@ -573,9 +565,6 @@ class IntegrationManager(object):
         # multiprocessing is a bit messed up and used fork on linux so need to
         # close and reopen file.
         self.experiments.nullify_all_single_file_reader_format_instances()
-
-        # Set the initialization time
-        # self.time.initialize = time() - start_time
 
     def task(self, index):
         """
@@ -621,14 +610,9 @@ class IntegrationManager(object):
         Finalize the processing and finish.
 
         """
-        # Get the start time
-        start_time = time()
-
         # Check manager is finished
         assert self.manager.finished(), "Manager is not finished"
 
-        # Update the time and finalized flag
-        # self.time.finalize = time() - start_time
         self.finalized = True
 
     def result(self):
@@ -845,11 +829,7 @@ class ReferenceCalculatorJob(object):
         :return: The processed data
 
         """
-        from dials.array_family import flex
         from dials.algorithms.integration.processor import job
-
-        # Get the start time
-        start_time = time()
 
         # Set the global process ID
         job.index = self.index
@@ -1061,9 +1041,6 @@ class ReferenceCalculatorManager(object):
         Initialise the processing
 
         """
-        # Get the start time
-        start_time = time()
-
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
@@ -1086,9 +1063,6 @@ class ReferenceCalculatorManager(object):
         # multiprocessing is a bit messed up and used fork on linux so need to
         # close and reopen file.
         self.experiments.nullify_all_single_file_reader_format_instances()
-
-        # Set the initialization time
-        # self.time.initialize = time() - start_time
 
     def task(self, index):
         """
@@ -1129,27 +1103,17 @@ class ReferenceCalculatorManager(object):
         else:
             self.reference.accumulate(result.reference)
 
-        # self.time.read += result.read_time
-        # self.time.extract += result.extract_time
-        # self.time.process += result.process_time
-        # self.time.total += result.total_time
-
     def finalize(self):
         """
         Finalize the processing and finish.
 
         """
-        # Get the start time
-        start_time = time()
-
         # Check manager is finished
         assert self.manager.finished(), "Manager is not finished"
 
         # Set the reference profiles
         self.reference = self.reference.reference_profiles()
 
-        # Update the time and finalized flag
-        # self.time.finalize = time() - start_time
         self.finalized = True
 
     def result(self):

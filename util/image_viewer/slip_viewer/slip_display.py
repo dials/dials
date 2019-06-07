@@ -254,7 +254,7 @@ class LayerControl(wx.Panel):
         if self.selectable:
             event.state = self.cbx_select.IsChecked()
         else:
-            event_state = False
+            event.state = False
         self.GetEventHandler().ProcessEvent(event)
 
 
@@ -1832,12 +1832,10 @@ class AppFrame(wx.Frame):
             )
             # print "event with no position",event
         return
-        self.mouse_position.SetValue(posn_str)
 
     def handle_level_change(self, event):
         """Handle a pySlip LEVEL event."""
         return
-        self.map_level.SetLabel("%d" % event.level)
 
     ######
     # Handle adding/removing select handler functions.

@@ -9,8 +9,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 import copy
 from collections import OrderedDict
 import math
@@ -25,7 +23,10 @@ import iotbx.phil
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+
+logger = logging.getLogger(__name__)
 
 phil_scope = iotbx.phil.parse(
     """\
@@ -346,7 +347,6 @@ class CosymAnalysis(symmetry_base, Subject):
         for i_cluster in range(n_clusters):
             isel = (self.cluster_labels == i_cluster).iselection()
             dataset_ids = isel % len(self.input_intensities)
-            idx = flex.first_index(dataset_ids, dataset_id)
             sel = (dataset_ids == dataset_id).iselection()
             for s in sel:
                 sym_op_id = isel[s] // len(self.input_intensities)
@@ -689,9 +689,6 @@ class SymmetryAnalysis(object):
             d["subgroup_scores"].append(dd)
 
         return d
-
-
-from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 
 
 class ScoreSymmetryElement(object):

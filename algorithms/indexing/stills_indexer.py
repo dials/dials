@@ -35,39 +35,35 @@ def calc_2D_rmsd_and_displacements(reflections):
 def plot_displacements(reflections, predictions, experiments):
     rmsd, displacements = calc_2D_rmsd_and_displacements(predictions)
 
-    if True:  # params.refinement.plot_residual_scatter:
-        from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
 
-        plt.figure()
-        for cv in displacements:
-            plt.plot([cv[0]], [-cv[1]], "r.")
-        plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
-        plt.axes().set_aspect("equal")
-        plt.show()
-        plt.close()
+    plt.figure()
+    for cv in displacements:
+        plt.plot([cv[0]], [-cv[1]], "r.")
+    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.axes().set_aspect("equal")
+    plt.show()
+    plt.close()
 
-    if True:  # params.refinement.plot_residual_map:
-        from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
 
-        plt.figure()
-        sz1, sz2 = experiments[0].detector[0].get_image_size()
-        for item, cv in zip(predictions, displacements):
-            plt.plot([item["xyzcal.px"][0]], [sz1 - item["xyzcal.px"][1]], "r.")
-            plt.plot(
-                [item["xyzobs.px.value"][0]], [sz1 - item["xyzobs.px.value"][1]], "g."
-            )
-            plt.plot(
-                [item["xyzcal.px"][0], item["xyzcal.px"][0] + 10.0 * cv[0]],
-                [sz1 - item["xyzcal.px"][1], sz1 - item["xyzcal.px"][1] - 10.0 * cv[1]],
-                "r-",
-            )
+    plt.figure()
+    sz1, sz2 = experiments[0].detector[0].get_image_size()
+    for item, cv in zip(predictions, displacements):
+        plt.plot([item["xyzcal.px"][0]], [sz1 - item["xyzcal.px"][1]], "r.")
+        plt.plot([item["xyzobs.px.value"][0]], [sz1 - item["xyzobs.px.value"][1]], "g.")
+        plt.plot(
+            [item["xyzcal.px"][0], item["xyzcal.px"][0] + 10.0 * cv[0]],
+            [sz1 - item["xyzcal.px"][1], sz1 - item["xyzcal.px"][1] - 10.0 * cv[1]],
+            "r-",
+        )
 
-        plt.xlim([0, experiments[0].detector[0].get_image_size()[0]])
-        plt.ylim([0, experiments[0].detector[0].get_image_size()[1]])
-        plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
-        plt.axes().set_aspect("equal")
-        plt.show()
-        plt.close()
+    plt.xlim([0, experiments[0].detector[0].get_image_size()[0]])
+    plt.ylim([0, experiments[0].detector[0].get_image_size()[1]])
+    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.axes().set_aspect("equal")
+    plt.show()
+    plt.close()
 
 
 def e_refine(params, experiments, reflections, graph_verbose=False):

@@ -124,18 +124,6 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         with open(output_gain_map, "wb") as fh:
             pickle.dump(gain_map, fh, protocol=pickle.HIGHEST_PROTOCOL)
 
-    if 0:
-        sel = flex.random_selection(
-            population_size=len(sorted_dispersion), sample_size=10000
-        )
-        sorted_dispersion = sorted_dispersion.select(sel)
-
-        from matplotlib import pyplot
-
-        pyplot.scatter(range(len(sorted_dispersion)), sorted_dispersion)
-        pyplot.ylim(0, 10)
-        pyplot.show()
-
     return gain0
 
 
@@ -161,7 +149,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         print("The following parameters have been modified:\n")
         print(diff_phil)
 

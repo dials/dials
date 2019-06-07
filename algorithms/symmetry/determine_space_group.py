@@ -158,15 +158,6 @@ class determine_space_group(symmetry_base):
         assert fit.is_well_defined()
         self.cc_sig_fac = fit.slope()
 
-        if 0:
-            from matplotlib import pyplot as plt
-
-            plt.plot(x, y)
-            plt.plot(
-                plt.xlim(), [fit.slope() * x_ + fit.y_intercept() for x_ in plt.xlim()]
-            )
-            plt.show()
-
     def _estimate_cc_true(self):
 
         # A1.2. Estimation of E(CC; S).
