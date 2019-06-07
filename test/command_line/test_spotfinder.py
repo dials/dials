@@ -15,6 +15,7 @@ def test_find_spots_from_images(dials_data, tmpdir):
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
             "output.shoeboxes=True",
+            "algorithm=dispersion",
         ]
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
@@ -27,7 +28,7 @@ def test_find_spots_from_images(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.pickle").open("rb") as f:
         reflections = pickle.load(f)
-    assert len(reflections) == 653
+    assert len(reflections) in range(653, 655)
     refl = reflections[0]
     assert refl["intensity.sum.value"] == pytest.approx(42)
     assert refl["bbox"] == pytest.approx((1398, 1400, 513, 515, 0, 1))
@@ -43,6 +44,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
             "output.shoeboxes=False",
+            "algorithm=dispersion",
             "filter.d_min=2",
             "filter.d_max=15",
         ]
@@ -57,7 +59,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.pickle").open("rb") as f:
         reflections = pickle.load(f)
-    assert len(reflections) == 467
+    assert len(reflections) in range(467, 469)
     assert "shoebox" not in reflections
 
 
@@ -68,6 +70,7 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
             "dials.find_spots",
             "write_hot_mask=True",
             "output.reflections=spotfinder.pickle",
+            "algorithm=dispersion",
             "output.shoeboxes=False",
         ]
         + [
@@ -82,7 +85,7 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.pickle").open("rb") as f:
         reflections = pickle.load(f)
-    assert len(reflections) == 653
+    assert len(reflections) in range(653, 655)
     assert "shoebox" not in reflections
 
     with tmpdir.join("hot_mask_0.pickle").open("rb") as f:
@@ -100,6 +103,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
             "hot_mask_prefix=my_hot_mask",
             "output.reflections=spotfinder.pickle",
             "output.shoeboxes=False",
+            "algorithm=dispersion",
         ]
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
@@ -113,7 +117,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.pickle").open("rb") as f:
         reflections = pickle.load(f)
-    assert len(reflections) == 653
+    assert len(reflections) in range(653, 655)
     assert "shoebox" not in reflections
     with tmpdir.join("my_hot_mask_0.pickle").open("rb") as f:
         mask = pickle.load(f)
@@ -129,6 +133,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
             "min_spot_size=3",
             "max_separation=3",
             "output.reflections=spotfinder.pickle",
+            "algorithm=dispersion",
         ]
         + [
             f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
@@ -141,7 +146,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.pickle").open("rb") as f:
         reflections = pickle.load(f)
-    assert len(reflections) == 678
+    assert len(reflections) in range(678, 680)
 
 
 def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
@@ -151,6 +156,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
             "dials.find_spots",
             "output.reflections=spotfinder.pickle",
             "output.shoeboxes=True",
+            "algorithm=dispersion",
             "lookup.mask="
             + dials_data("centroid_test_data").join("mask.pickle").strpath,
         ]
@@ -217,6 +223,7 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
                 "idx-s00-20131106040302615.cbf",
             ),
             "output.reflections=spotfinder.pickle",
+            "algorithm=dispersion",
         ],
         working_directory=tmpdir.strpath,
     )
