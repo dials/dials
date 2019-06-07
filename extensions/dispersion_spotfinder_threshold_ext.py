@@ -166,7 +166,7 @@ def estimate_global_threshold(image, mask=None, plot=False):
         # for i in range(1, len(threshold)):
         #  pyplot.plot([threshold[0], threshold[i]],
         #              [n_above_threshold[0], n_above_threshold[i]])
-        pyplot.plot([x_g, x_g], pyplot.ylim())
+        pyplot.plot([x_g, y_g], pyplot.ylim())
         pyplot.plot(
             [threshold[p_m], threshold[-1]],
             [n_above_threshold[p_m], n_above_threshold[-1]],
