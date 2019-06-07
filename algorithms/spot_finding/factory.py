@@ -61,7 +61,7 @@ def generate_phil_scope():
                 "to be accepted by the filtering algorithm."
         .type = int(value_min=1)
 
-      max_spot_size = 100
+      max_spot_size = 1000
         .help = "The maximum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
         .type = int(value_min=1, allow_none=False)
@@ -421,7 +421,7 @@ class SpotDensityFilter(object):
             pyplot.xlim((0, pyplot.xlim()[1]))
             pyplot.ylim((0, pyplot.ylim()[1]))
             pyplot.gca().invert_yaxis()
-            cbar1 = pyplot.colorbar(plot1)
+            pyplot.colorbar(plot1)
             pyplot.axes().set_aspect("equal")
             pyplot.show()
 
@@ -442,7 +442,7 @@ class SpotDensityFilter(object):
             pyplot.xlim((0, pyplot.xlim()[1]))
             pyplot.ylim((0, pyplot.ylim()[1]))
             pyplot.gca().invert_yaxis()
-            cbar1 = pyplot.colorbar(plot1)
+            pyplot.colorbar(plot1)
             pyplot.axes().set_aspect("equal")
             pyplot.show()
 

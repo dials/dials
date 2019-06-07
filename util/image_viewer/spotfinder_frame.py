@@ -8,7 +8,9 @@ from past.builtins import basestring, unicode
 import wx
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
-from dials.algorithms.image.threshold import DispersionThresholdDebug
+from dials.algorithms.image.threshold import (
+    DispersionExtendedThresholdDebug as DispersionThresholdDebug,
+)
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope

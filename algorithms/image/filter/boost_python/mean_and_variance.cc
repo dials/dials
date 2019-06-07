@@ -74,7 +74,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("image"),
       arg("mask"),
       arg("size"),
-      arg("min_count")));
+      arg("min_count"),
+      arg("ignore_masked") = true));
 
     def("mean_and_variance_filter",
       &make_mean_and_variance_filter<FloatType>, (

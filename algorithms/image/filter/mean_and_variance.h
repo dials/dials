@@ -65,12 +65,13 @@ namespace dials { namespace algorithms {
    * @param mask The mask to use (0 = off, 1 == on)
    * @param size The size of the filter kernel (2 * size + 1)
    * @param min_count The minimum counts to use
+   * @param ignore_masked Ignore and set mean to zero if masked
    * @returns The filtered image
    */
   template <typename FloatType>
   af::versa< FloatType, af::c_grid<2> > mean_filter_masked(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
-      af::ref< int, af::c_grid<2> > mask, int2 size, int min_count) {
+      af::ref< int, af::c_grid<2> > mask, int2 size, int min_count, bool ignore_masked=true) {
 
     // Check the input is valid
     DIALS_ASSERT(size.all_ge(0));
@@ -101,7 +102,7 @@ namespace dials { namespace algorithms {
 
     // Calculate the mean filtered image
     for (std::size_t i = 0; i < image.size(); ++i) {
-      if (mask[i]) {
+      if ((!ignore_masked || mask[i]) && summed_mask[i] >= min_count) {
         summed_image[i] /= (FloatType)summed_mask[i];
       } else {
         summed_image[i] = 0.0;
