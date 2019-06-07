@@ -109,7 +109,7 @@ for cmd in [
         if filename.startswith("setpath") and filename.endswith(".sh"):
             with open(os.path.join(build_path, filename)) as f:
                 original_file = f.read()
-            if not "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in original_file:
+            if "DIALS_ENABLE_COMMAND_LINE_COMPLETION" not in original_file:
                 marker = "\nexport PATH\n"
                 original_position = original_file.find(marker)
                 if original_position >= 0:
