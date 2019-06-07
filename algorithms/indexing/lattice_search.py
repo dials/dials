@@ -21,7 +21,6 @@ from scitbx.array_family import flex
 import scitbx.matrix
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
-from dials.algorithms.indexing.basis_vector_search import strategies
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import optimise
 from dials.algorithms.indexing.basis_vector_search import combinations
@@ -73,48 +72,7 @@ basis_vector_combinations
     }
 }
 
-fft1d
-    .expert_level = 1
-{
-    characteristic_grid = None
-        .help = Sampling frequency in radians. See Steller 1997. If None, \
-                determine a grid sampling automatically using the input \
-                reflections, using at most 0.029 radians.
-        .type = float(value_min=0)
-}
-
-fft3d {
-    b_iso = Auto
-        .type = float(value_min=0)
-        .expert_level = 2
-    rmsd_cutoff = 15
-        .type = float(value_min=0)
-        .expert_level = 1
-    peak_search = *flood_fill clean
-        .type = choice
-        .expert_level = 2
-    peak_volume_cutoff = 0.15
-        .type = float
-        .expert_level = 2
-    reciprocal_space_grid {
-        n_points = 256
-            .type = int(value_min=0)
-            .expert_level = 1
-        d_min = Auto
-            .type = float(value_min=0)
-            .help = "The high resolution limit in Angstrom for spots to include in "
-                    "the initial indexing."
-      }
-}
-
-real_space_grid_search
-    .expert_level = 1
-{
-    characteristic_grid = 0.02
-        .type = float(value_min=0)
-}
-
-method = *fft3d fft1d real_space_grid_search
+method = None
     .type = choice
 
 optimise_initial_basis_vectors = False
@@ -122,39 +80,69 @@ optimise_initial_basis_vectors = False
     .expert_level = 2
 
 """
+
 basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
+
+import pkg_resources
+
+methods = []
+for entry_point in pkg_resources.iter_entry_points(
+    "dials.index.basis_vector_search_strategy"
+):
+    scope = (
+        """\
+%s {
+    include scope entry_point.load().phil_scope
+}
+    """
+        % entry_point.name
+    )
+    ext_master_scope = libtbx.phil.parse("%s .expert_level=1 {}" % entry_point.name)
+    ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
+    assert len(ext_phil_scope) == 1
+    ext_phil_scope = ext_phil_scope[0]
+    ext_phil_scope.adopt_scope(entry_point.load().phil_scope)
+    basis_vector_search_phil_scope.adopt_scope(ext_master_scope)
+    methods.append(entry_point.name)
+basis_vector_search_phil_scope.adopt_scope(
+    libtbx.phil.parse(
+        "method = "
+        + " ".join(("*" + m if m == "fft3d" else m for m in methods))
+        + "\n    .type = choice"
+    )
+)
 
 
 class BasisVectorSearch(indexer.Indexer):
     def __init__(self, reflections, experiments, params=None):
         super(BasisVectorSearch, self).__init__(reflections, experiments, params)
-        if params.indexing.method == "fft1d":
-            self._basis_vector_search_strategy = strategies.FFT1D(
-                max_cell=self.params.max_cell,
-                characteristic_grid=self.params.fft1d.characteristic_grid,
+
+        strategy_class = None
+        for entry_point in pkg_resources.iter_entry_points(
+            "dials.index.basis_vector_search_strategy"
+        ):
+            if entry_point.name == params.indexing.method:
+                strategy_class = entry_point.load()
+                break
+        if not strategy_class:
+            raise RuntimeError(
+                "Unknown basis vector search strategy: %s" % params.indexing.method
             )
-        elif params.indexing.method == "fft3d":
-            self._basis_vector_search_strategy = strategies.FFT3D(
-                self.params.max_cell,
-                self.params.fft3d.reciprocal_space_grid.n_points,
-                d_min=self.params.fft3d.reciprocal_space_grid.d_min,
-                b_iso=self.params.fft3d.b_iso,
-                rmsd_cutoff=self.params.fft3d.rmsd_cutoff,
-                peak_volume_cutoff=self.params.fft3d.peak_volume_cutoff,
-                min_cell=self.params.min_cell,
+
+        target_unit_cell = None
+        if (
+            self._symmetry_handler.target_symmetry_primitive is not None
+            and self._symmetry_handler.target_symmetry_primitive.unit_cell() is not None
+        ):
+            target_unit_cell = (
+                self._symmetry_handler.target_symmetry_primitive.unit_cell()
             )
-        elif params.indexing.method == "real_space_grid_search":
-            assert self._symmetry_handler.target_symmetry_primitive is not None
-            assert (
-                self._symmetry_handler.target_symmetry_primitive.unit_cell() is not None
-            )
-            self._basis_vector_search_strategy = strategies.RealSpaceGridSearch(
-                max_cell=self.params.max_cell,
-                target_unit_cell=self._symmetry_handler.target_symmetry_primitive.unit_cell(),
-                characteristic_grid=self.params.real_space_grid_search.characteristic_grid,
-            )
-        else:
-            raise RuntimeError("Unknown basis vector search method")
+        self._basis_vector_search_strategy = strategy_class(
+            max_cell=self.params.max_cell,
+            min_cell=self.params.min_cell,
+            target_unit_cell=target_unit_cell,
+            params=getattr(self.params, entry_point.name),
+        )
 
     def find_candidate_basis_vectors(self):
         self.d_min = self.params.refinement_protocol.d_min_start

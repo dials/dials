@@ -8,6 +8,7 @@ import math
 import logging
 
 import libtbx
+from libtbx import phil
 from scitbx.array_family import flex
 from scitbx import fftpack
 from scitbx import matrix
@@ -24,7 +25,9 @@ class Strategy(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, max_cell):
+    phil_scope = None
+
+    def __init__(self, max_cell, params=None, *args, **kwargs):
         """Construct the strategy.
 
         Args:
@@ -33,6 +36,9 @@ class Strategy(object):
 
         """
         self._max_cell = max_cell
+        self._params = params
+        if self._params is None and self.phil_scope is not None:
+            self._params = self.phil_scope.extract()
 
     @abc.abstractmethod
     def find_basis_vectors(self, reciprocal_lattice_vectors):
@@ -96,6 +102,15 @@ def _is_approximate_integer_multiple(
     return False
 
 
+fft1d_phil_str = """\
+characteristic_grid = None
+    .help = Sampling frequency in radians. See Steller 1997. If None, \
+            determine a grid sampling automatically using the input \
+            reflections, using at most 0.029 radians.
+    .type = float(value_min=0)
+"""
+
+
 class FFT1D(Strategy):
     """Basis vector search using a 1D FFT.
 
@@ -105,7 +120,9 @@ class FFT1D(Strategy):
 
     """
 
-    def __init__(self, max_cell, characteristic_grid=None):
+    phil_scope = phil.parse(fft1d_phil_str)
+
+    def __init__(self, max_cell, params=None, *args, **kwargs):
         """Construct an FFT1D object.
 
         Args:
@@ -116,8 +133,7 @@ class FFT1D(Strategy):
                 reflections, using at most 0.029 radians.
 
         """
-        super(FFT1D, self).__init__(max_cell)
-        self._characteristic_grid = characteristic_grid
+        super(FFT1D, self).__init__(max_cell, params=params, *args, **kwargs)
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
@@ -151,7 +167,7 @@ class FFT1D(Strategy):
 
         DPS = DPS_primitive_lattice(
             max_cell=self._max_cell,
-            recommended_grid_sampling_rad=self._characteristic_grid,
+            recommended_grid_sampling_rad=self._params.characteristic_grid,
             horizon_phil=hardcoded_phil,
         )
 
@@ -163,6 +179,31 @@ class FFT1D(Strategy):
         return candidate_basis_vectors, used_in_indexing
 
 
+fft3d_phil_str = """\
+b_iso = Auto
+    .type = float(value_min=0)
+    .expert_level = 2
+rmsd_cutoff = 15
+    .type = float(value_min=0)
+    .expert_level = 1
+peak_search = *flood_fill clean
+    .type = choice
+    .expert_level = 2
+peak_volume_cutoff = 0.15
+    .type = float
+    .expert_level = 2
+reciprocal_space_grid {
+    n_points = 256
+        .type = int(value_min=0)
+        .expert_level = 1
+    d_min = Auto
+        .type = float(value_min=0)
+        .help = "The high resolution limit in Angstrom for spots to include in "
+                "the initial indexing."
+    }
+"""
+
+
 class FFT3D(Strategy):
     """Basis vector search using a 3D FFT.
 
@@ -172,16 +213,9 @@ class FFT3D(Strategy):
 
     """
 
-    def __init__(
-        self,
-        max_cell,
-        n_points,
-        d_min=libtbx.Auto,
-        b_iso=libtbx.Auto,
-        rmsd_cutoff=15,
-        peak_volume_cutoff=0.15,
-        min_cell=3,
-    ):
+    phil_scope = phil.parse(fft3d_phil_str)
+
+    def __init__(self, max_cell, min_cell=3, params=None, *args, **kwargs):
         """Construct an FFT3D object.
 
         Args:
@@ -202,16 +236,12 @@ class FFT3D(Strategy):
             min_cell (float): A conservative lower bound on the minimum possible
                 primitive unit cell dimension.
         """
-        super(FFT3D, self).__init__(max_cell)
-        self._n_points = n_points
+        super(FFT3D, self).__init__(max_cell, params=params, *args, **kwargs)
+        n_points = self._params.reciprocal_space_grid.n_points
         self._gridding = fftpack.adjust_gridding_triple(
-            (self._n_points, self._n_points, self._n_points), max_prime=5
+            (n_points, n_points, n_points), max_prime=5
         )
         self._n_points = self._gridding[0]
-        self._d_min = d_min
-        self._b_iso = b_iso
-        self._rmsd_cutoff = rmsd_cutoff
-        self._peak_volume_cutoff = peak_volume_cutoff
         self._min_cell = min_cell
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
@@ -226,7 +256,7 @@ class FFT3D(Strategy):
             identifying which reflections were used in indexing.
 
         """
-        if self._d_min is libtbx.Auto:
+        if self._params.reciprocal_space_grid.d_min is libtbx.Auto:
             # rough calculation of suitable d_min based on max cell
             # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
             # fft_cell should be greater than twice max_cell, so say:
@@ -243,7 +273,7 @@ class FFT3D(Strategy):
             d_min = max(d_min, min(d_spacings))
             logger.info("Setting d_min: %.2f" % d_min)
         else:
-            d_min = self._d_min
+            d_min = self._params.reciprocal_space_grid.d_min
 
         grid_real, used_in_indexing = self._fft(reciprocal_lattice_vectors, d_min)
         self.sites, self.volumes = self._find_peaks(grid_real, d_min)
@@ -382,17 +412,16 @@ class FFT3D(Strategy):
 
         grid = flex.double(flex.grid(self._gridding), 0)
 
-        if self._b_iso is libtbx.Auto:
-            self._b_iso = -4 * d_min ** 2 * math.log(0.05)
-            logger.debug("Setting b_iso = %.1f" % self._b_iso)
-        # self._b_iso = 0
+        if self._params.b_iso is libtbx.Auto:
+            self._params.b_iso = -4 * d_min ** 2 * math.log(0.05)
+            logger.debug("Setting b_iso = %.1f" % self._params.b_iso)
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         map_centroids_to_reciprocal_space_grid(
             grid,
             reciprocal_lattice_vectors,
             used_in_indexing,  # do we really need this?
             d_min,
-            b_iso=self._b_iso,
+            b_iso=self._params.b_iso,
         )
         return grid, used_in_indexing
 
@@ -405,7 +434,9 @@ class FFT3D(Strategy):
                 )
             )
         )
-        grid_real_binary.set_selected(grid_real_binary < (self._rmsd_cutoff) * rmsd, 0)
+        grid_real_binary.set_selected(
+            grid_real_binary < (self._params.rmsd_cutoff) * rmsd, 0
+        )
         grid_real_binary.as_1d().set_selected(grid_real_binary.as_1d() > 0, 1)
         grid_real_binary = grid_real_binary.iround()
         from cctbx import masks
@@ -436,7 +467,7 @@ class FFT3D(Strategy):
         isel = (
             grid_points_per_void
             > int(
-                self._peak_volume_cutoff
+                self._params.peak_volume_cutoff
                 * flex.max(grid_points_per_void.select(~outliers))
             )
         ).iselection()
@@ -444,6 +475,12 @@ class FFT3D(Strategy):
         sites = flood_fill.centres_of_mass_frac().select(isel)
         volumes = flood_fill.grid_points_per_void().select(isel)
         return sites, volumes
+
+
+real_space_grid_search_phil_str = """\
+characteristic_grid = 0.02
+    .type = float(value_min=0)
+"""
 
 
 class RealSpaceGridSearch(Strategy):
@@ -454,7 +491,9 @@ class RealSpaceGridSearch(Strategy):
 
     """
 
-    def __init__(self, max_cell, target_unit_cell, characteristic_grid=0.02):
+    phil_scope = phil.parse(real_space_grid_search_phil_str)
+
+    def __init__(self, max_cell, target_unit_cell, params=None, *args, **kwargs):
         """Construct a real_space_grid_search object.
 
         Args:
@@ -464,9 +503,10 @@ class RealSpaceGridSearch(Strategy):
             characteristic_grid (float): Sampling frequency in radians.
 
         """
-        super(RealSpaceGridSearch, self).__init__(max_cell)
+        super(RealSpaceGridSearch, self).__init__(
+            max_cell, params=params, *args, **kwargs
+        )
         self._target_unit_cell = target_unit_cell
-        self._characteristic_grid = characteristic_grid
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
@@ -490,7 +530,7 @@ class RealSpaceGridSearch(Strategy):
 
         from rstbx.dps_core import SimpleSamplerTool
 
-        SST = SimpleSamplerTool(self._characteristic_grid)
+        SST = SimpleSamplerTool(self._params.characteristic_grid)
         SST.construct_hemisphere_grid(SST.incr)
         cell_dimensions = self._target_unit_cell.parameters()[:3]
         unique_cell_dimensions = set(cell_dimensions)

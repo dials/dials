@@ -23,7 +23,7 @@ class TestStrategies(object):
 
     def test_fft3d(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.FFT3D(max_cell, n_points=256)
+        strategy = strategies.FFT3D(max_cell)
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
         self.check_results(setup_rlp["crystal_symmetry"].unit_cell(), basis_vectors)
 
