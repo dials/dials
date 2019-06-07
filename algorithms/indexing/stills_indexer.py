@@ -484,8 +484,6 @@ class StillsIndexer(Indexer):
 
         params = copy.deepcopy(self.all_params)
 
-        candidate_orientation_matrices = list(candidate_orientation_matrices)
-
         for icm, cm in enumerate(candidate_orientation_matrices):
             if icm >= self.params.basis_vector_combinations.max_refine:
                 break
@@ -512,7 +510,7 @@ class StillsIndexer(Indexer):
                 new_crystal = new_crystal.change_basis(
                     self._symmetry_handler.cb_op_primitive_inp
                 )
-                cm = candidate_orientation_matrices[icm] = new_crystal
+                cm = new_crystal
                 experiments = self.experiment_list_for_crystal(cm)
 
                 if not cb_op_to_primitive.is_identity_op():
