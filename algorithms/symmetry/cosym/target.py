@@ -165,14 +165,11 @@ class Target(object):
 
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix."""
-        group = flex.bool(self._lattices.size(), True)
-
-        n_lattices = group.count(True)
+        n_lattices = self._lattices.size()
         n_sym_ops = len(self._sym_ops)
 
         NN = n_lattices * n_sym_ops
 
-        index_selected = group.iselection()
         self.rij_matrix = flex.double(flex.grid(NN, NN), 0.0)
         if self._weights is None:
             self.wij_matrix = None

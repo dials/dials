@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 
 import matplotlib
 
+from dials.array_family import flex  # import dependency
+
 matplotlib.use("WXAgg")
 
 
@@ -122,7 +124,6 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
 
 
 def pull_calculated(integrate_pkl):
-    from dials.array_family import flex  # import dependency
     import six.moves.cPickle as pickle
     import math
 
@@ -217,7 +218,6 @@ def meansd(values):
 
 def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json, d_min=0.0):
 
-    from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
     from dials.model.serialize import load
 
@@ -661,7 +661,6 @@ class CompareIntensity(object):
         pyplot.close()
 
     def plot_scale_vs_x_y(self):
-        from scitbx.array_family import flex
         from math import ceil
 
         print("Getting scale")
@@ -689,7 +688,7 @@ class CompareIntensity(object):
         fig, ax = pyplot.subplots()
         pyplot.title("scale vs x/y")
         cax = pyplot.imshow(grid.as_numpy_array())
-        cbar = fig.colorbar(cax)
+        fig.colorbar(cax)
         pyplot.savefig("plot-scale-vs-xy.png")
         pyplot.close()
 

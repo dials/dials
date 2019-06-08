@@ -157,7 +157,7 @@ def estimate_global_threshold(image, mask=None, plot=False):
     if plot:
         from matplotlib import pyplot
 
-        f = pyplot.figure(figsize=(16, 12))
+        pyplot.figure(figsize=(16, 12))
         pyplot.scatter(threshold, n_above_threshold, marker="+")
         # for i in range(len(threshold)-1):
         #  pyplot.plot([threshold[i], threshold[-1]],

@@ -146,7 +146,6 @@ class symmetry_base(object):
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
             logger.info("Normalising intensities for dataset %i" % (i + 1))
-            sel = self.dataset_ids == i
             intensities = self.intensities.select(self.dataset_ids == i)
             if i == 0:
                 normalised_intensities = normalise(intensities)
@@ -160,13 +159,6 @@ class symmetry_base(object):
 
     def _correct_sigmas(self, sd_fac, sd_b, sd_add):
         # sd' = SDfac * Sqrt(sd^2 + SdB * I + (SDadd * I)^2)
-        sigmas = sd_fac * flex.sqrt(
-            flex.pow2(
-                self.intensities.sigmas()
-                + (sd_b * self.intensities.data())
-                + flex.pow2(sd_add * self.intensities.data())
-            )
-        )
         variance = flex.pow2(self.intensities.sigmas())
         si2 = flex.pow2(sd_add * self.intensities.data())
         ssc = variance + sd_b * self.intensities.data() + si2
@@ -216,7 +208,7 @@ class symmetry_base(object):
             n_refl_shells = 10
         d_star_sq = intensities.d_star_sq().data()
         step = (flex.max(d_star_sq) - flex.min(d_star_sq) + 1e-8) / n_refl_shells
-        binner = intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
+        intensities.setup_binner_d_star_sq_step(d_star_sq_step=step)
 
         normalisations = intensities.intensity_quasi_normalisations()
         return intensities.customized_copy(

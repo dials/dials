@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import math
+
 import iotbx.phil
+from dials.array_family import flex
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.duelling_profiles
 
@@ -79,24 +82,10 @@ def random_vector_cone(vector, sd):
     """Pick orthogonal axis to vector, rotate by random angle about vector,
     rotate vector about this by sd in radians."""
     import random
-    import math
 
     o0 = vector.ortho()
     o1 = vector.rotate(o0, random.random() * 2.0 * math.pi)
     return vector.rotate(o1, random.gauss(0, sd))
-
-
-def model_reflection_example(reflection, experiment, params):
-    hkl = reflection["miller_index"]
-    i0 = reflection["intensity.sum.value"] / reflection["qe"]
-    s1 = reflection["s1"]
-    xyz = reflection["xyzcal.px"]
-    pixels = reflection["shoebox"]
-    mean_bg = reflection["background.mean"]
-    crystal = experiment.crystal
-    profile = experiment.profile
-    Amat = crystal.get_A_at_scan_point(int(xyz[2]))
-    return
 
 
 def trace_path(x0, y0, v, f, s, t0, p):
@@ -104,11 +93,8 @@ def trace_path(x0, y0, v, f, s, t0, p):
     and slow directions in lab frame, t0 is thickness in mm and p pixel size in
     mm"""
 
-    import math
-
     n = f.cross(s)
     a = v.angle(n)
-    t = t0 / math.cos(a)
 
     dx = t0 * v.dot(f) / v.dot(n)
     dy = t0 * v.dot(s) / v.dot(n)
@@ -194,7 +180,6 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
     """Model the passage of the ray s1 through the detector, depositing
     fractional counts in patch as we go."""
 
-    import math
     from scitbx import matrix
 
     p, xy = detector.get_ray_intersection(s1)
@@ -207,8 +192,6 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
     pixel = panel.get_pixel_size()
     f = matrix.col(panel.get_fast_axis())
     s = matrix.col(panel.get_slow_axis())
-    n = f.cross(s)
-    t = t0 / math.cos(s1.angle(n))
 
     v = s1.normalize()
 
@@ -233,11 +216,7 @@ def model_path_through_sensor(detector, reflection, s1, patch, scale):
 
 
 def model_reflection_predict(reflection, experiment, params):
-    import math
     from scitbx import matrix
-    from dials.array_family import flex
-
-    d2r = math.pi / 180.0
 
     hkl = reflection["miller_index"]
     xyz = reflection["xyzcal.px"]
@@ -271,7 +250,6 @@ def predict_angles(p0_star, experiment, s0=None):
     (entering, exiting)."""
 
     from scitbx import matrix
-    import math
 
     a = matrix.col(experiment.goniometer.get_rotation_axis())
     if s0 is None:
@@ -286,13 +264,11 @@ def predict_angles(p0_star, experiment, s0=None):
     p0_sqr = p0_star.dot(p0_star)
     rho = math.sqrt(p0_sqr - p0_star.dot(m2) ** 2)
     p_star_m3 = (-0.5 * p0_sqr - p0_star.dot(m2) * b.dot(m2)) / b.dot(m3)
-    p_star_m2 = p0_star.dot(m2)
     if rho ** 2 < p_star_m3 ** 2:
         return None
     p_star_m1 = math.sqrt(rho ** 2 - p_star_m3 ** 2)
 
     p0_star_m1 = p0_star.dot(m1)
-    p0_star_m2 = p0_star.dot(m2)
     p0_star_m3 = p0_star.dot(m3)
 
     cp1 = +p_star_m1 * p0_star_m1 + p_star_m3 * p0_star_m3
@@ -305,8 +281,6 @@ def predict_angles(p0_star, experiment, s0=None):
 
 def profile_correlation(data, model):
     """Compute CC between reflection profiles data and model."""
-
-    from dials.array_family import flex
 
     assert data.focus() == model.focus()
 
@@ -322,16 +296,12 @@ def profile_correlation(data, model):
 
 
 def abs_angle(a, b):
-    import math
-
     return abs(math.atan2(math.sin(b - a), math.cos(b - a)))
 
 
 def model_reflection_rt0(reflection, experiment, params):
-    import math
     import random
     from scitbx import matrix
-    from dials.array_family import flex
 
     d2r = math.pi / 180.0
 
@@ -358,16 +328,8 @@ def model_reflection_rt0(reflection, experiment, params):
     if params.debug:
         print("angles = %f %f" % angles)
 
-    angle = (
-        angles[0]
-        if (abs(angles[0] - xyz_mm[2]) < abs(angles[1] - xyz_mm[2]))
-        else angles[1]
-    )
-
     p = experiment.detector[reflection["panel"]]
-    n = matrix.col(p.get_normal())
     s1 = matrix.col(reflection["s1"])
-    t = p.get_thickness() / math.cos(s1.angle(n))
     if params.debug:
         print("qe = %f" % reflection["qe"])
 
@@ -412,8 +374,6 @@ def model_reflection_rt0(reflection, experiment, params):
         sigma_b = params.sigma_b * d2r
     else:
         sigma_b = experiment.profile.sigma_b() * d2r
-
-    r0 = xyz_mm[2]
 
     detector = experiment.detector
 
@@ -486,14 +446,6 @@ def model_reflection_rt0(reflection, experiment, params):
     return cc
 
 
-def model_reflection_flat(reflection, experiment, params):
-    pixels = reflection["shoebox"]
-    pixels.flatten()
-    data = pixels.data
-    dz, dy, dx = data.focus()
-    return
-
-
 def main(reflections, experiment, params):
     nref0 = len(reflections)
 
@@ -517,7 +469,6 @@ def main(reflections, experiment, params):
 
     if params.seed > 0 and params.num > 0:
         import random
-        from dials.array_family import flex
 
         random.seed(params.seed)
         selected = flex.bool(len(reflections), False)
@@ -584,7 +535,7 @@ def run(args):
         parser.print_help()
         exit()
 
-    if not "shoebox" in reflections[0]:
+    if "shoebox" not in reflections[0]:
         print("Please add shoeboxes to reflection pickle")
         exit()
 

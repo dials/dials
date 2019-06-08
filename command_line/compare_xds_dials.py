@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_xds_dials
 
+from dials.array_family import flex  # import dependency
+
 
 def pull_reference(integrate_hkl, d_min=0.0):
     """Generate reference data set from integrate.hkl, check out the calculated
@@ -116,7 +118,6 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
 
 
 def pull_calculated(integrate_pkl):
-    from dials.array_family import flex  # import dependency
     import six.moves.cPickle as pickle
     import math
 
@@ -203,7 +204,6 @@ def meansd(values):
 
 def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min=0.0):
 
-    from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
     rdx = derive_reindex_matrix(experiments_json, integrate_hkl)
@@ -270,8 +270,6 @@ def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min=0.0):
     # then extract the original observation structure
 
     print("Paired %d observations" % len(XDS))
-
-    scale = sum(XDS) / sum(DIALS)
 
     chunks = [(i, i + 1000) for i in range(0, len(XDS), 1000)]
 
