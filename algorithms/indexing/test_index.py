@@ -626,16 +626,17 @@ def test_multiple_experiments(dials_regression, tmpdir):
 
     extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
 
-    RunOneIndexing(
-        pickle_path,
-        experiments_json,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-        n_expected_lattices=3,
-        relative_length_tolerance=0.01,
-    )
+    with tmpdir.as_cwd():
+        RunOneIndexing(
+            pickle_path,
+            experiments_json,
+            extra_args,
+            expected_unit_cell,
+            expected_rmsds,
+            expected_hall_symbol,
+            n_expected_lattices=3,
+            relative_length_tolerance=0.01,
+        )
 
 
 def test_index_4rotation(dials_regression, tmpdir):
