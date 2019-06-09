@@ -11,15 +11,25 @@
 
 from __future__ import absolute_import, division, print_function
 
-import libtbx.load_env
 import logging
+import sys
 
-logger = logging.getLogger("dials.command_line.check_indexing_symmetry")
-from libtbx.phil import command_line
+import libtbx.load_env
+from libtbx.utils import show_times_at_exit
+
 import iotbx.phil
 from cctbx import sgtbx
+from cctbx.crystal import symmetry as crystal_symmetry
+from cctbx.miller import set as miller_set
+from cctbx.sgtbx import space_group as sgtbx_space_group
+from dials.algorithms.symmetry import origin
+from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util import log
+from dials.util.version import dials_version
+
+logger = logging.getLogger("dials.command_line.check_indexing_symmetry")
 
 help_message = """
 
@@ -95,8 +105,6 @@ def dump_text(filename, set0, set1):
 
 
 def get_symop_correlation_coefficients(miller_array, use_binning=False):
-    from scitbx.array_family import flex
-
     corr_coeffs = flex.double()
     n_refs = flex.int()
     space_group = miller_array.space_group()
@@ -137,8 +145,6 @@ def normalise_intensities(miller_array, n_bins=10):
 def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     crystal = experiment.crystal
 
-    from dials.array_family import flex
-
     # in case we pass in reflections from integration
     reflections = reflections.select(reflections["intensity.sum.variance"] > 0)
     reflections = reflections.select(reflections["intensity.sum.value"] > 0)
@@ -146,11 +152,8 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
     space_group = crystal.get_space_group()
     unit_cell = crystal.get_unit_cell()
-    from cctbx.crystal import symmetry as crystal_symmetry
 
     cs = crystal_symmetry(unit_cell, space_group.type().lookup_symbol())
-
-    from cctbx.miller import set as miller_set
 
     ms = miller_set(cs, original_miller_indices)
     ms = ms.array(
@@ -162,7 +165,6 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
         d_spacings = ms.d_spacings().data()
         sel = (d_spacings >= params.d_min) & (d_spacings <= params.d_max)
         ms = ms.select(sel)
-        reflections = reflections.select(sel)
 
     if params.normalise:
         if params.normalise_bins:
@@ -187,8 +189,6 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
         logger.info("%20s %6d %.3f %s" % (smx, n_ref, cc, accept))
 
     if params.symop_threshold:
-        from cctbx.sgtbx import space_group as sgtbx_space_group
-
         sg = sgtbx_space_group()
         for symop in true_symops:
             sg = sg.expand_smx(symop)
@@ -206,8 +206,6 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
 
 
 def offset_miller_indices(miller_indices, offset):
-    from dials.array_family import flex
-
     return flex.miller_index(
         *[mi.iround() for mi in (miller_indices.as_vec3_double() + offset).parts()]
     )
@@ -225,9 +223,6 @@ def get_indexing_offset_correlation_coefficients(
     grid_l=0,
     reference=None,
 ):
-
-    from dials.algorithms.symmetry import origin
-
     if grid:
         if grid_h == 0:
             grid_h = grid
@@ -236,85 +231,15 @@ def get_indexing_offset_correlation_coefficients(
         if grid_l == 0:
             grid_l = grid
 
-    if True:
-        return origin.get_hkl_offset_correlation_coefficients(
-            reflections,
-            crystal,
-            map_to_asu=map_to_asu,
-            grid_h=grid_h,
-            grid_k=grid_k,
-            grid_l=grid_l,
-            reference=reference,
-        )
-
-    from dials.array_family import flex
-
-    space_group = crystal.get_space_group()
-    unit_cell = crystal.get_unit_cell()
-    from cctbx.crystal import symmetry as crystal_symmetry
-
-    cs = crystal_symmetry(unit_cell, space_group.type().lookup_symbol())
-
-    from cctbx.miller import set as miller_set
-
-    data = reflections["intensity.sum.value"] / flex.sqrt(
-        reflections["intensity.sum.variance"]
+    return origin.get_hkl_offset_correlation_coefficients(
+        reflections,
+        crystal,
+        map_to_asu=map_to_asu,
+        grid_h=grid_h,
+        grid_k=grid_k,
+        grid_l=grid_l,
+        reference=reference,
     )
-
-    if reference:
-        reference = reference.select(reference["intensity.sum.variance"] > 0)
-        reference_data = reference["intensity.sum.value"] / flex.sqrt(
-            reference["intensity.sum.variance"]
-        )
-        reference_ms = miller_set(cs, reference["miller_index"]).array(reference_data)
-    else:
-        reference_ms = None
-
-    ccs = flex.double()
-    offsets = flex.vec3_int()
-    nref = flex.size_t()
-
-    original_miller_indices = reflections["miller_index"]
-    ms = miller_set(cs, original_miller_indices).array(data)
-
-    if d_min is not None or d_max is not None:
-        ms = ms.resolution_filter(d_min=d_min, d_max=d_max)
-
-    gh = gk = gl = grid
-    if grid_h:
-        gh = grid_h
-    if grid_k:
-        gk = grid_k
-    if grid_l:
-        gl = grid_l
-
-    # essentially just inversion operation - this *should* have good CC - unless
-    # we are working on a reference set where we don't reindex
-    if reference:
-        cb_op = sgtbx.change_of_basis_op("x,y,z")
-    else:
-        cb_op = sgtbx.change_of_basis_op("-x,-y,-z")
-
-    for h in range(-gh, gh + 1):
-        for k in range(-gk, gk + 1):
-            for l in range(-gl, gl + 1):
-                miller_indices = offset_miller_indices(ms.indices(), (h, k, l))
-                reindexed_miller_indices = cb_op.apply(miller_indices)
-                rms = miller_set(cs, reindexed_miller_indices).array(data)
-                if reference_ms:
-                    _ms = reference_ms
-                else:
-                    _ms = miller_set(cs, miller_indices).array(data)
-                if map_to_asu:
-                    rms = rms.map_to_asu()
-                    _ms = _ms.map_to_asu()
-                intensity, intensity_rdx = rms.common_sets(_ms)
-                cc = intensity.correlation(intensity_rdx).coefficient()
-                ccs.append(cc)
-                offsets.append((h, k, l))
-                nref.append(intensity.size())
-
-    return offsets, ccs, nref
 
 
 def test_P1_crystal_indexing(reflections, experiment, params):
@@ -326,8 +251,6 @@ def test_P1_crystal_indexing(reflections, experiment, params):
     logger.info("dH dK dL %6s %5s" % ("Nref", "CC"))
 
     if params.reference:
-        from dials.array_family import flex  # implicit dependency
-
         reference = flex.reflection_table.from_file(params.reference)
     else:
         reference = None
@@ -355,10 +278,6 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 
 def run(args):
-    from dials.array_family import flex
-    from dials.util import log
-    from dials.util.version import dials_version
-
     usage = "%s [options] experiment.json indexed.pickle" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
@@ -406,8 +325,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-    from libtbx.utils import show_times_at_exit
-
     show_times_at_exit()
     run(sys.argv[1:])
