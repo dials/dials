@@ -138,6 +138,7 @@ phil_overrides = libtbx.phil.parse(
 
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
+
 def write_centroids_table(refiner, filename):
     """Write a table of centroids from refinement for debugging.
 
@@ -151,9 +152,7 @@ def write_centroids_table(refiner, filename):
 
     matches = refiner.get_matches()
 
-    header = (
-        "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t" "Y_calc\tPhi_calc"
-    )
+    header = "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t" "Y_calc\tPhi_calc"
     msg_temp = "%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f"
     has_del_psi = "delpsical.rad" in matches
     if has_del_psi:
@@ -199,6 +198,7 @@ def write_centroids_table(refiner, filename):
                     phi_calc,
                 )
             f.write(msg)
+
 
 def run_macrocycle(params, reflections, experiments):
     """Run one macrocycle of refinement.
@@ -277,6 +277,7 @@ def run_macrocycle(params, reflections, experiments):
 
     return refiner, reflections, history
 
+
 def run_dials_refine(experiments, reflections, params):
     """Functional interface to tasks performed by the program dials.refine.
 
@@ -315,17 +316,20 @@ def run_dials_refine(experiments, reflections, params):
     else:
         for i in range(params.n_static_macrocycles):
             logger.info("\nStatic refinement macrocycle {0}".format(i + 1))
-            refiner, reflections, history = run_macrocycle(params, reflections, experiments)
+            refiner, reflections, history = run_macrocycle(
+                params, reflections, experiments
+            )
             experiments = refiner.get_experiments()
 
     # Scan-varying macrocycle, if appropriate
-    if scan_varying is Auto and refiner.experiment_type == 'scans':
+    if scan_varying is Auto and refiner.experiment_type == "scans":
         logger.info("\nScan-varying refinement")
         params.refinement.parameterisation.scan_varying = True
         refiner, reflections, history = run_macrocycle(params, reflections, experiments)
         experiments = refiner.get_experiments()
 
     return experiments, reflections, refiner, history
+
 
 def run(args=None, phil=working_phil):
     """
@@ -364,7 +368,8 @@ def run(args=None, phil=working_phil):
         read_reflections=True,
         read_experiments=True,
         check_format=False,
-        epilog=__doc__)
+        epilog=__doc__,
+    )
 
     # Parse the command line
     params, options = parser.parse_args(args=args, show_diff_phil=False)
@@ -372,10 +377,7 @@ def run(args=None, phil=working_phil):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure the logging
-    dials.util.log.config(
-        info=params.output.log,
-        debug=params.output.debug_log,
-    )
+    dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
 
     # Try to load the models and data
     nexp = len(experiments)
@@ -389,8 +391,7 @@ def run(args=None, phil=working_phil):
 
     # check input is suitable
     msg = (
-        "The supplied reflection table does not have the required data "
-        + "column: {0}"
+        "The supplied reflection table does not have the required data " + "column: {0}"
     )
     for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
         if key not in reflections:
@@ -398,6 +399,7 @@ def run(args=None, phil=working_phil):
             raise dials.util.Sorry(msg)
 
     from dials.util.version import dials_version
+
     logger.info(dials_version())
 
     # Log the diff phil
@@ -415,7 +417,9 @@ def run(args=None, phil=working_phil):
         )
 
     # Run refinement
-    experiments, reflections, refiner, history = run_dials_refine(experiments, reflections, params)
+    experiments, reflections, refiner, history = run_dials_refine(
+        experiments, reflections, params
+    )
 
     # For the usual case of refinement of one crystal, print that model for information
     crystals = experiments.crystals()
@@ -458,9 +462,7 @@ def run(args=None, phil=working_phil):
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
-    logger.info(
-        "Saving refined experiments to {0}".format(output_experiments_filename)
-    )
+    logger.info("Saving refined experiments to {0}".format(output_experiments_filename))
     from dxtbx.model.experiment_list import ExperimentListDumper
 
     dump = ExperimentListDumper(experiments)
@@ -522,9 +524,7 @@ def run(args=None, phil=working_phil):
                     plt = corrgram(corrmat, labels)
                     if plt is not None:
                         logger.info(
-                            "Saving parameter correlation plot to {}".format(
-                                plot_fname
-                            )
+                            "Saving parameter correlation plot to {}".format(plot_fname)
                         )
                         plt.savefig(plot_fname)
                         plt.close()
@@ -534,9 +534,7 @@ def run(args=None, phil=working_phil):
                     for k, corrmat in corrmats.items():
                         corrmats[k] = corrmat.as_scitbx_matrix()
                     logger.info(
-                        "Saving parameter correlation matrices to {0}".format(
-                            mat_fname
-                        )
+                        "Saving parameter correlation matrices to {0}".format(mat_fname)
                     )
                     pickle.dump({"corrmats": corrmats, "labels": labels}, handle)
 
@@ -552,16 +550,14 @@ def run(args=None, phil=working_phil):
     if params.output.history:
         with open(params.output.history, "wb") as handle:
             logger.info(
-                "Saving refinement step history to {0}".format(
-                    params.output.history
-                )
+                "Saving refinement step history to {0}".format(params.output.history)
             )
             pickle.dump(history, handle)
 
     # Log the total time taken
     logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
 
-if __name__ == '__main__':
-  with dials.util.show_mail_on_error():
-    run()
 
+if __name__ == "__main__":
+    with dials.util.show_mail_on_error():
+        run()

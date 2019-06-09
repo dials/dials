@@ -68,18 +68,14 @@ class Test:
         from dials.algorithms.image.threshold import gain
 
         n_sigma = 3
-        gain(
-            self.image, self.mask, self.gain, self.size, self.min_count, n_sigma
-        )
+        gain(self.image, self.mask, self.gain, self.size, self.min_count, n_sigma)
 
     def test_dispersion(self):
         from dials.algorithms.image.threshold import dispersion
 
         nsig_b = 3
         nsig_s = 3
-        dispersion(
-            self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count
-        )
+        dispersion(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
 
     def test_dispersion_w_gain(self):
         from dials.algorithms.image.threshold import dispersion_w_gain
