@@ -128,7 +128,7 @@ class render_3d(object):
         self.viewer.set_beam_vector(self.experiments[0].beam.get_s0())
         if self.settings.beam_centre is None:
             try:
-                panel_id, self.settings.beam_centre = self.experiments[
+                _, self.settings.beam_centre = self.experiments[
                     0
                 ].detector.get_ray_intersection(self.experiments[0].beam.get_s0())
             except RuntimeError:

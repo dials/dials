@@ -4,22 +4,27 @@
 
 from __future__ import absolute_import, division, print_function
 
+import copy
+import glob
 import logging
 import os
 from time import time
 
+import libtbx.load_env
 from libtbx.utils import Abort, Sorry
+from dxtbx.model import Detector
+from dials.util import log
+from dials.command_line.dials_import import ManualGeometryUpdater
+from dials.command_line.stills_process import Script as base_script
+from dials.command_line.stills_process import do_import, phil_scope
+from dials.command_line.stills_process import Processor
+from dials.util.options import OptionParser
 
 logger = logging.getLogger("dials.command_line.stills_process_mpi")
-
 
 help_message = """
 MPI derivative of dials.stills_process.  Only handle individual images, not HDF5
 """
-
-from dials.command_line.stills_process import Script as base_script
-from dials.command_line.stills_process import do_import, phil_scope
-from dials.command_line.stills_process import Processor
 
 
 class Script(base_script):
@@ -31,28 +36,21 @@ class Script(base_script):
         self.rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
         self.size = comm.Get_size()  # size: number of processes running in this job
 
-        if True:
-            from dials.util.options import OptionParser
-            import libtbx.load_env
+        # The script usage
+        usage = (
+            "usage: %s [options] [param.phil] mp.blob=<filepattern>"
+            % libtbx.env.dispatcher_name
+        )
 
-            # The script usage
-            usage = (
-                "usage: %s [options] [param.phil] mp.blob=<filepattern>"
-                % libtbx.env.dispatcher_name
-            )
+        self.tag = None
+        self.reference_detector = None
 
-            self.tag = None
-            self.reference_detector = None
-
-            # Create the parser
-            self.parser = OptionParser(
-                usage=usage, phil=phil_scope, epilog=help_message
-            )
+        # Create the parser
+        self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def assign_work(self):
 
         """Execute the script."""
-        from dials.util import log
 
         if self.rank == 0:
             # Parse the command line
@@ -65,11 +63,10 @@ class Script(base_script):
             assert params.mp.glob is not None
             # Log the diff phil
             diff_phil = self.parser.diff_phil.as_str()
-            if diff_phil is not "":
+            if diff_phil != "":
                 logger.info("The following parameters have been modified:\n")
                 logger.info(diff_phil)
                 print(diff_phil)
-            import glob
 
             for item in params.mp.glob:
                 all_paths += glob.glob(item)
@@ -119,51 +116,41 @@ class Script(base_script):
         print("DELEGATE %d of %d: %s" % (self.rank, self.size, self.subset[0:10]))
 
     def run(self):
-        import copy
-
         st = time()
         self.load_reference_geometry()
-        from dials.command_line.dials_import import ManualGeometryUpdater
 
         update_geometry = ManualGeometryUpdater(self.params)
 
         # Import stuff
         # no preimport for MPI multifile specialization
-        if True:
 
-            # Wrapper function
-            def do_work(i, item_list):
-                processor = Processor(
-                    copy.deepcopy(self.params), composite_tag="%04d" % i
-                )
-                for item in item_list:
-                    tag, filename = item
+        # Wrapper function
+        def do_work(i, item_list):
+            processor = Processor(copy.deepcopy(self.params), composite_tag="%04d" % i)
+            for item in item_list:
+                tag, filename = item
 
-                    experiments = do_import(filename)
-                    imagesets = experiments.imagesets()
-                    if len(imagesets) == 0 or len(imagesets[0]) == 0:
-                        logger.info("Zero length imageset in file: %s" % filename)
-                        return
-                    if len(imagesets) > 1:
-                        raise Abort(
-                            "Found more than one imageset in file: %s" % filename
-                        )
-                    if len(imagesets[0]) > 1:
-                        raise Abort(
-                            "Found a multi-image file. Run again with pre_import=True"
-                        )
+                experiments = do_import(filename)
+                imagesets = experiments.imagesets()
+                if len(imagesets) == 0 or len(imagesets[0]) == 0:
+                    logger.info("Zero length imageset in file: %s" % filename)
+                    return
+                if len(imagesets) > 1:
+                    raise Abort("Found more than one imageset in file: %s" % filename)
+                if len(imagesets[0]) > 1:
+                    raise Abort(
+                        "Found a multi-image file. Run again with pre_import=True"
+                    )
 
-                    if self.reference_detector is not None:
-                        from dxtbx.model import Detector
+                if self.reference_detector is not None:
+                    imagesets[0].set_detector(
+                        Detector.from_dict(self.reference_detector.to_dict())
+                    )
 
-                        imagesets[0].set_detector(
-                            Detector.from_dict(self.reference_detector.to_dict())
-                        )
+                update_geometry(imagesets[0])
 
-                    update_geometry(imagesets[0])
-
-                    processor.process_experiments(tag, experiments)
-                processor.finalize()
+                processor.process_experiments(tag, experiments)
+            processor.finalize()
 
         # Process the data
         assert self.params.mp.method == "mpi"

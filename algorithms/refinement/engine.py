@@ -307,7 +307,6 @@ class Refinery(object):
         nr, nc = m.all()
 
         try:  # convert a flex.double matrix to sparse
-            nr, nc = m.all()
             from scitbx import sparse
 
             m2 = sparse.matrix(nr, nc)
@@ -719,7 +718,7 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                     result["weights"] = None
                     return
 
-                task_results = easy_mp.parallel_map(
+                easy_mp.parallel_map(
                     func=task_wrapper,
                     iterable=blocks,
                     processes=self._nproc,

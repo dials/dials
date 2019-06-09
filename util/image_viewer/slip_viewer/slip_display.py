@@ -1757,7 +1757,6 @@ class AppFrame(wx.Frame):
         posn_str = ""
         if event.position:
             (lon, lat) = event.position
-            posn_str = "%.*f / %.*f" % (LonLatPrecision, lon, LonLatPrecision, lat)
             fast_picture, slow_picture = self.pyslip.tiles.lon_lat_to_picture_fast_slow(
                 lon, lat
             )
