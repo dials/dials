@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-
-from libtbx import easy_run
+import procrunner
 from dials.array_family import flex
 
 
@@ -21,36 +19,51 @@ def test_filter_reflections(run_in_tmpdir):
     rt.as_pickle(rt_name)
 
     # Test flag expression
-    cmd = (
-        "dials.filter_reflections " + rt_name + " flag_expression="
-        "'integrated & ~reference_spot'"
-    )
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    cmd = [
+        "dials.filter_reflections",
+        rt_name,
+        "flag_expression='integrated & ~reference_spot'",
+    ]
+    result = procrunner.run(cmd)
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
     ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the 2nd reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [1]
 
     # Test filter by experiment id
-    cmd = "dials.filter_reflections " + rt_name + " id=0"
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    cmd = ["dials.filter_reflections", rt_name, "id=0"]
+    result = procrunner.run(cmd)
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
     ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the first five reflections
     assert len(ref) == 5
     assert list(ref["iobs"]) == [0, 1, 2, 3, 4]
 
     # Test filter by panel
-    cmd = "dials.filter_reflections " + rt_name + " panel=5"
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    cmd = ["dials.filter_reflections", rt_name, "panel=5"]
+    result = procrunner.run(cmd)
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
     ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the last reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [5]
 
     # Test filter by resolution
-    cmd = "dials.filter_reflections " + rt_name + " d_max=3.0 d_min=2.0"
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    cmd = ["dials.filter_reflections", rt_name, "d_max=3.0", "d_min=2.0"]
+    result = procrunner.run(cmd)
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
     ref = flex.reflection_table.from_pickle("filtered.pickle")
     # The test selects only the 3rd, 4th and 5th reflections
     assert len(ref) == 3
     assert list(ref["iobs"]) == [2, 3, 4]
+
+    # Test printing analysis
+    cmd = ["dials.filter_reflections", rt_name]
+    result = procrunner.run(cmd)
+    assert result["exitcode"] == 0
+    assert result["stderr"] == ""
