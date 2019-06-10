@@ -8,11 +8,11 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-#
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division, print_function
 
+import copy
+import errno
 import os
 import math
 
@@ -66,11 +66,8 @@ phil_scope = libtbx.phil.parse(
 
 def ensure_directory(path):
     """ Make the directory if not already there. """
-    from os import makedirs
-    import errno
-
     try:
-        makedirs(path)
+        os.makedirs(path)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -119,8 +116,6 @@ class per_panel_plot(object):
         n_panels = flex.max(panel_ids) + 1
 
         n_cols, n_rows = determine_grid_size(rlist, grid_size=grid_size)
-
-        from matplotlib import pyplot
 
         for i_crystal in range(n_crystals):
             crystal_sel = crystal_ids == i_crystal
@@ -285,8 +280,6 @@ class StrongSpotsAnalyser(object):
         colours = ["blue", "red", "green", "orange", "purple", "black"] * 10
         assert len(spot_count_per_image) <= colours
 
-        from matplotlib import pyplot
-
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
         ax.set_title("Spot count per image")
@@ -316,8 +309,6 @@ class StrongSpotsAnalyser(object):
         for i in range(n_panels):
             sel = (panel >= i) & (panel < (i + 1))
             spot_count_per_panel.append(sel.count(True))
-
-        from matplotlib import pyplot
 
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
@@ -566,8 +557,6 @@ class CentroidAnalyser(object):
             rmsd_y.append(math.sqrt(flex.mean_sq(dy.select(sel))))
             rmsd_phi.append(math.sqrt(flex.mean_sq(dphi.select(sel))))
             phi.append(i_phi)
-
-        from matplotlib import pyplot
 
         fig = pyplot.figure()
         ax = fig.add_subplot(311)
@@ -1375,93 +1364,75 @@ class ReferenceProfileAnalyser(object):
             pyplot.close()
 
 
-class Analyser(object):
-    """ Helper class to do all the analysis. """
+def analyse(rlist, directory, grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
+    """ Setup the analysers. """
+    directory = os.path.join(directory, "analysis")
+    analysers = [
+        StrongSpotsAnalyser(directory),
+        CentroidAnalyser(
+            directory,
+            grid_size=grid_size,
+            pixels_per_bin=pixels_per_bin,
+            centroid_diff_max=centroid_diff_max,
+        ),
+        BackgroundAnalyser(
+            directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
+        ),
+        IntensityAnalyser(
+            directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
+        ),
+        ReferenceProfileAnalyser(
+            directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
+        ),
+    ]
 
-    def __init__(
-        self, directory, grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5
-    ):
-        """ Setup the analysers. """
-        directory = os.path.join(directory, "analysis")
-        self.analysers = [
-            StrongSpotsAnalyser(directory),
-            CentroidAnalyser(
-                directory,
-                grid_size=grid_size,
-                pixels_per_bin=pixels_per_bin,
-                centroid_diff_max=centroid_diff_max,
-            ),
-            BackgroundAnalyser(
-                directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
-            ),
-            IntensityAnalyser(
-                directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
-            ),
-            ReferenceProfileAnalyser(
-                directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
-            ),
-        ]
-
-    def __call__(self, rlist):
-        """ Do all the analysis. """
-        from copy import deepcopy
-
-        for analyse in self.analysers:
-            analyse(deepcopy(rlist))
+    """ Do all the analysis. """
+    for a in analysers:
+        a(copy.deepcopy(rlist))
 
 
-class Script(object):
-    """ A class to encapsulate the script. """
+def run():
+    from dials.util.options import OptionParser
 
-    def __init__(self):
-        """ Initialise the script. """
-        from dials.util.options import OptionParser
-        import libtbx.load_env
+    # Create the parser
+    usage = "usage: dials.analyse_output [options] reflections.pickle"
+    parser = OptionParser(
+        usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
+    )
 
-        # Create the parser
-        usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
-        self.parser = OptionParser(
-            usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
-        )
+    parser.add_option(
+        "--xkcd",
+        action="store_true",
+        dest="xkcd",
+        default=False,
+        help="Special drawing mode",
+    )
 
-        self.parser.add_option(
-            "--xkcd",
-            action="store_true",
-            dest="xkcd",
-            default=False,
-            help="Special drawing mode",
-        )
+    # Parse the command line arguments
+    params, options = parser.parse_args(show_diff_phil=True)
 
-    def run(self):
-        """ Run the script. """
-        # Parse the command line arguments
-        params, options = self.parser.parse_args(show_diff_phil=True)
+    if options.xkcd:
+        pyplot.xkcd()
 
-        if options.xkcd:
-            from matplotlib import pyplot
+    # Show the help
+    if len(params.input.reflections) != 1:
+        parser.print_help()
+        exit(0)
 
-            pyplot.xkcd()
-
-        # Shoe the help
-        if len(params.input.reflections) != 1:
-            self.parser.print_help()
-            exit(0)
-
-        # Analyse the reflections
-        analyse = Analyser(
-            params.output.directory,
-            grid_size=params.grid_size,
-            pixels_per_bin=params.pixels_per_bin,
-            centroid_diff_max=params.centroid_diff_max,
-        )
-        analyse(params.input.reflections[0].data)
+    # Analyse the reflections
+    analyse(
+        params.input.reflections[0].data,
+        params.output.directory,
+        grid_size=params.grid_size,
+        pixels_per_bin=params.pixels_per_bin,
+        centroid_diff_max=params.centroid_diff_max,
+    )
 
 
 if __name__ == "__main__":
     from dials.util import halraiser
 
     try:
-        script = Script()
-        script.run()
+        run()
     except Exception as e:
         halraiser(e)
