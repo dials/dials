@@ -665,12 +665,7 @@ class JsonExporter(object):
             else:
                 reflections.extend(refl)
 
-        settings = self.params
-        settings.__inject__("beam_centre", None)
-        settings.__inject__("reverse_phi", None)
-
-        exporter = export_json.ReciprocalLatticeJson(settings=self.params)
-        exporter.load_models(self.experiments, reflections)
+        exporter = export_json.ReciprocalLatticeJson(self.experiments, reflections)
         exporter.as_json(
             filename=params.json.filename,
             compact=params.json.compact,
