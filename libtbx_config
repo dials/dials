@@ -4,7 +4,7 @@
     "optional_modules": ["crys3d", "gltbx", "xfel"],
     "python_required": [
         "blosc>=1.8",
-        "dials-data>=1.0",
+        "dials-data>=2.0",
         "Jinja2",
         "mock>=2.0",
         "msgpack",
