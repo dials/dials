@@ -9,11 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
-try:
-    import __builtin__
-except ImportError:
-    import builtins as __builtin__
-
+import builtins
 import collections
 import logging
 import operator
@@ -499,7 +495,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             data = self[name]
             if order is None:
                 perm = flex.size_t(
-                    __builtin__.sorted(
+                    builtins.sorted(
                         range(len(self)), key=lambda x: data[x], reverse=reverse
                     )
                 )
@@ -512,7 +508,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                     return cmp(a, b)
 
                 perm = flex.size_t(
-                    __builtin__.sorted(
+                    builtins.sorted(
                         range(len(self)),
                         key=lambda x: data[x],
                         cmp=compare,
@@ -620,7 +616,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
                         d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
-                    i, j, d = __builtin__.min(d, key=lambda x: x[2])
+                    i, j, d = builtins.min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
@@ -635,7 +631,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Sort by self index
         sort_index = flex.size_t(
-            __builtin__.sorted(range(len(sind)), key=lambda x: sind[x])
+            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -735,7 +731,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         dy = y1[i] - y2[j]
                         dz = z1[i] - z2[j]
                         d.append((i, j, dx ** 2 + dy ** 2 + dz ** 2))
-                    i, j, d = __builtin__.min(d, key=lambda x: x[2])
+                    i, j, d = builtins.min(d, key=lambda x: x[2])
                     if j not in matched:
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
@@ -750,7 +746,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Sort by self index
         sort_index = flex.size_t(
-            __builtin__.sorted(range(len(sind)), key=lambda x: sind[x])
+            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -1605,11 +1601,11 @@ class reflection_table_selector(object):
             mask1 = None
             data = reflections[self.column]
         if isinstance(data, double):
-            value = __builtin__.float(self.value)
+            value = builtins.float(self.value)
         elif isinstance(data, int):
-            value = __builtin__.int(self.value)
+            value = builtins.int(self.value)
         elif isinstance(data, size_t):
-            value = __builtin__.int(self.value)
+            value = builtins.int(self.value)
         elif isinstance(data, std_string):
             value = self.value
         elif isinstance(data, vec3_double):
