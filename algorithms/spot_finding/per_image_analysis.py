@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+
 import math
 
 from cctbx import sgtbx, uctbx
@@ -9,15 +10,6 @@ from scitbx import matrix
 
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-
-try:
-    import matplotlib
-
-    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-    matplotlib.use("Agg")  # use a non-interactive backend
-    from matplotlib import pyplot
-except ImportError:
-    pyplot = None
 
 
 class slot(object):
@@ -262,8 +254,8 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     # resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
+        from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(d_star_sq, log_i_over_sigi, marker="+")
@@ -326,7 +318,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        # pyplot.show()
         pyplot.savefig(plot_filename)
         pyplot.close()
 
@@ -412,12 +403,11 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     noisiness /= (n - 1) * (n - 2) / 2
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
+        from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(ds3_subset)), ds3_subset)
-        # ax.set_xlabel('')
         ax.set_ylabel("D^-3")
         xlim = pyplot.xlim()
         ylim = pyplot.ylim()
@@ -474,12 +464,11 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
     noisiness /= 0.5 * m * (m - 1)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
+        from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.scatter(range(len(bin_counts)), bin_counts)
-        # ax.set_xlabel('')
         ax.set_ylabel("number of spots in shell")
         xlim = pyplot.xlim()
         ylim = pyplot.ylim()
@@ -546,8 +535,8 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
     hist = get_histogram(d_star_sq)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
+        from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         ax.bar(
@@ -565,7 +554,6 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        # pyplot.show()
         pyplot.savefig(plot_filename)
         pyplot.close()
 
@@ -593,8 +581,8 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
             slots.append(0)
 
     if plot_filename is not None:
-        if pyplot is None:
-            raise Sorry("matplotlib must be installed to generate a plot.")
+        from matplotlib import pyplot
+
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
         # ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
@@ -616,14 +604,13 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
         ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        # pyplot.show()
         pyplot.savefig(plot_filename)
         pyplot.close()
 
 
 def plot_ordered_d_star_sq(reflections, imageset):
-    if pyplot is None:
-        raise Sorry("matplotlib must be installed to generate a plot.")
+    from matplotlib import pyplot
+
     d_star_sq = flex.pow2(reflections["rlp"].norms())
 
     perm = flex.sort_permutation(d_star_sq)
@@ -845,6 +832,8 @@ def print_table(stats, perm=None, n_rows=None, out=None):
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):
+    from matplotlib import pyplot
+
     n_spots_total = flex.int(stats.n_spots_total)
     n_spots_no_ice = stats.n_spots_no_ice
     n_spots_4A = stats.n_spots_4A
@@ -854,8 +843,7 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     total_intensity = stats.total_intensity
 
     i_image = flex.int(list(range(1, len(n_spots_total) + 1)))
-    if pyplot is None:
-        raise Sorry("matplotlib must be installed to generate a plot.")
+
     _, (ax1, ax2, ax3) = pyplot.subplots(nrows=3)
     ax1.scatter(
         list(i_image),

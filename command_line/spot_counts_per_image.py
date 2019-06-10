@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import sys
@@ -143,6 +144,9 @@ def run(args):
             with open(params.json, "wb") as fp:
                 json.dump(stats.__dict__, fp)
     if params.plot:
+        import matplotlib
+
+        matplotlib.use("Agg")
         per_image_analysis.plot_stats(stats, filename=params.plot)
 
 
