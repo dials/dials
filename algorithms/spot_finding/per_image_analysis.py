@@ -1,13 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-
+from libtbx import group_args
 from cctbx import sgtbx, uctbx
-from libtbx import group_args, table_utils
-from libtbx.math_utils import nearest_integer as nint
-from scitbx import matrix
-
-from dials.algorithms.integration import filtering
 from dials.array_family import flex
 
 try:
@@ -27,6 +22,8 @@ class slot(object):
 
 class binner_equal_population(object):
     def __init__(self, d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
+        from libtbx.math_utils import nearest_integer as nint
+
         n_slots = len(d_star_sq) // target_n_per_bin
         if max_slots is not None:
             n_slots = min(n_slots, max_slots)
@@ -157,6 +154,7 @@ def wilson_outliers(reflections, ice_sel=None, p_cutoff=1e-2):
 
 
 def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename=None):
+
     if ice_sel is None:
         ice_sel = flex.bool(len(reflections), False)
 
@@ -196,14 +194,36 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     for i_slot, slot in enumerate(binner.bins):
         sel_all = (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
         sel = ~(ice_sel) & sel_all
+        # sel = ~(ice_sel) & (d_spacings < slot.d_max) & (d_spacings >= slot.d_min)
+
+        # print "%.2f" %(sel.count(True)/sel_all.count(True))
 
         if sel.count(True) == 0:
+            # outliers_all.set_selected(sel_all & ice_sel, True)
             continue
+            # if i_slot > i_slot_max:
+            # break
+            # else:
+            # continue
 
         outliers = wilson_outliers(
             reflections.select(sel_all), ice_sel=ice_sel.select(sel_all)
         )
+        # print "rejecting %d wilson outliers" %outliers.count(True)
         outliers_all.set_selected(sel_all, outliers)
+
+        # if sel.count(True)/sel_all.count(True) < 0.25:
+        # outliers_all.set_selected(sel_all & ice_sel, True)
+
+        # from scitbx.math import median_statistics
+        # intensities_sel = intensities.select(sel)
+        # stats = median_statistics(intensities_sel)
+        # z_score = 0.6745 * (intensities_sel - stats.median)/stats.median_absolute_deviation
+        # outliers = z_score > 3.5
+        # perm = flex.sort_permutation(intensities_sel)
+        ##print ' '.join('%.2f' %v for v in intensities_sel.select(perm))
+        ##print ' '.join('%.2f' %v for v in z_score.select(perm))
+        ##print
 
         isel = sel_all.iselection().select(~(outliers) & ~(ice_sel).select(sel_all))
         log_i_over_sigi_sel = log_i_over_sigi.select(isel)
@@ -323,6 +343,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
         ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
         xticks = ax.get_xticks()
         xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
+        xticks_ = [ds2 / (xlim[1] - xlim[0]) for ds2 in xticks]
         ax_.set_xticks(xticks)
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
@@ -334,6 +355,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
 
 
 def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename=None):
+
     # Implementation of Method 1 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -342,6 +364,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     variances = reflections["intensity.sum.variance"]
 
     sel = variances > 0
+    intensities = reflections["intensity.sum.value"]
     reflections = reflections.select(sel)
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
@@ -432,6 +455,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
 
 
 def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename=None):
+
     # Implementation of Method 2 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -440,6 +464,7 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
     variances = reflections["intensity.sum.variance"]
 
     sel = variances > 0
+    intensities = reflections["intensity.sum.value"]
     reflections = reflections.select(sel)
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
@@ -495,6 +520,9 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
 
 
 def points_below_line(d_star_sq, log_i_over_sigi, m, c):
+
+    from scitbx import matrix
+
     p1 = matrix.col((0, c))
     p2 = matrix.col((1, m * 1 + c))
 
@@ -527,6 +555,8 @@ def points_inside_envelope(
 def ice_rings_selection(reflections, width=0.004):
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
+
+    from dials.algorithms.integration import filtering
 
     unit_cell = uctbx.unit_cell((4.498, 4.498, 7.338, 90, 90, 120))
     space_group = sgtbx.space_group_info(number=194).group()
@@ -563,7 +593,9 @@ def resolution_histogram(reflections, imageset, plot_filename=None):
 
         ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
         xticks = ax.get_xticks()
+        xlim = ax.get_xlim()
         xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
+        xticks_ = [ds2 / (xlim[1] - xlim[0]) for ds2 in xticks]
         ax_.set_xticks(xticks)
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
@@ -615,7 +647,9 @@ def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
 
         ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
         xticks = ax.get_xticks()
+        xlim = ax.get_xlim()
         xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
+        xticks_ = [ds2 / (xlim[1] - xlim[0]) for ds2 in xticks]
         ax_.set_xticks(xticks)
         ax_.set_xlim(ax.get_xlim())
         ax_.set_xlabel(r"Resolution ($\AA$)")
@@ -840,6 +874,7 @@ def print_table(stats, perm=None, n_rows=None, out=None):
         import sys
 
         out = sys.stdout
+    from libtbx import table_utils
 
     rows = table(stats, perm=perm, n_rows=n_rows)
     print(
