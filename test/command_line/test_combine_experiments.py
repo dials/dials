@@ -258,5 +258,5 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
 
     with pytest.raises(Sorry) as exc:
         script.run_with_preparsed(params, options)
-    assert "Beam" in exc.value.message
-    print("Got error message:", exc.value.message)
+    assert "Beam" in str(exc.value)
+    print("Got (expected) error message:", exc.value)
