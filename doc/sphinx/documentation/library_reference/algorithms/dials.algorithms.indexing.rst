@@ -8,15 +8,15 @@ dials.algorithms.indexing
     :show-inheritance:
 
 dials.algorithms.indexing.indexer
-=============================================
+=================================
 
 .. automodule:: dials.algorithms.indexing.indexer
     :members:
     :undoc-members:
     :show-inheritance:
 
-dials.algorithms.indexing.indexer
-=============================================
+dials.algorithms.indexing.stills_indexer
+========================================
 
 .. automodule:: dials.algorithms.indexing.stills_indexer
     :members:
@@ -46,24 +46,24 @@ dials.algorithms.indexing.basis_vector_search
     :undoc-members:
     :show-inheritance:
 
-========================================
 dials.algorithms.indexing.lattice_search
+========================================
 
 .. automodule:: dials.algorithms.indexing.lattice_search
     :members:
     :undoc-members:
     :show-inheritance:
 
-==========================================
 dials.algorithms.indexing.model_evaluation
+==========================================
 
 .. automodule:: dials.algorithms.indexing.model_evaluation
     :members:
     :undoc-members:
     :show-inheritance:
 
-==================================
 dials.algorithms.indexing.max_cell
+==================================
 
 .. automodule:: dials.algorithms.indexing.max_cell
     :members:
