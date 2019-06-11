@@ -20,6 +20,7 @@ from scitbx import matrix
 from cctbx import sgtbx
 import iotbx.phil
 
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
@@ -144,11 +145,14 @@ class CosymAnalysis(symmetry_base, Subject):
 
         self.params = params
         if self.params.space_group is not None:
-            self.input_space_group = self.params.space_group.group()
+            matched = find_matching_symmetry(
+                self.intensities.unit_cell(), self.params.space_group.group()
+            )
+            self.input_space_group = self.params.space_group.change_basis(
+                matched["cb_op_inp_best"].inverse()
+            ).group()
             self.intensities = self.intensities.customized_copy(
-                space_group_info=self.params.space_group.change_basis(
-                    self.cb_op_inp_min
-                )
+                space_group_info=self.input_space_group.info()
             )
         else:
             self.input_space_group = None

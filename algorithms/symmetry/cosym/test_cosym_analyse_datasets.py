@@ -16,7 +16,7 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
         ("P2", None, 10, False),
         ("P3", None, 20, False),
         ("I23", libtbx.Auto, 10, False),
-        pytest.param("I23", libtbx.Auto, 10, True, marks=pytest.mark.xfail),
+        ("I23", libtbx.Auto, 10, True),
     ],
 )
 def test_cosym(
@@ -54,11 +54,14 @@ def test_cosym(
     cosym = CosymAnalysis(datasets, params)
     cosym.run()
     d = cosym.as_dict()
-    assert d["subgroup_scores"][0]["likelihood"] > 0.89
-    assert (
-        sgtbx.space_group(d["subgroup_scores"][0]["patterson_group"])
-        == sgtbx.space_group_info(space_group).group().build_derived_patterson_group()
-    )
+    if not use_known_space_group:
+        assert d["subgroup_scores"][0]["likelihood"] > 0.89
+        assert (
+            sgtbx.space_group(d["subgroup_scores"][0]["patterson_group"])
+            == sgtbx.space_group_info(space_group)
+            .group()
+            .build_derived_patterson_group()
+        )
 
     space_groups = {}
     reindexing_ops = {}
