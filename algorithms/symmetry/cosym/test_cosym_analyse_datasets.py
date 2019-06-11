@@ -11,10 +11,17 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
-    ("space_group", "dimensions", "sample_size"),
-    [("P2", None, 10), ("P3", None, 20), ("I23", libtbx.Auto, 10)],
+    ("space_group", "dimensions", "sample_size", "use_known_space_group"),
+    [
+        ("P2", None, 10, False),
+        ("P3", None, 20, False),
+        ("I23", libtbx.Auto, 10, False),
+        pytest.param("I23", libtbx.Auto, 10, True, marks=pytest.mark.xfail),
+    ],
 )
-def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
+def test_cosym(
+    space_group, dimensions, sample_size, use_known_space_group, run_in_tmpdir
+):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -41,6 +48,8 @@ def test_cosym(space_group, dimensions, sample_size, run_in_tmpdir):
     params = phil_scope.extract()
     params.cluster.n_clusters = len(expected_reindexing_ops)
     params.dimensions = dimensions
+    if use_known_space_group:
+        params.space_group = expected_space_group.info()
 
     cosym = CosymAnalysis(datasets, params)
     cosym.run()
