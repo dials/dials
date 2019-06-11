@@ -9,7 +9,7 @@ import shutil
 import sys
 
 try:
-    import dials_data
+    import dials_data.download
 except ImportError:
     dials_data = None
 import libtbx.load_env  # required for libtbx.env.find_in_repositories
@@ -83,7 +83,7 @@ class Processing_Tutorial(object):
                     "Run libtbx.pip install dials_data"
                 )
 
-            df = dials_data.DataFetcher()
+            df = dials_data.download.DataFetcher()
             dataset = df("thaumatin_i04").join("th_8_2_0*cbf").strpath
 
             self.cmd = "dials.import {0}".format(dataset)
