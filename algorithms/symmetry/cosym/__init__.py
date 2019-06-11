@@ -145,11 +145,29 @@ class CosymAnalysis(symmetry_base, Subject):
 
         self.params = params
         if self.params.space_group is not None:
-            matched = find_matching_symmetry(
+            best_subgroup = find_matching_symmetry(
                 self.intensities.unit_cell(), self.params.space_group.group()
             )
+            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+            best_subsym = best_subgroup["best_subsym"]
+            cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+            ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+            cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
+            sg_cb_op_inp_primitive = (
+                self.params.space_group.change_of_basis_op_to_primitive_setting()
+            )
+            sg_primitive = self.params.space_group.change_basis(sg_cb_op_inp_primitive)
+            sg_best = sg_primitive.change_basis(
+                (cb_op_ref_primitive * cb_op_best_ref).inverse()
+            )
+            # best_subgroup above is the bravais type, so create thin copy here with the
+            # user-input space group instead
+            self.best_subgroup = {
+                "best_subsym": best_subsym.customized_copy(space_group_info=sg_best),
+                "cb_op_inp_best": cb_op_inp_best,
+            }
             self.input_space_group = self.params.space_group.change_basis(
-                matched["cb_op_inp_best"].inverse()
+                self.best_subgroup["cb_op_inp_best"].inverse()
             ).group()
             self.intensities = self.intensities.customized_copy(
                 space_group_info=self.input_space_group.info()
@@ -313,6 +331,7 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         logger.info(str(self._symmetry_analysis))
         self.best_solution = self._symmetry_analysis.best_solution
+        self.best_subgroup = self.best_solution.subgroup
 
         cosets = sgtbx.cosets.left_decomposition(
             self.lattice_group, self.best_solution.subgroup["subsym"].space_group()

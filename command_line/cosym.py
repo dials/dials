@@ -149,12 +149,9 @@ class cosym(Subject):
             logger.info(cb_op)
             logger.info(datasets)
 
-        if self.cosym_analysis.best_solution is not None:
-            subgroup = self.cosym_analysis.best_solution.subgroup
-        else:
-            subgroup = None
-
-        self._apply_reindexing_operators(reindexing_ops, subgroup=subgroup)
+        self._apply_reindexing_operators(
+            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
+        )
 
     def export(self):
         """Output the datafiles for cosym.
