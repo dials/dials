@@ -71,7 +71,7 @@ class NeighborAnalysis(object):
             len(direct) > NEAR
         ), "Too few spots (%d) for nearest neighbour analysis." % len(direct)
 
-        perm = flex.sort_permutation(direct)
+        perm = flex.sort_permutation(direct, stable=True)
         direct = direct.select(perm)
         d_spacings = d_spacings.select(perm)
 
@@ -110,7 +110,7 @@ class NeighborAnalysis(object):
 
         if percentile is not None:
             # determine the nth-percentile direct-space distance
-            perm = flex.sort_permutation(direct, reverse=True)
+            perm = flex.sort_permutation(direct, reverse=True, stable=True)
             self.max_cell = (
                 self.tolerance * direct[perm[int((1 - percentile) * len(direct))]]
             )

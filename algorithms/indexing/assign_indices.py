@@ -134,7 +134,7 @@ class AssignIndicesLocal(AssignIndicesStrategy):
             hkl_sel = hkl.select(cryst_sel).as_vec3_double()
 
             d_sel = 1 / rlp_sel.norms()
-            d_perm = flex.sort_permutation(d_sel, reverse=True)
+            d_perm = flex.sort_permutation(d_sel, reverse=True, stable=True)
 
             hf_0 = A_inv * rlp_sel[d_perm[0]]
             h_0 = matrix.col([nint(j) for j in hf_0.elems])

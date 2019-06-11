@@ -234,7 +234,7 @@ class ModelRankWeighted(ModelRank):
 
     def best_model(self):
         scores = self.combined_scores()
-        perm = flex.sort_permutation(scores)
+        perm = flex.sort_permutation(scores, stable=True)
         return self.all_solutions[perm[0]]
 
     def combined_scores(self):
@@ -269,7 +269,7 @@ class ModelRankWeighted(ModelRank):
         score_by_rmsd_xy = self.score_by_rmsd_xy()
         combined_scores = self.combined_scores()
 
-        perm = flex.sort_permutation(combined_scores)
+        perm = flex.sort_permutation(combined_scores, stable=True)
 
         rmsd_x, rmsd_y, rmsd_z = flex.vec3_double(
             s.rmsds for s in self.all_solutions
