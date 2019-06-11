@@ -74,7 +74,7 @@ jobs:
       script:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
-         - BOOST_ADAPTBX_FPE_DEFAULT=1 pytest -ra -n 2 --runslow
+         - pytest -ra -n 2 --runslow
 
     - name: "Flake8 - Python 2.7"
       addons: false
