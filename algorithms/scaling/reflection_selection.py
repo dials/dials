@@ -372,7 +372,7 @@ with a total number between %s and %s.""",
     total = flex.double(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
         total[i] = col.non_zeroes
-    perm = flex.sort_permutation(total, reverse=True, stable=True)
+    perm = flex.sort_permutation(total, reverse=True)
     sorted_class_matrix = segments_in_groups.select_columns(perm)
     # matrix of segment index vs asu groups
 
@@ -421,7 +421,7 @@ def select_highly_connected_reflections_in_bin(
     total = flex.int(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
         total[i] = col.non_zeroes
-    perm = flex.sort_permutation(total, reverse=True, stable=True)
+    perm = flex.sort_permutation(total, reverse=True)
     sorted_class_matrix = segments_in_groups.select_columns(perm)
     # matrix of segment index vs asu groups
 

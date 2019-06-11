@@ -30,7 +30,7 @@ def candidate_orientation_matrices(basis_vectors, max_combinations=None):
     basis_vectors = basis_vectors[:n]
     combinations = flex.vec3_int(flex.nested_loop((n, n, n)))
     combinations = combinations.select(
-        flex.sort_permutation(combinations.as_vec3_double().norms(), stable=True)
+        flex.sort_permutation(combinations.as_vec3_double().norms())
     )
 
     # select only those combinations where j > i and k > j

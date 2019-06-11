@@ -13,7 +13,7 @@ def optimise_basis_vectors(reciprocal_lattice_points, vectors):
         minimised = BasisVectorMinimiser(reciprocal_lattice_points, vector)
         optimised.append(tuple(minimised.x))
     functionals = flex.double(minimised.target.compute_functional(v) for v in vectors)
-    perm = flex.sort_permutation(functionals, stable=True)
+    perm = flex.sort_permutation(functionals)
     optimised = optimised.select(perm)
     return optimised
 

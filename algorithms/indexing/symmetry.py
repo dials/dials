@@ -376,7 +376,7 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
         space_group_number = sgtbx.space_group_type(group, False).number()
         assert 1 <= space_group_number <= 230
         sort_values.append(order_z * 1000 + space_group_number)
-    perm = flex.sort_permutation(sort_values, reverse=True, stable=True)
+    perm = flex.sort_permutation(sort_values, reverse=True)
 
     for i_subgr in perm:
         acentric_subgroup = subgrs[i_subgr]

@@ -290,7 +290,7 @@ class FFT3D(Strategy):
         xs = xs.sites_mod_short()
         sites_cart = xs.sites_cart()
         lengths = flex.double([matrix.col(sc).length() for sc in sites_cart])
-        perm = flex.sort_permutation(lengths, stable=True)
+        perm = flex.sort_permutation(lengths)
         xs = xs.select(perm)
         volumes = self.volumes.select(perm)
 
@@ -338,7 +338,7 @@ class FFT3D(Strategy):
         volumes = flex.double(max(g.volumes) for g in vector_groups)
 
         # sort by peak size
-        perm = flex.sort_permutation(volumes, reverse=True, stable=True)
+        perm = flex.sort_permutation(volumes, reverse=True)
         volumes = volumes.select(perm)
         vectors = [vectors[i] for i in perm]
 
@@ -347,7 +347,7 @@ class FFT3D(Strategy):
 
         # sort by length
         lengths = flex.double(v.length() for v in vectors)
-        perm = flex.sort_permutation(lengths, stable=True)
+        perm = flex.sort_permutation(lengths)
 
         # exclude vectors that are (approximately) integer multiples of a shorter
         # vector
@@ -371,7 +371,7 @@ class FFT3D(Strategy):
                 unique_volumes.append(volumes[p])
 
         # re-sort by peak volume
-        perm = flex.sort_permutation(unique_volumes, reverse=True, stable=True)
+        perm = flex.sort_permutation(unique_volumes, reverse=True)
         self.candidate_basis_vectors = [unique_vectors[i] for i in perm]
         return self.candidate_basis_vectors, used_in_indexing
 
@@ -547,7 +547,7 @@ class RealSpaceGridSearch(Strategy):
                 vectors.append(v.elems)
                 function_values.append(f)
 
-        perm = flex.sort_permutation(function_values, reverse=True, stable=True)
+        perm = flex.sort_permutation(function_values, reverse=True)
         vectors = vectors.select(perm)
         function_values = function_values.select(perm)
 

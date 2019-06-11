@@ -61,7 +61,7 @@ class NaveParameters(object):
         n_bins = min(max(3, len(excursion_rad) // 25), 50)
         bin_sz = len(excursion_rad) // n_bins
         logger.info("nbins %s bin_sz %s", n_bins, bin_sz)
-        order = flex.sort_permutation(two_thetas, stable=True)
+        order = flex.sort_permutation(two_thetas)
         two_thetas_env = flex.double()
         dspacings_env = flex.double()
         excursion_rads_env = flex.double()
