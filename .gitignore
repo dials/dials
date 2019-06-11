@@ -24,6 +24,9 @@ _*.nb
 git-notifier.log
 .gitversion
 
+# Python3 migration testing
+.python3-test-failures.new
+
 doc/sphinx/build
 doc/sphinx/documentation/tutorials/logs
 doc/sphinx/documentation/tutorials/logs_ccp4
