@@ -168,11 +168,8 @@ def test3(dials_regression, run_in_tmpdir):
 
 
 # Test the functionality of the parameter 'auto reduction' extension modules
-def test4():
-    from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
-    from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
-    from dials_refinement_helpers_ext import surpl_iter as surpl
-
+@pytest.fixture(scope="session")
+def setup_test4():
     # Borrowed from tst_reflection_table function tst_find_overlapping
 
     N = 110
@@ -187,11 +184,9 @@ def test4():
             i % 7,
         )  # A nice bunch of miller indices
 
-    """
-   Filter out reflections to be used by refinement. Sorting of filtered reflections require
-   to allow C++ extension modules to give performance benefit. Sorting performed within the
-   _filter_reflections step by id, then by panel.
-  """
+    # Filter out reflections to be used by refinement. Sorting of filtered reflections
+    # require to allow C++ extension modules to give performance benefit. Sorting
+    # performed within the _filter_reflections step by id, then by panel.
     r_sorted = copy.deepcopy(r)
     r_sorted.sort("id")
     r_sorted.subsort("id", "panel")
@@ -208,10 +203,15 @@ def test4():
             r_sorted_id["panel"]
             == r_id["panel"].select(flex.sort_permutation(r_id["panel"]))
         ).count(False) == 0
+    return (r, r_sorted, exp_ids)
 
-    ############################################################
+
+def test_auto_reduction_parameter_extension_modules_part1(setup_test4):
     # Cut-down original algorithm for AutoReduce._surplus_reflections
-    ############################################################
+
+    from dials_refinement_helpers_ext import surpl_iter as surpl
+
+    r, r_sorted, exp_ids = setup_test4
     isel = flex.size_t()
     for exp_id in exp_ids:
         isel.extend((r["id"] == exp_id).iselection())
@@ -227,9 +227,16 @@ def test4():
     assert res0 == res1_int
     assert res0 == res1_sizet
 
-    ############################################################
+
+def test_auto_reduction_parameter_extension_modules_part2(setup_test4):
     # Cut-down original algorithm for AutoReduce._unit_cell_surplus_reflections
-    ############################################################
+
+    from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
+
+    r, r_sorted, exp_ids = setup_test4
+    isel = flex.size_t()
+    for exp_id in exp_ids:
+        isel.extend((r["id"] == exp_id).iselection())
     ref = r.select(isel)
     h = ref["miller_index"].as_vec3_double()
     dB_dp = flex.mat3_double([(1, 2, 3, 4, 5, 6, 7, 8, 9), (0, 1, 0, 1, 0, 1, 0, 1, 0)])
@@ -249,9 +256,13 @@ def test4():
     assert res0 == res1_int
     assert res0 == res1_sizet
 
-    ############################################################
+
+def test_auto_reduction_parameter_extension_modules_part3(setup_test4):
     # Cut-down original algorithm for AutoReduce._panel_gp_surplus_reflections
-    ############################################################
+
+    from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
+
+    r, r_sorted, exp_ids = setup_test4
     isel = flex.size_t()
     pnl_ids = [0, 1]
     for exp_id in exp_ids:
@@ -259,8 +270,7 @@ def test4():
         sub_panels_expID = r["panel"].select(sub_expID)
         for pnl in pnl_ids:
             isel.extend(sub_expID.select(sub_panels_expID == pnl))
-    nref = len(isel)
-    res0 = nref
+    res0 = len(isel)
 
     # Updated algorithm for _panel_gp_surplus_reflections
     res1_unsrt_int = pg_surpl(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
