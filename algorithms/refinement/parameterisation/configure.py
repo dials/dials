@@ -625,24 +625,18 @@ def _parameterise_detectors(options, experiments, analysis):
                 detector, array_range, n_intervals, experiment_ids=exp_ids
             )
         else:
+            # Convert automatic into correct specific option
             if options.detector.panels == "automatic":
                 if len(detector) > 1:
                     if hasattr(detector, "hierarchy"):
-                        # Use hierarchy in parameterisation if the detector has one
-                        det_param = DetectorParameterisationHierarchical(
-                            detector,
-                            experiment_ids=exp_ids,
-                            level=options.detector.hierarchy_level,
-                        )
+                        options.detector.panels = "hierarchical"
                     else:
-                        det_param = DetectorParameterisationMultiPanel(
-                            detector, beam, experiment_ids=exp_ids
-                        )
+                        options.detector.panels = "multiple"
                 else:
-                    det_param = DetectorParameterisationSinglePanel(
-                        detector, experiment_ids=exp_ids
-                    )
-            elif options.detector.panels == "single":
+                    options.detector.panels = "single"
+
+            # Construct parameterisation based on panels choice
+            if options.detector.panels == "single":
                 if len(detector) > 1:
                     raise Sorry(
                         "A single panel parameterisation cannot be created "
@@ -652,10 +646,12 @@ def _parameterise_detectors(options, experiments, analysis):
                     detector, experiment_ids=exp_ids
                 )
             elif options.detector.panels == "multiple":
+                # Take first associated beam model
+                beam = experiments[exp_ids[0]].beam
                 det_param = DetectorParameterisationMultiPanel(
                     detector, beam, experiment_ids=exp_ids
                 )
-            else:  # options.detector.panels == "hierarchical"
+            elif options.detector.panels == "hierarchical":
                 try:  # Use hierarchy in parameterisation if the detector has one
                     detector.hierarchy()
                     det_param = DetectorParameterisationHierarchical(

@@ -16,10 +16,7 @@ from dials.array_family import flex
     [
         "automatic",
         pytest.param("single", marks=pytest.mark.xfail()),
-        pytest.param(
-            "multiple",
-            marks=pytest.mark.xfail(reason="https://github.com/dials/dials/issues/809"),
-        ),
+        "multiple",
         "hierarchical",
     ],
 )
