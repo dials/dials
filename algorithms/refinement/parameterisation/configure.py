@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 import libtbx  # for libtbx.Auto
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 
 # Function to convert fix_lists into to_fix selections
 from dials.algorithms.refinement.refinement_helpers import string_sel
@@ -398,14 +398,14 @@ def _parameterise_beams(options, experiments, analysis):
 
         if sv_beam:
             if not all((goniometer, scan)):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A scan-varying beam model cannot be created because "
                     "a scan or goniometer model is missing"
                 )
             # If a beam is scan-varying, then it must always be found alongside
             # the same Scan and Goniometer in any Experiments in which it appears
             if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A single scan-varying beam model cannot be refined "
                     "when associated with more than one scan or goniometer"
                 )
@@ -473,21 +473,21 @@ def _parameterise_crystals(options, experiments, analysis):
         if goniometer is None:
             # There should be no associated goniometer and scan models
             if any(g or s for (g, s) in assoc_models):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A crystal model appears in a mixture of scan and still "
                     "experiments, which is not supported"
                 )
 
         if sv_xl_ori or sv_xl_uc:
             if not all((goniometer, scan)):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A scan-varying crystal model cannot be created because "
                     "a scan or goniometer model is missing"
                 )
             # If a crystal is scan-varying, then it must always be found alongside
             # the same Scan and Goniometer in any Experiments in which it appears
             if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A single scan-varying crystal model cannot be refined "
                     "when associated with more than one scan or goniometer"
                 )
@@ -589,31 +589,31 @@ def _parameterise_detectors(options, experiments, analysis):
 
         if sv_det:
             if not all((goniometer, scan)):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A scan-varying detector model cannot be created "
                     "because a scan or goniometer model is missing"
                 )
             # If a detector is scan-varying, then it must always be found alongside
             # the same Scan and Goniometer in any Experiments in which it appears
             if not all(g is goniometer and s is scan for (g, s) in assoc_models):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A single scan-varying detector model cannot be "
                     "refined when associated with more than one scan or goniometer"
                 )
 
             # Additional checks on whether a scan-varying parameterisation is allowed
             if options.detector.panels == "automatic" and len(detector) > 1:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Scan-varying multiple panel detectors are not "
                     "currently supported"
                 )
             if options.detector.panels == "multiple":
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Scan-varying multiple panel detectors are not "
                     "currently supported"
                 )
             if options.detector.panels == "hierarchical":
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Scan-varying hierarchical detectors are not " "currently supported"
                 )
 
@@ -638,7 +638,7 @@ def _parameterise_detectors(options, experiments, analysis):
             # Construct parameterisation based on panels choice
             if options.detector.panels == "single":
                 if len(detector) > 1:
-                    raise Sorry(
+                    raise DialsRefineConfigError(
                         "A single panel parameterisation cannot be created "
                         "for a multiple panel detector"
                     )
@@ -660,7 +660,7 @@ def _parameterise_detectors(options, experiments, analysis):
                         level=options.detector.hierarchy_level,
                     )
                 except AttributeError:
-                    raise Sorry(
+                    raise DialsRefineConfigError(
                         "A hierarchical detector parameterisation cannot be "
                         "created for a detector without a hierarchy"
                     )
@@ -714,12 +714,12 @@ def _parameterise_goniometers(options, experiments, analysis):
             # If a goniometer is scan-varying, then it must always be found
             # alongside the same Scan in any Experiments in which it appears
             if not scan:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A scan-varying goniometer model cannot be created "
                     "because a scan model is missing"
                 )
             if not all(s is scan for (g, s) in assoc_models):
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "A single scan-varying goniometer model cannot be "
                     "refined when associated with more than one scan"
                 )

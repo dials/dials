@@ -23,7 +23,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 import libtbx
 
 # The include scope directive does not work here. For example:
@@ -228,12 +228,12 @@ class RefinerFactory(object):
                     exps_are_stills.append(False)
             else:
                 if exp.scan.get_oscillation()[1] <= 0.0:
-                    raise Sorry("Cannot refine a zero-width scan")
+                    raise DialsRefineConfigError("Cannot refine a zero-width scan")
                 exps_are_stills.append(False)
 
         # check experiment types are consistent
         if not all(exps_are_stills[0] == e for e in exps_are_stills):
-            raise Sorry("Cannot refine a mixture of stills and scans")
+            raise DialsRefineConfigError("Cannot refine a mixture of stills and scans")
         do_stills = exps_are_stills[0]
 
         # If experiments are stills, ensure scan-varying refinement won't be attempted
@@ -479,11 +479,11 @@ class RefinerFactory(object):
 
         for tie in cell_r.tie_to_target:
             if len(tie.values) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 cell parameters must be provided as the tie_to_target.values."
                 )
             if len(tie.sigmas) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 sigmas must be provided as the tie_to_target.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter."
@@ -496,7 +496,7 @@ class RefinerFactory(object):
 
         for tie in cell_r.tie_to_group:
             if len(tie.sigmas) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 sigmas must be provided as the tie_to_group.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter."

@@ -29,6 +29,7 @@ from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.util import log
 from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 
 logger = logging.getLogger(__name__)
 debug_handle = log.debug_handle(logger)
@@ -643,7 +644,7 @@ class Indexer(object):
                         refined_experiments, refined_reflections = self.refine(
                             experiments, reflections_for_refinement
                         )
-                    except Sorry as e:
+                    except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
                         if len(experiments) == 1:
                             raise DialsIndexRefineError(e.message)
                         had_refinement_error = True

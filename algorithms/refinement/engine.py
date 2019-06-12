@@ -20,9 +20,8 @@ from libtbx import easy_mp
 from libtbx.phil import parse
 from scitbx import lbfgs
 from scitbx.array_family import flex
-
-# use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
+from dials.algorithms.refinement import DialsRefineRuntimeError
 
 logger = logging.getLogger(__name__)
 
@@ -980,8 +979,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # early test for linear independence, require all right hand side elements to be non-zero
         RHS = self.step_equations().right_hand_side()
         if RHS.count(0.0) > 0:
-            raise Exception(
-                r"""Sorry, there is at least one normal equation with a right hand side of zero,
+            raise DialsRefineRuntimeError(
+                r"""There is at least one normal equation with a right hand side of zero,
 meaning that the parameters are not all independent, and there is no unique
 solution.  Mathematically, some kind of row reduction needs to be performed
 before this can be solved."""

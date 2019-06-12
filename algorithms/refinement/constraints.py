@@ -16,7 +16,7 @@ import logging
 from functools import reduce
 
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 from scitbx import sparse
 from scitbx.array_family import flex
 
@@ -222,7 +222,7 @@ class ConstraintManagerFactory(object):
                 if n_samples == 0:
                     n_samples = ns
                 if ns != n_samples:
-                    raise Sorry(
+                    raise DialsRefineConfigError(
                         "Constraints cannot be created between scan-varying "
                         "parameterisations when these have a different number of "
                         "sample points."

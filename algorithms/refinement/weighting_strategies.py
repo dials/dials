@@ -12,6 +12,7 @@ ReflectionManagers."""
 from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
+from dials.algorithms.refinement import DialsRefineConfigError
 
 
 class StatisticalWeightingStrategy(object):
@@ -71,9 +72,8 @@ class ExternalDelPsiWeightingStrategy(StatisticalWeightingStrategy):
         )
 
         if not "delpsical.weights" in reflections:
-            from dials.util import Sorry
 
-            raise Sorry(
+            raise DialsRefineConfigError(
                 'The key "delpsical.weights" is expected within the input reflections'
             )
 

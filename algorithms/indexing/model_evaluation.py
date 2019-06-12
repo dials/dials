@@ -10,7 +10,6 @@ from libtbx import group_args
 from scitbx import matrix
 from scitbx.array_family import flex
 from dxtbx.model import Crystal
-from dials.util import Sorry
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
@@ -341,7 +340,7 @@ class ModelEvaluation(Strategy):
                 self._params, indexed_reflections, experiments
             )
             refiner.run()
-        except (RuntimeError, ValueError, Sorry):
+        except (RuntimeError, ValueError):
             return
         else:
             rmsds = refiner.rmsds()

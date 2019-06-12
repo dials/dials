@@ -37,6 +37,7 @@ import libtbx.phil
 from libtbx import Auto
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 
 logger = logging.getLogger("dials.command_line.refine")
 
@@ -219,9 +220,12 @@ def run_macrocycle(params, reflections, experiments):
     """
     # Get the refiner
     logger.info("Configuring refiner")
-    refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments
-    )
+    try:
+        refiner = RefinerFactory.from_parameters_data_experiments(
+            params, reflections, experiments
+        )
+    except DialsRefineConfigError as e:
+        raise Sorry(e.message)
 
     # Refine the geometry
     nexp = len(experiments)
@@ -231,7 +235,10 @@ def run_macrocycle(params, reflections, experiments):
         logger.info("Performing refinement of {0} Experiments...".format(nexp))
 
     # Refine and get the refinement history
-    history = refiner.run()
+    try:
+        history = refiner.run()
+    except DialsRefineRuntimeError as e:
+        raise Sorry(e.message)
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")

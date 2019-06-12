@@ -24,7 +24,7 @@ from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 
 from libtbx.phil import parse
 from dials.algorithms.refinement.outlier_detection.outlier_base import (
@@ -151,9 +151,7 @@ class BlockCalculator(object):
         # scan edges
         start, stop = scan.get_oscillation_range(deg=False)
         if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            from dials.util import Sorry
-
-            raise Sorry("The reflections do not fill the scan range.")
+            raise DialsRefineConfigError("The reflections do not fill the scan range.")
 
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
@@ -254,9 +252,7 @@ class ReflectionManagerFactory(object):
             refman = StillsReflectionManager
             # check incompatible weighting strategy
             if params.weighting_strategy.override == "statistical":
-                from dials.util import Sorry
-
-                raise Sorry(
+                raise DialsRefineConfigError(
                     'The "statistical" weighting strategy is not compatible '
                     "with stills refinement"
                 )
@@ -268,9 +264,7 @@ class ReflectionManagerFactory(object):
                     'The "{0}" weighting strategy is not compatible with '
                     "scan refinement"
                 ).format(params.weighting_strategy.override)
-                from dials.util import Sorry
-
-                raise Sorry(msg)
+                raise DialsRefineConfigError(msg)
 
         # set automatic outlier rejection options
         if params.outlier.algorithm in ("auto", libtbx.Auto):
@@ -593,7 +587,7 @@ class ReflectionManager(object):
 
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp)
                 )

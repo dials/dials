@@ -14,6 +14,7 @@ from dials.test.algorithms.refinement.test_stills_prediction_parameters import _
 from dials.algorithms.refinement.prediction.managed_predictors import (
     StillsExperimentsPredictor,
 )
+from dials.algorithms.refinement import DialsRefineConfigError
 
 
 @pytest.fixture(scope="session")
@@ -66,11 +67,10 @@ def test_check_and_fail(tc):
         gon_params=[],
         reflection_manager=tc.refman,
     )
-    from libtbx.test_utils import Sorry
 
     try:
         ar.check_and_fail()
-    except Sorry:
+    except DialsRefineConfigError:
         return
     raise RuntimeError
 

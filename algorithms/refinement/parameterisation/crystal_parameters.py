@@ -146,13 +146,12 @@ class CrystalUnitCellMixin(object):
         try:
             newB = matrix.sqr(S.backward_orientation(vals).reciprocal_matrix())
         except RuntimeError as e:
-            from dials.util import Sorry
 
             # write original error to debug log
             logger.debug("Unable to compose the crystal model")
             logger.debug("Original error message: {0}".format(str(e)))
             logger.debug("Failing now.")
-            raise Sorry(
+            raise RuntimeError(
                 "Unable to compose the crystal model. Please check that the "
                 "experiments match the indexing of the reflections."
             )
