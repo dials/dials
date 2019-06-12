@@ -230,7 +230,7 @@ def test4():
     ############################################################
     # Cut-down original algorithm for AutoReduce._unit_cell_surplus_reflections
     ############################################################
-    ref = r_sorted.select(isel)
+    ref = r.select(isel)
     h = ref["miller_index"].as_vec3_double()
     dB_dp = flex.mat3_double([(1, 2, 3, 4, 5, 6, 7, 8, 9), (0, 1, 0, 1, 0, 1, 0, 1, 0)])
     nref_each_param = []
