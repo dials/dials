@@ -246,6 +246,14 @@ class ScanVaryingCrystalAnalyser(object):
                     "yaxis2": {"domain": [0.55, 0.75], "anchor": "x", "nticks": 3},
                     "yaxis": {"domain": [0.8, 1], "nticks": 3},
                 },
+                "help": """\
+A plot of the smoothly-varying unit cell parameters determined by scan-varying
+refinement. Small variations up to ~1% of the linear cell dimensions are not
+uncommon. Especially in cases of radiation damage, an increase of cell volume
+with respect to dose is often seen. Multi-turn scans typically show some
+oscillatory behaviour. This is not expected to be physically real, but indicates
+the refinement algorithm accounting for unmodelled features in the data.
+""",
             }
         }
 
@@ -376,6 +384,16 @@ class ScanVaryingCrystalAnalyser(object):
                     "yaxis2": {"domain": [0.35, 0.65], "anchor": "x2"},
                     "yaxis": {"domain": [0.7, 1]},
                 },
+                "help": """\
+A plot of the smoothly-varying crystal orientation parameters determined by
+scan-varying refinement. By default, the crystal orientation matrix is
+decomposed into rotations along the orthogonal axes of the laboratory frame.
+Alternate axes may be chosen as parameters to the program. Small variations of
+a few tenths of a degree are not uncommon. Larger changes may indicate a
+problem with the model geometry. Monotonic drift along the axis closest to the
+rotation axis may indicate that the goniometer rotation speed is recorded
+incorrectly.
+""",
             }
         }
 
