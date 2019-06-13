@@ -1,0 +1,29 @@
+---
+BasedOnStyle: Google
+---
+Language: Cpp
+IndentWidth: 2
+ColumnLimit: 88
+# Put arguments and parameter on separate lines if they don't fit on one
+BinPackArguments: false
+BinPackParameters: false
+
+# If the declaration parameters fit on the next line, still don't pack
+AllowAllParametersOfDeclarationOnNextLine: false
+# public, private align with the class declaration
+AccessModifierOffset: -2
+# Only allow empty functions to be fully declared on a single line
+AllowShortFunctionsOnASingleLine: Empty
+# When splitting long expression put the operator on the new line
+# Technically break with prevailing style but matches black for operators
+BreakBeforeBinaryOperators: NonAssignment
+# Open multiple namespaces on the same line
+CompactNamespaces: true
+# When wrapping lines, indent the continuation by this
+ContinuationIndentWidth: 2
+# case: line up with the switch rather than being indented
+IndentCaseLabels: false
+NamespaceIndentation: Inner
+# Don't sort includes
+SortIncludes: false
+---
