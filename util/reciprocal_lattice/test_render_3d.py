@@ -8,7 +8,8 @@ from dials.array_family import flex
 from dials.util.reciprocal_lattice import Render3d
 
 
-def test_Render3d(mocker, dials_regression):
+@pytest.fixture
+def multi_sweep_data(dials_regression):
     experiments = load.experiment_list(
         os.path.join(
             dials_regression, "indexing_test_data", "multi_sweep", "experiments.json"
@@ -20,6 +21,24 @@ def test_Render3d(mocker, dials_regression):
             dials_regression, "indexing_test_data", "multi_sweep", "indexed.pickle"
         )
     )
+    return {"reflections": reflections, "experiments": experiments}
+
+
+@pytest.fixture
+def centroid_test_data(dials_regression):
+    experiments = load.experiment_list(
+        os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+        check_format=False,
+    )
+    reflections = flex.reflection_table.from_file(
+        os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
+    )
+    return {"reflections": reflections, "experiments": experiments}
+
+
+def test_Render3d(mocker, multi_sweep_data):
+    experiments = multi_sweep_data["experiments"]
+    reflections = multi_sweep_data["reflections"]
     render = Render3d()
     render.viewer = mocker.Mock()
     mocker.spy(render, "set_beam_centre")
@@ -79,3 +98,45 @@ def test_Render3d(mocker, dials_regression):
     assert flex.reflection_table.map_centroids_to_reciprocal_space.call_args[0][
         3
     ].get_rotation_axis() == pytest.approx((-1.0, 0.0, 0.0))
+
+
+def test_Render3d_integrated(mocker, centroid_test_data):
+    experiments = centroid_test_data["experiments"]
+    reflections = centroid_test_data["reflections"]
+
+    render = Render3d()
+    render.viewer = mocker.Mock()
+    render.load_models(experiments, reflections)
+    assert render.viewer.set_points.call_args[0][0].size() == 2269
+
+    render.settings.partiality_min = 0.2
+    render.settings.partiality_max = 0.9
+    render.load_models(experiments, reflections)
+    assert render.viewer.set_points.call_args[0][0].size() == 922
+
+    render = Render3d()
+    render.viewer = mocker.Mock()
+    render.settings.z_min = 2
+    render.settings.z_max = 7
+    render.load_models(experiments, reflections)
+    assert render.viewer.set_points.call_args[0][0].size() == 1885
+
+    import random
+
+    random.seed(42)
+    reflections["n_signal"] = flex.size_t(
+        random.randint(1, 100) for i in range(len(reflections))
+    )
+    render = Render3d()
+    render.viewer = mocker.Mock()
+    render.settings.n_min = None
+    render.settings.n_max = None
+    render.load_models(experiments, reflections)
+    assert render.viewer.set_points.call_args[0][0].size() == 2269
+
+    render = Render3d()
+    render.viewer = mocker.Mock()
+    render.settings.n_min = 20
+    render.settings.n_max = 80
+    render.load_models(experiments, reflections)
+    assert render.viewer.set_points.call_args[0][0].size() == 1402

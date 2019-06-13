@@ -200,7 +200,9 @@ class Render3d(object):
         if "partiality" in reflections:
             p = reflections["partiality"]
             if self.settings.partiality_min is not None:
-                reflections = reflections.select(p >= self.settings.partiality_min)
+                sel = p >= self.settings.partiality_min
+                reflections = reflections.select(sel)
+                p = p.select(sel)
             else:
                 self.settings.partiality_min = flex.min(p)
             if self.settings.partiality_max is not None:
