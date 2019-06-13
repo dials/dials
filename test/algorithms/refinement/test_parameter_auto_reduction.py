@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import pytest
 from dials.algorithms.refinement.reflection_manager import (
     phil_scope as refman_phil_scope,
@@ -14,6 +15,7 @@ from dials.test.algorithms.refinement.test_stills_prediction_parameters import _
 from dials.algorithms.refinement.prediction.managed_predictors import (
     StillsExperimentsPredictor,
 )
+from dials.array_family import flex
 from dials.algorithms.refinement import DialsRefineConfigError
 
 
@@ -208,3 +210,119 @@ def test_check_and_remove():
     assert not ar.xl_ori_params
     assert not ar.xl_uc_params
     assert len(ar.reflection_manager.get_obs()) == 0
+
+
+# Test the functionality of the parameter 'auto reduction' extension modules
+@pytest.fixture(scope="session")
+def setup_test_sorting():
+    # Borrowed from tst_reflection_table function tst_find_overlapping
+
+    N = 110
+    r = flex.reflection_table.empty_standard(N)
+    r["panel"] = flex.size_t([1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0] * 10)
+    r["id"] = flex.int([1, 2, 1, 1, 2, 0, 1, 1, 1, 0, 1] * 10)
+    exp_ids = flex.size_t([0, 1])
+    for i in xrange(N):
+        r["miller_index"][i] = (
+            int(i // 10) - 5,
+            i % 3,
+            i % 7,
+        )  # A nice bunch of miller indices
+
+    # Filter out reflections to be used by refinement. Sorting of filtered reflections
+    # require to allow C++ extension modules to give performance benefit. Sorting
+    # performed within the _filter_reflections step by id, then by panel.
+    r_sorted = copy.deepcopy(r)
+    r_sorted.sort("id")
+    r_sorted.subsort("id", "panel")
+
+    # Test that the unfiltered/unsorted table becomes filtered/sorted for id
+    assert (r_sorted["id"] == r["id"].select(flex.sort_permutation(r["id"]))).count(
+        False
+    ) == 0
+    # as above for panel within each id
+    for ii in [0, 1, 2]:
+        r_id = r.select(r["id"] == ii)
+        r_sorted_id = r_sorted.select(r_sorted["id"] == ii)
+        assert (
+            r_sorted_id["panel"]
+            == r_id["panel"].select(flex.sort_permutation(r_id["panel"]))
+        ).count(False) == 0
+    return (r, r_sorted, exp_ids)
+
+
+def test_auto_reduction_parameter_extension_modules_part1(setup_test_sorting):
+    # Cut-down original algorithm for AutoReduce._surplus_reflections
+
+    from dials_refinement_helpers_ext import surpl_iter as surpl
+
+    r, r_sorted, exp_ids = setup_test_sorting
+    isel = flex.size_t()
+    for exp_id in exp_ids:
+        isel.extend((r["id"] == exp_id).iselection())
+    res0 = len(isel)
+
+    # Updated algorithm for _surplus_reflections, with templated id column for int and size_t
+    res1_unsrt_int = surpl(r["id"], exp_ids).result
+    res1_int = surpl(r_sorted["id"], exp_ids).result
+    res1_sizet = surpl(flex.size_t(list(r_sorted["id"])), exp_ids).result
+
+    # Check that unsorted list fails, while sorted succeeds for both int and size_t array types
+    assert res0 != res1_unsrt_int
+    assert res0 == res1_int
+    assert res0 == res1_sizet
+
+
+def test_auto_reduction_parameter_extension_modules_part2(setup_test_sorting):
+    # Cut-down original algorithm for AutoReduce._unit_cell_surplus_reflections
+
+    from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
+
+    r, r_sorted, exp_ids = setup_test_sorting
+    isel = flex.size_t()
+    for exp_id in exp_ids:
+        isel.extend((r["id"] == exp_id).iselection())
+    ref = r.select(isel)
+    h = ref["miller_index"].as_vec3_double()
+    dB_dp = flex.mat3_double([(1, 2, 3, 4, 5, 6, 7, 8, 9), (0, 1, 0, 1, 0, 1, 0, 1, 0)])
+    nref_each_param = []
+    for der in dB_dp:
+        tst = (der * h).norms()
+        nref_each_param.append((tst > 0.0).count(True))
+    res0 = min(nref_each_param)
+
+    # Updated algorithm for _unit_cell_surplus_reflections
+    res1_unsrt_int = uc_surpl(r["id"], r["miller_index"], exp_ids, dB_dp).result
+    res1_int = uc_surpl(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
+    res1_sizet = uc_surpl(
+        flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp
+    ).result
+    assert res0 != res1_unsrt_int
+    assert res0 == res1_int
+    assert res0 == res1_sizet
+
+
+def test_auto_reduction_parameter_extension_modules_part3(setup_test_sorting):
+    # Cut-down original algorithm for AutoReduce._panel_gp_surplus_reflections
+
+    from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
+
+    r, r_sorted, exp_ids = setup_test_sorting
+    isel = flex.size_t()
+    pnl_ids = [0, 1]
+    for exp_id in exp_ids:
+        sub_expID = (r["id"] == exp_id).iselection()
+        sub_panels_expID = r["panel"].select(sub_expID)
+        for pnl in pnl_ids:
+            isel.extend(sub_expID.select(sub_panels_expID == pnl))
+    res0 = len(isel)
+
+    # Updated algorithm for _panel_gp_surplus_reflections
+    res1_unsrt_int = pg_surpl(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
+    res1_int = pg_surpl(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
+    res1_sizet = pg_surpl(
+        flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0
+    ).result
+    assert res0 != res1_unsrt_int
+    assert res0 == res1_int
+    assert res0 == res1_sizet
