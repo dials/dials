@@ -6,6 +6,7 @@
         "blosc>=1.8",
         "dials-data>=2.0",
         "Jinja2",
+        "pytest-mock",
         "mock>=2.0",
         "msgpack",
         "orderedset",
