@@ -137,13 +137,25 @@ class StillsIndexer(Indexer):
             n_lattices_previous_cycle = len(experiments)
 
             # index multiple lattices per shot
+            # Append tags to identifiers  and assign them if identifier
+            # from spotfinding is not an empty string
+            # For example for XTC streams when read with FormatXTC
+            # 2016-12-13T21:10Z19.804-00 where -00 gets added at the end.
             if len(experiments) == 0:
                 experiments.extend(self.find_lattices())
                 if len(experiments) == 0:
                     raise DialsIndexError("No suitable lattice could be found.")
+                if self.experiments[0].identifier != "":
+                    experiments[0].identifier = self.experiments[
+                        0
+                    ].identifier + "-%02d" % (len(experiments) - 1)
             else:
                 try:
                     new = self.find_lattices()
+                    if self.experiments[0].identifier != "":
+                        new.identifier = self.experiments[0].identifier + "-%02d" % (
+                            len(experiments) - 1
+                        )
                     experiments.extend(new)
                 except Exception as e:
                     logger.info("Indexing remaining reflections failed")
