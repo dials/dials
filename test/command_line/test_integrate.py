@@ -51,14 +51,14 @@ def test2(dials_data, tmpdir):
     j["scan"][0]["image_range"] = [11, 19]
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
-    with tmpdir.join("experiments.json").open("w") as fh:
+    with tmpdir.join("experiments.expt").open("w") as fh:
         json.dump(j, fh)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "experiments.json",
+            "experiments.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
@@ -231,14 +231,14 @@ def test_output_rubbish(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("indexed_experiments.json").check(file=1)
+    assert tmpdir.join("indexed_experiments.expt").check(file=1)
     assert tmpdir.join("indexed.refl").check(file=1)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "indexed_experiments.json",
+            "indexed_experiments.expt",
             "indexed.refl",
             "profile.fitting=False",
             "prediction.padding=0",
@@ -285,7 +285,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     templ_phil = """
       output {
-        experiments = 'idx-20161021225550223_integrated_experiments_%s.json'
+        experiments = 'idx-20161021225550223_integrated_experiments_%s.expt'
         reflections = 'idx-20161021225550223_integrated_%s.refl'
       }
       integration {

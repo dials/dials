@@ -18,9 +18,9 @@ def test_cosym(dials_data, tmpdir, space_group):
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result["exitcode"] and not result["stderr"]
     assert tmpdir.join("reindexed_reflections.refl").check(file=1)
-    assert tmpdir.join("reindexed_experiments.json").check(file=1)
+    assert tmpdir.join("reindexed_experiments.expt").check(file=1)
     experiments = load.experiment_list(
-        tmpdir.join("reindexed_experiments.json").strpath, check_format=False
+        tmpdir.join("reindexed_experiments.expt").strpath, check_format=False
     )
     if space_group is None:
         assert (
@@ -53,9 +53,9 @@ def test_cosym_partial_dataset(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result["exitcode"] and not result["stderr"]
     assert tmpdir.join("reindexed_reflections.refl").check(file=1)
-    assert tmpdir.join("reindexed_experiments.json").check(file=1)
+    assert tmpdir.join("reindexed_experiments.expt").check(file=1)
     experiments = load.experiment_list(
-        tmpdir.join("reindexed_experiments.json").strpath, check_format=False
+        tmpdir.join("reindexed_experiments.expt").strpath, check_format=False
     )
     assert len(experiments) == 3
 

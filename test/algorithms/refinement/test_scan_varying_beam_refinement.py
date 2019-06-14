@@ -51,7 +51,7 @@ def test_refinement_and_compare_with_known_truth(dials_regression, run_in_tmpdir
     )
     assert not result["exitcode"] and not result["stderr"]
     exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
+        "refined_experiments.expt", check_format=False
     )[0]
     beam, detector = exp.beam, exp.detector
 

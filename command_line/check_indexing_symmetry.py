@@ -35,16 +35,16 @@ help_message = """
 
 This program can be used to analyse the correlation coefficients between
 reflections related by the symmetry operators belonging to the space group of
-the input experiment.json file. It can also check for misindexing of
+the input experiment.expt file. It can also check for misindexing of
 the diffraction pattern, possibly as a result of an incorrect beam centre.
 
 Examples::
 
-  dials.check_indexing_symmetry experiment.json indexed.refl \\
+  dials.check_indexing_symmetry experiment.expt indexed.refl \\
     grid=1 symop_threshold=0.7
 
 
-  dials.check_indexing_symmetry experiment.json indexed.refl \\
+  dials.check_indexing_symmetry experiment.expt indexed.refl \\
     grid_l=3 symop_threshold=0.7
 
 """
@@ -278,7 +278,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 
 def run(args):
-    usage = "%s [options] experiment.json indexed.refl" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiment.expt indexed.refl" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

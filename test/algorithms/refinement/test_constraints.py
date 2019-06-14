@@ -152,7 +152,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     # append to the experiment list and write out
     el.append(e2)
     dump = ExperimentListDumper(el)
-    dump.as_json("foo_experiments.json")
+    dump.as_json("foo_experiments.expt")
 
     # duplicate the reflections and increment the experiment id
     rt2 = deepcopy(rt)
@@ -164,7 +164,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # set up refinement, constraining the distance parameter
     cmd = (
-        "dials.refine foo_experiments.json foo_reflections.refl "
+        "dials.refine foo_experiments.expt foo_reflections.refl "
         "history=history.pickle refinement.parameterisation.detector."
         "constraints.parameter=Dist scan_varying=False"
     )
@@ -175,7 +175,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     with open("history.pickle", "rb") as f:
         history = pickle.load(f)
     ref_exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
+        "refined_experiments.expt", check_format=False
     )
 
     # we expect 8 steps of constrained refinement

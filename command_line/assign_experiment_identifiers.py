@@ -30,7 +30,7 @@ phil_scope = phil.parse(
   output {
     reflections = assigned_reflections.refl
       .type = str
-    experiments = assigned_experiments.json
+    experiments = assigned_experiments.expt
       .type = str
   }
 """
@@ -40,7 +40,7 @@ phil_scope = phil.parse(
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
     usage = """Usage: dials.assign_experiment_identifiers reflections.refl
-experiments.json"""
+experiments.expt"""
     parser = OptionParser(
         usage=usage,
         read_experiments=True,

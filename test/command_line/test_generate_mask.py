@@ -38,16 +38,16 @@ def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
             "dials.generate_mask",
             dials_data("centroid_test_data").join("experiments.json").strpath,
             "output.mask=mask2.pickle",
-            "output.experiments=masked_experiments.json",
+            "output.experiments=masked_experiments.expt",
             "untrusted.rectangle=100,200,100,200",
         ],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
     assert tmpdir.join("mask2.pickle").check()
-    assert tmpdir.join("masked_experiments.json").check()
+    assert tmpdir.join("masked_experiments.expt").check()
 
-    experiments = load.experiment_list(tmpdir.join("masked_experiments.json").strpath)
+    experiments = load.experiment_list(tmpdir.join("masked_experiments.expt").strpath)
     imageset = experiments.imagesets()[0]
     assert imageset.external_lookup.mask.filename == tmpdir.join("mask2.pickle").strpath
 
@@ -133,16 +133,16 @@ def test_generate_mask_with_untrusted_polygon_and_pixels(dials_data, tmpdir):
 def test_generate_mask_function_with_untrusted_rectangle(input_experiment_list, tmpdir):
     params = phil_scope.extract()
     params.output.mask = tmpdir.join("mask4.pickle").strpath
-    params.output.experiments = tmpdir.join("masked_experiments.json").strpath
+    params.output.experiments = tmpdir.join("masked_experiments.expt").strpath
     params.untrusted.rectangle = [100, 200, 100, 200]
     generate_mask(input_experiment_list, params)
 
     assert tmpdir.join("mask4.pickle").check() or all(
         [tmpdir.join("mask4_{:d}.pickle".format(i + 1)).check() for i in range(4)]
     )
-    assert tmpdir.join("masked_experiments.json").check()
+    assert tmpdir.join("masked_experiments.expt").check()
 
-    experiments = load.experiment_list(tmpdir.join("masked_experiments.json").strpath)
+    experiments = load.experiment_list(tmpdir.join("masked_experiments.expt").strpath)
     imageset = experiments.imagesets()[0]
     associated_masks = [
         tmpdir.join(f).strpath for f in ("mask4.pickle", "mask4_1.pickle")

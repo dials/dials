@@ -19,7 +19,7 @@ import iotbx.phil
 help_message = (
     """
 
-  %s imported_experiments.json strong.refl
+  %s imported_experiments.expt strong.refl
 
 """
     % libtbx.env.dispatcher_name
@@ -59,7 +59,7 @@ def spot_count_iqr_mean(reflections, experiment, bin_width=1):
 
 def run(args):
     usage = (
-        "%s [options] imported_experiments.json strong.refl"
+        "%s [options] imported_experiments.expt strong.refl"
         % libtbx.env.dispatcher_name
     )
 

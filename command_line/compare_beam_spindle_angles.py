@@ -17,7 +17,7 @@ https://github.com/dials/dials/issues/271
 
 Example::
 
-  dials.compare_beam_spindle_angles experiments1.json experiments2.json ...
+  dials.compare_beam_spindle_angles experiments1.expt experiments2.expt ...
 
 """
 
@@ -42,8 +42,8 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] experiments1.json "
-            "experiments2.json..." % libtbx.env.dispatcher_name
+            "usage: %s [options] [param.phil] experiments1.expt "
+            "experiments2.expt..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser

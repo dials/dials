@@ -36,7 +36,7 @@ def run(args):
     from cctbx.sgtbx import lattice_symmetry_group
     from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
-    usage = "%s [options] experiment_0.json ..." % libtbx.env.dispatcher_name
+    usage = "%s [options] experiment_0.expt ..." % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

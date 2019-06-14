@@ -56,7 +56,7 @@ def test(dials_regression, run_in_tmpdir):
 
     # load results
     exp = ExperimentListFactory.from_json_file(
-        "combined_experiments.json", check_format=False
+        "combined_experiments.expt", check_format=False
     )
     ref = flex.reflection_table.from_pickle("combined_reflections.refl")
 
@@ -76,7 +76,7 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "combined_experiments.json",
+            "combined_experiments.expt",
             "combined_reflections.refl",
         ]
     )
@@ -84,11 +84,11 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i, e in enumerate(exp):
-        assert os.path.exists("experiments_%03d.json" % i)
+        assert os.path.exists("experiments_%03d.expt" % i)
         assert os.path.exists("reflections_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.json" % i, check_format=False
+            "experiments_%03d.expt" % i, check_format=False
         )
         ref_single = flex.reflection_table.from_pickle("reflections_%03d.refl" % i)
 
@@ -105,7 +105,7 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "combined_experiments.json",
+            "combined_experiments.expt",
             "output.experiments_prefix=test",
         ]
     )
@@ -113,7 +113,7 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i in range(len(exp)):
-        assert os.path.exists("test_%03d.json" % i)
+        assert os.path.exists("test_%03d.expt" % i)
 
     # Modify a copy of the detector
     detector = copy.deepcopy(exp.detectors()[0])
@@ -123,12 +123,12 @@ def test(dials_regression, run_in_tmpdir):
     # Set half of the experiments to the new detector
     for i in xrange(len(exp) // 2):
         exp[i].detector = detector
-    dump.experiment_list(exp, "modded_experiments.json")
+    dump.experiment_list(exp, "modded_experiments.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.json",
+            "modded_experiments.expt",
             "combined_reflections.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
@@ -139,15 +139,15 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i in range(2):
-        assert os.path.exists("test_by_detector_%03d.json" % i)
+        assert os.path.exists("test_by_detector_%03d.expt" % i)
         assert os.path.exists("test_by_detector_%03d.refl" % i)
-    assert not os.path.exists("test_by_detector_%03d.json" % 2)
+    assert not os.path.exists("test_by_detector_%03d.expt" % 2)
     assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
     # Now do test when input has identifiers set
     reflections = flex.reflection_table().from_pickle("combined_reflections.refl")
     explist = ExperimentListFactory.from_json_file(
-        "combined_experiments.json", check_format=False
+        "combined_experiments.expt", check_format=False
     )
     # set string identifiers as nonconsecutive 0,2,4,6....
     for i, exp in enumerate(explist):
@@ -155,12 +155,12 @@ def test(dials_regression, run_in_tmpdir):
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
     reflections.as_pickle("assigned_reflections.refl")
-    dump.experiment_list(explist, "assigned_experiments.json")
+    dump.experiment_list(explist, "assigned_experiments.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "assigned_experiments.json",
+            "assigned_experiments.expt",
             "assigned_reflections.refl",
         ]
     )
@@ -168,11 +168,11 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i in range(len(explist)):
-        assert os.path.exists("experiments_%03d.json" % i)
+        assert os.path.exists("experiments_%03d.expt" % i)
         assert os.path.exists("reflections_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.json" % i, check_format=False
+            "experiments_%03d.expt" % i, check_format=False
         )
         ref_single = flex.reflection_table.from_pickle("reflections_%03d.refl" % i)
 
@@ -185,16 +185,16 @@ def test(dials_regression, run_in_tmpdir):
 
     # update modded experiments to have same identifiers as assigned_experiments
     moddedlist = ExperimentListFactory.from_json_file(
-        "modded_experiments.json", check_format=False
+        "modded_experiments.expt", check_format=False
     )
     for i, exp in enumerate(moddedlist):
         exp.identifier = str(i * 2)
-    dump.experiment_list(moddedlist, "modded_experiments.json")
+    dump.experiment_list(moddedlist, "modded_experiments.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.json",
+            "modded_experiments.expt",
             "assigned_reflections.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
@@ -208,10 +208,10 @@ def test(dials_regression, run_in_tmpdir):
     # all kept from before 0,2,4,6,...
     current_exp_id = 0
     for i in range(2):
-        assert os.path.exists("test_by_detector_%03d.json" % i)
+        assert os.path.exists("test_by_detector_%03d.expt" % i)
         assert os.path.exists("test_by_detector_%03d.refl" % i)
         explist = ExperimentListFactory.from_json_file(
-            "test_by_detector_%03d.json" % i, check_format=False
+            "test_by_detector_%03d.expt" % i, check_format=False
         )
         refl = flex.reflection_table.from_pickle("test_by_detector_%03d.refl" % i)
 
@@ -219,7 +219,7 @@ def test(dials_regression, run_in_tmpdir):
             assert refl.experiment_identifiers()[k] == str(current_exp_id)
             current_exp_id += 2
 
-    assert not os.path.exists("test_by_detector_%03d.json" % 2)
+    assert not os.path.exists("test_by_detector_%03d.expt" % 2)
     assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
 

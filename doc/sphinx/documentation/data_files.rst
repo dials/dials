@@ -22,21 +22,21 @@ below.
 +------------------+-------------------------------+-------------------------------+
 | Program          | Reads                         | Writes                        |
 +==================+===============================+===============================+
-| dials.import     | N/A                           | datablock.json                |
+| dials.import     | N/A                           | datablock.expt                |
 +------------------+-------------------------------+-------------------------------+
-| dials.find_spots | datablock.json                | strong.refl                   |
+| dials.find_spots | datablock.expt                | strong.refl                   |
 +------------------+-------------------------------+-------------------------------+
-| dials.index      | | datablock.json              | | experiments.json            |
+| dials.index      | | datablock.expt              | | experiments.expt            |
 |                  | | strong.refl                 | | indexed.refl                |
 +------------------+-------------------------------+-------------------------------+
-| dials.refine     | | experiments.json            | | refined_experiments.json    |
+| dials.refine     | | experiments.expt            | | refined_experiments.expt    |
 |                  | | indexed.refl                | | refined_reflections.refl    |
 +------------------+-------------------------------+-------------------------------+
-| dials.integrate  | | refined_experiments.json    | | integrated_experiments.json |
+| dials.integrate  | | refined_experiments.expt    | | integrated_experiments.expt |
 |                  | | refined_reflections.refl    | | integrated.refl             |
 |                  | |                             | | profile_model.phil          |
 +------------------+-------------------------------+-------------------------------+
-| dials.scale      | | integrated_experiments.json | | scaled_experiments.json     |
+| dials.scale      | | integrated_experiments.expt | | scaled_experiments.expt     |
 |                  | | integrated.refl             | | scaled.refl                 |
 +------------------+-------------------------------+-------------------------------+
 

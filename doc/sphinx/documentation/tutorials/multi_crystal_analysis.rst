@@ -63,13 +63,13 @@ let DIALS figure it out for us::
     num sweeps: 73
     num stills: 0
   --------------------------------------------------------------------------------
-  Writing datablocks to datablock.json
+  Writing datablocks to datablock.expt
 
 With a single command we have determined that there are 73 individual sweeps
 comprising 2711 total images. Running the following command will give us
 information about each one of these datasets::
 
-  dials.show datablock.json
+  dials.show datablock.expt
 
 That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
@@ -81,14 +81,14 @@ a single command. We will have to start again with :program:`dials.import` for
 each sweep individually - but we really don't want to run this manually 73
 times.
 
-The solution is to write a script that will take the :samp:`datablock.json` as
+The solution is to write a script that will take the :samp:`datablock.expt` as
 input, extract the filename templates, and run the same processing commands
 for each dataset. This script could be written in BASH, tcsh, perl,
 ruby - whatever you feel most comfortable with. However here we will use Python,
 or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
-Also we would like to read :samp:`datablock.json` with the DIALS API rather than
+Also we would like to read :samp:`datablock.expt` with the DIALS API rather than
 extracting the sweep templates using something like :program:`grep`.
 
 .. highlight:: python
@@ -96,7 +96,7 @@ extracting the sweep templates using something like :program:`grep`.
 The script we used to do this is reproduced below. You can copy this into a file,
 save it as :samp:`process_TehA.py` and then run it as follows::
 
-  time dials.python process_TehA.py datablock.json
+  time dials.python process_TehA.py datablock.expt
 
 On a Linux desktop with a Core i7 CPU running at 3.07GHz the script took about 8
 minutes to run (though file i/o is a significant factor)
@@ -125,34 +125,34 @@ script does. If time is *really* short then try uncommenting the line
     with cd("sweep_%02d" % num):
       cmd = "dials.import template={0}".format(template)
       easy_run.fully_buffered(command=cmd)
-      easy_run.fully_buffered(command="dials.find_spots datablock.json")
+      easy_run.fully_buffered(command="dials.find_spots datablock.expt")
 
       # initial indexing in P 1
-      cmd = "dials.index datablock.json strong.refl " +\
-            "output.experiments=P1_experiments.json"
+      cmd = "dials.index datablock.expt strong.refl " +\
+            "output.experiments=P1_experiments.expt"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("P1_experiments.json"):
+      if not os.path.isfile("P1_experiments.expt"):
         print "Job %02d failed in initial indexing" % num
         return
 
       # bootstrap from the refined P 1 cell
-      cmd = "dials.index P1_experiments.json strong.refl space_group='H 3'"
+      cmd = "dials.index P1_experiments.expt strong.refl space_group='H 3'"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("experiments.json"):
+      if not os.path.isfile("experiments.expt"):
         print "Job %02d failed in indexing" % num
         return
 
       # static model refinement
-      cmd = "dials.refine experiments.json indexed.refl scan_varying=false " + \
+      cmd = "dials.refine experiments.expt indexed.refl scan_varying=false " + \
             "outlier.algorithm=tukey use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("refined_experiments.json"):
+      if not os.path.isfile("refined_experiments.expt"):
         print "Job %02d failed in refinement" % num
         return
 
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
-      cmd = "dials.integrate refined_experiments.json indexed.refl " + \
+      cmd = "dials.integrate refined_experiments.expt indexed.refl " + \
             "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.refl"):
@@ -160,7 +160,7 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # create MTZ
-      cmd = "dials.export refined_experiments.json integrated.refl " +\
+      cmd = "dials.export refined_experiments.expt integrated.refl " +\
             "mtz.hklout=integrated.mtz"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):
@@ -173,7 +173,7 @@ script does. If time is *really* short then try uncommenting the line
   if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-      sys.exit("Usage: dials.python process_TehA.py datablock.json")
+      sys.exit("Usage: dials.python process_TehA.py datablock.expt")
 
     datablock_path = os.path.abspath(sys.argv[1])
     datablock = DataBlockFactory.from_serialized_format(datablock_path,
@@ -240,20 +240,20 @@ familiar from other tutorials. There are a couple of interesting points
 to note though. We know that the correct space group is *H* 3, but it turns out
 that if we ask :program:`dials.index` to find an *H* 3 cell right from the start
 then many of the sweeps fail to index. This is simply because the initial models
-contained in :samp:`datablock.json` are too poor to locate a cell with the
+contained in :samp:`datablock.expt` are too poor to locate a cell with the
 symmetry constraints. However, for many of the sweeps the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
-  dials.index datablock.json strong.refl output.experiments=P1_experiments.json
+  dials.index datablock.expt strong.refl output.experiments=P1_experiments.expt
 
-and then we feed the refined :file:`P1_experiments.json` back into
+and then we feed the refined :file:`P1_experiments.expt` back into
 :program:`dials.index` specifying the correct symmetry::
 
-  dials.index P1_experiments.json strong.refl space_group='H 3'
+  dials.index P1_experiments.expt strong.refl space_group='H 3'
 
-When :program:`dials.index` is passed an :file:`experiments.json` containing
-a crystal model rather than just a :file:`databock.json` then it automatically
+When :program:`dials.index` is passed an :file:`experiments.expt` containing
+a crystal model rather than just a :file:`databock.expt` then it automatically
 uses a :samp:`known_orientation` indexer, which avoids doing the basis vector
 search again. It uses the basis of the refined *P* 1 cell and just assigns
 indices under the assumption of *H* 3 symmetry. The symmetry constraints are
@@ -263,7 +263,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine experiments.json indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
+  dials.refine experiments.expt indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -287,7 +287,7 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined_experiments.json indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
+  dials.integrate refined_experiments.expt indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
 
 The :samp:`profile.fitting=False` option ensures we only do summation integration,
 no profile fitting, while the :samp:`prediction.dmin=8.0` and
@@ -304,7 +304,7 @@ is useless for any other purpose.
 
 Finally we use :program:`dials.export` to create an MTZ file::
 
-  dials.export refined_experiments.json integrated.refl mtz.hklout=integrated.mtz
+  dials.export refined_experiments.expt integrated.refl mtz.hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
@@ -507,7 +507,7 @@ between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
   cd sweep_00
-  dials.refine experiments.json indexed.refl scan_varying=false \
+  dials.refine experiments.expt indexed.refl scan_varying=false \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
@@ -521,7 +521,7 @@ correlated.
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
 rather limited. In order to do joint refinement of the sweeps we need to combine them
-into a single multi-experiment :file:`experiments.json` and corresponding
+into a single multi-experiment :file:`experiments.expt` and corresponding
 :file:`reflections.refl`. Whilst doing this we want to reduce the separate
 detector, beam and goniometer models for each experiment into a single shared
 model of each type. The program :program:`dials.combine_experiments` can
@@ -531,46 +531,46 @@ listing the individual sweeps in order. We can use
 file looks like this::
 
   input {
-    experiments = "sweep_00/refined_experiments.json"
-    experiments = "sweep_01/refined_experiments.json"
-    experiments = "sweep_02/refined_experiments.json"
-    experiments = "sweep_03/refined_experiments.json"
-    experiments = "sweep_05/refined_experiments.json"
-    experiments = "sweep_09/refined_experiments.json"
-    experiments = "sweep_14/refined_experiments.json"
-    experiments = "sweep_16/refined_experiments.json"
-    experiments = "sweep_17/refined_experiments.json"
-    experiments = "sweep_18/refined_experiments.json"
-    experiments = "sweep_19/refined_experiments.json"
-    experiments = "sweep_22/refined_experiments.json"
-    experiments = "sweep_23/refined_experiments.json"
-    experiments = "sweep_24/refined_experiments.json"
-    experiments = "sweep_25/refined_experiments.json"
-    experiments = "sweep_26/refined_experiments.json"
-    experiments = "sweep_27/refined_experiments.json"
-    experiments = "sweep_28/refined_experiments.json"
-    experiments = "sweep_29/refined_experiments.json"
-    experiments = "sweep_30/refined_experiments.json"
-    experiments = "sweep_31/refined_experiments.json"
-    experiments = "sweep_33/refined_experiments.json"
-    experiments = "sweep_34/refined_experiments.json"
-    experiments = "sweep_36/refined_experiments.json"
-    experiments = "sweep_42/refined_experiments.json"
-    experiments = "sweep_43/refined_experiments.json"
-    experiments = "sweep_48/refined_experiments.json"
-    experiments = "sweep_50/refined_experiments.json"
-    experiments = "sweep_51/refined_experiments.json"
-    experiments = "sweep_53/refined_experiments.json"
-    experiments = "sweep_54/refined_experiments.json"
-    experiments = "sweep_56/refined_experiments.json"
-    experiments = "sweep_58/refined_experiments.json"
-    experiments = "sweep_59/refined_experiments.json"
-    experiments = "sweep_60/refined_experiments.json"
-    experiments = "sweep_63/refined_experiments.json"
-    experiments = "sweep_64/refined_experiments.json"
-    experiments = "sweep_65/refined_experiments.json"
-    experiments = "sweep_66/refined_experiments.json"
-    experiments = "sweep_67/refined_experiments.json"
+    experiments = "sweep_00/refined_experiments.expt"
+    experiments = "sweep_01/refined_experiments.expt"
+    experiments = "sweep_02/refined_experiments.expt"
+    experiments = "sweep_03/refined_experiments.expt"
+    experiments = "sweep_05/refined_experiments.expt"
+    experiments = "sweep_09/refined_experiments.expt"
+    experiments = "sweep_14/refined_experiments.expt"
+    experiments = "sweep_16/refined_experiments.expt"
+    experiments = "sweep_17/refined_experiments.expt"
+    experiments = "sweep_18/refined_experiments.expt"
+    experiments = "sweep_19/refined_experiments.expt"
+    experiments = "sweep_22/refined_experiments.expt"
+    experiments = "sweep_23/refined_experiments.expt"
+    experiments = "sweep_24/refined_experiments.expt"
+    experiments = "sweep_25/refined_experiments.expt"
+    experiments = "sweep_26/refined_experiments.expt"
+    experiments = "sweep_27/refined_experiments.expt"
+    experiments = "sweep_28/refined_experiments.expt"
+    experiments = "sweep_29/refined_experiments.expt"
+    experiments = "sweep_30/refined_experiments.expt"
+    experiments = "sweep_31/refined_experiments.expt"
+    experiments = "sweep_33/refined_experiments.expt"
+    experiments = "sweep_34/refined_experiments.expt"
+    experiments = "sweep_36/refined_experiments.expt"
+    experiments = "sweep_42/refined_experiments.expt"
+    experiments = "sweep_43/refined_experiments.expt"
+    experiments = "sweep_48/refined_experiments.expt"
+    experiments = "sweep_50/refined_experiments.expt"
+    experiments = "sweep_51/refined_experiments.expt"
+    experiments = "sweep_53/refined_experiments.expt"
+    experiments = "sweep_54/refined_experiments.expt"
+    experiments = "sweep_56/refined_experiments.expt"
+    experiments = "sweep_58/refined_experiments.expt"
+    experiments = "sweep_59/refined_experiments.expt"
+    experiments = "sweep_60/refined_experiments.expt"
+    experiments = "sweep_63/refined_experiments.expt"
+    experiments = "sweep_64/refined_experiments.expt"
+    experiments = "sweep_65/refined_experiments.expt"
+    experiments = "sweep_66/refined_experiments.expt"
+    experiments = "sweep_67/refined_experiments.expt"
     reflections = "sweep_00/indexed.refl"
     reflections = "sweep_01/indexed.refl"
     reflections = "sweep_02/indexed.refl"
@@ -672,13 +672,13 @@ to the final :file:`combined_reflections.refl`::
   | 38         | 982  |
   | 39         | 1138 |
   ---------------------
-  Saving combined experiments to combined_experiments.json
+  Saving combined experiments to combined_experiments.expt
   Saving combined reflections to combined_reflections.refl
 
-We may also inspect the contents of :file:`combined_experiments.json`, by using
+We may also inspect the contents of :file:`combined_experiments.expt`, by using
 :program:`dials.show`, for example::
 
-  dials.show combined_experiments.json
+  dials.show combined_experiments.expt
 
 Useful though this is, it is clear how this could become unwieldy as the number
 of experiments increases. Work on better interfaces to multi-crystal (or
@@ -689,7 +689,7 @@ Now we have the joint experiments and reflections files we can run our multi-
 crystal refinement job. First we try outlier rejection, so that the refinement
 run is similar to the jobs we ran on individual datasets::
 
-  dials.refine combined_experiments.json combined_reflections.refl \
+  dials.refine combined_experiments.expt combined_reflections.refl \
     scan_varying=false use_all_reflections=true outlier.algorithm=tukey
 
 ::
@@ -704,7 +704,7 @@ run is similar to the jobs we ran on individual datasets::
     }
   }
   input {
-    experiments = combined_experiments.json
+    experiments = combined_experiments.expt
     reflections = combined_reflections.refl
   }
 
@@ -758,16 +758,16 @@ because it selectively removes reflections from the worst fitting experiments.
 
 Instead we try without outlier rejection::
 
-  dials.refine combined_experiments.json combined_reflections.refl \
+  dials.refine combined_experiments.expt combined_reflections.refl \
     scan_varying=false use_all_reflections=true \
-    output.experiments=refined_combined_experiments.json
+    output.experiments=refined_combined_experiments.expt
 
 This worked much better::
 
   The following parameters have been modified:
 
   output {
-    experiments = refined_combined_experiments.json
+    experiments = refined_combined_experiments.expt
   }
   refinement {
     reflections {
@@ -775,7 +775,7 @@ This worked much better::
     }
   }
   input {
-    experiments = combined_experiments.json
+    experiments = combined_experiments.expt
     reflections = combined_reflections.refl
   }
 
@@ -845,7 +845,7 @@ This worked much better::
   ---------------------------------------------
   Table truncated to show the first 20 experiments only
   Re-run with verbosity >= 2 to show all experiments
-  Saving refined experiments to refined_combined_experiments.json
+  Saving refined experiments to refined_combined_experiments.expt
 
 The overall final RMSDs are 0.17 mm in X, 0.16 mm in Y and 0.12 degrees in
 :math:`\phi`. The RMSDs per experiment are also shown, but only for the first
@@ -874,11 +874,11 @@ joint refinement seem appropriate. For better parity with the original results
 perhaps we should use outlier rejection though. Now the models are close enough
 it is safe to do so::
 
-  dials.refine refined_combined_experiments.json combined_reflections.refl \
+  dials.refine refined_combined_experiments.expt combined_reflections.refl \
     scan_varying=false \
     use_all_reflections=true \
     outlier.algorithm=tukey \
-    output.experiments=refined_combined_experiments_outrej.json
+    output.experiments=refined_combined_experiments_outrej.expt
 
 The RMSD tables resulting from this::
 
@@ -941,7 +941,7 @@ re-integrating the data to create MTZs for BLEND.
 Analysis of jointly refined datasets
 ------------------------------------
 
-:program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.json`
+:program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.expt`
 and :file:`combined_reflections.refl` directly, so we have to separate these
 into individual files for each experiment. It is best to do this inside a new
 directory:
@@ -950,9 +950,9 @@ directory:
 
   mkdir joint
   cd !$
-  dials.split_experiments ../refined_combined_experiments_outrej.json ../combined_reflections.refl
+  dials.split_experiments ../refined_combined_experiments_outrej.expt ../combined_reflections.refl
 
-This fills the directory with 39 individual :file:`experiments_##.json` and
+This fills the directory with 39 individual :file:`experiments_##.expt` and
 :file:`reflections_##.refl` files. To integrate these quickly we want a script
 to run in parallel, similar to the one used previously::
 
@@ -971,7 +971,7 @@ to run in parallel, similar to the one used previously::
     num = task[0]
     datadir = task[1]
 
-    experiments_file = "experiments_%02d.json" % num
+    experiments_file = "experiments_%02d.expt" % num
     reflections_file = "reflections_%02d.refl" % num
     experiments_path = os.path.join(datadir, experiments_file)
     reflections_path = os.path.join(datadir, reflections_file)
@@ -1005,7 +1005,7 @@ to run in parallel, similar to the one used previously::
       sys.exit("Usage: dials.python integrate_joint_TehA.py ..")
     data_dir = os.path.abspath(sys.argv[1])
 
-    pathname = os.path.join(data_dir, "experiments_*.json")
+    pathname = os.path.join(data_dir, "experiments_*.expt")
     experiments = glob.glob(pathname)
 
     templates = [data_dir for f in experiments]

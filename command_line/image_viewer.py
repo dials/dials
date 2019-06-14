@@ -28,11 +28,11 @@ Examples::
 
   dials.image_viewer image.cbf
 
-  dials.image_viewer experiments.json
+  dials.image_viewer experiments.expt
 
-  dials.image_viewer experiments.json strong.refl
+  dials.image_viewer experiments.expt strong.refl
 
-  dials.image_viewer experiments.json integrated.refl
+  dials.image_viewer experiments.expt integrated.refl
 
 """
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     usage_message = (
         """
-    %s experiments.json [reflections.refl]
+    %s experiments.expt [reflections.refl]
   """
         % libtbx.env.dispatcher_name
     )

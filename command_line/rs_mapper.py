@@ -27,7 +27,7 @@ Examples::
 
   dials.rs_mapper image_00*.cbf
 
-  dials.rs_mapper experiments.json
+  dials.rs_mapper experiments.expt
 
 """
 
@@ -69,7 +69,7 @@ class Script(object):
         usage = (
             "usage: %s map_file=output.ccp4 [max_resolution=6] [grid_size=192] "
             "[reverse_phi=False] [param.phil] "
-            "{image1.file [image2.file ...]} | experiments.json"
+            "{image1.file [image2.file ...]} | experiments.expt"
             % libtbx.env.dispatcher_name
         )
 

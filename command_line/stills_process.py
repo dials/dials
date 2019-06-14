@@ -81,7 +81,7 @@ control_phil_str = """
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_experiments.json
+    experiments_filename = %s_experiments.expt
       .type = str
       .help = The filename for output experiments
     strong_filename = %s_strong.refl
@@ -90,13 +90,13 @@ control_phil_str = """
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
-    refined_experiments_filename = %s_refined_experiments.json
+    refined_experiments_filename = %s_refined_experiments.expt
       .type = str
       .help = The filename for saving refined experimental models
     integrated_filename = %s_integrated.refl
       .type = str
       .help = The filename for final integrated reflections.
-    integrated_experiments_filename = %s_integrated_experiments.json
+    integrated_experiments_filename = %s_integrated_experiments.expt
       .type = str
       .help = The filename for saving final experimental models.
     profile_filename = None
@@ -134,7 +134,7 @@ dials_phil_str = """
   input {
     reference_geometry = None
       .type = str
-      .help = Provide an experiments.json file with exactly one detector model. Data processing will use \
+      .help = Provide an experiments.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
   }
 

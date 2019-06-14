@@ -42,7 +42,7 @@ Utility to just display the mask for the desired image
 
 Examples::
 
-  dev.dials.show_mask experiments.json image=1
+  dev.dials.show_mask experiments.expt image=1
 
 """
 
@@ -56,7 +56,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.refl "
+            "experiments1.expt experiments2.expt reflections1.refl "
             "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 

@@ -21,7 +21,7 @@ Examples::
 
   dials.export_bitmaps image.cbf
 
-  dials.export_bitmaps experiments.json
+  dials.export_bitmaps experiments.expt
 
   dials.export_bitmaps image.cbf display=variance colour_scheme=inverse_greyscale
 
@@ -92,7 +92,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 
 
 def run(args):
-    usage = "%s [options] experiments.json | image.cbf" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiments.expt | image.cbf" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

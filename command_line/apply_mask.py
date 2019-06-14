@@ -27,9 +27,9 @@ imagesets (sweeps) appear in the experiments JSON file.
 
 Examples::
 
-    dials.apply_mask experiments.json input.mask=mask.pickle
+    dials.apply_mask experiments.expt input.mask=mask.pickle
 
-    dials.apply_mask experiments.json input.mask=mask1.pickle input.mask=mask2.pickle
+    dials.apply_mask experiments.expt input.mask=mask1.pickle input.mask=mask2.pickle
 
 """
 
@@ -43,7 +43,7 @@ phil_scope = parse(
         }
 
         output {
-            experiments = masked_experiments.json
+            experiments = masked_experiments.expt
                 .type = str
                 .help = "Name of output experiments file"
         }
@@ -62,7 +62,7 @@ class Script(object):
 
         # Create the parser
         usage = (
-            "usage: %s experiments.json input.mask=mask.pickle"
+            "usage: %s experiments.expt input.mask=mask.pickle"
             % libtbx.env.dispatcher_name
         )
         self.parser = OptionParser(

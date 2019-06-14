@@ -20,13 +20,13 @@ logger = logging.getLogger("dials.command_line.create_profile_model")
 help_message = """
 
 This program computes the profile model from the input reflections. It then
-saves a modified experiments.json file with the additional profile model
+saves a modified experiments.expt file with the additional profile model
 information. Usually this is performed during integration; however, on some
 occasions it may be desirable to compute the profile model independently.
 
 Examples::
 
-  dials.create_profile_model experiments.json reflections.refl
+  dials.create_profile_model experiments.expt reflections.refl
 
 """
 
@@ -36,7 +36,7 @@ phil_scope = parse(
     .type = bool
     .help = "Subtract background from pixel data before computing profile"
     .expert_level = 2
-  output = experiments_with_profile_model.json
+  output = experiments_with_profile_model.expt
     .type = str
     .help = "The filename for the experiments"
 
@@ -57,7 +57,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiments.json spots.refl"
+            "usage: %s [options] experiments.expt spots.refl"
             % libtbx.env.dispatcher_name
         )
         self.parser = OptionParser(

@@ -30,12 +30,12 @@ are removed.
 
 Examples::
 
-  dials.slice_sweep experiments.json reflections.refl "image_range=1 20"
+  dials.slice_sweep experiments.expt reflections.refl "image_range=1 20"
 
-  dials.slice_sweep experiments.json "image_range=1 20"
+  dials.slice_sweep experiments.expt "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
-  dials.slice_sweep experiments.json reflections.refl \
+  dials.slice_sweep experiments.expt reflections.refl \
     "image_range=1 20" "image_range=5 30"
 
 """
@@ -117,7 +117,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.refl" % libtbx.env.dispatcher_name
+            "experiments.expt reflections.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -222,9 +222,9 @@ class Script(object):
                 if not bname:
                     bname = "experiments"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.json".format(*params.image_range[0])
+                    ext = "_{0}_{1}.expt".format(*params.image_range[0])
                 else:
-                    ext = "_sliced.json"
+                    ext = "_sliced.expt"
                 output_experiments_filename = bname + ext
             print(
                 "Saving sliced experiments to {0}".format(output_experiments_filename)

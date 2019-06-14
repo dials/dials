@@ -12,7 +12,7 @@ reflection file per output experiment file.
 
 Example::
 
-  dials.split_experiments combined_experiments.json combined_reflections.refl
+  dials.split_experiments combined_experiments.expt combined_reflections.refl
 
 """
 
@@ -73,7 +73,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.refl "
+            "experiments1.expt experiments2.expt reflections1.refl "
             "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 
@@ -116,7 +116,7 @@ class Script(object):
 
         import math
 
-        experiments_template = "%s_%%0%sd%s.json" % (
+        experiments_template = "%s_%%0%sd%s.expt" % (
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.experiments_suffix)

@@ -28,12 +28,12 @@ def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("optimized_experiments.json")
+    assert os.path.exists("optimized_experiments.expt")
 
     experiments = load.experiment_list(experiments_file, check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list(
-        "optimized_experiments.json", check_format=False
+        "optimized_experiments.expt", check_format=False
     )
     detector_1 = original_imageset.get_detector()
     detector_2 = optimized_experiments.detectors()[0]
@@ -72,12 +72,12 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("optimized_experiments.json")
+    assert os.path.exists("optimized_experiments.expt")
 
     experiments = load.experiment_list(experiments_path1, check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list(
-        "optimized_experiments.json", check_format=False
+        "optimized_experiments.expt", check_format=False
     )
     detector_1 = original_imageset.get_detector()
     detector_2 = optimized_experiments.detectors()[0]
@@ -119,12 +119,12 @@ def test_index_after_search(dials_data, run_in_tmpdir):
             import dials.command_line.dials_import
 
             dials.command_line.dials_import.Script().run()
-    assert os.path.exists("imported_experiments.json")
+    assert os.path.exists("imported_experiments.expt")
 
     # spot-finding, just need a subset of the data
     args = [
         "dials.find_spots",
-        "imported_experiments.json",
+        "imported_experiments.expt",
         "scan_range=1,10",
         "scan_range=531,540",
     ]
@@ -134,19 +134,19 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     assert os.path.exists("strong.refl")
 
     # actually run the beam centre search
-    args = ["dials.search_beam_position", "imported_experiments.json", "strong.refl"]
+    args = ["dials.search_beam_position", "imported_experiments.expt", "strong.refl"]
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("optimized_experiments.json")
+    assert os.path.exists("optimized_experiments.expt")
 
     # look at the results
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("imported_experiments.json", check_format=False)
+    experiments = load.experiment_list("imported_experiments.expt", check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list(
-        "optimized_experiments.json", check_format=False
+        "optimized_experiments.expt", check_format=False
     )
     detector_1 = original_imageset.get_detector()
     detector_2 = optimized_experiments.detectors()[0]
@@ -166,7 +166,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     expected_hall_symbol = " P 1"
     RunOneIndexing(
         run_in_tmpdir.join("strong.refl").strpath,
-        run_in_tmpdir.join("optimized_experiments.json").strpath,
+        run_in_tmpdir.join("optimized_experiments.expt").strpath,
         [],
         expected_unit_cell,
         expected_rmsds,
@@ -194,14 +194,14 @@ def test_search_single(run_in_tmpdir, dials_regression):
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("optimized_experiments.json")
+    assert os.path.exists("optimized_experiments.expt")
 
     from dxtbx.serialize import load
 
     experiments = load.experiment_list(experiments_path, check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list(
-        "optimized_experiments.json", check_format=False
+        "optimized_experiments.expt", check_format=False
     )
     detector_1 = original_imageset.get_detector()
     detector_2 = optimized_experiments.detectors()[0]
@@ -232,7 +232,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
-    assert os.path.exists("optimized_experiments.json")
+    assert os.path.exists("optimized_experiments.expt")
 
     from dxtbx.serialize import load
 
@@ -240,7 +240,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     original_imageset = datablocks[0].extract_imagesets()[0]
     detector_1 = original_imageset.get_detector()
     optimized_experiments = load.experiment_list(
-        "optimized_experiments.json", check_format=False
+        "optimized_experiments.expt", check_format=False
     )
     detector_2 = optimized_experiments[0].detector
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(

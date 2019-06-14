@@ -20,11 +20,11 @@ reflections are then saved to file.
 
 Examples::
 
-  dials.predict experiments.json
+  dials.predict experiments.expt
 
-  dials.predict experiments.json force_static=True
+  dials.predict experiments.expt force_static=True
 
-  dials.predict experiments.json d_min=2.0
+  dials.predict experiments.expt d_min=2.0
 
 """
 
@@ -68,7 +68,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "{sweep.json | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "{sweep.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

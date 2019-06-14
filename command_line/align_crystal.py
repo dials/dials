@@ -27,11 +27,11 @@ principle goniometer axis.
 
 Examples::
 
-  dials.align_crystal experiments.json
+  dials.align_crystal experiments.expt
 
-  dials.align_crystal experiments.json vector=0,0,1 vector=0,1,0
+  dials.align_crystal experiments.expt vector=0,0,1 vector=0,1,0
 
-  dials.align_crystal experiments.json frame=direct
+  dials.align_crystal experiments.expt frame=direct
 
 """
 
@@ -51,7 +51,7 @@ align {
   }
 }
 output {
-  json = align_crystal.json
+  json = align_crystal.expt
     .type = path
 }
 """
@@ -369,7 +369,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] experiments.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

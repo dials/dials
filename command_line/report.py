@@ -45,7 +45,7 @@ RAD2DEG = 180 / math.pi
 help_message = """
 
 Generates a html report given the output of various DIALS programs
-(reflections.refl and/or experiments.json).
+(reflections.refl and/or experiments.expt).
 
 Examples::
 
@@ -57,9 +57,9 @@ Examples::
 
   dials.report integrated.refl
 
-  dials.report refined_experiments.json
+  dials.report refined_experiments.expt
 
-  dials.report integrated.refl integrated_experiments.json
+  dials.report integrated.refl integrated_experiments.expt
 
 """
 

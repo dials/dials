@@ -20,13 +20,13 @@ simple shapes or by setting different resolution ranges.
 
 Examples::
 
-  dials.generate_mask experiments.json border=5
+  dials.generate_mask experiments.expt border=5
 
-  dials.generate_mask experiments.json \\
+  dials.generate_mask experiments.expt \\
     untrusted.rectangle=50,100,50,100 \\
     untrusted.circle=200,200,100
 
-  dials.generate_mask experiments.json resolution.d_max=2.00
+  dials.generate_mask experiments.expt resolution.d_max=2.00
 
 """
 
@@ -170,7 +170,7 @@ def run(phil=phil_scope, args=None):
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
+    usage = "usage: %s [options] experiments.expt" % libtbx.env.dispatcher_name
     parser = OptionParser(usage=usage, phil=phil, epilog=__doc__, read_experiments=True)
 
     # Parse the command line arguments

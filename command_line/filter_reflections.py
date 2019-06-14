@@ -53,7 +53,7 @@ Examples::
   dials.filter_reflections integrated.refl \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
-  dials.filter_reflections indexed.refl experiments.json \
+  dials.filter_reflections indexed.refl experiments.expt \
     d_max=20 d_min=2.5
 """
 
@@ -419,7 +419,7 @@ def run():
     phil_scope = parse(phil_str, process_includes=True)
 
     # The script usage
-    usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+    usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
 
     # Create the parser
     parser = OptionParser(

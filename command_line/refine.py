@@ -22,9 +22,9 @@ reflections used in refinement.
 
 Examples::
 
-  dials.refine experiments.json indexed.refl
+  dials.refine experiments.expt indexed.refl
 
-  dials.refine experiments.json indexed.refl scan_varying=(False/True/Auto)
+  dials.refine experiments.expt indexed.refl scan_varying=(False/True/Auto)
 
 """
 
@@ -47,7 +47,7 @@ phil_scope = libtbx.phil.parse(
     """
 
   output {
-    experiments = refined_experiments.json
+    experiments = refined_experiments.expt
       .type = str
       .help = "The filename for refined experimental models"
 
@@ -366,7 +366,7 @@ def run(args=None, phil=working_phil):
     # The script usage
     usage = (
         "usage: %s [options] [param.phil] "
-        "experiments.json reflections.refl" % libtbx.env.dispatcher_name
+        "experiments.expt reflections.refl" % libtbx.env.dispatcher_name
     )
 
     # Create the parser

@@ -24,7 +24,7 @@ extracts pixels from the images. The shoeboxes are then saved to file.
 
 Examples::
 
-dials.extract_shoeboxes experiments.json reflections.refl
+dials.extract_shoeboxes experiments.expt reflections.refl
 
 """
 
@@ -60,7 +60,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiment.json reflections.refl"
+            "usage: %s [options] experiment.expt reflections.refl"
             % libtbx.env.dispatcher_name
         )
 

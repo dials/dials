@@ -202,7 +202,7 @@ def run(args):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json reflections.refl" % (
+    usage = "%s [options] experiments.expt reflections.refl" % (
         libtbx.env.dispatcher_name
     )
 

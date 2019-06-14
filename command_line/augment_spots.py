@@ -102,7 +102,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] [experiments.json] strong.refl" % libtbx.env.dispatcher_name
+    usage = "%s [options] [experiments.expt] strong.refl" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

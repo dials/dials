@@ -20,7 +20,7 @@ logger = logging.getLogger("dials.command_line.find_spots")
 help_message = """
 
 This program tries to find strong spots on a sequence of images. The program can
-be called with either a "experiments.json" file or a sequence of image files (see
+be called with either a "experiments.expt" file or a sequence of image files (see
 help for dials.import for more information about how images are imported). Spot
 finding will be done against each logically grouped set of images given. Strong
 pixels will be found on each image and spots will be formed from connected
@@ -39,9 +39,9 @@ Examples::
 
   dials.find_spots imager_00*.cbf
 
-  dials.find_spots experiments.json
+  dials.find_spots experiments.expt
 
-  dials.find_spots experiments.json output.reflections=strong.refl
+  dials.find_spots experiments.expt output.reflections=strong.refl
 
 """
 
@@ -100,7 +100,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "{experiments.json | image1.file [image2.file ...]}"
+            "{experiments.expt | image1.file [image2.file ...]}"
             % libtbx.env.dispatcher_name
         )
 

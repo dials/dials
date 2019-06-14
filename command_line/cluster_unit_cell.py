@@ -33,7 +33,7 @@ plot {
 
 
 def run(args):
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] experiments.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

@@ -12,7 +12,7 @@ This program makes a polar background image
 
 Examples::
 
-dev.dials.make_polar_background_image experiments.json model=background.pickle
+dev.dials.make_polar_background_image experiments.expt model=background.pickle
 
 """
 
@@ -52,7 +52,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
 
         # Create the parser
         self.parser = OptionParser(

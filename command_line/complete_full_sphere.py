@@ -14,7 +14,7 @@ logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
 help_message = """
 
-dials.complete_full_sphere [resolution=1.6] experiments.json
+dials.complete_full_sphere [resolution=1.6] experiments.expt
 
 """
 
@@ -168,8 +168,8 @@ class Script(object):
             [n.replace("GON_", "").lower() for n in expt.goniometer.get_names()]
         )
 
-        logger.info(" %8s %8s %8s  coverage expt.json" % names)
-        self.write_expt(experiments, "solution_0.json")
+        logger.info(" %8s %8s %8s  coverage expt.expt" % names)
+        self.write_expt(experiments, "solution_0.expt")
         for j, s in enumerate(solutions):
             expt.goniometer.set_angles(s)
             if model_shadow:
@@ -177,7 +177,7 @@ class Script(object):
             else:
                 obs = self.predict_to_miller_set(expt, resolution)
             new = missing.common_set(obs)
-            fout = "solution_%d.json" % (j + 1)
+            fout = "solution_%d.expt" % (j + 1)
             f = len(new.indices()) / len(missing.indices())
 
             logger.info("%8.3f %8.3f %8.3f %4.2f %s" % (s[0], s[1], s[2], f, fout))

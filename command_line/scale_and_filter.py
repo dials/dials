@@ -63,7 +63,7 @@ output {
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    experiments = "scaled_experiments.json"
+    experiments = "scaled_experiments.expt"
       .type = str
       .help = "Option to set filepath for output json."
     reflections = "scaled.refl"
@@ -589,7 +589,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_experiments
 
     usage = (
-        "dials.scale_and_filter [options] integrated_experiments.json integrated.refl"
+        "dials.scale_and_filter [options] integrated_experiments.expt integrated.refl"
     )
 
     parser = OptionParser(

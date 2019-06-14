@@ -30,27 +30,27 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 
 help_message = """
 
-This program can be used to re-index an experiments.json and/or indexed.refl
+This program can be used to re-index an experiments.expt and/or indexed.refl
 file from one setting to another. The change of basis operator can be
 provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
-basis operator will also be applied to the space group in the experiments.json
+basis operator will also be applied to the space group in the experiments.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
 Alternatively, to reindex an integated dataset in the case of indexing abiguity,
-a reference dataset (experiments.json and reflection.refl) in the same space
+a reference dataset (experiments.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
 with the reference dataset.
 
 Examples::
 
-  dials.reindex experiments.json change_of_basis_op=b+c,a+c,a+b
+  dials.reindex experiments.expt change_of_basis_op=b+c,a+c,a+b
 
   dials.reindex indexed.refl change_of_basis_op=-b,a+b+2*c,-a
 
-  dials.reindex experiments.json indexed.refl change_of_basis_op=l,h,k
+  dials.reindex experiments.expt indexed.refl change_of_basis_op=l,h,k
 
-  dials.reindex experiments.json indexed.refl reference.experiments=ref_experiments.json
+  dials.reindex experiments.expt indexed.refl reference.experiments=ref_experiments.expt
     reference.reflections=ref_reflections.refl
 
 """
@@ -74,7 +74,7 @@ reference {
     .help = "Reference reflections to allow reindexing to consistent index between datasets."
 }
 output {
-  experiments = reindexed_experiments.json
+  experiments = reindexed_experiments.expt
     .type = str
     .help = "The filename for reindexed experimental models"
 
@@ -138,7 +138,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] experiments.json indexed.refl" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiments.expt indexed.refl" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

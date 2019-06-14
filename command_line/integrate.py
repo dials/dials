@@ -26,18 +26,18 @@ is called with an experiment list outputted from dials.index or dials.refine and
 a corresponding set of strong spots from which a profile model is calculated.
 The program will output a set of integrated reflections and an experiment list
 with additional profile model data. The data can be reintegrated using the same
-profile model by inputting this integrated_experiments.json file back into
+profile model by inputting this integrated_experiments.expt file back into
 dials.integate.
 
 Examples::
 
-  dials.integrate experiments.json refined.refl
+  dials.integrate experiments.expt refined.refl
 
-  dials.integrate experiments.json refined.refl output.reflections=integrated.refl
+  dials.integrate experiments.expt refined.refl output.reflections=integrated.refl
 
-  dials.integrate experiments.json refined.refl profile.fitting=False
+  dials.integrate experiments.expt refined.refl profile.fitting=False
 
-  dials.integrate experiments.json refined.refl background.algorithm=glm
+  dials.integrate experiments.expt refined.refl background.algorithm=glm
 
 """
 
@@ -48,7 +48,7 @@ phil_scope = parse(
     """
 
   output {
-    experiments = 'integrated_experiments.json'
+    experiments = 'integrated_experiments.expt'
       .type = str
       .help = "The experiments output filename"
 
@@ -145,7 +145,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
 
         # Create the parser
         self.parser = OptionParser(

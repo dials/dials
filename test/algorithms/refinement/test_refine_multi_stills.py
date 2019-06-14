@@ -28,7 +28,7 @@ def test1(dials_regression, run_in_tmpdir):
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
     )
     ref_exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
+        "refined_experiments.expt", check_format=False
     )
 
     # compare results
@@ -69,23 +69,23 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
         "output.reflections=None",
     ]
     result = procrunner.run(
-        cmd + ["output.experiments=refined_experiments_nproc4.json", "nproc=4"]
+        cmd + ["output.experiments=refined_experiments_nproc4.expt", "nproc=4"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
     result = procrunner.run(
-        cmd + ["output.experiments=refined_experiments_nproc1.json", "nproc=1"]
+        cmd + ["output.experiments=refined_experiments_nproc1.expt", "nproc=1"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
     # load results
     nproc1 = ExperimentListFactory.from_json_file(
-        "refined_experiments_nproc1.json", check_format=False
+        "refined_experiments_nproc1.expt", check_format=False
     )
     nproc4 = ExperimentListFactory.from_json_file(
-        "refined_experiments_nproc4.json", check_format=False
+        "refined_experiments_nproc4.expt", check_format=False
     )
 
     # compare results

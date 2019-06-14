@@ -581,7 +581,7 @@ def run(args):
     import libtbx.load_env
     import os
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] experiments.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

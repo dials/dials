@@ -26,11 +26,11 @@ def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
-        assert os.path.exists("tst_bravais_setting_%i.json" % i)
+        assert os.path.exists("tst_bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
-        "tst_bravais_setting_9.json", check_format=False
+        "tst_bravais_setting_9.expt", check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -69,11 +69,11 @@ def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
-        assert os.path.exists("bravais_setting_%i.json" % i)
+        assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
-        "bravais_setting_9.json", check_format=False
+        "bravais_setting_9.expt", check_format=False
     )
     assert len(experiments_list) == 4
     assert len(experiments_list.crystals()) == 1
@@ -111,11 +111,11 @@ def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
-        assert os.path.exists("bravais_setting_%i.json" % i)
+        assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
-        "bravais_setting_5.json", check_format=False
+        "bravais_setting_5.expt", check_format=False
     )
     assert len(experiments_list) == 1
     assert (
@@ -150,11 +150,11 @@ def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 5):
-        assert os.path.exists("bravais_setting_%i.json" % i)
+        assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
-        "bravais_setting_5.json", check_format=False
+        "bravais_setting_5.expt", check_format=False
     )
     assert len(experiments_list) == 7
     assert len(experiments_list.crystals()) == 1

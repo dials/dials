@@ -10,7 +10,7 @@ help_message = """
 
 Examples::
 
-  dials.show experiments.json
+  dials.show experiments.expt
 
   dials.show image_*.cbf
 
@@ -171,7 +171,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json | image_*.cbf" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] experiments.expt | image_*.cbf" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

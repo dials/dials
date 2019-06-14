@@ -11,7 +11,7 @@ Cross reference indexing solutions.
 
 Examples::
 
-  %s expts0.json refl0.json
+  %s expts0.expt refl0.refl
 
 """
     % libtbx.env.dispatcher_name
@@ -68,7 +68,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json reflections.refl" % (
+    usage = "%s [options] experiments.expt reflections.refl" % (
         libtbx.env.dispatcher_name
     )
 

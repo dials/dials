@@ -8,7 +8,7 @@ orientation is expressed as a zone axis (a direction referenced to the direct
 lattice) [uvw] giving the beam direction with respect to the crystal lattice.
 Take into account any scan-varying models.
 
-Usage: dials.frame_orientations refined_experiments.json
+Usage: dials.frame_orientations refined_experiments.expt
 """
 
 from __future__ import division, print_function, absolute_import
@@ -52,7 +52,7 @@ class Script(object):
         import __main__
 
         usage = (
-            "usage: dials.python {0} refined_experiments.json " "refined.refl"
+            "usage: dials.python {0} refined_experiments.expt " "refined.refl"
         ).format(__main__.__file__)
 
         # Create the parser

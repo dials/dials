@@ -62,7 +62,7 @@ output {
     .type = str
   debug_log = dials.symmetry.debug.log
     .type = str
-  experiments = "reindexed_experiments.json"
+  experiments = "reindexed_experiments.expt"
     .type = path
   reflections = "reindexed_reflections.refl"
     .type = path
@@ -163,13 +163,13 @@ reflections.
 
 Examples::
 
-  dials.symmetry experiments.json reflections.refl
+  dials.symmetry experiments.expt reflections.refl
 
 """
 
 
 def run(args):
-    usage = "dials.symmetry [options] experiments.json reflections.refl"
+    usage = "dials.symmetry [options] experiments.expt reflections.refl"
 
     parser = OptionParser(
         usage=usage,

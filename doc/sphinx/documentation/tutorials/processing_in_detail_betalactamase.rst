@@ -39,7 +39,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that metadata are read for all the images, and a file
-describing their contents (:ref:`datablock.json <datablock-json>`) is written::
+describing their contents (:ref:`datablock.expt <datablock-json>`) is written::
 
     dials.import tutorial-data/summed/C2sum_1*.cbf.gz
 
@@ -52,7 +52,7 @@ Now is a good point to take a first look at the data using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
 the data is sensible and to anticipate any problems in processing::
 
-  dials.image_viewer datablock.json
+  dials.image_viewer datablock.expt
 
 You will be presented with the main image viewer screen:
 
@@ -93,7 +93,7 @@ not as fast as viewers such as ADXV, however it does integrate well with
 DIALS data files. Having found strong spots open the image viewer again,
 but giving it the newly found reflection list::
 
-  dials.image_viewer datablock.json strong.refl
+  dials.image_viewer datablock.expt strong.refl
 
 Adjust the brightness so that you can see the spots, then zoom in so
 that you can see the clustered individual pixels of a single spot.
@@ -126,7 +126,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions::
 
-  dials.reciprocal_lattice_viewer datablock.json strong.refl
+  dials.reciprocal_lattice_viewer datablock.expt strong.refl
 
 .. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
 
@@ -160,7 +160,7 @@ using space group P1.
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
-:ref:`experiments.json <experiments_json>` containing the tuned
+:ref:`experiments.expt <experiments_json>` containing the tuned
 experimental model and determined parameters, and a ``indexed.refl``
 reflection file, including index data from the best fit.
 
@@ -234,7 +234,7 @@ care needs to be taken in selecting the strategy used by ``dials.index``.
 
 After indexing it can be useful to inspect the reciprocal lattice again::
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.refl
+  dials.reciprocal_lattice_viewer experiments.expt indexed.refl
 
 Now indexed/unindexed spots are differentiated by colour, and it is possible
 to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`
@@ -275,10 +275,10 @@ finding procedure (uncorrected and unscaled) but provides a very useful
 check to see if the data does appear to adhere to the proposed symmetry
 operators.
 
-A separate ``bravais_setting_N.json`` experiments file is written for
+A separate ``bravais_setting_N.expt`` experiments file is written for
 each plausible lattice type, corresponding to the solution index. In this
 example we choose to continue processing with
-:samp:`bravais_setting_2.json`, which is the highest symmetry suggested
+:samp:`bravais_setting_2.expt`, which is the highest symmetry suggested
 result - the options 3, 4, 5 have higher symmetries, but at the cost of
 a steep jump in RMSd's and worsening of fit.
 
@@ -329,7 +329,7 @@ from ``dials.refine_bravais_settings`` run:
 
 
 This uses all reflections in refinement rather than a subset and provided a
-small reduction in RMSDs, writing the results out to ``refined_experiments.json``
+small reduction in RMSDs, writing the results out to ``refined_experiments.expt``
 and ``refined.refl``.
 
 However, the refined model is still static over
@@ -354,7 +354,7 @@ previous job:
     .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
         :linenos:
 
-which writes over the ``refined_experiments.json`` and
+which writes over the ``refined_experiments.expt`` and
 ``refined.refl`` from the previous refinement step. By default the
 scan-varying refinement looks for smooth changes over an interval of 36°
 intervals, to avoid fitting unphysical models to noise, though this
@@ -397,7 +397,7 @@ highest resolution at the corner of the detector. This is fine, but if we
 wanted to we could have adjusted the resolution limits using parameters
 :samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
 made using the scan-varying crystal model recorded in
-:file:`refined_experiments.json`. This ensures that prediction is made using
+:file:`refined_experiments.expt`. This ensures that prediction is made using
 the smoothly varying lattice and orientation that we determined in the
 refinement step. As this scan-varying model was determined in advance of
 integration, each of the integration jobs is independent and we can take
@@ -440,7 +440,7 @@ intensities, and for all reflections, not just the strong spots. So, it is
 prudent to repeat the assessment to see if there is any indication that our
 initial assessment should be revised.::
 
-  dials.symmetry integrated_experiments.json integrated.refl
+  dials.symmetry integrated_experiments.expt integrated.refl
 
 The symmetry analysis scores all possible symmetry operations by looking at
 the intensities of reflections that would be equivalent under that operation.
@@ -484,7 +484,7 @@ and scattered beam vector relative to the crystal. In this example, we shall
 scale the dataset using the output of dials.symmetry with a resolution cutoff of
 1.4 Angstrom::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.refl d_min=1.4
+  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4
 
 As can be seen from the output text, 70 parameters are used to parameterise the
 scaling model for this dataset. Outlier rejection is performed at several stages,
@@ -522,7 +522,7 @@ periodicity similar to the scale term. There is certainly no strong B-factor
 reduction as a function of rotation angle, which would have suggested radiation
 damage. The scaling can be repeated, omitting the :samp:`decay_term`::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.refl d_min=1.4 decay_term=False
+  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4 decay_term=False
 
 ::
 
@@ -554,7 +554,7 @@ within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with::
 
-  dials.report scaled_experiments.json scaled.refl
+  dials.report scaled_experiments.expt scaled.refl
 
 which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
 
@@ -613,7 +613,7 @@ and aimless_.
 2) export the scaled intensities for further downstream processing, making sure to
 include the :samp:`intensity=scale` option::
 
-  dials.export scaled.refl scaled_experiments.json intensity=scale
+  dials.export scaled.refl scaled_experiments.expt intensity=scale
 
 Here is the output for exporting after integration, showing the reflection file statistics.
 

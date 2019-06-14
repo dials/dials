@@ -27,9 +27,9 @@ def test_reindex(dials_regression, run_in_tmpdir):
     assert os.path.exists("reindexed_reflections.refl")
     new_reflections = easy_pickle.load("reindexed_reflections.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
-    assert os.path.exists("reindexed_experiments.json")
+    assert os.path.exists("reindexed_experiments.expt")
     new_experiments = load.experiment_list(
-        "reindexed_experiments.json", check_format=False
+        "reindexed_experiments.expt", check_format=False
     )
     h1, k1, l1 = old_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = new_reflections["miller_index"].as_vec3_double().parts()
@@ -50,7 +50,7 @@ def test_reindex(dials_regression, run_in_tmpdir):
         experiments_path,
         "space_group=P4",
         "change_of_basis_op=%s" % str(cb_op),
-        "output.experiments=P4.json",
+        "output.experiments=P4.expt",
     ]
     command = " ".join(commands)
     print(command)
@@ -59,14 +59,14 @@ def test_reindex(dials_regression, run_in_tmpdir):
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
     commands = [
         "dials.reindex",
-        "P4.json",
+        "P4.expt",
         "change_of_basis_op=%s" % str(cb_op),
-        "output.experiments=P4_reindexed.json",
+        "output.experiments=P4_reindexed.expt",
     ]
     command = " ".join(commands)
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    new_experiments1 = load.experiment_list("P4_reindexed.json", check_format=False)
+    new_experiments1 = load.experiment_list("P4_reindexed.expt", check_format=False)
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
         old_experiments[0].crystal.change_basis(cb_op).get_A()
     )
@@ -74,15 +74,15 @@ def test_reindex(dials_regression, run_in_tmpdir):
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
     commands = [
         "dials.reindex",
-        "P4.json",
+        "P4.expt",
         "change_of_basis_op=auto",
-        "reference.experiments=P4_reindexed.json",
-        "output.experiments=P4_reindexed2.json",
+        "reference.experiments=P4_reindexed.expt",
+        "output.experiments=P4_reindexed2.expt",
     ]
     command = " ".join(commands)
     print(command)
     result = easy_run.fully_buffered(command=command).raise_if_errors()
-    new_experiments2 = load.experiment_list("P4_reindexed2.json", check_format=False)
+    new_experiments2 = load.experiment_list("P4_reindexed2.expt", check_format=False)
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
         new_experiments2[0].crystal.get_A()
     )
@@ -106,9 +106,9 @@ def test_reindex_multi_sweep(dials_regression, run_in_tmpdir):
     assert os.path.exists("reindexed_reflections.refl")
     new_reflections = easy_pickle.load("reindexed_reflections.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
-    assert os.path.exists("reindexed_experiments.json")
+    assert os.path.exists("reindexed_experiments.expt")
     new_experiments = load.experiment_list(
-        "reindexed_experiments.json", check_format=False
+        "reindexed_experiments.expt", check_format=False
     )
     new_cs = new_experiments[0].crystal.get_crystal_symmetry()
     assert new_cs.unit_cell().parameters() == pytest.approx(
@@ -142,15 +142,15 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         "change_of_basis_op=a,b,c",
         "space_group=P4",
         "output.reflections=P4_reflections.refl",
-        "output.experiments=P4_experiments.json",
+        "output.experiments=P4_experiments.expt",
     ]
     command = " ".join(commands)
     print(command)
 
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("P4_reflections.refl")
-    assert os.path.exists("P4_experiments.json")
-    new_experiments = load.experiment_list("P4_experiments.json", check_format=False)
+    assert os.path.exists("P4_experiments.expt")
+    new_experiments = load.experiment_list("P4_experiments.expt", check_format=False)
     assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == " P 4"
 
     # Now have something in P4, get another dataset in a different indexing scheme
@@ -159,9 +159,9 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     commands = [
         "dials.reindex",
         "P4_reflections.refl",
-        "P4_experiments.json",
+        "P4_experiments.expt",
         "change_of_basis_op=%s" % str(cb_op),
-        "output.experiments=P4_reindexed.json",
+        "output.experiments=P4_reindexed.expt",
         "output.reflections=P4_reindexed.refl",
     ]
     command = " ".join(commands)
@@ -172,8 +172,8 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     commands = [
         "dials.reindex",
         "P4_reflections.refl",
-        "P4_experiments.json",
-        "reference.experiments=P4_reindexed.json",
+        "P4_experiments.expt",
+        "reference.experiments=P4_reindexed.expt",
         "reference.reflections=P4_reindexed.refl",
     ]
     command = " ".join(commands)

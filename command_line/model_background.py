@@ -314,7 +314,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json" % libtbx.env.dispatcher_name
+            "experiments.expt" % libtbx.env.dispatcher_name
         )
 
         # Initialise the base class

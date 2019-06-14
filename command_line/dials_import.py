@@ -43,7 +43,7 @@ the template= parameter where the consecutive digits representing the image
 numbers in the filenames are replaced with '#' characters.
 
 The geometry can be set manually, either by using the reference_geometry=
-parameter to specify an experiment list .json file containing
+parameter to specify an experiment list .expt file containing
 the reference geometry, by using the mosflm_beam_centre= parameter to set
 the Mosflm beam centre, or by specifying each variable to be overridden
 using various geometry parameters.
@@ -80,7 +80,7 @@ phil_scope = parse(
 
   output {
 
-    experiments = imported_experiments.json
+    experiments = imported_experiments.expt
       .type = str
       .help = "The output JSON or pickle file"
 
@@ -120,8 +120,8 @@ phil_scope = parse(
 
     reference_geometry = None
       .type = path
-      .help = "Experimental geometry from this experiments.json or "
-              "experiments.json will override the geometry from the "
+      .help = "Experimental geometry from this experiments.expt or "
+              "experiments.expt will override the geometry from the "
               "image headers."
 
     allow_multiple_sweeps = False

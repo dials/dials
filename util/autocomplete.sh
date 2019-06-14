@@ -119,6 +119,7 @@ function _dials_autocomplete ()
   _dials_autocomplete_hints "${cur}"
   COMPREPLY=( $(compgen -W "${_dials_autocomplete_values}" -- "${cur}") \
               $(compgen -f -X "!*.json" -- "${cur}") \
+              $(compgen -f -X "!*.expt" -- "${cur}") \
               $(compgen -f -X "!*.pickle" -- "${cur}") \
               $(compgen -f -X "!*.refl" -- "${cur}") \
               $(compgen -f -X "!*.mpack" -- "${cur}") \

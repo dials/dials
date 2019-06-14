@@ -20,4 +20,4 @@ def test_symmetry(dials_regression, run_in_tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
     assert os.path.exists("reindexed_reflections.refl")
-    assert os.path.exists("reindexed_experiments.json")
+    assert os.path.exists("reindexed_experiments.expt")

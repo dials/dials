@@ -57,11 +57,11 @@ phil_scope = parse(
 help_message = """
 
 Generate plots of scan-varying models, including crystal orientation, unit cell
-and beam centre, from the input refined_experiments.json
+and beam centre, from the input refined_experiments.expt
 
 Examples::
 
-  dials.plot_scan_varying_model refined_experiments.json
+  dials.plot_scan_varying_model refined_experiments.expt
 
 """
 
@@ -74,7 +74,7 @@ class Script(object):
         from dials.util.options import OptionParser
         import libtbx.load_env
 
-        usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] experiments.expt" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

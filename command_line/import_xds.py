@@ -257,7 +257,7 @@ class XDSFileImporter(object):
 
         # Write the experiment list to a JSON or pickle file
         if params.output.filename is None:
-            params.output.filename = "experiments.json"
+            params.output.filename = "experiments.expt"
         print("-" * 80)
         print("Writing experiments to %s" % params.output.filename)
         dump = ExperimentListDumper(experiments)
