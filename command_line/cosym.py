@@ -53,7 +53,7 @@ output {
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
-  reflections = "reindexed_reflections.pickle"
+  reflections = "reindexed_reflections.refl"
     .type = path
   json = dials.cosym.json
     .type = path
@@ -298,18 +298,18 @@ the presence of an indexing ambiguity.
 
 The program takes as input a set of integrated experiments and reflections,
 either in one file per experiment, or with all experiments combined in a single
-experiments.json and reflections.pickle file. It will perform analysis of the
+experiments.json and reflections.refl file. It will perform analysis of the
 symmetry elements present in the datasets and, if necessary, reindex experiments
 and reflections as necessary to ensure that all output experiments and
 reflections are indexed consistently.
 
 Examples::
 
-  dials.cosym experiments.json reflections.pickle
+  dials.cosym experiments.json reflections.refl
 
-  dials.cosym experiments.json reflections.pickle space_group=I23
+  dials.cosym experiments.json reflections.refl space_group=I23
 
-  dials.cosym experiments.json reflections.pickle space_group=I23 lattice_group=I23
+  dials.cosym experiments.json reflections.refl space_group=I23 lattice_group=I23
 
 """
 
@@ -318,7 +318,7 @@ def run(args):
     from dials.util import log
     from dials.util.options import OptionParser
 
-    usage = "dials.cosym [options] experiments.json reflections.pickle"
+    usage = "dials.cosym [options] experiments.json reflections.refl"
 
     parser = OptionParser(
         usage=usage,

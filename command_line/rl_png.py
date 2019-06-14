@@ -27,9 +27,9 @@ Generate a png of the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.rl_png experiments.json strong.pickle
+  dials.rl_png experiments.json strong.refl
 
-  dials.rl_png experiments.json indexed.pickle
+  dials.rl_png experiments.json indexed.refl
 
 """
 
@@ -134,7 +134,7 @@ def run():
     from dials.util.options import flatten_reflections
     from dials.util import log
 
-    usage = "dials.rl_png [options] experiments.json reflections.pickle"
+    usage = "dials.rl_png [options] experiments.json reflections.refl"
 
     parser = OptionParser(
         usage=usage,

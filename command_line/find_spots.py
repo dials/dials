@@ -29,7 +29,7 @@ be done in 3D.
 
 Once a set of spots have been found, their centroids and intensities will be
 calculated. They will then be filtered according to the particular preferences
-of the user. The output will be a file (strong.pickle) containing a list of spot
+of the user. The output will be a file (strong.refl) containing a list of spot
 centroids and intensities which can be used in the dials.index program. To view
 a list of parameters for spot finding use the --show-config option.
 
@@ -41,7 +41,7 @@ Examples::
 
   dials.find_spots experiments.json
 
-  dials.find_spots experiments.json output.reflections=strong.pickle
+  dials.find_spots experiments.json output.reflections=strong.refl
 
 """
 
@@ -52,7 +52,7 @@ phil_scope = parse(
     """
 
   output {
-    reflections = 'strong.pickle'
+    reflections = 'strong.refl'
       .type = str
       .help = "The output filename"
 

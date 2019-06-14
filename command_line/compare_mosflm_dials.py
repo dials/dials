@@ -81,7 +81,7 @@ def pull_calculated(integrate_pkl):
     import six.moves.cPickle as pickle
     import math
 
-    # table = pickle.load(open('integrated.pickle', 'rb'))
+    # table = pickle.load(open('integrated.refl', 'rb'))
 
     with open(integrate_pkl, "rb") as fh:
         r_list = pickle.load(fh)

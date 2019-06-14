@@ -8,7 +8,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s integrated.pickle")
+        raise RuntimeError("%s integrated.refl")
 
     integrated_data = flex.reflection_table.from_file(sys.argv[1])
     export_text(integrated_data)

@@ -24,7 +24,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 4:
         outfile_template = sys.argv[3]
     else:
-        outfile_template = "int-%03d.pickle"
+        outfile_template = "int-%03d.refl"
 
     # Split everything into separate experiments for pickling
     for e_number in range(len(experiments)):

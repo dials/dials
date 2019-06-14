@@ -22,7 +22,7 @@ This program does not perform any calculation ... just visualizations
 
 Example for invoking from CLI:
 
-dials.reflection_viewer My_Reflections.pickle
+dials.reflection_viewer reflections.refl
 
 """
 

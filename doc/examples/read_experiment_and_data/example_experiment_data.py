@@ -17,7 +17,7 @@ from libtbx.phil import parse
 
 help_message = """
 
-pass experiment.json indexed.pickle
+pass experiment.json indexed.refl
 
 """
 
@@ -39,7 +39,7 @@ class Script(object):
         import libtbx.load_env
 
         usage = (
-            "usage: %s [options] experiments.json indexed.pickle"
+            "usage: %s [options] experiments.json indexed.refl"
             % libtbx.env.dispatcher_name
         )
 

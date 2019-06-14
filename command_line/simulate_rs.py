@@ -25,7 +25,7 @@ class Script(object):
         phil_scope = parse(
             """
 
-      output = simulated.pickle
+      output = simulated.refl
         .type = str
         .help = "The output pickle file"
 

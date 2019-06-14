@@ -78,7 +78,7 @@ However, if not, we won't worry too much about it, because if we pass
 in the known unit cell for thaumatin then it works just fine. We
 also chose to apply tetragonal symmetry immediately::
 
-  dials.index datablock.json strong.pickle space_group="P 4" unit_cell="58 58 150 90 90 90"
+  dials.index datablock.json strong.refl space_group="P 4" unit_cell="58 58 150 90 90 90"
 
 The output of refinement in the highest resolution macrocycle is as follows::
 
@@ -226,9 +226,9 @@ closer to the spindle to be included in refinement (default value is 0.05, and
 if set to 0.0 no reflections will be rejected for being too close).
 Without this option, the central panels are very sparse::
 
-  dials.refine indexed.pickle experiments.json \
+  dials.refine indexed.refl experiments.json \
    outlier.algorithm=tukey use_all_reflections=true close_to_spindle_cutoff=0.01 \
-   output.reflections=refined_reflections_lev0.pickle \
+   output.reflections=refined_reflections_lev0.refl \
    output.experiments=refined_experiments_lev0.json
 
 Here is the output::
@@ -236,7 +236,7 @@ Here is the output::
   The following parameters have been modified:
 
   output {
-    reflections = refined_reflections_lev0.pickle
+    reflections = refined_reflections_lev0.refl
     experiments = refined_experiments_lev0.json
   }
   refinement {
@@ -250,7 +250,7 @@ Here is the output::
   }
   input {
     experiments = experiments.json
-    reflections = indexed.pickle
+    reflections = indexed.refl
   }
 
   Configuring refiner
@@ -374,7 +374,7 @@ Here is the output::
   | 59    | 39   | 0.43205 | 0.65796 | 0.25585  |
   -----------------------------------------------
   Saving refined experiments to refined_experiments_lev0.json
-  Saving refined reflections to refined_reflections_lev0.pickle
+  Saving refined reflections to refined_reflections_lev0.refl
 
 Outlier rejection has cleaned up the positional residuals so now the greatest
 deviation is within 0.4 mm of the predicted position. The angular extreme is
@@ -390,7 +390,7 @@ dataset.
 Before moving on to the multi-panel refinement job we will take a look at the
 refined reflections file::
 
-  dials.analyse_output refined_reflections_lev0.pickle grid_size=5,12
+  dials.analyse_output refined_reflections_lev0.refl grid_size=5,12
 
 Here we had to tell :program:`dials.analyse_output` about the arrangement of
 the panels, as it does not use the :file:`refined_experiments_lev0.json` file so cannot
@@ -418,8 +418,8 @@ with a single lower level, :samp:`hieararchy_level=1`, in which every panel is
 treated separately. We now start from the previous refinement run
 specifying this hierarchy level::
 
-  dials.refine indexed.pickle refined_experiments_lev0.json outlier.algorithm=tukey \
-   use_all_reflections=true output.reflections=refined_reflections_lev1.pickle \
+  dials.refine indexed.refl refined_experiments_lev0.json outlier.algorithm=tukey \
+   use_all_reflections=true output.reflections=refined_reflections_lev1.refl \
    close_to_spindle_cutoff=0.01 bin_size_fraction=0 hierarchy_level=1 \
    output.experiments=refined_experiments_lev1.json
 
@@ -446,7 +446,7 @@ speed the job up. The output is as follows::
 
   output {
     experiments = refined_experiments_lev1.json
-    reflections = refined_reflections_lev1.pickle
+    reflections = refined_reflections_lev1.refl
   }
   refinement {
     parameterisation {
@@ -467,7 +467,7 @@ speed the job up. The output is as follows::
   }
   input {
     experiments = refined_experiments.json
-    reflections = indexed.pickle
+    reflections = indexed.refl
   }
 
   Configuring refiner
@@ -598,12 +598,12 @@ speed the job up. The output is as follows::
   | 59    | 40   | 0.39499  | 0.38962 | 0.2466   |
   ------------------------------------------------
   Saving refined experiments to refined_experiments_lev1.json
-  Saving refined reflections to refined_reflections_lev1.pickle
+  Saving refined reflections to refined_reflections_lev1.refl
 
 Following refinement, we repeat the analysis of positional residuals::
 
   mv analysis analysis_lev0
-  dials.analyse_output refined_reflections.pickle grid_size=5,12
+  dials.analyse_output refined_reflections.refl grid_size=5,12
   mv analysis analysis_lev1
 
 The positional residual plots for X and Y,
@@ -635,8 +635,8 @@ the commands from the tutorial::
   cd !$
   dials.import /path/to/th_8_2*cbf
   dials.find_spots datablock.json nproc=4
-  dials.index datablock.json strong.pickle space_group="P4"
-  dials.refine experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
+  dials.index datablock.json strong.refl space_group="P4"
+  dials.refine experiments.json indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the
 :doc:`processing_in_detail_tutorial`, as we'd expect)::
@@ -651,10 +651,10 @@ Note these are the overall RMSDs (comparable to the results from the
 
 Now we do the scan-varying refinement and integrate::
 
-  dials.refine refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
-  dials.integrate sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4
-  dials.export integrated.pickle sv_refined_experiments.json mtz.hklout=integrated.mtz ignore_panels=true
-  dials.analyse_output integrated.pickle grid_size=5,12
+  dials.refine refined_experiments.json indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.json
+  dials.integrate sv_refined_experiments.json indexed.refl outlier.algorithm=null nproc=4
+  dials.export integrated.refl sv_refined_experiments.json mtz.hklout=integrated.mtz ignore_panels=true
+  dials.analyse_output integrated.refl grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
 
@@ -710,8 +710,8 @@ with the :samp:`reference_from_experiment.detector` option to overwrite the dete
 model from our :file:`experiments.json`. We don't really want the combined experiments
 file, only this side-effect, so we immediately split it again::
 
-  dials.combine_experiments experiments=../refined_experiments_lev1.json experiments=refined_experiments.json reflections=../refined_reflections_lev1.pickle reflections=indexed.pickle reference_from_experiment.detector=0
-  dials.split_experiments combined_experiments.json combined_reflections.pickle
+  dials.combine_experiments experiments=../refined_experiments_lev1.json experiments=refined_experiments.json reflections=../refined_reflections_lev1.refl reflections=indexed.refl reference_from_experiment.detector=0
+  dials.split_experiments combined_experiments.json combined_reflections.refl
 
 This results in a few files, of which :file:`experiments_1.json` is interesting.
 It contains the updated detector - but beware the detector distance is now
@@ -720,7 +720,7 @@ by editing :file:`experiments_1.json` directly, but actually there is no need.
 :program:`dials.refine` is *extremely forgiving* of bad starting geometry, though
 we should remember to fix the beam and crystal models::
 
-  dials.refine experiments_1.json indexed.pickle output.experiments=corrected_refined_experiments.json beam.fix=all crystal.fix=all
+  dials.refine experiments_1.json indexed.refl output.experiments=corrected_refined_experiments.json beam.fix=all crystal.fix=all
 
 A snippet from the log file shows that the detector distance offset was largely
 corrected in a single step::
@@ -737,7 +737,7 @@ corrected in a single step::
 
 Now we'll let the crystal and beam refine along with the new detector to RMSD convergence::
 
-  dials.refine corrected_refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.json
+  dials.refine corrected_refined_experiments.json indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.json
 
 Here is the output::
 
@@ -759,7 +759,7 @@ Here is the output::
   }
   input {
     experiments = corrected_refined_experiments.json
-    reflections = indexed.pickle
+    reflections = indexed.refl
   }
 
   Configuring refiner
@@ -894,10 +894,10 @@ After correction they are as follows::
 
 Let's now do scan-varying refinement then integrate the dataset with corrected metrology::
 
-  dials.refine corrected_refined_experiments.json indexed.pickle outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
-  dials.integrate corrected_sv_refined_experiments.json indexed.pickle outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.pickle
-  dials.export corrected_integrated.pickle corrected_sv_refined_experiments.json mtz.hklout=corrected_integrated.mtz ignore_panels=true
-  dials.analyse_output corrected_integrated.pickle grid_size=5,12
+  dials.refine corrected_refined_experiments.json indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.json
+  dials.integrate corrected_sv_refined_experiments.json indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
+  dials.export corrected_integrated.refl corrected_sv_refined_experiments.json mtz.hklout=corrected_integrated.mtz ignore_panels=true
+  dials.analyse_output corrected_integrated.refl grid_size=5,12
 
 From the integration log::
 

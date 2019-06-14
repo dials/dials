@@ -698,7 +698,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 5:
         raise RuntimeError(
-            "%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json [dmin]"
+            "%s INTEGRATE.HKL integrate.refl crystal.json sweep.json [dmin]"
             % sys.argv[0]
         )
 

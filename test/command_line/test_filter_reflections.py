@@ -15,7 +15,7 @@ def test_filter_reflections(run_in_tmpdir):
     mask2 = flex.bool([True, False] * 3)
     rt.set_flags(mask1, rt.flags.integrated)
     rt.set_flags(mask2, rt.flags.reference_spot)
-    rt_name = "test_refs.pickle"
+    rt_name = "test_refs.refl"
     rt.as_pickle(rt_name)
 
     # Test flag expression
@@ -27,7 +27,7 @@ def test_filter_reflections(run_in_tmpdir):
     result = procrunner.run(cmd)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    ref = flex.reflection_table.from_pickle("filtered.pickle")
+    ref = flex.reflection_table.from_pickle("filtered.refl")
     # The test selects only the 2nd reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [1]
@@ -37,7 +37,7 @@ def test_filter_reflections(run_in_tmpdir):
     result = procrunner.run(cmd)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    ref = flex.reflection_table.from_pickle("filtered.pickle")
+    ref = flex.reflection_table.from_pickle("filtered.refl")
     # The test selects only the first five reflections
     assert len(ref) == 5
     assert list(ref["iobs"]) == [0, 1, 2, 3, 4]
@@ -47,7 +47,7 @@ def test_filter_reflections(run_in_tmpdir):
     result = procrunner.run(cmd)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    ref = flex.reflection_table.from_pickle("filtered.pickle")
+    ref = flex.reflection_table.from_pickle("filtered.refl")
     # The test selects only the last reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [5]
@@ -57,7 +57,7 @@ def test_filter_reflections(run_in_tmpdir):
     result = procrunner.run(cmd)
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    ref = flex.reflection_table.from_pickle("filtered.pickle")
+    ref = flex.reflection_table.from_pickle("filtered.refl")
     # The test selects only the 3rd, 4th and 5th reflections
     assert len(ref) == 3
     assert list(ref["iobs"]) == [2, 3, 4]

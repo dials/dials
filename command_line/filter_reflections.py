@@ -44,22 +44,22 @@ reflection file.
 
 Examples::
 
-  dials.filter_reflections refined.pickle \
+  dials.filter_reflections refined.refl \
     flag_expression=used_in_refinement
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.refl \
     flag_expression="integrated & ~reference_spot"
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.refl \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
-  dials.filter_reflections indexed.pickle experiments.json \
+  dials.filter_reflections indexed.refl experiments.json \
     d_max=20 d_min=2.5
 """
 
 phil_str = """
     output {
-    reflections = 'filtered.pickle'
+    reflections = 'filtered.refl'
         .type = str
         .help = "The filtered reflections output filename"
     }

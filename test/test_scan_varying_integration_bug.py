@@ -13,10 +13,10 @@ def test_1(dials_data, run_in_tmpdir):
         "dials.import %s" % " ".join(g),
         "dials.slice_sweep imported_experiments.json image_range=80,90",
         "dials.find_spots imported_experiments_80_90.json",
-        "dials.index imported_experiments_80_90.json strong.pickle space_group=P41212",
-        "dials.refine indexed_experiments.json indexed.pickle scan_varying=True",
-        "dials.integrate refined_experiments.json indexed.pickle",
-        "dials.export refined_experiments.json integrated.pickle partiality_threshold=0.99",
+        "dials.index imported_experiments_80_90.json strong.refl space_group=P41212",
+        "dials.refine indexed_experiments.json indexed.refl scan_varying=True",
+        "dials.integrate refined_experiments.json indexed.refl",
+        "dials.export refined_experiments.json integrated.refl partiality_threshold=0.99",
     ]
 
     for cmd in commands:

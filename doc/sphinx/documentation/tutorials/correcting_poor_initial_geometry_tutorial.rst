@@ -109,7 +109,7 @@ to speed the job up (feel free to set this greater than 4, if appropriate)::
 After finding strong spots it is *always* worth viewing them using
 :program:`dials.reciprocal_lattice_viewer`::
 
-  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+  dials.reciprocal_lattice_viewer datablock.json strong.refl
 
 .. image:: /figures/dpf3_bad_found_spot.png
 
@@ -132,7 +132,7 @@ Indexing
 
 ::
 
-  dials.index datablock.json strong.pickle
+  dials.index datablock.json strong.refl
 
 It turns out that the reciprocal lattice positions were regular enough for
 indexing to complete ('succeed' is the wrong word, as will become clear).
@@ -164,7 +164,7 @@ with spot profiles may result in higher RMSDs for a solution that is still
 correct, however we should always remain sceptical. Looking at the results
 in :program:`dials.reciprocal_lattice_viewer` is instructive as ever::
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+  dials.reciprocal_lattice_viewer experiments.json indexed.refl
 
 .. image:: /figures/dpf3_bad_indexed.png
 
@@ -179,7 +179,7 @@ what happened and how to fix it. However, unfortunately a careless user could
 go ahead and integrate with this model. Let's see what happens if we try
 to refine compatible Bravais lattices::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings experiments.json indexed.refl
 
 ::
 
@@ -227,7 +227,7 @@ shifted by some value. This would be equivalent to the beam centre latching
 onto some very low resolution Bragg reflection rather than the direct beam
 :math:`hkl = (0,0,0)`. DIALS offers a tool to check this. If we run::
 
-  dials.check_indexing_symmetry experiments.json indexed.pickle grid=1
+  dials.check_indexing_symmetry experiments.json indexed.refl grid=1
 
 then all combinations of off-by-one offsets in :math:`h`, :math:`k` and :math:`l`
 will be checked by testing correlation coefficients between sets of reflections
@@ -272,7 +272,7 @@ have found the right solution.
 Although it is possible to apply the correction using :program:`dials.reindex`
 like this::
 
-  dials.reindex indexed.pickle hkl_offset=1,1,1
+  dials.reindex indexed.refl hkl_offset=1,1,1
 
 it will be very difficult to take the result and continue to process the data.
 There is a much better way to proceed.
@@ -291,7 +291,7 @@ implemented in :program:`LABELIT`.
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
 
-  dials.search_beam_position strong.pickle datablock.json n_macro_cycles=2
+  dials.search_beam_position strong.refl datablock.json n_macro_cycles=2
 
 In particularly bad cases it may useful to perform this search iteratively.
 Here we requested two macrocyles, though we see from the concise, yet
@@ -319,7 +319,7 @@ Indexing with the corrected beam centre
 
 ::
 
-  dials.index optimized_datablock.json strong.pickle
+  dials.index optimized_datablock.json strong.refl
 
 We now have a more convincing solution, which also indexes many more
 reflections::
@@ -341,7 +341,7 @@ reflections::
 The lattice looks orthorhombic, and indeed the top solution in the table
 from :program:`dials.refine_bravais_settings` looks reasonable::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings experiments.json indexed.refl
 
 ::
 

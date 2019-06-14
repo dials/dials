@@ -28,7 +28,7 @@ phil_scope = phil.parse(
     .help = "User specified identifiers to use, must be a list of strings equal"
             "to the number of datasets."
   output {
-    reflections = assigned_reflections.pickle
+    reflections = assigned_reflections.refl
       .type = str
     experiments = assigned_experiments.json
       .type = str
@@ -39,7 +39,7 @@ phil_scope = phil.parse(
 
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
-    usage = """Usage: dials.assign_experiment_identifiers reflections.pickle
+    usage = """Usage: dials.assign_experiment_identifiers reflections.refl
 experiments.json"""
     parser = OptionParser(
         usage=usage,

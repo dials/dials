@@ -40,11 +40,11 @@ the diffraction pattern, possibly as a result of an incorrect beam centre.
 
 Examples::
 
-  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+  dials.check_indexing_symmetry experiment.json indexed.refl \\
     grid=1 symop_threshold=0.7
 
 
-  dials.check_indexing_symmetry experiment.json indexed.pickle \\
+  dials.check_indexing_symmetry experiment.json indexed.refl \\
     grid_l=3 symop_threshold=0.7
 
 """
@@ -278,7 +278,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 
 def run(args):
-    usage = "%s [options] experiment.json indexed.pickle" % libtbx.env.dispatcher_name
+    usage = "%s [options] experiment.json indexed.refl" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

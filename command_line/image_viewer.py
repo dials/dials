@@ -30,9 +30,9 @@ Examples::
 
   dials.image_viewer experiments.json
 
-  dials.image_viewer experiments.json strong.pickle
+  dials.image_viewer experiments.json strong.refl
 
-  dials.image_viewer experiments.json integrated.pickle
+  dials.image_viewer experiments.json integrated.refl
 
 """
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     usage_message = (
         """
-    %s experiments.json [reflections.pickle]
+    %s experiments.json [reflections.refl]
   """
         % libtbx.env.dispatcher_name
     )

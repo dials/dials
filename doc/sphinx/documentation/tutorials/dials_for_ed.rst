@@ -471,9 +471,9 @@ except dataset 6, with the following commands:
 
 .. code-block:: bash
 
-  dials.index datablock.json strong.pickle refine.phil
-  dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
-  dials.refine bravais_setting_5.json indexed.pickle refine.phil
+  dials.index datablock.json strong.refl refine.phil
+  dials.refine_bravais_settings indexed.refl experiments.json refine.phil
+  dials.refine bravais_setting_5.json indexed.refl refine.phil
 
 Dataset 6
 ---------
@@ -512,8 +512,8 @@ of PHIL definitions:
 at this stage we did not impose additional lattice symmetry, so kept the
 triclinic solution from indexing and refinement::
 
-  dials.index datablock.json strong.pickle refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
-  dials.refine experiments.json indexed.pickle refine.phil restraint.phil
+  dials.index datablock.json strong.refl refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
+  dials.refine experiments.json indexed.refl refine.phil restraint.phil
 
 Static model refinement
 =======================
@@ -590,10 +590,10 @@ Datasets 1-5 & 7
 
 .. code-block:: bash
 
-  dials.index datablock.json strong.pickle refine.phil
-  dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
-  dials.refine bravais_setting_5.json indexed.pickle refine.phil \
-    output.experiments=static.json output.reflections=static.pickle
+  dials.index datablock.json strong.refl refine.phil
+  dials.refine_bravais_settings indexed.refl experiments.json refine.phil
+  dials.refine bravais_setting_5.json indexed.refl refine.phil \
+    output.experiments=static.json output.reflections=static.refl
 
 Dataset 6
 ---------
@@ -604,10 +604,10 @@ restraint was still used.
 
 .. code-block:: bash
 
-  dials.index datablock.json strong.pickle refine.phil restraint.phil
-  dials.refine_bravais_settings experiments.json indexed.pickle refine.phil
-  dials.refine bravais_setting_5.json indexed.pickle refine.phil restraint.phil \
-    output.experiments=static.json output.reflections=static.pickle
+  dials.index datablock.json strong.refl refine.phil restraint.phil
+  dials.refine_bravais_settings experiments.json indexed.refl refine.phil
+  dials.refine bravais_setting_5.json indexed.refl refine.phil restraint.phil \
+    output.experiments=static.json output.reflections=static.refl
 
 Scan-varying refinement
 =======================
@@ -622,14 +622,14 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     beam.smoother.absolute_num_intervals=1 \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 2
 ---------
@@ -638,13 +638,13 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 3
 ---------
@@ -653,14 +653,14 @@ Varying beam and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     crystal.unit_cell.force_static=True \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 4
 ---------
@@ -669,13 +669,13 @@ Varying crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     crystal.unit_cell.force_static=True \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 5
 ---------
@@ -684,12 +684,12 @@ Varying crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 6
 ---------
@@ -698,7 +698,7 @@ Varying beam and crystal orientation with static, restrained cell:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
@@ -706,7 +706,7 @@ Varying beam and crystal orientation with static, restrained cell:
     crystal.unit_cell.force_static=True \
     restraint.phil \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Dataset 7
 ---------
@@ -715,13 +715,13 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.json static.pickle scan_varying=True \
+  dials.refine static.json static.refl scan_varying=True \
     detector.fix=all \
     parameterisation.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     output.experiments=varying.json \
-    output.reflections=varying.pickle
+    output.reflections=varying.refl
 
 Integration
 ===========
@@ -732,38 +732,38 @@ processing with CCP4.
 
 1. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.0
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_1.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.0
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_1.mtz
 
 2. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_2.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_2.mtz
 
 3. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_3.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_3.mtz
 
 4. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_4.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_4.mtz
 
 5. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_5.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_5.mtz
 
 6. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_6.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_6.mtz
 
 7. .. code-block:: bash
 
-    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
-    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_7.mtz
+    dials.integrate varying.json varying.refl nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.refl mtz.hklout=integrated_7.mtz
 
 Scaling and merging
 ===================

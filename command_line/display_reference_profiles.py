@@ -140,7 +140,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: dials.display_reference_profiles reflections.pickle")
+        print("Usage: dials.display_reference_profiles reflections.refl")
         exit(0)
     if len(sys.argv) > 2:
         profile_number = int(sys.argv[2])

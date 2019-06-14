@@ -128,7 +128,7 @@ script does. If time is *really* short then try uncommenting the line
       easy_run.fully_buffered(command="dials.find_spots datablock.json")
 
       # initial indexing in P 1
-      cmd = "dials.index datablock.json strong.pickle " +\
+      cmd = "dials.index datablock.json strong.refl " +\
             "output.experiments=P1_experiments.json"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("P1_experiments.json"):
@@ -136,14 +136,14 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # bootstrap from the refined P 1 cell
-      cmd = "dials.index P1_experiments.json strong.pickle space_group='H 3'"
+      cmd = "dials.index P1_experiments.json strong.refl space_group='H 3'"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("experiments.json"):
         print "Job %02d failed in indexing" % num
         return
 
       # static model refinement
-      cmd = "dials.refine experiments.json indexed.pickle scan_varying=false " + \
+      cmd = "dials.refine experiments.json indexed.refl scan_varying=false " + \
             "outlier.algorithm=tukey use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("refined_experiments.json"):
@@ -152,15 +152,15 @@ script does. If time is *really* short then try uncommenting the line
 
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
-      cmd = "dials.integrate refined_experiments.json indexed.pickle " + \
+      cmd = "dials.integrate refined_experiments.json indexed.refl " + \
             "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.pickle"):
+      if not os.path.isfile("integrated.refl"):
         print "Job %02d failed during integration" % num
         return
 
       # create MTZ
-      cmd = "dials.export refined_experiments.json integrated.pickle " +\
+      cmd = "dials.export refined_experiments.json integrated.refl " +\
             "mtz.hklout=integrated.mtz"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):
@@ -245,12 +245,12 @@ symmetry constraints. However, for many of the sweeps the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
-  dials.index datablock.json strong.pickle output.experiments=P1_experiments.json
+  dials.index datablock.json strong.refl output.experiments=P1_experiments.json
 
 and then we feed the refined :file:`P1_experiments.json` back into
 :program:`dials.index` specifying the correct symmetry::
 
-  dials.index P1_experiments.json strong.pickle space_group='H 3'
+  dials.index P1_experiments.json strong.refl space_group='H 3'
 
 When :program:`dials.index` is passed an :file:`experiments.json` containing
 a crystal model rather than just a :file:`databock.json` then it automatically
@@ -263,7 +263,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine experiments.json indexed.pickle scan_varying=false outlier.algorithm=tukey use_all_reflections=true
+  dials.refine experiments.json indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -287,7 +287,7 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined_experiments.json indexed.pickle profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
+  dials.integrate refined_experiments.json indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
 
 The :samp:`profile.fitting=False` option ensures we only do summation integration,
 no profile fitting, while the :samp:`prediction.dmin=8.0` and
@@ -304,7 +304,7 @@ is useless for any other purpose.
 
 Finally we use :program:`dials.export` to create an MTZ file::
 
-  dials.export refined_experiments.json integrated.pickle mtz.hklout=integrated.mtz
+  dials.export refined_experiments.json integrated.refl mtz.hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
@@ -507,7 +507,7 @@ between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
   cd sweep_00
-  dials.refine experiments.json indexed.pickle scan_varying=false \
+  dials.refine experiments.json indexed.refl scan_varying=false \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
@@ -522,7 +522,7 @@ Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
 rather limited. In order to do joint refinement of the sweeps we need to combine them
 into a single multi-experiment :file:`experiments.json` and corresponding
-:file:`reflections.pickle`. Whilst doing this we want to reduce the separate
+:file:`reflections.refl`. Whilst doing this we want to reduce the separate
 detector, beam and goniometer models for each experiment into a single shared
 model of each type. The program :program:`dials.combine_experiments` can
 be used for this, but first we have to prepare an input file with a text editor
@@ -571,46 +571,46 @@ file looks like this::
     experiments = "sweep_65/refined_experiments.json"
     experiments = "sweep_66/refined_experiments.json"
     experiments = "sweep_67/refined_experiments.json"
-    reflections = "sweep_00/indexed.pickle"
-    reflections = "sweep_01/indexed.pickle"
-    reflections = "sweep_02/indexed.pickle"
-    reflections = "sweep_03/indexed.pickle"
-    reflections = "sweep_05/indexed.pickle"
-    reflections = "sweep_09/indexed.pickle"
-    reflections = "sweep_14/indexed.pickle"
-    reflections = "sweep_16/indexed.pickle"
-    reflections = "sweep_17/indexed.pickle"
-    reflections = "sweep_18/indexed.pickle"
-    reflections = "sweep_19/indexed.pickle"
-    reflections = "sweep_22/indexed.pickle"
-    reflections = "sweep_23/indexed.pickle"
-    reflections = "sweep_24/indexed.pickle"
-    reflections = "sweep_25/indexed.pickle"
-    reflections = "sweep_26/indexed.pickle"
-    reflections = "sweep_27/indexed.pickle"
-    reflections = "sweep_28/indexed.pickle"
-    reflections = "sweep_29/indexed.pickle"
-    reflections = "sweep_30/indexed.pickle"
-    reflections = "sweep_31/indexed.pickle"
-    reflections = "sweep_33/indexed.pickle"
-    reflections = "sweep_34/indexed.pickle"
-    reflections = "sweep_36/indexed.pickle"
-    reflections = "sweep_42/indexed.pickle"
-    reflections = "sweep_43/indexed.pickle"
-    reflections = "sweep_48/indexed.pickle"
-    reflections = "sweep_50/indexed.pickle"
-    reflections = "sweep_51/indexed.pickle"
-    reflections = "sweep_53/indexed.pickle"
-    reflections = "sweep_54/indexed.pickle"
-    reflections = "sweep_56/indexed.pickle"
-    reflections = "sweep_58/indexed.pickle"
-    reflections = "sweep_59/indexed.pickle"
-    reflections = "sweep_60/indexed.pickle"
-    reflections = "sweep_63/indexed.pickle"
-    reflections = "sweep_64/indexed.pickle"
-    reflections = "sweep_65/indexed.pickle"
-    reflections = "sweep_66/indexed.pickle"
-    reflections = "sweep_67/indexed.pickle"
+    reflections = "sweep_00/indexed.refl"
+    reflections = "sweep_01/indexed.refl"
+    reflections = "sweep_02/indexed.refl"
+    reflections = "sweep_03/indexed.refl"
+    reflections = "sweep_05/indexed.refl"
+    reflections = "sweep_09/indexed.refl"
+    reflections = "sweep_14/indexed.refl"
+    reflections = "sweep_16/indexed.refl"
+    reflections = "sweep_17/indexed.refl"
+    reflections = "sweep_18/indexed.refl"
+    reflections = "sweep_19/indexed.refl"
+    reflections = "sweep_22/indexed.refl"
+    reflections = "sweep_23/indexed.refl"
+    reflections = "sweep_24/indexed.refl"
+    reflections = "sweep_25/indexed.refl"
+    reflections = "sweep_26/indexed.refl"
+    reflections = "sweep_27/indexed.refl"
+    reflections = "sweep_28/indexed.refl"
+    reflections = "sweep_29/indexed.refl"
+    reflections = "sweep_30/indexed.refl"
+    reflections = "sweep_31/indexed.refl"
+    reflections = "sweep_33/indexed.refl"
+    reflections = "sweep_34/indexed.refl"
+    reflections = "sweep_36/indexed.refl"
+    reflections = "sweep_42/indexed.refl"
+    reflections = "sweep_43/indexed.refl"
+    reflections = "sweep_48/indexed.refl"
+    reflections = "sweep_50/indexed.refl"
+    reflections = "sweep_51/indexed.refl"
+    reflections = "sweep_53/indexed.refl"
+    reflections = "sweep_54/indexed.refl"
+    reflections = "sweep_56/indexed.refl"
+    reflections = "sweep_58/indexed.refl"
+    reflections = "sweep_59/indexed.refl"
+    reflections = "sweep_60/indexed.refl"
+    reflections = "sweep_63/indexed.refl"
+    reflections = "sweep_64/indexed.refl"
+    reflections = "sweep_65/indexed.refl"
+    reflections = "sweep_66/indexed.refl"
+    reflections = "sweep_67/indexed.refl"
   }
 
 
@@ -626,7 +626,7 @@ The :samp:`reference_from_experiment` options tell the program to replace all
 beam, goniometer and detector models in the input experiments with those
 models taken from the first experiment, i.e. experiment '0' using 0-based
 indexing. The output lists the number of reflections in each sweep contributing
-to the final :file:`combined_reflections.pickle`::
+to the final :file:`combined_reflections.refl`::
 
   ---------------------
   | Experiment | Nref |
@@ -673,7 +673,7 @@ to the final :file:`combined_reflections.pickle`::
   | 39         | 1138 |
   ---------------------
   Saving combined experiments to combined_experiments.json
-  Saving combined reflections to combined_reflections.pickle
+  Saving combined reflections to combined_reflections.refl
 
 We may also inspect the contents of :file:`combined_experiments.json`, by using
 :program:`dials.show`, for example::
@@ -689,7 +689,7 @@ Now we have the joint experiments and reflections files we can run our multi-
 crystal refinement job. First we try outlier rejection, so that the refinement
 run is similar to the jobs we ran on individual datasets::
 
-  dials.refine combined_experiments.json combined_reflections.pickle \
+  dials.refine combined_experiments.json combined_reflections.refl \
     scan_varying=false use_all_reflections=true outlier.algorithm=tukey
 
 ::
@@ -705,7 +705,7 @@ run is similar to the jobs we ran on individual datasets::
   }
   input {
     experiments = combined_experiments.json
-    reflections = combined_reflections.pickle
+    reflections = combined_reflections.refl
   }
 
   Configuring refiner
@@ -758,7 +758,7 @@ because it selectively removes reflections from the worst fitting experiments.
 
 Instead we try without outlier rejection::
 
-  dials.refine combined_experiments.json combined_reflections.pickle \
+  dials.refine combined_experiments.json combined_reflections.refl \
     scan_varying=false use_all_reflections=true \
     output.experiments=refined_combined_experiments.json
 
@@ -776,7 +776,7 @@ This worked much better::
   }
   input {
     experiments = combined_experiments.json
-    reflections = combined_reflections.pickle
+    reflections = combined_reflections.refl
   }
 
   Configuring refiner
@@ -874,7 +874,7 @@ joint refinement seem appropriate. For better parity with the original results
 perhaps we should use outlier rejection though. Now the models are close enough
 it is safe to do so::
 
-  dials.refine refined_combined_experiments.json combined_reflections.pickle \
+  dials.refine refined_combined_experiments.json combined_reflections.refl \
     scan_varying=false \
     use_all_reflections=true \
     outlier.algorithm=tukey \
@@ -942,7 +942,7 @@ Analysis of jointly refined datasets
 ------------------------------------
 
 :program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.json`
-and :file:`combined_reflections.pickle` directly, so we have to separate these
+and :file:`combined_reflections.refl` directly, so we have to separate these
 into individual files for each experiment. It is best to do this inside a new
 directory:
 
@@ -950,10 +950,10 @@ directory:
 
   mkdir joint
   cd !$
-  dials.split_experiments ../refined_combined_experiments_outrej.json ../combined_reflections.pickle
+  dials.split_experiments ../refined_combined_experiments_outrej.json ../combined_reflections.refl
 
 This fills the directory with 39 individual :file:`experiments_##.json` and
-:file:`reflections_##.pickle` files. To integrate these quickly we want a script
+:file:`reflections_##.refl` files. To integrate these quickly we want a script
 to run in parallel, similar to the one used previously::
 
   #!/bin/env dials.python
@@ -972,7 +972,7 @@ to run in parallel, similar to the one used previously::
     datadir = task[1]
 
     experiments_file = "experiments_%02d.json" % num
-    reflections_file = "reflections_%02d.pickle" % num
+    reflections_file = "reflections_%02d.refl" % num
     experiments_path = os.path.join(datadir, experiments_file)
     reflections_path = os.path.join(datadir, reflections_file)
 
@@ -984,12 +984,12 @@ to run in parallel, similar to the one used previously::
             "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       cmd = cmd % (experiments_path, reflections_path)
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.pickle"):
+      if not os.path.isfile("integrated.refl"):
         print "Job %02d failed during integration" % num
         return
 
       # create MTZ
-      cmd = "dials.export %s integrated.pickle mtz.hklout=integrated.mtz"
+      cmd = "dials.export %s integrated.refl mtz.hklout=integrated.mtz"
       cmd = cmd % experiments_path
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):

@@ -52,7 +52,7 @@ class Script(object):
         import __main__
 
         usage = (
-            "usage: dials.python {0} refined_experiments.json " "refined.pickle"
+            "usage: dials.python {0} refined_experiments.json " "refined.refl"
         ).format(__main__.__file__)
 
         # Create the parser

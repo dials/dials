@@ -53,9 +53,9 @@ class RunOneIndexing(object):
             len(experiments_list.crystals()),
             n_expected_lattices,
         )
-        assert os.path.exists("indexed.pickle")
+        assert os.path.exists("indexed.refl")
 
-        self.indexed_reflections = flex.reflection_table.from_file("indexed.pickle")
+        self.indexed_reflections = flex.reflection_table.from_file("indexed.refl")
 
         self.experiments = experiments_list
         for i in range(len(experiments_list)):
@@ -539,7 +539,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     command = " ".join(args)
     print(command)
     easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.pickle"
+    pickle_path = "strong.refl"
     assert os.path.exists(pickle_path)
 
     expected_unit_cell = uctbx.unit_cell(
@@ -583,7 +583,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
     args = ["dials.find_spots", experiments_json]
     command = " ".join(args)
     easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.pickle"
+    pickle_path = "strong.refl"
     assert os.path.exists(pickle_path)
 
     expected_unit_cell = uctbx.unit_cell(
@@ -768,9 +768,7 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir)
         "max_lattices=3",
     ]
     easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
-    assert os.path.isfile("indexed.pickle") and os.path.isfile(
-        "indexed_experiments.json"
-    )
+    assert os.path.isfile("indexed.refl") and os.path.isfile("indexed_experiments.json")
     experiments_list = load.experiment_list(
         "indexed_experiments.json", check_format=False
     )

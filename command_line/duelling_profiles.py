@@ -51,7 +51,7 @@ help_message = """
 
 Examples::
 
-  dev.dials.duelling_profiles experiments.json integrated.pickle
+  dev.dials.duelling_profiles experiments.json integrated.refl
 
 """
 
@@ -514,7 +514,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] integrated.pickle experiments.json" % (
+    usage = "%s [options] integrated.refl experiments.json" % (
         libtbx.env.dispatcher_name
     )
 

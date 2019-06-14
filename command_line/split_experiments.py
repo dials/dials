@@ -12,7 +12,7 @@ reflection file per output experiment file.
 
 Example::
 
-  dials.split_experiments combined_experiments.json combined_reflections.pickle
+  dials.split_experiments combined_experiments.json combined_reflections.refl
 
 """
 
@@ -73,8 +73,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.json experiments2.json reflections1.refl "
+            "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -124,7 +124,7 @@ class Script(object):
             else "",
         )
 
-        reflections_template = "%s_%%0%sd%s.pickle" % (
+        reflections_template = "%s_%%0%sd%s.refl" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.reflections_suffix)

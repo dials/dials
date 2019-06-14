@@ -24,8 +24,8 @@ def test_reindex(dials_regression, run_in_tmpdir):
 
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
-    assert os.path.exists("reindexed_reflections.pickle")
-    new_reflections = easy_pickle.load("reindexed_reflections.pickle")
+    assert os.path.exists("reindexed_reflections.refl")
+    new_reflections = easy_pickle.load("reindexed_reflections.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert os.path.exists("reindexed_experiments.json")
     new_experiments = load.experiment_list(
@@ -103,8 +103,8 @@ def test_reindex_multi_sweep(dials_regression, run_in_tmpdir):
 
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
-    assert os.path.exists("reindexed_reflections.pickle")
-    new_reflections = easy_pickle.load("reindexed_reflections.pickle")
+    assert os.path.exists("reindexed_reflections.refl")
+    new_reflections = easy_pickle.load("reindexed_reflections.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert os.path.exists("reindexed_experiments.json")
     new_experiments = load.experiment_list(
@@ -141,14 +141,14 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         experiments_path,
         "change_of_basis_op=a,b,c",
         "space_group=P4",
-        "output.reflections=P4_reflections.pickle",
+        "output.reflections=P4_reflections.refl",
         "output.experiments=P4_experiments.json",
     ]
     command = " ".join(commands)
     print(command)
 
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("P4_reflections.pickle")
+    assert os.path.exists("P4_reflections.refl")
     assert os.path.exists("P4_experiments.json")
     new_experiments = load.experiment_list("P4_experiments.json", check_format=False)
     assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == " P 4"
@@ -158,11 +158,11 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     cb_op = sgtbx.change_of_basis_op("a,-b,-c")
     commands = [
         "dials.reindex",
-        "P4_reflections.pickle",
+        "P4_reflections.refl",
         "P4_experiments.json",
         "change_of_basis_op=%s" % str(cb_op),
         "output.experiments=P4_reindexed.json",
-        "output.reflections=P4_reindexed.pickle",
+        "output.reflections=P4_reindexed.refl",
     ]
     command = " ".join(commands)
     print(command)
@@ -171,19 +171,19 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     # now run reference reindexing
     commands = [
         "dials.reindex",
-        "P4_reflections.pickle",
+        "P4_reflections.refl",
         "P4_experiments.json",
         "reference.experiments=P4_reindexed.json",
-        "reference.reflections=P4_reindexed.pickle",
+        "reference.reflections=P4_reindexed.refl",
     ]
     command = " ".join(commands)
     print(command)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = easy_pickle.load("reindexed_reflections.pickle")
-    P4_reindexed = easy_pickle.load("P4_reindexed.pickle")
-    P4_reflections = easy_pickle.load("P4_reflections.pickle")
+    reindexed_reflections = easy_pickle.load("reindexed_reflections.refl")
+    P4_reindexed = easy_pickle.load("P4_reindexed.refl")
+    P4_reflections = easy_pickle.load("P4_reflections.refl")
 
     h1, k1, l1 = reindexed_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = P4_reindexed["miller_index"].as_vec3_double().parts()

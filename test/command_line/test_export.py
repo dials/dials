@@ -70,14 +70,14 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     for r in refls:
         joint_refl.extend(r)
     dump.experiment_list(exps, "tmp_exp.json")
-    joint_refl.as_pickle("tmp_refl.pickle")
+    joint_refl.as_pickle("tmp_refl.refl")
 
     # Now run
     result = procrunner.run(
         [
             "dials.export",
             "experiments=tmp_exp.json",
-            "reflections=tmp_refl.pickle",
+            "reflections=tmp_refl.refl",
             "format=mtz",
             "mtz.hklout=unmerged.mtz",
         ],

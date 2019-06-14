@@ -19,12 +19,7 @@ def test_export_best(dials_data, tmpdir):
     )
     assert not result["exitcode"] and not result["stderr"]
     result = procrunner.run(
-        [
-            "dials.index",
-            "imported_experiments.json",
-            "strong.pickle",
-            "space_group=P422",
-        ],
+        ["dials.index", "imported_experiments.json", "strong.refl", "space_group=P422"],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
@@ -32,7 +27,7 @@ def test_export_best(dials_data, tmpdir):
         [
             "dials.integrate",
             "indexed_experiments.json",
-            "indexed.pickle",
+            "indexed.refl",
             "prediction.padding=0",
             "sigma_m_algorithm=basic",
         ],
@@ -43,7 +38,7 @@ def test_export_best(dials_data, tmpdir):
         [
             "dials.export",
             "integrated_experiments.json",
-            "integrated.pickle",
+            "integrated.refl",
             "format=best",
         ],
         working_directory=tmpdir.strpath,

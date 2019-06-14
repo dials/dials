@@ -50,7 +50,7 @@ def test(dials_regression, run_in_tmpdir):
         [
             "dials.refine",
             "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined_reflections.refl",
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
@@ -111,12 +111,12 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
         [
             "dials.refine",
             "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined_reflections.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history1.pickle",
             "output.experiments=refined_experiments1.json",
-            "output.reflections=refined1.pickle",
+            "output.reflections=refined1.refl",
         ]
     )
     assert result["exitcode"] == 0
@@ -145,12 +145,12 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
         [
             "dials.refine",
             "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined_reflections.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history2.pickle",
             "output.experiments=refined_experiments2.json",
-            "output.reflections=refined2.pickle",
+            "output.reflections=refined2.refl",
         ]
     )
     assert result["exitcode"] == 0

@@ -101,8 +101,8 @@ This will just report the number of spots found.
   Filtered 38341 spots by peak-centroid distance
 
   --------------------------------------------------------------------------------
-  Saving 38341 reflections to strong.pickle
-  Saved 38341 reflections to strong.pickle
+  Saving 38341 reflections to strong.refl
+  Saved 38341 reflections to strong.refl
 
 Indexing
 ^^^^^^^^
@@ -112,7 +112,7 @@ lattice is searched for, but if there are sufficient unindexed reflections
 remaining after indexing the first lattice, we can switch on indexing of
 multiple lattices using the parameter max_lattices=2 (e.g.)::
 
-  dials.index datablock.json strong.pickle \
+  dials.index datablock.json strong.refl \
     max_lattices=2
 
 ::
@@ -126,7 +126,7 @@ multiple lattices using the parameter max_lattices=2 (e.g.)::
   }
   input {
     datablock = datablock.json
-    reflections = strong.pickle
+    reflections = strong.refl
   }
 
   ...
@@ -186,9 +186,9 @@ processing using bravais_setting_5.json, i.e. solution number 5.
 
 ::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=0
+  dials.refine_bravais_settings experiments.json indexed.refl crystal_id=0
 
-  dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
+  dials.refine_bravais_settings experiments.json indexed.refl crystal_id=1
 
 gives a table containing the metric fit, rmsds (in mm) and unit cell for
 each Bravais setting...
@@ -229,7 +229,7 @@ P222.
 
 ::
 
-  dials.index datablock.json strong.pickle \
+  dials.index datablock.json strong.refl \
     max_lattices=2 \
     space_group=P222
 
@@ -247,7 +247,7 @@ P222.
   }
   input {
     datablock = datablock.json
-    reflections = strong.pickle
+    reflections = strong.refl
   }
 
   ...
@@ -306,7 +306,7 @@ refinement step in here to allow e.g. scan varying refinement.
 
 ::
 
-  dials.refine experiments.json indexed.pickle \
+  dials.refine experiments.json indexed.refl \
     scan_varying=True \
     outlier.algorithm=tukey
 
@@ -328,7 +328,7 @@ refinement step in here to allow e.g. scan varying refinement.
   }
   input {
     experiments = experiments.json
-    reflections = indexed.pickle
+    reflections = indexed.refl
   }
 
   Configuring refiner
@@ -400,7 +400,7 @@ by the program :doc:`dials.integrate </documentation/programs/dials_integrate>`.
 
 ::
 
-  dials.integrate refined_experiments.json refined.pickle
+  dials.integrate refined_experiments.json refined.refl
 
 This program outputs a lot of information as integration progresses,
 concluding with a summary of the integration results.
@@ -719,28 +719,28 @@ The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_. Currently :doc:`dials.export </documentation/programs/dials_export>`
 only supports one experiment at a time, therefore it is necessary to first
-split the :samp:`integrated_experiments.json` and :samp:`integrated.pickle` into
+split the :samp:`integrated_experiments.json` and :samp:`integrated.refl` into
 separate files
 
 ::
 
-  dials.split_experiments integrated_experiments.json integrated.pickle \
+  dials.split_experiments integrated_experiments.json integrated.refl \
     experiments_prefix=integrated_experiments reflections_prefix=integrated
 
 ::
 
   Saving experiment 0 to integrated_experiments_0.json
-  Saving reflections for experiment 0 to integrated_0.pickle
+  Saving reflections for experiment 0 to integrated_0.refl
   Saving experiment 1 to integrated_experiments_1.json
-  Saving reflections for experiment 1 to integrated_1.pickle
+  Saving reflections for experiment 1 to integrated_1.refl
 
-Now we are ready to run dials.export on the individual .pickle and .json
+Now we are ready to run dials.export on the individual .refl and .json
 files output for each experiment.
 
 ::
 
-  dials.export integrated_0.pickle integrated_experiments_0.json mtz.hklout=integrated_0.mtz
-  dials.export integrated_1.pickle integrated_experiments_1.json mtz.hklout=integrated_1.mtz
+  dials.export integrated_0.refl integrated_experiments_0.json mtz.hklout=integrated_0.mtz
+  dials.export integrated_1.refl integrated_experiments_1.json mtz.hklout=integrated_1.mtz
 
 And this is the output, showing the reflection file statistics.
 

@@ -31,13 +31,13 @@ dials.integate.
 
 Examples::
 
-  dials.integrate experiments.json indexed.pickle
+  dials.integrate experiments.json refined.refl
 
-  dials.integrate experiments.json indexed.pickle output.reflections=integrated.pickle
+  dials.integrate experiments.json refined.refl output.reflections=integrated.refl
 
-  dials.integrate experiments.json indexed.pickle profile.fitting=False
+  dials.integrate experiments.json refined.refl profile.fitting=False
 
-  dials.integrate experiments.json indexed.pickle background.algorithm=glm
+  dials.integrate experiments.json refined.refl background.algorithm=glm
 
 """
 
@@ -52,7 +52,7 @@ phil_scope = parse(
       .type = str
       .help = "The experiments output filename"
 
-    reflections = 'integrated.pickle'
+    reflections = 'integrated.refl'
       .type = str
       .help = "The integrated output filename"
 

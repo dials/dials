@@ -37,25 +37,25 @@ dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 
 # index these found spots, searching for multiple lattices
 
-dials.index datablock.json strong.pickle \
+dials.index datablock.json strong.refl \
   max_lattices=2
 
 # refine each indexing solution (separately) in all Bravais settings consistent
 # with the indexed unit cell. In this example we would continue processing
 # using the bravais_setting_5.json, i.e. solution number 5
 
-dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=0
+dials.refine_bravais_settings experiments.json indexed.refl crystal_id=0
 
-dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
+dials.refine_bravais_settings experiments.json indexed.refl crystal_id=1
 
 # now re-run the indexing, this time imposing the lattice constraints for the
 # chosen Bravais setting, in this case number 5, i.e. oP, or point group P222
 
-dials.index datablock.json strong.pickle \
+dials.index datablock.json strong.refl \
   max_lattices=2 \
   space_group=P222
 
-dials.refine experiments.json indexed.pickle \
+dials.refine experiments.json indexed.refl \
   scan_varying=True \
   outlier.algorithm=tukey
 
@@ -66,21 +66,21 @@ dials.refine experiments.json indexed.pickle \
 
 dials.integrate outlier.algorithm=null profile.fitting=True \
   input.experiments=refined_experiments.json \
-  input.reflections=indexed.pickle \
+  input.reflections=indexed.refl \
   nproc=$nproc
 
 # currently dials.export only supports one experiment at a time
-# therefore split the refined_experiments.json and integrated.pickle into
+# therefore split the refined_experiments.json and integrated.refl into
 # separate files
 
-dials.split_experiments refined_experiments.json integrated.pickle \
+dials.split_experiments refined_experiments.json integrated.refl \
   experiments_prefix=refined_experiments reflections_prefix=integrated
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated_0.pickle refined_experiments_0.json mtz.hklout=integrated_0.mtz
-dials.export integrated_1.pickle refined_experiments_1.json mtz.hklout=integrated_1.mtz
+dials.export integrated_0.refl refined_experiments_0.json mtz.hklout=integrated_0.mtz
+dials.export integrated_1.refl refined_experiments_1.json mtz.hklout=integrated_1.mtz
 
 rebatch hklin integrated_0.mtz hklout rebatch_0.mtz > rebatch_0.log << EOF
 batch add 0

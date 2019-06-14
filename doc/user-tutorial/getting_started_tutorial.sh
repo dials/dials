@@ -42,12 +42,12 @@ dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
 # and refinement. can also specify unit cell here and also apply different
 # indexing algorithms
 
-dials.index strong.pickle datablock.json
+dials.index strong.refl datablock.json
 
 # Refining: If you do want to use a time varying model,
 # you will need to rerun the refinement with this new model as
 
-dials.refine experiments.json indexed.pickle scan_varying=true
+dials.refine experiments.json indexed.refl scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile
@@ -55,12 +55,12 @@ dials.refine experiments.json indexed.pickle scan_varying=true
 # background determination with no outlier rejection and XDS-style 3D profile
 # fitting. These commands are most likely to change and can be viewed by running
 
-dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
+dials.integrate outlier.algorithm=null refined_experiments.json indexed.refl
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz
+dials.export integrated.refl refined_experiments.json mtz.hklout=integrated.mtz
 
 # and as if to make a point, here is all we need to do is to sort the data with
 # pointless and then scale the data (ignoring anomalous differences) to 1.3A,

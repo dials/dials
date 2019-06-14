@@ -37,7 +37,7 @@ def run(args):
 
     usage = (
         """\
-%s experiments.json reflections.pickle [options]"""
+%s experiments.json reflections.refl [options]"""
         % libtbx.env.dispatcher_name
     )
     from dials.util.options import OptionParser

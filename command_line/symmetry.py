@@ -64,7 +64,7 @@ output {
     .type = str
   experiments = "reindexed_experiments.json"
     .type = path
-  reflections = "reindexed_reflections.pickle"
+  reflections = "reindexed_reflections.refl"
     .type = path
   json = dials.symmetry.json
     .type = path
@@ -163,13 +163,13 @@ reflections.
 
 Examples::
 
-  dials.symmetry experiments.json reflections.pickle
+  dials.symmetry experiments.json reflections.refl
 
 """
 
 
 def run(args):
-    usage = "dials.symmetry [options] experiments.json reflections.pickle"
+    usage = "dials.symmetry [options] experiments.json reflections.refl"
 
     parser = OptionParser(
         usage=usage,

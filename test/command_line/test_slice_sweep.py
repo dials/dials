@@ -29,7 +29,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_
     sliced_exp = ExperimentListFactory.from_json_file(
         "experiments_1_20.json", check_format=False
     )[0]
-    with open("indexed_strong_1_20.pickle", "rb") as f:
+    with open("indexed_strong_1_20.refl", "rb") as f:
         sliced_refs = pickle.load(f)
 
     # simple test of results

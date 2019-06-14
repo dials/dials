@@ -502,9 +502,9 @@ class IntegrationJob(object):
                 output = output.split_by_experiment_id()
                 for table in output:
                     i = table["id"][0]
-                    table.as_pickle("shoeboxes_%d_%d.pickle" % (self.index, i))
+                    table.as_pickle("shoeboxes_%d_%d.refl" % (self.index, i))
             else:
-                output.as_pickle("shoeboxes_%d.pickle" % self.index)
+                output.as_pickle("shoeboxes_%d.refl" % self.index)
 
         # Delete the shoeboxes
         if debug.separate_files or not debug.output:
@@ -995,9 +995,9 @@ class ReferenceCalculatorJob(object):
                 output = output.split_by_experiment_id()
                 for table in output:
                     i = table["id"][0]
-                    table.as_pickle("shoeboxes_%d_%d.pickle" % (self.index, i))
+                    table.as_pickle("shoeboxes_%d_%d.refl" % (self.index, i))
             else:
-                output.as_pickle("shoeboxes_%d.pickle" % self.index)
+                output.as_pickle("shoeboxes_%d.refl" % self.index)
 
         # Delete the shoeboxes
         if debug.separate_files or not debug.output:

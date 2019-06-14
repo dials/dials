@@ -39,7 +39,7 @@ integration_methpd = *xds mosflm
 output {
   over = None
   under = None
-  all = all_refl.pickle
+  all = all_refl.refl
 }
 rotation {
   axis {
@@ -54,4 +54,4 @@ rotation {
         ]
     )
     main(working_phil.extract())
-    assert (tmpdir / "all_refl.pickle").check()
+    assert (tmpdir / "all_refl.refl").check()

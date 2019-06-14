@@ -56,8 +56,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.json experiments2.json reflections1.refl "
+            "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser

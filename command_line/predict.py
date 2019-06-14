@@ -30,7 +30,7 @@ Examples::
 
 phil_scope = parse(
     """
-  output = predicted.pickle
+  output = predicted.refl
     .type = str
     .help = "The filename for the predicted reflections"
 

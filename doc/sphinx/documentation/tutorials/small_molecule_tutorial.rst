@@ -37,7 +37,7 @@ Though will of course take a little longer to work through four sweeps. Here npr
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer datablock.json strong.pickle
+   dials.reciprocal_lattice_viewer datablock.json strong.refl
 
 Which will show how the four sweeps overlap in reciprocal space, as:
 
@@ -50,7 +50,7 @@ Indexing here will depend on the model for the experiment being reasonably accur
 
 .. code-block:: bash
 
-   dials.index datablock.json strong.pickle split_experiments=True
+   dials.index datablock.json strong.refl split_experiments=True
 
 Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
 
@@ -61,16 +61,16 @@ In the single sweep tutorial the determination of the Bravais lattice is perform
 
 .. code-block:: bash
 
-   dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=0
-   dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=1
-   dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=2
-   dials.refine_bravais_settings indexed.pickle experiments.json crystal_id=3
+   dials.refine_bravais_settings indexed.refl experiments.json crystal_id=0
+   dials.refine_bravais_settings indexed.refl experiments.json crystal_id=1
+   dials.refine_bravais_settings indexed.refl experiments.json crystal_id=2
+   dials.refine_bravais_settings indexed.refl experiments.json crystal_id=3
 
 Inspect the results, conclude that the oP lattice is appropriate then assign this as a space group for indexing (in this case, P222)
 
 .. code-block:: bash
 
-   dials.index datablock.json strong.pickle split_experiments=True space_group=P222
+   dials.index datablock.json strong.refl split_experiments=True space_group=P222
 
 This will once again consistently index the data, this time enforcing the lattice constraints.
 
@@ -81,14 +81,14 @@ Prior to integration we want to refine the experimental geometry and the scan va
 
 .. code-block:: bash
 
-   dials.refine indexed.pickle experiments.json output.reflections=static.pickle output.experiments=static.json scan_varying=false
-   dials.refine static.pickle static.json scan_varying=True
+   dials.refine indexed.refl experiments.json output.reflections=static.refl output.experiments=static.json scan_varying=false
+   dials.refine static.refl static.json scan_varying=True
 
 At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sweeps:
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer refined_experiments.json refined.pickle
+   dials.reciprocal_lattice_viewer refined_experiments.json refined.refl
 
 
 Integration
@@ -98,7 +98,7 @@ At this stage the reflections may be integrated - this is run with:
 
 .. code-block:: bash
 
-   dials.integrate refined.pickle refined_experiments.json nproc=8
+   dials.integrate refined.refl refined_experiments.json nproc=8
 
 which will integrate each sweep in sequence, again using 8 cores.
 
@@ -109,7 +109,7 @@ After integration the unit cell for downstream analysis may be derived from refi
 
 .. code-block:: bash
 
-   dials.two_theta_refine integrated.pickle integrated_experiments.json p4p=integrated.p4p
+   dials.two_theta_refine integrated.refl integrated_experiments.json p4p=integrated.p4p
 
 Here the results will be output to a p4p file for XPREP, which includes the standard uncertainties on the unit cell.
 
@@ -121,10 +121,10 @@ Note that SADABS requires the batches and file names to be numbered from 1:
 
 .. code-block:: bash
 
-   dials.split_experiments integrated.pickle integrated_experiments.json
-   dials.export format=sadabs reflections_0.pickle experiments_0.json sadabs.hklout=integrated_1.sad run=1
-   dials.export format=sadabs reflections_1.pickle experiments_1.json sadabs.hklout=integrated_2.sad run=2
-   dials.export format=sadabs reflections_2.pickle experiments_2.json sadabs.hklout=integrated_3.sad run=3
-   dials.export format=sadabs reflections_3.pickle experiments_3.json sadabs.hklout=integrated_4.sad run=4
+   dials.split_experiments integrated.refl integrated_experiments.json
+   dials.export format=sadabs reflections_0.refl experiments_0.json sadabs.hklout=integrated_1.sad run=1
+   dials.export format=sadabs reflections_1.refl experiments_1.json sadabs.hklout=integrated_2.sad run=2
+   dials.export format=sadabs reflections_2.refl experiments_2.json sadabs.hklout=integrated_3.sad run=3
+   dials.export format=sadabs reflections_3.refl experiments_3.json sadabs.hklout=integrated_4.sad run=4
 
-If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated.
+If desired, p4p files for each combination of reflections_[0-3].refl, experiments_[0-3].json could also be generated.
