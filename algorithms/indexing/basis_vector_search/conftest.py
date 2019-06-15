@@ -7,6 +7,8 @@ from scitbx import matrix
 from scitbx.math import euler_angles_as_matrix
 from cctbx import sgtbx
 
+random.seed(42)
+
 
 def random_rotation(angle_min=0, angle_max=360):
     angles = [random.uniform(angle_min, angle_max) for i in range(3)]
