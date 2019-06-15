@@ -1,11 +1,11 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import pytest
 
 from dials.algorithms.indexing.basis_vector_search import optimise, strategies
 
 
+@pytest.mark.skip("Test unstable, https://github.com/dials/dials/issues/813")
 def test_optimise_basis_vectors(setup_rlp):
     max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
     rlp = setup_rlp["rlp"]
