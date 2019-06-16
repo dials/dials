@@ -1,11 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import pytest
+import random
 
 from dials.algorithms.indexing.basis_vector_search import optimise, strategies
 
 
 def test_optimise_basis_vectors(setup_rlp):
+    random.seed(42)  # guaranteed to be random
     max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
     rlp = setup_rlp["rlp"]
     strategy = strategies.FFT3D(max_cell, n_points=256)
