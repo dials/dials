@@ -1,4 +1,4 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.test_failure_reasons
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_test_failure_reasons
 
 from __future__ import absolute_import, division, print_function
 
