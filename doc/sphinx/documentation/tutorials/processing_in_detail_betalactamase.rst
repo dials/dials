@@ -291,7 +291,7 @@ chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
 
 .. literalinclude:: logs_detail_betalactamase/dials.reindex.cmd
 
-This outputs the file :file:`reindexed_reflections.refl` which we now
+This outputs the file :file:`reindexed.refl` which we now
 use as input to downstream programs, in place of the original
 :file:`indexed.refl`.
 
@@ -484,7 +484,7 @@ and scattered beam vector relative to the crystal. In this example, we shall
 scale the dataset using the output of dials.symmetry with a resolution cutoff of
 1.4 Angstrom::
 
-  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4
 
 As can be seen from the output text, 70 parameters are used to parameterise the
 scaling model for this dataset. Outlier rejection is performed at several stages,
@@ -522,7 +522,7 @@ periodicity similar to the scale term. There is certainly no strong B-factor
 reduction as a function of rotation angle, which would have suggested radiation
 damage. The scaling can be repeated, omitting the :samp:`decay_term`::
 
-  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4 decay_term=False
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4 decay_term=False
 
 ::
 

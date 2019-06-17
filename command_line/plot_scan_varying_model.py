@@ -74,7 +74,9 @@ class Script(object):
         from dials.util.options import OptionParser
         import libtbx.load_env
 
-        usage = "usage: %s [options] experiments.expt" % libtbx.env.dispatcher_name
+        usage = (
+            "usage: %s [options] refined_experiments.expt" % libtbx.env.dispatcher_name
+        )
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

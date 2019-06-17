@@ -162,7 +162,7 @@ analysis. Now the correct solution is easily found with a very high likelihood,
 that's much better! We can now run scaling again on the output of :samp:`dials.symmetry`.
 Let's also output the results to an unmerged mtz so that we can later create a report::
 
-  dials.scale reindexed_reflections.refl reindexed_experiments.expt unmerged_mtz=rescaled.mtz
+  dials.scale symmetrized.refl symmetrized.expt unmerged_mtz=rescaled.mtz
 
 From the output, you can see that the merging statistics are significantly better
 than before, with high correlation coefficients close to 1. At this point we could

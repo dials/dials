@@ -101,7 +101,7 @@ class Processing_Tutorial(object):
         cmd = "dials.reindex indexed.refl change_of_basis_op=a,b,c"
 
     class dials_refine(Job):
-        cmd = "dials.refine bravais_setting_9.expt reindexed_reflections.refl scan_varying=false"
+        cmd = "dials.refine bravais_setting_9.expt reindexed.refl scan_varying=false"
 
     class dials_sv_refine(Job):
         cmd = "dials.refine refined_experiments.expt refined.refl scan_varying=true"
@@ -236,7 +236,7 @@ def generate_processing_detail_text_betalactamase():
         ("dials.reindex", "dials.reindex indexed.refl change_of_basis_op=a+b,-a+b,c"),
         (
             "dials.refine",
-            "dials.refine bravais_setting_2.expt reindexed_reflections.refl scan_varying=false",
+            "dials.refine bravais_setting_2.expt reindexed.refl scan_varying=false",
         ),
         (
             "dials.sv_refine",

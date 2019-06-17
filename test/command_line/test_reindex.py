@@ -24,13 +24,11 @@ def test_reindex(dials_regression, run_in_tmpdir):
 
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
-    assert os.path.exists("reindexed_reflections.refl")
-    new_reflections = easy_pickle.load("reindexed_reflections.refl")
+    assert os.path.exists("reindexed.refl")
+    new_reflections = easy_pickle.load("reindexed.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
-    assert os.path.exists("reindexed_experiments.expt")
-    new_experiments = load.experiment_list(
-        "reindexed_experiments.expt", check_format=False
-    )
+    assert os.path.exists("reindexed.expt")
+    new_experiments = load.experiment_list("reindexed.expt", check_format=False)
     h1, k1, l1 = old_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = new_reflections["miller_index"].as_vec3_double().parts()
     assert 2 * h1 == pytest.approx(h2)
@@ -103,13 +101,11 @@ def test_reindex_multi_sweep(dials_regression, run_in_tmpdir):
 
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     old_reflections = easy_pickle.load(pickle_path)
-    assert os.path.exists("reindexed_reflections.refl")
-    new_reflections = easy_pickle.load("reindexed_reflections.refl")
+    assert os.path.exists("reindexed.refl")
+    new_reflections = easy_pickle.load("reindexed.refl")
     old_experiments = load.experiment_list(experiments_path, check_format=False)
-    assert os.path.exists("reindexed_experiments.expt")
-    new_experiments = load.experiment_list(
-        "reindexed_experiments.expt", check_format=False
-    )
+    assert os.path.exists("reindexed.expt")
+    new_experiments = load.experiment_list("reindexed.expt", check_format=False)
     new_cs = new_experiments[0].crystal.get_crystal_symmetry()
     assert new_cs.unit_cell().parameters() == pytest.approx(
         (
@@ -181,7 +177,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = easy_pickle.load("reindexed_reflections.refl")
+    reindexed_reflections = easy_pickle.load("reindexed.refl")
     P4_reindexed = easy_pickle.load("P4_reindexed.refl")
     P4_reflections = easy_pickle.load("P4_reflections.refl")
 

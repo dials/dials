@@ -62,9 +62,9 @@ output {
     .type = str
   debug_log = dials.symmetry.debug.log
     .type = str
-  experiments = "reindexed_experiments.expt"
+  experiments = "symmetrized.expt"
     .type = path
-  reflections = "reindexed_reflections.refl"
+  reflections = "symmetrized.refl"
     .type = path
   json = dials.symmetry.json
     .type = path

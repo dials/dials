@@ -74,11 +74,11 @@ reference {
     .help = "Reference reflections to allow reindexing to consistent index between datasets."
 }
 output {
-  experiments = reindexed_experiments.expt
+  experiments = reindexed.expt
     .type = str
     .help = "The filename for reindexed experimental models"
 
-  reflections = reindexed_reflections.refl
+  reflections = reindexed.refl
     .type = str
     .help = "The filename for reindexed reflections"
 }

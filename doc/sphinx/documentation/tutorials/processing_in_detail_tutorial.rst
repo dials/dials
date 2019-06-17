@@ -215,7 +215,7 @@ anyway to demonstrate its use.
 
 .. literalinclude:: logs/dials.reindex.cmd
 
-This outputs the file :file:`reindexed_reflections.refl` which should be
+This outputs the file :file:`reindexed.refl` which should be
 used as input to downstream programs in place of :file:`indexed.refl`.
 
 .. _sec-refinement:

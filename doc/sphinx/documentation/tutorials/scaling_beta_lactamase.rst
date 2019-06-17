@@ -30,8 +30,8 @@ in agreement with the result from :samp:`dials.refine_bravais_settings`.
 
 To run scaling, any reflection files containing integrated reflections can be
 passed to :samp:`dials.scale`. In the example below, we shall use the output files of
-:samp:`dials.symmetry`, :samp:`reindexed_experiments.expt` and
-:samp:`reindexed_reflections.refl`. When run, :samp:`dials.scale` performs scaling
+:samp:`dials.symmetry`, :samp:`symmetrized.expt` and
+:samp:`symmetrized.refl`. When run, :samp:`dials.scale` performs scaling
 on the dataset, and calculates an inverse scale factor for
 each reflection (i.e. the corrected intensities are given by
 :math:`I^{cor}_i = I^{obs}_i / g_i`). The updated dataset is saved to
@@ -53,7 +53,7 @@ and scattered beam vector relative to the crystal (:samp:`absorption_term`).
 
 Let's run :samp:`dials.scale` on the Beta-lactamase dataset, using a :samp:`d_min` cutoff::
 
-  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4
 
 As can be seen from the log, a subset of reflections are selected to be used in
 scale factor determination, which helps to speed up the algorithm. In a typical
@@ -116,7 +116,7 @@ component is accounting for variation that could be described only by a scale
 and absorption term. To test this, we can repeat the scaling process but turn
 off the :samp:`decay_term`::
 
-  dials.scale reindexed_experiments.expt reindexed_reflections.refl d_min=1.4 decay_term=False
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4 decay_term=False
 
 ::
 

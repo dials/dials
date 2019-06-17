@@ -96,7 +96,7 @@ include those which are now disallowed by the centring operation. An easy
 way to fix this is simply to reindex the spot list using the new model. We
 also request output of the unindexed reflections to explore later::
 
-  dials.index reindexed_experiments.expt strong.refl output.unindexed_reflections=unindexed.refl
+  dials.index reindexed.expt strong.refl output.unindexed_reflections=unindexed.refl
 
 This produces a properly indexed spot list, but the space group is in an
 unconventional setting. We can fix this as follows::
@@ -120,7 +120,7 @@ consistent with the conventional oC lattice::
 
   dials.reindex indexed.refl change_of_basis_op=b-c,b+c,a
 
-This gives us :file:`reindexed_reflections.refl`. Before passing this along with
+This gives us :file:`reindexed.refl`. Before passing this along with
 :file:`bravais_setting_5.expt` to refinement and then to integration it is worth
 exploring this result with :program:`dials.image_viewer` and
 :program:`dials.reciprocal_lattice_viewer`.
@@ -167,7 +167,7 @@ separate crystallite, rotated about 11 degrees from the first and therefore
 easily disentangled from the others. We can combine this result with the
 previous one::
 
-  dials.combine_experiments bravais_setting_5.expt reindexed_reflections.refl minor.expt minor.refl beam=0 detector=0 scan=0 goniometer=0 compare_models=False
+  dials.combine_experiments bravais_setting_5.expt reindexed.refl minor.expt minor.refl beam=0 detector=0 scan=0 goniometer=0 compare_models=False
 
 Here, the ``beam=0`` etc. specify that the combined result should have all
 experimental models apart from the crystal taken from the first experiment,

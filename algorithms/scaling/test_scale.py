@@ -719,10 +719,10 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
     )
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("reindexed_experiments.expt")
-    assert os.path.exists("reindexed_reflections.refl")
+    assert os.path.exists("symmetrized.expt")
+    assert os.path.exists("symmetrized.refl")
 
-    args = ["dials.scale", "reindexed_reflections.refl", "reindexed_experiments.expt"]
+    args = ["dials.scale", "symmetrized.refl", "symmetrized.expt"]
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.expt")
@@ -736,14 +736,14 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
         + ["scaled.refl", "scaled_experiments.expt"]
         + [pickle_path]
         + [sweep_path]
-        + ["output.reflections=reindexed.refl", "output.experiments=reindexed.expt"]
+        + ["output.reflections=symmetrized.refl", "output.experiments=symmetrized.expt"]
     )
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("reindexed_experiments.expt")
-    assert os.path.exists("reindexed_reflections.refl")
+    assert os.path.exists("symmetrized.expt")
+    assert os.path.exists("symmetrized.refl")
 
-    args = ["dials.scale", "reindexed_reflections.refl", "reindexed_experiments.expt"]
+    args = ["dials.scale", "symmetrized.refl", "symmetrized.expt"]
     command = " ".join(args)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
     assert os.path.exists("scaled_experiments.expt")
