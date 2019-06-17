@@ -175,7 +175,7 @@ More about this is discussed below in :ref:`sec-refinement`.
 
 After indexing it can be useful to inspect the reciprocal lattice again::
 
-  dials.reciprocal_lattice_viewer experiments.expt indexed.refl
+  dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
 Now indexed/unindexed spots are differentiated by colour, and it is possible
 to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`

@@ -18,7 +18,7 @@ from iotbx.phil import parse
 
 help_message = """
 
-This program augments a experiements JSON file with one or more masks specified by the
+This program augments a experiments JSON file with one or more masks specified by the
 user.  Its only function is to input the mask file paths to the experiments JSON file,
 but means that the user does not have to edit the experiments file by hand.
 

@@ -226,7 +226,7 @@ closer to the spindle to be included in refinement (default value is 0.05, and
 if set to 0.0 no reflections will be rejected for being too close).
 Without this option, the central panels are very sparse::
 
-  dials.refine indexed.refl experiments.expt \
+  dials.refine indexed.refl indexed.expt \
    outlier.algorithm=tukey use_all_reflections=true close_to_spindle_cutoff=0.01 \
    output.reflections=refined_reflections_lev0.refl \
    output.experiments=refined_experiments_lev0.expt
@@ -249,7 +249,7 @@ Here is the output::
     }
   }
   input {
-    experiments = experiments.expt
+    experiments = indexed.expt
     reflections = indexed.refl
   }
 
@@ -636,7 +636,7 @@ the commands from the tutorial::
   dials.import /path/to/th_8_2*cbf
   dials.find_spots datablock.expt nproc=4
   dials.index datablock.expt strong.refl space_group="P4"
-  dials.refine experiments.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
+  dials.refine indexed.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the
 :doc:`processing_in_detail_tutorial`, as we'd expect)::
@@ -707,7 +707,7 @@ misorientations:
 
 Now, how can we apply the metrology? Here we will use :program:`dials.combine_experiments`
 with the :samp:`reference_from_experiment.detector` option to overwrite the detector
-model from our :file:`experiments.expt`. We don't really want the combined experiments
+model from our :file:`indexed.expt`. We don't really want the combined experiments
 file, only this side-effect, so we immediately split it again::
 
   dials.combine_experiments experiments=../refined_experiments_lev1.expt experiments=refined_experiments.expt reflections=../refined_reflections_lev1.refl reflections=indexed.refl reference_from_experiment.detector=0

@@ -22,9 +22,9 @@ reflections used in refinement.
 
 Examples::
 
-  dials.refine experiments.expt indexed.refl
+  dials.refine indexed.expt indexed.refl
 
-  dials.refine experiments.expt indexed.refl scan_varying=(False/True/Auto)
+  dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
 
 """
 

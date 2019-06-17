@@ -39,7 +39,7 @@ class Script(object):
         import libtbx.load_env
 
         usage = (
-            "usage: %s [options] experiments.expt indexed.refl"
+            "usage: %s [options] indexed.expt indexed.refl"
             % libtbx.env.dispatcher_name
         )
 

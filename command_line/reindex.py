@@ -30,10 +30,10 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 
 help_message = """
 
-This program can be used to re-index an experiments.expt and/or indexed.refl
+This program can be used to re-index an indexed.expt and/or indexed.refl
 file from one setting to another. The change of basis operator can be
 provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
-basis operator will also be applied to the space group in the experiments.expt
+basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
 Alternatively, to reindex an integated dataset in the case of indexing abiguity,
@@ -44,13 +44,13 @@ with the reference dataset.
 
 Examples::
 
-  dials.reindex experiments.expt change_of_basis_op=b+c,a+c,a+b
+  dials.reindex indexed.expt change_of_basis_op=b+c,a+c,a+b
 
   dials.reindex indexed.refl change_of_basis_op=-b,a+b+2*c,-a
 
-  dials.reindex experiments.expt indexed.refl change_of_basis_op=l,h,k
+  dials.reindex indexed.expt indexed.refl change_of_basis_op=l,h,k
 
-  dials.reindex experiments.expt indexed.refl reference.experiments=ref_experiments.expt
+  dials.reindex indexed.expt indexed.refl reference.experiments=ref_experiments.expt
     reference.reflections=ref_reflections.refl
 
 """
@@ -138,7 +138,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] experiments.expt indexed.refl" % libtbx.env.dispatcher_name
+    usage = "%s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

@@ -28,8 +28,8 @@ program dials.find_spots. The program is called with a "imported.expt" file
 dials.find_spots). If one or more lattices are identified given the input
 list of strong spots, then the crystal orientation and experimental geometry
 are refined to minimise the differences between the observed and predicted
-spot centroids. The program will output an "experiments.expt" file which
-is similar to the input "experiments.expt" file, but with the addition of the
+spot centroids. The program will output an "indexed.expt" file which
+is similar to the input "imported.expt" file, but with the addition of the
 crystal model(s), and an "indexed.refl" file which is similar to the input
 "strong.refl" file, but with the addition of miller indices and predicted
 spot centroids.
@@ -77,7 +77,7 @@ indexing {
 include scope dials.algorithms.refinement.refiner.phil_scope
 
 output {
-  experiments = indexed_experiments.expt
+  experiments = indexed.expt
     .type = path
   split_experiments = False
     .type = bool

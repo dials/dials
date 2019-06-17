@@ -101,7 +101,7 @@ also request output of the unindexed reflections to explore later::
 This produces a properly indexed spot list, but the space group is in an
 unconventional setting. We can fix this as follows::
 
-  dials.refine_bravais_settings experiments.expt indexed.refl
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
 Solution 5 is what we want::
 

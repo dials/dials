@@ -53,7 +53,7 @@ Examples::
   dials.filter_reflections integrated.refl \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
-  dials.filter_reflections indexed.refl experiments.expt \
+  dials.filter_reflections indexed.refl indexed.expt \
     d_max=20 d_min=2.5
 """
 

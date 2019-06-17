@@ -143,7 +143,7 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # static model refinement
-      cmd = "dials.refine experiments.expt indexed.refl scan_varying=false " + \
+      cmd = "dials.refine indexed.expt indexed.refl scan_varying=false " + \
             "outlier.algorithm=tukey use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("refined_experiments.expt"):
@@ -263,7 +263,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine experiments.expt indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
+  dials.refine indexed.expt indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -507,7 +507,7 @@ between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
   cd sweep_00
-  dials.refine experiments.expt indexed.refl scan_varying=false \
+  dials.refine indexed.expt indexed.refl scan_varying=false \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 

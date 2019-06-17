@@ -14,7 +14,7 @@ def test_1(dials_data, run_in_tmpdir):
         "dials.slice_sweep imported.expt image_range=80,90",
         "dials.find_spots imported_80_90.expt",
         "dials.index imported_80_90.expt strong.refl space_group=P41212",
-        "dials.refine indexed_experiments.expt indexed.refl scan_varying=True",
+        "dials.refine indexed.expt indexed.refl scan_varying=True",
         "dials.integrate refined_experiments.expt indexed.refl",
         "dials.export refined_experiments.expt integrated.refl partiality_threshold=0.99",
     ]

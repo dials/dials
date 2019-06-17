@@ -231,14 +231,14 @@ def test_output_rubbish(dials_data, tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert tmpdir.join("indexed_experiments.expt").check(file=1)
+    assert tmpdir.join("indexed.expt").check(file=1)
     assert tmpdir.join("indexed.refl").check(file=1)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "indexed_experiments.expt",
+            "indexed.expt",
             "indexed.refl",
             "profile.fitting=False",
             "prediction.padding=0",

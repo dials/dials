@@ -61,10 +61,10 @@ In the single sweep tutorial the determination of the Bravais lattice is perform
 
 .. code-block:: bash
 
-   dials.refine_bravais_settings indexed.refl experiments.expt crystal_id=0
-   dials.refine_bravais_settings indexed.refl experiments.expt crystal_id=1
-   dials.refine_bravais_settings indexed.refl experiments.expt crystal_id=2
-   dials.refine_bravais_settings indexed.refl experiments.expt crystal_id=3
+   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=0
+   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=1
+   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=2
+   dials.refine_bravais_settings indexed.refl indexed.expt crystal_id=3
 
 Inspect the results, conclude that the oP lattice is appropriate then assign this as a space group for indexing (in this case, P222)
 
@@ -81,7 +81,7 @@ Prior to integration we want to refine the experimental geometry and the scan va
 
 .. code-block:: bash
 
-   dials.refine indexed.refl experiments.expt output.reflections=static.refl output.experiments=static.expt scan_varying=false
+   dials.refine indexed.refl indexed.expt output.reflections=static.refl output.experiments=static.expt scan_varying=false
    dials.refine static.refl static.expt scan_varying=True
 
 At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sweeps:

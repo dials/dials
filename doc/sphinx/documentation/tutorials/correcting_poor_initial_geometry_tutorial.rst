@@ -164,7 +164,7 @@ with spot profiles may result in higher RMSDs for a solution that is still
 correct, however we should always remain sceptical. Looking at the results
 in :program:`dials.reciprocal_lattice_viewer` is instructive as ever::
 
-  dials.reciprocal_lattice_viewer experiments.expt indexed.refl
+  dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
 .. image:: /figures/dpf3_bad_indexed.png
 
@@ -179,7 +179,7 @@ what happened and how to fix it. However, unfortunately a careless user could
 go ahead and integrate with this model. Let's see what happens if we try
 to refine compatible Bravais lattices::
 
-  dials.refine_bravais_settings experiments.expt indexed.refl
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
 ::
 
@@ -227,7 +227,7 @@ shifted by some value. This would be equivalent to the beam centre latching
 onto some very low resolution Bragg reflection rather than the direct beam
 :math:`hkl = (0,0,0)`. DIALS offers a tool to check this. If we run::
 
-  dials.check_indexing_symmetry experiments.expt indexed.refl grid=1
+  dials.check_indexing_symmetry indexed.expt indexed.refl grid=1
 
 then all combinations of off-by-one offsets in :math:`h`, :math:`k` and :math:`l`
 will be checked by testing correlation coefficients between sets of reflections
@@ -341,7 +341,7 @@ reflections::
 The lattice looks orthorhombic, and indeed the top solution in the table
 from :program:`dials.refine_bravais_settings` looks reasonable::
 
-  dials.refine_bravais_settings experiments.expt indexed.refl
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
 ::
 

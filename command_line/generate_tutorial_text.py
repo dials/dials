@@ -89,34 +89,34 @@ class Processing_Tutorial(object):
             self.cmd = "dials.import {0}".format(dataset)
 
     class dials_find_spots(Job):
-        cmd = "dials.find_spots imported.json nproc=4"
+        cmd = "dials.find_spots imported.expt nproc=4"
 
     class dials_index(Job):
-        cmd = "dials.index imported.json strong.refl"
+        cmd = "dials.index imported.expt strong.refl"
 
     class dials_refine_bravais_settings(Job):
-        cmd = "dials.refine_bravais_settings indexed_experiments.json indexed.refl"
+        cmd = "dials.refine_bravais_settings indexed.expt indexed.refl"
 
     class dials_reindex(Job):
         cmd = "dials.reindex indexed.refl change_of_basis_op=a,b,c"
 
     class dials_refine(Job):
-        cmd = "dials.refine bravais_setting_9.json reindexed_reflections.refl scan_varying=false"
+        cmd = "dials.refine bravais_setting_9.expt reindexed_reflections.refl scan_varying=false"
 
     class dials_sv_refine(Job):
-        cmd = "dials.refine refined_experiments.json refined.refl scan_varying=true"
+        cmd = "dials.refine refined_experiments.expt refined.refl scan_varying=true"
 
     class dials_integrate(Job):
-        cmd = "dials.integrate refined_experiments.json refined.refl nproc=4"
+        cmd = "dials.integrate refined_experiments.expt refined.refl nproc=4"
 
     class dials_report(Job):
-        cmd = "dials.report integrated_experiments.json integrated.refl"
+        cmd = "dials.report integrated_experiments.expt integrated.refl"
 
         def mangle_result(self):
             self.result["stdout"] = open("dials-report.html").read()
 
     class dials_export(Job):
-        cmd = "dials.export integrated.refl integrated_experiments.json"
+        cmd = "dials.export integrated.refl integrated_experiments.expt"
 
 
 def generate_processing_detail_text_thaumatin():
@@ -231,23 +231,23 @@ def generate_processing_detail_text_betalactamase():
         ("dials.index", "dials.index imported.expt strong.refl"),
         (
             "dials.refine_bravais_settings",
-            "dials.refine_bravais_settings indexed_experiments.json indexed.refl",
+            "dials.refine_bravais_settings indexed.expt indexed.refl",
         ),
         ("dials.reindex", "dials.reindex indexed.refl change_of_basis_op=a+b,-a+b,c"),
         (
             "dials.refine",
-            "dials.refine bravais_setting_2.json reindexed_reflections.refl scan_varying=false",
+            "dials.refine bravais_setting_2.expt reindexed_reflections.refl scan_varying=false",
         ),
         (
             "dials.sv_refine",
-            "dials.refine refined_experiments.json refined.refl scan_varying=true",
+            "dials.refine refined_experiments.expt refined.refl scan_varying=true",
         ),
         (
             "dials.integrate",
-            "dials.integrate refined_experiments.json refined.refl nproc=4",
+            "dials.integrate refined_experiments.expt refined.refl nproc=4",
         ),
-        ("dials.report", "dials.report integrated_experiments.json integrated.refl"),
-        ("dials.export", "dials.export integrated.refl integrated_experiments.json"),
+        ("dials.report", "dials.report integrated_experiments.expt integrated.refl"),
+        ("dials.export", "dials.export integrated.refl integrated_experiments.expt"),
     ]
 
     job_writer = JobWriter(OUTPUT_DIR)

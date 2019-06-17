@@ -27,9 +27,9 @@ Generate a png of the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.rl_png experiments.json strong.refl
+  dials.rl_png imported.expt strong.refl
 
-  dials.rl_png experiments.json indexed.refl
+  dials.rl_png indexed.expt indexed.refl
 
 """
 

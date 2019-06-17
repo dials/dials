@@ -419,7 +419,7 @@ def data_from_pickle_and_json():
 
   Examples:
 
-    dials.util.intensity_explorer indexed.refl experiments.expt
+    dials.util.intensity_explorer indexed.refl indexed.expt
 
     dials.util.intensity_explorer integrated.refl integrated_experiments.expt
 

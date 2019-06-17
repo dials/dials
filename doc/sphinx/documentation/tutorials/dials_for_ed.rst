@@ -472,7 +472,7 @@ except dataset 6, with the following commands:
 .. code-block:: bash
 
   dials.index datablock.expt strong.refl refine.phil
-  dials.refine_bravais_settings indexed.refl experiments.expt refine.phil
+  dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil
 
 Dataset 6
@@ -513,7 +513,7 @@ at this stage we did not impose additional lattice symmetry, so kept the
 triclinic solution from indexing and refinement::
 
   dials.index datablock.expt strong.refl refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
-  dials.refine experiments.expt indexed.refl refine.phil restraint.phil
+  dials.refine indexed.expt indexed.refl refine.phil restraint.phil
 
 Static model refinement
 =======================
@@ -591,7 +591,7 @@ Datasets 1-5 & 7
 .. code-block:: bash
 
   dials.index datablock.expt strong.refl refine.phil
-  dials.refine_bravais_settings indexed.refl experiments.expt refine.phil
+  dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil \
     output.experiments=static.expt output.reflections=static.refl
 
@@ -605,7 +605,7 @@ restraint was still used.
 .. code-block:: bash
 
   dials.index datablock.expt strong.refl refine.phil restraint.phil
-  dials.refine_bravais_settings experiments.expt indexed.refl refine.phil
+  dials.refine_bravais_settings indexed.expt indexed.refl refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil restraint.phil \
     output.experiments=static.expt output.reflections=static.refl
 

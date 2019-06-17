@@ -16,7 +16,7 @@ from dials.array_family import flex
 
 help_message = """
 
-This program takes as input the output of dials.index, i.e. experiments.expt
+This program takes as input the output of dials.index, i.e. indexed.expt
 and indexed.refl files. Full refinement of the crystal and experimental
 geometry parameters will be performed (by default) in all Bravais settings
 that are consistent with the input primitive unit cell. A table is printed
@@ -28,7 +28,7 @@ setting, and the change of basis operator to transform from the triclinic cell
 to each Bravais setting.
 
 The program also generates a .expt file for each Bravais setting, e.g.
-bravais_setting_1.expt, which is equivalent to the input experiments.expt, but
+bravais_setting_1.expt, which is equivalent to the input indexed.expt, but
 with the crystal model refined in the chosen Bravais setting. These
 bravais_setting_*.expt files are suitable as input to dials.refine or
 dials.integrate, although the indexed.refl file will need to be re-indexed
@@ -37,9 +37,9 @@ Bravais setting is not the identity operator (a,b,c).
 
 Examples::
 
-  dials.refine_bravais_settings experiments.expt indexed.refl
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
-  dials.refine_bravais_settings experiments.expt indexed.refl nproc=4
+  dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 
 """
 
@@ -135,7 +135,7 @@ def run(args=None):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s experiments.expt indexed.refl [options]" % libtbx.env.dispatcher_name
+    usage = "%s indexed.expt indexed.refl [options]" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

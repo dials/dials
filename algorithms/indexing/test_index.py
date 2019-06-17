@@ -45,9 +45,9 @@ class RunOneIndexing(object):
         command = " ".join(args)
         print(command)
         easy_run.fully_buffered(command=command).raise_if_errors()
-        assert os.path.exists("indexed_experiments.expt")
+        assert os.path.exists("indexed.expt")
         experiments_list = load.experiment_list(
-            "indexed_experiments.expt", check_format=False
+            "indexed.expt", check_format=False
         )
         assert len(experiments_list.crystals()) == n_expected_lattices, (
             len(experiments_list.crystals()),
@@ -768,8 +768,8 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir)
         "max_lattices=3",
     ]
     easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
-    assert os.path.isfile("indexed.refl") and os.path.isfile("indexed_experiments.expt")
+    assert os.path.isfile("indexed.refl") and os.path.isfile("indexed.expt")
     experiments_list = load.experiment_list(
-        "indexed_experiments.expt", check_format=False
+        "indexed.expt", check_format=False
     )
     assert len(experiments_list) == 2

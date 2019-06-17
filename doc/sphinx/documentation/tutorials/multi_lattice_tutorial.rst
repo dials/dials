@@ -186,9 +186,9 @@ processing using bravais_setting_5.expt, i.e. solution number 5.
 
 ::
 
-  dials.refine_bravais_settings experiments.expt indexed.refl crystal_id=0
+  dials.refine_bravais_settings indexed.expt indexed.refl crystal_id=0
 
-  dials.refine_bravais_settings experiments.expt indexed.refl crystal_id=1
+  dials.refine_bravais_settings indexed.expt indexed.refl crystal_id=1
 
 gives a table containing the metric fit, rmsds (in mm) and unit cell for
 each Bravais setting...
@@ -306,7 +306,7 @@ refinement step in here to allow e.g. scan varying refinement.
 
 ::
 
-  dials.refine experiments.expt indexed.refl \
+  dials.refine indexed.expt indexed.refl \
     scan_varying=True \
     outlier.algorithm=tukey
 
@@ -327,7 +327,7 @@ refinement step in here to allow e.g. scan varying refinement.
     }
   }
   input {
-    experiments = experiments.expt
+    experiments = indexed.expt
     reflections = indexed.refl
   }
 

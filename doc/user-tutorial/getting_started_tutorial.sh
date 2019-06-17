@@ -47,7 +47,7 @@ dials.index strong.refl datablock.expt
 # Refining: If you do want to use a time varying model,
 # you will need to rerun the refinement with this new model as
 
-dials.refine experiments.expt indexed.refl scan_varying=true
+dials.refine indexed.expt indexed.refl scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile

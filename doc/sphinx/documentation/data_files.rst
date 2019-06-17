@@ -26,10 +26,10 @@ below.
 +------------------+-------------------------------+-------------------------------+
 | dials.find_spots | datablock.expt                | strong.refl                   |
 +------------------+-------------------------------+-------------------------------+
-| dials.index      | | datablock.expt              | | experiments.expt            |
+| dials.index      | | datablock.expt              | | indexed.expt                |
 |                  | | strong.refl                 | | indexed.refl                |
 +------------------+-------------------------------+-------------------------------+
-| dials.refine     | | experiments.expt            | | refined_experiments.expt    |
+| dials.refine     | | indexed.expt                | | refined_experiments.expt    |
 |                  | | indexed.refl                | | refined_reflections.refl    |
 +------------------+-------------------------------+-------------------------------+
 | dials.integrate  | | refined_experiments.expt    | | integrated_experiments.expt |
