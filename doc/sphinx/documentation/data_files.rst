@@ -32,11 +32,11 @@ below.
 | dials.refine     | | indexed.expt                | | refined.expt                |
 |                  | | indexed.refl                | | refined.refl                |
 +------------------+-------------------------------+-------------------------------+
-| dials.integrate  | | refined.expt                | | integrated_experiments.expt |
+| dials.integrate  | | refined.expt                | | integrated.expt             |
 |                  | | refined.refl                | | integrated.refl             |
 |                  | |                             | | profile_model.phil          |
 +------------------+-------------------------------+-------------------------------+
-| dials.scale      | | integrated_experiments.expt | | scaled_experiments.expt     |
+| dials.scale      | | integrated.expt             | | scaled_experiments.expt     |
 |                  | | integrated.refl             | | scaled.refl                 |
 +------------------+-------------------------------+-------------------------------+
 

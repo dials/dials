@@ -110,13 +110,13 @@ class Processing_Tutorial(object):
         cmd = "dials.integrate refined.expt refined.refl nproc=4"
 
     class dials_report(Job):
-        cmd = "dials.report integrated_experiments.expt integrated.refl"
+        cmd = "dials.report integrated.expt integrated.refl"
 
         def mangle_result(self):
             self.result["stdout"] = open("dials-report.html").read()
 
     class dials_export(Job):
-        cmd = "dials.export integrated.refl integrated_experiments.expt"
+        cmd = "dials.export integrated.refl integrated.expt"
 
 
 def generate_processing_detail_text_thaumatin():
@@ -240,8 +240,8 @@ def generate_processing_detail_text_betalactamase():
         ),
         ("dials.sv_refine", "dials.refine refined.expt refined.refl scan_varying=true"),
         ("dials.integrate", "dials.integrate refined.expt refined.refl nproc=4"),
-        ("dials.report", "dials.report integrated_experiments.expt integrated.refl"),
-        ("dials.export", "dials.export integrated.refl integrated_experiments.expt"),
+        ("dials.report", "dials.report integrated.expt integrated.refl"),
+        ("dials.export", "dials.export integrated.refl integrated.expt"),
     ]
 
     job_writer = JobWriter(OUTPUT_DIR)

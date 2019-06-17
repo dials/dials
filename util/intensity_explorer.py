@@ -421,7 +421,7 @@ def data_from_pickle_and_json():
 
     dials.util.intensity_explorer indexed.refl indexed.expt
 
-    dials.util.intensity_explorer integrated.refl integrated_experiments.expt
+    dials.util.intensity_explorer integrated.refl integrated.expt
 
     """
 

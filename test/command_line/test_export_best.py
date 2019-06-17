@@ -34,12 +34,7 @@ def test_export_best(dials_data, tmpdir):
     )
     assert not result["exitcode"] and not result["stderr"]
     result = procrunner.run(
-        [
-            "dials.export",
-            "integrated_experiments.expt",
-            "integrated.refl",
-            "format=best",
-        ],
+        ["dials.export", "integrated.expt", "integrated.refl", "format=best"],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]

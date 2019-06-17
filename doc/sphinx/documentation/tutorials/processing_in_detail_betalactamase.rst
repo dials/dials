@@ -440,7 +440,7 @@ intensities, and for all reflections, not just the strong spots. So, it is
 prudent to repeat the assessment to see if there is any indication that our
 initial assessment should be revised.::
 
-  dials.symmetry integrated_experiments.expt integrated.refl
+  dials.symmetry integrated.expt integrated.refl
 
 The symmetry analysis scores all possible symmetry operations by looking at
 the intensities of reflections that would be equivalent under that operation.

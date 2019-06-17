@@ -26,7 +26,7 @@ is called with an experiment list outputted from dials.index or dials.refine and
 a corresponding set of strong spots from which a profile model is calculated.
 The program will output a set of integrated reflections and an experiment list
 with additional profile model data. The data can be reintegrated using the same
-profile model by inputting this integrated_experiments.expt file back into
+profile model by inputting this integrated.expt file back into
 dials.integate.
 
 Examples::
@@ -48,7 +48,7 @@ phil_scope = parse(
     """
 
   output {
-    experiments = 'integrated_experiments.expt'
+    experiments = 'integrated.expt'
       .type = str
       .help = "The experiments output filename"
 

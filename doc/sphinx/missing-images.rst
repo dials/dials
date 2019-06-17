@@ -37,7 +37,7 @@ Export
 
 Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment integration, but we can rely on ``dials.split_experiments`` again::
 
-  dials.split_experiments integrated_experiments.expt integrated.refl
+  dials.split_experiments integrated.expt integrated.refl
   i=0
   for e in $(ls experiments_*.expt)
   do

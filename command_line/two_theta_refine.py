@@ -34,9 +34,9 @@ estimated standard deviation.
 
 Examples::
 
-  dials.two_theta_refine integrated_experiments.expt integrated.refl
+  dials.two_theta_refine integrated.expt integrated.refl
 
-  dials.two_theta_refine integrated_experiments.expt integrated.refl \
+  dials.two_theta_refine integrated.expt integrated.refl \
     correlation_plot.filename=corrplot.png cif=refined_cell.cif
 """
 

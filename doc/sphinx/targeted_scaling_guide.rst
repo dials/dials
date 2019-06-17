@@ -15,10 +15,10 @@ Scaling against a dials reference dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In this example, reference_reflections.refl and reference_experiments.expt are
 from a dataset that has already been scaled with dials.scale. To scale another
-dataset (datafiles integrated.refl, integrated_experiments.expt) against this
+dataset (datafiles integrated.refl, integrated.expt) against this
 target/reference, one should use the following command::
 
-  dials.scale only_target=True integrated.refl integrated_experiments.expt reference_reflections.refl reference_experiments.expt
+  dials.scale only_target=True integrated.refl integrated.expt reference_reflections.refl reference_experiments.expt
 
 This will scale the intensities of the dataset to agree as closely as possible
 with the intensities of the reference dataset, and save the scaled dataset to
@@ -32,7 +32,7 @@ In this case, it is assumed that the intensity and variance columns of the mtz
 file have already been scaled. Targeted scaling would be run with the following
 command::
 
-  dials.scale integrated.refl integrated_experiments.expt target_mtz=scaled.mtz
+  dials.scale integrated.refl integrated.expt target_mtz=scaled.mtz
 
 The targeted scaling algorithm is the same regardless of the target datafile type,
 likewise the scaled dataset will be saved to scaled.refl and scaled_experiments.expt.

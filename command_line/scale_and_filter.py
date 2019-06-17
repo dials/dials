@@ -588,9 +588,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = (
-        "dials.scale_and_filter [options] integrated_experiments.expt integrated.refl"
-    )
+    usage = "dials.scale_and_filter [options] integrated.expt integrated.refl"
 
     parser = OptionParser(
         usage=usage,

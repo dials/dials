@@ -27,17 +27,17 @@ Example use cases
 
 Regular single-sweep scaling, with no absorption correction::
 
-  dials.scale integrated.refl integrated_experiments.expt absorption_term=False
+  dials.scale integrated.refl integrated.expt absorption_term=False
 
 Scaling multiple datasets, specifying scale parameter interval::
 
-  dials.scale 1_integrated.refl 1_integrated_experiments.expt 2_integrated.refl 2_integrated_experiments.expt scale_interval=10.0
+  dials.scale 1_integrated.refl 1_integrated.expt 2_integrated.refl 2_integrated.expt scale_interval=10.0
 
 Incremental scaling (with different options per dataset)::
 
-  dials.scale integrated.refl integrated_experiments.expt scale_interval=10.0
+  dials.scale integrated.refl integrated.expt scale_interval=10.0
 
-  dials.scale integrated_2.refl integrated_experiments_2.expt scaled.refl scaled_experiments.expt scale_interval=15.0
+  dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled_experiments.expt scale_interval=15.0
 
 """
 import time
@@ -674,8 +674,8 @@ def run_scaling(params, experiments, reflections):
 
 def run(args=None):
     """Run the scaling from the command-line."""
-    usage = """Usage: dials.scale integrated.refl integrated_experiments.expt
-[integrated.refl(2) integrated_experiments.expt(2) ....] [options]"""
+    usage = """Usage: dials.scale integrated.refl integrated.expt
+[integrated.refl(2) integrated.expt(2) ....] [options]"""
 
     parser = OptionParser(
         usage=usage,

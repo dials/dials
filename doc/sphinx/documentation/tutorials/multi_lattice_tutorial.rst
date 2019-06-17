@@ -719,19 +719,19 @@ The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_. Currently :doc:`dials.export </documentation/programs/dials_export>`
 only supports one experiment at a time, therefore it is necessary to first
-split the :samp:`integrated_experiments.expt` and :samp:`integrated.refl` into
+split the :samp:`integrated.expt` and :samp:`integrated.refl` into
 separate files
 
 ::
 
-  dials.split_experiments integrated_experiments.expt integrated.refl \
-    experiments_prefix=integrated_experiments reflections_prefix=integrated
+  dials.split_experiments integrated.expt integrated.refl \
+    experiments_prefix=integrated reflections_prefix=integrated
 
 ::
 
-  Saving experiment 0 to integrated_experiments_0.expt
+  Saving experiment 0 to integrated_0.expt
   Saving reflections for experiment 0 to integrated_0.refl
-  Saving experiment 1 to integrated_experiments_1.expt
+  Saving experiment 1 to integrated_1.expt
   Saving reflections for experiment 1 to integrated_1.refl
 
 Now we are ready to run dials.export on the individual .refl and .expt
@@ -739,8 +739,8 @@ files output for each experiment.
 
 ::
 
-  dials.export integrated_0.refl integrated_experiments_0.expt mtz.hklout=integrated_0.mtz
-  dials.export integrated_1.refl integrated_experiments_1.expt mtz.hklout=integrated_1.mtz
+  dials.export integrated_0.refl integrated_0.expt mtz.hklout=integrated_0.mtz
+  dials.export integrated_1.refl integrated_1.expt mtz.hklout=integrated_1.mtz
 
 And this is the output, showing the reflection file statistics.
 

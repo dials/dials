@@ -733,37 +733,37 @@ processing with CCP4.
 1. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.0
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_1.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_1.mtz
 
 2. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.3
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_2.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_2.mtz
 
 3. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.3
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_3.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_3.mtz
 
 4. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.2
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_4.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_4.mtz
 
 5. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.2
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_5.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_5.mtz
 
 6. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.5
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_6.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_6.mtz
 
 7. .. code-block:: bash
 
     dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.5
-    dials.export integrated_experiments.expt integrated.refl mtz.hklout=integrated_7.mtz
+    dials.export integrated.expt integrated.refl mtz.hklout=integrated_7.mtz
 
 Scaling and merging
 ===================

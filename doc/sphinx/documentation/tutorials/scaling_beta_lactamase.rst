@@ -21,9 +21,9 @@ cell.
 
 Scaling is dependent on the space group symmetry assigned, which can be assessed
 now that we have integrated intensities. Therefore first we shall run :samp:`dials.symmetry`
-on the :samp:`integrated.refl` and :samp:`integrated_experiments.expt` files::
+on the :samp:`integrated.refl` and :samp:`integrated.expt` files::
 
-  dials.symmetry integrated_experiments.expt integrated.refl
+  dials.symmetry integrated.expt integrated.refl
 
 As can be seen from the output, the best solution is given by :samp:`C 1 2/m 1`,
 in agreement with the result from :samp:`dials.refine_bravais_settings`.

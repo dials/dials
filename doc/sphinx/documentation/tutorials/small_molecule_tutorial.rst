@@ -109,7 +109,7 @@ After integration the unit cell for downstream analysis may be derived from refi
 
 .. code-block:: bash
 
-   dials.two_theta_refine integrated.refl integrated_experiments.expt p4p=integrated.p4p
+   dials.two_theta_refine integrated.refl integrated.expt p4p=integrated.p4p
 
 Here the results will be output to a p4p file for XPREP, which includes the standard uncertainties on the unit cell.
 
@@ -121,7 +121,7 @@ Note that SADABS requires the batches and file names to be numbered from 1:
 
 .. code-block:: bash
 
-   dials.split_experiments integrated.refl integrated_experiments.expt
+   dials.split_experiments integrated.refl integrated.expt
    dials.export format=sadabs reflections_0.refl experiments_0.expt sadabs.hklout=integrated_1.sad run=1
    dials.export format=sadabs reflections_1.refl experiments_1.expt sadabs.hklout=integrated_2.sad run=2
    dials.export format=sadabs reflections_2.refl experiments_2.expt sadabs.hklout=integrated_3.sad run=3
