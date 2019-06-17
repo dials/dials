@@ -389,7 +389,7 @@ refinement step in here to allow e.g. scan varying refinement.
   | 0   | 14739 | 0.46827 | 0.28366 | 0.22357  |
   | 1   | 15475 | 0.35367 | 0.30743 | 0.21195  |
   ----------------------------------------------
-  Saving refined experiments to refined_experiments.expt
+  Saving refined experiments to refined.expt
 
 
 Integration
@@ -400,7 +400,7 @@ by the program :doc:`dials.integrate </documentation/programs/dials_integrate>`.
 
 ::
 
-  dials.integrate refined_experiments.expt refined.refl
+  dials.integrate refined.expt refined.refl
 
 This program outputs a lot of information as integration progresses,
 concluding with a summary of the integration results.

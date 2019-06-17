@@ -51,16 +51,16 @@ dials.refine indexed.expt indexed.refl scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile
-# fitting and integrates the data in refined_experiments.expt, using the default
+# fitting and integrates the data in refined.expt, using the default
 # background determination with no outlier rejection and XDS-style 3D profile
 # fitting. These commands are most likely to change and can be viewed by running
 
-dials.integrate outlier.algorithm=null refined_experiments.expt indexed.refl
+dials.integrate outlier.algorithm=null refined.expt indexed.refl
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated.refl refined_experiments.expt mtz.hklout=integrated.mtz
+dials.export integrated.refl integrated.expt mtz.hklout=integrated.mtz
 
 # and as if to make a point, here is all we need to do is to sort the data with
 # pointless and then scale the data (ignoring anomalous differences) to 1.3A,

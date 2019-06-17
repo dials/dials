@@ -228,16 +228,16 @@ Without this option, the central panels are very sparse::
 
   dials.refine indexed.refl indexed.expt \
    outlier.algorithm=tukey use_all_reflections=true close_to_spindle_cutoff=0.01 \
-   output.reflections=refined_reflections_lev0.refl \
-   output.experiments=refined_experiments_lev0.expt
+   output.reflections=refined_lev0.refl \
+   output.experiments=refined_lev0.expt
 
 Here is the output::
 
   The following parameters have been modified:
 
   output {
-    reflections = refined_reflections_lev0.refl
-    experiments = refined_experiments_lev0.expt
+    reflections = refined_lev0.refl
+    experiments = refined_lev0.expt
   }
   refinement {
     reflections {
@@ -373,8 +373,8 @@ Here is the output::
   | 58    | 786  | 0.53669 | 0.50635 | 0.27127  |
   | 59    | 39   | 0.43205 | 0.65796 | 0.25585  |
   -----------------------------------------------
-  Saving refined experiments to refined_experiments_lev0.expt
-  Saving refined reflections to refined_reflections_lev0.refl
+  Saving refined experiments to refined_lev0.expt
+  Saving refined reflections to refined_lev0.refl
 
 Outlier rejection has cleaned up the positional residuals so now the greatest
 deviation is within 0.4 mm of the predicted position. The angular extreme is
@@ -390,10 +390,10 @@ dataset.
 Before moving on to the multi-panel refinement job we will take a look at the
 refined reflections file::
 
-  dials.analyse_output refined_reflections_lev0.refl grid_size=5,12
+  dials.analyse_output refined_lev0.refl grid_size=5,12
 
 Here we had to tell :program:`dials.analyse_output` about the arrangement of
-the panels, as it does not use the :file:`refined_experiments_lev0.expt` file so cannot
+the panels, as it does not use the :file:`refined_lev0.expt` file so cannot
 figure this out itself.
 
 Here are the positional residual plots for X and Y, :file:`analysis/centroid/centroid_diff_x.png`
@@ -418,10 +418,10 @@ with a single lower level, :samp:`hieararchy_level=1`, in which every panel is
 treated separately. We now start from the previous refinement run
 specifying this hierarchy level::
 
-  dials.refine indexed.refl refined_experiments_lev0.expt outlier.algorithm=tukey \
-   use_all_reflections=true output.reflections=refined_reflections_lev1.refl \
+  dials.refine indexed.refl refined_lev0.expt outlier.algorithm=tukey \
+   use_all_reflections=true output.reflections=refined_lev1.refl \
    close_to_spindle_cutoff=0.01 bin_size_fraction=0 hierarchy_level=1 \
-   output.experiments=refined_experiments_lev1.expt
+   output.experiments=refined_lev1.expt
 
 You may have noticed that apart from :samp:`hierarchy_level=1` there was an
 additional parameter added to this command compared to the previous refinement run,
@@ -445,8 +445,8 @@ speed the job up. The output is as follows::
   The following parameters have been modified:
 
   output {
-    experiments = refined_experiments_lev1.expt
-    reflections = refined_reflections_lev1.refl
+    experiments = refined_lev1.expt
+    reflections = refined_lev1.refl
   }
   refinement {
     parameterisation {
@@ -466,7 +466,7 @@ speed the job up. The output is as follows::
     }
   }
   input {
-    experiments = refined_experiments.expt
+    experiments = refined.expt
     reflections = indexed.refl
   }
 
@@ -597,13 +597,13 @@ speed the job up. The output is as follows::
   | 58    | 786  | 0.48028  | 0.48906 | 0.26898  |
   | 59    | 40   | 0.39499  | 0.38962 | 0.2466   |
   ------------------------------------------------
-  Saving refined experiments to refined_experiments_lev1.expt
-  Saving refined reflections to refined_reflections_lev1.refl
+  Saving refined experiments to refined_lev1.expt
+  Saving refined reflections to refined_lev1.refl
 
 Following refinement, we repeat the analysis of positional residuals::
 
   mv analysis analysis_lev0
-  dials.analyse_output refined_reflections.refl grid_size=5,12
+  dials.analyse_output refined.refl grid_size=5,12
   mv analysis analysis_lev1
 
 The positional residual plots for X and Y,
@@ -651,9 +651,9 @@ Note these are the overall RMSDs (comparable to the results from the
 
 Now we do the scan-varying refinement and integrate::
 
-  dials.refine refined_experiments.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined_experiments.expt
-  dials.integrate sv_refined_experiments.expt indexed.refl outlier.algorithm=null nproc=4
-  dials.export integrated.refl sv_refined_experiments.expt mtz.hklout=integrated.mtz ignore_panels=true
+  dials.refine refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined.expt
+  dials.integrate sv_refined.expt indexed.refl outlier.algorithm=null nproc=4
+  dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz ignore_panels=true
   dials.analyse_output integrated.refl grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
@@ -710,7 +710,7 @@ with the :samp:`reference_from_experiment.detector` option to overwrite the dete
 model from our :file:`indexed.expt`. We don't really want the combined experiments
 file, only this side-effect, so we immediately split it again::
 
-  dials.combine_experiments experiments=../refined_experiments_lev1.expt experiments=refined_experiments.expt reflections=../refined_reflections_lev1.refl reflections=indexed.refl reference_from_experiment.detector=0
+  dials.combine_experiments experiments=../refined_lev1.expt experiments=refined.expt reflections=../refined_lev1.refl reflections=indexed.refl reference_from_experiment.detector=0
   dials.split_experiments combined_experiments.expt combined_reflections.refl
 
 This results in a few files, of which :file:`experiments_1.expt` is interesting.
@@ -720,7 +720,7 @@ by editing :file:`experiments_1.expt` directly, but actually there is no need.
 :program:`dials.refine` is *extremely forgiving* of bad starting geometry, though
 we should remember to fix the beam and crystal models::
 
-  dials.refine experiments_1.expt indexed.refl output.experiments=corrected_refined_experiments.expt beam.fix=all crystal.fix=all
+  dials.refine experiments_1.expt indexed.refl output.experiments=corrected_refined.expt beam.fix=all crystal.fix=all
 
 A snippet from the log file shows that the detector distance offset was largely
 corrected in a single step::
@@ -737,14 +737,14 @@ corrected in a single step::
 
 Now we'll let the crystal and beam refine along with the new detector to RMSD convergence::
 
-  dials.refine corrected_refined_experiments.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined_experiments.expt
+  dials.refine corrected_refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 output.experiments=corrected_refined.expt
 
 Here is the output::
 
   The following parameters have been modified:
 
   output {
-    experiments = corrected_refined_experiments.expt
+    experiments = corrected_refined.expt
   }
   refinement {
     target {
@@ -758,7 +758,7 @@ Here is the output::
     }
   }
   input {
-    experiments = corrected_refined_experiments.expt
+    experiments = corrected_refined.expt
     reflections = indexed.refl
   }
 
@@ -869,7 +869,7 @@ Here is the output::
   | 51    | 22   | 0.11972  | 0.18238  | 0.11037  |
   | 52    | 80   | 0.12845  | 0.24552  | 0.1396   |
   -------------------------------------------------
-  Saving refined experiments to corrected_refined_experiments.expt
+  Saving refined experiments to corrected_refined.expt
 
 As a reminder, before metrology correction we had these refined RMSDs from scan-
 static refinement::
@@ -894,9 +894,9 @@ After correction they are as follows::
 
 Let's now do scan-varying refinement then integrate the dataset with corrected metrology::
 
-  dials.refine corrected_refined_experiments.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined_experiments.expt
-  dials.integrate corrected_sv_refined_experiments.expt indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
-  dials.export corrected_integrated.refl corrected_sv_refined_experiments.expt mtz.hklout=corrected_integrated.mtz ignore_panels=true
+  dials.refine corrected_refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined.expt
+  dials.integrate corrected_sv_refined.expt indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
+  dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz ignore_panels=true
   dials.analyse_output corrected_integrated.refl grid_size=5,12
 
 From the integration log::

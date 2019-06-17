@@ -88,7 +88,7 @@ At this stage the reciprocal lattice view will show a much improved level of agr
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer refined_experiments.expt refined.refl
+   dials.reciprocal_lattice_viewer refined.expt refined.refl
 
 
 Integration
@@ -98,7 +98,7 @@ At this stage the reflections may be integrated - this is run with:
 
 .. code-block:: bash
 
-   dials.integrate refined.refl refined_experiments.expt nproc=8
+   dials.integrate refined.refl refined.expt nproc=8
 
 which will integrate each sweep in sequence, again using 8 cores.
 

@@ -57,7 +57,7 @@ Examples::
 
   dials.report integrated.refl
 
-  dials.report refined_experiments.expt
+  dials.report refined.expt
 
   dials.report integrated.refl integrated_experiments.expt
 

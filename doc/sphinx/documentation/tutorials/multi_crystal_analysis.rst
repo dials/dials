@@ -146,13 +146,13 @@ script does. If time is *really* short then try uncommenting the line
       cmd = "dials.refine indexed.expt indexed.refl scan_varying=false " + \
             "outlier.algorithm=tukey use_all_reflections=true"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("refined_experiments.expt"):
+      if not os.path.isfile("refined.expt"):
         print "Job %02d failed in refinement" % num
         return
 
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
-      cmd = "dials.integrate refined_experiments.expt indexed.refl " + \
+      cmd = "dials.integrate refined.expt indexed.refl " + \
             "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.refl"):
@@ -160,7 +160,7 @@ script does. If time is *really* short then try uncommenting the line
         return
 
       # create MTZ
-      cmd = "dials.export refined_experiments.expt integrated.refl " +\
+      cmd = "dials.export refined.expt integrated.refl " +\
             "mtz.hklout=integrated.mtz"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("integrated.mtz"):
@@ -287,7 +287,7 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined_experiments.expt indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
+  dials.integrate refined.expt indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
 
 The :samp:`profile.fitting=False` option ensures we only do summation integration,
 no profile fitting, while the :samp:`prediction.dmin=8.0` and
@@ -304,7 +304,7 @@ is useless for any other purpose.
 
 Finally we use :program:`dials.export` to create an MTZ file::
 
-  dials.export refined_experiments.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export refined.expt integrated.refl mtz.hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
@@ -531,46 +531,46 @@ listing the individual sweeps in order. We can use
 file looks like this::
 
   input {
-    experiments = "sweep_00/refined_experiments.expt"
-    experiments = "sweep_01/refined_experiments.expt"
-    experiments = "sweep_02/refined_experiments.expt"
-    experiments = "sweep_03/refined_experiments.expt"
-    experiments = "sweep_05/refined_experiments.expt"
-    experiments = "sweep_09/refined_experiments.expt"
-    experiments = "sweep_14/refined_experiments.expt"
-    experiments = "sweep_16/refined_experiments.expt"
-    experiments = "sweep_17/refined_experiments.expt"
-    experiments = "sweep_18/refined_experiments.expt"
-    experiments = "sweep_19/refined_experiments.expt"
-    experiments = "sweep_22/refined_experiments.expt"
-    experiments = "sweep_23/refined_experiments.expt"
-    experiments = "sweep_24/refined_experiments.expt"
-    experiments = "sweep_25/refined_experiments.expt"
-    experiments = "sweep_26/refined_experiments.expt"
-    experiments = "sweep_27/refined_experiments.expt"
-    experiments = "sweep_28/refined_experiments.expt"
-    experiments = "sweep_29/refined_experiments.expt"
-    experiments = "sweep_30/refined_experiments.expt"
-    experiments = "sweep_31/refined_experiments.expt"
-    experiments = "sweep_33/refined_experiments.expt"
-    experiments = "sweep_34/refined_experiments.expt"
-    experiments = "sweep_36/refined_experiments.expt"
-    experiments = "sweep_42/refined_experiments.expt"
-    experiments = "sweep_43/refined_experiments.expt"
-    experiments = "sweep_48/refined_experiments.expt"
-    experiments = "sweep_50/refined_experiments.expt"
-    experiments = "sweep_51/refined_experiments.expt"
-    experiments = "sweep_53/refined_experiments.expt"
-    experiments = "sweep_54/refined_experiments.expt"
-    experiments = "sweep_56/refined_experiments.expt"
-    experiments = "sweep_58/refined_experiments.expt"
-    experiments = "sweep_59/refined_experiments.expt"
-    experiments = "sweep_60/refined_experiments.expt"
-    experiments = "sweep_63/refined_experiments.expt"
-    experiments = "sweep_64/refined_experiments.expt"
-    experiments = "sweep_65/refined_experiments.expt"
-    experiments = "sweep_66/refined_experiments.expt"
-    experiments = "sweep_67/refined_experiments.expt"
+    experiments = "sweep_00/refined.expt"
+    experiments = "sweep_01/refined.expt"
+    experiments = "sweep_02/refined.expt"
+    experiments = "sweep_03/refined.expt"
+    experiments = "sweep_05/refined.expt"
+    experiments = "sweep_09/refined.expt"
+    experiments = "sweep_14/refined.expt"
+    experiments = "sweep_16/refined.expt"
+    experiments = "sweep_17/refined.expt"
+    experiments = "sweep_18/refined.expt"
+    experiments = "sweep_19/refined.expt"
+    experiments = "sweep_22/refined.expt"
+    experiments = "sweep_23/refined.expt"
+    experiments = "sweep_24/refined.expt"
+    experiments = "sweep_25/refined.expt"
+    experiments = "sweep_26/refined.expt"
+    experiments = "sweep_27/refined.expt"
+    experiments = "sweep_28/refined.expt"
+    experiments = "sweep_29/refined.expt"
+    experiments = "sweep_30/refined.expt"
+    experiments = "sweep_31/refined.expt"
+    experiments = "sweep_33/refined.expt"
+    experiments = "sweep_34/refined.expt"
+    experiments = "sweep_36/refined.expt"
+    experiments = "sweep_42/refined.expt"
+    experiments = "sweep_43/refined.expt"
+    experiments = "sweep_48/refined.expt"
+    experiments = "sweep_50/refined.expt"
+    experiments = "sweep_51/refined.expt"
+    experiments = "sweep_53/refined.expt"
+    experiments = "sweep_54/refined.expt"
+    experiments = "sweep_56/refined.expt"
+    experiments = "sweep_58/refined.expt"
+    experiments = "sweep_59/refined.expt"
+    experiments = "sweep_60/refined.expt"
+    experiments = "sweep_63/refined.expt"
+    experiments = "sweep_64/refined.expt"
+    experiments = "sweep_65/refined.expt"
+    experiments = "sweep_66/refined.expt"
+    experiments = "sweep_67/refined.expt"
     reflections = "sweep_00/indexed.refl"
     reflections = "sweep_01/indexed.refl"
     reflections = "sweep_02/indexed.refl"

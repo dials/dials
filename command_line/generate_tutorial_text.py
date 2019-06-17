@@ -104,10 +104,10 @@ class Processing_Tutorial(object):
         cmd = "dials.refine bravais_setting_9.expt reindexed.refl scan_varying=false"
 
     class dials_sv_refine(Job):
-        cmd = "dials.refine refined_experiments.expt refined.refl scan_varying=true"
+        cmd = "dials.refine refined.expt refined.refl scan_varying=true"
 
     class dials_integrate(Job):
-        cmd = "dials.integrate refined_experiments.expt refined.refl nproc=4"
+        cmd = "dials.integrate refined.expt refined.refl nproc=4"
 
     class dials_report(Job):
         cmd = "dials.report integrated_experiments.expt integrated.refl"
@@ -238,14 +238,8 @@ def generate_processing_detail_text_betalactamase():
             "dials.refine",
             "dials.refine bravais_setting_2.expt reindexed.refl scan_varying=false",
         ),
-        (
-            "dials.sv_refine",
-            "dials.refine refined_experiments.expt refined.refl scan_varying=true",
-        ),
-        (
-            "dials.integrate",
-            "dials.integrate refined_experiments.expt refined.refl nproc=4",
-        ),
+        ("dials.sv_refine", "dials.refine refined.expt refined.refl scan_varying=true"),
+        ("dials.integrate", "dials.integrate refined.expt refined.refl nproc=4"),
         ("dials.report", "dials.report integrated_experiments.expt integrated.refl"),
         ("dials.export", "dials.export integrated.refl integrated_experiments.expt"),
     ]

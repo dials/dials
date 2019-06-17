@@ -329,7 +329,7 @@ from ``dials.refine_bravais_settings`` run:
 
 
 This uses all reflections in refinement rather than a subset and provided a
-small reduction in RMSDs, writing the results out to ``refined_experiments.expt``
+small reduction in RMSDs, writing the results out to ``refined.expt``
 and ``refined.refl``.
 
 However, the refined model is still static over
@@ -354,7 +354,7 @@ previous job:
     .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
         :linenos:
 
-which writes over the ``refined_experiments.expt`` and
+which writes over the ``refined.expt`` and
 ``refined.refl`` from the previous refinement step. By default the
 scan-varying refinement looks for smooth changes over an interval of 36°
 intervals, to avoid fitting unphysical models to noise, though this
@@ -397,7 +397,7 @@ highest resolution at the corner of the detector. This is fine, but if we
 wanted to we could have adjusted the resolution limits using parameters
 :samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
 made using the scan-varying crystal model recorded in
-:file:`refined_experiments.expt`. This ensures that prediction is made using
+:file:`refined.expt`. This ensures that prediction is made using
 the smoothly varying lattice and orientation that we determined in the
 refinement step. As this scan-varying model was determined in advance of
 integration, each of the integration jobs is independent and we can take

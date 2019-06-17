@@ -65,22 +65,22 @@ dials.refine indexed.expt indexed.refl \
 # profile parameters...
 
 dials.integrate outlier.algorithm=null profile.fitting=True \
-  input.experiments=refined_experiments.expt \
+  input.experiments=refined.expt \
   input.reflections=indexed.refl \
   nproc=$nproc
 
 # currently dials.export only supports one experiment at a time
-# therefore split the refined_experiments.expt and integrated.refl into
+# therefore split the refined.expt and integrated.refl into
 # separate files
 
-dials.split_experiments refined_experiments.expt integrated.refl \
-  experiments_prefix=refined_experiments reflections_prefix=integrated
+dials.split_experiments refined.expt integrated.refl \
+  experiments_prefix=refined reflections_prefix=integrated
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated_0.refl refined_experiments_0.expt mtz.hklout=integrated_0.mtz
-dials.export integrated_1.refl refined_experiments_1.expt mtz.hklout=integrated_1.mtz
+dials.export integrated_0.refl refined_0.expt mtz.hklout=integrated_0.mtz
+dials.export integrated_1.refl refined_1.expt mtz.hklout=integrated_1.mtz
 
 rebatch hklin integrated_0.mtz hklout rebatch_0.mtz > rebatch_0.log << EOF
 batch add 0

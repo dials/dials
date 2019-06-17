@@ -47,7 +47,7 @@ phil_scope = libtbx.phil.parse(
     """
 
   output {
-    experiments = refined_experiments.expt
+    experiments = refined.expt
       .type = str
       .help = "The filename for refined experimental models"
 

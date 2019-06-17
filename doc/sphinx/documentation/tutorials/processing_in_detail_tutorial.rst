@@ -298,7 +298,7 @@ highest resolution at the corner of the detector. This is fine, but if we
 wanted to we could have adjusted the resolution limits using parameters
 :samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
 made using the scan-varying crystal model recorded in
-:file:`refined_experiments.expt`. This ensures that prediction is made using
+:file:`refined.expt`. This ensures that prediction is made using
 the smoothly varying lattice and orientation that we determined in the
 refinement step. As this scan-varying model was determined in advance of
 integration, each of the integration jobs is independent and we can take

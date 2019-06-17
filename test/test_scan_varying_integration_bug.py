@@ -15,8 +15,8 @@ def test_1(dials_data, run_in_tmpdir):
         "dials.find_spots imported_80_90.expt",
         "dials.index imported_80_90.expt strong.refl space_group=P41212",
         "dials.refine indexed.expt indexed.refl scan_varying=True",
-        "dials.integrate refined_experiments.expt indexed.refl",
-        "dials.export refined_experiments.expt integrated.refl partiality_threshold=0.99",
+        "dials.integrate refined.expt indexed.refl",
+        "dials.export refined.expt integrated.refl partiality_threshold=0.99",
     ]
 
     for cmd in commands:

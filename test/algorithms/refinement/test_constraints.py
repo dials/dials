@@ -174,9 +174,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     with open("history.pickle", "rb") as f:
         history = pickle.load(f)
-    ref_exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.expt", check_format=False
-    )
+    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)
 
     # we expect 8 steps of constrained refinement
     assert history.get_nrows() == 8

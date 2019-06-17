@@ -458,7 +458,7 @@ def dump_details(entry):
     nx_note["date"] = strftime("%Y-%m-%dT%H:%M:%S")
     nx_note["type"] = "text/plain"
     nx_note["description"] = "Integration parameters"
-    nx_note["data"] = "dials.integrate refined_experiments.expt indexed.refl"
+    nx_note["data"] = "dials.integrate refined.expt refined.refl"
     nx_note["sequence_index"] = 3
 
 

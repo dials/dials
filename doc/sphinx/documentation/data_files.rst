@@ -29,11 +29,11 @@ below.
 | dials.index      | | datablock.expt              | | indexed.expt                |
 |                  | | strong.refl                 | | indexed.refl                |
 +------------------+-------------------------------+-------------------------------+
-| dials.refine     | | indexed.expt                | | refined_experiments.expt    |
-|                  | | indexed.refl                | | refined_reflections.refl    |
+| dials.refine     | | indexed.expt                | | refined.expt                |
+|                  | | indexed.refl                | | refined.refl                |
 +------------------+-------------------------------+-------------------------------+
-| dials.integrate  | | refined_experiments.expt    | | integrated_experiments.expt |
-|                  | | refined_reflections.refl    | | integrated.refl             |
+| dials.integrate  | | refined.expt                | | integrated_experiments.expt |
+|                  | | refined.refl                | | integrated.refl             |
 |                  | |                             | | profile_model.phil          |
 +------------------+-------------------------------+-------------------------------+
 | dials.scale      | | integrated_experiments.expt | | scaled_experiments.expt     |

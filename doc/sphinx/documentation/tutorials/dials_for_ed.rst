@@ -521,7 +521,7 @@ Static model refinement
 For all these datasets there is significant uncertainty in the initial
 experimental model. Although indexing was successful in each case, the refined
 geometry shows some quite large differences compared with the initial geometry.
-This is immediately obvious from viewing the ``refined_experiments.expt`` with
+This is immediately obvious from viewing the ``refined.expt`` with
 the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. For example, here
 is one image from the first dataset:
 
@@ -543,42 +543,42 @@ differ for each dataset as follows:
 1. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=mask.pickle \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.076
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.076
 
 2. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_2/frame_value_###.cbf \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.1615 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.1615 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 3. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_3/frame_value_###.cbf \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.0344 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0344 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 4. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_4/frame_value_###.cbf \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 5. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_5/frame_value_###.cbf \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 6. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=mask.pickle \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 7. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_7/frame_value_###.cbf \
-      reference_geometry=refined_experiments.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 
