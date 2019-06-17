@@ -119,12 +119,12 @@ def test_index_after_search(dials_data, run_in_tmpdir):
             import dials.command_line.dials_import
 
             dials.command_line.dials_import.Script().run()
-    assert os.path.exists("imported_experiments.expt")
+    assert os.path.exists("imported.expt")
 
     # spot-finding, just need a subset of the data
     args = [
         "dials.find_spots",
-        "imported_experiments.expt",
+        "imported.expt",
         "scan_range=1,10",
         "scan_range=531,540",
     ]
@@ -134,7 +134,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     assert os.path.exists("strong.refl")
 
     # actually run the beam centre search
-    args = ["dials.search_beam_position", "imported_experiments.expt", "strong.refl"]
+    args = ["dials.search_beam_position", "imported.expt", "strong.refl"]
     print(args)
     result = procrunner.run(args)
     assert result["stderr"] == "" and result["exitcode"] == 0
@@ -143,7 +143,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     # look at the results
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("imported_experiments.expt", check_format=False)
+    experiments = load.experiment_list("imported.expt", check_format=False)
     original_imageset = experiments.imagesets()[0]
     optimized_experiments = load.experiment_list(
         "optimized_experiments.expt", check_format=False

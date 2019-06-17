@@ -34,7 +34,7 @@ def run(args):
     from dials.util import log
 
     usage = (
-        "%s [options] experiments.expt strong.refl output.csv=rl.csv"
+        "%s [options] imported.expt strong.refl output.csv=rl.csv"
         % libtbx.env.dispatcher_name
     )
 

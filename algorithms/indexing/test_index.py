@@ -532,7 +532,7 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     # print(command)
     easy_run.fully_buffered(command=command).raise_if_errors()
 
-    experiments_json = "imported_experiments.expt"
+    experiments_json = "imported.expt"
 
     args = ["dials.find_spots", experiments_json]
 
@@ -579,7 +579,7 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
     # print(command)
     easy_run.fully_buffered(command=command).raise_if_errors()
 
-    experiments_json = "imported_experiments.expt"
+    experiments_json = "imported.expt"
     args = ["dials.find_spots", experiments_json]
     command = " ".join(args)
     easy_run.fully_buffered(command=command).raise_if_errors()

@@ -31,7 +31,7 @@ phil_scope = parse(
 
   output {
 
-    experiments = experiments.expt
+    experiments = imported.expt
       .type = str
       .help = "The output JSON or pickle file"
 

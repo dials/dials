@@ -39,7 +39,7 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  dials.search_beam_position experiments.expt strong.refl
+  dials.search_beam_position imported.expt strong.refl
 
 """
 
@@ -517,7 +517,7 @@ def discover_better_experimental_model(
 
 
 def run(args):
-    usage = "dials.search_beam_position [options] experiments.expt strong.refl"
+    usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

@@ -75,7 +75,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
 
     result = fully_buffered("dials.import %s" % path).raise_if_errors()
     result = fully_buffered(
-        "dials.shadow_plot imported_experiments.expt json=shadow.json"
+        "dials.shadow_plot imported.expt json=shadow.json"
     ).raise_if_errors()
     assert os.path.exists("scan_shadow_plot.png")
     assert os.path.exists("shadow.json")
@@ -85,7 +85,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
         assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
 
     fully_buffered(
-        "dials.shadow_plot imported_experiments.expt mode=2d plot=shadow_2d.png"
+        "dials.shadow_plot imported.expt mode=2d plot=shadow_2d.png"
     ).raise_if_errors()
     assert os.path.exists("shadow_2d.png")
 

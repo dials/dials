@@ -89,10 +89,10 @@ class Processing_Tutorial(object):
             self.cmd = "dials.import {0}".format(dataset)
 
     class dials_find_spots(Job):
-        cmd = "dials.find_spots imported_experiments.json nproc=4"
+        cmd = "dials.find_spots imported.json nproc=4"
 
     class dials_index(Job):
-        cmd = "dials.index imported_experiments.json strong.refl"
+        cmd = "dials.index imported.json strong.refl"
 
     class dials_refine_bravais_settings(Job):
         cmd = "dials.refine_bravais_settings indexed_experiments.json indexed.refl"
@@ -227,8 +227,8 @@ def generate_processing_detail_text_betalactamase():
     # Make an ordered list of named steps and associated commands
     commands = [
         ("dials.import", "dials.import {}".format(DATA_PATH)),
-        ("dials.find_spots", "dials.find_spots imported_experiments.json nproc=4"),
-        ("dials.index", "dials.index imported_experiments.json strong.refl"),
+        ("dials.find_spots", "dials.find_spots imported.expt nproc=4"),
+        ("dials.index", "dials.index imported.expt strong.refl"),
         (
             "dials.refine_bravais_settings",
             "dials.refine_bravais_settings indexed_experiments.json indexed.refl",
