@@ -166,7 +166,7 @@ class Render3d(object):
             use_column = "xyzcal.px"
 
         if self.settings.d_min is not None:
-            reflections = reflections.select(d_spacings > self.settings.d_min)
+            reflections = reflections.select(d_spacings >= self.settings.d_min)
         else:
             self.settings.d_min = flex.min(d_spacings)
         if self.settings.z_min is not None:

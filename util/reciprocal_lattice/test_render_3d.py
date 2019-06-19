@@ -33,13 +33,13 @@ def test_Render3d(mocker, multi_sweep_data):
     render.load_models(experiments, reflections)
     assert render.set_beam_centre.call_count == 1
 
-    for (outlier_display, expected_count) in (("outliers", 0), ("inliers", 1254)):
+    for (outlier_display, expected_count) in (("outliers", 0), ("inliers", 1255)):
         render.settings.outlier_display = outlier_display
         render.load_models(experiments, reflections)
         assert render.viewer.set_points.call_args[0][0].size() == expected_count
 
     for (display, expected_count) in (
-        ("indexed", 1254),
+        ("indexed", 1255),
         ("unindexed", 0),
         ("integrated", 0),
     ):
@@ -50,7 +50,7 @@ def test_Render3d(mocker, multi_sweep_data):
     render.settings.display = "all"
     render.settings.experiment_ids = [0, 2, 3]
     render.load_models(experiments, reflections)
-    assert render.viewer.set_points.call_args[0][0].size() == 956
+    assert render.viewer.set_points.call_args[0][0].size() == 957
 
     render.settings.black_background = False
     render.load_models(experiments, reflections)
@@ -82,7 +82,7 @@ def test_Render3d_integrated(mocker, centroid_test_data):
     render.settings.partiality_min = 0.2
     render.settings.partiality_max = 0.9
     render.load_models(experiments, reflections)
-    assert render.viewer.set_points.call_args[0][0].size() == 922
+    assert render.viewer.set_points.call_args[0][0].size() == 923
 
     render = Render3d()
     render.viewer = mocker.Mock()
