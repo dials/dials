@@ -145,7 +145,7 @@ oC lattice do themselves form an orthorhombic lattice. In views from the
 third lattice in some parts of reciprocal space. We might try to index these
 lattices now::
 
-  dials.index optimized_datablock.expt unindexed.refl output.experiments=minor.expt output.reflections=minor.refl unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
+  dials.index optimised.expt unindexed.refl output.experiments=minor.expt output.reflections=minor.refl unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
 
 Here is some output::
 

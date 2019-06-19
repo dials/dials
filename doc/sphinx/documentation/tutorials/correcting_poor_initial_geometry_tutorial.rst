@@ -319,7 +319,7 @@ Indexing with the corrected beam centre
 
 ::
 
-  dials.index optimized_datablock.expt strong.refl
+  dials.index optimised.expt strong.refl
 
 We now have a more convincing solution, which also indexes many more
 reflections::

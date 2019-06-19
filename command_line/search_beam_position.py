@@ -78,7 +78,7 @@ seed = 42
   .type = int(value_min=0)
 
 output {
-  experiments = optimized_experiments.expt
+  experiments = optimised.expt
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
