@@ -28,15 +28,15 @@ The output formats currently supported are:
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is a models.expt file and an
-integrated.pickle file. For exporting scaled data, the required input is a
+integrated.refl file. For exporting scaled data, the required input is a
 models.expt file and a scaled.pickle file, also passing the option
 intensity=scale.
 
 NXS format exports the files as an NXmx file. The required input is a
-models.expt file and an integrated.pickle file.
+models.expt file and an integrated.refl file.
 
 MMCIF format exports the files as an mmcif file. The required input is a
-models.expt file and an integrated.pickle file.
+models.expt file and an integrated.refl file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -56,20 +56,20 @@ reflection pickle is given it will be exported as a SPOT.XDS file.
 Examples::
 
   # Export to mtz
-  dials.export models.expt integrated.pickle
-  dials.export models.expt integrated.pickle mtz.hklout=integrated.mtz
+  dials.export models.expt integrated.refl
+  dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
   dials.export models.expt scaled.pickle intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export models.expt integrated.pickle format=nxs
-  dials.export models.expt integrated.pickle format=nxs nxs.hklout=integrated.nxs
+  dials.export models.expt integrated.refl format=nxs
+  dials.export models.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export models.expt integrated.pickle format=mmcif
-  dials.export models.expt integrated.pickle format=mmcif mmcif.hklout=integrated.mmcif
+  dials.export models.expt integrated.refl format=mmcif
+  dials.export models.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to mosflm
-  dials.export models.expt integrated.pickle format=mosflm
+  dials.export models.expt integrated.refl format=mosflm
 
   # Export to xds
   dials.export strong.pickle format=xds
