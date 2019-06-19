@@ -101,7 +101,7 @@ masking {
 }
 
 output {
-  mask = mask.pickle
+  mask = pixels.mask
     .type = path
     .help = "Name of output mask file"
 

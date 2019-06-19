@@ -60,7 +60,7 @@ log = logging.getLogger("dials.generate_mask")
 phil_scope = phil.parse(
     """
     output {
-        mask = mask.pickle
+        mask = pixels.mask
             .type = path
             .help = "Name of output mask file."
         experiments = None

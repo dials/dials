@@ -137,7 +137,7 @@ re-import including the mask:
 .. code-block:: bash
 
   dials.generate_mask mask.phil datablock.expt
-  dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=mask.pickle
+  dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=pixels.mask
 
 Dataset 2
 ---------
@@ -274,7 +274,7 @@ then the mask was generated, and used during re-import of the images
 .. code-block:: bash
 
   dials.generate_mask mask.phil datablock.expt
-  dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=mask.pickle
+  dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=pixels.mask
 
 Dataset 7
 ---------
@@ -542,7 +542,7 @@ differ for each dataset as follows:
 
 1. .. code-block:: bash
 
-    dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=mask.pickle \
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=pixels.mask \
       reference_geometry=refined.expt geometry.scan.oscillation=0,0.076
 
 2. .. code-block:: bash
@@ -571,7 +571,7 @@ differ for each dataset as follows:
 
 6. .. code-block:: bash
 
-    dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=mask.pickle \
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=pixels.mask \
       reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 

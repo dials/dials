@@ -25,12 +25,12 @@ def test(dials_data, tmpdir):
             "dials.find_hot_pixels",
             "input.experiments=experiments.expt",
             "input.reflections=spotfinder.refl",
-            "output.mask=hot_mask.pickle",
+            "output.mask=hot_pixels.mask",
         ],
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("hot_mask.pickle").check()
+    assert tmpdir.join("hot_pixels.mask").check()
     assert (
         "Found 8 hot pixels" in result["stdout"]
         or "Found 9 hot pixels" in result["stdout"]

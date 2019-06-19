@@ -28,7 +28,7 @@ images = None
   .type = ints
   .help = "Images on which to perform the analysis (otherwise use all images)"
 output {
-    mask = mask.pickle
+    mask = pixels.mask
         .type = path
         .help = "Output mask file name"
 }
