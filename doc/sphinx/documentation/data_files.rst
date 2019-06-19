@@ -36,7 +36,7 @@ below.
 |                  | | refined.refl                | | integrated.refl             |
 |                  | |                             | | profile_model.phil          |
 +------------------+-------------------------------+-------------------------------+
-| dials.scale      | | integrated.expt             | | scaled_experiments.expt     |
+| dials.scale      | | integrated.expt             | | scaled.expt                 |
 |                  | | integrated.refl             | | scaled.refl                 |
 +------------------+-------------------------------+-------------------------------+
 

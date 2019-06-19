@@ -36,7 +36,7 @@ on the dataset, and calculates an inverse scale factor for
 each reflection (i.e. the corrected intensities are given by
 :math:`I^{cor}_i = I^{obs}_i / g_i`). The updated dataset is saved to
 :samp:`scaled.refl`, while details of the scaling model are saved in an
-updated experiments file :samp:`scaled_experiments.expt`. This can then be
+updated experiments file :samp:`scaled.expt`. This can then be
 used to produce an MTZ file for structure solution.
 
 The scaling process
@@ -161,7 +161,7 @@ structural solution.
 To obtain an unmerged mtz file, :samp:`dials.export` should be run, passing in
 the output from scaling, with the option :samp:`intensity=scale`::
 
-  dials.export scaled.refl scaled_experiments.expt intensity=scale
+  dials.export scaled.refl scaled.expt intensity=scale
 
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html

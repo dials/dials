@@ -63,7 +63,7 @@ output {
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    experiments = "scaled_experiments.expt"
+    experiments = "scaled.expt"
       .type = str
       .help = "Option to set filepath for output json."
     reflections = "scaled.refl"

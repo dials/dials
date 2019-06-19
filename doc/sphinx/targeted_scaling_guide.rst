@@ -8,7 +8,7 @@ file containing a scaled dataset.
 Any number of datasets can be scaled against the reference dataset at once,
 giving the same scaling result as if each dataset were scaled as an independent
 job. The only difference is that all scaled datasets would be output in one
-scaled.refl and scaled_experiments.expt, which may be more or less convenient
+scaled.refl and scaled.expt, which may be more or less convenient
 for further processing.
 
 Scaling against a dials reference dataset
@@ -22,7 +22,7 @@ target/reference, one should use the following command::
 
 This will scale the intensities of the dataset to agree as closely as possible
 with the intensities of the reference dataset, and save the scaled dataset to
-scaled.refl, scaled_experiments.expt (the reference files are unchanged).
+scaled.refl, scaled.expt (the reference files are unchanged).
 The :samp:`only_target=True` command is important, else all the data will be
 scaled together and output in a joint output file.
 
@@ -35,7 +35,7 @@ command::
   dials.scale integrated.refl integrated.expt target_mtz=scaled.mtz
 
 The targeted scaling algorithm is the same regardless of the target datafile type,
-likewise the scaled dataset will be saved to scaled.refl and scaled_experiments.expt.
+likewise the scaled dataset will be saved to scaled.refl and scaled.expt.
 
 
 General considerations for suitable options

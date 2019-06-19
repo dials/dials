@@ -10,18 +10,18 @@ with scale, decay and absorption components. If multiple input files have been
 specified, the datasets will be jointly scaled against a common target of
 unique reflection intensities.
 
-The program outputs one scaled.refl and scaled_experiments.expt file, which
+The program outputs one scaled.refl and scaled.expt file, which
 contains reflection data and scale models, from one or more experiments.
 The output pickle file contains intensity.scale.value, the unscaled intensity
 values used to determine the scaling model, and a inverse scale factor per
 reflection. These values can then be used to merge the data for downstream
-structural solution. Alternatively, the scaled_experiments.expt and
+structural solution. Alternatively, the scaled.expt and
 scaled.refl files can be passed back to dials.scale, and further scaling will
 be performed, starting from where the previous job finished.
 
 The scaling models determined by this program can be plotted with::
 
-  dials.plot_scaling_models scaled.refl scaled_experiments.expt
+  dials.plot_scaling_models scaled.refl scaled.expt
 
 Example use cases
 
@@ -37,7 +37,7 @@ Incremental scaling (with different options per dataset)::
 
   dials.scale integrated.refl integrated.expt scale_interval=10.0
 
-  dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled_experiments.expt scale_interval=15.0
+  dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt scale_interval=15.0
 
 """
 import time
@@ -114,7 +114,7 @@ phil_scope = phil.parse(
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    experiments = "scaled_experiments.expt"
+    experiments = "scaled.expt"
       .type = str
       .help = "Option to set filepath for output json."
     reflections = "scaled.refl"

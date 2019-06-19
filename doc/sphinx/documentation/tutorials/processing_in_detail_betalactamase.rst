@@ -554,7 +554,7 @@ within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with::
 
-  dials.report scaled_experiments.expt scaled.refl
+  dials.report scaled.expt scaled.refl
 
 which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
 
@@ -613,7 +613,7 @@ and aimless_.
 2) export the scaled intensities for further downstream processing, making sure to
 include the :samp:`intensity=scale` option::
 
-  dials.export scaled.refl scaled_experiments.expt intensity=scale
+  dials.export scaled.refl scaled.expt intensity=scale
 
 Here is the output for exporting after integration, showing the reflection file statistics.
 

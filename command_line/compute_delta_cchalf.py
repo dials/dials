@@ -538,7 +538,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = "dials.compute_delta_cchalf [options] scaled_experiments.expt scaled.refl"
+    usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
     parser = OptionParser(
         usage=usage,
