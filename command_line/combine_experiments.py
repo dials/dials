@@ -112,11 +112,11 @@ phil_scope = parse(
   }
 
   output {
-    experiments_filename = combined_experiments.expt
+    experiments_filename = combined.expt
       .type = str
       .help = "The filename for combined experimental models"
 
-    reflections_filename = combined_reflections.refl
+    reflections_filename = combined.refl
       .type = str
       .help = "The filename for combined reflections"
 

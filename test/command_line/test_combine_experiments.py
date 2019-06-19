@@ -55,10 +55,8 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     # load results
-    exp = ExperimentListFactory.from_json_file(
-        "combined_experiments.expt", check_format=False
-    )
-    ref = flex.reflection_table.from_pickle("combined_reflections.refl")
+    exp = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
+    ref = flex.reflection_table.from_pickle("combined.refl")
 
     # test the experiments
     assert len(exp) == 103
@@ -74,11 +72,7 @@ def test(dials_regression, run_in_tmpdir):
     assert len(ref) == 11689
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "combined_experiments.expt",
-            "combined_reflections.refl",
-        ]
+        ["dials.split_experiments", "combined.expt", "combined.refl"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
@@ -103,11 +97,7 @@ def test(dials_regression, run_in_tmpdir):
         assert ref_single["id"].all_eq(0)
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "combined_experiments.expt",
-            "output.experiments_prefix=test",
-        ]
+        ["dials.split_experiments", "combined.expt", "output.experiments_prefix=test"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
@@ -129,7 +119,7 @@ def test(dials_regression, run_in_tmpdir):
         [
             "dials.split_experiments",
             "modded_experiments.expt",
-            "combined_reflections.refl",
+            "combined.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
@@ -145,10 +135,8 @@ def test(dials_regression, run_in_tmpdir):
     assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
     # Now do test when input has identifiers set
-    reflections = flex.reflection_table().from_pickle("combined_reflections.refl")
-    explist = ExperimentListFactory.from_json_file(
-        "combined_experiments.expt", check_format=False
-    )
+    reflections = flex.reflection_table().from_pickle("combined.refl")
+    explist = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
     # set string identifiers as nonconsecutive 0,2,4,6....
     for i, exp in enumerate(explist):
         assert i in reflections["id"]

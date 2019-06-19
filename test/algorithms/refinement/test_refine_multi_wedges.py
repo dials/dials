@@ -49,8 +49,8 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.expt",
-            "combined_reflections.refl",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
@@ -110,8 +110,8 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.expt",
-            "combined_reflections.refl",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history1.pickle",
@@ -144,8 +144,8 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.expt",
-            "combined_reflections.refl",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history2.pickle",

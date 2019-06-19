@@ -711,7 +711,7 @@ model from our :file:`indexed.expt`. We don't really want the combined experimen
 file, only this side-effect, so we immediately split it again::
 
   dials.combine_experiments experiments=../refined_lev1.expt experiments=refined.expt reflections=../refined_lev1.refl reflections=indexed.refl reference_from_experiment.detector=0
-  dials.split_experiments combined_experiments.expt combined_reflections.refl
+  dials.split_experiments combined.expt combined.refl
 
 This results in a few files, of which :file:`experiments_1.expt` is interesting.
 It contains the updated detector - but beware the detector distance is now

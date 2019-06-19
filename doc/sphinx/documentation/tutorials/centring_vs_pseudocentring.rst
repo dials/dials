@@ -187,7 +187,7 @@ Here is a view of reciprocal space, aligned down the shared :math:`c^\star`
 axes of the oC lattice, and its complement, the oP lattice that indexes the
 disallowed reflections::
 
-  dials.reciprocal_lattice_viewer combined_experiments.expt combined_reflections.refl
+  dials.reciprocal_lattice_viewer combined.expt combined.refl
 
 .. image:: /figures/dpf3_3lattices.png
 
@@ -200,7 +200,7 @@ spots found) in latter half of the dataset (images 100 onwards).
 We can see this more directly if we create an HTML report for the combined
 experiments::
 
-  dials.report combined_experiments.expt combined_reflections.refl
+  dials.report combined.expt combined.refl
 
 Load the resulting :file:`dials-report.html` in a web browser. This includes
 a useful plot of the number of indexed reflections for each lattice versus

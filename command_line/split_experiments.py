@@ -12,7 +12,7 @@ reflection file per output experiment file.
 
 Example::
 
-  dials.split_experiments combined_experiments.expt combined_reflections.refl
+  dials.split_experiments combined.expt combined.refl
 
 """
 

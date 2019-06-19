@@ -626,7 +626,7 @@ The :samp:`reference_from_experiment` options tell the program to replace all
 beam, goniometer and detector models in the input experiments with those
 models taken from the first experiment, i.e. experiment '0' using 0-based
 indexing. The output lists the number of reflections in each sweep contributing
-to the final :file:`combined_reflections.refl`::
+to the final :file:`combined.refl`::
 
   ---------------------
   | Experiment | Nref |
@@ -672,13 +672,13 @@ to the final :file:`combined_reflections.refl`::
   | 38         | 982  |
   | 39         | 1138 |
   ---------------------
-  Saving combined experiments to combined_experiments.expt
-  Saving combined reflections to combined_reflections.refl
+  Saving combined experiments to combined.expt
+  Saving combined reflections to combined.refl
 
-We may also inspect the contents of :file:`combined_experiments.expt`, by using
+We may also inspect the contents of :file:`combined.expt`, by using
 :program:`dials.show`, for example::
 
-  dials.show combined_experiments.expt
+  dials.show combined.expt
 
 Useful though this is, it is clear how this could become unwieldy as the number
 of experiments increases. Work on better interfaces to multi-crystal (or
@@ -689,7 +689,7 @@ Now we have the joint experiments and reflections files we can run our multi-
 crystal refinement job. First we try outlier rejection, so that the refinement
 run is similar to the jobs we ran on individual datasets::
 
-  dials.refine combined_experiments.expt combined_reflections.refl \
+  dials.refine combined.expt combined.refl \
     scan_varying=false use_all_reflections=true outlier.algorithm=tukey
 
 ::
@@ -704,8 +704,8 @@ run is similar to the jobs we ran on individual datasets::
     }
   }
   input {
-    experiments = combined_experiments.expt
-    reflections = combined_reflections.refl
+    experiments = combined.expt
+    reflections = combined.refl
   }
 
   Configuring refiner
@@ -758,16 +758,16 @@ because it selectively removes reflections from the worst fitting experiments.
 
 Instead we try without outlier rejection::
 
-  dials.refine combined_experiments.expt combined_reflections.refl \
+  dials.refine combined.expt combined.refl \
     scan_varying=false use_all_reflections=true \
-    output.experiments=refined_combined_experiments.expt
+    output.experiments=refined_combined.expt
 
 This worked much better::
 
   The following parameters have been modified:
 
   output {
-    experiments = refined_combined_experiments.expt
+    experiments = refined_combined.expt
   }
   refinement {
     reflections {
@@ -775,8 +775,8 @@ This worked much better::
     }
   }
   input {
-    experiments = combined_experiments.expt
-    reflections = combined_reflections.refl
+    experiments = combined.expt
+    reflections = combined.refl
   }
 
   Configuring refiner
@@ -845,7 +845,7 @@ This worked much better::
   ---------------------------------------------
   Table truncated to show the first 20 experiments only
   Re-run with verbosity >= 2 to show all experiments
-  Saving refined experiments to refined_combined_experiments.expt
+  Saving refined experiments to refined_combined.expt
 
 The overall final RMSDs are 0.17 mm in X, 0.16 mm in Y and 0.12 degrees in
 :math:`\phi`. The RMSDs per experiment are also shown, but only for the first
@@ -874,11 +874,11 @@ joint refinement seem appropriate. For better parity with the original results
 perhaps we should use outlier rejection though. Now the models are close enough
 it is safe to do so::
 
-  dials.refine refined_combined_experiments.expt combined_reflections.refl \
+  dials.refine refined_combined.expt combined.refl \
     scan_varying=false \
     use_all_reflections=true \
     outlier.algorithm=tukey \
-    output.experiments=refined_combined_experiments_outrej.expt
+    output.experiments=refined_combined_outrej.expt
 
 The RMSD tables resulting from this::
 
@@ -941,8 +941,8 @@ re-integrating the data to create MTZs for BLEND.
 Analysis of jointly refined datasets
 ------------------------------------
 
-:program:`dials.integrate` will not work with our :file:`refined_combined_experiments_outrej.expt`
-and :file:`combined_reflections.refl` directly, so we have to separate these
+:program:`dials.integrate` will not work with our :file:`refined_combined_outrej.expt`
+and :file:`combined.refl` directly, so we have to separate these
 into individual files for each experiment. It is best to do this inside a new
 directory:
 
@@ -950,7 +950,7 @@ directory:
 
   mkdir joint
   cd !$
-  dials.split_experiments ../refined_combined_experiments_outrej.expt ../combined_reflections.refl
+  dials.split_experiments ../refined_combined_outrej.expt ../combined.refl
 
 This fills the directory with 39 individual :file:`experiments_##.expt` and
 :file:`reflections_##.refl` files. To integrate these quickly we want a script
