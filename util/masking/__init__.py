@@ -16,6 +16,8 @@ import logging
 from iotbx.phil import parse
 from scitbx.array_family import flex
 
+from dials_util_masking_ext import GoniometerShadowMaskGenerator  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 phil_scope = parse(
@@ -282,8 +284,10 @@ class MaskGenerator(object):
         return tuple(masks)
 
 
-class GoniometerShadowMaskGenerator(object):
+class _GoniometerShadowMaskGenerator(object):
     def __init__(self, goniometer, extrema_at_datum, axis):
+        # axis is an array of size_t the same size as extrema_at_datum,
+        # where each element identifies the axis that that coordinate depends on
         self.goniometer = goniometer
         self._extrema_at_datum = extrema_at_datum
         self.axis = axis

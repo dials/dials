@@ -43,55 +43,126 @@ def pilatus_6M():
     return _construct_detector
 
 
-def test_GoniometerShadowMaskGenerator(kappa_goniometer, pilatus_6M):
+@pytest.fixture(params=["cpp", "python"])
+def kappa_goniometer_shadow_masker(request):
+    def _construct_shadow_masker(goniometer):
+        # Simple model of cone around goniometer phi axis
+        # Exact values don't matter, only the ratio of height/radius
+        height = 50  # mm
+        radius = 20  # mm
+
+        steps_per_degree = 1
+        theta = (
+            flex.double([range(360 * steps_per_degree)])
+            * math.pi
+            / 180
+            * 1
+            / steps_per_degree
+        )
+        y = radius * flex.cos(-theta)
+        z = radius * flex.sin(-theta)
+        x = flex.double(theta.size(), height)
+
+        coords = flex.vec3_double(zip(x, y, z))
+        coords.append(coords[0])  # ensure closure of polygon
+        coords.insert(0, (0, 0, 0))
+
+        # from matplotlib import pyplot
+        # pyplot.plot(y, z)
+        # pyplot.show()
+
+        if request.param == "python":
+            from dials.util.masking import _GoniometerShadowMaskGenerator
+
+            return _GoniometerShadowMaskGenerator(
+                goniometer, coords, flex.size_t(len(coords), 0)
+            )
+        return GoniometerShadowMaskGenerator(
+            goniometer, coords, flex.size_t(len(coords), 0)
+        )
+
+    return _construct_shadow_masker
+
+
+def test_GoniometerShadowMaskGenerator_kappa_180_omega_0(
+    kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
+):
     goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
-    # Simple model of cone around goniometer phi axis
-    # Exact values don't matter, only the ratio of height/radius
-    height = 50  # mm
-    radius = 20  # mm
-
-    steps_per_degree = 1
-    theta = (
-        flex.double([range(360 * steps_per_degree)])
-        * math.pi
-        / 180
-        * 1
-        / steps_per_degree
-    )
-    y = radius * flex.cos(theta)
-    z = radius * flex.sin(theta)
-    x = flex.double(theta.size(), height)
-
-    coords = flex.vec3_double(zip(x, y, z))
-    coords.insert(0, (0, 0, 0))
-
-    masker = GoniometerShadowMaskGenerator(
-        goniometer, coords, flex.size_t(len(coords), 0)
-    )
-
     detector = pilatus_6M(distance=170)
-    shadow = masker.project_extrema(detector, scan_angle=0)
-    assert len(shadow) == len(detector)
-    assert len(shadow[0]) == 145
-    assert shadow[0][0] == pytest.approx((1752.4703959222845, 672.2428154208985))
-    extrema = masker.extrema_at_scan_angle(scan_angle=0)
-    assert len(extrema) == len(coords)
+    masker = kappa_goniometer_shadow_masker(goniometer)
+
+    scan_angle = 0  # omega = 0, shadow in top right corner of detector
+    extrema = masker.extrema_at_scan_angle(scan_angle)
+    assert len(extrema) == 362
     assert extrema[1] == pytest.approx(
         (43.60448791048147, 8.572923552543028, -30.416337975287743)
     )
-    mask = masker.get_mask(detector, 0)
+
+    shadow = masker.project_extrema(detector, scan_angle)
+    assert len(shadow) == len(detector)
+    assert len(shadow[0]) == 145
+
+    mask = masker.get_mask(detector, scan_angle)
     assert len(mask) == len(detector)
     assert mask[0].all() == tuple(reversed(detector[0].get_image_size()))
-    assert mask[0].count(True) == 5570865
+    assert mask[0].count(True) == pytest.approx(5570865)
 
-    shadow = masker.project_extrema(detector, scan_angle=-45)
-    assert len(shadow[0]) == 226
-    assert shadow[0][0] == pytest.approx((1623.5133257425446, 1254.0966982780835))
-    extrema = masker.extrema_at_scan_angle(scan_angle=-45)
-    assert len(extrema) == len(coords)
+
+def test_GoniometerShadowMaskGenerator_kappa_180_omega_m45(
+    kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
+):
+    goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
+    detector = pilatus_6M(distance=170)
+    masker = kappa_goniometer_shadow_masker(goniometer)
+
+    scan_angle = -45  # omega = -45, shadow on centre-right of detector
+    extrema = masker.extrema_at_scan_angle(scan_angle)
+    assert len(extrema) == 362
     assert extrema[1] == pytest.approx(
         (43.60448791048147, -15.445626462590827, -27.569571219784905)
     )
-    mask = masker.get_mask(detector, -45)
+    shadow = masker.project_extrema(detector, scan_angle)
+    assert len(shadow[0]) in (226, 227)
+    # assert shadow[0][0] == pytest.approx((1623.5133257425446, 1254.0966982780835))
+    mask = masker.get_mask(detector, scan_angle)
     assert mask[0].all() == tuple(reversed(detector[0].get_image_size()))
-    assert mask[0].count(True) == 5467810
+    assert mask[0].count(True) == pytest.approx(5467810)
+
+
+def test_GoniometerShadowMaskGenerator_kappa_180_omega_p45(
+    kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
+):
+    goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
+    detector = pilatus_6M(distance=170)
+    masker = kappa_goniometer_shadow_masker(goniometer)
+
+    scan_angle = 45  # omega = +45, no shadow on detector
+    shadow = masker.project_extrema(detector, scan_angle)
+    assert len(shadow[0]) == 0
+    extrema = masker.extrema_at_scan_angle(scan_angle)
+    assert len(extrema) == 362
+    assert extrema[1] == pytest.approx(
+        (43.60448791048147, 27.56957121978491, -15.445626462590822)
+    )
+    mask = masker.get_mask(detector, scan_angle)
+    assert mask[0] is None or mask[0].count(False) == 0
+
+
+def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
+    kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
+):
+    # goniometer shadow does not intersect with detector panel
+    goniometer = kappa_goniometer(phi=0, kappa=-70, omega=0)
+    detector = pilatus_6M(distance=170)
+    masker = kappa_goniometer_shadow_masker(goniometer)
+
+    scan_angle = 100
+    extrema = masker.extrema_at_scan_angle(scan_angle)
+    assert len(extrema) == 362
+    assert extrema[1] == pytest.approx(
+        (42.318198019878935, 8.61724085750561, 32.17006801910824)
+    )
+    shadow = masker.project_extrema(detector, scan_angle)
+    assert len(shadow[0]) == 0
+    mask = masker.get_mask(detector, scan_angle)
+    assert mask[0] is None or mask[0].count(False) == 0
