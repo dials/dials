@@ -52,7 +52,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
+        usage = "usage: dev.dials.make_polar_background_image [options] models.expt"
 
         # Create the parser
         self.parser = OptionParser(

@@ -170,7 +170,7 @@ def run(phil=phil_scope, args=None):
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: %s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "usage: dials.generate_mask [options] models.expt"
     parser = OptionParser(usage=usage, phil=phil, epilog=__doc__, read_experiments=True)
 
     # Parse the command line arguments

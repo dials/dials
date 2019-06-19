@@ -419,7 +419,7 @@ def run():
     phil_scope = parse(phil_str, process_includes=True)
 
     # The script usage
-    usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
+    usage = "usage: dials.filter_reflections [options] experiment.expt" 
 
     # Create the parser
     parser = OptionParser(

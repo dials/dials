@@ -52,7 +52,7 @@ id = None
 def run(args):
     import libtbx.load_env
 
-    usage = "%s [options] imported.expt strong.refl" % libtbx.env.dispatcher_name
+    usage = "dials.spot_counts_per_image [options] imported.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

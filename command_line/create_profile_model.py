@@ -36,7 +36,7 @@ phil_scope = parse(
     .type = bool
     .help = "Subtract background from pixel data before computing profile"
     .expert_level = 2
-  output = models_wth_profiles.expt
+  output = models_with_profiles.expt
     .type = str
     .help = "The filename for the experiments"
 
@@ -57,7 +57,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] models.expt spots.refl" % libtbx.env.dispatcher_name
+            "usage: dials.create_profile_model [options] models.expt spots.refl"
         )
         self.parser = OptionParser(
             usage=usage,

@@ -42,7 +42,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "dials.goniometer_calibration [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

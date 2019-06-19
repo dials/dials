@@ -60,7 +60,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] models.expt observations.refl" % (libtbx.env.dispatcher_name)
+    usage = "dials.spot_resolution_shells [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,

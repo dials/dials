@@ -234,7 +234,7 @@ class Index(object):
 def run(phil=working_phil, args=None):
     import libtbx.load_env
 
-    usage = "%s [options] models.expt strong.refl" % libtbx.env.dispatcher_name
+    usage = "dials.index [options] models.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

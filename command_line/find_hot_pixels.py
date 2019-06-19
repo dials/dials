@@ -48,7 +48,7 @@ def run(args):
     from dials.util import log
     import six.moves.cPickle as pickle
 
-    usage = "%s [options] models.expt strong.refl" % libtbx.env.dispatcher_name
+    usage = "dials.find_hot_pixels [options] models.expt strong.refl"
 
     # Create the option parser
     parser = OptionParser(

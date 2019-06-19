@@ -130,7 +130,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
 def run(args):
     import libtbx.load_env
 
-    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "dials.estimate_gain [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

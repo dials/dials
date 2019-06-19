@@ -138,7 +138,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
+    usage = "dials.reindex [options] indexed.expt indexed.refl"
 
     parser = OptionParser(
         usage=usage,

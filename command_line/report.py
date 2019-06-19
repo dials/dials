@@ -2424,7 +2424,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] observations.refl" % libtbx.env.dispatcher_name
+        usage = "usage: dials.report [options] observations.refl"
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

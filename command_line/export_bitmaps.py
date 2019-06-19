@@ -92,7 +92,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 
 
 def run(args):
-    usage = "%s [options] models.expt | image.cbf" % libtbx.env.dispatcher_name
+    usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
     parser = OptionParser(
         usage=usage,

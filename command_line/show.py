@@ -171,7 +171,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] models.expt | image_*.cbf" % (libtbx.env.dispatcher_name)
+    usage = "dials.show [options] models.expt | image_*.cbf"
 
     parser = OptionParser(
         usage=usage,

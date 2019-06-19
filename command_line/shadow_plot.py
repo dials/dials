@@ -49,7 +49,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
+    usage = "dials.shadow_plot [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

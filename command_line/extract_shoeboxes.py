@@ -60,8 +60,8 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiment.expt observations.refl"
-            % libtbx.env.dispatcher_name
+            "usage: dials.extract_shoeboxes [options] experiment.expt observations.refl"
+            
         )
 
         # Create the parser

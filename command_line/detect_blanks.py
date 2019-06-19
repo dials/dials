@@ -202,7 +202,7 @@ def run(args):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s [options] models.expt observations.refl" % (libtbx.env.dispatcher_name)
+    usage = "dials.detect_blanks [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,

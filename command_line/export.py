@@ -686,7 +686,7 @@ if __name__ == "__main__":
     from dials.util import Sorry
     import os
 
-    usage = "%s models.expt reflections.pickle [options]" % (libtbx.env.dispatcher_name)
+    usage = "dials.export models.expt reflections.pickle [options]"
 
     # Create the option parser
     if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):

@@ -135,7 +135,7 @@ def run(args=None):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s indexed.expt indexed.refl [options]" % libtbx.env.dispatcher_name
+    usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
         usage=usage,

@@ -74,7 +74,7 @@ class Script(object):
         from dials.util.options import OptionParser
         import libtbx.load_env
 
-        usage = "usage: %s [options] refined.expt" % libtbx.env.dispatcher_name
+        usage = "usage: dials.plot_scan_varying_model [options] refined.expt"
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

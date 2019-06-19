@@ -514,7 +514,7 @@ def run(args):
     from dials.util.options import flatten_reflections
     import libtbx.load_env
 
-    usage = "%s [options] integrated.refl models.expt" % (libtbx.env.dispatcher_name)
+    usage = "dev.dials.duelling_profiles [options] integrated.refl models.expt"
 
     parser = OptionParser(
         usage=usage,
