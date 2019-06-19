@@ -36,7 +36,7 @@ phil_scope = parse(
     .type = bool
     .help = "Subtract background from pixel data before computing profile"
     .expert_level = 2
-  output = experiments_with_profile_model.expt
+  output = models_wth_profiles.expt
     .type = str
     .help = "The filename for the experiments"
 
