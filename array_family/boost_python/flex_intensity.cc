@@ -25,14 +25,13 @@ namespace dials { namespace af { namespace boost_python {
   using namespace boost::python;
   using namespace scitbx::af::boost_python;
 
+  using dials::model::Intensity;
   using scitbx::vec2;
   using scitbx::vec3;
-  using dials::model::Intensity;
 
   /** @returns An array of observed intensity values */
-  static
-  af::shared<double> intensity_observed_value(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_observed_value(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].observed.value;
@@ -41,9 +40,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of observed intensity variances */
-  static
-  af::shared<double> intensity_observed_variance(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_observed_variance(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].observed.variance;
@@ -52,9 +50,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of success values */
-  static
-  af::shared<bool> intensity_observed_success(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<bool> intensity_observed_success(
+    const af::const_ref<Intensity> &obj) {
     af::shared<bool> result(obj.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].observed.success;
@@ -63,9 +60,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of corrected intensity values */
-  static
-  af::shared<double> intensity_corrected_value(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_corrected_value(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].corrected.value;
@@ -74,9 +70,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of corrected intensity variances */
-  static
-  af::shared<double> intensity_corrected_variance(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_corrected_variance(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].corrected.variance;
@@ -85,9 +80,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of background intensity values */
-  static
-  af::shared<double> intensity_background_value(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_background_value(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].background.value;
@@ -96,9 +90,8 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /** @returns An array of background intensity variances */
-  static
-  af::shared<double> intensity_background_variance(
-      const af::const_ref<Intensity> &obj) {
+  static af::shared<double> intensity_background_variance(
+    const af::const_ref<Intensity> &obj) {
     af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].background.variance;
@@ -106,24 +99,16 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  void export_flex_intensity()
-  {
-    scitbx::af::boost_python::flex_wrapper <
-        Intensity, return_internal_reference<> >::plain("intensity")
-      .def("observed_value",
-        &intensity_observed_value)
-      .def("observed_variance",
-        &intensity_observed_variance)
-      .def("observed_success",
-        &intensity_observed_success)
-      .def("corrected_value",
-        &intensity_corrected_value)
-      .def("corrected_variance",
-        &intensity_corrected_variance)
-      .def("background_value",
-        &intensity_background_value)
-      .def("background_variance",
-        &intensity_background_variance);
+  void export_flex_intensity() {
+    scitbx::af::boost_python::flex_wrapper<Intensity, return_internal_reference<> >::
+      plain("intensity")
+        .def("observed_value", &intensity_observed_value)
+        .def("observed_variance", &intensity_observed_variance)
+        .def("observed_success", &intensity_observed_success)
+        .def("corrected_value", &intensity_corrected_value)
+        .def("corrected_variance", &intensity_corrected_variance)
+        .def("background_value", &intensity_background_value)
+        .def("background_variance", &intensity_background_variance);
   }
 
-}}} // namespace dials::af::boost_python
+}}}  // namespace dials::af::boost_python

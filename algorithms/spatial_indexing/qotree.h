@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
    * @return The maximum depth of the tree
    */
   template <typename BoxType>
-  std::size_t maximum_depth(const BoxType&);
+  std::size_t maximum_depth(const BoxType &);
 
   /**
    * Template function to be specialized, subdivide the box.
@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
    * @return The sub-divided box
    */
   template <typename BoxType>
-  BoxType subdivide(const BoxType&, std::size_t);
+  BoxType subdivide(const BoxType &, std::size_t);
 
   /**
    * Template structure containing functions to use in comparison of objects
@@ -42,18 +42,15 @@ namespace dials { namespace algorithms {
    */
   template <typename ObjectTypeA, typename ObjectTypeB>
   struct compare {
+    /**
+     * @return True/False object a contains object b
+     */
+    static bool contains(const ObjectTypeA &, const ObjectTypeB &);
 
-  /**
-   * @return True/False object a contains object b
-   */
-    static
-    bool contains(const ObjectTypeA&, const ObjectTypeB &);
-
-  /**
-   * @return True/False the objects collide
-   */
-    static
-    bool collides(const ObjectTypeA&, const ObjectTypeB&);
+    /**
+     * @return True/False the objects collide
+     */
+    static bool collides(const ObjectTypeA &, const ObjectTypeB &);
   };
 
   /**
@@ -65,7 +62,6 @@ namespace dials { namespace algorithms {
   template <int NDIM, typename BoxType, typename ObjectType>
   class QOTree {
   public:
-
     // The number of children 2^NDIM
     static const int NCHILD = (1 << NDIM);
 
@@ -81,20 +77,19 @@ namespace dials { namespace algorithms {
 
     // The node structure
     struct node_type {
-      box_type box;                 // The bounding box
-      node_type *parent;            // The parent node
-      node_type *child[NCHILD];     // The child nodes
-      size_type bucket_size;        // The bucket size
-      object_list_type bucket;      // The bucket list
-      bool is_leaf;                 // Is the node a leaf
+      box_type box;              // The bounding box
+      node_type *parent;         // The parent node
+      node_type *child[NCHILD];  // The child nodes
+      size_type bucket_size;     // The bucket size
+      object_list_type bucket;   // The bucket list
+      bool is_leaf;              // Is the node a leaf
 
       // Default node initialisation
-      node_type()
-        : parent(NULL), bucket_size(0), is_leaf(true) {}
+      node_type() : parent(NULL), bucket_size(0), is_leaf(true) {}
 
       // Initialise the node with a box and parent
       node_type(const box_type &b, node_type *p)
-        : box(b), parent(p), bucket_size(0), is_leaf(true) {}
+          : box(b), parent(p), bucket_size(0), is_leaf(true) {}
     };
 
     // Node list typedefs
@@ -133,7 +128,6 @@ namespace dials { namespace algorithms {
 
     /** Insert an element into the tree */
     bool insert(const object_type &v) {
-
       // Get the root node and ensure input is inside
       node_pointer root = &node_list_.front();
       if (compare<box_type, object_type>::contains(root->box, v)) {
@@ -174,7 +168,6 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-
     /** Push the node and return a pointer to it */
     node_pointer push_node(const node_type &node) {
       node_list_.push_back(node);
@@ -183,15 +176,13 @@ namespace dials { namespace algorithms {
 
     /** Choose the sub-division to that the object is contained within */
     template <typename T>
-    size_type choose_subdivision(const T &v,
-        const_node_pointer node) const {
+    size_type choose_subdivision(const T &v, const_node_pointer node) const {
       // Find the sub-division in which the element is contained. Return the
       // index of the sub-division. If no subdivision fully contains the
       // element, this will return NCHILD.
       size_type div;
       for (div = 0; div < NCHILD; ++div) {
-        if (compare<box_type, T>::contains(
-            node->child[div]->box, v)) {
+        if (compare<box_type, T>::contains(node->child[div]->box, v)) {
           break;
         }
       }
@@ -199,8 +190,7 @@ namespace dials { namespace algorithms {
     }
 
     /** Move elements from the bucket of one node to another */
-    void move_element(node_pointer from, node_pointer to,
-        object_iterator it) {
+    void move_element(node_pointer from, node_pointer to, object_iterator it) {
       // Move the element from list to list without moving the element itself
       // in memory, increment the 'to' counter and decrement the 'from' counter.
       to->bucket.splice(to->bucket.end(), from->bucket, it);
@@ -224,7 +214,6 @@ namespace dials { namespace algorithms {
 
     /** Sub-divide the node */
     void split_node(node_pointer node) {
-
       // Create all the child nodes
       node->is_leaf = false;
       for (std::size_t i = 0; i < NCHILD; ++i) {
@@ -249,7 +238,6 @@ namespace dials { namespace algorithms {
 
     /** Insert an element into the tree */
     bool insert(const object_type &v, node_pointer node) {
-
       // Iterate until we reach the maximum depth
       for (size_type depth = 0; depth < max_depth_; ++depth) {
         // If this is a leaf node, then check if the bucket has space for
@@ -280,12 +268,13 @@ namespace dials { namespace algorithms {
 
     /** Add objects contained in range in the current node to the list */
     template <typename ObjectList>
-    void append_contained_objects(const box_type &range, ObjectList &elements,
-        const_node_pointer node) const {
+    void append_contained_objects(const box_type &range,
+                                  ObjectList &elements,
+                                  const_node_pointer node) const {
       // Loop through all objects in the node and add any that are contained
       // to the given object list.
-      for (const_object_iterator it = node->bucket.begin();
-          it != node->bucket.end(); ++it) {
+      for (const_object_iterator it = node->bucket.begin(); it != node->bucket.end();
+           ++it) {
         if (compare<box_type, object_type>::contains(range, *it)) {
           elements.push_back(*it);
         }
@@ -294,9 +283,9 @@ namespace dials { namespace algorithms {
 
     /** Find all the objects in the given range */
     template <typename ObjectList>
-    bool query_range(const box_type &range, ObjectList &elements,
-        const_node_pointer node) const {
-
+    bool query_range(const box_type &range,
+                     ObjectList &elements,
+                     const_node_pointer node) const {
       // Find the node that fully contains the range.
       for (;;) {
         if (node->is_leaf) {
@@ -323,8 +312,7 @@ namespace dials { namespace algorithms {
         append_contained_objects(range, elements, node);
         if (!node->is_leaf) {
           for (size_type i = 0; i < NCHILD; ++i) {
-            if (compare<box_type, box_type>::collides(
-                range, node->child[i]->box)) {
+            if (compare<box_type, box_type>::collides(range, node->child[i]->box)) {
               stack.push(node->child[i]);
             }
           }
@@ -337,12 +325,13 @@ namespace dials { namespace algorithms {
 
     /** Add objects colliding with v in the current node to the list */
     template <typename ObjectList>
-    void append_colliding_objects(const object_type &v, ObjectList &elements,
-        const_node_pointer node) const {
+    void append_colliding_objects(const object_type &v,
+                                  ObjectList &elements,
+                                  const_node_pointer node) const {
       // Loop through all objects in the node and add any that collide
       // to the given object list.
-      for (const_object_iterator it = node->bucket.begin();
-          it != node->bucket.end(); ++it) {
+      for (const_object_iterator it = node->bucket.begin(); it != node->bucket.end();
+           ++it) {
         if (compare<object_type, object_type>::collides(*it, v)) {
           elements.push_back(*it);
         }
@@ -351,8 +340,9 @@ namespace dials { namespace algorithms {
 
     /** Find all the objects colliding with the given object */
     template <typename ObjectList>
-    bool query_collision(const object_type &v, ObjectList &elements,
-        const_node_pointer node) const {
+    bool query_collision(const object_type &v,
+                         ObjectList &elements,
+                         const_node_pointer node) const {
       // Create a stack and push the root node. Loop until the stack is empty.
       // Get the node from the stack and add any colliding elements in the node
       // to the element list. Then, if the current node is not a leaf node,
@@ -366,8 +356,7 @@ namespace dials { namespace algorithms {
         append_colliding_objects(v, elements, node);
         if (!node->is_leaf) {
           for (size_type i = 0; i < NCHILD; ++i) {
-            if (compare<box_type, object_type>::collides(
-                node->child[i]->box, v)) {
+            if (compare<box_type, object_type>::collides(node->child[i]->box, v)) {
               stack.push(node->child[i]);
             }
           }
@@ -383,6 +372,6 @@ namespace dials { namespace algorithms {
     size_type max_depth_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPATIAL_INDEXING_QOTREE_H
+#endif  // DIALS_ALGORITHMS_SPATIAL_INDEXING_QOTREE_H

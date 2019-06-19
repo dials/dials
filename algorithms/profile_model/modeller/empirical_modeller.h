@@ -24,24 +24,17 @@ namespace dials { namespace algorithms {
    */
   class EmpiricalProfileModeller : public ProfileModellerIface {
   public:
-
     /**
      * Initialise the modeller
      * @param n The number of profiles
      * @param accessor The size of the profiles
      * @param threshold The threshold for counts
      */
-    EmpiricalProfileModeller(
-            std::size_t n,
-            int3 datasize,
-            double threshold)
+    EmpiricalProfileModeller(std::size_t n, int3 datasize, double threshold)
         : data_(n),
           mask_(n),
           n_reflections_(n, 0),
-          accessor_(af::c_grid<3>(
-                datasize[0],
-                datasize[1],
-                datasize[2])),
+          accessor_(af::c_grid<3>(datasize[0], datasize[1], datasize[2])),
           threshold_(threshold),
           finalized_(false) {
       DIALS_ASSERT(n > 0);
@@ -49,8 +42,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(threshold_ >= 0);
     }
 
-    virtual
-    ~EmpiricalProfileModeller() {}
+    virtual ~EmpiricalProfileModeller() {}
 
     /**
      * Add a profile with indices and weights
@@ -58,10 +50,9 @@ namespace dials { namespace algorithms {
      * @param weights The weight to give the profile
      * @param profile The profile data
      */
-    void add(
-        const af::const_ref<std::size_t> &indices,
-        const af::const_ref<double> &weights,
-        data_const_reference profile) {
+    void add(const af::const_ref<std::size_t> &indices,
+             const af::const_ref<double> &weights,
+             data_const_reference profile) {
       DIALS_ASSERT(finalized_ == false);
       DIALS_ASSERT(indices.size() == weights.size());
       DIALS_ASSERT(indices.size() > 0);
@@ -94,9 +85,7 @@ namespace dials { namespace algorithms {
      * @param weight The weight to give the profile
      * @param profile The profile data
      */
-    void add_single(std::size_t index,
-                    double weight,
-                    data_const_reference profile) {
+    void add_single(std::size_t index, double weight, data_const_reference profile) {
       DIALS_ASSERT(finalized_ == false);
       DIALS_ASSERT(profile.accessor().all_eq(accessor_));
       DIALS_ASSERT(index < data_.size());
@@ -257,38 +246,32 @@ namespace dials { namespace algorithms {
     /**
      * The model method
      */
-    virtual
-    void model(af::reflection_table) {
+    virtual void model(af::reflection_table) {
       throw DIALS_ERROR("No implemented");
     }
-
 
     /**
      * The model copy method
      */
-    virtual
-    pointer copy() const {
+    virtual pointer copy() const {
       throw DIALS_ERROR("No implemented");
     }
 
     /**
      * The fit method
      */
-    virtual
-    af::shared<bool> fit(af::reflection_table) const {
+    virtual af::shared<bool> fit(af::reflection_table) const {
       throw DIALS_ERROR("No implemented");
     }
 
     /**
      * The validate method
      */
-    virtual
-    void validate(af::reflection_table) const {
+    virtual void validate(af::reflection_table) const {
       throw DIALS_ERROR("No implemented");
     }
 
   protected:
-
     /**
      * Finalize a single profile
      * @param index The index of the profile to finalize
@@ -300,19 +283,19 @@ namespace dials { namespace algorithms {
 
       // Get the reference profile at the index
       data_reference data = data_[index].ref();
-      //mask_reference mask = mask_[index].ref();
+      // mask_reference mask = mask_[index].ref();
 
       // Calculate the profile maximum and signal threshold
-      //double threshold = threshold_ * max(data);
+      // double threshold = threshold_ * max(data);
 
       // Get the sum of signal pixels
       double signal_sum = 0.0;
       for (std::size_t i = 0; i < data.size(); ++i) {
-        if (data[i] >= 0.0){//threshold) {
+        if (data[i] >= 0.0) {  // threshold) {
           signal_sum += data[i];
         } else {
           data[i] = 0.0;
-          //mask[i] = false;
+          // mask[i] = false;
         }
       }
 
@@ -331,6 +314,6 @@ namespace dials { namespace algorithms {
     bool finalized_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_EMPIRICAL_MODELLER_H
+#endif  // DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_EMPIRICAL_MODELLER_H

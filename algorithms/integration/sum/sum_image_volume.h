@@ -17,28 +17,26 @@
 
 namespace dials { namespace algorithms {
 
-  using dials::model::Intensity;
   using dials::model::ImageVolume;
+  using dials::model::Intensity;
   using dials::model::MultiPanelImageVolume;
 
   /**
    * Compute the summation intensity from a single reflection
    */
   template <typename FloatType>
-  Intensity sum_image_volume(
-      std::size_t index,
-      int6 bbox,
-      ImageVolume<FloatType> volume,
-      bool success) {
-
+  Intensity sum_image_volume(std::size_t index,
+                             int6 bbox,
+                             ImageVolume<FloatType> volume,
+                             bool success) {
     // Trim the bbox
     int6 trimmed_bbox = volume.trim_bbox(bbox);
 
     // Do the summation
     Summation<FloatType> summation(
-        volume.extract_data(trimmed_bbox).const_ref(),
-        volume.extract_background(trimmed_bbox).const_ref(),
-        volume.extract_mask(trimmed_bbox, index).const_ref());
+      volume.extract_data(trimmed_bbox).const_ref(),
+      volume.extract_background(trimmed_bbox).const_ref(),
+      volume.extract_mask(trimmed_bbox, index).const_ref());
 
     // Return the result
     Intensity result;
@@ -55,8 +53,8 @@ namespace dials { namespace algorithms {
    */
   template <typename FloatType>
   af::shared<Intensity> sum_multi_panel_image_volume(
-      af::reflection_table reflections,
-      MultiPanelImageVolume<FloatType> volume) {
+    af::reflection_table reflections,
+    MultiPanelImageVolume<FloatType> volume) {
     DIALS_ASSERT(reflections.contains("bbox"));
     DIALS_ASSERT(reflections.contains("panel"));
     DIALS_ASSERT(reflections.contains("fraction"));
@@ -65,15 +63,12 @@ namespace dials { namespace algorithms {
     af::const_ref<double> fraction = reflections["fraction"];
     af::shared<Intensity> intensity(bbox.size());
     for (std::size_t i = 0; i < bbox.size(); ++i) {
-      intensity[i] = sum_image_volume(
-          i,
-          bbox[i],
-          volume.get(panel[i]),
-          fraction[i] > 1.0-1e-6);
+      intensity[i] =
+        sum_image_volume(i, bbox[i], volume.get(panel[i]), fraction[i] > 1.0 - 1e-6);
     }
     return intensity;
   }
 
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_SUM_SUM_IMAGE_VOLUME_H
+#endif  // DIALS_ALGORITHMS_INTEGRATION_SUM_SUM_IMAGE_VOLUME_H

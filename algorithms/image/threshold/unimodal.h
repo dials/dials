@@ -21,8 +21,8 @@
 namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
-  using scitbx::af::max_index;
   using scitbx::af::max;
+  using scitbx::af::max_index;
   using scitbx::af::min;
 
   /**
@@ -30,9 +30,7 @@ namespace dials { namespace algorithms {
    * @param histo The histogram
    * @returns The threshold value
    */
-  inline
-  std::size_t maximum_deviation(const af::const_ref<double> &histo) {
-
+  inline std::size_t maximum_deviation(const af::const_ref<double> &histo) {
     // Get x, y at peak and at end of tail.
     std::size_t i0 = max_index(histo);
     std::size_t i1 = histo.size() - 1;
@@ -66,11 +64,9 @@ namespace dials { namespace algorithms {
    * @param range The range of values to consider
    * @returns The probability distribution of values
    */
-  inline
-  af::shared<double> probability_distribution(
-      const af::const_ref< int, af::c_grid<2> > &image,
-      int2 range) {
-
+  inline af::shared<double> probability_distribution(
+    const af::const_ref<int, af::c_grid<2> > &image,
+    int2 range) {
     // Get the histogram range
     int minh = range[0];
     int maxi = max(image);
@@ -81,7 +77,7 @@ namespace dials { namespace algorithms {
     std::size_t count = 0;
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (minh <= image[i] && image[i] <= maxh) {
-        p[image[i]-minh] += 1;
+        p[image[i] - minh] += 1;
         count++;
       }
     }
@@ -98,6 +94,6 @@ namespace dials { namespace algorithms {
     return p;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H */

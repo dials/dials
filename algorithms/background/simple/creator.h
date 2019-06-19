@@ -22,14 +22,13 @@
 #include <dials/model/data/image_volume.h>
 #include <dials/error.h>
 
-
 namespace dials { namespace algorithms { namespace background {
 
-  using dials::model::Shoebox;
-  using dials::model::Valid;
   using dials::model::Background;
   using dials::model::BackgroundUsed;
   using dials::model::Overlapped;
+  using dials::model::Shoebox;
+  using dials::model::Valid;
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
 
@@ -38,15 +37,13 @@ namespace dials { namespace algorithms { namespace background {
    */
   class SimpleBackgroundCreator {
   public:
-
     /**
      * Initialise with the desired modeller.
      * @param modeller The background modeller
      */
     SimpleBackgroundCreator(boost::shared_ptr<Modeller> modeller,
-            std::size_t min_pixels)
-      : modeller_(modeller),
-        min_pixels_(min_pixels) {
+                            std::size_t min_pixels)
+        : modeller_(modeller), min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
       DIALS_ASSERT(min_pixels > 0);
     }
@@ -56,13 +53,10 @@ namespace dials { namespace algorithms { namespace background {
      * @param modeller The background modeller
      * @param rejector The outlier rejector
      */
-    SimpleBackgroundCreator(
-          boost::shared_ptr<Modeller> modeller,
-          boost::shared_ptr<OutlierRejector> rejector,
-          std::size_t min_pixels)
-      : modeller_(modeller),
-        rejector_(rejector),
-        min_pixels_(min_pixels) {
+    SimpleBackgroundCreator(boost::shared_ptr<Modeller> modeller,
+                            boost::shared_ptr<OutlierRejector> rejector,
+                            std::size_t min_pixels)
+        : modeller_(modeller), rejector_(rejector), min_pixels_(min_pixels) {
       DIALS_ASSERT(modeller != NULL);
       DIALS_ASSERT(min_pixels > 0);
     }
@@ -73,14 +67,13 @@ namespace dials { namespace algorithms { namespace background {
      * @return Success True/False per shoebox
      */
     template <typename FloatType>
-    af::shared<bool> operator()(
-        const af::const_ref< Shoebox<FloatType> > &shoeboxes,
-        af::ref<double> mse,
-        af::ref<double> dispersion) const {
+    af::shared<bool> operator()(const af::const_ref<Shoebox<FloatType> > &shoeboxes,
+                                af::ref<double> mse,
+                                af::ref<double> dispersion) const {
       af::shared<bool> result(shoeboxes.size(), true);
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         try {
-          af::tiny<FloatType,2> r = this->operator()(shoeboxes[i]);
+          af::tiny<FloatType, 2> r = this->operator()(shoeboxes[i]);
           mse[i] = r[0];
           dispersion[i] = r[1];
         } catch (dials::error) {
@@ -103,16 +96,14 @@ namespace dials { namespace algorithms { namespace background {
      * @returns Success True/False
      */
     template <typename FloatType>
-    af::shared<bool> operator()(
-        af::reflection_table reflections,
-        MultiPanelImageVolume<FloatType> volume) const {
+    af::shared<bool> operator()(af::reflection_table reflections,
+                                MultiPanelImageVolume<FloatType> volume) const {
       DIALS_ASSERT(reflections.contains("bbox"));
       DIALS_ASSERT(reflections.contains("panel"));
-      af::const_ref< int6 > bbox = reflections["bbox"];
-      af::const_ref< std::size_t > panel = reflections["panel"];
+      af::const_ref<int6> bbox = reflections["bbox"];
+      af::const_ref<std::size_t> panel = reflections["panel"];
       af::shared<bool> success(bbox.size(), true);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-
         // Get the image volume
         ImageVolume<FloatType> v = volume.get(panel[i]);
 
@@ -120,22 +111,19 @@ namespace dials { namespace algorithms { namespace background {
         int6 b = v.trim_bbox(bbox[i]);
 
         // Extract from image volume
-        af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
-        af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
+        af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
-          this->operator()(
-              data.const_ref(),
-              mask.ref(),
-              bgrd.ref());
+          this->operator()(data.const_ref(), mask.ref(), bgrd.ref());
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch(scitbx::error) {
+        } catch (scitbx::error) {
           success[i] = false;
-        } catch(dials::error) {
+        } catch (dials::error) {
           success[i] = false;
         }
       }
@@ -147,11 +135,9 @@ namespace dials { namespace algorithms { namespace background {
      * @param shoebox The shoebox
      */
     template <typename FloatType>
-    af::tiny<FloatType,2> operator()(Shoebox<FloatType> shoebox) const {
+    af::tiny<FloatType, 2> operator()(Shoebox<FloatType> shoebox) const {
       return this->operator()(
-          shoebox.data.const_ref(),
-          shoebox.mask.ref(),
-          shoebox.background.ref());
+        shoebox.data.const_ref(), shoebox.mask.ref(), shoebox.background.ref());
     }
 
     /**
@@ -161,13 +147,12 @@ namespace dials { namespace algorithms { namespace background {
      * @param background The shoebox background
      */
     template <typename FloatType>
-    af::tiny<FloatType,2> operator()(
-        const af::const_ref< FloatType, af::c_grid<3> > &data_in,
-        af::ref< int, af::c_grid<3> > mask,
-        af::ref< FloatType, af::c_grid<3> > background) const {
-
+    af::tiny<FloatType, 2> operator()(
+      const af::const_ref<FloatType, af::c_grid<3> > &data_in,
+      af::ref<int, af::c_grid<3> > mask,
+      af::ref<FloatType, af::c_grid<3> > background) const {
       // Copy the array to a double
-      af::versa< double, af::c_grid<3> > data(data_in.accessor());
+      af::versa<double, af::c_grid<3> > data(data_in.accessor());
       std::copy(data_in.begin(), data_in.end(), data.begin());
 
       // Do outlier rejection on the pixels
@@ -178,8 +163,9 @@ namespace dials { namespace algorithms { namespace background {
           for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
             for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
               const int mask_code = Valid | Background;
-              if ((mask(k,j,i) & mask_code) == mask_code && ((mask(k,j,i) & Overlapped) == 0)) {
-                mask(k,j,i) |= BackgroundUsed;
+              if ((mask(k, j, i) & mask_code) == mask_code
+                  && ((mask(k, j, i) & Overlapped) == 0)) {
+                mask(k, j, i) |= BackgroundUsed;
               }
             }
           }
@@ -187,14 +173,14 @@ namespace dials { namespace algorithms { namespace background {
       }
 
       // Create a background boolean mask
-      af::versa< bool, af::c_grid<3> > bgmask(mask.accessor(), false);
+      af::versa<bool, af::c_grid<3> > bgmask(mask.accessor(), false);
       for (std::size_t i = 0; i < mask.size(); ++i) {
         bgmask[i] = (mask[i] & BackgroundUsed) != 0;
       }
 
       // Create the background model
-      boost::shared_ptr<Model> model = modeller_->create(
-          data.const_ref(), bgmask.const_ref());
+      boost::shared_ptr<Model> model =
+        modeller_->create(data.const_ref(), bgmask.const_ref());
 
       // Populate the background shoebox
       double mse = 0.0;
@@ -204,12 +190,12 @@ namespace dials { namespace algorithms { namespace background {
       for (std::size_t k = 0; k < background.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < background.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < background.accessor()[2]; ++i) {
-            background(k,j,i) = model->value(k + 0.5, j + 0.5, i + 0.5);
+            background(k, j, i) = model->value(k + 0.5, j + 0.5, i + 0.5);
             if (bgmask(k, j, i)) {
-              double tmp = (background(k,j,i) - data(k,j,i));
+              double tmp = (background(k, j, i) - data(k, j, i));
               mse += tmp * tmp;
-              sum1 += data(k,j,i);
-              sum2 += data(k,j,i)*data(k,j,i);
+              sum1 += data(k, j, i);
+              sum2 += data(k, j, i) * data(k, j, i);
               count += 1;
             }
           }
@@ -217,21 +203,20 @@ namespace dials { namespace algorithms { namespace background {
       }
       DIALS_ASSERT(count >= min_pixels_);
       double mean = sum1 / count;
-      double var = sum2 / count - mean*mean;
+      double var = sum2 / count - mean * mean;
       DIALS_ASSERT(mean >= 0);
       DIALS_ASSERT(var >= 0);
       double dispersion = mean > 0 ? var / mean : 0;
       mse /= count;
-      return af::tiny<FloatType,2>(mse, dispersion);
+      return af::tiny<FloatType, 2>(mse, dispersion);
     }
 
   private:
-
     boost::shared_ptr<Modeller> modeller_;
     boost::shared_ptr<OutlierRejector> rejector_;
     std::size_t min_pixels_;
   };
 
-}}} // namespace dials::algorithms::background
+}}}  // namespace dials::algorithms::background
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_CREATOR_H
+#endif  // DIALS_ALGORITHMS_BACKGROUND_CREATOR_H

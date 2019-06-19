@@ -24,20 +24,41 @@ namespace dials { namespace algorithms {
   using scitbx::af::int6;
 
   // Helper functions needed for 3D collision detection
-  template <> struct bound_coord_type<int6> { typedef int type; };
-  template <> int get_minimum_bound<0, int6>(const int6 &b) { return b[0]; }
-  template <> int get_maximum_bound<0, int6>(const int6 &b) { return b[1]; }
-  template <> int get_minimum_bound<1, int6>(const int6 &b) { return b[2]; }
-  template <> int get_maximum_bound<1, int6>(const int6 &b) { return b[3]; }
-  template <> int get_minimum_bound<2, int6>(const int6 &b) { return b[4]; }
-  template <> int get_maximum_bound<2, int6>(const int6 &b) { return b[5]; }
+  template <>
+  struct bound_coord_type<int6> {
+    typedef int type;
+  };
+  template <>
+  int get_minimum_bound<0, int6>(const int6 &b) {
+    return b[0];
+  }
+  template <>
+  int get_maximum_bound<0, int6>(const int6 &b) {
+    return b[1];
+  }
+  template <>
+  int get_minimum_bound<1, int6>(const int6 &b) {
+    return b[2];
+  }
+  template <>
+  int get_maximum_bound<1, int6>(const int6 &b) {
+    return b[3];
+  }
+  template <>
+  int get_minimum_bound<2, int6>(const int6 &b) {
+    return b[4];
+  }
+  template <>
+  int get_maximum_bound<2, int6>(const int6 &b) {
+    return b[5];
+  }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 namespace dials { namespace algorithms { namespace shoebox {
 
-  using scitbx::af::int6;
   using dials::model::AdjacencyList;
+  using scitbx::af::int6;
 
   /**
    * Given a set of reflections, find the bounding_boxes that overlap.
@@ -48,10 +69,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param bbox The list of bounding boxes
    * @returns An adjacency list
    */
-  inline
-  AdjacencyList find_overlapping(
-      const af::const_ref<int6> &bboxes) {
-
+  inline AdjacencyList find_overlapping(const af::const_ref<int6> &bboxes) {
     // Ensure we have a valid number of bboxes
     DIALS_ASSERT(bboxes.size() > 0);
 
@@ -73,15 +91,14 @@ namespace dials { namespace algorithms { namespace shoebox {
   namespace detail {
 
     // Struct to help sort data
-      struct sort_by_panel {
-        const af::const_ref<std::size_t> p_;
-        sort_by_panel(const af::const_ref<std::size_t> &p)
-          : p_(p) {}
-        bool operator()(std::size_t a, std::size_t b) {
-          return p_[a] < p_[b];
-        }
-      };
-  }
+    struct sort_by_panel {
+      const af::const_ref<std::size_t> p_;
+      sort_by_panel(const af::const_ref<std::size_t> &p) : p_(p) {}
+      bool operator()(std::size_t a, std::size_t b) {
+        return p_[a] < p_[b];
+      }
+    };
+  }  // namespace detail
 
   /**
    * Given a set of reflections, find the bounding_boxes that overlap.
@@ -93,12 +110,9 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param bbox The list of bounding boxes
    * @returns An adjacency list
    */
-  inline
-  AdjacencyList find_overlapping_multi_panel(
-      const af::const_ref<int6> &bbox,
-      const af::const_ref<std::size_t> &panel) {
-
-
+  inline AdjacencyList find_overlapping_multi_panel(
+    const af::const_ref<int6> &bbox,
+    const af::const_ref<std::size_t> &panel) {
     DIALS_ASSERT(panel.size() > 0);
     DIALS_ASSERT(panel.size() == bbox.size());
 
@@ -131,20 +145,16 @@ namespace dials { namespace algorithms { namespace shoebox {
     AdjacencyList list(bbox.size());
     for (std::size_t j = 0; j < offset.size() - 1; ++j) {
       std::size_t d0 = offset[j];
-      std::size_t d1 = offset[j+1];
-      std::vector< std::pair<int,int> > collisions;
+      std::size_t d1 = offset[j + 1];
+      std::vector<std::pair<int, int> > collisions;
 
       // Detect the collisions
-      detect_collisions3d(
-          data.begin() + d0,
-          data.begin() + d1,
-          collisions);
+      detect_collisions3d(data.begin() + d0, data.begin() + d1, collisions);
 
       // Put all the collisions into an adjacency list
       for (std::size_t i = 0; i < collisions.size(); ++i) {
-        list.add_edge(
-            index[d0 + collisions[i].first],
-            index[d0 + collisions[i].second]);
+        list.add_edge(index[d0 + collisions[i].first],
+                      index[d0 + collisions[i].second]);
       }
     }
     list.finish();
@@ -153,24 +163,19 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   class OverlapFinder {
   public:
-
-    OverlapFinder() {
-    }
+    OverlapFinder() {}
 
     struct sort_by_group {
-      const std::vector<std::size_t>& g_;
-      sort_by_group(const std::vector<std::size_t> &g)
-        : g_(g) {}
+      const std::vector<std::size_t> &g_;
+      sort_by_group(const std::vector<std::size_t> &g) : g_(g) {}
       bool operator()(std::size_t a, std::size_t b) {
         return g_[a] < g_[b];
       }
     };
 
-    AdjacencyList operator()(
-      const af::const_ref<std::size_t> &id,
-      const af::const_ref<std::size_t> &panel,
-      const af::const_ref<int6> &bbox) const {
-
+    AdjacencyList operator()(const af::const_ref<std::size_t> &id,
+                             const af::const_ref<std::size_t> &panel,
+                             const af::const_ref<int6> &bbox) const {
       DIALS_ASSERT(panel.size() > 0);
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == id.size());
@@ -178,14 +183,14 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Get the maximum panel number
       std::size_t max_panel = af::max(panel);
       std::size_t max_id = af::max(id);
-      std::size_t max_group = (max_panel+1)*(max_id+1);
+      std::size_t max_group = (max_panel + 1) * (max_id + 1);
 
       // The arrays to use in the collision detection
       std::vector<std::size_t> group(panel.size());
       std::vector<int6> data(panel.size());
       std::vector<std::size_t> index(panel.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
-        group[i] = id[i] * (max_panel+1) + panel[i];
+        group[i] = id[i] * (max_panel + 1) + panel[i];
         index[i] = i;
       }
       std::vector<std::size_t> offset;
@@ -207,26 +212,22 @@ namespace dials { namespace algorithms { namespace shoebox {
         }
       }
       offset.push_back(index.size());
-      DIALS_ASSERT(offset.size() <= max_group+1);
+      DIALS_ASSERT(offset.size() <= max_group + 1);
 
       // Do the collision detection for all bboxes in the same group
       AdjacencyList list(bbox.size());
       for (std::size_t j = 0; j < offset.size() - 1; ++j) {
         std::size_t d0 = offset[j];
-        std::size_t d1 = offset[j+1];
-        std::vector< std::pair<int,int> > collisions;
+        std::size_t d1 = offset[j + 1];
+        std::vector<std::pair<int, int> > collisions;
 
         // Detect the collisions
-        detect_collisions3d(
-            data.begin() + d0,
-            data.begin() + d1,
-            collisions);
+        detect_collisions3d(data.begin() + d0, data.begin() + d1, collisions);
 
         // Put all the collisions into an adjacency list
         for (std::size_t i = 0; i < collisions.size(); ++i) {
-          list.add_edge(
-              index[d0 + collisions[i].first],
-              index[d0 + collisions[i].second]);
+          list.add_edge(index[d0 + collisions[i].first],
+                        index[d0 + collisions[i].second]);
         }
       }
       list.finish();
@@ -234,6 +235,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}  // namespace dials::algorithms::shoebox
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H
+#endif  // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H

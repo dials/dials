@@ -12,68 +12,50 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/simple/modeller.h>
 
-namespace dials { namespace algorithms { namespace background {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace background { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_modeller()
-  {
+  void export_modeller() {
     // An abstract class for background model
-    class_<Model, boost::shared_ptr<Model>, boost::noncopyable>(
-        "Model", no_init)
-      .def("value", &Model::value, (
-        arg("z"),
-        arg("y"),
-        arg("x")))
+    class_<Model, boost::shared_ptr<Model>, boost::noncopyable>("Model", no_init)
+      .def("value", &Model::value, (arg("z"), arg("y"), arg("x")))
       .def("params", &Model::params)
       .def("variances", &Model::variances);
 
     // An abtract class for background modeller
     class_<Modeller, boost::noncopyable>("Modeller", no_init)
-      .def("create", &Modeller::create, (
-        arg("data"),
-        arg("mask")));
+      .def("create", &Modeller::create, (arg("data"), arg("mask")));
 
     // A constant 2d model
     class_<Constant2dModel, bases<Model> >("Constant2dModel", no_init)
-      .def(init< af::shared<double>, af::shared<double> >((
-        arg("a"),
-        arg("va"))));
+      .def(init<af::shared<double>, af::shared<double> >((arg("a"), arg("va"))));
 
     // A constant 3d model
     class_<Constant3dModel, bases<Model> >("Constant3dModel", no_init)
-      .def(init<double, double>((
-        arg("a"),
-        arg("va"))));
+      .def(init<double, double>((arg("a"), arg("va"))));
 
     // A linear 2d model
     class_<Linear2dModel, bases<Model> >("Linear2dModel", no_init)
-      .def(init< af::shared<double>,
-                 af::shared<double>,
-                 af::shared<double>,
-                 af::shared<double>,
-                 af::shared<double>,
-                 af::shared<double> >((
-        arg("a"),
-        arg("b"),
-        arg("c"),
-        arg("va"),
-        arg("vb"),
-        arg("vc"))));
+      .def(init<af::shared<double>,
+                af::shared<double>,
+                af::shared<double>,
+                af::shared<double>,
+                af::shared<double>,
+                af::shared<double> >(
+        (arg("a"), arg("b"), arg("c"), arg("va"), arg("vb"), arg("vc"))));
 
     // A linear 3d model
     class_<Linear3dModel, bases<Model> >("Linear3dModel", no_init)
-      .def(init<double, double, double, double,
-                double, double, double, double>((
-        arg("a"),
-        arg("b"),
-        arg("c"),
-        arg("d"),
-        arg("va"),
-        arg("vb"),
-        arg("vc"),
-        arg("vd"))));
+      .def(init<double, double, double, double, double, double, double, double>(
+        (arg("a"),
+         arg("b"),
+         arg("c"),
+         arg("d"),
+         arg("va"),
+         arg("vb"),
+         arg("vc"),
+         arg("vd"))));
 
     // The modeller classes
     class_<Constant2dModeller, bases<Modeller> >("Constant2dModeller");
@@ -82,4 +64,4 @@ namespace dials { namespace algorithms { namespace background {
     class_<Linear3dModeller, bases<Modeller> >("Linear3dModeller");
   }
 
-}}}} // namespace = dials::algorithms::background::boost_python
+}}}}  // namespace dials::algorithms::background::boost_python

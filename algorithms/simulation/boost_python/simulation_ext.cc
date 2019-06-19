@@ -16,12 +16,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  BOOST_PYTHON_MODULE(dials_algorithms_simulation_ext)
-  {
-    def("simulate_reciprocal_space_gaussian",
-        &simulate_reciprocal_space_gaussian);
-    def("integrate_reciprocal_space_gaussian",
-        &integrate_reciprocal_space_gaussian);
+  BOOST_PYTHON_MODULE(dials_algorithms_simulation_ext) {
+    def("simulate_reciprocal_space_gaussian", &simulate_reciprocal_space_gaussian);
+    def("integrate_reciprocal_space_gaussian", &integrate_reciprocal_space_gaussian);
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

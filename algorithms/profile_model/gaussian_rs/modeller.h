@@ -23,75 +23,66 @@
 
 namespace dials { namespace algorithms {
 
+  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
+  using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
+  using dials::model::Shoebox;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using dials::model::Shoebox;
-  using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
-  using dials::algorithms::profile_model::gaussian_rs::transform::TransformSpec;
-  using dials::algorithms::profile_model::gaussian_rs::transform::TransformForward;
-  using dials::algorithms::profile_model::gaussian_rs::transform::TransformReverse;
 
   /**
    * A base class to initialize the sampler
    */
   class GaussianRSProfileModellerBase {
   public:
-
     enum GridMethod {
-      Single        = 1,
-      RegularGrid   = 2,
-      CircularGrid  = 3,
+      Single = 1,
+      RegularGrid = 2,
+      CircularGrid = 3,
       SphericalGrid = 4,
     };
 
-    enum FitMethod {
-      ReciprocalSpace = 1,
-      DetectorSpace   = 2
-    };
+    enum FitMethod { ReciprocalSpace = 1, DetectorSpace = 2 };
 
-    GaussianRSProfileModellerBase(
-        const boost::shared_ptr<BeamBase> beam,
-        const Detector &detector,
-        const Goniometer &goniometer,
-        const Scan &scan,
-        double sigma_b,
-        double sigma_m,
-        double n_sigma,
-        std::size_t grid_size,
-        std::size_t num_scan_points,
-        int grid_method,
-        int fit_method)
-      : beam_(beam),
-        detector_(detector),
-        goniometer_(goniometer),
-        scan_(scan),
-        sigma_b_(sigma_b),
-        sigma_m_(sigma_m),
-        n_sigma_(n_sigma),
-        grid_size_(grid_size),
-        num_scan_points_(num_scan_points),
-        grid_method_(grid_method),
-        fit_method_(fit_method),
-        sampler_(
-          init_sampler(
-            beam,
-            detector,
-            goniometer,
-            scan,
-            num_scan_points,
-            grid_method)) {}
+    GaussianRSProfileModellerBase(const boost::shared_ptr<BeamBase> beam,
+                                  const Detector &detector,
+                                  const Goniometer &goniometer,
+                                  const Scan &scan,
+                                  double sigma_b,
+                                  double sigma_m,
+                                  double n_sigma,
+                                  std::size_t grid_size,
+                                  std::size_t num_scan_points,
+                                  int grid_method,
+                                  int fit_method)
+        : beam_(beam),
+          detector_(detector),
+          goniometer_(goniometer),
+          scan_(scan),
+          sigma_b_(sigma_b),
+          sigma_m_(sigma_m),
+          n_sigma_(n_sigma),
+          grid_size_(grid_size),
+          num_scan_points_(num_scan_points),
+          grid_method_(grid_method),
+          fit_method_(fit_method),
+          sampler_(init_sampler(beam,
+                                detector,
+                                goniometer,
+                                scan,
+                                num_scan_points,
+                                grid_method)) {}
 
   protected:
-
-    boost::shared_ptr<SamplerIface> init_sampler(
-        boost::shared_ptr<BeamBase> beam,
-        const Detector &detector,
-        const Goniometer &goniometer,
-        const Scan &scan,
-        std::size_t num_scan_points,
-        int grid_method) {
+    boost::shared_ptr<SamplerIface> init_sampler(boost::shared_ptr<BeamBase> beam,
+                                                 const Detector &detector,
+                                                 const Goniometer &goniometer,
+                                                 const Scan &scan,
+                                                 std::size_t num_scan_points,
+                                                 int grid_method) {
       int2 scan_range = scan.get_array_range();
       boost::shared_ptr<SamplerIface> sampler;
       if (grid_method == RegularGrid || grid_method == CircularGrid) {
@@ -101,31 +92,21 @@ namespace dials { namespace algorithms {
       }
       switch (grid_method) {
       case Single:
-        sampler = boost::make_shared<SingleSampler>(
-            scan_range,
-            num_scan_points);
+        sampler = boost::make_shared<SingleSampler>(scan_range, num_scan_points);
         break;
       case RegularGrid:
         DIALS_ASSERT(detector.size() == 1);
         sampler = boost::make_shared<GridSampler>(
-            detector[0].get_image_size(),
-            scan_range,
-            int3(3, 3, num_scan_points));
+          detector[0].get_image_size(), scan_range, int3(3, 3, num_scan_points));
         break;
       case CircularGrid:
         DIALS_ASSERT(detector.size() == 1);
         sampler = boost::make_shared<CircleSampler>(
-            detector[0].get_image_size(),
-            scan_range,
-            num_scan_points);
+          detector[0].get_image_size(), scan_range, num_scan_points);
         break;
       case SphericalGrid:
         sampler = boost::make_shared<EwaldSphereSampler>(
-            beam,
-            detector,
-            goniometer,
-            scan,
-            num_scan_points);
+          beam, detector, goniometer, scan, num_scan_points);
       default:
         throw DIALS_ERROR("Unknown grid method");
       };
@@ -159,22 +140,21 @@ namespace dials { namespace algorithms {
     struct check_either_mask_code {
       int mask_code1;
       int mask_code2;
-      check_either_mask_code(int code1, int code2) : mask_code1(code1), mask_code2(code2) {}
+      check_either_mask_code(int code1, int code2)
+          : mask_code1(code1), mask_code2(code2) {}
       bool operator()(int a) const {
         return ((a & mask_code1) == mask_code1) || ((a & mask_code2) == mask_code2);
       }
     };
 
-  }
+  }  // namespace detail
 
   /**
    * The profile modeller for the gaussian rs profile model
    */
-  class GaussianRSProfileModeller
-      : public GaussianRSProfileModellerBase,
-        public EmpiricalProfileModeller {
+  class GaussianRSProfileModeller : public GaussianRSProfileModellerBase,
+                                    public EmpiricalProfileModeller {
   public:
-
     /**
      * Initialize
      * @param beam The beam model
@@ -189,47 +169,41 @@ namespace dials { namespace algorithms {
      * @param threshold The modelling threshold value
      * @param grid_method The gridding method
      */
-    GaussianRSProfileModeller(
-            boost::shared_ptr<BeamBase> beam,
-            const Detector &detector,
-            const Goniometer &goniometer,
-            const Scan &scan,
-            double sigma_b,
-            double sigma_m,
-            double n_sigma,
-            std::size_t grid_size,
-            std::size_t num_scan_points,
-            double threshold,
-            int grid_method,
-            int fit_method)
-      : GaussianRSProfileModellerBase(
-          beam,
-          detector,
-          goniometer,
-          scan,
-          sigma_b,
-          sigma_m,
-          n_sigma,
-          grid_size,
-          num_scan_points,
-          grid_method,
-          fit_method),
-        EmpiricalProfileModeller(
-          sampler_->size(),
-          int3(
-            2*grid_size+1,
-            2*grid_size+1,
-            2*grid_size+1),
-          threshold),
-        spec_(
-          beam,
-          detector,
-          goniometer,
-          scan,
-          sigma_b,
-          sigma_m,
-          n_sigma,
-          grid_size) {
+    GaussianRSProfileModeller(boost::shared_ptr<BeamBase> beam,
+                              const Detector &detector,
+                              const Goniometer &goniometer,
+                              const Scan &scan,
+                              double sigma_b,
+                              double sigma_m,
+                              double n_sigma,
+                              std::size_t grid_size,
+                              std::size_t num_scan_points,
+                              double threshold,
+                              int grid_method,
+                              int fit_method)
+        : GaussianRSProfileModellerBase(beam,
+                                        detector,
+                                        goniometer,
+                                        scan,
+                                        sigma_b,
+                                        sigma_m,
+                                        n_sigma,
+                                        grid_size,
+                                        num_scan_points,
+                                        grid_method,
+                                        fit_method),
+          EmpiricalProfileModeller(
+            sampler_->size(),
+            int3(2 * grid_size + 1, 2 * grid_size + 1, 2 * grid_size + 1),
+            threshold),
+          spec_(beam,
+                detector,
+                goniometer,
+                scan,
+                sigma_b,
+                sigma_m,
+                n_sigma,
+                grid_size) {
       DIALS_ASSERT(sampler_ != 0);
     }
 
@@ -290,7 +264,6 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection list
      */
     void model(af::reflection_table reflections) {
-
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
       DIALS_ASSERT(reflections.contains("shoebox"));
@@ -301,11 +274,11 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref< Shoebox<> > sbox = reflections["shoebox"];
+      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
       af::const_ref<double> partiality = reflections["partiality"];
-      af::const_ref< vec3<double> > s1 = reflections["s1"];
-      af::const_ref< vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref< vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<vec3<double> > s1 = reflections["s1"];
+      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
 
       // Loop through all the reflections and add them to the model
@@ -314,49 +287,41 @@ namespace dials { namespace algorithms {
 
         // Check if we want to use this reflection
         if (check1(flags[i], partiality[i], sbox[i])) {
-
           // Create the coordinate system
           vec3<double> m2 = spec_.goniometer().get_rotation_axis();
           vec3<double> s0 = spec_.beam()->get_s0();
           CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
           // Create the data array
-          af::versa< double, af::c_grid<3> > data(sbox[i].data.accessor());
-          std::transform(
-              sbox[i].data.begin(),
-              sbox[i].data.end(),
-              sbox[i].background.begin(),
-              data.begin(),
-              std::minus<double>());
+          af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
+          std::transform(sbox[i].data.begin(),
+                         sbox[i].data.end(),
+                         sbox[i].background.begin(),
+                         data.begin(),
+                         std::minus<double>());
 
           // Create the mask array
-          af::versa< bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
-          std::transform(
-              sbox[i].mask.begin(),
-              sbox[i].mask.end(),
-              mask.begin(),
-              detail::check_mask_code(Valid | Foreground));
+          af::versa<bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+          std::transform(sbox[i].mask.begin(),
+                         sbox[i].mask.end(),
+                         mask.begin(),
+                         detail::check_mask_code(Valid | Foreground));
 
           // Compute the transform
           TransformForward<double> transform(
-              spec_,
-              cs,
-              sbox[i].bbox,
-              sbox[i].panel,
-              data.const_ref(),
-              mask.const_ref());
+            spec_, cs, sbox[i].bbox, sbox[i].panel, data.const_ref(), mask.const_ref());
 
           // Get the indices and weights of the profiles
-          af::shared<std::size_t> indices = sampler_->nearest_n(sbox[i].panel, xyzpx[i]);
+          af::shared<std::size_t> indices =
+            sampler_->nearest_n(sbox[i].panel, xyzpx[i]);
           af::shared<double> weights(indices.size());
           for (std::size_t j = 0; j < indices.size(); ++j) {
             weights[j] = sampler_->weight(indices[j], sbox[i].panel, xyzpx[i]);
           }
 
           // Add the profile
-          add(indices.const_ref(),
-              weights.const_ref(),
-              transform.profile().const_ref());
+          add(
+            indices.const_ref(), weights.const_ref(), transform.profile().const_ref());
 
           // Set the flags
           flags[i] |= af::UsedInModelling;
@@ -405,7 +370,6 @@ namespace dials { namespace algorithms {
      * @return The profile fitter class
      */
     af::shared<bool> fit_reciprocal_space(af::reflection_table reflections) const {
-
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
       DIALS_ASSERT(reflections.contains("shoebox"));
@@ -416,15 +380,15 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref< Shoebox<> > sbox = reflections["shoebox"];
-      af::const_ref< vec3<double> > s1 = reflections["s1"];
-      af::const_ref< vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref< vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
+      af::const_ref<vec3<double> > s1 = reflections["s1"];
+      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
       af::ref<double> intensity_val = reflections["intensity.prf.value"];
       af::ref<double> intensity_var = reflections["intensity.prf.variance"];
       af::ref<double> reference_cor = reflections["profile.correlation"];
-      //af::ref<double> reference_rmsd = reflections["profile.rmsd"];
+      // af::ref<double> reference_rmsd = reflections["profile.rmsd"];
 
       // Loop through all the reflections and process them
       af::shared<bool> success(reflections.size(), false);
@@ -435,14 +399,12 @@ namespace dials { namespace algorithms {
         intensity_val[i] = 0.0;
         intensity_var[i] = -1.0;
         reference_cor[i] = 0.0;
-        //reference_rmsd[i] = 0.0;
+        // reference_rmsd[i] = 0.0;
         flags[i] &= ~af::IntegratedPrf;
 
         // Check if we want to use this reflection
         if (check2(flags[i], sbox[i])) {
-
           try {
-
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference p = data(index).const_ref();
@@ -454,62 +416,49 @@ namespace dials { namespace algorithms {
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Create the data array
-            af::versa< double, af::c_grid<3> > data(sbox[i].data.accessor());
-            std::copy(
-                sbox[i].data.begin(),
-                sbox[i].data.end(),
-                data.begin());
+            af::versa<double, af::c_grid<3> > data(sbox[i].data.accessor());
+            std::copy(sbox[i].data.begin(), sbox[i].data.end(), data.begin());
 
             // Create the background array
-            af::versa< double, af::c_grid<3> > background(sbox[i].background.accessor());
+            af::versa<double, af::c_grid<3> > background(sbox[i].background.accessor());
             std::copy(
-                sbox[i].background.begin(),
-                sbox[i].background.end(),
-                background.begin());
+              sbox[i].background.begin(), sbox[i].background.end(), background.begin());
 
             // Create the mask array
-            af::versa< bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
-            std::transform(
-                sbox[i].mask.begin(),
-                sbox[i].mask.end(),
-                mask.begin(),
-                detail::check_mask_code(Valid | Foreground));
+            af::versa<bool, af::c_grid<3> > mask(sbox[i].mask.accessor());
+            std::transform(sbox[i].mask.begin(),
+                           sbox[i].mask.end(),
+                           mask.begin(),
+                           detail::check_mask_code(Valid | Foreground));
 
             // Compute the transform
-            TransformForward<double> transform(
-                spec_,
-                cs,
-                sbox[i].bbox,
-                sbox[i].panel,
-                data.const_ref(),
-                background.const_ref(),
-                mask.const_ref());
+            TransformForward<double> transform(spec_,
+                                               cs,
+                                               sbox[i].bbox,
+                                               sbox[i].panel,
+                                               data.const_ref(),
+                                               background.const_ref(),
+                                               mask.const_ref());
 
             // Get the transformed shoebox
             data_const_reference c = transform.profile().const_ref();
             data_const_reference b = transform.background().const_ref();
             mask_const_reference mask2 = transform.mask().const_ref();
-            af::versa< bool, af::c_grid<3> > m(mask2.accessor());
+            af::versa<bool, af::c_grid<3> > m(mask2.accessor());
             DIALS_ASSERT(mask1.size() == mask2.size());
             for (std::size_t j = 0; j < m.size(); ++j) {
               m[j] = mask1[j] && mask2[j];
             }
 
             // Do the profile fitting
-            ProfileFitter<double> fit(
-                c,
-                b,
-                m.const_ref(),
-                p,
-                1e-3,
-                100);
-            //DIALS_ASSERT(fit.niter() < 100);
+            ProfileFitter<double> fit(c, b, m.const_ref(), p, 1e-3, 100);
+            // DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
             intensity_val[i] = fit.intensity()[0];
             intensity_var[i] = fit.variance()[0];
             reference_cor[i] = fit.correlation();
-            //reference_rmsd[i] = fit.rmsd();
+            // reference_rmsd[i] = fit.rmsd();
 
             // Set the integrated flag
             flags[i] |= af::IntegratedPrf;
@@ -529,7 +478,6 @@ namespace dials { namespace algorithms {
      * @return The profile fitter class
      */
     af::shared<bool> fit_detector_space(af::reflection_table reflections) const {
-
       // Check input is OK
       DIALS_ASSERT(reflections.is_consistent());
       DIALS_ASSERT(reflections.contains("shoebox"));
@@ -540,10 +488,10 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(reflections.contains("xyzcal.mm"));
 
       // Get some data
-      af::const_ref< Shoebox<> > sbox = reflections["shoebox"];
-      af::const_ref< vec3<double> > s1 = reflections["s1"];
-      af::const_ref< vec3<double> > xyzpx = reflections["xyzcal.px"];
-      af::const_ref< vec3<double> > xyzmm = reflections["xyzcal.mm"];
+      af::const_ref<Shoebox<> > sbox = reflections["shoebox"];
+      af::const_ref<vec3<double> > s1 = reflections["s1"];
+      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
+      af::const_ref<vec3<double> > xyzmm = reflections["xyzcal.mm"];
       af::ref<std::size_t> flags = reflections["flags"];
       af::ref<double> intensity_val = reflections["intensity.prf.value"];
       af::ref<double> intensity_var = reflections["intensity.prf.variance"];
@@ -562,9 +510,7 @@ namespace dials { namespace algorithms {
 
         // Check if we want to use this reflection
         if (check2(flags[i], sbox[i])) {
-
           try {
-
             // Get the reference profiles
             std::size_t index = sampler_->nearest(sbox[i].panel, xyzpx[i]);
             data_const_reference d = data(index).const_ref();
@@ -575,48 +521,31 @@ namespace dials { namespace algorithms {
             CoordinateSystem cs(m2, s0, s1[i], xyzmm[i][2]);
 
             // Compute the transform
-            TransformReverse transform(
-                spec_,
-                cs,
-                sbox[i].bbox,
-                sbox[i].panel,
-                d);
+            TransformReverse transform(spec_, cs, sbox[i].bbox, sbox[i].panel, d);
 
             // Get the transformed shoebox
             data_const_reference p = transform.profile().const_ref();
 
             // Create the data array
-            af::versa< double, af::c_grid<3> > c(sbox[i].data.accessor());
-            std::copy(
-                sbox[i].data.begin(),
-                sbox[i].data.end(),
-                c.begin());
+            af::versa<double, af::c_grid<3> > c(sbox[i].data.accessor());
+            std::copy(sbox[i].data.begin(), sbox[i].data.end(), c.begin());
 
             // Create the background array
-            af::versa< double, af::c_grid<3> > b(sbox[i].background.accessor());
-            std::copy(
-                sbox[i].background.begin(),
-                sbox[i].background.end(),
-                b.begin());
+            af::versa<double, af::c_grid<3> > b(sbox[i].background.accessor());
+            std::copy(sbox[i].background.begin(), sbox[i].background.end(), b.begin());
 
             // Create the mask array
-            af::versa< bool, af::c_grid<3> > m(sbox[i].mask.accessor());
+            af::versa<bool, af::c_grid<3> > m(sbox[i].mask.accessor());
 
-            std::transform(
-              sbox[i].mask.begin(),
-              sbox[i].mask.end(),
-              m.begin(),
-              detail::check_mask_code(Valid | Foreground));
-
+            std::transform(sbox[i].mask.begin(),
+                           sbox[i].mask.end(),
+                           m.begin(),
+                           detail::check_mask_code(Valid | Foreground));
 
             // Do the profile fitting
             ProfileFitter<double> fit(
-                c.const_ref(),
-                b.const_ref(),
-                m.const_ref(),
-                p,
-                1e-3, 100);
-            //DIALS_ASSERT(fit.niter() < 100);
+              c.const_ref(), b.const_ref(), m.const_ref(), p, 1e-3, 100);
+            // DIALS_ASSERT(fit.niter() < 100);
 
             // Set the data in the reflection
             intensity_val[i] = fit.intensity()[0];
@@ -639,23 +568,20 @@ namespace dials { namespace algorithms {
      * @return a copy of the profile modller
      */
     pointer copy() const {
-      GaussianRSProfileModeller result(
-          beam_,
-          detector_,
-          goniometer_,
-          scan_,
-          sigma_b_,
-          sigma_m_,
-          n_sigma_,
-          grid_size_,
-          num_scan_points_,
-          threshold_,
-          grid_method_,
-          fit_method_);
+      GaussianRSProfileModeller result(beam_,
+                                       detector_,
+                                       goniometer_,
+                                       scan_,
+                                       sigma_b_,
+                                       sigma_m_,
+                                       n_sigma_,
+                                       grid_size_,
+                                       num_scan_points_,
+                                       threshold_,
+                                       grid_method_,
+                                       fit_method_);
       result.finalized_ = finalized_;
-      result.n_reflections_.assign(
-          n_reflections_.begin(),
-          n_reflections_.end());
+      result.n_reflections_.assign(n_reflections_.begin(), n_reflections_.end());
       for (std::size_t i = 0; i < data_.size(); ++i) {
         if (data_[i].size() > 0) {
           result.data_[i] = data_type(accessor_, 0);
@@ -667,9 +593,7 @@ namespace dials { namespace algorithms {
       return pointer(new GaussianRSProfileModeller(result));
     }
 
-
   private:
-
     /**
      * Do we want to use the reflection in profile modelling
      * @param flags The reflection flags
@@ -677,10 +601,7 @@ namespace dials { namespace algorithms {
      * @param sbox The reflection shoebox
      * @return True/False
      */
-    bool check1(std::size_t flags,
-               double partiality,
-               const Shoebox<> &sbox) const {
-
+    bool check1(std::size_t flags, double partiality, const Shoebox<> &sbox) const {
       // Check we're fully recorded
       bool full = partiality > 0.99;
 
@@ -689,10 +610,9 @@ namespace dials { namespace algorithms {
 
       // Check if the bounding box is in the image
       bool bbox_valid =
-        sbox.bbox[0] >= 0 &&
-        sbox.bbox[2] >= 0 &&
-        sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0] &&
-        sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
+        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
+        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
 
       // Check if all pixels are valid
       bool pixels_valid = true;
@@ -713,18 +633,15 @@ namespace dials { namespace algorithms {
      * @param sbox The reflection shoebox
      * @return True/False
      */
-    bool check2(std::size_t flags,
-               const Shoebox<> &sbox) const {
-
+    bool check2(std::size_t flags, const Shoebox<> &sbox) const {
       // Check if we want to integrate
       bool integrate = !(flags & af::DontIntegrate);
 
       // Check if the bounding box is in the image
       bool bbox_valid =
-        sbox.bbox[0] >= 0 &&
-        sbox.bbox[2] >= 0 &&
-        sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0] &&
-        sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
+        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
+        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
 
       // Check if all pixels are valid
       bool pixels_valid = true;
@@ -745,18 +662,15 @@ namespace dials { namespace algorithms {
      * @param sbox The reflection shoebox
      * @return True/False
      */
-    bool check3(std::size_t flags,
-               const Shoebox<> &sbox) const {
-
+    bool check3(std::size_t flags, const Shoebox<> &sbox) const {
       // Check if we want to integrate
       bool integrate = !(flags & af::DontIntegrate);
 
       // Check if the bounding box is in the image
       bool bbox_valid =
-        sbox.bbox[0] >= 0 &&
-        sbox.bbox[2] >= 0 &&
-        sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0] &&
-        sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
+        sbox.bbox[0] >= 0 && sbox.bbox[2] >= 0
+        && sbox.bbox[1] <= spec_.detector()[sbox.panel].get_image_size()[0]
+        && sbox.bbox[3] <= spec_.detector()[sbox.panel].get_image_size()[1];
 
       // Return whether to use or not
       return integrate && bbox_valid;
@@ -765,6 +679,6 @@ namespace dials { namespace algorithms {
     TransformSpec spec_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H
+#endif  // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_MODELLER_H

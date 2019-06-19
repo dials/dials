@@ -7,4 +7,4 @@
 #include <scitbx/array_family/accessors/c_grid.h>
 #include <dials/array_family/import_scitbx_af.h>
 
-#endif // DIALS_ARRAY_FAMILY_SCITBX_SHARED_AND_VERSA_H
+#endif  // DIALS_ARRAY_FAMILY_SCITBX_SHARED_AND_VERSA_H

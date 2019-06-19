@@ -16,13 +16,9 @@ using namespace boost::python;
 
 namespace dials { namespace refinement { namespace boost_python {
 
-  void export_gaussian_smoother()
-  {
+  void export_gaussian_smoother() {
     class_<GaussianSmoother>("GaussianSmoother", no_init)
-      .def(init< vec2<double>,
-                 std::size_t >((
-        arg("x_range"),
-        arg("num_intervals"))))
+      .def(init<vec2<double>, std::size_t>((arg("x_range"), arg("num_intervals"))))
       .def("set_smoothing", &GaussianSmoother::set_smoothing)
       .def("num_values", &GaussianSmoother::num_values)
       .def("num_samples", &GaussianSmoother::num_samples)
@@ -31,20 +27,17 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("spacing", &GaussianSmoother::spacing)
       .def("positions", &GaussianSmoother::positions)
       .def("value_weight", &GaussianSmoother::value_weight)
-      .def("multi_value_weight", &GaussianSmoother::multi_value_weight)
-    ;
+      .def("multi_value_weight", &GaussianSmoother::multi_value_weight);
 
     class_<SingleValueWeights>("SingleValueWeights", no_init)
       .def("get_value", &SingleValueWeights::get_value)
       .def("get_weight", &SingleValueWeights::get_weight)
-      .def("get_sumweight", &SingleValueWeights::get_sumweight)
-    ;
+      .def("get_sumweight", &SingleValueWeights::get_sumweight);
 
     class_<MultiValueWeights>("MultiValueWeights", no_init)
       .def("get_value", &MultiValueWeights::get_value)
       .def("get_weight", &MultiValueWeights::get_weight)
-      .def("get_sumweight", &MultiValueWeights::get_sumweight)
-    ;
+      .def("get_sumweight", &MultiValueWeights::get_sumweight);
   }
 
-}}} // namespace dials::refinement::boost_python
+}}}  // namespace dials::refinement::boost_python

@@ -14,20 +14,16 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
-
 namespace dials { namespace algorithms { namespace background {
 
   class OutlierRejector {
   public:
-    virtual
-    ~OutlierRejector() {}
+    virtual ~OutlierRejector() {}
 
-    virtual
-    void mark(
-        const af::const_ref< double, af::c_grid<3> > &data,
-        af::ref <int, af::c_grid<3> > mask) const = 0;
+    virtual void mark(const af::const_ref<double, af::c_grid<3> > &data,
+                      af::ref<int, af::c_grid<3> > mask) const = 0;
   };
 
-}}} // namespace dials::algorithms::background
+}}}  // namespace dials::algorithms::background
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_OUTLIER_REJECTOR_H
+#endif  // DIALS_ALGORITHMS_BACKGROUND_OUTLIER_REJECTOR_H

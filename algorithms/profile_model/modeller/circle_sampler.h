@@ -21,30 +21,29 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::constants::pi;
-  using scitbx::constants::two_pi;
-  using scitbx::af::int3;
   using scitbx::af::double2;
   using scitbx::af::double3;
+  using scitbx::af::int3;
   using scitbx::af::min;
+  using scitbx::constants::pi;
+  using scitbx::constants::two_pi;
 
   /**
    * Class to sample image with reference profiles as in XDS
    */
   class CircleSampler : public SamplerIface {
   public:
-
     /**
      * Initialise the sampler
      * @param volume_size The size of the image to sample
      * @param num_z The number of grid points in z
      */
     CircleSampler(int2 image_size, int2 scan_range, std::size_t num_z)
-      : image_size_(image_size),
-        scan_range_(scan_range),
-        centre_(image_size_[0] / 2.0, image_size_[1] / 2.0),
-        num_z_(num_z),
-        nprofile_(9) {
+        : image_size_(image_size),
+          scan_range_(scan_range),
+          centre_(image_size_[0] / 2.0, image_size_[1] / 2.0),
+          num_z_(num_z),
+          nprofile_(9) {
       DIALS_ASSERT(image_size_.all_gt(0));
       DIALS_ASSERT(scan_range_[1] > scan_range_[0]);
       DIALS_ASSERT(num_z > 0);
@@ -139,7 +138,6 @@ namespace dials { namespace algorithms {
      * @returns A list of reference profile indices
      */
     af::shared<std::size_t> nearest_n(std::size_t panel, double3 xyz) const {
-
       DIALS_ASSERT(panel == 0);
 
       // Get the main index
@@ -173,9 +171,9 @@ namespace dials { namespace algorithms {
       double3 c = coord(index);
       double dx = (c[0] - xyz[0]);
       double dy = (c[1] - xyz[1]);
-      double d = std::sqrt(dx*dx + dy*dy);
-      d = (index % 9) == 0 ? d / (2.0*r1_) : d / (2.0*(r2_ - r1_));
-      return std::exp(-4.0*d*d*std::log(2.0));
+      double d = std::sqrt(dx * dx + dy * dy);
+      d = (index % 9) == 0 ? d / (2.0 * r1_) : d / (2.0 * (r2_ - r1_));
+      return std::exp(-4.0 * d * d * std::log(2.0));
     }
 
     /**
@@ -184,7 +182,6 @@ namespace dials { namespace algorithms {
      * @returns The x, y, z coordinate of the profile
      */
     double3 coord(std::size_t index) const {
-
       // Ensure index is within range
       DIALS_ASSERT(index >= 0 && index < size());
 
@@ -204,7 +201,6 @@ namespace dials { namespace algorithms {
      * @returns A list of reference profile indices
      */
     af::shared<std::size_t> neighbours(std::size_t index) const {
-
       // Get the main index
       std::size_t image_index = index % 9;
       std::size_t zero_index = (index / 9) * 9;
@@ -224,18 +220,16 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Find the nearest reference profile to the given point.
      * @param xy The coordinate
      * @returns The index of the reference profile
      */
     std::size_t index_at_image_coord(double2 xy) const {
-
       // Get the radius and angle at the point
       double xmc = xy[0] - centre_[0];
       double ymc = xy[1] - centre_[1];
-      double r = std::sqrt(xmc*xmc + ymc*ymc);
+      double r = std::sqrt(xmc * xmc + ymc * ymc);
       double t = atan2(ymc, xmc);
 
       // If radius is less than the inner radius return 0
@@ -259,7 +253,7 @@ namespace dials { namespace algorithms {
 
       // If index is zero then return central reference position
       if (index == 0) {
-          return centre_;
+        return centre_;
       }
 
       // Calculate the angle and get the x, y coordinate of the profile
@@ -278,6 +272,6 @@ namespace dials { namespace algorithms {
     double r0_, r1_, r2_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_CIRCLE_SAMPLER_H */

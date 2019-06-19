@@ -23,33 +23,31 @@
 
 namespace dials { namespace algorithms {
 
-  using model::Shoebox;
   using model::ImageVolume;
   using model::MultiPanelImageVolume;
+  using model::Shoebox;
 
   /**
    * A class to create the background model
    */
   class GModelBackgroundCreator {
   public:
-
     /**
      * Initialise the creator
      * @param tuning_constant The robust tuning constant
      * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels needed
      */
-    GModelBackgroundCreator(
-          boost::shared_ptr<BackgroundModel> model,
-          bool robust,
-          double tuning_constant,
-          std::size_t max_iter,
-          std::size_t min_pixels)
-      : model_(model),
-        robust_(robust),
-        tuning_constant_(tuning_constant),
-        max_iter_(max_iter),
-        min_pixels_(min_pixels) {
+    GModelBackgroundCreator(boost::shared_ptr<BackgroundModel> model,
+                            bool robust,
+                            double tuning_constant,
+                            std::size_t max_iter,
+                            std::size_t min_pixels)
+        : model_(model),
+          robust_(robust),
+          tuning_constant_(tuning_constant),
+          max_iter_(max_iter),
+          min_pixels_(min_pixels) {
       DIALS_ASSERT(tuning_constant > 0);
       DIALS_ASSERT(max_iter > 0);
       DIALS_ASSERT(min_pixels > 0);
@@ -61,12 +59,11 @@ namespace dials { namespace algorithms {
      * @returns Success True/False
      */
     void single(Shoebox<> sbox) const {
-      compute(
-          sbox.panel,
-          sbox.bbox,
-          sbox.data.const_ref(),
-          sbox.background.ref(),
-          sbox.mask.ref());
+      compute(sbox.panel,
+              sbox.bbox,
+              sbox.data.const_ref(),
+              sbox.background.ref(),
+              sbox.mask.ref());
     }
 
     /**
@@ -76,21 +73,20 @@ namespace dials { namespace algorithms {
      */
     af::shared<bool> shoebox(af::reflection_table reflections) const {
       DIALS_ASSERT(reflections.contains("shoebox"));
-      af::ref< Shoebox<> > sbox = reflections["shoebox"];
+      af::ref<Shoebox<> > sbox = reflections["shoebox"];
       af::shared<bool> success(sbox.size(), true);
       af::shared<double> scale = reflections["background.scale"];
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
           DIALS_ASSERT(sbox[i].is_consistent());
-          scale[i] = compute(
-              sbox[i].panel,
-              sbox[i].bbox,
-              sbox[i].data.const_ref(),
-              sbox[i].background.ref(),
-              sbox[i].mask.ref());
-        } catch(scitbx::error) {
+          scale[i] = compute(sbox[i].panel,
+                             sbox[i].bbox,
+                             sbox[i].data.const_ref(),
+                             sbox[i].background.ref(),
+                             sbox[i].mask.ref());
+        } catch (scitbx::error) {
           success[i] = false;
-        } catch(dials::error) {
+        } catch (dials::error) {
           success[i] = false;
         }
       }
@@ -103,19 +99,17 @@ namespace dials { namespace algorithms {
      * @param volume The image volume
      * @returns Success True/False
      */
-    af::shared<bool> volume(
-        af::reflection_table reflections,
-        MultiPanelImageVolume<> volume) const {
+    af::shared<bool> volume(af::reflection_table reflections,
+                            MultiPanelImageVolume<> volume) const {
       typedef MultiPanelImageVolume<>::float_type FloatType;
 
       DIALS_ASSERT(reflections.contains("bbox"));
       DIALS_ASSERT(reflections.contains("panel"));
-      af::const_ref< int6 > bbox = reflections["bbox"];
-      af::const_ref< std::size_t > panel = reflections["panel"];
+      af::const_ref<int6> bbox = reflections["bbox"];
+      af::const_ref<std::size_t> panel = reflections["panel"];
       af::shared<bool> success(bbox.size(), true);
       af::shared<double> scale = reflections["background.scale"];
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-
         // Get the image volume
         ImageVolume<> v = volume.get(panel[i]);
 
@@ -124,24 +118,19 @@ namespace dials { namespace algorithms {
         std::size_t p = panel[i];
 
         // Extract from image volume
-        af::versa< FloatType, af::c_grid<3> > data = v.extract_data(b);
-        af::versa< FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa< int,    af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
+        af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
-          scale[i] = compute(
-              p,
-              b,
-              data.const_ref(),
-              bgrd.ref(),
-              mask.ref());
+          scale[i] = compute(p, b, data.const_ref(), bgrd.ref(), mask.ref());
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch(scitbx::error) {
+        } catch (scitbx::error) {
           success[i] = false;
-        } catch(dials::error) {
+        } catch (dials::error) {
           success[i] = false;
         }
       }
@@ -149,18 +138,16 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Compute the background values for a single shoebox
      * @param sbox The shoebox
      */
     template <typename T>
-    double compute(
-        std::size_t panel,
-        int6 bbox,
-        const af::const_ref< T, af::c_grid<3> > &data,
-        af::ref< T, af::c_grid<3> > background,
-        af::ref< int, af::c_grid<3> > mask) const {
+    double compute(std::size_t panel,
+                   int6 bbox,
+                   const af::const_ref<T, af::c_grid<3> > &data,
+                   af::ref<T, af::c_grid<3> > background,
+                   af::ref<int, af::c_grid<3> > mask) const {
       if (robust_) {
         return compute_robust(panel, bbox, data, background, mask);
       } else {
@@ -173,13 +160,12 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    double compute_non_robust(
-        std::size_t panel,
-        int6 bbox,
-        const af::const_ref< T, af::c_grid<3> > &data,
-        af::ref< T, af::c_grid<3> > background,
-        af::ref< int, af::c_grid<3> > mask) const {
-      af::versa< double, af::c_grid<3> > model = model_->extract(panel, bbox);
+    double compute_non_robust(std::size_t panel,
+                              int6 bbox,
+                              const af::const_ref<T, af::c_grid<3> > &data,
+                              af::ref<T, af::c_grid<3> > background,
+                              af::ref<int, af::c_grid<3> > mask) const {
+      af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
       double sum1 = 0;
       double sum2 = 0;
       double count = 0;
@@ -209,13 +195,12 @@ namespace dials { namespace algorithms {
      * @param sbox The shoebox
      */
     template <typename T>
-    double compute_robust(
-        std::size_t panel,
-        int6 bbox,
-        const af::const_ref< T, af::c_grid<3> > &data,
-        af::ref< T, af::c_grid<3> > background,
-        af::ref< int, af::c_grid<3> > mask) const {
-      af::versa< double, af::c_grid<3> > model = model_->extract(panel, bbox);
+    double compute_robust(std::size_t panel,
+                          int6 bbox,
+                          const af::const_ref<T, af::c_grid<3> > &data,
+                          af::ref<T, af::c_grid<3> > background,
+                          af::ref<int, af::c_grid<3> > mask) const {
+      af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
 
       // Compute number of background pixels
       std::size_t num_background = 0;
@@ -250,7 +235,8 @@ namespace dials { namespace algorithms {
       estimate_pixel_weights(X.const_ref(), Y.const_ref(), W.ref());
 
       // Estimate the scale parameter
-      double scale = estimate_scale_parameter(X.const_ref(), Y.const_ref(), W.const_ref());
+      double scale =
+        estimate_scale_parameter(X.const_ref(), Y.const_ref(), W.const_ref());
 
       // Fill in the background shoebox values
       for (std::size_t i = 0; i < data.size(); ++i) {
@@ -263,11 +249,9 @@ namespace dials { namespace algorithms {
       return scale;
     }
 
-    void estimate_pixel_weights(
-        const af::const_ref<double> &X,
-        const af::const_ref<double> &Y,
-        af::ref<double> W) const {
-
+    void estimate_pixel_weights(const af::const_ref<double> &X,
+                                const af::const_ref<double> &Y,
+                                af::ref<double> W) const {
       af::shared<double> tX(X.size());
       af::shared<double> tY(X.size());
       for (std::size_t i = 0; i < X.size(); ++i) {
@@ -292,13 +276,11 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(XWX > 0);
         B = XWY / XWX;
       }
-
     }
 
-    double estimate_scale_parameter(
-        const af::const_ref<double> &X,
-        const af::const_ref<double> &Y,
-        const af::const_ref<double> &W) const {
+    double estimate_scale_parameter(const af::const_ref<double> &X,
+                                    const af::const_ref<double> &Y,
+                                    const af::const_ref<double> &W) const {
       double XWX = 0.0;
       double XWY = 0.0;
       for (std::size_t i = 0; i < X.size(); ++i) {
@@ -314,9 +296,8 @@ namespace dials { namespace algorithms {
     double tuning_constant_;
     std::size_t max_iter_;
     std::size_t min_pixels_;
-
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_GMODEL_CREATOR_H
+#endif  // DIALS_ALGORITHMS_BACKGROUND_GMODEL_CREATOR_H

@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RTMATS_H
 
 #ifndef DEG2RAD
-#define DEG2RAD(x) ((x) * 0.01745329251994329575)
+#define DEG2RAD(x) ((x)*0.01745329251994329575)
 #endif
 
 #include <cmath>
@@ -35,12 +35,12 @@ namespace dials { namespace refinement {
    */
   mat3<double> dR_from_axis_and_angle(const vec3<double> &axis,
                                       double angle,
-                                      bool deg=false){
+                                      bool deg = false) {
     if (deg) angle = DEG2RAD(angle);
     vec3<double> axis_ = axis.normalize();
     double ca = cos(angle);
     double sa = sin(angle);
-    return mat3<double>(sa * axis_[0] * axis_[0] - sa ,
+    return mat3<double>(sa * axis_[0] * axis_[0] - sa,
                         sa * axis_[0] * axis_[1] - ca * axis_[2],
                         sa * axis_[0] * axis_[2] + ca * axis_[1],
                         sa * axis_[1] * axis_[0] + ca * axis_[2],
@@ -51,6 +51,6 @@ namespace dials { namespace refinement {
                         sa * axis_[2] * axis_[2] - sa);
   }
 
-}} // namespace dials::refinement
+}}  // namespace dials::refinement
 
-#endif // DIALS_REFINEMENT_RTMATS_H
+#endif  // DIALS_REFINEMENT_RTMATS_H

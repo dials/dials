@@ -31,10 +31,9 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<2> > convolve(
-      const af::const_ref<FloatType, af::c_grid<2> > &image,
-      const af::const_ref<FloatType, af::c_grid<2> > &kernel) {
-
+  af::versa<FloatType, af::c_grid<2> > convolve(
+    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType, af::c_grid<2> > &kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.accessor()[0] & 1);
     DIALS_ASSERT(kernel.accessor()[1] & 1);
@@ -45,8 +44,8 @@ namespace dials { namespace algorithms {
     int2 mid(ksz[0] / 2, ksz[1] / 2);
 
     // Create the output
-    af::versa< FloatType, af::c_grid<2> > result(image.accessor(),
-      af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > result(image.accessor(),
+                                                af::init_functor_null<FloatType>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -56,10 +55,14 @@ namespace dials { namespace algorithms {
           for (int ii = 0; ii < ksz[1]; ++ii) {
             int jjj = j + jj - mid[0];
             int iii = i + ii - mid[1];
-            if (jjj < 0) jjj = 0;
-            else if (jjj >= isz[0]) jjj = isz[0] - 1;
-            if (iii < 0) iii = 0;
-            else if (iii >= isz[1]) iii = isz[1] - 1;
+            if (jjj < 0)
+              jjj = 0;
+            else if (jjj >= isz[0])
+              jjj = isz[0] - 1;
+            if (iii < 0)
+              iii = 0;
+            else if (iii >= isz[1])
+              iii = isz[1] - 1;
             result(j, i) += image(jjj, iii) * kernel(jj, ii);
           }
         }
@@ -77,10 +80,9 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<2> > convolve_row(
-      const af::const_ref< FloatType, af::c_grid<2> > &image,
-      const af::const_ref< FloatType > &kernel) {
-
+  af::versa<FloatType, af::c_grid<2> > convolve_row(
+    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType> &kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.size() & 1);
 
@@ -90,8 +92,8 @@ namespace dials { namespace algorithms {
     std::size_t mid = ksz / 2;
 
     // Create the output
-    af::versa< FloatType, af::c_grid<2> > result(image.accessor(),
-      af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > result(image.accessor(),
+                                                af::init_functor_null<FloatType>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -99,8 +101,10 @@ namespace dials { namespace algorithms {
         result(j, i) = 0.0;
         for (int ii = 0; ii < ksz; ++ii) {
           int iii = i + ii - mid;
-          if (iii < 0) iii = 0;
-          else if (iii >= isz[1]) iii = isz[1] - 1;
+          if (iii < 0)
+            iii = 0;
+          else if (iii >= isz[1])
+            iii = isz[1] - 1;
           result(j, i) += image(j, iii) * kernel[ii];
         }
       }
@@ -117,10 +121,9 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<2> > convolve_col(
-      const af::const_ref< FloatType, af::c_grid<2> > &image,
-      const af::const_ref< FloatType > &kernel) {
-
+  af::versa<FloatType, af::c_grid<2> > convolve_col(
+    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType> &kernel) {
     // Only allow odd-sized kernel sizes
     DIALS_ASSERT(kernel.size() & 1);
 
@@ -130,8 +133,8 @@ namespace dials { namespace algorithms {
     std::size_t mid = ksz / 2;
 
     // Create the output
-    af::versa< FloatType, af::c_grid<2> > result(image.accessor(),
-      af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > result(image.accessor(),
+                                                af::init_functor_null<FloatType>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -139,8 +142,10 @@ namespace dials { namespace algorithms {
         result(j, i) = 0.0;
         for (int jj = 0; jj < ksz; ++jj) {
           int jjj = j + jj - mid;
-          if (jjj < 0) jjj = 0;
-          else if (jjj >= isz[0]) jjj = isz[0] - 1;
+          if (jjj < 0)
+            jjj = 0;
+          else if (jjj >= isz[0])
+            jjj = isz[0] - 1;
           result(j, i) += image(jjj, i) * kernel[jj];
         }
       }
@@ -150,6 +155,6 @@ namespace dials { namespace algorithms {
     return result;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_IMAGE_FILTER_CONVOLVE_H */

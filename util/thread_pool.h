@@ -22,20 +22,14 @@ namespace dials { namespace util {
    */
   class ThreadPool {
   public:
-
     /**
      * Instantiate with the number of required threads
      * @param N The number of threads
      */
-    ThreadPool(std::size_t N)
-        : work_(io_service_),
-          started_(0),
-          finished_(0) {
+    ThreadPool(std::size_t N) : work_(io_service_), started_(0), finished_(0) {
       for (std::size_t i = 0; i < N; ++i) {
         threads_.create_thread(
-            boost::bind(
-              &boost::asio::io_service::run,
-              &io_service_));
+          boost::bind(&boost::asio::io_service::run, &io_service_));
       }
     }
 
@@ -46,7 +40,7 @@ namespace dials { namespace util {
       io_service_.stop();
       try {
         threads_.join_all();
-      } catch (const std::exception&) {
+      } catch (const std::exception &) {
         // pass
       }
     }
@@ -65,26 +59,24 @@ namespace dials { namespace util {
      * Wait until all posted jobs have finished
      */
     void wait() {
-      while (finished_ < started_);
+      while (finished_ < started_)
+        ;
     }
 
   protected:
-
     /**
      * A helper class to call the function increasing an atomic counter
      */
     template <typename Function>
     class FunctionRunner {
     public:
-
       /**
        * Create the helper class instance
        * @param function The function to call
        * @param counter The counter to increment
        */
       FunctionRunner(Function function, boost::atomic<std::size_t> &counter)
-        : function_(function),
-          counter_(counter) {}
+          : function_(function), counter_(counter) {}
 
       /**
        * Call the function and increment the counter
@@ -95,7 +87,6 @@ namespace dials { namespace util {
       }
 
     protected:
-
       Function function_;
       boost::atomic<std::size_t> &counter_;
     };
@@ -107,6 +98,6 @@ namespace dials { namespace util {
     boost::atomic<std::size_t> finished_;
   };
 
-}}
+}}  // namespace dials::util
 
-#endif // DIALS_ARRAY_FAMILY_THREAD_POOL_H
+#endif  // DIALS_ARRAY_FAMILY_THREAD_POOL_H

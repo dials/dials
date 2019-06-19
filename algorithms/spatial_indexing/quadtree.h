@@ -22,11 +22,9 @@ namespace dials { namespace algorithms {
   struct Box {
     int x0, y0, x1, y1;
 
-    Box()
-      : x0(0), y0(0), x1(0), y1(0) {}
+    Box() : x0(0), y0(0), x1(0), y1(0) {}
 
-    Box(int x0_, int y0_, int x1_, int y1_)
-      : x0(x0_), y0(y0_), x1(x1_), y1(y1_) {}
+    Box(int x0_, int y0_, int x1_, int y1_) : x0(x0_), y0(y0_), x1(x1_), y1(y1_) {}
   };
 
   /** Calculate the maximum depth */
@@ -44,29 +42,24 @@ namespace dials { namespace algorithms {
   Box subdivide<Box>(const Box &box, std::size_t i) {
     int x0 = box.x0, x1 = box.x1, xc = (x0 + x1) / 2;
     int y0 = box.y0, y1 = box.y1, yc = (y0 + y1) / 2;
-    int x00[4] = { x0, xc, x0, xc };
-    int x11[4] = { xc, x1, xc, x1 };
-    int y00[4] = { y0, y0, yc, yc };
-    int y11[4] = { yc, yc, y1, y1 };
+    int x00[4] = {x0, xc, x0, xc};
+    int x11[4] = {xc, x1, xc, x1};
+    int y00[4] = {y0, y0, yc, yc};
+    int y11[4] = {yc, yc, y1, y1};
     return Box(x00[i], y00[i], x11[i], y11[i]);
   }
 
   /** Comparison operations for Box/Box objects */
   template <>
   struct compare<Box, Box> {
-
     /** Check if a box contains another box */
-    static
-    bool contains(const Box &box, const Box &v) {
-      return box.x0 <= v.x0 && box.y0 <= v.y0
-          && box.x1 >= v.x1 && box.y1 >= v.y1;
+    static bool contains(const Box &box, const Box &v) {
+      return box.x0 <= v.x0 && box.y0 <= v.y0 && box.x1 >= v.x1 && box.y1 >= v.y1;
     }
 
     /** Check collisions between boxes */
-    static
-    bool collides(const Box &box, const Box &v) {
-      return !(box.x0 >= v.x1 || v.x0 >= box.x1
-            || box.y0 >= v.y1 || v.y0 >= box.y1);
+    static bool collides(const Box &box, const Box &v) {
+      return !(box.x0 >= v.x1 || v.x0 >= box.x1 || box.y0 >= v.y1 || v.y0 >= box.y1);
     }
   };
 
@@ -77,7 +70,6 @@ namespace dials { namespace algorithms {
   template <typename ObjectType>
   class Quadtree {
   public:
-
     // General typedefs
     typedef QOTree<2, Box, ObjectType> tree_type;
     typedef typename tree_type::box_type box_type;
@@ -98,7 +90,7 @@ namespace dials { namespace algorithms {
     typedef typename tree_type::const_node_iterator const_node_iterator;
 
     Quadtree(const box_type &box, size_type max_bucket_size = 10)
-      : tree_(box, max_bucket_size) {}
+        : tree_(box, max_bucket_size) {}
 
     /** Get the const iterator to the beginning of the node list */
     const_node_iterator node_begin() const {
@@ -141,6 +133,6 @@ namespace dials { namespace algorithms {
     tree_type tree_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPATIAL_INDEXING_QUADTREE_H
+#endif  // DIALS_ALGORITHMS_SPATIAL_INDEXING_QUADTREE_H

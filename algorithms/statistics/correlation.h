@@ -22,14 +22,14 @@ namespace dials { namespace algorithms {
     // Struct to help sort
     template <typename T>
     struct sort_by_index {
-      const af::const_ref<T>& d;
-      sort_by_index(const af::const_ref<T>& d_) : d(d_) {}
+      const af::const_ref<T> &d;
+      sort_by_index(const af::const_ref<T> &d_) : d(d_) {}
       bool operator()(std::size_t a, std::size_t b) const {
         return d[a] < d[b];
       }
     };
 
-  }
+  }  // namespace detail
 
   /**
    * A function to compute the rank of an array
@@ -38,7 +38,6 @@ namespace dials { namespace algorithms {
    */
   template <typename T>
   af::shared<T> rank(const af::const_ref<T> data) {
-
     // Construct the indices
     std::vector<std::size_t> index(data.size());
     for (std::size_t i = 0; i < index.size(); ++i) {
@@ -52,13 +51,13 @@ namespace dials { namespace algorithms {
     af::shared<T> result(index.size());
     for (std::size_t i = 0; i < index.size();) {
       std::size_t j = i + 1;
-      T value = (T)(i+1.0);
+      T value = (T)(i + 1.0);
       for (; j < index.size(); ++j) {
         DIALS_ASSERT(data[index[j]] >= data[index[i]]);
         if (data[index[j]] > data[index[i]]) {
           break;
         }
-        value += (T)(j+1.0);
+        value += (T)(j + 1.0);
       }
       value /= (T)(j - i);
       for (; i < j; ++i) {
@@ -68,7 +67,6 @@ namespace dials { namespace algorithms {
 
     // Return the rank
     return result;
-
   }
 
   /**
@@ -78,9 +76,8 @@ namespace dials { namespace algorithms {
    * @return The rank correlation coefficient
    */
   template <typename T>
-  T spearman_correlation_coefficient(
-      const af::const_ref<T> &a,
-      const af::const_ref<T> &b) {
+  T spearman_correlation_coefficient(const af::const_ref<T> &a,
+                                     const af::const_ref<T> &b) {
     DIALS_ASSERT(a.size() == b.size());
 
     // Rank the two datasets
@@ -90,13 +87,13 @@ namespace dials { namespace algorithms {
     // The numerator
     T num = 0.0;
     for (std::size_t i = 0; i < ra.size(); ++i) {
-      num += (ra[i]-rb[i])*(ra[i]-rb[i]);
+      num += (ra[i] - rb[i]) * (ra[i] - rb[i]);
     }
     num *= 6.0;
 
     // The denominator
     T n = (T)ra.size();
-    T den = n * (n*n - 1.0);
+    T den = n * (n * n - 1.0);
     DIALS_ASSERT(den > 0);
 
     // Return the correlation
@@ -110,9 +107,8 @@ namespace dials { namespace algorithms {
    * @return The corrleation coefficient
    */
   template <typename T>
-  T pearson_correlation_coefficient(
-      const af::const_ref<T> &x,
-      const af::const_ref<T> &y) {
+  T pearson_correlation_coefficient(const af::const_ref<T> &x,
+                                    const af::const_ref<T> &y) {
     DIALS_ASSERT(x.size() == y.size());
     DIALS_ASSERT(x.size() > 0);
     T mx = 0.0;
@@ -129,14 +125,14 @@ namespace dials { namespace algorithms {
     for (std::size_t i = 0; i < x.size(); ++i) {
       T dx = x[i] - mx;
       T dy = y[i] - my;
-      sdx2 += dx*dx;
-      sdy2 += dy*dy;
-      sdxy += dx*dy;
+      sdx2 += dx * dx;
+      sdy2 += dy * dy;
+      sdxy += dx * dy;
     }
     DIALS_ASSERT(sdx2 > 0 && sdy2 > 0);
     return sdxy / (std::sqrt(sdx2) * std::sqrt(sdy2));
   }
 
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_STATISTICS_CORRELATION_H
+#endif  // DIALS_ALGORITHMS_STATISTICS_CORRELATION_H

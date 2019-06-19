@@ -17,9 +17,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_corrections();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_ext) {
     export_corrections();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

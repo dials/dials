@@ -19,10 +19,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_sampler();
   void export_modeller();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_profile_model_modeller_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_profile_model_modeller_ext) {
     export_sampler();
     export_modeller();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

@@ -17,9 +17,9 @@
 #include <dials/error.h>
 
 namespace dials {
-namespace algorithms {
-namespace profile_model {
-namespace gaussian_rs {
+  namespace algorithms {
+    namespace profile_model {
+      namespace gaussian_rs {
 
   /**
    * Evalaute a gaussian at a point
@@ -41,14 +41,14 @@ namespace gaussian_rs {
    * @returns The profile
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<3> >
-  ideal_profile(std::size_t size, std::size_t nsig) {
+  af::versa<FloatType, af::c_grid<3> > ideal_profile(std::size_t size,
+                                                     std::size_t nsig) {
     FloatType centre = size;
     size = 2 * size + 1;
     FloatType sig = centre / nsig;
 
     af::c_grid<3> accessor(size, size, size);
-    af::versa< FloatType, af::c_grid<3> > profile(accessor, 0.0);
+    af::versa<FloatType, af::c_grid<3> > profile(accessor, 0.0);
     for (std::size_t k = 0; k < size; ++k) {
       for (std::size_t j = 0; j < size; ++j) {
         for (std::size_t i = 0; i < size; ++i) {
@@ -67,6 +67,6 @@ namespace gaussian_rs {
     return profile;
   }
 
-}}}} // namespace dials::algorithms::profile_model::gaussian_rs
+}}}}  // namespace dials::algorithms::profile_model::gaussian_rs
 
 #endif /* DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_IDEAL_PROFILE_H */

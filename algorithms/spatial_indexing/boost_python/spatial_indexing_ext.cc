@@ -18,10 +18,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_quadtree();
   void export_octree();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_spatial_indexing_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_spatial_indexing_ext) {
     export_quadtree();
     export_octree();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

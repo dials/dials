@@ -21,59 +21,54 @@
 
 namespace dials { namespace af {
 
+  using model::Shoebox;
+  using scitbx::mat3;
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::mat3;
   using scitbx::af::int6;
-  using model::Shoebox;
 
-
-  template <> inline
-  vec2<double> init_zero< vec2<double> >() {
-    return vec2<double>(0.0,0.0);
+  template <>
+  inline vec2<double> init_zero<vec2<double> >() {
+    return vec2<double>(0.0, 0.0);
   }
 
-  template <> inline
-  vec3<double> init_zero< vec3<double> >() {
-    return vec3<double>(0.0,0.0,0.0);
+  template <>
+  inline vec3<double> init_zero<vec3<double> >() {
+    return vec3<double>(0.0, 0.0, 0.0);
   }
 
-  template <> inline
-  mat3<double> init_zero< mat3<double> >() {
-    return mat3<double>(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+  template <>
+  inline mat3<double> init_zero<mat3<double> >() {
+    return mat3<double>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
   }
 
-  template <> inline
-  int6 init_zero<int6>() {
-    return int6(0,0,0,0,0,0);
+  template <>
+  inline int6 init_zero<int6>() {
+    return int6(0, 0, 0, 0, 0, 0);
   }
 
-  template <> inline
-  cctbx::miller::index<> init_zero< cctbx::miller::index<> >() {
-    return cctbx::miller::index<>(0,0,0);
+  template <>
+  inline cctbx::miller::index<> init_zero<cctbx::miller::index<> >() {
+    return cctbx::miller::index<>(0, 0, 0);
   }
 
-
-  typedef flex_type_generator<
-    bool,
-    int,
-    std::size_t,
-    double,
-    std::string,
-    vec2<double>,
-    vec3<double>,
-    mat3<double>,
-    int6,
-    cctbx::miller::index<>,
-    Shoebox<>
-  > reflection_table_type_generator;
+  typedef flex_type_generator<bool,
+                              int,
+                              std::size_t,
+                              double,
+                              std::string,
+                              vec2<double>,
+                              vec3<double>,
+                              mat3<double>,
+                              int6,
+                              cctbx::miller::index<>,
+                              Shoebox<> >
+    reflection_table_type_generator;
 
   typedef reflection_table_type_generator::type reflection_table_types;
 
-
   class reflection_table : public flex_table<reflection_table_types> {
   public:
-
     typedef flex_table<reflection_table_types>::map_type map_type;
     typedef flex_table<reflection_table_types>::key_type key_type;
     typedef flex_table<reflection_table_types>::mapped_type mapped_type;
@@ -84,58 +79,57 @@ namespace dials { namespace af {
     typedef std::map<std::size_t, std::string> experiment_map_type;
 
     reflection_table()
-      : flex_table<reflection_table_types>(),
-        experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
+        : flex_table<reflection_table_types>(),
+          experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
 
     reflection_table(size_type n)
-      : flex_table<reflection_table_types>(n),
-        experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
+        : flex_table<reflection_table_types>(n),
+          experiment_identifiers_(boost::make_shared<experiment_map_type>()) {}
 
     boost::shared_ptr<experiment_map_type> experiment_identifiers() const {
       return experiment_identifiers_;
     }
 
   protected:
-
     boost::shared_ptr<experiment_map_type> experiment_identifiers_;
-
   };
 
   enum Flags {
 
     // Predicted/Observed
-    Predicted        = (1 << 0),
-    Observed         = (1 << 1),
+    Predicted = (1 << 0),
+    Observed = (1 << 1),
 
     // Use in indexing/refinement
-    Indexed          = (1 << 2),
+    Indexed = (1 << 2),
     UsedInRefinement = (1 << 3),
-    Strong           = (1 << 5),
+    Strong = (1 << 5),
 
     // Role in integration
-    ReferenceSpot    = (1 << 6),
-    DontIntegrate    = (1 << 7),
+    ReferenceSpot = (1 << 6),
+    DontIntegrate = (1 << 7),
 
     // Integated
-    IntegratedSum    = (1 << 8),
-    IntegratedPrf    = (1 << 9),
-    Integrated       = IntegratedSum | IntegratedPrf,
+    IntegratedSum = (1 << 8),
+    IntegratedPrf = (1 << 9),
+    Integrated = IntegratedSum | IntegratedPrf,
 
     // Bad shoebox
-    Overloaded       = (1 << 10),
-    OverlappedBg     = (1 << 11),
-    OverlappedFg     = (1 << 12),
-    InPowderRing     = (1 << 13),
+    Overloaded = (1 << 10),
+    OverlappedBg = (1 << 11),
+    OverlappedFg = (1 << 12),
+    InPowderRing = (1 << 13),
     ForegroundIncludesBadPixels = (1 << 14),
     BackgroundIncludesBadPixels = (1 << 15),
     IncludesBadPixels = ForegroundIncludesBadPixels | BackgroundIncludesBadPixels,
-    BadShoebox       = Overloaded | OverlappedBg | OverlappedFg | InPowderRing | IncludesBadPixels,
+    BadShoebox =
+      Overloaded | OverlappedBg | OverlappedFg | InPowderRing | IncludesBadPixels,
 
     // Bad spot
     BadSpot = BadShoebox,
 
     // Profile Modelling
-    UsedInModelling  = (1 << 16),
+    UsedInModelling = (1 << 16),
 
     // Centroid outlier
     CentroidOutlier = (1 << 17),
@@ -160,6 +154,6 @@ namespace dials { namespace af {
 
   };
 
-}} // namespace dials::af
+}}  // namespace dials::af
 
-#endif // DIALS_ARRAY_FAMILY_REFLECTION_TABLE_H
+#endif  // DIALS_ARRAY_FAMILY_REFLECTION_TABLE_H

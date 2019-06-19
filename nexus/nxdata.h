@@ -7,9 +7,8 @@ namespace dials { namespace nexus {
 
   class NXdata {
   public:
-
   };
 
-}} // namespace dials::nexus
+}}  // namespace dials::nexus
 
-#endif // DIALS_NEXUS_NXDATA_H
+#endif  // DIALS_NEXUS_NXDATA_H

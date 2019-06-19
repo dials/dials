@@ -3,9 +3,8 @@
 
 namespace dials {
 
-  typedef float ProfileFloatType;
+typedef float ProfileFloatType;
 
-} // namespace dials
+}  // namespace dials
 
 #endif /* DIALS_CONFIG_H */
-

@@ -13,16 +13,14 @@
 #include <dials/algorithms/background/helpers.h>
 #include <dials/algorithms/background/radial_average.h>
 
-namespace dials { namespace algorithms { namespace background {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace background { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_helpers()
-  {
+  void export_helpers() {
     def("set_shoebox_background_value",
-      &set_shoebox_background_value<float>, (
-        arg("reflections"), arg("value")));
+        &set_shoebox_background_value<float>,
+        (arg("reflections"), arg("value")));
 
     class_<RadialAverage>("RadialAverage", no_init)
       .def(init<boost::shared_ptr<BeamBase>,
@@ -33,8 +31,7 @@ namespace dials { namespace algorithms { namespace background {
       .def("add", &RadialAverage::add)
       .def("mean", &RadialAverage::mean)
       .def("weight", &RadialAverage::weight)
-      .def("inv_d2", &RadialAverage::inv_d2)
-      ;
+      .def("inv_d2", &RadialAverage::inv_d2);
   }
 
-}}}} // namespace = dials::algorithms::background::boost_python
+}}}}  // namespace dials::algorithms::background::boost_python

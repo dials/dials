@@ -22,11 +22,11 @@
 namespace dials { namespace algorithms { namespace background {
 
   using boost::math::erf_inv;
-  using scitbx::af::min;
+  using dials::af::sort_index;
   using scitbx::af::max;
   using scitbx::af::mean;
+  using scitbx::af::min;
   using scitbx::math::mean_and_variance;
-  using dials::af::sort_index;
 
   /**
    * Get the expected number of standard deviations based on the number of
@@ -35,8 +35,7 @@ namespace dials { namespace algorithms { namespace background {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  inline
-  double normal_expected_n_sigma(int n_obs) {
+  inline double normal_expected_n_sigma(int n_obs) {
     return std::sqrt(2.0) * erf_inv(1.0 - (1.0 / n_obs));
   }
 
@@ -47,9 +46,8 @@ namespace dials { namespace algorithms { namespace background {
    */
   template <typename FloatType>
   FloatType minimum_n_sigma(const af::const_ref<FloatType> &data) {
-
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <FloatType> mean_and_variance(data);
+    mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
     FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
@@ -69,9 +67,8 @@ namespace dials { namespace algorithms { namespace background {
    */
   template <typename FloatType>
   FloatType maximum_n_sigma(const af::const_ref<FloatType> &data) {
-
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <FloatType> mean_and_variance(data);
+    mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
     FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
@@ -91,9 +88,8 @@ namespace dials { namespace algorithms { namespace background {
    */
   template <typename FloatType>
   FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType> &data) {
-
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <FloatType> mean_and_variance(data);
+    mean_and_variance<FloatType> mean_and_variance(data);
     FloatType mean = mean_and_variance.mean();
     FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
@@ -119,8 +115,7 @@ namespace dials { namespace algorithms { namespace background {
    * @returns True/False
    */
   template <typename FloatType>
-  bool is_normally_distributed(const af::const_ref<FloatType> &data,
-      double n_sigma) {
+  bool is_normally_distributed(const af::const_ref<FloatType> &data, double n_sigma) {
     return maximum_n_sigma(data) < n_sigma;
   }
 
@@ -136,9 +131,8 @@ namespace dials { namespace algorithms { namespace background {
   template <typename FloatType>
   bool is_normally_distributed(const af::const_ref<FloatType> &data) {
     return is_normally_distributed<FloatType>(data,
-      normal_expected_n_sigma(data.size()));
+                                              normal_expected_n_sigma(data.size()));
   }
-
 
   /**
    * A class that uses normal distribution statistics to discriminate
@@ -146,13 +140,11 @@ namespace dials { namespace algorithms { namespace background {
    */
   class NormalOutlierRejector : public OutlierRejector {
   public:
-
     /**
      * @param min_data The minimum number of data points to use.
      * @param n_sigma The number of standard deviations to check for
      */
-    NormalOutlierRejector(std::size_t min_data)
-      : min_data_(min_data) {
+    NormalOutlierRejector(std::size_t min_data) : min_data_(min_data) {
       DIALS_ASSERT(min_data > 0);
     }
 
@@ -175,11 +167,8 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual
-    void mark(
-        const af::const_ref< double, af::c_grid<3> > &shoebox,
-        af::ref< int, af::c_grid<3> > mask) const {
-
+    virtual void mark(const af::const_ref<double, af::c_grid<3> > &shoebox,
+                      af::ref<int, af::c_grid<3> > mask) const {
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
 
@@ -187,7 +176,8 @@ namespace dials { namespace algorithms { namespace background {
       int mask_code = shoebox::Valid | shoebox::Background;
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
+        if ((mask[i] & mask_code) == mask_code
+            && (mask[i] & shoebox::Overlapped) == 0) {
           indices.push_back(i);
         }
       }
@@ -197,8 +187,7 @@ namespace dials { namespace algorithms { namespace background {
 
       // Sort the pixels into ascending intensity order
       sort_index(indices.begin(), indices.end(), shoebox.begin());
-      af::shared<double> pixels(indices.size(),
-        af::init_functor_null<double>());
+      af::shared<double> pixels(indices.size(), af::init_functor_null<double>());
       for (std::size_t i = 0; i < indices.size(); ++i) {
         pixels[i] = (double)shoebox[indices[i]];
       }
@@ -208,8 +197,7 @@ namespace dials { namespace algorithms { namespace background {
       // of iterations exceeds the maximum then exit the loop.
       std::size_t num_data = pixels.size();
       for (; num_data > min_data_; --num_data) {
-        if (is_normally_distributed(af::const_ref<double>(
-            pixels.begin(), num_data))) {
+        if (is_normally_distributed(af::const_ref<double>(pixels.begin(), num_data))) {
           break;
         }
       }
@@ -221,9 +209,8 @@ namespace dials { namespace algorithms { namespace background {
     }
 
   private:
-
     std::size_t min_data_;
   };
-}}}
+}}}  // namespace dials::algorithms::background
 
 #endif /* DIALS_ALGORITHMS_BACKGROUND_NORMAL_OUTLIER_REJECTOR_H */

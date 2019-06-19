@@ -8,15 +8,14 @@ using namespace dials::algorithms;
 typedef Octree<Box3d> MyOctree;
 
 /** Print out a box */
-std::ostream& operator<<(std::ostream &os, const Box3d &box) {
-  os << "(" << box.x0 << ", " << box.y0 << ", " << box.z0 << ", "
-            << box.x1 << ", " << box.y1 << ", " << box.z1 << ")";
+std::ostream &operator<<(std::ostream &os, const Box3d &box) {
+  os << "(" << box.x0 << ", " << box.y0 << ", " << box.z0 << ", " << box.x1 << ", "
+     << box.y1 << ", " << box.z1 << ")";
   return os;
 }
 
 /** The quadtree node bucket */
-void print_bucket(const MyOctree::object_list_type &l,
-    const std::string &indent) {
+void print_bucket(const MyOctree::object_list_type &l, const std::string &indent) {
   MyOctree::const_object_iterator it;
   for (it = l.begin(); it != l.end(); ++it) {
     std::cout << indent << *it << "\n";
@@ -52,15 +51,12 @@ Box3d random_box3d(Box3d bounds, int min_size, int max_size) {
 
 /** Test that no quadtree boxes have size < 1 */
 bool test_node_box_sizes(const MyOctree &tree) {
-
   // Loop through all nodes and check the box size
-  for (MyOctree::const_node_iterator it = tree.node_begin();
-      it != tree.node_end(); ++it) {
-
+  for (MyOctree::const_node_iterator it = tree.node_begin(); it != tree.node_end();
+       ++it) {
     // If x or y size is less than 1 then fail the test
-    if ((it->box.x1 - it->box.x0) < 1 ||
-        (it->box.y1 - it->box.y0) < 1 ||
-        (it->box.z1 - it->box.z0) < 1) {
+    if ((it->box.x1 - it->box.x0) < 1 || (it->box.y1 - it->box.y0) < 1
+        || (it->box.z1 - it->box.z0) < 1) {
       return false;
     }
   }
@@ -71,18 +67,16 @@ bool test_node_box_sizes(const MyOctree &tree) {
 
 /** Test that all the elements have been put in the correct box */
 bool test_elements_in_correct_box(const MyOctree &tree) {
-
   typedef compare<Box3d, Box3d> check;
 
   // Loop through all the nodes in the tree
-  for (MyOctree::const_node_iterator it  = tree.node_begin();
-      it != tree.node_end(); ++it) {
-
+  for (MyOctree::const_node_iterator it = tree.node_begin(); it != tree.node_end();
+       ++it) {
     // Loop through all the items contained in the node
     std::size_t n_obj = 0;
     for (MyOctree::const_object_iterator vit = it->bucket.begin();
-        vit != it->bucket.end(); ++vit) {
-
+         vit != it->bucket.end();
+         ++vit) {
       // If the item does not belong in this node then fail the test
       if (!check::contains(it->box, *vit)) {
         return false;
@@ -113,12 +107,11 @@ bool test_elements_in_correct_box(const MyOctree &tree) {
 
 /** Test the total number of elements in the tree */
 bool test_num_elements(const MyOctree &tree, std::size_t n_obj_expected) {
-
   // Loop through all the nodes in the tree and sum the number of elements
   // in the whole tree
   std::size_t n_obj = 0;
-  for (MyOctree::const_node_iterator it  = tree.node_begin();
-      it != tree.node_end(); ++it) {
+  for (MyOctree::const_node_iterator it = tree.node_begin(); it != tree.node_end();
+       ++it) {
     n_obj += it->bucket_size;
   }
 
@@ -132,22 +125,21 @@ bool test_num_elements(const MyOctree &tree, std::size_t n_obj_expected) {
 }
 
 /** By brute-force find the number of elements in the range */
-void query_range_brute_force(MyOctree &tree, const Box3d &box,
-    std::size_t &n_elements) {
-
+void query_range_brute_force(MyOctree &tree,
+                             const Box3d &box,
+                             std::size_t &n_elements) {
   typedef compare<Box3d, Box3d> check;
 
   // Init n_elements to zero
   n_elements = 0;
 
   // Loop through all the tree nodes
-  for (MyOctree::const_node_iterator node = tree.node_begin();
-      node != tree.node_end(); ++node) {
-
+  for (MyOctree::const_node_iterator node = tree.node_begin(); node != tree.node_end();
+       ++node) {
     // Loop through all the values in the node
     for (MyOctree::const_object_iterator value = node->bucket.begin();
-        value != node->bucket.end(); ++value) {
-
+         value != node->bucket.end();
+         ++value) {
       // If the value is within the box then add to the counter
       if (check::contains(box, *value)) {
         n_elements++;
@@ -157,22 +149,21 @@ void query_range_brute_force(MyOctree &tree, const Box3d &box,
 }
 
 /** By brute-force find the number of elements that collide */
-void query_collision_brute_force(MyOctree &tree, const Box3d &box,
-    std::size_t &n_elements) {
-
+void query_collision_brute_force(MyOctree &tree,
+                                 const Box3d &box,
+                                 std::size_t &n_elements) {
   typedef compare<Box3d, Box3d> check;
 
   // Init n_elements to zero
   n_elements = 0;
 
   // Loop through all the tree nodes
-  for (MyOctree::const_node_iterator node = tree.node_begin();
-      node != tree.node_end(); ++node) {
-
+  for (MyOctree::const_node_iterator node = tree.node_begin(); node != tree.node_end();
+       ++node) {
     // Loop through all the values in the node
     for (MyOctree::const_object_iterator value = node->bucket.begin();
-        value != node->bucket.end(); ++value) {
-
+         value != node->bucket.end();
+         ++value) {
       // If the value collides with the box then add to the counter
       if (check::collides(box, *value)) {
         n_elements++;
@@ -183,18 +174,14 @@ void query_collision_brute_force(MyOctree &tree, const Box3d &box,
 
 /** Perform a selection of range queries and check the results */
 bool test_query_range(MyOctree &tree, const std::list<Box3d> &range) {
-
   // Loop through all the range items
   std::list<Box3d> elements;
-  for (std::list<Box3d>::const_iterator it = range.begin();
-      it != range.end(); ++it) {
-
+  for (std::list<Box3d>::const_iterator it = range.begin(); it != range.end(); ++it) {
     // Clear elements
     elements.clear();
 
     // Query the quadtree with a range and get the elements in the range
     if (tree.query_range(*it, elements)) {
-
       // Find the number of elements by brute forace
       std::size_t n_brute_force_elements;
       query_range_brute_force(tree, *it, n_brute_force_elements);
@@ -219,15 +206,12 @@ bool test_query_collides(MyOctree &tree, const std::list<Box3d> &v) {
   std::list<Box3d> elements;
 
   // Loop through all the given boxes
-  for (std::list<Box3d>::const_iterator it = v.begin();
-      it != v.end(); ++it) {
-
+  for (std::list<Box3d>::const_iterator it = v.begin(); it != v.end(); ++it) {
     // Clear the elements
     elements.clear();
 
     // Query the quad tree for elements that collide with the box
     if (tree.query_collision(*it, elements)) {
-
       // Find the number of elements by brute forace
       std::size_t n_brute_force_elements;
       query_collision_brute_force(tree, *it, n_brute_force_elements);
@@ -245,17 +229,15 @@ bool test_query_collides(MyOctree &tree, const std::list<Box3d> &v) {
 
   // Test passed
   return true;
-
 }
 
 std::string pass_fail(bool pass) {
   return pass ? "OK" : "Fail";
 }
 
-int main (int argc, char const* argv[])
-{
+int main(int argc, char const *argv[]) {
   MyOctree tree(Box3d(0, 0, 0, 512, 512, 512));
-  //clock_t st = clock();
+  // clock_t st = clock();
   std::size_t num = 10000;
   std::size_t num_valid_obj = 0;
   for (std::size_t i = 0; i < num; ++i) {
@@ -263,19 +245,19 @@ int main (int argc, char const* argv[])
       num_valid_obj++;
     }
   }
-  //std::cout << "Time: " << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
+  // std::cout << "Time: " << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
 
   std::list<Box3d> range;
   for (std::size_t i = 0; i < 10000; ++i) {
     range.push_back(random_box3d(Box3d(0, 0, 0, 512, 512, 512), 10, 100));
   }
 
-//  std::list <Box3d> elements;
-//  st = clock();
-//  for (std::list<Box3d>::iterator it = range.begin(); it != range.end(); ++it) {
-//    tree.query_collision(*it, elements);
-//  }
-//  std::cout << "Time: " << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
+  //  std::list <Box3d> elements;
+  //  st = clock();
+  //  for (std::list<Box3d>::iterator it = range.begin(); it != range.end(); ++it) {
+  //    tree.query_collision(*it, elements);
+  //  }
+  //  std::cout << "Time: " << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
 
   std::cout << pass_fail(test_node_box_sizes(tree)) << std::endl;
   std::cout << pass_fail(test_elements_in_correct_box(tree)) << std::endl;
@@ -283,8 +265,7 @@ int main (int argc, char const* argv[])
   std::cout << pass_fail(test_query_range(tree, range)) << std::endl;
   std::cout << pass_fail(test_query_collides(tree, range)) << std::endl;
 
-
-  //print_tree(tree);
+  // print_tree(tree);
 
   return 0;
 }

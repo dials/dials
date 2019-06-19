@@ -40,10 +40,14 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
   template <typename PointType, typename BoxType>
   int cohen_sutherland_outcode(const PointType &p, const BoxType &b) {
     int code = INSIDE;
-    if      (p[0] < b[0][0]) code |= LEFT;
-    else if (p[0] > b[1][0]) code |= RIGHT;
-    if      (p[1] < b[0][1]) code |= BOTTOM;
-    else if (p[1] > b[1][1]) code |= TOP;
+    if (p[0] < b[0][0])
+      code |= LEFT;
+    else if (p[0] > b[1][0])
+      code |= RIGHT;
+    if (p[1] < b[0][1])
+      code |= BOTTOM;
+    else if (p[1] > b[1][1])
+      code |= TOP;
     return code;
   }
 
@@ -58,9 +62,11 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @retuns The return code.
    */
   template <typename PointType, typename BoxType>
-  int cohen_sutherland_intersection(PointType &p, const BoxType &aabb,
-                                    int code, double m, double c)
-  {
+  int cohen_sutherland_intersection(PointType &p,
+                                    const BoxType &aabb,
+                                    int code,
+                                    double m,
+                                    double c) {
     int retcode = INSIDE;
     double x = 0, y = 0;
 
@@ -71,26 +77,22 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
     case LEFT:
       x = aabb[0][0];
       y = m * x + c;
-      if (y < aabb[0][1] || aabb[1][1] < y)
-        retcode = OUTSIDE;
+      if (y < aabb[0][1] || aabb[1][1] < y) retcode = OUTSIDE;
       break;
     case RIGHT:
       x = aabb[1][0];
       y = m * x + c;
-      if (y < aabb[0][1] || aabb[1][1] < y)
-        retcode = OUTSIDE;
+      if (y < aabb[0][1] || aabb[1][1] < y) retcode = OUTSIDE;
       break;
     case BOTTOM:
       y = aabb[0][1];
       x = (y - c) / m;
-      if (x < aabb[0][0] || aabb[1][0] < x)
-        retcode = OUTSIDE;
+      if (x < aabb[0][0] || aabb[1][0] < x) retcode = OUTSIDE;
       break;
     case TOP:
       y = aabb[1][1];
       x = (y - c) / m;
-      if (x < aabb[0][0] || aabb[1][0] < x)
-        retcode = OUTSIDE;
+      if (x < aabb[0][0] || aabb[1][0] < x) retcode = OUTSIDE;
       break;
     case LEFT | BOTTOM:
       x = aabb[0][0];
@@ -100,8 +102,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       } else if (y < aabb[0][1]) {
         y = aabb[0][1];
         x = (y - c) / m;
-        if (aabb[1][0] < x)
-          retcode = OUTSIDE;
+        if (aabb[1][0] < x) retcode = OUTSIDE;
       }
       break;
     case LEFT | TOP:
@@ -112,8 +113,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       else if (y > aabb[1][1]) {
         y = aabb[1][1];
         x = (y - c) / m;
-        if (aabb[1][0] < x)
-          retcode = OUTSIDE;
+        if (aabb[1][0] < x) retcode = OUTSIDE;
       }
       break;
     case RIGHT | BOTTOM:
@@ -124,8 +124,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       } else if (y < aabb[0][1]) {
         y = aabb[0][1];
         x = (y - c) / m;
-        if (aabb[0][0] > x)
-          retcode = OUTSIDE;
+        if (aabb[0][0] > x) retcode = OUTSIDE;
       }
       break;
     case RIGHT | TOP:
@@ -136,8 +135,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       } else if (y > aabb[1][1]) {
         y = aabb[1][1];
         x = (y - c) / m;
-        if (aabb[0][0] > x)
-          retcode = OUTSIDE;
+        if (aabb[0][0] > x) retcode = OUTSIDE;
       }
       break;
     default:
@@ -161,9 +159,8 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @returns The intersecting line
    */
   template <typename LineType, typename BoxType>
-  std::pair<LineType, bool> cohen_sutherland_single(
-      const LineType &line, const BoxType &aabb) {
-
+  std::pair<LineType, bool> cohen_sutherland_single(const LineType &line,
+                                                    const BoxType &aabb) {
     typedef typename LineType::value_type point_type;
 
     // Get the points on the line
@@ -201,6 +198,6 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
     return std::make_pair(LineType(), false);
   }
 
-}}}} // namespace dials::algorithms::polygon::clip
+}}}}  // namespace dials::algorithms::polygon::clip
 
 #endif /* DIALS_ALGORITHMS_POLYGON_CLIP_COHEN_SUTHERLAND_H */

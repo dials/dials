@@ -22,13 +22,11 @@ namespace dials { namespace af {
    */
   class BinIndexer {
   public:
-
     /**
      * Initialize with the number of bins and an index
      */
     BinIndexer(std::size_t nbins, af::shared<std::size_t> index)
-      : nbins_(nbins),
-        index_(index) {
+        : nbins_(nbins), index_(index) {
       for (std::size_t i = 0; i < index_.size(); ++i) {
         DIALS_ASSERT(index_[i] < nbins_);
       }
@@ -125,28 +123,23 @@ namespace dials { namespace af {
     }
 
   private:
-
     std::size_t nbins_;
     af::shared<std::size_t> index_;
   };
-
 
   /**
    * A class to help with binned data
    */
   class Binner {
   public:
-
     typedef std::map<double, std::size_t> map_type;
 
     Binner(const af::const_ref<double> &bins) {
       DIALS_ASSERT(bins.size() > 1);
       bins_.insert(std::pair<double, std::size_t>(bins[0], 0));
       for (std::size_t i = 1; i < bins.size(); ++i) {
-        DIALS_ASSERT(bins[i] > bins[i-1]);
-        bins_.insert(
-            bins_.end(),
-            std::pair<double, std::size_t>(bins[i], i));
+        DIALS_ASSERT(bins[i] > bins[i - 1]);
+        bins_.insert(bins_.end(), std::pair<double, std::size_t>(bins[i], i));
       }
     }
 
@@ -168,7 +161,6 @@ namespace dials { namespace af {
      * @returns an indexer
      */
     BinIndexer indexer(const af::const_ref<double> &x) {
-
       // Find the indices of elements
       af::shared<std::size_t> index(x.size());
       for (std::size_t i = 0; i < x.size(); ++i) {
@@ -190,11 +182,10 @@ namespace dials { namespace af {
       return bins_.size();
     }
 
-
   private:
     map_type bins_;
   };
 
-}}
+}}  // namespace dials::af
 
-#endif // DIALS_ARRAY_FAMILY_BINNER_H
+#endif  // DIALS_ARRAY_FAMILY_BINNER_H

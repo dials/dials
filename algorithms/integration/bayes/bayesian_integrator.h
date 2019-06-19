@@ -21,13 +21,13 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::int3;
-  using scitbx::af::int6;
-  using scitbx::af::sqrt;
-  using dials::model::Valid;
   using dials::model::Background;
   using dials::model::BackgroundUsed;
   using dials::model::Foreground;
+  using dials::model::Valid;
+  using scitbx::af::int3;
+  using scitbx::af::int6;
+  using scitbx::af::sqrt;
 
   /**
    * Class to sum the intensity in 3D
@@ -35,7 +35,6 @@ namespace dials { namespace algorithms {
   template <typename FloatType = double>
   class BayesianIntegrator {
   public:
-
     /**
      * Perform the summation integration
      * @param signal The signal array
@@ -43,8 +42,8 @@ namespace dials { namespace algorithms {
      * @param mask The mask array
      */
     BayesianIntegrator(const af::const_ref<FloatType> &signal,
-              const af::const_ref<FloatType> &background,
-              const af::const_ref<int> &mask) {
+                       const af::const_ref<FloatType> &background,
+                       const af::const_ref<int> &mask) {
       init(signal, background, mask);
     }
 
@@ -54,9 +53,9 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    BayesianIntegrator(const af::const_ref< FloatType, af::c_grid<2> > &signal,
-              const af::const_ref< FloatType, af::c_grid<2> > &background,
-              const af::const_ref< int, af::c_grid<2> > &mask) {
+    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<2> > &signal,
+                       const af::const_ref<FloatType, af::c_grid<2> > &background,
+                       const af::const_ref<int, af::c_grid<2> > &mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
 
@@ -66,9 +65,9 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    BayesianIntegrator(const af::const_ref< FloatType, af::c_grid<3> > &signal,
-              const af::const_ref< FloatType, af::c_grid<3> > &background,
-              const af::const_ref< int, af::c_grid<3> > &mask) {
+    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<3> > &signal,
+                       const af::const_ref<FloatType, af::c_grid<3> > &background,
+                       const af::const_ref<int, af::c_grid<3> > &mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
 
@@ -79,7 +78,7 @@ namespace dials { namespace algorithms {
       using boost::math::gamma_q;
       double C = sum_p_;
       double B = sum_b_;
-      return gamma_q(C+1,B) * ((C+1)*gamma_q(C+1,B) - B*gamma_q(C+1,B));
+      return gamma_q(C + 1, B) * ((C + 1) * gamma_q(C + 1, B) - B * gamma_q(C + 1, B));
     }
 
     /**
@@ -88,8 +87,8 @@ namespace dials { namespace algorithms {
     FloatType variance() const {
       FloatType Is = intensity();
       FloatType Ib = sum_b_;
-      FloatType m_n = n_background_ > 0 ?
-        (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
+      FloatType m_n =
+        n_background_ > 0 ? (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
       return std::abs(Is) + std::abs(Ib) * (1.0 + m_n);
     }
 
@@ -104,8 +103,8 @@ namespace dials { namespace algorithms {
      * @returns The background variance
      */
     FloatType background_variance() const {
-      FloatType m_n = n_background_ > 0 ?
-        (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
+      FloatType m_n =
+        n_background_ > 0 ? (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
       return std::abs(sum_b_) * (1.0 + m_n);
     }
 
@@ -131,7 +130,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Integrate the intensity
      * @param signal The signal to integrate
@@ -140,8 +138,7 @@ namespace dials { namespace algorithms {
      */
     void init(const af::const_ref<FloatType> &signal,
               const af::const_ref<FloatType> &background,
-              const af::const_ref<int> &mask)
-    {
+              const af::const_ref<int> &mask) {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
       DIALS_ASSERT(signal.size() == mask.size());
@@ -175,6 +172,6 @@ namespace dials { namespace algorithms {
     bool success_;
   };
 
-}}
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_BAYESIAN_INTEGRATOR_H */

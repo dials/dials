@@ -25,7 +25,6 @@ namespace dials { namespace algorithms {
    */
   class MultiExpProfileModeller {
   public:
-
     typedef ProfileModellerIface::pointer modeller_pointer;
 
     /**
@@ -57,7 +56,6 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection table
      */
     void model(af::reflection_table reflections) {
-
       using af::boost_python::flex_table_suite::select_rows_index;
       using af::boost_python::flex_table_suite::set_selected_rows_index;
 
@@ -89,7 +87,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] < num1.size());
         std::size_t o1 = offset[id[i]];
-        std::size_t o2 = offset[id[i]+1];
+        std::size_t o2 = offset[id[i] + 1];
         std::size_t n1 = num1[id[i]];
         std::size_t n2 = num2[id[i]];
         std::size_t j = o1 + n2;
@@ -107,10 +105,9 @@ namespace dials { namespace algorithms {
 
       // Process all the reflections
       for (std::size_t i = 0; i < modellers_.size(); ++i) {
-
         // Get the indices
         std::size_t o1 = offset[i];
-        std::size_t o2 = offset[i+1];
+        std::size_t o2 = offset[i + 1];
         DIALS_ASSERT(o2 <= indices.size());
         DIALS_ASSERT(o1 <= o2);
         std::size_t n = o2 - o1;
@@ -131,7 +128,6 @@ namespace dials { namespace algorithms {
      * @param reflections
      */
     af::shared<bool> fit(af::reflection_table reflections) const {
-
       using af::boost_python::flex_table_suite::select_rows_index;
       using af::boost_python::flex_table_suite::set_selected_rows_index;
 
@@ -163,7 +159,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] < num1.size());
         std::size_t o1 = offset[id[i]];
-        std::size_t o2 = offset[id[i]+1];
+        std::size_t o2 = offset[id[i] + 1];
         std::size_t n1 = num1[id[i]];
         std::size_t n2 = num2[id[i]];
         std::size_t j = o1 + n2;
@@ -181,10 +177,9 @@ namespace dials { namespace algorithms {
       // Process all the reflections
       af::shared<bool> success(reflections.size(), false);
       for (std::size_t i = 0; i < modellers_.size(); ++i) {
-
         // Get the indices
         std::size_t o1 = offset[i];
-        std::size_t o2 = offset[i+1];
+        std::size_t o2 = offset[i + 1];
         DIALS_ASSERT(o2 <= indices.size());
         DIALS_ASSERT(o1 <= o2);
         std::size_t n = o2 - o1;
@@ -210,7 +205,6 @@ namespace dials { namespace algorithms {
      * @param reflections
      */
     void validate(af::reflection_table reflections) const {
-
       using af::boost_python::flex_table_suite::select_rows_index;
       using af::boost_python::flex_table_suite::set_selected_rows_index;
 
@@ -242,7 +236,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] < num1.size());
         std::size_t o1 = offset[id[i]];
-        std::size_t o2 = offset[id[i]+1];
+        std::size_t o2 = offset[id[i] + 1];
         std::size_t n1 = num1[id[i]];
         std::size_t n2 = num2[id[i]];
         std::size_t j = o1 + n2;
@@ -259,10 +253,9 @@ namespace dials { namespace algorithms {
 
       // Process all the reflections
       for (std::size_t i = 0; i < modellers_.size(); ++i) {
-
         // Get the indices
         std::size_t o1 = offset[i];
-        std::size_t o2 = offset[i+1];
+        std::size_t o2 = offset[i + 1];
         DIALS_ASSERT(o2 <= indices.size());
         DIALS_ASSERT(o1 < o2);
         std::size_t n = o2 - o1;
@@ -334,11 +327,9 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     std::vector<modeller_pointer> modellers_;
   };
 
+}}  // namespace dials::algorithms
 
-}} // namespace dials::algorithms
-
-#endif // DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_MULTI_EXPERIMENT_MODELLER_H
+#endif  // DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_MULTI_EXPERIMENT_MODELLER_H

@@ -12,7 +12,7 @@
 #define DIALS_REFINEMENT_RESTRAINTS_HELPERS_H
 
 #ifndef RAD2DEG
-#define RAD2DEG(x) ((x) * 57.29577951308232087721)
+#define RAD2DEG(x) ((x)*57.29577951308232087721)
 #endif
 
 #include <scitbx/mat3.h>
@@ -37,18 +37,14 @@ namespace dials { namespace refinement {
    * dbb/dp and dcc/dp.
    */
   class CalculateCellGradients {
-
   public:
-
-    CalculateCellGradients(
-        const mat3<double> &B,
-        const af::const_ref< mat3 <double> > &dB_dp) {
-
+    CalculateCellGradients(const mat3<double> &B,
+                           const af::const_ref<mat3<double> > &dB_dp) {
       // calculate the real space orthogonalisation matrix and its derivatives
       Omat_ = (B.transpose()).inverse();
       for (std::size_t i = 0; i < dB_dp.size(); ++i) {
-         mat3<double> dBT = dB_dp[i].transpose();
-         dO_dp_.push_back(-Omat_ * dBT * Omat_);
+        mat3<double> dBT = dB_dp[i].transpose();
+        dO_dp_.push_back(-Omat_ * dBT * Omat_);
       }
 
       // extract the real space cell vectors and lengths
@@ -70,48 +66,43 @@ namespace dials { namespace refinement {
       dbeta_dc_ = dbeta[1];
       dgamma_da_ = dgamma[0];
       dgamma_db_ = dgamma[1];
-
     }
 
     // gradients of parameter a
-    af::shared<double>
-    da_dp(){
+    af::shared<double> da_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dav_dp = dO_dp_[i].get_column(0);
         // 1./a * avec.dot(dav_dp)
-        result.push_back(1./a_ * avec_ * dav_dp);
+        result.push_back(1. / a_ * avec_ * dav_dp);
       }
       return result;
     }
 
     // gradients of parameter b
-    af::shared<double>
-    db_dp(){
+    af::shared<double> db_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dbv_dp = dO_dp_[i].get_column(1);
         // 1./b * bvec.dot(dbv_dp)
-        result.push_back(1./b_ * bvec_ * dbv_dp);
+        result.push_back(1. / b_ * bvec_ * dbv_dp);
       }
       return result;
     }
 
     // gradients of parameter c
-    af::shared<double>
-    dc_dp(){
+    af::shared<double> dc_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dcv_dp = dO_dp_[i].get_column(2);
         // 1./c * cvec.dot(dcv_dp)
-        result.push_back(1./c_ * cvec_ * dcv_dp);
+        result.push_back(1. / c_ * cvec_ * dcv_dp);
       }
       return result;
     }
 
     // gradients of parameter alpha
-    af::shared<double>
-    daa_dp(){
+    af::shared<double> daa_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dbv_dp = dO_dp_[i].get_column(1);
@@ -123,8 +114,7 @@ namespace dials { namespace refinement {
     }
 
     // gradients of parameter beta
-    af::shared<double>
-    dbb_dp(){
+    af::shared<double> dbb_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dav_dp = dO_dp_[i].get_column(0);
@@ -136,8 +126,7 @@ namespace dials { namespace refinement {
     }
 
     // gradients of parameter gamma
-    af::shared<double>
-    dcc_dp(){
+    af::shared<double> dcc_dp() {
       af::shared<double> result;
       for (std::size_t i = 0; i < dO_dp_.size(); ++i) {
         vec3<double> dav_dp = dO_dp_[i].get_column(0);
@@ -149,15 +138,14 @@ namespace dials { namespace refinement {
     }
 
   private:
-
     mat3<double> Omat_;
     double a_, b_, c_;
-    af::shared< mat3<double> > dO_dp_;
+    af::shared<mat3<double> > dO_dp_;
     vec3<double> avec_, bvec_, cvec_;
     vec3<double> dalpha_db_, dalpha_dc_;
     vec3<double> dbeta_da_, dbeta_dc_;
     vec3<double> dgamma_da_, dgamma_db_;
   };
-}} // namespace dials::refinement
+}}  // namespace dials::refinement
 
-#endif // DIALS_REFINEMENT_RESTRAINTS_HELPERS_H
+#endif  // DIALS_REFINEMENT_RESTRAINTS_HELPERS_H

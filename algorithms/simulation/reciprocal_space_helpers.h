@@ -26,34 +26,33 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::vec2;
-  using scitbx::vec3;
-  using scitbx::af::int6;
+  using dials::model::Foreground;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using profile_model::gaussian_rs::CoordinateSystem;
-  using dials::model::Foreground;
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::af::int6;
 
   /**
    * Simulate a gaussian in reciprocal space and transform back to detector
    * space.
    */
   int simulate_reciprocal_space_gaussian(
-      const BeamBase &beam,
-      const Detector &detector,
-      const Goniometer &goniometer,
-      const Scan &scan,
-      double sigma_b,
-      double sigma_m,
-      const vec3<double> s1,
-      double phi,
-      const int6 &bbox,
-      std::size_t I,
-      af::ref< double, af::c_grid<3> > shoebox,
-      const af::const_ref<int, af::c_grid<3> > &mask) {
-
+    const BeamBase &beam,
+    const Detector &detector,
+    const Goniometer &goniometer,
+    const Scan &scan,
+    double sigma_b,
+    double sigma_m,
+    const vec3<double> s1,
+    double phi,
+    const int6 &bbox,
+    std::size_t I,
+    af::ref<double, af::c_grid<3> > shoebox,
+    const af::const_ref<int, af::c_grid<3> > &mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 
@@ -67,14 +66,13 @@ namespace dials { namespace algorithms {
     int counts = 0;
     CoordinateSystem cs(m2, s0, s1, phi);
     for (std::size_t i = 0; i < I; ++i) {
-
       // Get the random coordinates
       double e1 = dist_x(gen);
       double e2 = dist_y(gen);
       double e3 = dist_z(gen);
 
       // Get the beam vector and rotation angle
-      vec3<double> s1_dash = cs.to_beam_vector(vec2<double>(e1,e2));
+      vec3<double> s1_dash = cs.to_beam_vector(vec2<double>(e1, e2));
       double phi_dash = cs.to_rotation_angle_fast(e3);
 
       // Get the pixel coordinate
@@ -85,9 +83,8 @@ namespace dials { namespace algorithms {
       double frame = scan.get_array_index_from_angle(phi_dash);
 
       // Make sure coordinate is within range
-      if (px[0] < bbox[0] || px[0] >= bbox[1] ||
-          px[1] < bbox[2] || px[1] >= bbox[3] ||
-          frame < bbox[4] || frame >= bbox[5]) {
+      if (px[0] < bbox[0] || px[0] >= bbox[1] || px[1] < bbox[2] || px[1] >= bbox[3]
+          || frame < bbox[4] || frame >= bbox[5]) {
         continue;
       }
 
@@ -111,18 +108,17 @@ namespace dials { namespace algorithms {
    * space. Estimate the expected intensity within the masked region.
    */
   int integrate_reciprocal_space_gaussian(
-      const BeamBase &beam,
-      const Detector &detector,
-      const Goniometer &goniometer,
-      const Scan &scan,
-      double sigma_b,
-      double sigma_m,
-      const vec3<double> s1,
-      double phi,
-      const int6 &bbox,
-      std::size_t I,
-      const af::const_ref< int, af::c_grid<3> > &mask) {
-
+    const BeamBase &beam,
+    const Detector &detector,
+    const Goniometer &goniometer,
+    const Scan &scan,
+    double sigma_b,
+    double sigma_m,
+    const vec3<double> s1,
+    double phi,
+    const int6 &bbox,
+    std::size_t I,
+    const af::const_ref<int, af::c_grid<3> > &mask) {
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
 
@@ -136,14 +132,13 @@ namespace dials { namespace algorithms {
     int counts = 0;
     CoordinateSystem cs(m2, s0, s1, phi);
     for (std::size_t i = 0; i < I; ++i) {
-
       // Get the random coordinates
       double e1 = dist_x(gen);
       double e2 = dist_y(gen);
       double e3 = dist_z(gen);
 
       // Get the beam vector and rotation angle
-      vec3<double> s1_dash = cs.to_beam_vector(vec2<double>(e1,e2));
+      vec3<double> s1_dash = cs.to_beam_vector(vec2<double>(e1, e2));
       double phi_dash = cs.to_rotation_angle_fast(e3);
 
       // Get the pixel coordinate
@@ -154,9 +149,8 @@ namespace dials { namespace algorithms {
       double frame = scan.get_array_index_from_angle(phi_dash);
 
       // Make sure coordinate is within range
-      if (px[0] < bbox[0] || px[0] >= bbox[1] ||
-          px[1] < bbox[2] || px[1] >= bbox[3] ||
-          frame < bbox[4] || frame >= bbox[5]) {
+      if (px[0] < bbox[0] || px[0] >= bbox[1] || px[1] < bbox[2] || px[1] >= bbox[3]
+          || frame < bbox[4] || frame >= bbox[5]) {
         continue;
       }
 
@@ -173,6 +167,6 @@ namespace dials { namespace algorithms {
     return counts;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SIMULATION_RECIPROCAL_SPACE_HELPERS_H
+#endif  // DIALS_ALGORITHMS_SIMULATION_RECIPROCAL_SPACE_HELPERS_H

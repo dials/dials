@@ -13,18 +13,14 @@
 #include <boost/python/iterator.hpp>
 #include <dials/algorithms/shoebox/overload_checker.h>
 
-namespace dials { namespace algorithms { namespace shoebox {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace shoebox { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_overload_checker()
-  {
+  void export_overload_checker() {
     class_<OverloadChecker>("OverloadChecker")
       .def("add", &OverloadChecker::add)
-      .def("__call__", &OverloadChecker::operator())
-      ;
+      .def("__call__", &OverloadChecker::operator());
   }
 
-}}}} // namespace = dials::algorithms::shoebox::boost_python
-
+}}}}  // namespace dials::algorithms::shoebox::boost_python

@@ -23,20 +23,19 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::vec2;
-  using scitbx::vec3;
-  using scitbx::mat3;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Panel;
+  using scitbx::mat3;
+  using scitbx::vec2;
+  using scitbx::vec3;
 
   /**
    * A class to do pixel labelling as in XDS.
    */
   class PixelLabeller {
   public:
-
-    typedef af::versa< vec3<double>, af::c_grid<2> > pstar_array_type;
+    typedef af::versa<vec3<double>, af::c_grid<2> > pstar_array_type;
     typedef af::shared<pstar_array_type> array_type;
 
     /**
@@ -44,9 +43,7 @@ namespace dials { namespace algorithms {
      * @param beam The beam model
      * @param detector The detector model
      */
-    PixelLabeller(
-        BeamBase &beam,
-        Detector detector) {
+    PixelLabeller(BeamBase &beam, Detector detector) {
       p_star_.resize(detector.size());
       vec3<double> s0 = beam.get_s0();
       for (std::size_t p = 0; p < detector.size(); ++p) {
@@ -56,9 +53,8 @@ namespace dials { namespace algorithms {
         pstar_array_type ps = p_star_[p];
         for (std::size_t j = 0; j < image_size[1]; ++j) {
           for (std::size_t i = 0; i < image_size[0]; ++i) {
-            vec3<double> s1 = panel.get_pixel_lab_coord(
-                vec2<double>(j+0.5, i+0.5));
-            ps(j,i) = s1 - s0;
+            vec3<double> s1 = panel.get_pixel_lab_coord(vec2<double>(j + 0.5, i + 0.5));
+            ps(j, i) = s1 - s0;
           }
         }
       }
@@ -85,8 +81,9 @@ namespace dials { namespace algorithms {
      * @param A The setting matrix
      * @param panel_number The panel
      */
-    void label(af::ref< cctbx::miller::index<> > index,
-        mat3<double> A, std::size_t panel_number) const {
+    void label(af::ref<cctbx::miller::index<> > index,
+               mat3<double> A,
+               std::size_t panel_number) const {
       DIALS_ASSERT(panel_number < size());
       af::c_grid<2> size = panel_size(panel_number);
       DIALS_ASSERT(index.size() == size[0] * size[1]);
@@ -94,21 +91,19 @@ namespace dials { namespace algorithms {
       pstar_array_type ps = p_star_[panel_number];
       for (std::size_t j = 0; j < size[0]; ++j) {
         for (std::size_t i = 0; i < size[1]; ++i) {
-          vec3<double> hf = A1 * ps(j,i);
-          cctbx::miller::index<> h(
-              (int)std::floor(hf[0] + 0.5),
-              (int)std::floor(hf[1] + 0.5),
-              (int)std::floor(hf[2] + 0.5));
-          index[i+j*size[1]] = h;
+          vec3<double> hf = A1 * ps(j, i);
+          cctbx::miller::index<> h((int)std::floor(hf[0] + 0.5),
+                                   (int)std::floor(hf[1] + 0.5),
+                                   (int)std::floor(hf[2] + 0.5));
+          index[i + j * size[1]] = h;
         }
       }
     }
 
   private:
-
     array_type p_star_;
   };
 
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_PIXEL_LABELLER_H
+#endif  // DIALS_ALGORITHMS_SPOT_PREDICTION_PIXEL_LABELLER_H

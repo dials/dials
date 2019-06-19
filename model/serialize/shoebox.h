@@ -11,40 +11,29 @@ namespace dials { namespace model {
 
   class ShoeboxReaderInternal {
   public:
+    ShoeboxReaderInternal(const std::string &filename) {}
 
-    ShoeboxReaderInternal(const std::string &filename) {
-
-    }
-
-    af::shared< Shoebox<double> > read(std::size_t z0, std::size_t z1) const {
-
-    }
+    af::shared<Shoebox<double> > read(std::size_t z0, std::size_t z1) const {}
 
   private:
-
   };
-
 
   /**
    * Interface for reading shoeboxes from the intermediate file.
    */
   class ShoeboxReader {
   public:
-
     /**
      * Create the shoebox reader with the filename and block.
      * @param filename The file to read from
      * @param blocks The list of blocks to read
      */
-    ShoeboxReader(const std::string &filename,
-                  const af::const_ref<std::size_t> &blocks)
-        : filename_(filename),
-          blocks_(blocks.begin(), blocks.end()) {
-
+    ShoeboxReader(const std::string &filename, const af::const_ref<std::size_t> &blocks)
+        : filename_(filename), blocks_(blocks.begin(), blocks.end()) {
       // Check we have atleast 1 block and that block array is valid
       DIALS_ASSERT(blocks.size() >= 2);
       for (std::size_t i = 1; i < blocks.size(); ++i) {
-        DIALS_ASSERT(blocks[i] > blocks[i-1]);
+        DIALS_ASSERT(blocks[i] > blocks[i - 1]);
       }
     }
 
@@ -76,7 +65,7 @@ namespace dials { namespace model {
      */
     int2 block(std::size_t index) const {
       DIALS_ASSERT(index < size());
-      return int2(blocks_[index], blocks_[index+1]);
+      return int2(blocks_[index], blocks_[index + 1]);
     }
 
     /**
@@ -84,77 +73,72 @@ namespace dials { namespace model {
      * @param index The block index
      * @returns The list of shoeboxes in the block
      */
-    af::shared< Shoebox<double> > operator[](std::size_t index) const {
+    af::shared<Shoebox<double> > operator[](std::size_t index) const {
       DIALS_ASSERT(index < size());
-      return af::shared< Shoebox<double> >();
+      return af::shared<Shoebox<double> >();
     }
 
   private:
-
     std::string filename_;
     af::shared<std::size_t> blocks_;
   };
 
-  //class ShoeboxFile {
-  //public:
+  // class ShoeboxFile {
+  // public:
 
-    //ShoeboxFile(const std::string filename)
-        //: filename_(filename) {
+  // ShoeboxFile(const std::string filename)
+  //: filename_(filename) {
 
-    //}
+  //}
 
+  // std::string filename() const {
+  // return filename_;
+  //}
 
-    //std::string filename() const {
-      //return filename_;
-    //}
+  // int* block(std::size_t n) {
 
-    //int* block(std::size_t n) {
+  //}
 
-    //}
+  // private:
 
-  //private:
-
-    //std::string filename_;
+  // std::string filename_;
   //};
 
+  // class ShoeboxWriter {
+  // public:
 
-  //class ShoeboxWriter {
-  //public:
+  // ShoeboxWriter(const std::string &filename
+  // const af::const_ref<std::size_t> &panel,
+  // const af::const_ref<int6> &bbox,
+  // std::size_t max_block_size) {
 
-    //ShoeboxWriter(const std::string &filename
-                  //const af::const_ref<std::size_t> &panel,
-                  //const af::const_ref<int6> &bbox,
-                  //std::size_t max_block_size) {
+  //}
 
-    //}
+  //~ShoeboxWriter() {
+  // defragment();
+  //}
 
-    //~ShoeboxWriter() {
-      //defragment();
-    //}
+  // void add_image(std::size_t z, std::size_t panel, const af::const_ref &image) {
 
-    //void add_image(std::size_t z, std::size_t panel, const af::const_ref &image) {
+  //// Ensure we can't go backward and panels are valid
+  // DIALS_ASSERT(z >= current_frame_);
+  // DIALS_ASSERT(panel < num_panels_);
+  // current_frame_ = z;
 
-      //// Ensure we can't go backward and panels are valid
-      //DIALS_ASSERT(z >= current_frame_);
-      //DIALS_ASSERT(panel < num_panels_);
-      //current_frame_ = z;
+  //// Get the current
 
-      //// Get the current
+  //}
 
-    //}
+  // private:
 
-  //private:
+  // void defragment() {
 
-    //void defragment() {
+  //}
 
-    //}
-
-    //std::size_t current_frame_;
-    //std::size_t num_panels_;
+  // std::size_t current_frame_;
+  // std::size_t num_panels_;
   //};
 
+}}  // namespace dials::model
 
-}} // namespace dials::model
-
-
-#endif // DIALS_MODEL_SERIALIZE_SHOEBOX_H
+#endif  // DIALS_MODEL_SERIALIZE_SHOEBOX_H

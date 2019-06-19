@@ -46,8 +46,7 @@ namespace dials { namespace af { namespace boost_python {
     return "double";
   }
 
-  BOOST_PYTHON_MODULE(dials_array_family_flex_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_array_family_flex_ext) {
     export_flex_int6();
     export_flex_shoebox();
     export_flex_centroid();
@@ -67,4 +66,4 @@ namespace dials { namespace af { namespace boost_python {
     tuple_mapping_fixed_capacity<af::small<model::Ray, 2> >();
   }
 
-}}} // namespace = dials::af::boost_python
+}}}  // namespace dials::af::boost_python

@@ -25,10 +25,10 @@ namespace dials { namespace algorithms {
   // Useful imports
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::fn::pow2;
   using scitbx::af::sum;
   using scitbx::af::sum_sq;
   using scitbx::af::tiny;
+  using scitbx::fn::pow2;
 
   /**
    * Class to calculate the centroid of a list of coordinates
@@ -36,7 +36,6 @@ namespace dials { namespace algorithms {
   template <typename FloatType, typename CoordType>
   class CentroidPoints {
   public:
-
     // Get the dimensions
     static const std::size_t DIM = CoordType::fixed_size;
 
@@ -44,7 +43,7 @@ namespace dials { namespace algorithms {
     typedef FloatType pixel_type;
     typedef CoordType coord_type;
     typedef typename CoordType::value_type value_type;
-    typedef tiny<FloatType, DIM*DIM> matrix_type;
+    typedef tiny<FloatType, DIM * DIM> matrix_type;
 
     /**
      * Calculate the centroid.
@@ -53,12 +52,11 @@ namespace dials { namespace algorithms {
      */
     CentroidPoints(const af::const_ref<FloatType> &pixels,
                    const af::const_ref<coord_type> &coords)
-      : sum_pixels_((value_type)sum(pixels)),
-        sum_pixels_sq_((value_type)sum_sq(pixels)),
-        sum_pixels_coords_(0.0),
-        sum_pixels_delta_sq_(0.0),
-        sum_pixels_delta_cross_(0.0) {
-
+        : sum_pixels_((value_type)sum(pixels)),
+          sum_pixels_sq_((value_type)sum_sq(pixels)),
+          sum_pixels_coords_(0.0),
+          sum_pixels_delta_sq_(0.0),
+          sum_pixels_delta_cross_(0.0) {
       // Check the size of the input
       DIALS_ASSERT(DIM > 1);
       DIALS_ASSERT(coords.size() > 0);
@@ -83,8 +81,8 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < coords.size(); ++i) {
         for (std::size_t j = 0, l = 0; j < DIM - 1; ++j) {
           for (std::size_t k = j + 1; k < DIM; ++k, ++l) {
-            sum_pixels_delta_cross_[l] += (value_type)pixels[i] *
-              (coords[i][j] - m[j]) * (coords[i][k] - m[k]);
+            sum_pixels_delta_cross_[l] +=
+              (value_type)pixels[i] * (coords[i][j] - m[j]) * (coords[i][k] - m[k]);
           }
         }
       }
@@ -130,8 +128,7 @@ namespace dials { namespace algorithms {
       /* DIALS_ASSERT(sum_pixels_ > 1); */
       /* return sum_pixels_delta_sq_ / (sum_pixels_ - 1); */
       DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
-      return sum_pixels_delta_sq_ * sum_pixels_ /
-        (pow2(sum_pixels_) - sum_pixels_sq_);
+      return sum_pixels_delta_sq_ * sum_pixels_ / (pow2(sum_pixels_) - sum_pixels_sq_);
     }
 
     /** @returns The biased standard error on the mean squared. */
@@ -163,7 +160,7 @@ namespace dials { namespace algorithms {
       // of 1/12 seems to make refinement work better because there are more
       // uniform weights. Until we figure this out, I'm changing this to add
       // 1/12 again.
-      return unbiased_standard_error_sq() + 1.0/12.0;//average_bias_estimate();
+      return unbiased_standard_error_sq() + 1.0 / 12.0;  // average_bias_estimate();
     }
 
     /** @returns The covariance matrix. */
@@ -179,9 +176,9 @@ namespace dials { namespace algorithms {
 
       // Create the covariance matrix
       matrix_type matrix;
-      for (std::size_t j = 0, k = 0; j < DIM-1; ++j) {
+      for (std::size_t j = 0, k = 0; j < DIM - 1; ++j) {
         matrix[j + j * DIM] = variance[j];
-        for (std::size_t i = j+1; i < DIM; ++i, ++k) {
+        for (std::size_t i = j + 1; i < DIM; ++i, ++k) {
           matrix[i + j * DIM] = covariance[k];
           matrix[j + i * DIM] = covariance[k];
         }
@@ -192,7 +189,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     coord_type pow2c(const coord_type &x) const {
       coord_type r;
       for (std::size_t i = 0; i < DIM; ++i) {
@@ -207,6 +203,6 @@ namespace dials { namespace algorithms {
     coord_type sum_pixels_delta_sq_;
     coord_type sum_pixels_delta_cross_;
   };
-}}
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_IMAGE_CENTROID_CENTROID_LIST_H */

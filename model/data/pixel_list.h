@@ -19,46 +19,37 @@
 
 namespace dials { namespace model {
 
-  using scitbx::af::int2;
   using scitbx::vec3;
+  using scitbx::af::int2;
 
   namespace detail {
 
-    inline
-    bool lessthan(const vec3<int> &a, const vec3<int> &b) {
-      return (a[0] < b[0]
+    inline bool lessthan(const vec3<int> &a, const vec3<int> &b) {
+      return (
+        a[0] < b[0]
           ? true
           : (a[0] == b[0]
-            ? (a[1] < b[1]
-              ? true
-              : (a[1] == b[1]
-                ? (a[2] < b[2]
-                  ? true
-                  : false)
-                : false))
-            : false));
+               ? (a[1] < b[1] ? true
+                              : (a[1] == b[1] ? (a[2] < b[2] ? true : false) : false))
+               : false));
     }
 
-  }
+  }  // namespace detail
 
   /**
    * A class to hold a list of pixels
    */
   class PixelList {
-
     int frame_;
     int2 size_;
     af::shared<double> value_;
     af::shared<std::size_t> index_;
 
   public:
-
     /**
      * Initialise an empty list
      */
-    PixelList()
-      : frame_(0),
-        size_(0, 0) {}
+    PixelList() : frame_(0), size_(0, 0) {}
 
     /**
      * Initialise the list
@@ -66,11 +57,9 @@ namespace dials { namespace model {
      * @param image The image values
      * @param mask The pixel mask
      */
-    PixelList(
-        int frame,
-        const af::const_ref< int, af::c_grid<2> > &image,
-        const af::const_ref< bool, af::c_grid<2> > &mask) {
-
+    PixelList(int frame,
+              const af::const_ref<int, af::c_grid<2> > &image,
+              const af::const_ref<bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
       frame_ = frame;
@@ -99,11 +88,9 @@ namespace dials { namespace model {
      * @param image The image values
      * @param mask The pixel mask
      */
-    PixelList(
-        int frame,
-        const af::const_ref< double, af::c_grid<2> > &image,
-        const af::const_ref< bool, af::c_grid<2> > &mask) {
-
+    PixelList(int frame,
+              const af::const_ref<double, af::c_grid<2> > &image,
+              const af::const_ref<bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
       frame_ = frame;
@@ -133,15 +120,14 @@ namespace dials { namespace model {
      * @param value The list of pixel values
      * @param index The list of pixel indices
      */
-    PixelList(
-          int frame,
-          int2 size,
-          const af::const_ref<double> value,
-          const af::const_ref<std::size_t> index)
-      : frame_(frame),
-        size_(size),
-        value_(value.begin(), value.end()),
-        index_(index.begin(), index.end()) {
+    PixelList(int frame,
+              int2 size,
+              const af::const_ref<double> value,
+              const af::const_ref<std::size_t> index)
+        : frame_(frame),
+          size_(size),
+          value_(value.begin(), value.end()),
+          index_(index.begin(), index.end()) {
       DIALS_ASSERT(value.size() == index.size());
     }
 
@@ -180,28 +166,20 @@ namespace dials { namespace model {
       DIALS_ASSERT(value_.size() == index_.size());
       return value_.size();
     }
-
-
   };
-
 
   /**
    * A class to label the pixels as spots
    */
   class PixelListLabeller {
   public:
-
-    PixelListLabeller()
-      : size_(0,0),
-        first_frame_(0),
-        last_frame_(0) {}
+    PixelListLabeller() : size_(0, 0), first_frame_(0), last_frame_(0) {}
 
     /**
      * Add a pixel list
      * @param pixel_list The pixel list
      */
     void add(const PixelList &pixel_list) {
-
       // Check the frame number
       if (last_frame_ == first_frame_) {
         first_frame_ = pixel_list.frame();
@@ -224,7 +202,7 @@ namespace dials { namespace model {
       // Add the values and coordinates
       for (std::size_t i = 0; i < value.size(); ++i) {
         std::size_t k = index[i];
-        DIALS_ASSERT(i < size[0]*size[1]);
+        DIALS_ASSERT(i < size[0] * size[1]);
         std::size_t y = k / size[1];
         std::size_t x = k - y * size[1];
         DIALS_ASSERT(x < size[1]);
@@ -234,7 +212,6 @@ namespace dials { namespace model {
         coords_.push_back(coord);
       }
     }
-
 
     /**
      * @returns The image size
@@ -273,7 +250,7 @@ namespace dials { namespace model {
     /**
      * @returns The list of valid point coordinates
      */
-    af::shared< vec3<int> > coords() const {
+    af::shared<vec3<int> > coords() const {
       return coords_;
     }
 
@@ -288,12 +265,9 @@ namespace dials { namespace model {
      * Label the pixels in 3D
      */
     af::shared<int> labels_3d() const {
-
       // Adjacency list type
-      typedef boost::adjacency_list<
-        boost::listS,
-        boost::vecS,
-        boost::undirectedS> AdjacencyList;
+      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
+        AdjacencyList;
 
       if (coords_.size() == 0) {
         return af::shared<int>();
@@ -302,30 +276,32 @@ namespace dials { namespace model {
       // Calculate the coordinate indices
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i-1], coords_[i]));
+          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
         }
       }
 
       // Create a graph of coordinates
       AdjacencyList graph(coords_.size());
       std::size_t i1 = 0, i2 = 0, i3 = 0;
-      for (; i1 < coords_.size()-1; ++i1) {
+      for (; i1 < coords_.size() - 1; ++i1) {
         vec3<int> a0 = coords_[i1];
-        vec3<int> a1(a0[0], a0[1], a0[2]+1);
-        vec3<int> a2(a0[0], a0[1]+1, a0[2]);
-        vec3<int> a3(a0[0]+1, a0[1], a0[2]);
-        if (coords_[i1+1] == a1) {
-          boost::add_edge(i1, i1+1, graph);
+        vec3<int> a1(a0[0], a0[1], a0[2] + 1);
+        vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
+        vec3<int> a3(a0[0] + 1, a0[1], a0[2]);
+        if (coords_[i1 + 1] == a1) {
+          boost::add_edge(i1, i1 + 1, graph);
         }
-        if (a0[1] < size_[0]-1) {
-          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size()-1; ++i2);
+        if (a0[1] < size_[0] - 1) {
+          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
+            ;
           if (coords_[i2] == a2) {
             boost::add_edge(i1, i2, graph);
           }
         }
-        if (a0[0] < last_frame_-1) {
+        if (a0[0] < last_frame_ - 1) {
           if (i2 > i3) i3 = i2;
-          for (; detail::lessthan(coords_[i3], a3) && i3 < coords_.size()-1; ++i3);
+          for (; detail::lessthan(coords_[i3], a3) && i3 < coords_.size() - 1; ++i3)
+            ;
           if (coords_[i3] == a3) {
             boost::add_edge(i1, i3, graph);
           }
@@ -344,12 +320,9 @@ namespace dials { namespace model {
      * Label the pixels in 2D
      */
     af::shared<int> labels_2d() const {
-
       // Adjacency list type
-      typedef boost::adjacency_list<
-        boost::listS,
-        boost::vecS,
-        boost::undirectedS> AdjacencyList;
+      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
+        AdjacencyList;
 
       if (coords_.size() == 0) {
         return af::shared<int>();
@@ -358,22 +331,23 @@ namespace dials { namespace model {
       // Calculate the coordinate indices
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i-1], coords_[i]));
+          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
         }
       }
 
       // Create a graph of coordinates
       AdjacencyList graph(coords_.size());
       std::size_t i1 = 0, i2 = 0;
-      for (; i1 < coords_.size()-1; ++i1) {
+      for (; i1 < coords_.size() - 1; ++i1) {
         vec3<int> a0 = coords_[i1];
-        vec3<int> a1(a0[0], a0[1], a0[2]+1);
-        vec3<int> a2(a0[0], a0[1]+1, a0[2]);
-        if (coords_[i1+1] == a1) {
-          boost::add_edge(i1, i1+1, graph);
+        vec3<int> a1(a0[0], a0[1], a0[2] + 1);
+        vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
+        if (coords_[i1 + 1] == a1) {
+          boost::add_edge(i1, i1 + 1, graph);
         }
-        if (a0[1] < size_[0]-1) {
-          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size()-1; ++i2);
+        if (a0[1] < size_[0] - 1) {
+          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
+            ;
           if (coords_[i2] == a2) {
             boost::add_edge(i1, i2, graph);
           }
@@ -389,15 +363,13 @@ namespace dials { namespace model {
     }
 
   private:
-
     int2 size_;
     int first_frame_;
     int last_frame_;
-    af::shared< vec3<int> > coords_;
+    af::shared<vec3<int> > coords_;
     af::shared<double> values_;
   };
 
-
-}} // namespace dials::model
+}}  // namespace dials::model
 
 #endif /* DIALS_MODEL_DATA_PIXEL_LIST_H */

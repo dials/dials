@@ -20,16 +20,12 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_stills_ray_predictor()
-  {
+  void export_stills_ray_predictor() {
     // Create and return the wrapper for the spot predictor object
-    class_ <StillsRayPredictor> ("StillsRayPredictor", no_init)
-      .def(init < vec3<double> >((
-        arg("s0"))))
-      .def("__call__", &StillsRayPredictor::operator(), (
-        arg("miller_index"),
-        arg("UB")));
+    class_<StillsRayPredictor>("StillsRayPredictor", no_init)
+      .def(init<vec3<double> >((arg("s0"))))
+      .def(
+        "__call__", &StillsRayPredictor::operator(), (arg("miller_index"), arg("UB")));
   }
 
-}}} // namespace = dials::spot_prediction::boost_python
-
+}}}  // namespace dials::algorithms::boost_python

@@ -14,16 +14,12 @@
 #include <dials/algorithms/background/gmodel/model.h>
 #include <dials/algorithms/background/gmodel/polar_transform.h>
 
-
-namespace dials { namespace algorithms { namespace background {
-  namespace boost_python {
+namespace dials { namespace algorithms { namespace background { namespace boost_python {
 
   using namespace boost::python;
 
   struct StaticBackgroundModelPickleSuite : boost::python::pickle_suite {
-    static
-    boost::python::tuple getstate(const StaticBackgroundModel &obj)
-    {
+    static boost::python::tuple getstate(const StaticBackgroundModel &obj) {
       boost::python::list data;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         data.append(obj.data(i));
@@ -31,66 +27,53 @@ namespace dials { namespace algorithms { namespace background {
       return boost::python::make_tuple(data);
     }
 
-    static
-    void setstate(StaticBackgroundModel &obj, boost::python::tuple state)
-    {
+    static void setstate(StaticBackgroundModel &obj, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       boost::python::list data = boost::python::extract<boost::python::list>(state[0]);
       for (std::size_t i = 0; i < boost::python::len(data); ++i) {
-        af::const_ref< double, af::c_grid<2> > arr = boost::python::extract<
-          af::const_ref< double, af::c_grid<2> > >(data[i]);
+        af::const_ref<double, af::c_grid<2> > arr =
+          boost::python::extract<af::const_ref<double, af::c_grid<2> > >(data[i]);
         obj.add(arr);
       }
     }
   };
 
-  BOOST_PYTHON_MODULE(dials_algorithms_background_gmodel_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_background_gmodel_ext) {
     class_<PolarTransformResult>("PolarTransfrormResult", no_init)
       .def("data", &PolarTransformResult::data)
-      .def("mask", &PolarTransformResult::mask)
-      ;
+      .def("mask", &PolarTransformResult::mask);
 
     class_<PolarTransform>("PolarTransform", no_init)
-      .def(init<
-          const BeamBase&,
-          const Panel&,
-          const Goniometer&>())
+      .def(init<const BeamBase &, const Panel &, const Goniometer &>())
       .def("image_xmap", &PolarTransform::image_xmap)
       .def("image_ymap", &PolarTransform::image_ymap)
       .def("discontinuity", &PolarTransform::discontinuity)
       .def("to_polar", &PolarTransform::to_polar)
-      .def("from_polar", &PolarTransform::from_polar)
-      ;
+      .def("from_polar", &PolarTransform::from_polar);
 
+    class_<BackgroundModel, boost::noncopyable, boost::shared_ptr<BackgroundModel> >(
+      "BackgroundModel", no_init)
+      .def("extract", pure_virtual(&BackgroundModel::extract));
 
-    class_<BackgroundModel, boost::noncopyable, boost::shared_ptr<BackgroundModel> >("BackgroundModel", no_init)
-      .def("extract", pure_virtual(&BackgroundModel::extract))
-      ;
-
-    class_< StaticBackgroundModel, bases<BackgroundModel> >("StaticBackgroundModel")
+    class_<StaticBackgroundModel, bases<BackgroundModel> >("StaticBackgroundModel")
       .def("add", &StaticBackgroundModel::add)
       .def("__len__", &StaticBackgroundModel::size)
       .def("data", &StaticBackgroundModel::data)
-      .def_pickle(StaticBackgroundModelPickleSuite())
-      ;
+      .def_pickle(StaticBackgroundModelPickleSuite());
 
     class_<GModelBackgroundCreator> creator("Creator", no_init);
     creator
-      .def(init<
-          boost::shared_ptr<BackgroundModel>,
-          bool,
-          double,
-          std::size_t,
-          std::size_t>((
-              arg("model"),
-              arg("robust"),
-              arg("tuning_constant"),
-              arg("max_iter"),
-              arg("min_pixels")=10)))
+      .def(init<boost::shared_ptr<BackgroundModel>,
+                bool,
+                double,
+                std::size_t,
+                std::size_t>((arg("model"),
+                              arg("robust"),
+                              arg("tuning_constant"),
+                              arg("max_iter"),
+                              arg("min_pixels") = 10)))
       .def("__call__", &GModelBackgroundCreator::shoebox)
-      .def("__call__", &GModelBackgroundCreator::volume)
-      ;
+      .def("__call__", &GModelBackgroundCreator::volume);
   }
 
-}}}} // namespace = dials::algorithms::background::boost_python
+}}}}  // namespace dials::algorithms::background::boost_python

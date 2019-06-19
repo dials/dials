@@ -20,7 +20,6 @@ namespace dials { namespace af {
    */
   class Reflection {
   public:
-
     typedef reflection_table_type_generator::data_type data_type;
     typedef std::map<std::string, data_type> map_type;
 
@@ -41,7 +40,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns The proxy object to access the value
      */
-    const mapped_type& operator[](const key_type &key) const {
+    const mapped_type &operator[](const key_type &key) const {
       const_iterator it = find(key);
       DIALS_ASSERT(it != end());
       return it->second;
@@ -52,7 +51,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns The proxy object to access the value
      */
-    mapped_type& operator[](const key_type &key) {
+    mapped_type &operator[](const key_type &key) {
       return data_[key];
     }
 
@@ -62,7 +61,7 @@ namespace dials { namespace af {
      * @returns The value.
      */
     template <typename T>
-    T& get(const key_type &key) {
+    T &get(const key_type &key) {
       iterator it = find(key);
       DIALS_ASSERT(it != end());
       return boost::get<T>(it->second);
@@ -74,7 +73,7 @@ namespace dials { namespace af {
      * @returns The value.
      */
     template <typename T>
-    const T& get(const key_type &key) const {
+    const T &get(const key_type &key) const {
       const_iterator it = find(key);
       DIALS_ASSERT(it != end());
       return boost::get<T>(it->second);
@@ -154,9 +153,7 @@ namespace dials { namespace af {
     }
 
   protected:
-
     map_type data_;
-
   };
 
   namespace detail {
@@ -164,12 +161,12 @@ namespace dials { namespace af {
     /**
      * A visitor to convert extract reflection table row to a reflection object
      */
-    struct row_to_reflection_visitor :
-        public boost::static_visitor<Reflection::data_type> {
+    struct row_to_reflection_visitor
+        : public boost::static_visitor<Reflection::data_type> {
       std::size_t n_;
       row_to_reflection_visitor(std::size_t n) : n_(n) {}
       template <typename T>
-      Reflection::data_type operator () (T &col) {
+      Reflection::data_type operator()(T &col) {
         DIALS_ASSERT(n_ < col.size());
         return Reflection::data_type(col[n_]);
       }
@@ -182,15 +179,12 @@ namespace dials { namespace af {
       af::reflection_table table_;
       std::size_t n_;
       Reflection::key_type key_;
-      reflection_to_row_visitor(
-          af::reflection_table table,
-          std::size_t n,
-          Reflection::key_type key) :
-        table_(table),
-        n_(n),
-        key_(key) {}
+      reflection_to_row_visitor(af::reflection_table table,
+                                std::size_t n,
+                                Reflection::key_type key)
+          : table_(table), n_(n), key_(key) {}
       template <typename T>
-      void operator () (const T &item) {
+      void operator()(const T &item) {
         af::ref<T> col = table_[key_];
         DIALS_ASSERT(n_ < col.size());
         col[n_] = item;
@@ -203,9 +197,8 @@ namespace dials { namespace af {
      * @param index The array index
      * @returns The reflection object
      */
-    inline
-    Reflection reflection_table_get_reflection(
-        af::reflection_table table, std::size_t index) {
+    inline Reflection reflection_table_get_reflection(af::reflection_table table,
+                                                      std::size_t index) {
       typedef af::reflection_table::const_iterator iterator;
       DIALS_ASSERT(index < table.size());
       Reflection result;
@@ -222,9 +215,9 @@ namespace dials { namespace af {
      * @param index The array index
      * @param value The reflection
      */
-    inline
-    void reflection_table_set_reflection(
-        af::reflection_table table, std::size_t index, Reflection value) {
+    inline void reflection_table_set_reflection(af::reflection_table table,
+                                                std::size_t index,
+                                                Reflection value) {
       typedef Reflection::const_iterator iterator;
       DIALS_ASSERT(index < table.size());
       for (iterator it = value.begin(); it != value.end(); ++it) {
@@ -233,15 +226,14 @@ namespace dials { namespace af {
       }
     }
 
-  }
+  }  // namespace detail
 
   /**
    * Convert a reflection table to an array of reflections
    * @param table The reflection table
    * @returns The array of reflections
    */
-  inline
-  af::shared<Reflection> reflection_table_to_array(af::reflection_table table) {
+  inline af::shared<Reflection> reflection_table_to_array(af::reflection_table table) {
     af::shared<Reflection> result;
     result.reserve(table.size());
     for (std::size_t i = 0; i < table.size(); ++i) {
@@ -255,8 +247,8 @@ namespace dials { namespace af {
    * @param array The array of reflections
    * @returns The reflection table
    */
-  inline
-  af::reflection_table reflection_table_from_array(af::const_ref<Reflection> array) {
+  inline af::reflection_table reflection_table_from_array(
+    af::const_ref<Reflection> array) {
     af::reflection_table result(array.size());
     for (std::size_t i = 0; i < array.size(); ++i) {
       detail::reflection_table_set_reflection(result, i, array[i]);
@@ -264,6 +256,6 @@ namespace dials { namespace af {
     return result;
   }
 
-}}
+}}  // namespace dials::af
 
-#endif // DIALS_ARRAY_FAMILY_REFLECTION_H
+#endif  // DIALS_ARRAY_FAMILY_REFLECTION_H

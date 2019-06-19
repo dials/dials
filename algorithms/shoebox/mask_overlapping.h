@@ -19,16 +19,15 @@
 
 namespace dials { namespace algorithms { namespace shoebox {
 
+  using dials::model::AdjacencyList;
+  using dials::model::Shoebox;
   using scitbx::vec3;
   using scitbx::af::int3;
   using scitbx::af::int6;
-  using dials::model::Shoebox;
-  using dials::model::AdjacencyList;
 
   /** Class to calculate the shoebox masks for all reflections */
   class MaskOverlapping {
   public:
-
     // Useful typedefs
     typedef AdjacencyList::edge_iterator edge_iterator;
     typedef AdjacencyList::edge_iterator_range edge_iterator_range;
@@ -51,15 +50,12 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param coords The pixel coordinate
      * @param adjacency_list The adjacency_list
      */
-    void operator()(
-        af::ref<Shoebox<> > shoeboxes,
-        const af::const_ref< vec3<double> > &coords,
-        const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
-
+    void operator()(af::ref<Shoebox<> > shoeboxes,
+                    const af::const_ref<vec3<double> > &coords,
+                    const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
       // Loop through all the reflections
       if (adjacency_list) {
         for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
-
           // Get a reference to the reflection
           Shoebox<> &s = shoeboxes[i];
           vec3<double> c = coords[i];
@@ -79,7 +75,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
   private:
-
     /**
      * The distance between two points
      * @param a Point a
@@ -98,7 +93,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @returns An (x, y, z) coordinate
      */
     vec3<double> voxel_coord(double i, double j, double k) const {
-      return vec3<double>(i+0.5, j+0.5, k+0.5);
+      return vec3<double>(i + 0.5, j + 0.5, k + 0.5);
     }
 
     /**
@@ -109,13 +104,13 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param coord_b The coordinate of b
      * @throws RuntimeError if reflections to do overlap.
      */
-    void assign_ownership(
-        Shoebox<> &a, vec3<double> coord_a,
-        Shoebox<> &b, vec3<double> coord_b) const {
-
+    void assign_ownership(Shoebox<> &a,
+                          vec3<double> coord_a,
+                          Shoebox<> &b,
+                          vec3<double> coord_b) const {
       // Get the reflection mask arrays
-      af::ref< int, af::c_grid<3> > mask_a = a.mask.ref();
-      af::ref< int, af::c_grid<3> > mask_b = b.mask.ref();
+      af::ref<int, af::c_grid<3> > mask_a = a.mask.ref();
+      af::ref<int, af::c_grid<3> > mask_b = b.mask.ref();
 
       // Get the sizes of the masks
       af::c_grid<3> size_a = mask_a.accessor();
@@ -148,7 +143,6 @@ namespace dials { namespace algorithms { namespace shoebox {
       for (int k = k0; k < k1; ++k) {
         for (int j = j0; j < j1; ++j) {
           for (int i = i0; i < i1; ++i) {
-
             // Set the coordinate
             vec3<double> coord_c(voxel_coord(i, j, k));
 
@@ -171,6 +165,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}  // namespace dials::algorithms::shoebox
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_MASK_OVERLAPPING_H */

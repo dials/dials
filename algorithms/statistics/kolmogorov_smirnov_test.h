@@ -22,11 +22,7 @@ namespace dials { namespace algorithms {
   /**
    * Enumeration for type of test
    */
-  enum KSType {
-    Less,
-    Greater,
-    TwoSided
-  };
+  enum KSType { Less, Greater, TwoSided };
 
   /**
    * Calculate D-
@@ -52,7 +48,7 @@ namespace dials { namespace algorithms {
     RealType Dmax = 0.0;
     std::size_t n = cdfv.size();
     for (std::size_t i = 0; i < n; ++i) {
-      RealType D = (RealType)(i+1) / (RealType)n - cdfv[i];
+      RealType D = (RealType)(i + 1) / (RealType)n - cdfv[i];
       if (D > Dmax) {
         Dmax = D;
       }
@@ -64,8 +60,8 @@ namespace dials { namespace algorithms {
    * Perform the test for one-sided less
    */
   template <typename RealType>
-  std::pair<RealType, RealType>
-  kolmogorov_smirnov_test_less(const std::vector<RealType> &cdfv) {
+  std::pair<RealType, RealType> kolmogorov_smirnov_test_less(
+    const std::vector<RealType> &cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist;
     RealType Dm = kolmogorov_smirnov_test_d_minus(cdfv);
     return std::make_pair(Dm, 1.0 - cdf(ks_dist(cdfv.size()), Dm));
@@ -75,8 +71,8 @@ namespace dials { namespace algorithms {
    * Perform the test for one-sided greater
    */
   template <typename RealType>
-  std::pair<RealType, RealType>
-  kolmogorov_smirnov_test_greater(const std::vector<RealType> &cdfv) {
+  std::pair<RealType, RealType> kolmogorov_smirnov_test_greater(
+    const std::vector<RealType> &cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist;
     RealType Dp = kolmogorov_smirnov_test_d_plus(cdfv);
     return std::make_pair(Dp, 1.0 - cdf(ks_dist(cdfv.size()), Dp));
@@ -86,8 +82,8 @@ namespace dials { namespace algorithms {
    * Perform the two-sided test
    */
   template <typename RealType>
-  std::pair<RealType, RealType>
-  kolmogorov_smirnov_test_two_sided(const std::vector<RealType> &cdfv) {
+  std::pair<RealType, RealType> kolmogorov_smirnov_test_two_sided(
+    const std::vector<RealType> &cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist1;
     typedef kolmogorov_smirnov_two_sided_distribution<RealType> ks_dist2;
     std::size_t n = cdfv.size();
@@ -115,13 +111,11 @@ namespace dials { namespace algorithms {
    * @returns (D, p-value)
    */
   template <typename Dist, typename Iterator>
-  std::pair<
-    typename Dist::value_type,
-    typename Dist::value_type>
-  kolmogorov_smirnov_test(
-      const Dist &dist,
-      Iterator first, Iterator last,
-      const KSType &kstype) {
+  std::pair<typename Dist::value_type, typename Dist::value_type>
+  kolmogorov_smirnov_test(const Dist &dist,
+                          Iterator first,
+                          Iterator last,
+                          const KSType &kstype) {
     typedef typename Dist::value_type value_type;
 
     // Sort the sample values into ascending order
@@ -137,22 +131,22 @@ namespace dials { namespace algorithms {
     // Do the ks test
     std::pair<value_type, value_type> result(0, 0);
     switch (kstype) {
-      case Less:
-        result = kolmogorov_smirnov_test_less(cdfv);
-        break;
-      case Greater:
-        result = kolmogorov_smirnov_test_greater(cdfv);
-        break;
-      case TwoSided:
-        result = kolmogorov_smirnov_test_two_sided(cdfv);
-        break;
-      default:
-        DIALS_ASSERT(false);
-        break;
+    case Less:
+      result = kolmogorov_smirnov_test_less(cdfv);
+      break;
+    case Greater:
+      result = kolmogorov_smirnov_test_greater(cdfv);
+      break;
+    case TwoSided:
+      result = kolmogorov_smirnov_test_two_sided(cdfv);
+      break;
+    default:
+      DIALS_ASSERT(false);
+      break;
     };
     return result;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_STATISTICS_KOLMOGOROV_SMIRNOV_TEST_H
+#endif  // DIALS_ALGORITHMS_STATISTICS_KOLMOGOROV_SMIRNOV_TEST_H

@@ -9,7 +9,6 @@
  *  included in the root directory of this package.
  */
 
-
 #ifndef DIALS_ALGORITHMS_BACKGROUND_GMODEL_PIXEL_FILTER_H
 #define DIALS_ALGORITHMS_BACKGROUND_GMODEL_PIXEL_FILTER_H
 
@@ -19,65 +18,58 @@
 
 namespace dials { namespace algorithms { namespace background {
 
-
   /**
    * A class to hold the value from filtering
    */
   class PixelFilterResult {
   public:
-
     /**
      * Initialise the class
      * @param data The data array
      * @param mask The mask array
      */
-    PixelFilterResult(
-        af::versa<double, af::c_grid<2> > data,
-        af::versa<bool, af::c_grid<2> > mask)
-      : data_(data),
-        mask_(mask) {
+    PixelFilterResult(af::versa<double, af::c_grid<2> > data,
+                      af::versa<bool, af::c_grid<2> > mask)
+        : data_(data), mask_(mask) {
       DIALS_ASSERT(data_.accessor().all_eq(mask_.accessor()));
     }
 
     /**
      * @return The data array
      */
-    af::versa< double, af::c_grid<2> > data() const {
+    af::versa<double, af::c_grid<2> > data() const {
       return data_;
     }
 
     /**
      * @return The mask array
      */
-    af::versa< bool, af::c_grid<2> > mask() const {
+    af::versa<bool, af::c_grid<2> > mask() const {
       return mask_;
     }
 
   private:
-
-    af::versa< double, af::c_grid<2> > data_;
-    af::versa< bool,   af::c_grid<2> > mask_;
+    af::versa<double, af::c_grid<2> > data_;
+    af::versa<bool, af::c_grid<2> > mask_;
   };
-
 
   /**
    * A class to filter the image pixels
    */
   class PixelFilter {
   public:
-
     /**
      * Initialise the pixel filter
      * @param height The height of the image
      * @param width The width of the image
      */
     PixelFilter(std::size_t height, std::size_t width)
-      : max_count_(0),
-        height_(height),
-        width_(width),
-        sum1_(height * width),
-        sum2_(height * width),
-        count_(height * width) {}
+        : max_count_(0),
+          height_(height),
+          width_(width),
+          sum1_(height * width),
+          sum2_(height * width),
+          count_(height * width) {}
 
     /**
      * Add another image to be processed
@@ -87,7 +79,6 @@ namespace dials { namespace algorithms { namespace background {
     template <typename T>
     void add(const af::const_ref<T, af::c_grid<2> > &data,
              const af::const_ref<bool, af::c_grid<2> > &mask) {
-
       // Check stuff is ok
       DIALS_ASSERT(data.accessor()[0] == height_);
       DIALS_ASSERT(data.accessor()[1] == width_);
@@ -98,7 +89,7 @@ namespace dials { namespace algorithms { namespace background {
         if (mask[i]) {
           count_[i] += 1;
           sum1_[i] += (double)data[i];
-          sum2_[i] += (double)data[i]*(double)data[i];
+          sum2_[i] += (double)data[i] * (double)data[i];
         }
       }
 
@@ -111,10 +102,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param min_count The minimum number of elements per pixel
      * @param nsigma The number of standard deviations to filter by
      */
-    PixelFilterResult compute(
-        std::size_t min_count,
-        double nsigma) const {
-
+    PixelFilterResult compute(std::size_t min_count, double nsigma) const {
       // Check input
       DIALS_ASSERT(nsigma > 0);
       DIALS_ASSERT(max_count_ >= 2);
@@ -123,8 +111,8 @@ namespace dials { namespace algorithms { namespace background {
       }
 
       // Initialise the result array
-      af::versa< double, af::c_grid<2> > data(af::c_grid<2>(height_, width_), 0);
-      af::versa< bool,   af::c_grid<2> > mask(af::c_grid<2>(height_, width_), false);
+      af::versa<double, af::c_grid<2> > data(af::c_grid<2>(height_, width_), 0);
+      af::versa<bool, af::c_grid<2> > mask(af::c_grid<2>(height_, width_), false);
 
       // Pixels whose variance is > expected variance are masked out using the
       // index of dispersion. Otherwise, the result is the mean value
@@ -134,7 +122,7 @@ namespace dials { namespace algorithms { namespace background {
           double s2 = sum2_[i];
           double n = count_[i];
           double mean = s1 / n;
-          double var = (s2 - s1*s1 / n) / (n - 1);
+          double var = (s2 - s1 * s1 / n) / (n - 1);
           if (var <= mean * (1.0 + nsigma * sqrt(2.0 / (n - 1)))) {
             data[i] = mean;
             mask[i] = true;
@@ -154,7 +142,6 @@ namespace dials { namespace algorithms { namespace background {
     }
 
   private:
-
     std::size_t max_count_;
     std::size_t height_;
     std::size_t width_;
@@ -163,6 +150,6 @@ namespace dials { namespace algorithms { namespace background {
     std::vector<std::size_t> count_;
   };
 
-}}}
+}}}  // namespace dials::algorithms::background
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_GMODEL_PIXEL_FILTER_H
+#endif  // DIALS_ALGORITHMS_BACKGROUND_GMODEL_PIXEL_FILTER_H
