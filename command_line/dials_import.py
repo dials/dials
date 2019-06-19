@@ -120,8 +120,8 @@ phil_scope = parse(
 
     reference_geometry = None
       .type = path
-      .help = "Experimental geometry from this experiments.expt or "
-              "experiments.expt will override the geometry from the "
+      .help = "Experimental geometry from this models.expt "
+              "will override the geometry from the "
               "image headers."
 
     allow_multiple_sweeps = False

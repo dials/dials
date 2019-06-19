@@ -26,8 +26,8 @@ def test_simple(dials_data, model, tmpdir):
     path = dials_data("centroid_test_data")
     experiments = path.join("experiments.json")
 
-    reflns_simple = tmpdir.join("simple").join("reflections.refl")
-    reflns_g_simple = tmpdir.join("gmodel_simple").join("reflections.refl")
+    reflns_simple = tmpdir.join("simple").join("observations.refl")
+    reflns_g_simple = tmpdir.join("gmodel_simple").join("observations.refl")
     reflns_simple.dirpath().ensure(dir=1)
     reflns_g_simple.dirpath().ensure(dir=1)
 
@@ -86,8 +86,8 @@ def test_robust(dials_data, model, tmpdir):
     path = dials_data("centroid_test_data")
     experiments = path.join("experiments.json")
 
-    reflns_robust = tmpdir.join("robust").join("reflections.refl")
-    reflns_g_robust = tmpdir.join("gmodel_robust").join("reflections.refl")
+    reflns_robust = tmpdir.join("robust").join("observations.refl")
+    reflns_g_robust = tmpdir.join("gmodel_robust").join("observations.refl")
     reflns_robust.dirpath().ensure(dir=1)
     reflns_g_robust.dirpath().ensure(dir=1)
 

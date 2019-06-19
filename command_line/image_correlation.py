@@ -9,7 +9,7 @@ help_message = """
 
 Examples::
 
-  dev.dials.image_correlation experiments.expt image=1,2,3
+  dev.dials.image_correlation models.expt image=1,2,3
 
 """
 
@@ -64,7 +64,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.expt" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

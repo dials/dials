@@ -1395,7 +1395,7 @@ def run():
     from dials.util.options import OptionParser
 
     # Create the parser
-    usage = "usage: dials.analyse_output [options] reflections.refl"
+    usage = "usage: dials.analyse_output [options] observations.refl"
     parser = OptionParser(
         usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
     )

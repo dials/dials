@@ -31,13 +31,13 @@ dials.integate.
 
 Examples::
 
-  dials.integrate experiments.expt refined.refl
+  dials.integrate models.expt refined.refl
 
-  dials.integrate experiments.expt refined.refl output.reflections=integrated.refl
+  dials.integrate models.expt refined.refl output.reflections=integrated.refl
 
-  dials.integrate experiments.expt refined.refl profile.fitting=False
+  dials.integrate models.expt refined.refl profile.fitting=False
 
-  dials.integrate experiments.expt refined.refl background.algorithm=glm
+  dials.integrate models.expt refined.refl background.algorithm=glm
 
 """
 

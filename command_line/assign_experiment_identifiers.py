@@ -40,7 +40,7 @@ phil_scope = phil.parse(
 def run(args=None):
     """Run assign experiment identifiers from the command line."""
     usage = (
-        """Usage: dials.assign_experiment_identifiers reflections.refl models.expt"""
+        """Usage: dials.assign_experiment_identifiers observations.refl models.expt"""
     )
     parser = OptionParser(
         usage=usage,

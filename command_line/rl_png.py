@@ -134,7 +134,7 @@ def run():
     from dials.util.options import flatten_reflections
     from dials.util import log
 
-    usage = "dials.rl_png [options] experiments.json reflections.refl"
+    usage = "dials.rl_png [options] experiments.json observations.refl"
 
     parser = OptionParser(
         usage=usage,

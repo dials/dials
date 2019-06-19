@@ -113,12 +113,12 @@ def test(dials_regression, run_in_tmpdir):
     # Set half of the experiments to the new detector
     for i in xrange(len(exp) // 2):
         exp[i].detector = detector
-    dump.experiment_list(exp, "modded_experiments.expt")
+    dump.experiment_list(exp, "modded.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.expt",
+            "modded.expt",
             "combined.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
@@ -142,15 +142,11 @@ def test(dials_regression, run_in_tmpdir):
         assert i in reflections["id"]
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
-    reflections.as_pickle("assigned_reflections.refl")
-    dump.experiment_list(explist, "assigned_experiments.expt")
+    reflections.as_pickle("assigned.refl")
+    dump.experiment_list(explist, "assigned.expt")
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "assigned_experiments.expt",
-            "assigned_reflections.refl",
-        ]
+        ["dials.split_experiments", "assigned.expt", "assigned.refl"]
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
@@ -172,18 +168,16 @@ def test(dials_regression, run_in_tmpdir):
         assert ref_single.experiment_identifiers()[0] == str(i * 2)
 
     # update modded experiments to have same identifiers as assigned_experiments
-    moddedlist = ExperimentListFactory.from_json_file(
-        "modded_experiments.expt", check_format=False
-    )
+    moddedlist = ExperimentListFactory.from_json_file("modded.expt", check_format=False)
     for i, exp in enumerate(moddedlist):
         exp.identifier = str(i * 2)
-    dump.experiment_list(moddedlist, "modded_experiments.expt")
+    dump.experiment_list(moddedlist, "modded.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.expt",
-            "assigned_reflections.refl",
+            "modded.expt",
+            "assigned.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",

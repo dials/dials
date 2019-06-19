@@ -27,11 +27,11 @@ principle goniometer axis.
 
 Examples::
 
-  dials.align_crystal experiments.expt
+  dials.align_crystal models.expt
 
-  dials.align_crystal experiments.expt vector=0,0,1 vector=0,1,0
+  dials.align_crystal models.expt vector=0,0,1 vector=0,1,0
 
-  dials.align_crystal experiments.expt frame=direct
+  dials.align_crystal models.expt frame=direct
 
 """
 
@@ -369,7 +369,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.expt" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

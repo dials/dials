@@ -152,7 +152,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     # append to the experiment list and write out
     el.append(e2)
     dump = ExperimentListDumper(el)
-    dump.as_json("foo_experiments.expt")
+    dump.as_json("foo.expt")
 
     # duplicate the reflections and increment the experiment id
     rt2 = deepcopy(rt)
@@ -160,11 +160,11 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # concatenate reflections and write out
     rt.extend(rt2)
-    rt.as_pickle("foo_reflections.refl")
+    rt.as_pickle("foo.refl")
 
     # set up refinement, constraining the distance parameter
     cmd = (
-        "dials.refine foo_experiments.expt foo_reflections.refl "
+        "dials.refine foo.expt foo.refl "
         "history=history.pickle refinement.parameterisation.detector."
         "constraints.parameter=Dist scan_varying=False"
     )

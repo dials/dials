@@ -51,14 +51,14 @@ def test2(dials_data, tmpdir):
     j["scan"][0]["image_range"] = [11, 19]
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
-    with tmpdir.join("experiments.expt").open("w") as fh:
+    with tmpdir.join("models.expt").open("w") as fh:
         json.dump(j, fh)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "experiments.expt",
+            "models.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",

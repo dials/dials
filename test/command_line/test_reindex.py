@@ -137,16 +137,16 @@ def test_reindex_against_reference(dials_regression, tmpdir):
         experiments_path,
         "change_of_basis_op=a,b,c",
         "space_group=P4",
-        "output.reflections=P4_reflections.refl",
-        "output.experiments=P4_experiments.expt",
+        "output.reflections=P4.refl",
+        "output.experiments=P4.expt",
     ]
     command = " ".join(commands)
     print(command)
 
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("P4_reflections.refl")
-    assert os.path.exists("P4_experiments.expt")
-    new_experiments = load.experiment_list("P4_experiments.expt", check_format=False)
+    assert os.path.exists("P4.refl")
+    assert os.path.exists("P4.expt")
+    new_experiments = load.experiment_list("P4.expt", check_format=False)
     assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == " P 4"
 
     # Now have something in P4, get another dataset in a different indexing scheme
@@ -154,8 +154,8 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     cb_op = sgtbx.change_of_basis_op("a,-b,-c")
     commands = [
         "dials.reindex",
-        "P4_reflections.refl",
-        "P4_experiments.expt",
+        "P4.refl",
+        "P4.expt",
         "change_of_basis_op=%s" % str(cb_op),
         "output.experiments=P4_reindexed.expt",
         "output.reflections=P4_reindexed.refl",
@@ -167,8 +167,8 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     # now run reference reindexing
     commands = [
         "dials.reindex",
-        "P4_reflections.refl",
-        "P4_experiments.expt",
+        "P4.refl",
+        "P4.expt",
         "reference.experiments=P4_reindexed.expt",
         "reference.reflections=P4_reindexed.refl",
     ]
@@ -179,7 +179,7 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
     reindexed_reflections = easy_pickle.load("reindexed.refl")
     P4_reindexed = easy_pickle.load("P4_reindexed.refl")
-    P4_reflections = easy_pickle.load("P4_reflections.refl")
+    P4_reflections = easy_pickle.load("P4.refl")
 
     h1, k1, l1 = reindexed_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = P4_reindexed["miller_index"].as_vec3_double().parts()

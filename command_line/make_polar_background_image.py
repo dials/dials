@@ -12,7 +12,7 @@ This program makes a polar background image
 
 Examples::
 
-dev.dials.make_polar_background_image experiments.expt model=background.pickle
+dev.dials.make_polar_background_image models.expt model=background.pickle
 
 """
 

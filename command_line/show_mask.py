@@ -42,7 +42,7 @@ Utility to just display the mask for the desired image
 
 Examples::
 
-  dev.dials.show_mask experiments.expt image=1
+  dev.dials.show_mask models.expt image=1
 
 """
 

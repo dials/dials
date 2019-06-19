@@ -43,7 +43,7 @@ for scan-varying refinement.
 
 Examples::
 
-  dev.dials.plot_centroid_analysis reflections.refl
+  dev.dials.plot_centroid_analysis observations.refl
 
 """
 
@@ -191,7 +191,7 @@ def run(args):
 
     usage = (
         """\
-%s reflections.refl [options]"""
+%s observations.refl [options]"""
         % libtbx.env.dispatcher_name
     )
     from dials.util.options import OptionParser

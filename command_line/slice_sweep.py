@@ -30,12 +30,12 @@ are removed.
 
 Examples::
 
-  dials.slice_sweep experiments.expt reflections.refl "image_range=1 20"
+  dials.slice_sweep models.expt observations.refl "image_range=1 20"
 
-  dials.slice_sweep experiments.expt "image_range=1 20"
+  dials.slice_sweep models.expt "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
-  dials.slice_sweep experiments.expt reflections.refl \
+  dials.slice_sweep models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 
 """
@@ -117,7 +117,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.expt reflections.refl" % libtbx.env.dispatcher_name
+            "models.expt observations.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

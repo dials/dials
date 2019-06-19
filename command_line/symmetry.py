@@ -163,13 +163,13 @@ reflections.
 
 Examples::
 
-  dials.symmetry experiments.expt reflections.refl
+  dials.symmetry models.expt observations.refl
 
 """
 
 
 def run(args):
-    usage = "dials.symmetry [options] experiments.expt reflections.refl"
+    usage = "dials.symmetry [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,

@@ -298,18 +298,18 @@ the presence of an indexing ambiguity.
 
 The program takes as input a set of integrated experiments and reflections,
 either in one file per experiment, or with all experiments combined in a single
-experiments.expt and reflections.refl file. It will perform analysis of the
+models.expt and observations.refl file. It will perform analysis of the
 symmetry elements present in the datasets and, if necessary, reindex experiments
 and reflections as necessary to ensure that all output experiments and
 reflections are indexed consistently.
 
 Examples::
 
-  dials.cosym experiments.expt reflections.refl
+  dials.cosym models.expt observations.refl
 
-  dials.cosym experiments.expt reflections.refl space_group=I23
+  dials.cosym models.expt observations.refl space_group=I23
 
-  dials.cosym experiments.expt reflections.refl space_group=I23 lattice_group=I23
+  dials.cosym models.expt observations.refl space_group=I23 lattice_group=I23
 
 """
 
@@ -318,7 +318,7 @@ def run(args):
     from dials.util import log
     from dials.util.options import OptionParser
 
-    usage = "dials.cosym [options] experiments.expt reflections.refl"
+    usage = "dials.cosym [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,

@@ -86,7 +86,7 @@ def test_from_xds_files(dials_data, tmpdir):
         [
             "dials.import_xds",
             "input.method=experiment",
-            "output.filename=import_experiments.expt",
+            "output.filename=import_xds.expt",
             dials_data("centroid_test_data"),
         ],
         working_directory=tmpdir,
@@ -94,4 +94,4 @@ def test_from_xds_files(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    assert tmpdir.join("import_experiments.expt").check(file=1)
+    assert tmpdir.join("import_xds.expt").check(file=1)

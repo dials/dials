@@ -13,12 +13,12 @@ for further processing.
 
 Scaling against a dials reference dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In this example, reference_reflections.refl and reference_experiments.expt are
+In this example, reference.refl and reference.expt are
 from a dataset that has already been scaled with dials.scale. To scale another
 dataset (datafiles integrated.refl, integrated.expt) against this
 target/reference, one should use the following command::
 
-  dials.scale only_target=True integrated.refl integrated.expt reference_reflections.refl reference_experiments.expt
+  dials.scale only_target=True integrated.refl integrated.expt reference.refl reference.expt
 
 This will scale the intensities of the dataset to agree as closely as possible
 with the intensities of the reference dataset, and save the scaled dataset to

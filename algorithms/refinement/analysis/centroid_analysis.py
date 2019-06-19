@@ -120,7 +120,7 @@ class CentroidAnalyser(object):
 
         # for debugging, write out reflections used
         if debug:
-            self._reflections.as_pickle("centroid_analysis_reflections.refl")
+            self._reflections.as_pickle("centroid_analysis.refl")
 
     def __call__(
         self, calc_average_residuals=True, calc_periodograms=True, spans=(4, 4)

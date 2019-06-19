@@ -60,7 +60,7 @@ class Sort(object):
         # The script usage
         usage = (
             """
-      usage: %s [options] reflections.refl
+      usage: %s [options] observations.refl
 
     """
             % libtbx.env.dispatcher_name

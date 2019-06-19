@@ -144,7 +144,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.expt reflections.refl" % libtbx.env.dispatcher_name
+            "models.expt observations.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

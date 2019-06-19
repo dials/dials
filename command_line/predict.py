@@ -20,11 +20,11 @@ reflections are then saved to file.
 
 Examples::
 
-  dials.predict experiments.expt
+  dials.predict models.expt
 
-  dials.predict experiments.expt force_static=True
+  dials.predict models.expt force_static=True
 
-  dials.predict experiments.expt d_min=2.0
+  dials.predict models.expt d_min=2.0
 
 """
 

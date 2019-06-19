@@ -43,9 +43,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = (
-            "usage: %s [options] /path/to/experiments.expt" % libtbx.env.dispatcher_name
-        )
+        usage = "usage: %s [options] /path/to/models.expt" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             epilog=help_message, usage=usage, phil=phil_scope, read_experiments=True
         )

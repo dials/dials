@@ -23,7 +23,7 @@ This program averages images and makes a radial average over resolution shells
 
 Examples::
 
-dev.dials.make_radial_average experiments.expt
+dev.dials.make_radial_average models.expt
 
 """
 

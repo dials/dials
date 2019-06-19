@@ -9,7 +9,7 @@ def test(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.experiments=experiments.expt",
+            "output.experiments=spotfinder.expt",
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
         ]
@@ -17,13 +17,13 @@ def test(dials_data, tmpdir):
         working_directory=tmpdir.strpath,
     )
     assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("experiments.expt").check()
+    assert tmpdir.join("spotfinder.expt").check()
     assert tmpdir.join("spotfinder.refl").check()
 
     result = procrunner.run(
         [
             "dials.find_hot_pixels",
-            "input.experiments=experiments.expt",
+            "input.experiments=spotfinder.expt",
             "input.reflections=spotfinder.refl",
             "output.mask=hot_pixels.mask",
         ],

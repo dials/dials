@@ -129,16 +129,16 @@ script does. If time is *really* short then try uncommenting the line
 
       # initial indexing in P 1
       cmd = "dials.index datablock.expt strong.refl " +\
-            "output.experiments=P1_experiments.expt"
+            "output.experiments=P1_models.expt"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("P1_experiments.expt"):
+      if not os.path.isfile("P1_models.expt"):
         print "Job %02d failed in initial indexing" % num
         return
 
       # bootstrap from the refined P 1 cell
-      cmd = "dials.index P1_experiments.expt strong.refl space_group='H 3'"
+      cmd = "dials.index P1_models.expt strong.refl space_group='H 3'"
       easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("experiments.expt"):
+      if not os.path.isfile("indexed.expt"):
         print "Job %02d failed in indexing" % num
         return
 
@@ -245,14 +245,14 @@ symmetry constraints. However, for many of the sweeps the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
-  dials.index datablock.expt strong.refl output.experiments=P1_experiments.expt
+  dials.index datablock.expt strong.refl output.experiments=P1_models.expt
 
-and then we feed the refined :file:`P1_experiments.expt` back into
+and then we feed the refined :file:`P1_models.expt` back into
 :program:`dials.index` specifying the correct symmetry::
 
-  dials.index P1_experiments.expt strong.refl space_group='H 3'
+  dials.index P1_models.expt strong.refl space_group='H 3'
 
-When :program:`dials.index` is passed an :file:`experiments.expt` containing
+When :program:`dials.index` is passed a :file:`models.expt` containing
 a crystal model rather than just a :file:`databock.expt` then it automatically
 uses a :samp:`known_orientation` indexer, which avoids doing the basis vector
 search again. It uses the basis of the refined *P* 1 cell and just assigns
@@ -521,8 +521,8 @@ correlated.
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
 rather limited. In order to do joint refinement of the sweeps we need to combine them
-into a single multi-experiment :file:`experiments.expt` and corresponding
-:file:`reflections.refl`. Whilst doing this we want to reduce the separate
+into a single multi-experiment :file:`combined.expt` and corresponding
+:file:`combined.refl`. Whilst doing this we want to reduce the separate
 detector, beam and goniometer models for each experiment into a single shared
 model of each type. The program :program:`dials.combine_experiments` can
 be used for this, but first we have to prepare an input file with a text editor

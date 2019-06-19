@@ -134,7 +134,7 @@ dials_phil_str = """
   input {
     reference_geometry = None
       .type = str
-      .help = Provide an experiments.expt file with exactly one detector model. Data processing will use \
+      .help = Provide an models.expt file with exactly one detector model. Data processing will use \
               that geometry instead of the geometry found in the image headers.
   }
 

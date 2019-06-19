@@ -341,7 +341,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 4:
         raise RuntimeError(
-            "%s INTEGRATE.HKL integrate.refl experiments.expt [dmin]" % sys.argv[0]
+            "%s INTEGRATE.HKL integrate.refl models.expt [dmin]" % sys.argv[0]
         )
 
     if len(sys.argv) == 4:

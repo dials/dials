@@ -178,7 +178,7 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
-    # provide an alternative experiments.expt to get geometry from
+    # provide an alternative models.expt to get geometry from
     result = procrunner.run(
         [
             "dials.import",
@@ -258,12 +258,12 @@ def test_from_image_files(dials_data, tmpdir):
 
     # Import from the image files
     result = procrunner.run(
-        ["dials.import", "output.experiments=import_experiments.expt"]
+        ["dials.import", "output.experiments=imported.expt"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
-    assert tmpdir.join("import_experiments.expt").check(file=1)
+    assert tmpdir.join("imported.expt").check(file=1)
 
 
 def test_from_template(dials_data, tmpdir):
@@ -275,12 +275,12 @@ def test_from_template(dials_data, tmpdir):
         [
             "dials.import",
             "template=" + template.strpath,
-            "output.experiments=import_experiments.expt",
+            "output.experiments=imported.expt",
         ],
         working_directory=tmpdir.strpath,
     )
     assert result["exitcode"] == 0
-    assert tmpdir.join("import_experiments.expt").check(file=1)
+    assert tmpdir.join("imported.expt").check(file=1)
 
 
 def test_extrapolate_scan(dials_data, tmpdir):

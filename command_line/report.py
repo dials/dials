@@ -45,7 +45,7 @@ RAD2DEG = 180 / math.pi
 help_message = """
 
 Generates a html report given the output of various DIALS programs
-(reflections.refl and/or experiments.expt).
+(observations.refl and/or models.expt).
 
 Examples::
 
@@ -2424,7 +2424,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] reflections.refl" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] observations.refl" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

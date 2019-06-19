@@ -14,7 +14,7 @@ logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
 help_message = """
 
-dials.complete_full_sphere [resolution=1.6] experiments.expt
+dials.complete_full_sphere [resolution=1.6] models.expt
 
 """
 

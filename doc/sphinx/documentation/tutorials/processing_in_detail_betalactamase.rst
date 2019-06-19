@@ -160,7 +160,7 @@ using space group P1.
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
-:ref:`experiments.expt <experiments_json>` containing the tuned
+:ref:`indexed.expt <experiments_json>` containing the tuned
 experimental model and determined parameters, and a ``indexed.refl``
 reflection file, including index data from the best fit.
 

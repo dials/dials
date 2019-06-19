@@ -20,13 +20,13 @@ logger = logging.getLogger("dials.command_line.create_profile_model")
 help_message = """
 
 This program computes the profile model from the input reflections. It then
-saves a modified experiments.expt file with the additional profile model
+saves a modified models.expt file with the additional profile model
 information. Usually this is performed during integration; however, on some
 occasions it may be desirable to compute the profile model independently.
 
 Examples::
 
-  dials.create_profile_model experiments.expt reflections.refl
+  dials.create_profile_model models.expt observations.refl
 
 """
 
@@ -57,8 +57,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiments.expt spots.refl"
-            % libtbx.env.dispatcher_name
+            "usage: %s [options] models.expt spots.refl" % libtbx.env.dispatcher_name
         )
         self.parser = OptionParser(
             usage=usage,

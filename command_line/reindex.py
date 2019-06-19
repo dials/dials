@@ -37,7 +37,7 @@ basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
 Alternatively, to reindex an integated dataset in the case of indexing abiguity,
-a reference dataset (experiments.expt and reflection.refl) in the same space
+a reference dataset (models.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
 with the reference dataset.
@@ -50,8 +50,8 @@ Examples::
 
   dials.reindex indexed.expt indexed.refl change_of_basis_op=l,h,k
 
-  dials.reindex indexed.expt indexed.refl reference.experiments=ref_experiments.expt
-    reference.reflections=ref_reflections.refl
+  dials.reindex indexed.expt indexed.refl reference.experiments=reference.expt
+    reference.reflections=reference.refl
 
 """
 
