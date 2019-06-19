@@ -28,16 +28,13 @@ def run_delta_cchalf(pickle_path_list, sweep_path_list, extra_args):
         + pickle_path_list
         + sweep_path_list
         + extra_args
-        + [
-            "output.reflections=filtered_reflections.refl",
-            "output.experiments=filtered_experiments.expt",
-        ]
+        + ["output.reflections=filtered.refl", "output.experiments=filtered.expt"]
     )
     command = " ".join(args)
     print(command)
     _ = easy_run.fully_buffered(command=command).raise_if_errors()
-    assert os.path.exists("filtered_experiments.expt")
-    assert os.path.exists("filtered_reflections.refl")
+    assert os.path.exists("filtered.expt")
+    assert os.path.exists("filtered.refl")
 
 
 def run_one_scaling(pickle_path_list, sweep_path_list, extra_args):

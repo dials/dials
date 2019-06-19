@@ -57,11 +57,11 @@ phil_scope = parse(
 
   output {
 
-    experiments = "filtered_experiments.expt"
+    experiments = "filtered.expt"
       .type = str
       .help = "The filtered experiments file"
 
-    reflections = "filtered_reflections.refl"
+    reflections = "filtered.refl"
       .type = str
       .help = "The filtered reflections file"
 
