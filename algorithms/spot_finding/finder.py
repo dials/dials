@@ -3,12 +3,14 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 import os
+import warnings
 
 import six.moves.cPickle as pickle
 
 import libtbx
 from dxtbx.format.image import ImageBool
 from dxtbx.imageset import ImageSequence
+from dxtbx.model import ExperimentList
 
 from dials.array_family import flex
 from dials.model.data import PixelList, PixelListLabeller
@@ -723,11 +725,22 @@ class SpotFinder(object):
         self.min_chunksize = min_chunksize
 
     def __call__(self, experiments):
-        """
-        Do the spot finding.
+        warnings.warn(
+            "Please use Spotfinder.find_spots to run spotfinding.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.find_spots(experiments)
 
-        :param experiments: The experiments to process
-        :return: The observed spots
+    def find_spots(self, experiments: ExperimentList) -> flex.reflection_table:
+        """
+        Do spotfinding for a set of experiments.
+
+        Args:
+            experiments: The experiment list to process
+
+        Returns:
+            A new reflection table of found reflections
         """
         # Loop through all the experiments and get the unique imagesets
         imagesets = []
