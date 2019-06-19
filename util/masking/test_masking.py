@@ -7,12 +7,15 @@ from scitbx.array_family import flex
 
 from dxtbx.model.goniometer import GoniometerFactory
 from dxtbx.model.detector import DetectorFactory
-from dials.util.masking import GoniometerShadowMaskGenerator
+from dials.util.masking import (
+    GoniometerShadowMaskGenerator,
+    PyGoniometerShadowMaskGenerator,
+)
 
 
 @pytest.fixture
 def kappa_goniometer():
-    def _construct_kappa_goniometer(phi, kappa, omega):
+    def _construct_goniometer(phi, kappa, omega):
         phi_axis = (1.0, 0.0, 0.0)
         kappa_axis = (0.914, 0.279, -0.297)
         omega_axis = (1.0, 0.0, 0.0)
@@ -23,7 +26,23 @@ def kappa_goniometer():
             axes, angles, names, scan_axis=2
         )
 
-    return _construct_kappa_goniometer
+    return _construct_goniometer
+
+
+@pytest.fixture
+def smargon_goniometer():
+    def _construct_goniometer(phi, chi, omega):
+        phi_axis = (1.0, 0.0, 0.0)
+        chi_axis = (0, 0, -1)
+        omega_axis = (1.0, 0.0, 0.0)
+        axes = flex.vec3_double((phi_axis, chi_axis, omega_axis))
+        angles = flex.double((phi, chi, omega))
+        names = flex.std_string(("GON_PHI", "GON_CHI", "GON_OMEGA"))
+        return GoniometerFactory.make_multi_axis_goniometer(
+            axes, angles, names, scan_axis=2
+        )
+
+    return _construct_goniometer
 
 
 @pytest.fixture
@@ -72,14 +91,24 @@ def kappa_goniometer_shadow_masker(request):
         # pyplot.show()
 
         if request.param == "python":
-            from dials.util.masking import _GoniometerShadowMaskGenerator
-
-            return _GoniometerShadowMaskGenerator(
+            return PyGoniometerShadowMaskGenerator(
                 goniometer, coords, flex.size_t(len(coords), 0)
             )
         return GoniometerShadowMaskGenerator(
             goniometer, coords, flex.size_t(len(coords), 0)
         )
+
+    return _construct_shadow_masker
+
+
+@pytest.fixture(params=["cpp", "python"])
+def smargon_shadow_masker(request):
+    def _construct_shadow_masker(goniometer):
+        from dxtbx.format.SmarGonShadowMask import SmarGonShadowMaskGenerator
+
+        if request.param == "python":
+            return SmarGonShadowMaskGenerator(goniometer)
+        return SmarGonShadowMaskGenerator(goniometer)
 
     return _construct_shadow_masker
 
@@ -166,3 +195,23 @@ def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
     assert len(shadow[0]) == 0
     mask = masker.get_mask(detector, scan_angle)
     assert mask[0] is None or mask[0].count(False) == 0
+
+
+def test_SmarGonShadowMaskGenerator(
+    smargon_goniometer, pilatus_6M, smargon_shadow_masker
+):
+    # goniometer shadow does not intersect with detector panel
+    goniometer = smargon_goniometer(phi=48, chi=45, omega=95)
+    detector = pilatus_6M(distance=170)
+    masker = smargon_shadow_masker(goniometer)
+
+    scan_angle = 100
+    extrema = masker.extrema_at_scan_angle(scan_angle)
+    assert len(extrema) == 82
+    assert extrema[1] == pytest.approx(
+        (22.106645739466337, 13.963679418895005, -22.47914302717216)
+    )
+    shadow = masker.project_extrema(detector, scan_angle)
+    assert len(shadow[0]) == 15
+    mask = masker.get_mask(detector, scan_angle)
+    assert mask[0] is None or mask[0].count(True) == 5716721
