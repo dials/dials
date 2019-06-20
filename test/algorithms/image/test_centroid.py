@@ -4,9 +4,9 @@ from __future__ import absolute_import, division, print_function
 class Test_Centroid(object):
     EPS = 1e-7
 
-    def setup_class(cls):
-        cls.generate_data()
-        cls.calculate_gold()
+    def setup_class(self):
+        self.generate_data()
+        self.calculate_gold()
 
     def test_centroid_points2d(self):
         from dials.algorithms.image.centroid import centroid_points
@@ -85,12 +85,6 @@ class Test_Centroid(object):
     def test_centroid_bias(self):
         from dials.algorithms.image.centroid import centroid_image
         from scitbx.array_family import flex
-
-        pixels = flex.double(flex.grid(5, 5), 0)
-        pixels[2, 2] = 10
-        centroid = centroid_image(pixels)
-        # assert abs(centroid.average_bias_estimate()[0] - 1/12.0) < 1e-7
-        # assert abs(centroid.average_bias_estimate()[1] - 1/12.0) < 1e-7
 
         pixels = flex.double(flex.grid(5, 5), 0)
         pixels[1, 2] = 5

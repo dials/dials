@@ -260,7 +260,6 @@ def test_reflection_manager():
     reflections["id"] = flex.int()
     reflections["flags"] = flex.size_t()
 
-    npanels = 2
     width = 1000
     height = 1000
     nrefl = 10000
@@ -394,7 +393,6 @@ def test_reflection_manager():
     # Get results and check they're as expected
     data = executor.data()
     result = data["data"]
-    bbox = data["bbox"]
     for i in range(len(processed)):
         for j in range(len(processed[i])):
             assert result[processed[i][j]] == i + 1
@@ -438,7 +436,7 @@ def test_integrator_3d(dials_data, nproc):
     ).extract()
 
     integrator = Integrator3D(exlist, rlist, params)
-    result = integrator.integrate()
+    integrator.integrate()
 
 
 def test_summation(dials_data):

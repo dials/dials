@@ -40,7 +40,6 @@ def test_indexing():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
@@ -142,7 +141,6 @@ def test_weights():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
@@ -213,7 +211,6 @@ def test_self_consistent():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2
@@ -232,7 +229,6 @@ def test_pickle():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nx = 10
     ny = 10
     nz = 2

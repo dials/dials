@@ -321,7 +321,6 @@ def test_with_flat_background_partial():
     mp = m[0:5, :, :]
     cp = c[0:5, :, :]
     bp = b[0:5, :, :]
-    c0p = c0[0:5, :, :]
 
     # Fit
     fit = ProfileFitter(cp, bp, mp, pp)
@@ -348,8 +347,6 @@ def test_deconvolve_zero():
 
     seed(0)
 
-    I0 = [1000, 2000, 3000]
-
     # Create profile
     p = generate_3_profiles()
 
@@ -359,11 +356,10 @@ def test_deconvolve_zero():
     m = flex.bool(flex.grid(40, 9, 9), True)
 
     # Fit
-    passed = False
     with pytest.raises(Exception):
         fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
-        V = fit.variance()
+        fit.intensity()
+        fit.variance()
 
 
 def test_deconvolve_3_with_no_background():

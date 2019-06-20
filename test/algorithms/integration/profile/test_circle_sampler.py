@@ -10,11 +10,9 @@ def test_getters():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
     image_size = sampler.image_size()
-    scan_range = sampler.scan_range()
     image_centre = sampler.image_centre()
     r0 = sampler.r0()
     r1 = sampler.r1()
@@ -38,7 +36,6 @@ def test_detector_area():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
     im = flex.int(flex.grid(height, width))
@@ -184,7 +181,6 @@ def test_weights():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 1
     sampler = CircleSampler((width, height), scan_range, nz)
 
@@ -195,7 +191,6 @@ def test_weights():
         weight = sampler.weight(i, 0, coord)
         assert abs(weight - 1.0) < eps
 
-    r0 = sampler.r0()
     r1 = sampler.r1()
     r2 = sampler.r2()
     r = r2 / (2.0 * r1)
@@ -228,7 +223,6 @@ def test_self_consistent():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
 
@@ -244,7 +238,6 @@ def test_z_index():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
     assert (sampler.nearest(0, (500, 500, 2.0)) / 9) == 0
@@ -269,7 +262,6 @@ def test_pickle():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = CircleSampler((width, height), scan_range, nz)
 

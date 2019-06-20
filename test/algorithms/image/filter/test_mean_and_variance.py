@@ -58,8 +58,6 @@ def test_masked_mean_filter():
             p = flex.select(p, flags=m)
             mv = flex.mean_and_variance(flex.double(p))
             m2 = mv.mean()
-            s1 = flex.sum(flex.double(p))
-            s2 = flex.sum(m.as_1d())
         assert m1 == pytest.approx(m2, abs=eps)
 
 
@@ -74,7 +72,6 @@ def test_mean_and_variance_filter():
     # Calculate the summed area table
     mean_and_variance = mean_and_variance_filter(image, (3, 3))
     mean = mean_and_variance.mean()
-    variance = mean_and_variance.variance()
     sample_variance = mean_and_variance.sample_variance()
 
     # For a selection of random points, ensure that the value is the
@@ -84,7 +81,6 @@ def test_mean_and_variance_filter():
         i = random.randint(10, 1990)
         j = random.randint(10, 1990)
         m1 = mean[j, i]
-        v1 = variance[j, i]
         sv1 = sample_variance[j, i]
         p = image[j - 3 : j + 4, i - 3 : i + 4]
         mv = flex.mean_and_variance(p.as_1d())

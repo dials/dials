@@ -5,7 +5,6 @@ import six.moves.cPickle as pickle
 
 
 def test_run(dials_regression):
-    from dials.algorithms.background.simple import Creator
     from dials.algorithms.background.simple import MosflmOutlierRejector
     from dials.algorithms.background.simple import Linear2dModeller
 
@@ -21,7 +20,6 @@ def test_run(dials_regression):
     n_sigma = 4
     outlier_rejector = MosflmOutlierRejector(fraction, n_sigma)
     linear_modeller = Linear2dModeller()
-    background_creator = Creator(linear_modeller, outlier_rejector)
 
     from dials.array_family import flex
     from math import sqrt
@@ -44,22 +42,11 @@ def test_run(dials_regression):
     VAR2 = []
     DIFF = []
     for i in range(len(rtable)):
-        xdet, ydet = rtable[i]["xy"]
-        nx = rtable[i]["nx"]
-        ny = rtable[i]["ny"]
-        nc = rtable[i]["nc"]
-        nrx = rtable[i]["nrx"]
-        nry = rtable[i]["nry"]
-        bbox = rtable[i]["bbox"]
         I = rtable[i]["intensity.sum.value"]
         Ivar = rtable[i]["intensity.sum.variance"]
-        lp = rtable[i]["lp"]
         data = shoeboxes[i].as_double()
         mask = masks[i]
-        fraction = 1.0
-        nsigma = 4
         try:
-            # model = PlaneModel(data, mask, fraction, nsigma)
             assert len(data.all()) == 2
             assert len(mask.all()) == 2
             data.reshape(flex.grid(1, *data.all()))
@@ -71,8 +58,6 @@ def test_run(dials_regression):
         except Exception:
             count += 1
             raise
-            continue
-        # n = model.noutlier()
         assert len(model.params()) == 3
         hy = data.all()[1] // 2
         hx = data.all()[2] // 2
@@ -80,9 +65,6 @@ def test_run(dials_regression):
         a1 = model.params()[1]
         b1 = model.params()[2]
         c3 = c1 + a1 * (0.5 + hx) + b1 * (0.5 + hy)
-        # a1 = model.a()
-        # b1 = model.b()
-        # c1 = model.c()
         a2 = rtable[i]["background"][0]
         b2 = rtable[i]["background"][1]
         c2 = rtable[i]["background"][2]
@@ -94,19 +76,6 @@ def test_run(dials_regression):
         except Exception:
             count += 1
             continue
-            # print "BG %d:(%.2f, %.2f, %.1f), (%.2f, %.2f, %.1f): %d" % \
-            # (i, a1, b1, c1, a2, b2, c2, n)
-            # print "X, Y: ", xdet, ydet
-            # print "NX, NY: ", nx, ny
-            # print "NRX, NRY, NC", nrx, nry, nc
-            # print int(floor(xdet + 0.5)) - nx // 2, int(floor(ydet + 0.5)) - ny // 2
-            # print "BBOX: ", bbox
-            # print "N Outliers: ", model.noutlier()
-            # print "N Background: ", model.nbackground()
-            # print "Max DIff: ", model.maxdiff()
-            # print data.as_numpy_array().transpose()[::-1,::-1]
-            # print mask.as_numpy_array().transpose()[::-1,::-1]
-            # raise
 
         background = data.as_double()
         # hy = background.all()[1] // 2
@@ -139,30 +108,6 @@ def test_run(dials_regression):
                 assert abs(sqrt(Ivar1) - sqrt(Ivar2)) < 1.0
             except Exception:
                 count += 1
-                # import numpy
-                # numpy.set_printoptions(precision=4, linewidth=200)
-                # print "# %d" % i
-                # print "I: %f, %f, %f" % (I2, I1, lp)
-                # print "DEBUG: ", c1 * 25
-                # print "PF: %f" % rtable[i]['intensity.prf.value']
-                # print "BG (%.4f, %.4f, %.4f), (%.2f, %.2f, %.1f): %d" % \
-                # (a1, b1, c1, a2, b2, c2, n)
-                # print "X, Y: ", xdet, ydet
-                # print "NX, NY: ", nx, ny
-                # print "NRX, NRY, NC", nrx, nry, nc
-                # print int(floor(xdet + 0.5)) - nx // 2, int(floor(ydet + 0.5)) - ny // 2
-                # print "BBOX: ", bbox
-                # print "N Outliers: ", model.noutlier()
-                # print "N Background: ", model.nbackground()
-                # print "Max DIff: ", model.maxdiff()
-                # temp = (mask == MaskCode.Valid | MaskCode.Foreground).as_1d().as_int()
-                # temp.resize(flex.grid(*data.all()))
-                # temp = temp.as_double()
-                # print data.as_numpy_array().transpose()[::-1,::-1]
-                # print (background * temp).as_numpy_array().transpose()[::-1,::-1]
-                # print mask.as_numpy_array().transpose()[::-1,::-1]
-                # print ((data.as_double() - background) * temp).as_numpy_array().transpose()[::-1,::-1]
-                # raise
                 continue
 
     # Only 1 should fail

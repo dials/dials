@@ -91,10 +91,10 @@ def test_kapton(run_in_tmpdir):
         image_file
     )
 
-    result = libtbx.easy_run.fully_buffered(
+    libtbx.easy_run.fully_buffered(
         command=command_without_kapton, stdout_splitlines=True
     )  # .raise_if_errors()
-    result = libtbx.easy_run.fully_buffered(
+    libtbx.easy_run.fully_buffered(
         command=command_with_kapton, stdout_splitlines=True
     )  # .raise_if_errors()
 
@@ -128,12 +128,10 @@ def test_kapton(run_in_tmpdir):
                     all_i.append(panel_refls["intensity.sum.value"][i])
 
         for sel in all_x <= 0, all_x > 0, all_y <= 0, all_y > 0:
-            stats = flex.mean_and_variance(all_i.select(sel))
             if count == 0:
                 without_kapton_medians.append(flex.median(all_i.select(sel)))
             if count == 1:
                 with_kapton_medians.append(flex.median(all_i.select(sel)))
-            # print "Mean", stats.mean(), "stddev", stats.unweighted_sample_standard_deviation(), "median", flex.median(all_i.select(sel))
         count += 1
 
     # Now compare results between uncorrected and corrected data

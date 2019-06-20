@@ -7,8 +7,6 @@ import random
 def test_getters():
     from dials.algorithms.profile_model.modeller import SingleSampler
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
     depth = scan_range[1] - scan_range[0]
     nz = 2
@@ -31,7 +29,6 @@ def test_indexing():
     width = 1000
     height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = SingleSampler(scan_range, nz)
     zstep = sampler.step_size()
@@ -51,8 +48,6 @@ def test_indexing():
 def test_nearest():
     from dials.algorithms.profile_model.modeller import SingleSampler
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
     depth = scan_range[1] - scan_range[0]
     nz = 2
@@ -73,8 +68,6 @@ def test_nearest():
 def test_nearest_n():
     from dials.algorithms.profile_model.modeller import SingleSampler
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
     depth = scan_range[1] - scan_range[0]
     nz = 2
@@ -99,10 +92,7 @@ def test_weights():
     from dials.algorithms.profile_model.modeller import SingleSampler
     from scitbx import matrix
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = SingleSampler(scan_range, nz)
 
@@ -135,10 +125,7 @@ def test_weights():
 def test_self_consistent():
     from dials.algorithms.profile_model.modeller import SingleSampler
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = SingleSampler(scan_range, nz)
 
@@ -152,10 +139,7 @@ def test_pickle():
     from dials.algorithms.profile_model.modeller import SingleSampler
     import six.moves.cPickle as pickle
 
-    width = 1000
-    height = 1000
     scan_range = (2, 12)
-    depth = scan_range[1] - scan_range[0]
     nz = 2
     sampler = SingleSampler(scan_range, nz)
     sampler2 = pickle.loads(pickle.dumps(sampler))

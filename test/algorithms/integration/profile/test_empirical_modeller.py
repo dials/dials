@@ -45,9 +45,6 @@ class Modeller(EmpiricalProfileModeller):
 
 class Test(object):
     def setup_class(self):
-        width = 1000
-        height = 1000
-        depth = 10
         self.n = 9
         self.grid_size = (9, 9, 9)
         self.threshold = 0.0
