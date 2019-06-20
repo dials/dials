@@ -18,6 +18,7 @@ def random_rotation(angle_min=0, angle_max=360):
 
 @pytest.fixture(params=["P2", "P3", "P6", "R3:h", "I23"])
 def setup_rlp(request):
+    random.seed(42)  # guaranteed to be random
     space_group = request.param
     # setup symmetry information
     sgi = sgtbx.space_group_info(symbol=space_group)
