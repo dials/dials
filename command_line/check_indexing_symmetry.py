@@ -28,6 +28,7 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 from dials.util import log
 from dials.util.version import dials_version
+from libtbx.utils import format_float_with_standard_uncertainty
 
 logger = logging.getLogger("dials.command_line.check_indexing_symmetry")
 
@@ -128,6 +129,15 @@ def standard_error_of_pearson_cc(corr_coeffs, n):
     return numerator / denominator.as_double()
 
 
+def format_cc_with_standard_error(cc, se, decimal_places=3):
+    minimum = pow(0.1, decimal_places)
+    if se >= minimum:
+        cc_str = format_float_with_standard_uncertainty(cc, se, minimum=1.0e-3)
+    else:
+        cc_str = "{val:0.{dp}f}".format(val=cc, dp=decimal_places)
+    return cc_str
+
+
 def get_symop_correlation_coefficients(miller_array, use_binning=False):
     corr_coeffs = flex.double()
     n_refs = flex.int()
@@ -211,7 +221,8 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
             if cc - se > params.symop_threshold:
                 true_symops.append(smx)
                 accept = "***"
-        logger.info("%20s %6d %.3f +/- %.3f %s" % (smx, n_ref, cc, se, accept))
+        cc_str = format_cc_with_standard_error(cc, se)
+        logger.info("%20s %6d %s %s" % (smx, n_ref, cc_str, accept))
 
     if params.symop_threshold:
         sg = sgtbx_space_group()
@@ -297,7 +308,8 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
     for (h, k, l), cc, n, se in zip(offsets, ccs, n_refs, ses):
         if cc > params.symop_threshold or (h == k == l == 0):
-            logger.info("%2d %2d %2d %6d %.3f +/- %.3f" % (h, k, l, n, cc, se))
+            cc_str = format_cc_with_standard_error(cc, se)
+            logger.info("%2d %2d %2d %6d %s" % (h, k, l, n, cc_str))
 
     logger.info("")
 
