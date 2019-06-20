@@ -60,6 +60,8 @@ d_max = 0
 symop_threshold = 0
   .type = float
   .help = "Threshold above which we consider a symmetry operator true."
+          "The value tested is the correlation coefficient minus one"
+          "standard error."
 grid = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
@@ -102,6 +104,28 @@ def dump_text(filename, set0, set1):
         for _0, _1 in zip(i0, i1):
             assert _0[0] == _1[0]
             fout.write("%f %f\n" % (_0[1], _1[1]))
+
+
+def standard_error_of_pearson_cc(corr_coeffs, n):
+    """Calculate the standard error of Pearson's correlation coefficient.
+
+    This uses the formula SE = sqrt((1 - r^2) / (n - 2)), which is correct
+    only if the data from which the CCs were calculated are normally
+    distributed.
+
+    Args:
+        corr_coeffs: a flex.double array of correlation coefficient values
+        n: a flex.int array of sample sizes used to calculate corr_coeffs
+
+    Returns:
+        flex.double: the standard error for values in corr_coeffs
+    """
+
+    numerator = 1 - flex.pow2(corr_coeffs)
+    denominator = n - 2
+    if min(denominator) < 1:
+        raise ValueError("Too few reflections to calculate a standard error")
+    return numerator / denominator.as_double()
 
 
 def get_symop_correlation_coefficients(miller_array, use_binning=False):
@@ -179,14 +203,15 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     true_symops = []
 
     ccs, n_refs = get_symop_correlation_coefficients(ms)
+    ses = standard_error_of_pearson_cc(ccs, n_refs)
 
-    for smx, cc, n_ref in zip(space_group.smx(), ccs, n_refs):
+    for smx, cc, n_ref, se in zip(space_group.smx(), ccs, n_refs, ses):
         accept = ""
         if params.symop_threshold:
-            if cc > params.symop_threshold:
+            if cc - se > params.symop_threshold:
                 true_symops.append(smx)
                 accept = "***"
-        logger.info("%20s %6d %.3f %s" % (smx, n_ref, cc, accept))
+        logger.info("%20s %6d %.3f +/- %.3f %s" % (smx, n_ref, cc, se, accept))
 
     if params.symop_threshold:
         sg = sgtbx_space_group()
@@ -255,7 +280,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
     else:
         reference = None
 
-    offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
+    offsets, ccs, n_refs = get_indexing_offset_correlation_coefficients(
         reflections,
         experiment.crystal,
         grid=params.grid,
@@ -268,9 +293,11 @@ def test_P1_crystal_indexing(reflections, experiment, params):
         reference=reference,
     )
 
-    for (h, k, l), cc, n in zip(offsets, ccs, nref):
+    ses = standard_error_of_pearson_cc(ccs, n_refs)
+
+    for (h, k, l), cc, n, se in zip(offsets, ccs, n_refs, ses):
         if cc > params.symop_threshold or (h == k == l == 0):
-            logger.info("%2d %2d %2d %6d %.3f" % (h, k, l, n, cc))
+            logger.info("%2d %2d %2d %6d %.3f +/- %.3f" % (h, k, l, n, cc, se))
 
     logger.info("")
 
