@@ -284,7 +284,7 @@ class MaskGenerator(object):
         return tuple(masks)
 
 
-class _GoniometerShadowMaskGenerator(object):
+class PyGoniometerShadowMaskGenerator(object):
     def __init__(self, goniometer, extrema_at_datum, axis):
         # axis is an array of size_t the same size as extrema_at_datum,
         # where each element identifies the axis that that coordinate depends on

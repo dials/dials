@@ -197,11 +197,10 @@ def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
     assert mask[0] is None or mask[0].count(False) == 0
 
 
-def test_SmarGonShadowMaskGenerator(
+def test_SmarGonShadowMaskGenerator_p48_c45_o95(
     smargon_goniometer, pilatus_6M, smargon_shadow_masker
 ):
-    # goniometer shadow does not intersect with detector panel
-    goniometer = smargon_goniometer(phi=48, chi=45, omega=95)
+    goniometer = smargon_goniometer(phi=48, chi=45, omega=100)
     detector = pilatus_6M(distance=170)
     masker = smargon_shadow_masker(goniometer)
 
@@ -215,3 +214,24 @@ def test_SmarGonShadowMaskGenerator(
     assert len(shadow[0]) == 15
     mask = masker.get_mask(detector, scan_angle)
     assert mask[0] is None or mask[0].count(True) == 5716721
+
+
+def test_SmarGonShadowMaskGenerator_p0_c90_o50(
+    smargon_goniometer, pilatus_6M, smargon_shadow_masker
+):
+    for phi in (0, 90, 180):
+        # There should be no dependence of the shadow on phi
+        goniometer = smargon_goniometer(phi=phi, chi=90, omega=50)
+        detector = pilatus_6M(distance=214.75)
+        masker = smargon_shadow_masker(goniometer)
+
+        scan_angle = 50
+        extrema = masker.extrema_at_scan_angle(scan_angle)
+        assert len(extrema) == 82
+        assert extrema[1] == pytest.approx(
+            (-1.7364817766692957, -13.66792605230091, -31.609688838521162)
+        )
+        shadow = masker.project_extrema(detector, scan_angle)
+        assert len(shadow[0]) == 11
+        mask = masker.get_mask(detector, scan_angle)
+        assert mask[0] is None or mask[0].count(True) == 4614865
