@@ -286,7 +286,6 @@ def run_filtering(params, experiments, reflections):
 
     # 'Good' intensity selection
     if params.select_good_intensities:
-        # Combined filter, originally in dev.dials.filter_good_intensities
         if "intensity.sum.variance" not in reflections:
             raise Sorry("No intensity.sum.variance in reflection table.")
         if "intensity.prf.variance" in reflections:
@@ -353,8 +352,6 @@ def run_filtering(params, experiments, reflections):
 
 
 def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0):
-    """Combined filter, originally in dev.dials.filter_dead_time"""
-
     if not experiments:
         raise Sorry("an experiment list must be provided to filter by dead time")
 
