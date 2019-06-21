@@ -24,8 +24,8 @@ jobs:
          - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
 
          # Update CCTBX
-         - $HOME/build_dials/modules/dials/.travis/clean-cctbx
-         - $HOME/build_dials/modules/dials/.travis/update-cctbx
+         - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx
+         - $HOME/build_dials/modules/dials/.travis/update-cctbx-dxtbx
 
       before_script:
          # Enter CCTBX environment
@@ -95,6 +95,6 @@ jobs:
       if: type = pull_request
 
 before_cache:
-  - $HOME/build_dials/modules/dials/.travis/clean-cctbx
+  - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx
   - cd $HOME
   - rm -rf $HOME/build_dials/modules/dials

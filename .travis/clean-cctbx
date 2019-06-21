@@ -1,8 +1,0 @@
-#!/bin/bash
-
-if [ -e $HOME/build_dials/modules/cctbx_project/.git ]; then
-  echo Cleaning cctbx_project repository
-  cd $HOME/build_dials/modules/cctbx_project || exit 1
-  git reset --hard HEAD
-  git clean -dffx
-fi
