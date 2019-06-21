@@ -36,11 +36,11 @@ class Script(object):
                 "experiments that reference a single detector model."
 
       output {
-        experiments_prefix = experiments
+        experiments_prefix = split
           .type = str
           .help = "Filename prefix for the split experimental models"
 
-        reflections_prefix = reflections
+        reflections_prefix = split
           .type = str
           .help = "Filename prefix for the split reflections"
 

@@ -78,13 +78,13 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i, e in enumerate(exp):
-        assert os.path.exists("experiments_%03d.expt" % i)
-        assert os.path.exists("reflections_%03d.refl" % i)
+        assert os.path.exists("split_%03d.expt" % i)
+        assert os.path.exists("split_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.expt" % i, check_format=False
+            "split_%03d.expt" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_pickle("reflections_%03d.refl" % i)
+        ref_single = flex.reflection_table.from_pickle("split_%03d.refl" % i)
 
         assert len(exp_single) == 1
         assert exp_single[0].crystal == e.crystal
@@ -152,13 +152,13 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     for i in range(len(explist)):
-        assert os.path.exists("experiments_%03d.expt" % i)
-        assert os.path.exists("reflections_%03d.refl" % i)
+        assert os.path.exists("split_%03d.expt" % i)
+        assert os.path.exists("split_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.expt" % i, check_format=False
+            "split_%03d.expt" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_pickle("reflections_%03d.refl" % i)
+        ref_single = flex.reflection_table.from_pickle("split_%03d.refl" % i)
 
         assert len(exp_single) == 1
         # resets all ids to 0, but keeps mapping to unique identifier.
