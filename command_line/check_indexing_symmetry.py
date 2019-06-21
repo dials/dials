@@ -60,9 +60,8 @@ d_max = 0
   .help = "Low resolution limit to use for analysis"
 symop_threshold = 0
   .type = float
-  .help = "Threshold above which we consider a symmetry operator true."
-          "The value tested is the correlation coefficient minus one"
-          "standard error."
+  .help = "Threshold above which we consider a symmetry operator true"
+          "at approximately 95% confidence."
 grid = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
@@ -218,7 +217,7 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     for smx, cc, n_ref, se in zip(space_group.smx(), ccs, n_refs, ses):
         accept = ""
         if params.symop_threshold:
-            if cc - se > params.symop_threshold:
+            if (cc - 2.0 * se) > params.symop_threshold:
                 true_symops.append(smx)
                 accept = "***"
         cc_str = format_cc_with_standard_error(cc, se)
