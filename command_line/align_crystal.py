@@ -51,7 +51,7 @@ align {
   }
 }
 output {
-  json = align_crystal.expt
+  json = align_crystal.json
     .type = path
 }
 """
