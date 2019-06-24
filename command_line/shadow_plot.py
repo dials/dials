@@ -75,7 +75,7 @@ def run(args):
     scan = imageset.get_scan()
     masker = (
         imageset.masker()
-        .format_class(imageset.paths()[0])
+        .format_class(imageset.paths()[0], **imageset.data().get_params())
         .get_goniometer_shadow_masker()
     )
     if masker is None:

@@ -12,13 +12,13 @@ def filter_shadowed_reflections(experiments, reflections, experiment_goniometer=
         if experiment_goniometer:
             masker = (
                 imageset.masker()
-                .format_class(imageset.paths()[0])
+                .format_class(imageset.paths()[0], **imageset.data().get_params())
                 .get_goniometer_shadow_masker(goniometer=expt.goniometer)
             )
         else:
             masker = (
                 imageset.masker()
-                .format_class(imageset.paths()[0])
+                .format_class(imageset.paths()[0], **imageset.data().get_params())
                 .get_goniometer_shadow_masker()
             )
         detector = expt.detector
