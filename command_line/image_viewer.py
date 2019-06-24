@@ -192,9 +192,9 @@ if __name__ == "__main__":
         exit(0)
 
     flat_expts = flatten_experiments(params.input.experiments)
-    if not all([e.detector for e in flat_expts]):
+    if not all(e.detector for e in flat_expts):
         sys.exit("Error: experiment has no detector")
-    if not all([e.beam for e in flat_expts]):
+    if not all(e.beam for e in flat_expts):
         sys.exit("Error: experiment has no beam")
 
     if params.mask is not None:
