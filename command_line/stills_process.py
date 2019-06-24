@@ -74,14 +74,14 @@ control_phil_str = """
       .help = Directory output files will be placed
     composite_output = False
       .type = bool
-      .help = If True, save one set of json/pickle files per process, where each is a \
+      .help = If True, save one set of experiment/reflection files per process, where each is a \
               concatenated list of all the successful events examined by that process. \
-              If False, output a separate json/pickle file per image (generates a \
+              If False, output a separate experiment/reflection file per image (generates a \
               lot of files).
     logging_dir = None
       .type = str
       .help = Directory output log files will be placed
-    experiments_filename = %s_experiments.expt
+    experiments_filename = %s_imported.expt
       .type = str
       .help = The filename for output experiments
     strong_filename = %s_strong.refl
@@ -90,19 +90,19 @@ control_phil_str = """
     indexed_filename = %s_indexed.refl
       .type = str
       .help = The filename for indexed reflections.
-    refined_experiments_filename = %s_refined_experiments.expt
+    refined_experiments_filename = %s_refined.expt
       .type = str
       .help = The filename for saving refined experimental models
     integrated_filename = %s_integrated.refl
       .type = str
       .help = The filename for final integrated reflections.
-    integrated_experiments_filename = %s_integrated_experiments.expt
+    integrated_experiments_filename = %s_integrated.expt
       .type = str
       .help = The filename for saving final experimental models.
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
-    integration_pickle = int-%d-%s.refl
+    integration_pickle = int-%d-%s.pickle
       .type = str
       .help = Filename for cctbx.xfel-style integration pickle files
   }
@@ -123,7 +123,7 @@ control_phil_str = """
       .help = For MPI, if using composite mode, specify how many ranks to    \
               aggregate data from.  For example, if you have 100 processes,  \
               composite mode will output N*100 files, where N is the number  \
-              of file types (json, pickle, etc). If you specify stride = 25, \
+              of file types (expt, refl, etc). If you specify stride = 25, \
               then each group of 25 process will send their results to 4     \
               processes and only N*4 files will be created. Ideally, match   \
               stride to the number of processors per node.
