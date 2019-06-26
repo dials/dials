@@ -104,6 +104,13 @@ class determine_space_group(symmetry_base):
 
         a = flex.double()
         b = flex.double()
+        ma_tmp = self.intensities.customized_copy(
+            crystal_symmetry=crystal.symmetry(
+                space_group=self.lattice_group,
+                unit_cell=self.intensities.unit_cell(),
+                assert_is_compatible_unit_cell=False,
+            )
+        ).map_to_asu()
         for i in range(binner.n_bins_all()):
             count = binner.counts()[i]
             if count == 0:
@@ -111,13 +118,6 @@ class determine_space_group(symmetry_base):
             bin_isel = binner.array_indices(i)
             p = flex.random_permutation(count)
             p = p[: 2 * (count // 2)]  # ensure even count
-            ma_tmp = self.intensities.customized_copy(
-                crystal_symmetry=crystal.symmetry(
-                    space_group=self.lattice_group,
-                    unit_cell=self.intensities.unit_cell(),
-                    assert_is_compatible_unit_cell=False,
-                )
-            ).map_to_asu()
             ma_a = ma_tmp.select(bin_isel.select(p[: count // 2]))
             ma_b = ma_tmp.select(bin_isel.select(p[count // 2 :]))
             # only choose pairs of reflections that don't have the same indices
