@@ -1,3 +1,6 @@
+"""
+Contains implementation interface for finding spots on one or many images
+"""
 from __future__ import absolute_import, division, print_function
 
 import logging
