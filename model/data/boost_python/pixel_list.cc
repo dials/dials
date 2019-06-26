@@ -8,6 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
+#include <sstream>
+
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/model/data/pixel_list.h>
@@ -22,6 +24,14 @@ namespace dials { namespace model { namespace boost_python {
         obj.frame(), obj.size(), obj.value(), obj.index());
     }
   };
+
+  /// Better __repr__ than default for python
+  std::string PixelList_repr(PixelList const &pixel_list) {
+    std::stringstream ss;
+    ss << "<PixelList frame=" << pixel_list.frame() << " size=" << pixel_list.size()[0]
+       << "," << pixel_list.size()[1] << " len=" << pixel_list.num_points() << ">";
+    return ss.str();
+  }
 
   void export_pixel_list() {
     class_<PixelList>("PixelList", no_init)
@@ -43,6 +53,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("index", &PixelList::index)
       .def("value", &PixelList::value)
       .def("__len__", &PixelList::num_points)
+      .def("__repr__", &PixelList_repr)
       .def_pickle(PixelListPickleSuite());
 
     class_<PixelListLabeller>("PixelListLabeller")
