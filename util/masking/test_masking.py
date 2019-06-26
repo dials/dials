@@ -104,10 +104,13 @@ def kappa_goniometer_shadow_masker(request):
 @pytest.fixture(params=["cpp", "python"])
 def smargon_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
-        from dxtbx.format.SmarGonShadowMask import SmarGonShadowMaskGenerator
+        from dxtbx.format.SmarGonShadowMask import (
+            SmarGonShadowMaskGenerator,
+            PySmarGonShadowMaskGenerator,
+        )
 
         if request.param == "python":
-            return SmarGonShadowMaskGenerator(goniometer)
+            return PySmarGonShadowMaskGenerator(goniometer)
         return SmarGonShadowMaskGenerator(goniometer)
 
     return _construct_shadow_masker
@@ -211,9 +214,9 @@ def test_SmarGonShadowMaskGenerator_p48_c45_o95(
         (22.106645739466337, 13.963679418895005, -22.47914302717216)
     )
     shadow = masker.project_extrema(detector, scan_angle)
-    assert len(shadow[0]) == 15
+    assert len(shadow[0]) in (15, 16)
     mask = masker.get_mask(detector, scan_angle)
-    assert mask[0] is None or mask[0].count(True) == 5716721
+    assert mask[0].count(True) == pytest.approx(5716721, 3e-5)
 
 
 def test_SmarGonShadowMaskGenerator_p0_c90_o50(
@@ -234,4 +237,4 @@ def test_SmarGonShadowMaskGenerator_p0_c90_o50(
         shadow = masker.project_extrema(detector, scan_angle)
         assert len(shadow[0]) == 11
         mask = masker.get_mask(detector, scan_angle)
-        assert mask[0] is None or mask[0].count(True) == 4614865
+        assert mask[0].count(True) == pytest.approx(4614865, 2e-4)

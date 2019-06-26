@@ -17,6 +17,7 @@ from iotbx.phil import parse
 from scitbx.array_family import flex
 
 from dials_util_masking_ext import GoniometerShadowMaskGenerator  # noqa: F401
+from dials_util_masking_ext import SmarGonShadowMaskGenerator  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

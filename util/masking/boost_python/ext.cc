@@ -1,7 +1,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/util/scale_down_array.h>
 #include <dials/util/masking/goniometer_shadow_masking.h>
+#include <dials/util/scale_down_array.h>
 
 namespace dials { namespace util { namespace masking { namespace boost_python {
 
@@ -64,5 +64,10 @@ namespace dials { namespace util { namespace masking { namespace boost_python {
            &GoniometerShadowMaskGenerator::extrema_at_scan_angle)
       .def("project_extrema", GoniometerShadowMaskGenerator_project_extrema)
       .def("get_mask", GoniometerShadowMaskGenerator_get_mask);
+
+    class_<SmarGonShadowMaskGenerator, bases<GoniometerShadowMaskGenerator> >(
+      "SmarGonShadowMaskGenerator", no_init)
+      .def(init<const MultiAxisGoniometer &>())
+      .def("extrema_at_scan_angle", &SmarGonShadowMaskGenerator::extrema_at_scan_angle);
   }
 }}}}  // namespace dials::util::masking::boost_python

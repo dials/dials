@@ -55,7 +55,7 @@ def test_dynamic_shadowing(
             .get_goniometer_shadow_masker()
         )
         assert masker is not None
-        mask = masker.get_mask(detector, scan_angle=scan.get_oscillation()[0])
+        mask = masker.get_mask(detector, scan.get_oscillation()[0])
         assert len(mask) == len(detector)
         # only shadowed pixels masked
         assert mask[0].count(False) == count_only_shadow, (
