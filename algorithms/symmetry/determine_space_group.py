@@ -328,7 +328,7 @@ class determine_space_group(symmetry_base):
                     "% .2f" % score.cc_for.coefficient(),
                     "% .2f" % score.cc_against.coefficient(),
                     "%.1f" % score.subgroup["max_angular_difference"],
-                    "%s" % (score.subgroup["cb_op_inp_best"] * self.cb_op_inp_min),
+                    "%s" % (score.subgroup["cb_op_inp_best"]),
                 )
             )
         output.append("Scoring all possible sub-groups")
@@ -342,8 +342,7 @@ class determine_space_group(symmetry_base):
             "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
         )
         output.append(
-            "Reindex operator: %s"
-            % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
+            "Reindex operator: %s" % (self.best_solution.subgroup["cb_op_inp_best"])
         )
         output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
         output.append("Laue group confidence: %.3f" % self.best_solution.confidence)

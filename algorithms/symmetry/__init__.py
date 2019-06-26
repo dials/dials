@@ -87,7 +87,14 @@ class symmetry_base(object):
         self.intensities = self.intensities.select(~sys_absent_flags)
         self.dataset_ids = self.dataset_ids.select(~sys_absent_flags)
 
-        self.cb_op_inp_min = self.intensities.change_of_basis_op_to_minimum_cell()
+        self.lattice_symmetry_max_delta = lattice_symmetry_max_delta
+        self.subgroups = metric_subgroups(
+            self.intensities.crystal_symmetry(),
+            max_delta=self.lattice_symmetry_max_delta,
+            bravais_types_only=False,
+        )
+
+        self.cb_op_inp_min = self.subgroups.cb_op_inp_minimum
         self.intensities = (
             self.intensities.change_basis(self.cb_op_inp_min)
             .customized_copy(space_group_info=sgtbx.space_group_info("P1"))
@@ -95,12 +102,6 @@ class symmetry_base(object):
             .set_info(self.intensities.info())
         )
 
-        self.lattice_symmetry_max_delta = lattice_symmetry_max_delta
-        self.subgroups = metric_subgroups(
-            self.intensities.crystal_symmetry(),
-            max_delta=self.lattice_symmetry_max_delta,
-            bravais_types_only=False,
-        )
         self.lattice_group = (
             self.subgroups.result_groups[0]["subsym"].space_group().make_tidy()
         )
