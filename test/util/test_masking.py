@@ -28,11 +28,16 @@ def test_polygon():
     [
         (
             "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf",
-            426758,
-            917940,
-            528032,
+            pytest.approx(426758, abs=1e2),
+            pytest.approx(917940, abs=1e2),
+            pytest.approx(528032, abs=1e2),
         ),
-        ("shadow_test_data/DLS_I03_SmarGon/protk_2_0600.cbf", 519100, 1002068, 527314),
+        (
+            "shadow_test_data/DLS_I03_SmarGon/protk_2_0600.cbf",
+            pytest.approx(519100, abs=1e2),
+            pytest.approx(1002068, abs=1e2),
+            pytest.approx(527314, abs=1e2),
+        ),
     ],
 )
 def test_dynamic_shadowing(
@@ -90,8 +95,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
     with open("shadow.json", "rb") as f:
         d = json.load(f)
         assert d.keys() == ["fraction_shadowed", "scan_points"]
-        assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767])
-        assert d["scan_points"] == pytest.approx([94.9])
+        assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
 
     result = fully_buffered(
         "dials.shadow_plot imported_experiments.json mode=2d plot=shadow_2d.png"

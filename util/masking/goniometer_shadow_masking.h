@@ -194,7 +194,7 @@ namespace dials { namespace util { namespace masking {
     }
 
   protected:
-    const MultiAxisGoniometer &goniometer_;
+    MultiAxisGoniometer goniometer_;
     scitbx::af::shared<vec3<double> > extrema_at_datum_;
     scitbx::af::shared<std::size_t> axis_;
   };
