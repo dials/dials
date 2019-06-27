@@ -11,7 +11,6 @@ namespace dials { namespace util { namespace masking { namespace boost_python {
     double scan_angle) {
     scitbx::af::shared<scitbx::af::shared<scitbx::vec2<double> > > result =
       masker.project_extrema(detector, scan_angle);
-    std::cout << "made result";
     typename scitbx::af::shared<scitbx::af::shared<scitbx::vec2<double> > >::iterator
       iter;
     boost::python::list list;
@@ -62,6 +61,8 @@ namespace dials { namespace util { namespace masking { namespace boost_python {
                 const scitbx::af::const_ref<std::size_t> &>())
       .def("extrema_at_scan_angle",
            &GoniometerShadowMaskGenerator::extrema_at_scan_angle)
+      .def("set_goniometer_angles",
+           &GoniometerShadowMaskGenerator::set_goniometer_angles)
       .def("project_extrema", GoniometerShadowMaskGenerator_project_extrema)
       .def("get_mask", GoniometerShadowMaskGenerator_get_mask);
 

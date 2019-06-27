@@ -123,7 +123,8 @@ def run(args):
         assert len(angles) == 3
         for i, kappa in enumerate(kappa_values):
             for j, omega in enumerate(omega_values):
-                masker.goniometer.set_angles((phi, kappa, omega))
+                masker.set_goniometer_angles((phi, kappa, omega))
+                masker.extrema_at_scan_angle(omega)
                 shadow = masker.project_extrema(detector, omega)
                 for p_id in range(len(detector)):
                     px_x, px_y = detector[p_id].get_image_size()

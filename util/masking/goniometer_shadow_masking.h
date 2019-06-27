@@ -83,30 +83,31 @@ namespace dials { namespace util { namespace masking {
 
       scitbx::af::shared<scitbx::af::shared<vec2<double> > > result;
 
-      /*std::vector<point_t> points;*/
-      multi_point_t points;
       for (std::size_t i = 0; i < detector.size(); i++) {
         Panel panel = detector[i];
+        multi_point_t points;
+        scitbx::af::shared<vec2<double> > shadow_points;
 
         /* project coordinates onto panel plane */
         for (std::size_t j = 0; j < coords.size(); j++) {
           vec3<double> coord = panel.get_D_matrix() * coords[j];
           double z = coord[2];
-          if (z > 0) {
+          double eps = 1e-5;
+          if (z > eps) {
             point_t p(coord[0] / z, coord[1] / z);
             /*points.push_back(p);*/
             boost::geometry::append(points, p);
           }
         }
-        /*polygon_t poly;*/
-        /*boost::geometry::assign_points(poly, points);*/
+        if (points.size() < 3) {
+          result.push_back(shadow_points);
+          continue;
+        }
 
         polygon_t poly;
         boost::geometry::convex_hull(points, poly);
 
-        scitbx::af::shared<vec2<double> > shadow_points;
-
-        if (points.size() == 0) {
+        if (poly.outer().size() == 0) {
           result.push_back(shadow_points);
           continue;
         }
@@ -137,10 +138,12 @@ namespace dials { namespace util { namespace masking {
           }
         }
         if (!valid) {
-          std::cout << "Invalid polygon geometry: " << boost::geometry::dsv(poly)
-                    << std::endl;
+          std::cout << "Invalid polygon geometry (" << failure
+                    << "): " << boost::geometry::dsv(poly) << std::endl;
+          std::cout << boost::geometry::dsv(points) << std::endl;
+          result.push_back(shadow_points);
+          continue;
         }
-        DIALS_ASSERT(valid);
 
         polygon_t shadow;
         boost::geometry::convex_hull(poly, shadow);
@@ -191,6 +194,10 @@ namespace dials { namespace util { namespace masking {
       }
 
       return mask;
+    }
+
+    void set_goniometer_angles(scitbx::af::shared<double> angles) {
+      goniometer_.set_angles(angles);
     }
 
   protected:
