@@ -1,20 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
 import math
+import os
 import pytest
 
 from scitbx.array_family import flex
 
 from dxtbx.model.goniometer import GoniometerFactory
 from dxtbx.model.detector import DetectorFactory
-from dials.util.masking import (
-    GoniometerShadowMaskGenerator,
-    PyGoniometerShadowMaskGenerator,
-)
-from dials.util.masking.SmarGonShadowMask import (
-    SmarGonShadowMaskGenerator,
-    PySmarGonShadowMaskGenerator,
-)
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.util.masking import PyGoniometerShadowMaskGenerator
+from dials.util.masking.SmarGonShadowMask import PySmarGonShadowMaskGenerator
+from dials.util.masking import GoniometerMaskGeneratorFactory
 
 
 @pytest.fixture
@@ -69,6 +66,9 @@ def pilatus_6M():
 @pytest.fixture(params=["cpp", "python"])
 def kappa_goniometer_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
+        if request.param == "cpp":
+            return GoniometerMaskGeneratorFactory.mini_kappa(goniometer)
+
         # Simple model of cone around goniometer phi axis
         # Exact values don't matter, only the ratio of height/radius
         height = 50  # mm
@@ -87,18 +87,9 @@ def kappa_goniometer_shadow_masker(request):
         x = flex.double(theta.size(), height)
 
         coords = flex.vec3_double(zip(x, y, z))
-        coords.append(coords[0])  # ensure closure of polygon
         coords.insert(0, (0, 0, 0))
 
-        # from matplotlib import pyplot
-        # pyplot.plot(y, z)
-        # pyplot.show()
-
-        if request.param == "python":
-            return PyGoniometerShadowMaskGenerator(
-                goniometer, coords, flex.size_t(len(coords), 0)
-            )
-        return GoniometerShadowMaskGenerator(
+        return PyGoniometerShadowMaskGenerator(
             goniometer, coords, flex.size_t(len(coords), 0)
         )
 
@@ -110,7 +101,24 @@ def smargon_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
         if request.param == "python":
             return PySmarGonShadowMaskGenerator(goniometer)
-        return SmarGonShadowMaskGenerator(goniometer)
+        return GoniometerMaskGeneratorFactory.smargon(goniometer)
+
+    return _construct_shadow_masker
+
+
+@pytest.fixture
+def dls_i23_experiment(dials_regression):
+    experiments_file = os.path.join(
+        dials_regression, "shadow_test_data/DLS_I23_Kappa/data_1_0400.cbf.gz"
+    )
+    experiments = ExperimentListFactory.from_filenames([experiments_file])
+    return experiments[0]
+
+
+@pytest.fixture
+def dls_i23_kappa_shadow_masker(request):
+    def _construct_shadow_masker(goniometer):
+        return GoniometerMaskGeneratorFactory.dls_i23_kappa(goniometer)
 
     return _construct_shadow_masker
 
@@ -124,7 +132,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_0(
 
     scan_angle = 0  # omega = 0, shadow in top right corner of detector
     extrema = masker.extrema_at_scan_angle(scan_angle)
-    assert len(extrema) == 362
+    assert len(extrema) == 361
     assert extrema[1] == pytest.approx(
         (43.60448791048147, 8.572923552543028, -30.416337975287743)
     )
@@ -148,7 +156,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_m45(
 
     scan_angle = -45  # omega = -45, shadow on centre-right of detector
     extrema = masker.extrema_at_scan_angle(scan_angle)
-    assert len(extrema) == 362
+    assert len(extrema) == 361
     assert extrema[1] == pytest.approx(
         (43.60448791048147, -15.445626462590827, -27.569571219784905)
     )
@@ -171,7 +179,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_p45(
     shadow = masker.project_extrema(detector, scan_angle)
     assert len(shadow[0]) == 0
     extrema = masker.extrema_at_scan_angle(scan_angle)
-    assert len(extrema) == 362
+    assert len(extrema) == 361
     assert extrema[1] == pytest.approx(
         (43.60448791048147, 27.56957121978491, -15.445626462590822)
     )
@@ -189,7 +197,7 @@ def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
 
     scan_angle = 100
     extrema = masker.extrema_at_scan_angle(scan_angle)
-    assert len(extrema) == 362
+    assert len(extrema) == 361
     assert extrema[1] == pytest.approx(
         (42.318198019878935, 8.61724085750561, 32.17006801910824)
     )
@@ -237,3 +245,48 @@ def test_SmarGonShadowMaskGenerator_p0_c90_o50(
         assert len(shadow[0]) == 11
         mask = masker.get_mask(detector, scan_angle)
         assert mask[0].count(True) == pytest.approx(4614865, 2e-4)
+
+
+def test_dls_i23_kappa(dls_i23_experiment, dls_i23_kappa_shadow_masker):
+    for phi in (0, 90, 180):
+        goniometer = dls_i23_experiment.goniometer
+        goniometer.set_angles((0, -180, 0))
+        detector = dls_i23_experiment.detector
+        masker = dls_i23_kappa_shadow_masker(goniometer)
+
+        scan_angle = 40
+        extrema = masker.extrema_at_scan_angle(scan_angle)
+        assert len(extrema) == 66
+        assert extrema[1] == pytest.approx(
+            (-18.68628039873836, -55.47017980234442, -98.76129898677576)
+        )
+        shadow = masker.project_extrema(detector, scan_angle)
+        assert len(shadow) == len(detector)
+        assert [len(s) for s in shadow] == [
+            0,
+            0,
+            0,
+            6,
+            9,
+            7,
+            7,
+            7,
+            9,
+            4,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]
+        mask = masker.get_mask(detector, scan_angle)
+        assert sum([m.count(False) for m in mask]) == 1898843
