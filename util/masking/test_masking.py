@@ -11,6 +11,10 @@ from dials.util.masking import (
     GoniometerShadowMaskGenerator,
     PyGoniometerShadowMaskGenerator,
 )
+from dials.util.masking.SmarGonShadowMask import (
+    SmarGonShadowMaskGenerator,
+    PySmarGonShadowMaskGenerator,
+)
 
 
 @pytest.fixture
@@ -104,11 +108,6 @@ def kappa_goniometer_shadow_masker(request):
 @pytest.fixture(params=["cpp", "python"])
 def smargon_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
-        from dxtbx.format.SmarGonShadowMask import (
-            SmarGonShadowMaskGenerator,
-            PySmarGonShadowMaskGenerator,
-        )
-
         if request.param == "python":
             return PySmarGonShadowMaskGenerator(goniometer)
         return SmarGonShadowMaskGenerator(goniometer)
