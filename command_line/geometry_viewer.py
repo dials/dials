@@ -112,7 +112,7 @@ class render_3d(object):
 
         gonio_masker = (
             self.imageset.masker()
-            .format_class(imageset.paths()[0], **self.imageset.data().get_params())
+            .format_class(self.imageset.paths()[0], **self.imageset.data().get_params())
             .get_goniometer_shadow_masker(goniometer=gonio)
         )
         if gonio_masker is None:
