@@ -44,6 +44,14 @@ class Script(object):
           .type = str
           .help = "Filename prefix for the split reflections"
 
+        experiments_suffix = None
+          .type = str
+          .help = "Optional filename suffix, to be inserted before '.json', for the split experimental models"
+
+        reflections_suffix = None
+          .type = str
+          .help = "Optional filename suffix, to be inserted before '.pickle', for the split reflections"
+
         chunk_size = None
           .type = int
           .expert_level = 2
@@ -108,13 +116,16 @@ class Script(object):
 
         import math
 
-        experiments_template = "%s_%%0%sd.json" % (
+        experiments_template = "%s_%%0%sd%s.json" % (
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
+            ('_' + params.output.experiments_suffix) if params.output.experiments_suffix != None else '',
         )
-        reflections_template = "%s_%%0%sd.pickle" % (
+
+        reflections_template = "%s_%%0%sd%s.pickle" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
+            ('_' + params.output.reflections_suffix) if params.output.reflections_suffix != None else '',
         )
 
         from dxtbx.model.experiment_list import ExperimentList
