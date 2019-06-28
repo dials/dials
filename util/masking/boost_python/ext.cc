@@ -5,8 +5,8 @@
 
 namespace dials { namespace util { namespace masking { namespace boost_python {
 
-  static boost::python::list GoniometerShadowMaskGenerator_project_extrema(
-    GoniometerShadowMaskGenerator &masker,
+  static boost::python::list GoniometerShadowMasker_project_extrema(
+    GoniometerShadowMasker &masker,
     const Detector &detector,
     double scan_angle) {
     scitbx::af::shared<scitbx::af::shared<scitbx::vec2<double> > > result =
@@ -45,9 +45,9 @@ namespace dials { namespace util { namespace masking { namespace boost_python {
     return detail::list_to_tuple(result);
   }
 
-  boost::python::tuple GoniometerShadowMaskGenerator_get_mask(
+  boost::python::tuple GoniometerShadowMasker_get_mask(
 
-    GoniometerShadowMaskGenerator &masker,
+    GoniometerShadowMasker &masker,
     const Detector &detector,
     double scan_angle) {
     return image_as_tuple<bool>(masker.get_mask(detector, scan_angle));
@@ -55,20 +55,20 @@ namespace dials { namespace util { namespace masking { namespace boost_python {
 
   using namespace boost::python;
   BOOST_PYTHON_MODULE(dials_util_masking_ext) {
-    class_<GoniometerShadowMaskGenerator>("GoniometerShadowMaskGenerator", no_init)
+    class_<GoniometerShadowMasker>("GoniometerShadowMasker", no_init)
       .def(init<const MultiAxisGoniometer &,
                 const scitbx::af::const_ref<scitbx::vec3<double> > &,
                 const scitbx::af::const_ref<std::size_t> &>())
       .def("extrema_at_scan_angle",
-           &GoniometerShadowMaskGenerator::extrema_at_scan_angle)
+           &GoniometerShadowMasker::extrema_at_scan_angle)
       .def("set_goniometer_angles",
-           &GoniometerShadowMaskGenerator::set_goniometer_angles)
-      .def("project_extrema", GoniometerShadowMaskGenerator_project_extrema)
-      .def("get_mask", GoniometerShadowMaskGenerator_get_mask);
+           &GoniometerShadowMasker::set_goniometer_angles)
+      .def("project_extrema", GoniometerShadowMasker_project_extrema)
+      .def("get_mask", GoniometerShadowMasker_get_mask);
 
-    class_<SmarGonShadowMaskGenerator, bases<GoniometerShadowMaskGenerator> >(
-      "SmarGonShadowMaskGenerator", no_init)
+    class_<SmarGonShadowMasker, bases<GoniometerShadowMasker> >(
+      "SmarGonShadowMasker", no_init)
       .def(init<const MultiAxisGoniometer &>())
-      .def("extrema_at_scan_angle", &SmarGonShadowMaskGenerator::extrema_at_scan_angle);
+      .def("extrema_at_scan_angle", &SmarGonShadowMasker::extrema_at_scan_angle);
   }
 }}}}  // namespace dials::util::masking::boost_python

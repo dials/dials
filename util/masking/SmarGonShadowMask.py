@@ -5,13 +5,11 @@ import math
 from scitbx.array_family import flex
 from scitbx import matrix
 
-from dials.util.masking import PyGoniometerShadowMaskGenerator
-from dials_util_masking_ext import (  # noqa: F401, exported symbol
-    SmarGonShadowMaskGenerator,
-)
+from dials.util.masking import PyGoniometerShadowMasker
+from dials_util_masking_ext import SmarGonShadowMasker  # noqa: F401, exported symbol
 
 
-class PySmarGonShadowMaskGenerator(PyGoniometerShadowMaskGenerator):
+class PySmarGonShadowMasker(PyGoniometerShadowMasker):
     def __init__(self, goniometer):
         # FACE A: Sample holder
         #   Defined as semi-circle of radius r(A) = 10 mm (centred on PHI axis)
@@ -68,14 +66,12 @@ class PySmarGonShadowMaskGenerator(PyGoniometerShadowMaskGenerator):
 
         extrema_at_datum = self.faceA.deep_copy()
         extrema_at_datum.extend(self.faceE)
-        super(PySmarGonShadowMaskGenerator, self).__init__(
+        super(PySmarGonShadowMasker, self).__init__(
             goniometer, extrema_at_datum, flex.size_t(extrema_at_datum.size(), 1)
         )
 
     def extrema_at_scan_angle(self, scan_angle):
-        extrema = super(PySmarGonShadowMaskGenerator, self).extrema_at_scan_angle(
-            scan_angle
-        )
+        extrema = super(PySmarGonShadowMasker, self).extrema_at_scan_angle(scan_angle)
 
         axes = self.goniometer.get_axes()
         angles = self.goniometer.get_angles()

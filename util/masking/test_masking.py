@@ -9,9 +9,9 @@ from scitbx.array_family import flex
 from dxtbx.model.goniometer import GoniometerFactory
 from dxtbx.model.detector import DetectorFactory
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.util.masking import PyGoniometerShadowMaskGenerator
-from dials.util.masking.SmarGonShadowMask import PySmarGonShadowMaskGenerator
-from dials.util.masking import GoniometerMaskGeneratorFactory
+from dials.util.masking import PyGoniometerShadowMasker
+from dials.util.masking.SmarGonShadowMask import PySmarGonShadowMasker
+from dials.util.masking import GoniometerMaskerFactory
 
 
 @pytest.fixture
@@ -67,7 +67,7 @@ def pilatus_6M():
 def kappa_goniometer_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
         if request.param == "cpp":
-            return GoniometerMaskGeneratorFactory.mini_kappa(goniometer)
+            return GoniometerMaskerFactory.mini_kappa(goniometer)
 
         # Simple model of cone around goniometer phi axis
         # Exact values don't matter, only the ratio of height/radius
@@ -89,9 +89,7 @@ def kappa_goniometer_shadow_masker(request):
         coords = flex.vec3_double(zip(x, y, z))
         coords.insert(0, (0, 0, 0))
 
-        return PyGoniometerShadowMaskGenerator(
-            goniometer, coords, flex.size_t(len(coords), 0)
-        )
+        return PyGoniometerShadowMasker(goniometer, coords, flex.size_t(len(coords), 0))
 
     return _construct_shadow_masker
 
@@ -100,8 +98,8 @@ def kappa_goniometer_shadow_masker(request):
 def smargon_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
         if request.param == "python":
-            return PySmarGonShadowMaskGenerator(goniometer)
-        return GoniometerMaskGeneratorFactory.smargon(goniometer)
+            return PySmarGonShadowMasker(goniometer)
+        return GoniometerMaskerFactory.smargon(goniometer)
 
     return _construct_shadow_masker
 
@@ -118,12 +116,12 @@ def dls_i23_experiment(dials_regression):
 @pytest.fixture
 def dls_i23_kappa_shadow_masker(request):
     def _construct_shadow_masker(goniometer):
-        return GoniometerMaskGeneratorFactory.dls_i23_kappa(goniometer)
+        return GoniometerMaskerFactory.dls_i23_kappa(goniometer)
 
     return _construct_shadow_masker
 
 
-def test_GoniometerShadowMaskGenerator_kappa_180_omega_0(
+def test_GoniometerShadowMasker_kappa_180_omega_0(
     kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
 ):
     goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
@@ -147,7 +145,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_0(
     assert mask[0].count(True) == pytest.approx(5570865)
 
 
-def test_GoniometerShadowMaskGenerator_kappa_180_omega_m45(
+def test_GoniometerShadowMasker_kappa_180_omega_m45(
     kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
 ):
     goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
@@ -168,7 +166,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_m45(
     assert mask[0].count(True) == pytest.approx(5467810)
 
 
-def test_GoniometerShadowMaskGenerator_kappa_180_omega_p45(
+def test_GoniometerShadowMasker_kappa_180_omega_p45(
     kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
 ):
     goniometer = kappa_goniometer(phi=0, kappa=180, omega=0)
@@ -187,7 +185,7 @@ def test_GoniometerShadowMaskGenerator_kappa_180_omega_p45(
     assert mask[0] is None or mask[0].count(False) == 0
 
 
-def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
+def test_GoniometerShadowMasker_kappa_m70_omega_p100(
     kappa_goniometer, pilatus_6M, kappa_goniometer_shadow_masker
 ):
     # goniometer shadow does not intersect with detector panel
@@ -207,7 +205,7 @@ def test_GoniometerShadowMaskGenerator_kappa_m70_omega_p100(
     assert mask[0] is None or mask[0].count(False) == 0
 
 
-def test_SmarGonShadowMaskGenerator_p48_c45_o95(
+def test_SmarGonShadowMasker_p48_c45_o95(
     smargon_goniometer, pilatus_6M, smargon_shadow_masker
 ):
     goniometer = smargon_goniometer(phi=48, chi=45, omega=100)
@@ -226,7 +224,7 @@ def test_SmarGonShadowMaskGenerator_p48_c45_o95(
     assert mask[0].count(True) == pytest.approx(5716721, 3e-5)
 
 
-def test_SmarGonShadowMaskGenerator_p0_c90_o50(
+def test_SmarGonShadowMasker_p0_c90_o50(
     smargon_goniometer, pilatus_6M, smargon_shadow_masker
 ):
     for phi in (0, 90, 180):

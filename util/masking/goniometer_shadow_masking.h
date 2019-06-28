@@ -32,14 +32,14 @@ namespace dials { namespace util { namespace masking {
   /**
    * A class to mask multiple resolution ranges
    */
-  class GoniometerShadowMaskGenerator {
+  class GoniometerShadowMasker {
   public:
     /**
      * Initialise the resolution at each pixel
      * @param beam The beam model
      * @param panel The panel model
      */
-    GoniometerShadowMaskGenerator(
+    GoniometerShadowMasker(
       const MultiAxisGoniometer &goniometer,
       const scitbx::af::const_ref<vec3<double> > &extrema_at_datum,
       const scitbx::af::const_ref<std::size_t> &axis)
@@ -47,7 +47,7 @@ namespace dials { namespace util { namespace masking {
           extrema_at_datum_(extrema_at_datum.begin(), extrema_at_datum.end()),
           axis_(axis.begin(), axis.end()) {}
 
-    GoniometerShadowMaskGenerator(const MultiAxisGoniometer &goniometer)
+    GoniometerShadowMasker(const MultiAxisGoniometer &goniometer)
         : goniometer_(goniometer) {}
 
     virtual scitbx::af::shared<vec3<double> > extrema_at_scan_angle(
@@ -206,15 +206,15 @@ namespace dials { namespace util { namespace masking {
     scitbx::af::shared<std::size_t> axis_;
   };
 
-  class SmarGonShadowMaskGenerator : public GoniometerShadowMaskGenerator {
+  class SmarGonShadowMasker : public GoniometerShadowMasker {
   public:
     /**
      * Initialise the resolution at each pixel
      * @param beam The beam model
      * @param panel The panel model
      */
-    SmarGonShadowMaskGenerator(const MultiAxisGoniometer &goniometer)
-        : GoniometerShadowMaskGenerator(goniometer) {
+    SmarGonShadowMasker(const MultiAxisGoniometer &goniometer)
+        : GoniometerShadowMasker(goniometer) {
       // Face A: semi-circle + square
       double offsetA = 33.0;
 
@@ -261,7 +261,7 @@ namespace dials { namespace util { namespace masking {
 
     scitbx::af::shared<vec3<double> > extrema_at_scan_angle(double scan_angle) const {
       scitbx::af::shared<vec3<double> > extrema =
-        GoniometerShadowMaskGenerator::extrema_at_scan_angle(scan_angle);
+        GoniometerShadowMasker::extrema_at_scan_angle(scan_angle);
 
       scitbx::af::shared<vec3<double> > axes = goniometer_.get_axes();
       scitbx::af::shared<double> angles = goniometer_.get_angles();

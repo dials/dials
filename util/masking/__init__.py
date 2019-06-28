@@ -28,8 +28,8 @@ from dials.util.ext import mask_untrusted_rectangle
 from dials.util.ext import mask_untrusted_circle
 from dials.util.ext import mask_untrusted_polygon
 from dials.util.ext import is_inside_polygon
-from dials_util_masking_ext import GoniometerShadowMaskGenerator  # noqa: F401
-from dials_util_masking_ext import SmarGonShadowMaskGenerator  # noqa: F401
+from dials_util_masking_ext import GoniometerShadowMasker  # noqa: F401
+from dials_util_masking_ext import SmarGonShadowMasker  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -288,7 +288,7 @@ class MaskGenerator(object):
         return tuple(masks)
 
 
-class PyGoniometerShadowMaskGenerator(object):
+class PyGoniometerShadowMasker(object):
     def __init__(self, goniometer, extrema_at_datum, axis):
         # axis is an array of size_t the same size as extrema_at_datum,
         # where each element identifies the axis that that coordinate depends on
@@ -331,7 +331,7 @@ class PyGoniometerShadowMaskGenerator(object):
 
             # Compute convex hull of shadow points
             points = flex.vec2_double(x.select(valid), y.select(valid))
-            shadow = flex.vec2_double(convex_hull(points))
+            shadow = flex.vec2_double(_convex_hull(points))
             shadow *= 1 / p.get_pixel_size()[0]
 
             shadow_orig = shadow.deep_copy()
@@ -414,7 +414,7 @@ class PyGoniometerShadowMaskGenerator(object):
 
 # https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python
 # https://github.com/thepracticaldev/orly-full-res/blob/master/copyingandpasting-big.png
-def convex_hull(points):
+def _convex_hull(points):
     """Computes the convex hull of a set of 2D points.
 
     Input: an iterable sequence of (x, y) pairs representing the points.
@@ -456,10 +456,10 @@ def convex_hull(points):
     return lower[:-1] + upper[:-1]
 
 
-class GoniometerMaskGeneratorFactory(object):
+class GoniometerMaskerFactory(object):
     @staticmethod
     def mini_kappa(goniometer, cone_opening_angle=43.60281897270362):
-        """Construct a GoniometerShadowMaskGenerator for a mini-kappa goniometer.
+        """Construct a GoniometerShadowMasker for a mini-kappa goniometer.
 
         This is modelled a simple cone with the opening angle specified by
         `cone_opening_angle`.
@@ -469,7 +469,7 @@ class GoniometerMaskGeneratorFactory(object):
             cone_opening_angle (float): The opening angle of the cone (in degrees).
 
         Returns:
-            `dials.util.masking.GoniometerShadowMaskGenerator`
+            `dials.util.masking.GoniometerShadowMasker`
 
         """
         assert isinstance(goniometer, MultiAxisGoniometer)
@@ -496,12 +496,19 @@ class GoniometerMaskGeneratorFactory(object):
         coords = flex.vec3_double(zip(x, y, z))
         coords.insert(0, (0, 0, 0))
 
-        return GoniometerShadowMaskGenerator(
-            goniometer, coords, flex.size_t(len(coords), 0)
-        )
+        return GoniometerShadowMasker(goniometer, coords, flex.size_t(len(coords), 0))
 
     @staticmethod
     def dls_i23_kappa(goniometer):
+        """Construct a GoniometerShadowMasker for the DLS I23 Kappa goniometer.
+
+        Args:
+            goniometer (`dxtbx.model.Goniometer`): The goniometer instance.
+
+        Returns:
+            `dials.util.masking.GoniometerShadowMasker`
+
+        """
         coords = flex.vec3_double(((0, 0, 0),))
 
         alpha = flex.double_range(0, 190, step=10) * math.pi / 180
@@ -592,10 +599,17 @@ class GoniometerMaskGeneratorFactory(object):
         )
         coords = R.elems * coords
 
-        return GoniometerShadowMaskGenerator(
-            goniometer, coords, flex.size_t(len(coords), 1)
-        )
+        return GoniometerShadowMasker(goniometer, coords, flex.size_t(len(coords), 1))
 
     @staticmethod
     def smargon(goniometer):
-        return SmarGonShadowMaskGenerator(goniometer)
+        """Construct a SmarGonShadowMasker for the SmarGon goniometer.
+
+        Args:
+            goniometer (`dxtbx.model.Goniometer`): The goniometer instance.
+
+        Returns:
+            `dials.util.masking.SmarGonShadowMasker`
+
+        """
+        return SmarGonShadowMasker(goniometer)
