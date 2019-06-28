@@ -1,6 +1,7 @@
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
 
+import functools
 from libtbx.phil import parse
 from dials.util import Sorry
 
@@ -21,7 +22,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # The phil scope
         phil_scope = parse(
@@ -44,13 +44,9 @@ class Script(object):
           .type = str
           .help = "Filename prefix for the split reflections"
 
-        experiments_suffix = None
+        template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
           .type = str
-          .help = "Optional filename suffix, to be inserted before '.json', for the split experimental models"
-
-        reflections_suffix = None
-          .type = str
-          .help = "Optional filename suffix, to be inserted before '.pickle', for the split reflections"
+          .help = "Template string for output filenames"
 
         chunk_size = None
           .type = int
@@ -72,9 +68,9 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
+            "usage: dials.split_experiments [options] [param.phil] "
             "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "reflections2.pickle..."
         )
 
         # Create the parser
@@ -114,22 +110,18 @@ class Script(object):
         else:
             reflections = None
 
-        import math
-
-        experiments_template = "%s_%%0%sd%s.json" % (
-            params.output.experiments_prefix,
-            int(math.floor(math.log10(len(experiments))) + 1),
-            ("_" + params.output.experiments_suffix)
-            if params.output.experiments_suffix != None
-            else "",
+        experiments_template = functools.partial(
+            params.output.template.format,
+            prefix=params.output.experiments_prefix,
+            maxindexlength=len(str(len(experiments))),
+            extension="json",
         )
 
-        reflections_template = "%s_%%0%sd%s.pickle" % (
-            params.output.reflections_prefix,
-            int(math.floor(math.log10(len(experiments))) + 1),
-            ("_" + params.output.reflections_suffix)
-            if params.output.reflections_suffix != None
-            else "",
+        reflections_template = functools.partial(
+            params.output.template.format,
+            prefix=params.output.reflections_prefix,
+            maxindexlength=len(str(len(experiments))),
+            extension="pickle",
         )
 
         from dxtbx.model.experiment_list import ExperimentList
@@ -162,11 +154,11 @@ class Script(object):
 
             for i, experiment in enumerate(experiments):
                 split_expt_id = experiments.detectors().index(experiment.detector)
-                experiment_filename = experiments_template % split_expt_id
+                experiment_filename = experiments_template(index=split_expt_id)
                 print("Adding experiment %d to %s" % (i, experiment_filename))
                 split_data[experiment.detector]["experiments"].append(experiment)
                 if reflections is not None:
-                    reflections_filename = reflections_template % split_expt_id
+                    reflections_filename = reflections_template(index=split_expt_id)
                     print(
                         "Adding reflections for experiment %d to %s"
                         % (i, reflections_filename)
@@ -199,14 +191,14 @@ class Script(object):
                     split_data[experiment.detector]["reflections"].extend(ref_sel)
 
             for i, detector in enumerate(experiments.detectors()):
-                experiment_filename = experiments_template % i
+                experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
                 dump.experiment_list(
                     split_data[detector]["experiments"], experiment_filename
                 )
 
                 if reflections is not None:
-                    reflections_filename = reflections_template % i
+                    reflections_filename = reflections_template(index=i)
                     print(
                         "Saving reflections for experiment %d to %s"
                         % (i, reflections_filename)
@@ -217,11 +209,11 @@ class Script(object):
             from dxtbx.serialize import dump
 
             def save_chunk(chunk_id, expts, refls):
-                experiment_filename = experiments_template % chunk_id
+                experiment_filename = experiments_template(index=chunk_id)
                 print("Saving chunk %d to %s" % (chunk_id, experiment_filename))
                 dump.experiment_list(expts, experiment_filename)
                 if refls is not None:
-                    reflections_filename = reflections_template % chunk_id
+                    reflections_filename = reflections_template(index=chunk_id)
                     print(
                         "Saving reflections for chunk %d to %s"
                         % (chunk_id, reflections_filename)
@@ -279,12 +271,12 @@ class Script(object):
                 from dxtbx.model.experiment_list import ExperimentList
                 from dxtbx.serialize import dump
 
-                experiment_filename = experiments_template % i
+                experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
                 dump.experiment_list(ExperimentList([experiment]), experiment_filename)
 
                 if reflections is not None:
-                    reflections_filename = reflections_template % i
+                    reflections_filename = reflections_template(index=i)
                     print(
                         "Saving reflections for experiment %d to %s"
                         % (i, reflections_filename)
@@ -304,10 +296,8 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
+    import dials.util
 
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)
