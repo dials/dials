@@ -119,13 +119,17 @@ class Script(object):
         experiments_template = "%s_%%0%sd%s.json" % (
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
-            ('_' + params.output.experiments_suffix) if params.output.experiments_suffix != None else '',
+            ("_" + params.output.experiments_suffix)
+            if params.output.experiments_suffix != None
+            else "",
         )
 
         reflections_template = "%s_%%0%sd%s.pickle" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
-            ('_' + params.output.reflections_suffix) if params.output.reflections_suffix != None else '',
+            ("_" + params.output.reflections_suffix)
+            if params.output.reflections_suffix != None
+            else "",
         )
 
         from dxtbx.model.experiment_list import ExperimentList

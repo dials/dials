@@ -692,14 +692,25 @@ class Processor(object):
             return
         try:
             if self.params.dispatch.index:
-                if self.params.dispatch.hit_finder.enable and len(observed) < self.params.dispatch.hit_finder.minimum_number_of_reflections:
+                if (
+                    self.params.dispatch.hit_finder.enable
+                    and len(observed)
+                    < self.params.dispatch.hit_finder.minimum_number_of_reflections
+                ):
                     print("Not enough spots to index", tag)
-                    self.debug_write("not_enough_spots_%d"%len(observed), "stop")
+                    self.debug_write("not_enough_spots_%d" % len(observed), "stop")
                     return
-                if self.params.dispatch.hit_finder.maximum_number_of_reflections is not None:
-                    if self.params.dispatch.hit_finder.enable and len(observed) > self.params.dispatch.hit_finder.maximum_number_of_reflections:
+                if (
+                    self.params.dispatch.hit_finder.maximum_number_of_reflections
+                    is not None
+                ):
+                    if (
+                        self.params.dispatch.hit_finder.enable
+                        and len(observed)
+                        > self.params.dispatch.hit_finder.maximum_number_of_reflections
+                    ):
                         print("Too many spots to index - Possibly junk", tag)
-                        self.debug_write("too_many_spots_%d"%len(observed), "stop")
+                        self.debug_write("too_many_spots_%d" % len(observed), "stop")
                         return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
