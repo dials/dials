@@ -536,7 +536,7 @@ class Indexer(object):
                 if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
                     logger.info(
                         "Finish searching for more lattices: %i unindexed reflections remaining."
-                        % (min_reflections_for_indexing)
+                        % ((crystal_ids == -1).count(True))
                     )
                     break
 
@@ -604,6 +604,7 @@ class Indexer(object):
                 self.show_experiments(experiments, self.reflections, d_min=self.d_min)
 
                 if self._check_have_similar_crystal_models(experiments):
+                    have_similar_crystal_models = True
                     break
 
                 logger.info("")
