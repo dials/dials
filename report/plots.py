@@ -193,7 +193,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         anomalous=False,
         n_resolution_bins=20,
         xtriage_analyses=None,
-        run_xtraige_analysis=True,
+        run_xtriage_analysis=True,
     ):
         self.n_bins = n_resolution_bins
         self._xanalysis = xtriage_analyses
@@ -204,7 +204,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
         self.binner = intensities.binner()
         self.merged_intensities = merged.array()
         self.multiplicities = merged.redundancies().complete_array(new_data_value=0)
-        if not self._xanalysis and run_xtraige_analysis:
+        if not self._xanalysis and run_xtriage_analysis:
             # imports needed here or won't work, unsure why.
             from mmtbx.scaling.xtriage import xtriage_analyses
             from mmtbx.scaling.xtriage import master_params as xtriage_master_params

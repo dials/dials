@@ -371,7 +371,7 @@ class MergingStatisticsObserver(Observer):
                 i_over_sig_i_vs_batch_plot(self.data["bm"], self.data["isigivsbatch"])
             )
             plotter = IntensityStatisticsPlots(
-                self.data["scaled_miller_array"], run_xtraige_analysis=False
+                self.data["scaled_miller_array"], run_xtriage_analysis=False
             )
             d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
             if d["resolution_plots"]["cc_one_half"]["data"][2]:
