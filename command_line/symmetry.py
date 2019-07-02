@@ -169,7 +169,7 @@ Examples::
 
 
 def run(args):
-    usage = "dials.cosym [options] experiments.json reflections.pickle"
+    usage = "dials.symmetry [options] experiments.json reflections.pickle"
 
     parser = OptionParser(
         usage=usage,
