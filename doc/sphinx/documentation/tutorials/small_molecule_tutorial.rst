@@ -116,14 +116,15 @@ Here the results will be output to a p4p file for XPREP, which includes the stan
 Output
 ------
 
-After integration the data should be split before exporting to a format suitable for input to XPREP or SADABS:
+After integration, the data should be split before exporting to a format suitable for input to XPREP or SADABS.
+Note that SADABS requires the batches and file names to be numbered from 1:
 
 .. code-block:: bash
 
    dials.split_experiments integrated.pickle integrated_experiments.json
-   dials.export format=sadabs reflections_0.pickle experiments_0.json sadabs.hklout=integrated_0.sad run=0
-   dials.export format=sadabs reflections_1.pickle experiments_1.json sadabs.hklout=integrated_1.sad run=1
-   dials.export format=sadabs reflections_2.pickle experiments_2.json sadabs.hklout=integrated_2.sad run=2
-   dials.export format=sadabs reflections_3.pickle experiments_3.json sadabs.hklout=integrated_3.sad run=3
+   dials.export format=sadabs reflections_0.pickle experiments_0.json sadabs.hklout=integrated_1.sad run=1
+   dials.export format=sadabs reflections_1.pickle experiments_1.json sadabs.hklout=integrated_2.sad run=2
+   dials.export format=sadabs reflections_2.pickle experiments_2.json sadabs.hklout=integrated_3.sad run=3
+   dials.export format=sadabs reflections_3.pickle experiments_3.json sadabs.hklout=integrated_4.sad run=4
 
 If desired, p4p files for each combination of reflections_[0-3].pickle, experiments_[0-3].json could also be generated.
