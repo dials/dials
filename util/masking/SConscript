@@ -1,5 +1,0 @@
-Import("env")
-
-sources = ["boost_python/ext.cc"]
-
-env.SharedLibrary(target="#/lib/dials_util_masking_ext", source=sources, LIBS=env["LIBS"])
