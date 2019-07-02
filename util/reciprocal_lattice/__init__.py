@@ -76,8 +76,15 @@ class Render3d(object):
             expt.crystal for expt in self.experiments if expt.crystal is not None
         ]
         if crystals:
+            # the points are scaled by 100 so must do that here too
             vecs = [
-                matrix.sqr(c.get_A()).transpose().as_list_of_lists() for c in crystals
+                [
+                    matrix.col(l)
+                    for l in (100 * matrix.sqr(c.get_A()))
+                    .transpose()
+                    .as_list_of_lists()
+                ]
+                for c in crystals
             ]
             self.viewer.set_reciprocal_lattice_vectors(vecs)
         self.map_points_to_reciprocal_space()

@@ -7,7 +7,6 @@ import libtbx.phil
 import gltbx
 from gltbx.gl import *
 from scitbx.array_family import flex
-from scitbx import matrix
 from scitbx.math import minimum_covering_sphere
 import wxtbx.utils
 from wxtbx.segmentedctrl import (
@@ -480,14 +479,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.beam_vector = beam
 
     def set_reciprocal_lattice_vectors(self, vectors_per_crystal):
-        # the points are scaled by 100 so must do that here too
-        self.recip_latt_vectors = [
-            [
-                100.0 * matrix.col(vec)
-                for vectors in vectors_per_crystal
-                for vec in vectors
-            ]
-        ]
+        self.recip_latt_vectors = vectors_per_crystal
 
     # --- user input and settings
     def update_settings(self):
