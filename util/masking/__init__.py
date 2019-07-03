@@ -19,7 +19,7 @@ from iotbx.phil import parse
 
 from dials.array_family import flex
 from dials.util.ext import ResolutionMaskGenerator
-from dxtbx.util.masking import (
+from dxtbx.masking import (
     mask_untrusted_rectangle,
     mask_untrusted_circle,
     mask_untrusted_polygon,

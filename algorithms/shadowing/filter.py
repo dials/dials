@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 def filter_shadowed_reflections(experiments, reflections, experiment_goniometer=False):
-    from dxtbx.util.masking import is_inside_polygon
+    from dxtbx.masking import is_inside_polygon
     from scitbx.array_family import flex
 
     shadowed = flex.bool(reflections.size(), False)
