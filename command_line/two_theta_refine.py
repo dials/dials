@@ -309,7 +309,6 @@ class Script(object):
         from dials.algorithms.refinement.refiner import Refiner
 
         refiner = Refiner(
-            reflections=reflections,
             experiments=experiments,
             pred_param=pred_param,
             param_reporter=param_reporter,

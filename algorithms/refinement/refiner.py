@@ -368,7 +368,6 @@ class RefinerFactory(object):
         else:
             refiner = Refiner
         return refiner(
-            reflections,
             experiments,
             pred_param,
             param_reporter,
@@ -627,7 +626,6 @@ class Refiner(object):
 
     def __init__(
         self,
-        reflections,
         experiments,
         pred_param,
         param_reporter,
@@ -638,7 +636,6 @@ class Refiner(object):
     ):
         """
         Mandatory arguments:
-          reflections - Input ReflectionList data
           experiments - a dxtbx ExperimentList object
           pred_param - An object derived from the PredictionParameterisation class
           param_reporter -A ParameterReporter object
