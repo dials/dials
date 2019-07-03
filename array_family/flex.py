@@ -516,7 +516,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                     )
                 )
         else:
-            perm = flex.sort_permutation(self[name], reverse=reverse)
+            perm = flex.sort_permutation(self[name], reverse=reverse, stable=True)
         self.reorder(perm)
 
     """
