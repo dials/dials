@@ -27,12 +27,12 @@ def test_basic(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("models_wth_profiles.expt")
+    assert os.path.exists("models_with_profiles.expt")
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     experiments = ExperimentListFactory.from_json_file(
-        "models_wth_profiles.expt", check_format=False
+        "models_with_profiles.expt", check_format=False
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
@@ -61,12 +61,12 @@ def test_extended(dials_regression, run_in_tmpdir):
     )
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
-    assert os.path.exists("models_wth_profiles.expt")
+    assert os.path.exists("models_with_profiles.expt")
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     experiments = ExperimentListFactory.from_json_file(
-        "models_wth_profiles.expt", check_format=False
+        "models_with_profiles.expt", check_format=False
     )
     sigma_b = experiments[0].profile.sigma_b(deg=True)
     sigma_m = experiments[0].profile.sigma_m(deg=True)
