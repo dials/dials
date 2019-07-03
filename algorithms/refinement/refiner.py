@@ -452,6 +452,9 @@ class RefinerFactory(object):
             ]
         ):
             return None
+        if params.scan_varying:
+            logger.warning("Restraints will be ignored for scan_varying=True")
+            return None
 
         det_params = pred_param.get_detector_parameterisations()
         beam_params = pred_param.get_beam_parameterisations()
