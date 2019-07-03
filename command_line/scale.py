@@ -299,9 +299,9 @@ prepare the data in the correct space group.\n"""
                 """The experiments have different space groups:
                 space group numbers found: %s
                 Please reanalyse the data so that space groups are consistent,
-                (consider using dials.reindex, dials.symmetry or dials.cosym)
-                or remove incompatible experiments (using the option exclude_datasets=)""",
-                set(sgs),
+                (consider using dials.reindex, dials.symmetry or dials.cosym) or
+                remove incompatible experiments (using the option exclude_datasets=)"""
+                % ", ".join(map(str, set(sgs)))
             )
         logger.info(
             "Space group being used during scaling is %s",
