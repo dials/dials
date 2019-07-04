@@ -167,17 +167,22 @@ class CosymAnalysis(symmetry_base, Subject):
                 "cb_op_inp_best": cb_op_inp_best,
             }
             self.input_space_group = self.params.space_group.change_basis(
-                self.best_subgroup["cb_op_inp_best"].inverse()
+                cb_op_inp_best.inverse()
             ).group()
-            self.intensities = self.intensities.customized_copy(
-                space_group_info=self.input_space_group.info()
+            self.intensities = (
+                self.intensities.customized_copy(
+                    space_group_info=self.input_space_group.info()
+                )
+                .as_reference_setting()
+                .primitive_setting()
             )
+            self.input_space_group = self.intensities.space_group()
         else:
             self.input_space_group = None
-        if self.params.lattice_group is not None:
-            self.intensities = (
-                self.intensities.as_reference_setting().primitive_setting()
-            )
+            if self.params.lattice_group is not None:
+                self.intensities = (
+                    self.intensities.as_reference_setting().primitive_setting()
+                )
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
