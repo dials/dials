@@ -78,7 +78,6 @@ class render_3d(object):
 
     def set_goniometer_points(self):
         gonio = self.imageset.get_goniometer()
-        scan = self.imageset.get_scan()
         detector = self.imageset.get_detector()
         beam = self.imageset.get_beam()
 
@@ -194,7 +193,6 @@ class render_3d(object):
             return
         t1 = time.time()
         print("Predicted %i reflections in %.2f s" % (predicted.size(), (t1 - t0)))
-        xyzcal_mm = predicted["xyzcal.mm"]
         xc, yc, zc = predicted["xyzcal.mm"].parts()
         xycal = flex.vec2_double(xc, yc)
         panel = predicted["panel"]
@@ -579,7 +577,6 @@ class GeometryWindow(wx_viewer.show_points_and_lines_mixin):
 def run(args):
 
     from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_experiments
     import libtbx.load_env
     import os

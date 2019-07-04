@@ -43,7 +43,6 @@ def test_dynamic_shadowing(
         imageset = experiments.imagesets()[0]
         detector = imageset.get_detector()
         scan = imageset.get_scan()
-        filename = imageset.get_path(0)
         masker = imageset.masker()
         assert masker is not None
         mask = masker.get_mask(detector, scan.get_oscillation()[0])
@@ -84,7 +83,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
         assert d.keys() == ["fraction_shadowed", "scan_points"]
         assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
 
-    result = fully_buffered(
+    fully_buffered(
         "dials.shadow_plot imported_experiments.json mode=2d plot=shadow_2d.png"
     ).raise_if_errors()
     assert os.path.exists("shadow_2d.png")
