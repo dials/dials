@@ -335,15 +335,15 @@ class Target(object):
         L = 0.5 * flex.sum(weights * residuals2)
 
         def process_one_gradient(result):
-            # copy gradients out of the result
-            dX = result[self._grad_names[0]]
-            dY = result[self._grad_names[1]]
-            dZ = result[self._grad_names[2]]
+            # copy gradients out of the result in the right order
+            grads = [result[key] for key in self._grad_names]
+
             # reset result
             for k in result.keys():
                 result[k] = None
+
             # add new keys
-            grads = self._concatenate_gradients(dX, dY, dZ)
+            grads = self._concatenate_gradients(grads)
             result["dL_dp"] = flex.sum(w_resid * grads)
             result["curvature"] = flex.sum(weights * grads * grads)
             return result
@@ -456,7 +456,7 @@ class Target(object):
 
         nelem = len(matches) * len(self._grad_names)
         nparam = len(self._prediction_parameterisation)
-        jacobian = self._build_jacobian(*reshaped, nelem=nelem, nparam=nparam)
+        jacobian = self._build_jacobian(reshaped, nelem=nelem, nparam=nparam)
 
         return (residuals, jacobian, weights)
 
@@ -475,28 +475,32 @@ class Target(object):
             return None
 
     @staticmethod
-    def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
-        """construct Jacobian from lists of gradient vectors. This method may be
-        overridden for the case where these vectors use sparse storage"""
+    def _build_jacobian(grads_each_dim, nelem=None, nparam=None):
+        """construct Jacobian from lists of gradient vectors. The elements of
+        grads_each_dim refer to the gradients of each dimension of the problem
+        (e.g. dX, dY, dZ). The elements for a single dimension give the arrays
+        of gradients of the associated residual for each parameter. This method
+        may be overridden for the case where these vectors use sparse storage"""
 
         jacobian = flex.double(flex.grid(nelem, nparam))
         # loop over parameters
         for i in range(nparam):
-            dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
-            col = flex.double.concatenate(dX, dY)
-            col.extend(dZ)
+            col = grads_each_dim[0][i]
+            for g in grads_each_dim[1:]:
+                col.extend(g[i])
             jacobian.matrix_paste_column_in_place(col, i)
 
         return jacobian
 
     @staticmethod
-    def _concatenate_gradients(dX, dY, dZ):
-        """concatenate three gradient vectors and return a flex.double. This method
+    def _concatenate_gradients(grads):
+        """concatenate gradient vectors and return a flex.double. This method
         may be overriden for the case where these vectors use sparse storage"""
 
-        grads = flex.double.concatenate(dX, dY)
-        grads.extend(dZ)
-        return grads
+        result = grads[0]
+        for g in grads[1:]:
+            result.extend(g)
+        return result
 
     @staticmethod
     @abc.abstractmethod
@@ -671,38 +675,33 @@ class SparseGradientsMixin:
     that employed sparse storage."""
 
     @staticmethod
-    def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem=None, nparam=None):
+    def _build_jacobian(grads_each_dim, nelem=None, nparam=None):
         """construct Jacobian from lists of sparse gradient vectors."""
 
-        nref = int(nelem / 3)
-        X_mat = sparse.matrix(nref, nparam)
-        Y_mat = sparse.matrix(nref, nparam)
-        Z_mat = sparse.matrix(nref, nparam)
+        nref = int(nelem / len(grads_each_dim))
+
+        blocks = [sparse.matrix(nref, nparam) for g in grads_each_dim]
         jacobian = sparse.matrix(nelem, nparam)
 
         # loop over parameters, building full width blocks of the full Jacobian
         for i in range(nparam):
-            X_mat[:, i] = dX_dp[i]
-            Y_mat[:, i] = dY_dp[i]
-            Z_mat[:, i] = dZ_dp[i]
+            for block, grad in zip(blocks, grads_each_dim):
+                block[:, i] = grad[i]
 
         # set the blocks in the Jacobian
-        jacobian.assign_block(X_mat, 0, 0)
-        jacobian.assign_block(Y_mat, nref, 0)
-        jacobian.assign_block(Z_mat, 2 * nref, 0)
+        for i, block in enumerate(blocks):
+            jacobian.assign_block(block, (i * nref), 0)
 
         return jacobian
 
     @staticmethod
-    def _concatenate_gradients(dX, dY, dZ):
-        """concatenate three sparse gradient vectors and return a flex.double."""
+    def _concatenate_gradients(grads):
+        """concatenate sparse gradient vectors and return a flex.double."""
 
-        dX = dX.as_dense_vector()
-        dY = dY.as_dense_vector()
-        dZ = dZ.as_dense_vector()
-        grads = flex.double.concatenate(dX, dY)
-        grads.extend(dZ)
-        return grads
+        result = grads[0].as_dense_vector()
+        for g in grads[1:]:
+            result.extend(g.as_dense_vector())
+        return result
 
 
 class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
