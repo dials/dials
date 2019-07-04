@@ -11,22 +11,16 @@ from dials.array_family import flex
     "method,colnames,expected_nout",
     [
         ("tukey", ("x_resid", "y_resid", "phi_resid"), 34),
+        pytest.param("mcd", ("x_resid", "y_resid", "phi_resid"), 35),
+        pytest.param("mcd", ("x_resid", "y_resid", "phi_resid"), 35),
         pytest.param(
-            "mcd",
-            ("x_resid", "y_resid", "phi_resid"),
-            34,
-            marks=pytest.mark.skip(reason="https://github.com/dials/dials/issues/836"),
-        ),
-        pytest.param(
-            "sauter_poon",
-            ("miller_index", "xyzobs.px.value", "xyzcal.px"),
-            34,
-            marks=pytest.mark.skip(reason="https://github.com/dials/dials/issues/836"),
+            "sauter_poon", ("miller_index", "xyzobs.px.value", "xyzcal.px"), 34
         ),
     ],
 )
 def test_centroid_outlier(dials_regression, method, colnames, expected_nout):
 
+    flex.set_random_seed(42)
     data_dir = os.path.join(
         dials_regression, "refinement_test_data", "centroid_outlier"
     )
