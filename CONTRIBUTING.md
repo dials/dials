@@ -14,9 +14,9 @@ The intention is that all of the code should try to converge towards these.
 
 ## Configuring Dials for development
 
-1.  Install Dials and it's cctbx_project dependencies for development; For
+1.  Install Dials and its cctbx_project dependencies for development; For
     Linux/macOS, the current best way to create a fresh installation of Dials
-    and all of it's dependencies is with the following commands:
+    and all of its dependencies is with the following commands:
     ```
     git clone https://github.com/cctbx/cctbx_project modules/cctbx_project
     ln -s modules/cctbx_project/libtbx/auto_build/bootstrap.py
@@ -40,7 +40,7 @@ python version instead of your system version.
 ## Essential Code Development Standards
 
 - **Please install the pre-commit hooks**. (`libtbx.precommit install` if using
-  the libtbx ecosystem). These use the [pre-commit] library and ensures that
+  the libtbx ecosystem). These use the [pre-commit] library and ensure that
   various sanity checks are run before commit, including formatting, syntax
   compatibility, basic flake8 checks, lack of conflict markers and file size
   limits. Basically, most of the essential rules will be checked automatically
@@ -49,7 +49,7 @@ python version instead of your system version.
   you don't have to worry about laying things out neatly, because black will
   take care of the formatting. You should try to commit code formatted with
   black (the pre-commit hook will help do this for you), but if for some reason
-  you can't, the whole codebase is auto-cleaned once a week. Most IDE's and
+  you can't, the whole codebase is auto-cleaned once a week. Most IDEs and
   editors have support for running formatters like black frequently or
   automatically.
 - **Avoid introducing new pre-commit flake8 warnings** - if you feel that it's
@@ -104,7 +104,7 @@ message that the code in question is special and care should be taken.
   of the `sys` package). If an import is for an optional dependency, then it
   should be imported in a try/except block, with some fallback to identify the
   missing case (such as setting the name to `None`. **Matplotlib is an
-  exception** to this rule - because it's startup logic defines the backend it
+  exception** to this rule - because its startup logic defines the backend it
   uses, this is permitted to be imported inline. There are still a few
   exceptions to help avoid circular imports that are hard to remove. Anything
   that is a python standard library import should be at the top of the file,
@@ -119,7 +119,7 @@ message that the code in question is special and care should be taken.
   docstrings should try to follow [Google-style] - it has a good balance
   between clarity and length.
 - Try not to do `from <module> import *` imports - it makes it hard to trace
-  where definitions are coming from, and turns off may useful diagnostics in
+  where definitions are coming from, and turns off many useful diagnostics in
   static analysis tools. Exceptions are allowed for modules that purely import
   from an extension to wrap the interface, if it would be excessively verbose.
 - Make pull requests a clean representation of the implementation of a feature
