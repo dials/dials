@@ -170,6 +170,11 @@ class Target(object):
 
         return
 
+    @property
+    def dim(self):
+        """Get the number of dimensions of the target function"""
+        return len(self._grad_names)
+
     def _predict_core(self, reflections, skip_derivatives=False):
         """perform prediction for the specified reflections"""
 

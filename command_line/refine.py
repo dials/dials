@@ -38,6 +38,7 @@ from libtbx import Auto
 from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
+from dials.util import Sorry
 
 logger = logging.getLogger("dials.command_line.refine")
 

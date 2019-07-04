@@ -25,6 +25,7 @@ from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
 import libtbx
+from libtbx.introspection import machine_memory_info
 
 # The include scope directive does not work here. For example:
 #
@@ -361,6 +362,34 @@ class RefinerFactory(object):
             params, target, pred_param, constraints_manager, verbosity
         )
         logger.debug("Refinement engine built")
+
+        nparam = len(pred_param)
+        ndim = target.dim
+        nref = len(refman.get_matches())
+        logger.info(
+            "There are {0} parameters to refine against {1} reflections in {2} dimensions".format(
+                nparam, nref, ndim
+            )
+        )
+        from dials.algorithms.refinement.engine import AdaptLstbx
+
+        if not params.refinement.parameterisation.sparse and isinstance(
+            refinery, AdaptLstbx
+        ):
+            dense_jacobian_gigabytes = (
+                nparam * nref * ndim * flex.double.element_size()
+            ) / 1e9
+            tot_memory_gigabytes = machine_memory_info().memory_total() / 1e9
+            # Report if the Jacobian requires a large amount of storage
+            if (
+                dense_jacobian_gigabytes > 0.2 * tot_memory_gigabytes
+                or dense_jacobian_gigabytes > 0.5
+            ):
+                logger.info(
+                    "Storage of the Jacobian matrix requires {0:.1f} GB".format(
+                        dense_jacobian_gigabytes
+                    )
+                )
 
         # build refiner interface and return
         if params.refinement.parameterisation.scan_varying:
