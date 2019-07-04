@@ -1,21 +1,19 @@
-# Contributing to Dials
+# Contributing to DIALS
 
 We're happy to consider contributions from outside sources; whether in the form
-of code, tickets, documentation or even just typo corrections! We're aware that
-Dials can at times appear to have relatively indiosyncratic code, and some of
-this is supporting obscure/niche use cases - so, if in the event that you are
-planning any large scale work that you will want to merge back in, please
-contact us beforehand so that we can discuss any potential impacts this might
-have.
+of code, tickets, documentation or even just typo corrections! DIALS addresses
+a wide range of use cases - so, if in the event that you are planning any large
+scale work that you will want to merge back in, please contact us beforehand so
+that we can discuss any potential impacts this might have.
 
 Listed in this document are code standards and conventions that you should try
 to adhere to, some of which are essential and others that are just encouraged.
 The intention is that all of the code should try to converge towards these.
 
-## Configuring Dials for development
+## Configuring DIALS for development
 
-1.  Install Dials and its cctbx_project dependencies for development; For
-    Linux/macOS, the current best way to create a fresh installation of Dials
+1.  Install DIALS and its cctbx_project dependencies for development; For
+    Linux/macOS, the current best way to create a fresh installation of DIALS
     and all of its dependencies is with the following commands:
     ```
     git clone https://github.com/cctbx/cctbx_project modules/cctbx_project
@@ -23,11 +21,11 @@ The intention is that all of the code should try to converge towards these.
     python bootstrap.py hot base update build --builder=dials --use-conda
     ```
 2.  Activate the environment with `source <root>/build/setpaths.sh`. This will
-    need to be done every time you work on dials code.
+    need to be done every time you work on DIALS code.
 3.  Install pre-commit hooks with `libtbx.precommit install`. This will install
-    hooks for Dials, dxtbx and xia2.
+    hooks for DIALS, dxtbx and xia2.
 
-The Dials repository is now checked out in `<root>/modules/dials`. During
+The DIALS repository is now checked out in `<root>/modules/dials`. During
 development, run tests with pytest with `libtbx.pytest --regression` to ensure
 that all of the tests still pass.
 
