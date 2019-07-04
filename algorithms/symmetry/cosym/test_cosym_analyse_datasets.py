@@ -11,16 +11,30 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 @pytest.mark.parametrize(
-    ("space_group", "dimensions", "sample_size", "use_known_space_group"),
+    (
+        "space_group",
+        "unit_cell",
+        "dimensions",
+        "sample_size",
+        "use_known_space_group",
+        "use_known_lattice_group",
+    ),
     [
-        ("P2", None, 10, False),
-        ("P3", None, 20, False),
-        ("I23", libtbx.Auto, 10, False),
-        ("I23", libtbx.Auto, 10, True),
+        ("P2", None, None, 10, False, False),
+        ("P3", None, None, 20, False, False),
+        ("I23", None, libtbx.Auto, 10, False, False),
+        ("I23", None, libtbx.Auto, 10, True, False),
+        ("P422", (79, 79, 37, 90, 90, 90), None, 20, True, True),
     ],
 )
 def test_cosym(
-    space_group, dimensions, sample_size, use_known_space_group, run_in_tmpdir
+    space_group,
+    unit_cell,
+    dimensions,
+    sample_size,
+    use_known_space_group,
+    use_known_lattice_group,
+    run_in_tmpdir,
 ):
     import matplotlib
 
@@ -28,6 +42,7 @@ def test_cosym(
 
     datasets, expected_reindexing_ops = generate_test_data(
         space_group=sgtbx.space_group_info(symbol=space_group).group(),
+        unit_cell=unit_cell,
         unit_cell_volume=10000,
         d_min=1.5,
         map_to_p1=True,
@@ -50,6 +65,8 @@ def test_cosym(
     params.dimensions = dimensions
     if use_known_space_group:
         params.space_group = expected_space_group.info()
+    if use_known_lattice_group:
+        params.lattice_group = expected_space_group.info()
 
     cosym = CosymAnalysis(datasets, params)
     cosym.run()
