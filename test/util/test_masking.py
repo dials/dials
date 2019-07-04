@@ -44,11 +44,7 @@ def test_dynamic_shadowing(
         detector = imageset.get_detector()
         scan = imageset.get_scan()
         filename = imageset.get_path(0)
-        masker = (
-            imageset.masker()
-            .format_class(filename, **format_kwargs)
-            .get_goniometer_shadow_masker()
-        )
+        masker = imageset.masker()
         assert masker is not None
         mask = masker.get_mask(detector, scan.get_oscillation()[0])
         assert len(mask) == len(detector)
@@ -58,6 +54,7 @@ def test_dynamic_shadowing(
             count_only_shadow,
         )
         mask = imageset.get_mask(0)
+
         # dead pixels, pixels in gaps, etc also masked
         if shadowing is libtbx.Auto or shadowing is True:
             assert mask[0].count(False) == count_mask_shadow, (
