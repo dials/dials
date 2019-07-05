@@ -28,12 +28,9 @@ namespace dials { namespace model {
     Ray() {}
 
     Ray(vec3<double> s1_, double angle_, bool entering_)
-      : s1(s1_),
-        angle(angle_),
-        entering(entering_) {}
+        : s1(s1_), angle(angle_), entering(entering_) {}
   };
 
-}} // namespace dials::model
+}}  // namespace dials::model
 
-#endif // DIALS_MODEL_DATA_RAY_H
-
+#endif  // DIALS_MODEL_DATA_RAY_H

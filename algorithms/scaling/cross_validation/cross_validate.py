@@ -35,12 +35,14 @@ cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
 from __future__ import absolute_import, division, print_function
+
 import logging
 import itertools
 import time
+
 from libtbx import phil
-from dials.util import Sorry
 from dials.util import log
+import six
 
 logger = logging.getLogger("dials")
 info_handle = log.info_handle(logger)
@@ -98,7 +100,7 @@ def cross_validate(params, cross_validator):
     elif params.cross_validation.cross_validation_mode == "multi":
         # run each option nfolds times
         if params.cross_validation.parameter is None:
-            raise Sorry(
+            raise ValueError(
                 "parameter= must be set to specify what command line option should be optimised"
             )
 
@@ -113,7 +115,7 @@ def cross_validate(params, cross_validator):
             options_dict[choice] = [True, False]
         else:
             if not params.cross_validation.parameter_values:
-                raise Sorry(
+                raise ValueError(
                     "parameter_values= must be set to specify what options should be tested"
                 )
             options_dict[choice] = []
@@ -138,7 +140,7 @@ def cross_validate(params, cross_validator):
                 for value in params.cross_validation.parameter_values:
                     options_dict[choice].append(float(value))
             else:
-                raise Sorry("Error in interpreting parameter and parameter_values")
+                raise ValueError("Error in interpreting parameter and parameter_values")
 
         # this code below should work for more than one parameter to be optimised,
         # but one cannot specify this yet from the command line
@@ -149,7 +151,7 @@ def cross_validate(params, cross_validator):
 
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, val in e.iteritems():
+            for k, val in six.iteritems(e):
                 params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):
                 if n < 100.0 / free_set_percentage:
@@ -157,7 +159,7 @@ def cross_validate(params, cross_validator):
                     cross_validator.run_script(params, config_no=i)
 
     else:
-        raise Sorry("Error in interpreting mode and options.")
+        raise ValueError("Error in interpreting mode and options.")
 
     st = cross_validator.interpret_results()
     logger.info("Summary of the cross validation analysis: \n %s", st.format())

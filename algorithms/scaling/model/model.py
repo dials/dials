@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 import abc
 import logging
 from collections import OrderedDict
-import numpy as np
+
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import (
     SingleScaleFactor,
@@ -28,6 +28,7 @@ from dials_scaling_ext import (
     calc_lookup_index,
     create_sph_harm_lookup_table,
 )
+import six
 
 logger = logging.getLogger("dials")
 
@@ -170,7 +171,7 @@ class ScalingModelBase(object):
         """:obj:`str`: Return a string representation of a scaling model."""
         msg = ["Scaling model:"]
         msg.append("  type : " + str(self.id_))
-        for name, component in self.components.iteritems():
+        for name, component in six.iteritems(self.components):
             msg.append("  " + str(name).capitalize() + " component:")
             if component.parameter_esds:
                 msg.append("    parameters (sigma)")
@@ -360,31 +361,13 @@ class PhysicalScalingModel(ScalingModelBase):
                 joined_inv_scales.extend(
                     self.components["scale"].calculate_scales(block_id=i)
                 )
-            sel = joined_norm_vals == min(joined_norm_vals)
-            initial_scale = joined_inv_scales.select(sel)[0]
-            self.components["scale"].parameters /= initial_scale
-            logger.info(
-                '\nThe "scale" model component has been rescaled, so that the\n'
-                "initial scale is 1.0."
-            )
-        if "decay" in self.components:
-            joined_d_vals = flex.double([])
-            joined_inv_scales = flex.double([])
-            for i in range(len(self.components["decay"].d_values)):
-                joined_d_vals.extend(self.components["decay"].d_values[i])
-                joined_inv_scales.extend(
-                    self.components["decay"].calculate_scales(block_id=i)
+            mean_scale = flex.mean(joined_inv_scales)
+            if mean_scale > 0.0:
+                self.components["scale"].parameters /= mean_scale
+                logger.info(
+                    '\nThe "scale" model component has been rescaled, so that the\n'
+                    "average scale is 1.0."
                 )
-            maxB = flex.max(
-                flex.double(np.log(joined_inv_scales)) * 2.0 * (joined_d_vals ** 2)
-            )
-            self.components["decay"].parameters -= flex.double(
-                self.components["decay"].n_params, maxB
-            )
-            logger.info(
-                'The "decay" model component has been rescaled, so that the\n'
-                "maximum B-factor applied to any reflection is 0.0."
-            )
 
     @classmethod
     def from_dict(cls, obj):

@@ -762,7 +762,7 @@ class Script(object):
             msg = "Unable to handle the following arguments:\n"
             msg += "\n".join(["  %s" % a for a in unhandled])
             msg += "\n"
-            logger.warn(msg)
+            logger.warning(msg)
 
         # Print help if no input
         if len(params.input.experiments) == 0 and not (

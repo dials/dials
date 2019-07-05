@@ -9,9 +9,12 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
+import collections
 from dials.array_family import flex
 from dials.array_family.flex import Binner
 from dials.util.report import Array, Report, Table
+
+import six
 
 
 def flex_ios(val, var):
@@ -34,7 +37,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     Generate the integration report
 
     """
-    from collections import OrderedDict
     from dials.algorithms.statistics import pearson_correlation_coefficient
     from dials.algorithms.statistics import spearman_correlation_coefficient
     from cctbx import miller, crystal
@@ -42,7 +44,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     def overall_report(data):
 
         # Start by adding some overall numbers
-        report = OrderedDict()
+        report = collections.OrderedDict()
         report["n"] = len(reflections)
         report["n_full"] = data["full"].count(True)
         report["n_partial"] = data["full"].count(False)
@@ -108,7 +110,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         indexer_int = binner.indexer(index.select(data["int"]))
 
         # Add some stats by resolution
-        report = OrderedDict()
+        report = collections.OrderedDict()
         report["bins"] = list(binner.bins())
         report["n_full"] = list(indexer_all.sum(data["full"]))
         report["n_partial"] = list(indexer_all.sum(~data["full"]))
@@ -184,11 +186,8 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
         return flex.double(reversed(bins))
 
     def select(data, indices):
-
         # Select rows from columns
-        result = {}
-        for key, value in data.iteritems():
-            result[key] = value.select(indices)
+        result = {key: value.select(indices) for key, value in six.iteritems(data)}
         return result
 
     # Check the required columns are there
@@ -286,7 +285,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     overall["dmax"] = low_summary["dmax"]
 
     # Create the overall report
-    summary = OrderedDict(
+    summary = collections.OrderedDict(
         [("overall", overall), ("low", low_summary), ("high", high_summary)]
     )
 
@@ -297,7 +296,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     image = binned_report(frame_binner, data["xyzcal.px"].parts()[2], data)
 
     # Return the report
-    return OrderedDict(
+    return collections.OrderedDict(
         [("summary", summary), ("resolution", resolution), ("image", image)]
     )
 
@@ -316,8 +315,6 @@ class IntegrationReport(Report):
         :param reflections: The reflection table
 
         """
-        from collections import OrderedDict
-
         # Initialise the report class
         super(IntegrationReport, self).__init__()
 
@@ -467,8 +464,6 @@ class ProfileModelReport(Report):
         :param reflections: The reflection table
 
         """
-        from collections import OrderedDict
-
         # Initialise the report class
         super(ProfileModelReport, self).__init__()
 
@@ -534,8 +529,6 @@ class ProfileModelReport2(Report):
         :param reflections: The reflection table
 
         """
-        from collections import OrderedDict
-
         # Initialise the report class
         super(ProfileModelReport, self).__init__()
 
@@ -601,8 +594,6 @@ class ProfileValidationReport(Report):
         :param reflections: The reflection table
 
         """
-        from collections import OrderedDict
-
         # Initialise the report class
         super(ProfileValidationReport, self).__init__()
 

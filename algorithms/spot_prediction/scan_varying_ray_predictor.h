@@ -24,10 +24,10 @@
 
 namespace dials { namespace algorithms {
 
+  using dials::model::Ray;
+  using scitbx::mat3;
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::mat3;
-  using dials::model::Ray;
 
   /**
    * Reflection prediction for a relp within a small segment of a scan, which we
@@ -47,9 +47,8 @@ namespace dials { namespace algorithms {
    */
   class ScanVaryingRayPredictor {
   public:
-
     // Typedef the miller_index type
-    typedef cctbx::miller::index <> miller_index;
+    typedef cctbx::miller::index<> miller_index;
 
     /**
      * Initialise the predictor.
@@ -58,15 +57,17 @@ namespace dials { namespace algorithms {
      * @param dphi The oscillation (phi0, dphi)
      * @param dmin The resolution limit
      */
-    ScanVaryingRayPredictor(
-          vec3<double> s0, vec3<double> m2, int frame0,
-          vec2<double> dphi, double dmin)
-      : s0_(s0),
-        m2_(m2.normalize()),
-        frame0_(frame0),
-        dphi_(dphi),
-        s0_mag_(s0.length()),
-        dmin_(dmin) {
+    ScanVaryingRayPredictor(vec3<double> s0,
+                            vec3<double> m2,
+                            int frame0,
+                            vec2<double> dphi,
+                            double dmin)
+        : s0_(s0),
+          m2_(m2.normalize()),
+          frame0_(frame0),
+          dphi_(dphi),
+          s0_mag_(s0.length()),
+          dmin_(dmin) {
       DIALS_ASSERT(std::abs(dphi_[1]) > 0.0);
       DIALS_ASSERT(s0_mag_ > 0.0);
       DIALS_ASSERT(dmin_ > 0.0);
@@ -84,13 +85,11 @@ namespace dials { namespace algorithms {
      * @param step The step to predict over.
      * @returns The ray if predicted
      */
-    boost::optional<Ray> operator()(
-        const miller_index &h,
-        const mat3<double> &A1,
-        const mat3<double> &A2,
-        int image,
-        std::size_t step) const {
-
+    boost::optional<Ray> operator()(const miller_index &h,
+                                    const mat3<double> &A1,
+                                    const mat3<double> &A2,
+                                    int image,
+                                    std::size_t step) const {
       // Calculate the reciprocal space vectors
       vec3<double> r1 = A1 * h;
       vec3<double> r2 = A2 * h;
@@ -116,9 +115,7 @@ namespace dials { namespace algorithms {
       //
       // alpha^2*dr.dr + 2*alpha(s0 + r1).dr + 2*s0.r1 + r1.r1 = 0
       af::small<double, 2> roots = reeke_detail::solve_quad(
-          dr.length_sq(),
-          2.0 * s0pr1 * dr,
-          r1.length_sq() + 2.0*s0_*r1);
+        dr.length_sq(), 2.0 * s0pr1 * dr, r1.length_sq() + 2.0 * s0_ * r1);
 
       // Choose a root that lies in [0,1]
       double alpha;
@@ -151,15 +148,13 @@ namespace dials { namespace algorithms {
      * @param step The step to predict over.
      * @returns The ray if predicted
      */
-    boost::optional<Ray> operator()(
-        const miller_index &h,
-        const mat3<double> &A1,
-        const mat3<double> &A2,
-        const vec3<double> &s0a,
-        const vec3<double> &s0b,
-        int image,
-        std::size_t step) const {
-
+    boost::optional<Ray> operator()(const miller_index &h,
+                                    const mat3<double> &A1,
+                                    const mat3<double> &A2,
+                                    const vec3<double> &s0a,
+                                    const vec3<double> &s0b,
+                                    int image,
+                                    std::size_t step) const {
       // Calculate the reciprocal space vectors
       vec3<double> r1 = A1 * h;
       vec3<double> r2 = A2 * h;
@@ -189,9 +184,7 @@ namespace dials { namespace algorithms {
       //
       // alpha^2*dr.dr + 2*alpha(s0a + r1).dr + 2*s0a.r1 + r1.r1 = 0
       af::small<double, 2> roots = reeke_detail::solve_quad(
-          dr.length_sq(),
-          2.0 * s0pr1 * dr,
-          r1.length_sq() + 2.0*s0a*r1);
+        dr.length_sq(), 2.0 * s0pr1 * dr, r1.length_sq() + 2.0 * s0a * r1);
 
       // Choose a root that lies in [0,1]
       double alpha1;
@@ -210,9 +203,7 @@ namespace dials { namespace algorithms {
       //
       // alpha^2*dr.dr - 2*alpha(s0b + r2).dr + 2*s0b.r2 + r2.r2 = 0
       roots = reeke_detail::solve_quad(
-          dr.length_sq(),
-          -2.0 * s0pr2 * dr,
-          r2.length_sq() + 2.0*s0b*r2);
+        dr.length_sq(), -2.0 * s0pr2 * dr, r2.length_sq() + 2.0 * s0b * r2);
       // Choose a root that lies in [0,1]
       double alpha2;
       if (0.0 <= roots[0] && roots[0] <= 1.0) {
@@ -242,7 +233,6 @@ namespace dials { namespace algorithms {
       return Ray(s1, angle, starts_outside);
     }
 
-
   private:
     vec3<double> s0_;
     vec3<double> m2_;
@@ -254,6 +244,6 @@ namespace dials { namespace algorithms {
     double dstarmax_sq_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H
+#endif  // DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H

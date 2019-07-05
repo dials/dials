@@ -14,11 +14,12 @@ namespace dials { namespace af {
   af::shared<std::size_t> int_to_size_t(const const_ref<int> &x) {
     typedef af::shared<std::size_t>::iterator iterator;
     af::shared<std::size_t> result(x.size());
-    iterator end = std::copy_if(x.begin(), x.end(), result.begin(), std::greater_equal(0));
+    iterator end =
+      std::copy_if(x.begin(), x.end(), result.begin(), std::greater_equal(0));
     DIALS_ASSERT(end == result.end());
     return result;
   }
 
-}}
+}}  // namespace dials::af
 
-#endif // DIALS_ARRAY_FAMILY_UTIL_H
+#endif  // DIALS_ARRAY_FAMILY_UTIL_H

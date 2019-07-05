@@ -12,7 +12,7 @@
 
 from __future__ import absolute_import, division, print_function
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 from scitbx.array_family import flex
 from scitbx import sparse
 
@@ -191,7 +191,7 @@ class RestraintsParameterisation(object):
 
         # fail now if this is already restrained.
         if param_i.parameterisation in self._param_to_restraint:
-            raise Sorry(
+            raise DialsRefineConfigError(
                 "Parameterisation already restrained. Cannot create "
                 "additional restraint with experiment {0}".format(experiment_id)
             )
@@ -244,7 +244,7 @@ class RestraintsParameterisation(object):
         # fail if any of the parameterisations has already been restrained.
         for param in params:
             if param in self._param_to_restraint:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Parameterisation already restrained. Cannot create "
                     "additional group restraint for experiment(s) {0}".format(
                         str(param_i.parameterisation.get_experiment_ids())
@@ -259,12 +259,21 @@ class RestraintsParameterisation(object):
         elif target == "median":
             tie = MedianUnitCellTie(model_parameterisations=params, sigma=sigma)
         else:
-            raise Sorry("target type {0} not available".format(target))
+            raise DialsRefineConfigError("target type {0} not available".format(target))
 
         # add to the restraint list along with the global parameter indices
         self._group_model_restraints.append(RestraintIndex(tie, istarts))
 
         return
+
+    @property
+    def num_residuals(self):
+        """Get the total number of residuals across all parameterised restraints"""
+        n_single = sum(
+            (e.restraint.num_residuals for e in self._single_model_restraints)
+        )
+        n_group = sum((e.restraint.num_residuals for e in self._group_model_restraints))
+        return n_single + n_group
 
     def get_residuals_gradients_and_weights(self):
 

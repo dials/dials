@@ -7,6 +7,9 @@ import logging
 
 from libtbx.phil import parse
 
+from dials.array_family import flex
+
+
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
 
 help_message = """
@@ -34,7 +37,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        from libtbx.phil import parse
         import libtbx.load_env
 
         # The script usage
@@ -62,7 +64,6 @@ class Script(object):
         from scitbx import matrix
         from dials.algorithms.refinement import rotation_decomposition
         from dials.util.options import flatten_experiments
-        from dials.array_family import flex
 
         model_shadow = params.shadow
 
@@ -100,7 +101,7 @@ class Script(object):
         # at this point, predict all of the reflections in the scan possible (i.e.
         # extend scan to 360 degrees) - this points back to expt
 
-        scan = self.make_scan_360(expt.scan)
+        self.make_scan_360(expt.scan)
 
         # now get a full set of all unique miller indices
         from cctbx import miller
@@ -203,8 +204,6 @@ class Script(object):
         return scan
 
     def predict_to_miller_set(self, expt, resolution):
-        from dials.array_family import flex
-
         predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
         hkl = predicted["miller_index"]
 
@@ -224,7 +223,6 @@ class Script(object):
         return obs
 
     def predict_to_miller_set_with_shadow(self, expt, resolution):
-        from dials.array_family import flex
         from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 
         predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)

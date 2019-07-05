@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import os
 import pytest
+from random import randint, uniform
 
 from dials.array_family import flex
 from dxtbx.model import ExperimentList, Experiment, Crystal
@@ -43,7 +44,7 @@ def test_init():
     assert not table.empty()
 
     # test with invalid columns
-    try:
+    with pytest.raises(RuntimeError):
         table = flex.reflection_table(
             [
                 ("col1", flex.int(10)),
@@ -51,9 +52,6 @@ def test_init():
                 ("col3", flex.std_string(10)),
             ]
         )
-        assert false
-    except Exception:
-        pass
 
 
 def test_resizing():
@@ -79,11 +77,8 @@ def test_resizing():
     assert table.ncols() == 2
 
     # Add an extra column with the wrong size (throw)
-    try:
+    with pytest.raises(RuntimeError):
         table["col3"] = flex.std_string(20)
-        assert False
-    except Exception:
-        pass
     assert table.nrows() == 10
     assert table.ncols() == 2
     assert table.is_consistent()
@@ -126,7 +121,7 @@ def test_delete():
     assert table.is_consistent()
     assert table.nrows() == 10
     assert table.ncols() == 2
-    assert not "col3" in table
+    assert "col3" not in table
 
     # Test del row
     del table[5]
@@ -399,11 +394,8 @@ def test_updating():
     # Create a table with some elements
     table2 = flex.reflection_table()
     table2["col3"] = flex.std_string(c3)
-    try:
+    with pytest.raises(RuntimeError):
         table1.update(table2)
-        assert False
-    except Exception:
-        pass
 
     assert table1.is_consistent()
     assert table1.nrows() == 10
@@ -525,7 +517,6 @@ def test_set_selected():
     table2["col2"] = flex.double(cc2)
     table2["col3"] = flex.std_string(cc3)
 
-    flags = flex.bool([True, True, False, False, False, True, False, False, True, True])
     table1.set_selected(index, table2)
     assert all(a == b for a, b in zip(table1["col1"], ccc1))
     assert all(a == b for a, b in zip(table1["col2"], ccc2))
@@ -593,7 +584,6 @@ def test_del_selected():
     table1["col2"] = flex.double(c2)
     table1["col3"] = flex.std_string(c3)
 
-    flags = flex.bool([True, True, False, False, False, True, False, False, True, True])
     table1.del_selected(index)
     assert table1.nrows() == len(ccc1)
     assert all(a == b for a, b in zip(table1["col1"], ccc1))
@@ -898,7 +888,6 @@ def test_split_indices_by_experiment_id():
 
 def test_split_partials():
     from dials.array_family import flex
-    from random import randint, uniform
 
     r = flex.reflection_table()
     r["value1"] = flex.double()
@@ -943,7 +932,6 @@ def test_split_partials():
 
 def test_split_partials_with_shoebox():
     from dials.array_family import flex
-    from random import randint, uniform
     from dials.model.data import Shoebox
 
     r = flex.reflection_table()
@@ -1024,8 +1012,6 @@ def test_split_partials_with_shoebox():
 
 def test_find_overlapping():
     from dials.array_family import flex
-    from random import randint, uniform
-    from dials.model.data import Shoebox
 
     N = 10000
     r = flex.reflection_table(N)
@@ -1299,7 +1285,6 @@ def test_experiment_identifiers():
     assert table.experiment_identifiers()[3] == "mnop"
     assert table.experiment_identifiers()[4] == "qrst"
 
-    new_table = table.select(flex.size_t([0, 2]))
     assert len(table.experiment_identifiers()) == 5
     assert table.experiment_identifiers()[0] == "abcd"
     assert table.experiment_identifiers()[1] == "efgh"
@@ -1448,3 +1433,25 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     assert refl1["rlp"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, 0.19707031842793443)
     )
+
+
+def test_calculate_entering_flags(dials_regression):
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    experiments_path = os.path.join(data_dir, "experiments_import.json")
+
+    refl = flex.reflection_table.from_pickle(pickle_path)
+    experiments = load.experiment_list(experiments_path, check_format=False)
+    experiment = experiments[0]
+    detector = experiment.detector
+    scan = experiment.scan
+    beam = experiment.beam
+    goniometer = experiment.goniometer
+
+    refl.centroid_px_to_mm(detector, scan=scan)
+    refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
+    refl.calculate_entering_flags(experiments)
+    assert "entering" in refl
+    flags = refl["entering"]
+    assert flags.count(True) == 58283
+    assert flags.count(False) == 57799

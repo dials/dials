@@ -23,13 +23,12 @@
 
 namespace dials { namespace algorithms {
 
-  using boost::mpl::range_c;
   using boost::mpl::for_each;
+  using boost::mpl::range_c;
 
   //
   // User template specializations
   //
-
 
   /** Specify the data type of the bound coordinate */
   template <typename T>
@@ -45,11 +44,9 @@ namespace dials { namespace algorithms {
   template <int DIM, typename T>
   typename bound_coord_type<T>::type get_maximum_bound(const T &);
 
-
   //
   // BoundingBox struct and functions
   //
-
 
   /**
    * A simple bounding box structure that has min/max for each
@@ -74,13 +71,11 @@ namespace dials { namespace algorithms {
   /** The compile-time loop to set init the box elements */
   template <typename BoxType, typename ObjectType>
   struct init_bounding_box {
-
     const ObjectType &object_;
     BoxType &box_;
 
-    init_bounding_box(const ObjectType &object, BoxType &box) :
-      object_(object),
-      box_(box) {}
+    init_bounding_box(const ObjectType &object, BoxType &box)
+        : object_(object), box_(box) {}
 
     template <typename Index>
     void operator()(Index) {
@@ -92,13 +87,11 @@ namespace dials { namespace algorithms {
   /** The compile-time loop to set min/max elements */
   template <typename BoxType, typename ObjectType>
   struct set_minmax_bounding_box {
-
     const ObjectType &object_;
     BoxType &box_;
 
     set_minmax_bounding_box(const ObjectType &object, BoxType &box)
-      : object_(object),
-        box_(box) {}
+        : object_(object), box_(box) {}
 
     template <typename Index>
     void operator()(Index) {
@@ -124,7 +117,7 @@ namespace dials { namespace algorithms {
     BoxType box;
     for_each<range_c<int, 0, BoxType::size> >(
       init_bounding_box<BoxType, ObjectType>(*first, box));
-    for (Iterator it = first+1; it < last; ++it) {
+    for (Iterator it = first + 1; it < last; ++it) {
       for_each<range_c<int, 0, BoxType::size> >(
         set_minmax_bounding_box<BoxType, ObjectType>(*it, box));
     }
@@ -134,7 +127,6 @@ namespace dials { namespace algorithms {
   //
   // BoxSize struct and functions
   //
-
 
   /** Hold a D-dimensional size */
   template <int DIM, typename T>
@@ -146,41 +138,35 @@ namespace dials { namespace algorithms {
   /** The compile-time loop to set init the size elements */
   template <typename SizeType, typename ObjectType>
   struct init_box_size {
-
     const ObjectType &object_;
     SizeType &size_;
 
-    init_box_size(const ObjectType &object, SizeType &size) :
-      object_(object),
-      size_(size) {}
+    init_box_size(const ObjectType &object, SizeType &size)
+        : object_(object), size_(size) {}
 
     template <typename Index>
     void operator()(Index) {
-      size_.d[Index::value] =
-        get_maximum_bound<Index::value>(object_) -
-        get_minimum_bound<Index::value>(object_);
+      size_.d[Index::value] = get_maximum_bound<Index::value>(object_)
+                              - get_minimum_bound<Index::value>(object_);
     }
   };
 
   /** The compile-time loop to set min size elements */
   template <typename SizeType, typename ObjectType>
   struct set_minimum_box {
-
     const ObjectType &object_;
     SizeType &size_;
 
     set_minimum_box(const ObjectType &object, SizeType &size)
-      : object_(object),
-        size_(size) {}
+        : object_(object), size_(size) {}
 
     template <typename Index>
     void operator()(Index) {
-      if (get_maximum_bound<Index::value>(object_) -
-          get_minimum_bound<Index::value>(object_) <
-            size_.d[Index::value]) {
-        size_.d[Index::value] =
-          get_maximum_bound<Index::value>(object_) -
-          get_minimum_bound<Index::value>(object_);
+      if (get_maximum_bound<Index::value>(object_)
+            - get_minimum_bound<Index::value>(object_)
+          < size_.d[Index::value]) {
+        size_.d[Index::value] = get_maximum_bound<Index::value>(object_)
+                                - get_minimum_bound<Index::value>(object_);
       }
     }
   };
@@ -193,18 +179,16 @@ namespace dials { namespace algorithms {
     SizeType size;
     for_each<range_c<int, 0, SizeType::size> >(
       init_box_size<SizeType, ObjectType>(*first, size));
-    for (Iterator it = first+1; it < last; ++it) {
+    for (Iterator it = first + 1; it < last; ++it) {
       for_each<range_c<int, 0, SizeType::size> >(
         set_minimum_box<SizeType, ObjectType>(*it, size));
     }
     return size;
   }
 
-
   //
   // DetectCollisions struct and functions
   //
-
 
   /**
    * A simple brute force collision detection algorithm. Each
@@ -225,8 +209,10 @@ namespace dials { namespace algorithms {
    * @param collides The collision checking function.
    */
   template <typename Iterator, typename ListType, typename Collides>
-  void detect_collisions_brute_force(Iterator first, Iterator last,
-      ListType &collisions, Collides collides) {
+  void detect_collisions_brute_force(Iterator first,
+                                     Iterator last,
+                                     ListType &collisions,
+                                     Collides collides) {
     // Compare each element against every other. If element a is
     // deemed to collide with element b then add to the list.
     for (Iterator a = first; a < last - 1; ++a) {
@@ -247,10 +233,12 @@ namespace dials { namespace algorithms {
    * are considered to be colliding.
    */
   template <>
-  struct no_collision_in_dimension <true> {
+  struct no_collision_in_dimension<true> {
     template <typename CoordType>
-    bool operator()(const CoordType &mina, const CoordType &maxa,
-                    const CoordType &minb, const CoordType &maxb) {
+    bool operator()(const CoordType &mina,
+                    const CoordType &maxa,
+                    const CoordType &minb,
+                    const CoordType &maxb) {
       return mina > maxb || minb > maxa;
     }
   };
@@ -260,10 +248,12 @@ namespace dials { namespace algorithms {
    * are not considered to be colliding.
    */
   template <>
-  struct no_collision_in_dimension <false> {
+  struct no_collision_in_dimension<false> {
     template <typename CoordType>
-    bool operator()(const CoordType &mina, const CoordType &maxa,
-                    const CoordType &minb, const CoordType &maxb) {
+    bool operator()(const CoordType &mina,
+                    const CoordType &maxa,
+                    const CoordType &minb,
+                    const CoordType &maxb) {
       return mina >= maxb || minb >= maxa;
     }
   };
@@ -273,10 +263,11 @@ namespace dials { namespace algorithms {
   struct no_collision_loop {
     template <typename ObjectType>
     static bool exec(const ObjectType a, const ObjectType &b) {
-      return no_collision_in_dimension<touching>()(
-          get_minimum_bound<I-1>(a), get_maximum_bound<I-1>(a),
-          get_minimum_bound<I-1>(b), get_maximum_bound<I-1>(b))
-        || no_collision_loop<I-1, touching>::exec(a, b);
+      return no_collision_in_dimension<touching>()(get_minimum_bound<I - 1>(a),
+                                                   get_maximum_bound<I - 1>(a),
+                                                   get_minimum_bound<I - 1>(b),
+                                                   get_maximum_bound<I - 1>(b))
+             || no_collision_loop<I - 1, touching>::exec(a, b);
     }
   };
 
@@ -297,7 +288,7 @@ namespace dials { namespace algorithms {
    * of template metaprogramming. The no_collision_loop struct sets up a
    * compile time loop over the number of dimensions.
    */
-  template <int DIM, typename ObjectType, bool touching=true>
+  template <int DIM, typename ObjectType, bool touching = true>
   struct collides {
     bool operator()(const ObjectType &a, const ObjectType &b) {
       return !no_collision_loop<DIM, touching>::exec(a, b);
@@ -311,10 +302,9 @@ namespace dials { namespace algorithms {
    * on if we wrap it up in a class. The algorithm is first instantiated
    * and then called through the () operator.
    */
-  template <int DIM, typename Iterator, typename ListType, bool touching=false>
+  template <int DIM, typename Iterator, typename ListType, bool touching = false>
   class DetectCollisions {
   public:
-
     // Types derived from data iterator
     typedef Iterator DataIterator;
     typedef std::iterator_traits<DataIterator> traits;
@@ -358,9 +348,7 @@ namespace dials { namespace algorithms {
      * @param last The last iterator in the range
      * @param collisions The list of collisions
      */
-    void operator()(DataIterator first, DataIterator last,
-        CollisionList &collisions) {
-
+    void operator()(DataIterator first, DataIterator last, CollisionList &collisions) {
       // Ensure the amount of data is greater than zero.
       int n = last - first;
       DIALS_ASSERT(n > 0);
@@ -397,8 +385,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
-     int max_depth_;
+    int max_depth_;
 
     /**
      * The main body of the algorithm.
@@ -446,17 +433,18 @@ namespace dials { namespace algorithms {
      * @param depth The current recusion depth.
      */
     template <int D>
-    void partition_data(IndexIterator first, IndexIterator last,
-         DataIterator data, ListType &collisions, const BoxType &box,
-         int depth) const {
-
+    void partition_data(IndexIterator first,
+                        IndexIterator last,
+                        DataIterator data,
+                        ListType &collisions,
+                        const BoxType &box,
+                        int depth) const {
       // The next dimensions: X -> Y -> Z -> X ...
-      const int D_NEXT = (D+1) % DIM;
+      const int D_NEXT = (D + 1) % DIM;
 
       // Keep recusing until we either reach the maximum recusion depth or
       // the threshold of number of objects for brute force search is reached.
       if (depth < max_depth_ && last - first > BF_THRESHOLD) {
-
         IndexIterator mid;
 
         // Copy the current level bounding box and starting with the lower
@@ -469,7 +457,7 @@ namespace dials { namespace algorithms {
         // Then call the partition function on the next dimension, the order
         // of this is X -> Y -> Z -> X ...
         mid = std::partition(first, last, by_lower<D>(data, sub_box.max[D]));
-        partition_data<D_NEXT>(first, mid, data, collisions, sub_box, depth+1);
+        partition_data<D_NEXT>(first, mid, data, collisions, sub_box, depth + 1);
 
         // Rejig the subdivided box to set the maximum of the current dimension
         // back to that of the current level box and the minimum to the maximum
@@ -481,10 +469,9 @@ namespace dials { namespace algorithms {
         // Then call the partition function on the next dimension, the order
         // of this is X -> Y -> Z -> X ...
         mid = std::partition(first, last, by_upper<D>(data, sub_box.min[D]));
-        partition_data<D_NEXT>(mid, last, data, collisions, sub_box, depth+1);
+        partition_data<D_NEXT>(mid, last, data, collisions, sub_box, depth + 1);
 
       } else {
-
         // If the stopping condition has been met, then proceed with a
         // brute-force search for all the collison in the current level.
         detect_brute_force_w_check(first, last, data, collisions, box);
@@ -498,12 +485,10 @@ namespace dials { namespace algorithms {
      */
     template <int D>
     struct by_lower {
-
       const Iterator &data_;
       CoordType div_;
 
-      by_lower(const DataIterator &data, CoordType div)
-        : data_(data), div_(div) {}
+      by_lower(const DataIterator &data, CoordType div) : data_(data), div_(div) {}
 
       bool operator()(const IndexType &a) const {
         return get_minimum_bound<D>(*(data_ + a)) < div_;
@@ -517,12 +502,10 @@ namespace dials { namespace algorithms {
      */
     template <int D>
     struct by_upper {
-
       const DataIterator &data_;
       CoordType div_;
 
-      by_upper(const Iterator &data, CoordType div)
-        : data_(data), div_(div) {}
+      by_upper(const Iterator &data, CoordType div) : data_(data), div_(div) {}
 
       bool operator()(const int &a) const {
         return get_maximum_bound<D>(*(data_ + a)) < div_;
@@ -533,13 +516,15 @@ namespace dials { namespace algorithms {
      * A helper function to wrap the call to detect_collisions_brute_force with
      * the check_collision struct.
      */
-    void detect_brute_force_w_check(IndexIterator first, IndexIterator last,
-        DataIterator data, ListType &collisions, const BoxType &box) const {
-
+    void detect_brute_force_w_check(IndexIterator first,
+                                    IndexIterator last,
+                                    DataIterator data,
+                                    ListType &collisions,
+                                    const BoxType &box) const {
       // Do a brute force collision test using the collision checker to ensure
       // no pairs are added that have already been visited and added.
-      detect_collisions_brute_force(first, last, collisions,
-        check_collision(data, box));
+      detect_collisions_brute_force(
+        first, last, collisions, check_collision(data, box));
     }
 
     /**
@@ -553,13 +538,11 @@ namespace dials { namespace algorithms {
      * ignore them.
      */
     struct check_collision {
-
       const DataIterator d_;
       const BoxType &box_;
 
       /** Initialise the functor with the iterator and bounding box */
-      check_collision(const DataIterator &d, const BoxType &box)
-        : d_(d), box_(box) {}
+      check_collision(const DataIterator &d, const BoxType &box) : d_(d), box_(box) {}
 
       /**
        * Check for a collision. We return true if the objects collide and
@@ -569,7 +552,7 @@ namespace dials { namespace algorithms {
         // If the objects collide and they have not already been
         // added then return true, otherwise return false.
         return collision_type()(*(d_ + a), *(d_ + b))
-            && !already_visited(*(d_ + a), *(d_ + b), box_);
+               && !already_visited(*(d_ + a), *(d_ + b), box_);
       }
 
       /*
@@ -583,31 +566,32 @@ namespace dials { namespace algorithms {
        * of template metaprogramming. The already_visited_loop struct sets up a
        * compile time loop over the number of dimensions.
        */
-      bool already_visited(const ObjectType &a, const ObjectType &b,
-          const BoxType &box) const {
+      bool already_visited(const ObjectType &a,
+                           const ObjectType &b,
+                           const BoxType &box) const {
         bool result = false;
-        for_each<range_c<int, 0, DIM> >(
-          already_visited_loop(a, b, box, result));
+        for_each<range_c<int, 0, DIM> >(already_visited_loop(a, b, box, result));
         return result;
       }
 
       /** The compile-time loop to check if boxes have already been visited */
       struct already_visited_loop {
-
         const ObjectType &a_;
         const ObjectType &b_;
         const BoxType &box_;
         bool &result_;
 
-        already_visited_loop(const ObjectType &a, const ObjectType &b,
-          const BoxType &box, bool &result)
-        : a_(a), b_(b), box_(box), result_(result) {}
+        already_visited_loop(const ObjectType &a,
+                             const ObjectType &b,
+                             const BoxType &box,
+                             bool &result)
+            : a_(a), b_(b), box_(box), result_(result) {}
 
         template <typename I>
         void operator()(I) {
           result_ = result_
-            || (get_minimum_bound<I::value>(a_) < box_.min[I::value]
-            &&  get_minimum_bound<I::value>(b_) < box_.min[I::value]);
+                    || (get_minimum_bound<I::value>(a_) < box_.min[I::value]
+                        && get_minimum_bound<I::value>(b_) < box_.min[I::value]);
         }
       };
     };
@@ -615,22 +599,18 @@ namespace dials { namespace algorithms {
 
   /** Wrapper function specialised for 2D collision detection */
   template <typename Iterator, typename ListType>
-  void detect_collisions2d(Iterator first, Iterator last,
-      ListType &collisions) {
-
+  void detect_collisions2d(Iterator first, Iterator last, ListType &collisions) {
     // Create the collision detection object and call
     DetectCollisions<2, Iterator, ListType, false>()(first, last, collisions);
   }
 
   /** Wrapper function specialised for 3D collision detection */
   template <typename Iterator, typename ListType>
-  void detect_collisions3d(Iterator first, Iterator last,
-      ListType &collisions) {
-
+  void detect_collisions3d(Iterator first, Iterator last, ListType &collisions) {
     // Create the collision detection object and call
     DetectCollisions<3, Iterator, ListType, false>()(first, last, collisions);
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPATIAL_INDEXING_DETECT_COLLISIONS_H
+#endif  // DIALS_ALGORITHMS_SPATIAL_INDEXING_DETECT_COLLISIONS_H

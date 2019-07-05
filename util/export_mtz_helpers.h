@@ -16,8 +16,8 @@
 
 namespace dials { namespace util {
 
-  using scitbx::mat3;
   using cctbx::uctbx::unit_cell;
+  using scitbx::mat3;
 
   mat3<double> dials_u_to_mosflm(const mat3<double> dials_U, unit_cell uc) {
     scitbx::af::double6 p = uc.parameters();
@@ -41,9 +41,6 @@ namespace dials { namespace util {
 
     return mosflm_U;
   }
-  }
-}
-
-
+}}  // namespace dials::util
 
 #endif

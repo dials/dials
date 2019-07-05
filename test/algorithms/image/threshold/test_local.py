@@ -1,16 +1,38 @@
 from __future__ import absolute_import, division, print_function
+from numpy.random import poisson
+from random import randint
+from math import exp
 
 
 class Test:
     def setup_class(self):
         from scitbx.array_family import flex
 
+        spot = flex.double(flex.grid(11, 11))
+        for j in range(11):
+            for i in range(11):
+                spot[j, i] = exp(-((j - 5) ** 2 + (i - 5) ** 2) / 2 ** 2)
+
+        self.image = flex.double(flex.grid(2000, 2000))
+        for n in range(200):
+            x = randint(0, 2000)
+            y = randint(0, 2000)
+            for j in range(0, 11):
+                for i in range(0, 11):
+                    xx = x + i - 5
+                    yy = y + j - 5
+                    if xx >= 0 and yy >= 0 and xx < 2000 and yy < 2000:
+                        self.image[yy, xx] = poisson(100 * spot[j, i])
+
+        background = flex.double(list(poisson(5, 2000 * 2000)))
+        background.reshape(flex.grid(2000, 2000))
+
+        self.image += background
+
         # Create an image
-        self.image = flex.random_double(2000 * 2000, 10)
-        self.image.reshape(flex.grid(2000, 2000))
         self.mask = flex.random_bool(2000 * 2000, 0.99)
         self.mask.reshape(flex.grid(2000, 2000))
-        self.gain = flex.random_double(2000 * 2000) + 0.5
+        self.gain = flex.random_double(2000 * 2000) + 1.0
         self.gain.reshape(flex.grid(2000, 2000))
         self.size = (3, 3)
         self.min_count = 2
@@ -19,26 +41,26 @@ class Test:
         from dials.algorithms.image.threshold import niblack
 
         n_sigma = 3
-        result = niblack(self.image, self.size, n_sigma)
+        niblack(self.image, self.size, n_sigma)
 
     def test_sauvola(self):
         from dials.algorithms.image.threshold import sauvola
 
         k = 3
         r = 3
-        result = sauvola(self.image, self.size, k, r)
+        sauvola(self.image, self.size, k, r)
 
     def test_index_of_dispersion(self):
         from dials.algorithms.image.threshold import index_of_dispersion
 
         n_sigma = 3
-        result = index_of_dispersion(self.image, self.size, n_sigma)
+        index_of_dispersion(self.image, self.size, n_sigma)
 
     def test_index_of_dispersion_masked(self):
         from dials.algorithms.image.threshold import index_of_dispersion_masked
 
         n_sigma = 3
-        result = index_of_dispersion_masked(
+        index_of_dispersion_masked(
             self.image, self.mask, self.size, self.min_count, n_sigma
         )
 
@@ -46,18 +68,14 @@ class Test:
         from dials.algorithms.image.threshold import gain
 
         n_sigma = 3
-        result = gain(
-            self.image, self.mask, self.gain, self.size, self.min_count, n_sigma
-        )
+        gain(self.image, self.mask, self.gain, self.size, self.min_count, n_sigma)
 
     def test_dispersion(self):
         from dials.algorithms.image.threshold import dispersion
 
         nsig_b = 3
         nsig_s = 3
-        result = dispersion(
-            self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count
-        )
+        dispersion(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
 
     def test_dispersion_w_gain(self):
         from dials.algorithms.image.threshold import dispersion_w_gain
@@ -153,4 +171,39 @@ class Test:
         algorithm(self.image, self.mask, result3)
         algorithm(self.image, self.mask, self.gain, result4)
         assert result1 == result3
+        assert result2 == result4
+
+    def test_dispersion_extended_threshold(self):
+        from dials.algorithms.image.threshold import DispersionExtendedThreshold
+        from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
+        from dials.array_family import flex
+
+        nsig_b = 3
+        nsig_s = 3
+        algorithm = DispersionExtendedThreshold(
+            self.image.all(), self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result1 = flex.bool(flex.grid(self.image.all()))
+        result2 = flex.bool(flex.grid(self.image.all()))
+        algorithm(self.image, self.mask, result1)
+        algorithm(self.image, self.mask, self.gain, result2)
+
+        debug = DispersionExtendedThresholdDebug(
+            self.image, self.mask, self.size, nsig_b, nsig_s, 0, self.min_count
+        )
+        result3 = debug.final_mask()
+
+        assert result1.all_eq(result3)
+
+        debug = DispersionExtendedThresholdDebug(
+            self.image,
+            self.mask,
+            self.gain,
+            self.size,
+            nsig_b,
+            nsig_s,
+            0,
+            self.min_count,
+        )
+        result4 = debug.final_mask()
         assert result2 == result4

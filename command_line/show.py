@@ -192,9 +192,9 @@ def run(args):
         exit()
 
     if len(experiments):
-        if not all([e.detector for e in experiments]):
+        if not all(e.detector for e in experiments):
             sys.exit("Error: experiment has no detector")
-        if not all([e.beam for e in experiments]):
+        if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
         print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
 
@@ -236,7 +236,7 @@ def show_experiments(experiments, show_scan_varying=False):
             text.append(str(expt.scan))
         if expt.goniometer is not None:
             text.append(show_goniometer(expt.goniometer))
-        from cStringIO import StringIO
+        from six.moves import cStringIO as StringIO
 
         s = StringIO()
         if expt.crystal is not None:

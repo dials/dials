@@ -16,18 +16,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  BOOST_PYTHON_MODULE(dials_algorithms_image_fill_holes_ext)
-  {
-    def ("simple_fill",
-      &simple_fill, (
-        arg("data"),
-        arg("mask")));
+  BOOST_PYTHON_MODULE(dials_algorithms_image_fill_holes_ext) {
+    def("simple_fill", &simple_fill, (arg("data"), arg("mask")));
 
-    def ("diffusion_fill",
-      &diffusion_fill, (
-        arg("data"),
-        arg("mask"),
-        arg("niter")=10));
+    def(
+      "diffusion_fill", &diffusion_fill, (arg("data"), arg("mask"), arg("niter") = 10));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

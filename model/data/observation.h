@@ -20,18 +20,17 @@
 
 namespace dials { namespace model {
 
-  using scitbx::vec2;
-  using scitbx::vec3;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
+  using scitbx::vec2;
+  using scitbx::vec3;
 
   /**
    * A structure to hold the intensity data we want for both raw and
    * corrected intensities.
    */
   struct Intensity {
-
     /**
      * A struct with the intensity value and variance
      */
@@ -41,16 +40,11 @@ namespace dials { namespace model {
       bool success;
 
       /** Default construct */
-      IntensityData()
-        : value(0.0),
-          variance(0.0),
-          success(false) {}
+      IntensityData() : value(0.0), variance(0.0), success(false) {}
 
       /** Construct with values */
       IntensityData(double value_, double variance_, bool success_)
-        : value(value_),
-          variance(variance_),
-          success(success_) {}
+          : value(value_), variance(variance_), success(success_) {}
 
       /**
        * Test to see if intensity contain the same data
@@ -59,9 +53,8 @@ namespace dials { namespace model {
        */
       bool operator==(const IntensityData &rhs) const {
         const double eps = 1e-7;
-        return (std::abs(value - rhs.value) < eps &&
-                std::abs(variance - rhs.variance) < eps &&
-                success == rhs.success);
+        return (std::abs(value - rhs.value) < eps
+                && std::abs(variance - rhs.variance) < eps && success == rhs.success);
       }
 
       /**
@@ -83,22 +76,24 @@ namespace dials { namespace model {
 
     /** Construct with observed */
     Intensity(double observed_value, double observed_variance, bool observed_success)
-      : observed(observed_value, observed_variance, observed_success) {}
+        : observed(observed_value, observed_variance, observed_success) {}
 
     /** Construct with observed and corrected */
-    Intensity(double observed_value, double observed_variance, bool observed_success,
-              double corrected_value, double corrected_variance, bool corrected_success)
-      : observed(observed_value, observed_variance, observed_success),
-        corrected(corrected_value, corrected_variance, corrected_success) {}
+    Intensity(double observed_value,
+              double observed_variance,
+              bool observed_success,
+              double corrected_value,
+              double corrected_variance,
+              bool corrected_success)
+        : observed(observed_value, observed_variance, observed_success),
+          corrected(corrected_value, corrected_variance, corrected_success) {}
 
     /** Construct with observed */
-    Intensity(const IntensityData &observed_)
-      : observed(observed_) {}
+    Intensity(const IntensityData &observed_) : observed(observed_) {}
 
     /** Construct with observed and corrected */
     Intensity(const IntensityData &observed_, const IntensityData &corrected_)
-      : observed(observed_),
-        corrected(corrected_) {}
+        : observed(observed_), corrected(corrected_) {}
 
     /**
      * Test to see if intensity contain the same data
@@ -124,7 +119,6 @@ namespace dials { namespace model {
    * and millimeter coordinates.
    */
   struct Centroid {
-
     /**
      * The centroid data
      */
@@ -134,18 +128,13 @@ namespace dials { namespace model {
       vec3<double> std_err_sq;
 
       /** Default construct */
-      CentroidData()
-        : position(0, 0, 0),
-          variance(0, 0, 0),
-          std_err_sq(0, 0, 0) {}
+      CentroidData() : position(0, 0, 0), variance(0, 0, 0), std_err_sq(0, 0, 0) {}
 
       /** Construct from values */
       CentroidData(vec3<double> position_,
                    vec3<double> variance_,
                    vec3<double> std_err_sq_)
-        : position(position_),
-          variance(variance_),
-          std_err_sq(std_err_sq_) {}
+          : position(position_), variance(variance_), std_err_sq(std_err_sq_) {}
 
       /**
        * Test to see if centroids contain the same data
@@ -154,15 +143,15 @@ namespace dials { namespace model {
        */
       bool operator==(const CentroidData &rhs) const {
         const double eps = 1e-7;
-        return ((std::abs(position[0] - rhs.position[0]) < eps) &&
-                (std::abs(position[1] - rhs.position[1]) < eps) &&
-                (std::abs(position[2] - rhs.position[2]) < eps) &&
-                (std::abs(variance[0] - rhs.variance[0]) < eps) &&
-                (std::abs(variance[1] - rhs.variance[1]) < eps) &&
-                (std::abs(variance[2] - rhs.variance[2]) < eps) &&
-                (std::abs(std_err_sq[0] - rhs.std_err_sq[0]) < eps) &&
-                (std::abs(std_err_sq[1] - rhs.std_err_sq[1]) < eps) &&
-                (std::abs(std_err_sq[2] - rhs.std_err_sq[2]) < eps));
+        return ((std::abs(position[0] - rhs.position[0]) < eps)
+                && (std::abs(position[1] - rhs.position[1]) < eps)
+                && (std::abs(position[2] - rhs.position[2]) < eps)
+                && (std::abs(variance[0] - rhs.variance[0]) < eps)
+                && (std::abs(variance[1] - rhs.variance[1]) < eps)
+                && (std::abs(variance[2] - rhs.variance[2]) < eps)
+                && (std::abs(std_err_sq[0] - rhs.std_err_sq[0]) < eps)
+                && (std::abs(std_err_sq[1] - rhs.std_err_sq[1]) < eps)
+                && (std::abs(std_err_sq[2] - rhs.std_err_sq[2]) < eps));
       }
 
       /**
@@ -185,7 +174,7 @@ namespace dials { namespace model {
     Centroid(vec3<double> px_position,
              vec3<double> px_variance,
              vec3<double> px_std_err_sq)
-      : px(px_position, px_variance, px_std_err_sq) {}
+        : px(px_position, px_variance, px_std_err_sq) {}
 
     /** Construct with pixel and millimeter coordinates */
     Centroid(vec3<double> px_position,
@@ -194,17 +183,14 @@ namespace dials { namespace model {
              vec3<double> mm_position,
              vec3<double> mm_variance,
              vec3<double> mm_std_err_sq)
-      : px(px_position, px_variance, px_std_err_sq),
-        mm(mm_position, mm_variance, mm_std_err_sq) {}
+        : px(px_position, px_variance, px_std_err_sq),
+          mm(mm_position, mm_variance, mm_std_err_sq) {}
 
     /** Construct with the pixel coordinate */
-    Centroid(const CentroidData &px_)
-      : px(px_) {}
+    Centroid(const CentroidData &px_) : px(px_) {}
 
     /** Construct the with pixel and millimetre position */
-    Centroid(const CentroidData &px_, const CentroidData &mm_)
-      : px(px_),
-        mm(mm_) {}
+    Centroid(const CentroidData &px_, const CentroidData &mm_) : px(px_), mm(mm_) {}
 
     /**
      * Test to see if centroids contain the same data
@@ -232,7 +218,6 @@ namespace dials { namespace model {
      * @param s The scan model
      */
     void update_mm(std::size_t panel, const Detector &d, const Scan &s) {
-
       // Check the panel number
       DIALS_ASSERT(panel < d.size());
 
@@ -273,8 +258,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(std::size_t panel,
-        const BeamBase &b, const Detector &d) const {
+    double resolution(std::size_t panel, const BeamBase &b, const Detector &d) const {
       return d[panel].get_resolution_at_pixel(
         b.get_s0(), vec2<double>(px.position[0], px.position[1]));
     }
@@ -293,51 +277,39 @@ namespace dials { namespace model {
    * A struct holding details about an observation
    */
   struct Observation {
-
     std::size_t panel;
     Centroid centroid;
     Intensity intensity;
 
     /** Default construct */
-    Observation()
-      : panel(0) {}
+    Observation() : panel(0) {}
 
     /** Construct with position */
-    Observation(const Centroid &centroid_)
-      : panel(0),
-        centroid(centroid_) {}
+    Observation(const Centroid &centroid_) : panel(0), centroid(centroid_) {}
 
     /** Construct with intensity */
-    Observation(const Intensity &intensity_)
-      : panel(0),
-        intensity(intensity_) {}
+    Observation(const Intensity &intensity_) : panel(0), intensity(intensity_) {}
 
     /** Construct with position and intensity */
     Observation(const Centroid &centroid_, const Intensity &intensity_)
-      : panel(0),
-        centroid(centroid_),
-        intensity(intensity_) {}
+        : panel(0), centroid(centroid_), intensity(intensity_) {}
 
     /** Construct with panel */
-    Observation(std::size_t panel_)
-      : panel(panel_) {}
+    Observation(std::size_t panel_) : panel(panel_) {}
 
     /** Construct with position */
     Observation(std::size_t panel_, const Centroid &centroid_)
-      : panel(panel_),
-        centroid(centroid_) {}
+        : panel(panel_), centroid(centroid_) {}
 
     /** Construct with intensity */
     Observation(std::size_t panel_, const Intensity &intensity_)
-      : panel(panel_),
-        intensity(intensity_) {}
+        : panel(panel_), intensity(intensity_) {}
 
     /** Construct with position and intensity */
-    Observation(std::size_t panel_, const Centroid &centroid_,
-      const Intensity &intensity_)
-      : panel(panel_),
-        centroid(centroid_),
-        intensity(intensity_) {}
+    Observation(std::size_t panel_,
+                const Centroid &centroid_,
+                const Intensity &intensity_)
+        : panel(panel_), centroid(centroid_), intensity(intensity_) {}
 
     /**
      * Update the millimeter centroid position from the pixel centroid
@@ -364,9 +336,8 @@ namespace dials { namespace model {
      * @returns True/False. They are the same
      */
     bool operator==(const Observation &rhs) const {
-      return (panel == rhs.panel &&
-              centroid == rhs.centroid &&
-              intensity == rhs.intensity);
+      return (panel == rhs.panel && centroid == rhs.centroid
+              && intensity == rhs.intensity);
     }
 
     /**
@@ -379,6 +350,6 @@ namespace dials { namespace model {
     }
   };
 
-}}; // namespace dials::model
+}};  // namespace dials::model
 
 #endif /* DIALS_MODEL_DATA_OBSERVATION_H */

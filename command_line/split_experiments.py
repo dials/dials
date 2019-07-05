@@ -21,7 +21,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        from libtbx.phil import parse
         import libtbx.load_env
 
         # The phil scope
@@ -44,6 +43,14 @@ class Script(object):
         reflections_prefix = reflections
           .type = str
           .help = "Filename prefix for the split reflections"
+
+        experiments_suffix = None
+          .type = str
+          .help = "Optional filename suffix, to be inserted before '.json', for the split experimental models"
+
+        reflections_suffix = None
+          .type = str
+          .help = "Optional filename suffix, to be inserted before '.pickle', for the split reflections"
 
         chunk_size = None
           .type = int
@@ -84,7 +91,6 @@ class Script(object):
         """Execute the script."""
 
         from dials.util.options import flatten_reflections, flatten_experiments
-        from dials.util import Sorry
         from dials.array_family import flex
 
         # Parse the command line
@@ -110,13 +116,20 @@ class Script(object):
 
         import math
 
-        experiments_template = "%s_%%0%sd.json" % (
+        experiments_template = "%s_%%0%sd%s.json" % (
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
+            ("_" + params.output.experiments_suffix)
+            if params.output.experiments_suffix != None
+            else "",
         )
-        reflections_template = "%s_%%0%sd.pickle" % (
+
+        reflections_template = "%s_%%0%sd%s.pickle" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
+            ("_" + params.output.reflections_suffix)
+            if params.output.reflections_suffix != None
+            else "",
         )
 
         from dxtbx.model.experiment_list import ExperimentList

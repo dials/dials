@@ -6,8 +6,9 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import OrderedDict
+
 from dials.array_family import flex
-from dials.util import Sorry
+import six
 
 logger = logging.getLogger("dials")
 
@@ -33,7 +34,7 @@ class active_parameter_manager(object):
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
         n_cumul_params = 0
-        for component, obj in components.iteritems():
+        for component, obj in six.iteritems(components):
             if component in selection_list:
                 assert hasattr(
                     obj, "parameters"
@@ -212,7 +213,9 @@ class ConcurrentAPMFactory(object):
             for param in self.data_managers[0].components:
                 param_name.append(str(param))
             if not param_name:
-                raise Sorry("No model components have been chosen, aborting process.")
+                raise ValueError(
+                    "No model components have been chosen, aborting process."
+                )
             self.param_lists = param_name
             self.apm = apm_type(self.data_managers[0].components, self.param_lists)
 
@@ -222,7 +225,7 @@ class ConcurrentAPMFactory(object):
                 for param in data_manager.components:
                     param_name.append(str(param))
                 if not param_name:
-                    raise Sorry(
+                    raise ValueError(
                         "No model components have been chosen, aborting process."
                     )
                 self.param_lists.append(param_name)

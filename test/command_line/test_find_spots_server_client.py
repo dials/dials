@@ -71,6 +71,7 @@ def exercise_client(port, filenames):
         "dials.find_spots_client",
         "port=%i" % port,
         "min_spot_size=3",
+        "algorithm=dispersion",
         "nproc=1",
         filenames[0],
     ]

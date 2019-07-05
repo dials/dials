@@ -41,6 +41,10 @@ known_entry_points = {
         "required": ["gaussian_rs"],
     },
     "dxtbx.scaling_model_ext": {"description": "scaling models"},
+    "dials.index.basis_vector_search_strategy": {
+        "description": "Basis vector search strategies",
+        "required": ["fft1d", "fft3d", "real_space_grid_search"],
+    },
 }
 
 if __name__ == "__main__":

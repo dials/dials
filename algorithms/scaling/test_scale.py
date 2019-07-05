@@ -17,6 +17,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 import procrunner
 
 
@@ -187,10 +188,8 @@ def test_scale_merging_stats():
         [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
     )
     scaled_array = scaled_data_as_miller_array([reflections], exp)
-    merging_statistics_result = Script.merging_stats_from_scaled_array(
-        scaled_array, params
-    )
-    assert merging_statistics_result is None
+    with pytest.raises(DialsMergingStatisticsError):
+        _ = Script.merging_stats_from_scaled_array(scaled_array, params)
 
 
 def test_scale_script_prepare_input():
@@ -242,14 +241,6 @@ def test_scale_script_prepare_input():
 
     assert len(script_reflections) == 1
     assert script_reflections[0] is reflections[1]
-
-    # Try setting space group
-    params, exp, reflections = generate_test_input(n=1)
-    params.scaling_options.space_group = "P1"
-    params, script_exp, script_reflections = Script.prepare_input(
-        params, exp, reflections
-    )
-    assert script_exp[0].crystal.get_space_group().type().number() == 1
 
     # Try having two unequal space groups
     params, exp, reflections = generate_test_input(n=2)
@@ -307,7 +298,6 @@ def test_scale_script_prepare_input():
     ]
 
 
-@pytest.mark.dataset_test
 def test_scale_physical(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset."""
 
@@ -331,7 +321,8 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
     result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.0245  # at 30/01/19, value was 0.02410
+    print(result.overall.r_pim, result.overall.cc_one_half, result.overall.n_obs)
+    assert result.overall.r_pim < 0.0255  # at 30/01/19, value was 0.02410
     assert result.overall.cc_one_half > 0.9955  # at 30/01/19, value was 0.9960
     assert result.overall.n_obs > 2300  # at 30/01/19, was 2320
 
@@ -341,7 +332,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     run_one_scaling([pickle_path], [sweep_path], extra_args)
     result = get_merging_stats("unmerged.mtz")
     assert (
-        result.overall.r_pim < 0.0245
+        result.overall.r_pim < 0.0255
     )  # at 14/08/18, value was 0.023, at 07/02/19 was 0.0243
     assert (
         result.overall.cc_one_half > 0.9955
@@ -370,7 +361,7 @@ def test_scale_physical(dials_regression, run_in_tmpdir):
     assert (
         result.overall.cc_one_half > 0.995
     )  # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
-    assert result.overall.n_obs > 2320  # at 07/01/19, was 2336, at 30/01/19 was 2334
+    assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
     # test the 'stats_only' option
     extra_args = ["stats_only=True"]
     run_one_scaling(["scaled.pickle"], ["scaled_experiments.json"], extra_args)
@@ -425,9 +416,9 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert os.path.exists("merging_stats.png")
     assert os.path.exists("cc_half_histograms.png")
     result = get_merging_stats("unmerged.mtz")
-    assert result.overall.r_pim < 0.17  # 19/02/19 was 0.1640
-    assert result.overall.cc_one_half > 0.96  # 19/02/19 was 0.9684
-    assert result.overall.n_obs > 54700  # 19/02/19 was 54794
+    assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
+    assert result.overall.cc_one_half > 0.96  # 17/05/19 was 0.9722
+    assert result.overall.n_obs > 51540  # 17/05/19 was 51560
     # for this dataset, expect to have two regions excluded - last 5 images of
     # datasets _4 & _5
     with open("analysis_results.json") as f:
@@ -438,8 +429,7 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
         [[21, 25], 3]
     ]
-    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == []
-    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert analysis_results["termination_reason"] == "max_percent_removed"
 
     command = [
         "dials.scale_and_filter",
@@ -473,7 +463,6 @@ def test_scale_and_filter(dials_data, run_in_tmpdir):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
 
-@pytest.mark.dataset_test
 def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset with error optimisation."""
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -483,7 +472,6 @@ def test_scale_optimise_errors(dials_regression, run_in_tmpdir):
     run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
-@pytest.mark.dataset_test
 def test_scale_array(dials_regression, run_in_tmpdir):
     """Test a standard dataset - ideally needs a large dataset or full matrix
     round may fail. Currently turning off absorption term to avoid
@@ -497,7 +485,6 @@ def test_scale_array(dials_regression, run_in_tmpdir):
     run_one_scaling([pickle_path], [sweep_path], extra_args)
 
 
-@pytest.mark.dataset_test
 def test_multi_scale(dials_regression, run_in_tmpdir):
     """Test standard scaling of two datasets."""
 
@@ -538,7 +525,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     # Note: error optimisation currently appears to give worse results here!
     result = get_merging_stats("unmerged.mtz")
-    expected_nobs = 5520
+    expected_nobs = 5411
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
     assert abs(result.overall.n_obs - expected_nobs) < 100
@@ -569,7 +556,6 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     )  # set 0.0 to force one to be 'rejected'
 
 
-@pytest.mark.dataset_test
 def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
 
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -637,7 +623,6 @@ def test_multi_scale_exclude_images(dials_regression, run_in_tmpdir):
     )
 
 
-@pytest.mark.dataset_test
 def test_targeted_scaling(dials_regression, run_in_tmpdir):
     """Test the targeted scaling workflow."""
     data_dir = os.path.join(dials_regression, "xia2-28")
@@ -766,7 +751,6 @@ def test_incremental_scale_workflow(dials_regression, run_in_tmpdir):
     assert os.path.exists("scaled.pickle")
 
 
-@pytest.mark.dataset_test
 def test_scale_cross_validate(dials_regression, run_in_tmpdir):
     """Test standard scaling of one dataset."""
 

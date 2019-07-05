@@ -17,6 +17,7 @@ import logging
 import time
 import copy as copy
 from collections import OrderedDict
+
 from cctbx import crystal, sgtbx
 from scitbx import sparse
 from dials_scaling_ext import row_multiply
@@ -49,6 +50,7 @@ from dials.algorithms.scaling.reflection_selection import (
     select_connected_reflections_across_datasets,
 )
 from dials.util.observer import Subject
+import six
 
 logger = logging.getLogger("dials")
 
@@ -122,10 +124,6 @@ class ScalerBase(Subject):
 
     @space_group.setter
     def space_group(self, new_sg):
-        if self._space_group:
-            current_sg = self._space_group
-        else:
-            current_sg = None
         if isinstance(new_sg, str):
             crystal_symmetry = crystal.symmetry(space_group_symbol=new_sg)
             self._space_group = crystal_symmetry.space_group()
@@ -138,14 +136,6 @@ class ScalerBase(Subject):
             )
         if self.experiment:
             self.experiment.crystal.set_space_group(self._space_group)
-        if current_sg != self._space_group:
-            logger.info(
-                (
-                    "WARNING: Manually overriding space group from {0} to {1}. {sep}"
-                    "If the reflection indexing in these space groups is different, {sep}"
-                    "bad things may happen!!! {sep}"
-                ).format(current_sg.info(), self._space_group.info(), sep="\n")
-            )
 
     @property
     def reflection_table(self):
@@ -221,6 +211,7 @@ class ScalerBase(Subject):
                         Ih_table.blocked_data_list[0],
                         self.params.weighting.error_model.n_bins,
                         self.params.weighting.error_model.min_Ih,
+                        self.params.reflection_selection.min_partiality,
                     )
                 ),
                 max_iterations=100,
@@ -271,8 +262,6 @@ class SingleScaler(ScalerBase):
         self.active_scalers = [self]
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
-        if self._params.scaling_options.space_group:
-            self.space_group = self._params.scaling_options.space_group
         n_model_params = sum([val.n_params for val in self.components.itervalues()])
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
         self._initial_keys = [key for key in reflection_table.keys()]
@@ -358,7 +347,7 @@ class SingleScaler(ScalerBase):
             # first work out the order in self._var_cov
             cumul_pos_dict = {}
             n_cumul_params = 0
-            for name, component in self.components.iteritems():
+            for name, component in six.iteritems(self.components):
                 cumul_pos_dict[name] = n_cumul_params
                 n_cumul_params += component.n_params
             # now get a var_cov_matrix subblock for pairs of parameters
@@ -418,6 +407,7 @@ class SingleScaler(ScalerBase):
             # now set in global_Ih_table
             self.global_Ih_table.update_data_in_blocks(intensity, 0, column="intensity")
             self.global_Ih_table.update_data_in_blocks(variance, 0, column="variance")
+            self.global_Ih_table.calc_Ih()
             self.experiment.scaling_model.record_intensity_combination_Imid(
                 combiner.max_key
             )
@@ -484,6 +474,7 @@ class SingleScaler(ScalerBase):
                 dataset_id=0,
                 column="inverse_scale_factor",
             )
+            self.global_Ih_table.calc_Ih()
         if self.verbosity > 1:
             logger.info(
                 "Scale factors determined during minimisation have now been\n"
@@ -613,9 +604,7 @@ class SingleScaler(ScalerBase):
             sel_reflections, self.experiment, self.params
         )
         self._global_Ih_table = IhTable([sel_reflections], self.space_group, nblocks=1)
-        rows = []
-        for key, val in self.components.iteritems():
-            rows.append([key, str(val.n_params)])
+        rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
         st = simple_table(rows, ["correction", "n_parameters"])
         logger.info("The following corrections will be applied to this dataset: \n")
         logger.info(st.format())
@@ -728,6 +717,7 @@ class MultiScalerBase(ScalerBase):
                 dataset_id=i,
                 column="inverse_scale_factor",
             )
+        self.global_Ih_table.calc_Ih()
         if self.verbosity <= 1:
             logger.info(
                 (
@@ -836,7 +826,9 @@ class MultiScalerBase(ScalerBase):
             s.reflection_table.select(s.suitable_refl_for_scaling_sel)
             for s in self.active_scalers
         ]
-        self._global_Ih_table = IhTable(tables, self.space_group, nblocks=1)
+        self._global_Ih_table = IhTable(
+            tables, self.space_group, nblocks=1, additional_cols=["partiality"]
+        )
 
     def _create_Ih_table(self):
         """Create a new Ih table from the reflection tables."""
@@ -1040,6 +1032,7 @@ class MultiScaler(MultiScalerBase):
                     scaler.experiment.scaling_model.record_intensity_combination_Imid(
                         combiner.max_key
                     )
+                self.global_Ih_table.calc_Ih()
         else:
             for scaler in self.single_scalers:
                 scaler.combine_intensities()
@@ -1126,8 +1119,6 @@ class NullScaler(ScalerBase):
         self._params = params
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
-        if self._params.scaling_options.space_group:
-            self._space_group = self._params.scaling_options.space_group
         self._reflection_table = reflection
         self._initial_keys = [key for key in self._reflection_table.keys()]
         self.n_suitable_refl = self._reflection_table.size()

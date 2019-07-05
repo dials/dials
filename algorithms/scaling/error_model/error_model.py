@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 from math import log, exp
 from dials.array_family import flex
-from dials.util import Sorry
 from scitbx import sparse
 from libtbx.table_utils import simple_table
 
@@ -17,7 +16,7 @@ def get_error_model(error_model_type):
     if error_model_type == "basic":
         return BasicErrorModel
     else:
-        raise Sorry("Invalid choice of error model.")
+        raise ValueError("Invalid choice of error model: %s" % error_model_type)
 
 
 class BasicErrorModel(object):
@@ -27,13 +26,15 @@ class BasicErrorModel(object):
 
     min_reflections_required = 250
 
-    def __init__(self, Ih_table, n_bins=10, min_Ih=25.0):
+    def __init__(self, Ih_table, n_bins=10, min_Ih=25.0, min_partiality=0.95):
         logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
         self.binning_info = {}
         # First select on initial delta
-        self.filter_unsuitable_reflections(cutoff=12.0, min_Ih=min_Ih)
+        self.filter_unsuitable_reflections(
+            cutoff=12.0, min_Ih=min_Ih, min_partiality=min_partiality
+        )
         self.n_h = self.Ih_table.calc_nh()
         self.sigmaprime = None
         self.delta_hl = None
@@ -46,6 +47,7 @@ class BasicErrorModel(object):
     def __str__(self):
         a = abs(self.refined_parameters[0])
         b = abs(self.refined_parameters[1])
+        ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
         return "\n".join(
             (
                 "",
@@ -61,7 +63,7 @@ class BasicErrorModel(object):
                 + "("
                 + u"\u03C3\xb2"
                 " + (bI)" + u"\xb2" + ")",
-                "  estimated I/sigma asymptotic limit: %.3f" % (1.0 / (b * a)),
+                "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
             )
         )
@@ -103,7 +105,7 @@ class BasicErrorModel(object):
         """An array of the number of intensities assigned to each bin."""
         return self._bin_counts
 
-    def filter_unsuitable_reflections(self, cutoff=6.0, min_Ih=10.0):
+    def filter_unsuitable_reflections(self, cutoff, min_Ih, min_partiality):
         """Do a first pass to calculate delta_hl and filter out the largest
         deviants, so that the error model is not misled by these and instead
         operates on the central ~90% of the data. Also choose reflection groups
@@ -116,6 +118,8 @@ class BasicErrorModel(object):
         delta_hl = self.calc_deltahl()
         # make sure the fit isn't misled by extreme values
         sel = flex.abs(delta_hl) < cutoff
+        if "partiality" in self.Ih_table.Ih_table:
+            sel &= self.Ih_table.Ih_table["partiality"] > min_partiality
         self.Ih_table = self.Ih_table.select(sel)
 
         n = self.Ih_table.size

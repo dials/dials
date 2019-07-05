@@ -10,46 +10,14 @@
 
 namespace dials { namespace util { namespace boost_python {
 
-  af::shared<bool> is_inside_polygon_a(
-      const af::const_ref< vec2<double> > &poly,
-      const af::const_ref< vec2<double> > &xy) {
-    af::shared<bool> inside(xy.size(), false);
-    for (std::size_t i = 0; i < xy.size(); i++) {
-      inside[i] = is_inside_polygon(poly, xy[i][0], xy[i][1]);
-    }
-    return inside;
-  }
-
   using namespace boost::python;
   BOOST_PYTHON_MODULE(dials_util_ext) {
+    def("scale_down_array", &scale_down_array, (arg("image"), arg("scale_factor")));
 
-    def("scale_down_array", &scale_down_array,
-        (arg("image"), arg("scale_factor")));
-
-    def("dials_u_to_mosflm", &dials_u_to_mosflm,
-        (arg("dials_U"), arg("uc")));
-
-    def("mask_untrusted_rectangle",
-        &mask_untrusted_rectangle);
-
-    def("mask_untrusted_circle",
-        &mask_untrusted_circle);
-
-    def("mask_untrusted_resolution_range",
-        &mask_untrusted_resolution_range);
-
-    def("mask_untrusted_polygon",
-        &mask_untrusted_polygon);
-
-    def("is_inside_polygon",
-        &is_inside_polygon);
-
-    def("is_inside_polygon",
-        &is_inside_polygon_a);
+    def("dials_u_to_mosflm", &dials_u_to_mosflm, (arg("dials_U"), arg("uc")));
 
     class_<ResolutionMaskGenerator>("ResolutionMaskGenerator", no_init)
-      .def(init<const BeamBase&,const Panel&>())
-      .def("apply", &ResolutionMaskGenerator::apply)
-      ;
+      .def(init<const BeamBase &, const Panel &>())
+      .def("apply", &ResolutionMaskGenerator::apply);
   }
-}}}
+}}}  // namespace dials::util::boost_python

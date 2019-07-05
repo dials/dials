@@ -43,7 +43,6 @@ def test_maha():
     cols = [x1, x2, x3]
     center = [flex.mean(e) for e in cols]
     covmat = cov(x1, x2, x3)
-    n = len(cols[0])
 
     maha = maha_dist_sq(cols, center, covmat)
 

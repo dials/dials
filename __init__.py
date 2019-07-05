@@ -1,8 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import os
+import sys
 
 logging.getLogger("dials").addHandler(logging.NullHandler())
+
+# Invert FPE trap defaults, https://github.com/cctbx/cctbx_project/pull/324
+if "boost.python" in sys.modules:
+    import boost.python
+
+    boost.python.ext.trap_exceptions(
+        bool(os.getenv("BOOST_ADAPTBX_TRAP_FPE")),
+        bool(os.getenv("BOOST_ADAPTBX_TRAP_INVALID")),
+        bool(os.getenv("BOOST_ADAPTBX_TRAP_OVERFLOW")),
+    )
+elif not os.getenv("BOOST_ADAPTBX_TRAP_FPE") and not os.getenv(
+    "BOOST_ADAPTBX_TRAP_OVERFLOW"
+):
+    os.environ["BOOST_ADAPTBX_FPE_DEFAULT"] = "1"
 
 # Intercept easy_mp exceptions to extract stack traces before they are lost at
 # the libtbx process boundary/the easy_mp API. In the case of a subprocess

@@ -10,6 +10,7 @@ import os
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
+from dials.array_family import flex
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -53,7 +54,18 @@ control_phil_str = """
       .expert_level = 2
       .type = bool
       .help = Integrate indexed images. Ignored if index=False or find_spots=False
-
+    hit_finder{
+      enable = True
+        .type = bool
+        .help = Whether to do hitfinding. hit_finder=False: process all images
+      minimum_number_of_reflections = 16
+        .type = int
+        .help = If the number of strong reflections on an image is less than this, and \
+                 the hitfinder is enabled, discard this image.
+      maximum_number_of_reflections = None
+       .type = int
+       .help = If specified, ignores images with more than this many number of reflections
+    }
   }
 
   output {
@@ -134,7 +146,10 @@ dials_phil_str = """
 
   include scope dials.util.options.geometry_phil_scope
   include scope dials.algorithms.spot_finding.factory.phil_scope
-  include scope dials.algorithms.indexing.indexer.index_only_phil_scope
+  include scope dials.algorithms.indexing.indexer.phil_scope
+  indexing {
+      include scope dials.algorithms.indexing.lattice_search.basis_vector_search_phil_scope
+  }
   include scope dials.algorithms.refinement.refiner.phil_scope
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
@@ -308,7 +323,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -543,7 +558,7 @@ class Processor(object):
         if not os.path.exists(debug_dir):
             try:
                 os.makedirs(debug_dir)
-            except OSError as e:
+            except OSError:
                 pass  # due to multiprocessing, makedirs can sometimes fail
         assert os.path.exists(debug_dir)
         self.debug_file_path = os.path.join(debug_dir, "debug_%d.txt" % rank)
@@ -554,7 +569,6 @@ class Processor(object):
         if params.output.composite_output:
             assert composite_tag is not None
             from dxtbx.model.experiment_list import ExperimentList
-            from dials.array_family import flex
 
             # self.all_strong_reflections = flex.reflection_table() # no composite strong pickles yet
             self.all_indexed_experiments = ExperimentList()
@@ -638,7 +652,6 @@ class Processor(object):
         debug_file_handle.close()
 
     def process_experiments(self, tag, experiments):
-        import os
 
         if not self.params.output.composite_output:
             self.setup_filenames(tag)
@@ -679,6 +692,26 @@ class Processor(object):
             return
         try:
             if self.params.dispatch.index:
+                if (
+                    self.params.dispatch.hit_finder.enable
+                    and len(observed)
+                    < self.params.dispatch.hit_finder.minimum_number_of_reflections
+                ):
+                    print("Not enough spots to index", tag)
+                    self.debug_write("not_enough_spots_%d" % len(observed), "stop")
+                    return
+                if (
+                    self.params.dispatch.hit_finder.maximum_number_of_reflections
+                    is not None
+                ):
+                    if (
+                        self.params.dispatch.hit_finder.enable
+                        and len(observed)
+                        > self.params.dispatch.hit_finder.maximum_number_of_reflections
+                    ):
+                        print("Too many spots to index - Possibly junk", tag)
+                        self.debug_write("too_many_spots_%d" % len(observed), "stop")
+                        return
                 self.debug_write("index_start")
                 experiments, indexed = self.index(experiments, observed)
             else:
@@ -722,7 +755,6 @@ class Processor(object):
 
     def find_spots(self, experiments):
         from time import time
-        from dials.array_family import flex
 
         st = time()
 
@@ -754,7 +786,7 @@ class Processor(object):
         return observed
 
     def index(self, experiments, reflections):
-        from dials.algorithms.indexing.indexer import indexer_base
+        from dials.algorithms.indexing.indexer import Indexer
         from time import time
         import copy
 
@@ -774,7 +806,7 @@ class Processor(object):
             known_crystal_models = None
 
         if params.indexing.stills.method_list is None:
-            idxr = indexer_base.from_parameters(
+            idxr = Indexer.from_parameters(
                 reflections,
                 experiments,
                 known_crystal_models=known_crystal_models,
@@ -786,7 +818,7 @@ class Processor(object):
             for method in params.indexing.stills.method_list:
                 params.indexing.method = method
                 try:
-                    idxr = indexer_base.from_parameters(
+                    idxr = Indexer.from_parameters(
                         reflections, experiments, params=params
                     )
                     idxr.index()
@@ -806,7 +838,6 @@ class Processor(object):
         experiments = idxr.refined_experiments
 
         if known_crystal_models is not None:
-            from dials.array_family import flex
 
             filtered = flex.reflection_table()
             for idx in set(indexed["miller_index"]):
@@ -850,9 +881,9 @@ class Processor(object):
             centroids = centroids.select(refiner.selection_used_for_refinement())
 
             # Re-estimate mosaic estimates
-            from dials.algorithms.indexing.nave_parameters import nave_parameters
+            from dials.algorithms.indexing.nave_parameters import NaveParameters
 
-            nv = nave_parameters(
+            nv = NaveParameters(
                 params=self.params,
                 experiments=experiments,
                 reflections=centroids,
@@ -872,7 +903,6 @@ class Processor(object):
                     self.params.output.refined_experiments_filename is not None
                     and self.params.output.indexed_filename is not None
                 )
-                from dials.array_family import flex
 
                 n = len(self.all_indexed_experiments)
                 self.all_indexed_experiments.extend(experiments)
@@ -913,7 +943,6 @@ class Processor(object):
         logger.info("Configuring integrator from input parameters")
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.algorithms.integration.integrator import IntegratorFactory
-        from dials.array_family import flex
 
         # Compute the profile model
         # Predict the reflections
@@ -999,7 +1028,6 @@ class Processor(object):
                     self.params.output.integrated_experiments_filename is not None
                     and self.params.output.integrated_filename is not None
                 )
-                from dials.array_family import flex
 
                 n = len(self.all_integrated_experiments)
                 self.all_integrated_experiments.extend(experiments)
@@ -1073,17 +1101,13 @@ class Processor(object):
         def functionname(params, outfile, frame), where params is the phil scope, outfile is the path
         to the pickle that will be saved, and frame is the python dictionary to be serialized.
         """
-        try:
-            picklefilename = self.params.output.integration_pickle
-        except AttributeError:
+        if not hasattr(self.params.output, "integration_pickle"):
             return
 
         if self.params.output.integration_pickle is not None:
 
             from libtbx import easy_pickle
-            import os
             from xfel.command_line.frame_extractor import ConstructFrame
-            from dials.array_family import flex
 
             # Split everything into separate experiments for pickling
             for e_number in xrange(len(experiments)):
@@ -1136,7 +1160,6 @@ class Processor(object):
 
     def process_reference(self, reference):
         """ Load the reference spots. """
-        from dials.array_family import flex
         from time import time
 
         if reference is None:

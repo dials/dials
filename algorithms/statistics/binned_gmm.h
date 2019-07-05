@@ -19,8 +19,8 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::constants::pi;
   using boost::math::erf;
+  using scitbx::constants::pi;
 
   namespace detail {
 
@@ -29,7 +29,6 @@ namespace dials { namespace algorithms {
      */
     class Expectation {
     public:
-
       /**
        * Compute the expectations
        * @param a The lower bound of the bin
@@ -38,15 +37,18 @@ namespace dials { namespace algorithms {
        * @param sigma The standard deviation parameter
        */
       Expectation(double a, double b, double mu, double sigma) {
-        double e1 = erf((b-mu)/(std::sqrt(2.0)*sigma));
-        double e2 = erf((a-mu)/(std::sqrt(2.0)*sigma));
-        double e3 = std::exp(-(a-mu)*(a-mu) / (2 * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
-        double e4 = std::exp(-(b-mu)*(b-mu) / (2 * sigma*sigma)) / (std::sqrt(2.0*pi)*sigma);
+        double e1 = erf((b - mu) / (std::sqrt(2.0) * sigma));
+        double e2 = erf((a - mu) / (std::sqrt(2.0) * sigma));
+        double e3 = std::exp(-(a - mu) * (a - mu) / (2 * sigma * sigma))
+                    / (std::sqrt(2.0 * pi) * sigma);
+        double e4 = std::exp(-(b - mu) * (b - mu) / (2 * sigma * sigma))
+                    / (std::sqrt(2.0 * pi) * sigma);
         expectation0_ = 0.5 * (e1 - e2);
-        expectation1_ = 0.5*mu*(e1 - e2) + (sigma*sigma / std::sqrt(2*pi))*(e3 - e4);
-        expectation2_ = (sigma*sigma / 2.0)*(e1 - e2) + sigma*sigma * ((a-mu)*e3 - (b-mu)*e4);
+        expectation1_ =
+          0.5 * mu * (e1 - e2) + (sigma * sigma / std::sqrt(2 * pi)) * (e3 - e4);
+        expectation2_ = (sigma * sigma / 2.0) * (e1 - e2)
+                        + sigma * sigma * ((a - mu) * e3 - (b - mu) * e4);
       }
-
 
       /**
        * Return the expectation
@@ -70,14 +72,12 @@ namespace dials { namespace algorithms {
       }
 
     protected:
-
       double expectation0_;
       double expectation1_;
       double expectation2_;
-
     };
 
-  }
+  }  // namespace detail
 
   /**
    * Compute the binned gaussian model withe a fixed mean using expectation
@@ -85,7 +85,6 @@ namespace dials { namespace algorithms {
    */
   class BinnedGMMSingle1DFixedMean {
   public:
-
     /**
      * Compute the parameters
      * @param a The lower bounds of the bin
@@ -96,20 +95,14 @@ namespace dials { namespace algorithms {
      * @param epsilon The convergence tolerance
      * @param max_iter The maximum number of iterations
      */
-    BinnedGMMSingle1DFixedMean(
-            const af::const_ref<double> &a,
-            const af::const_ref<double> &b,
-            const af::const_ref<double> &n,
-            double mu,
-            double sigma,
-            double epsilon,
-            std::size_t max_iter)
-        : max_iter_(max_iter),
-          num_iter_(0),
-          epsilon_(epsilon),
-          mu_(mu),
-          sigma_(sigma) {
-
+    BinnedGMMSingle1DFixedMean(const af::const_ref<double> &a,
+                               const af::const_ref<double> &b,
+                               const af::const_ref<double> &n,
+                               double mu,
+                               double sigma,
+                               double epsilon,
+                               std::size_t max_iter)
+        : max_iter_(max_iter), num_iter_(0), epsilon_(epsilon), mu_(mu), sigma_(sigma) {
       // Check the input
       DIALS_ASSERT(epsilon > 0);
       DIALS_ASSERT(max_iter > 1);
@@ -157,7 +150,6 @@ namespace dials { namespace algorithms {
             sum_P += P;
             sum_E2 += E2;
           }
-
         }
 
         /* double Pr = (1.0 - sum_P); */
@@ -175,9 +167,7 @@ namespace dials { namespace algorithms {
           break;
         }
         logL0 = logL;
-
       }
-
     }
 
     /**
@@ -216,7 +206,6 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-
     std::size_t max_iter_;
     std::size_t num_iter_;
     double epsilon_;
@@ -224,14 +213,12 @@ namespace dials { namespace algorithms {
     double sigma_;
   };
 
-
   /**
    * Compute the binned gaussian model using expectation
    * maximization
    */
   class BinnedGMMSingle1D {
   public:
-
     /**
      * Compute the parameters
      * @param a The lower bounds of the bin
@@ -242,20 +229,14 @@ namespace dials { namespace algorithms {
      * @param epsilon The convergence tolerance
      * @param max_iter The maximum number of iterations
      */
-    BinnedGMMSingle1D(
-            const af::const_ref<double> &a,
-            const af::const_ref<double> &b,
-            const af::const_ref<double> &n,
-            double mu,
-            double sigma,
-            double epsilon,
-            std::size_t max_iter)
-        : max_iter_(max_iter),
-          num_iter_(0),
-          epsilon_(epsilon),
-          mu_(mu),
-          sigma_(sigma) {
-
+    BinnedGMMSingle1D(const af::const_ref<double> &a,
+                      const af::const_ref<double> &b,
+                      const af::const_ref<double> &n,
+                      double mu,
+                      double sigma,
+                      double epsilon,
+                      std::size_t max_iter)
+        : max_iter_(max_iter), num_iter_(0), epsilon_(epsilon), mu_(mu), sigma_(sigma) {
       // Check the input
       DIALS_ASSERT(epsilon > 0);
       DIALS_ASSERT(max_iter > 1);
@@ -297,7 +278,6 @@ namespace dials { namespace algorithms {
         }
         logL0 = logL;
       }
-
     }
 
     /**
@@ -336,7 +316,6 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-
     std::size_t max_iter_;
     std::size_t num_iter_;
     double epsilon_;
@@ -344,6 +323,6 @@ namespace dials { namespace algorithms {
     double sigma_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_STATISTICS_BINNED_GMM_H
+#endif  // DIALS_ALGORITHMS_STATISTICS_BINNED_GMM_H

@@ -24,7 +24,6 @@
 #include <dials/array_family/reflection_table.h>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 
-
 namespace dials { namespace algorithms {
 
   /**
@@ -32,16 +31,14 @@ namespace dials { namespace algorithms {
    */
   class ReflectionLookup2 {
   public:
-
-    ReflectionLookup2(
-        const af::const_ref<int> &id,
-        const af::const_ref<int6> &bbox,
-        const int2 &frames) {
+    ReflectionLookup2(const af::const_ref<int> &id,
+                      const af::const_ref<int6> &bbox,
+                      const int2 &frames) {
       DIALS_ASSERT(frames[1] > frames[0]);
 
       // Make a list of the frames
       for (int i = frames[0]; i < frames[1]; ++i) {
-        frames_.push_back(int2(i,i+1));
+        frames_.push_back(int2(i, i + 1));
       }
 
       // Check all the reflection bboxes are valid
@@ -79,7 +76,7 @@ namespace dials { namespace algorithms {
           DIALS_ASSERT(k >= 0);
           DIALS_ASSERT(k < count.size());
           std::size_t l = offset_[k] + count[k]++;
-          DIALS_ASSERT(l < offset_[k+1]);
+          DIALS_ASSERT(l < offset_[k + 1]);
           DIALS_ASSERT(l < indices_.size());
           indices_[l] = i;
         }
@@ -88,7 +85,7 @@ namespace dials { namespace algorithms {
 
       // Check we didn't make any mistakes
       for (std::size_t i = 0; i < count.size(); ++i) {
-        DIALS_ASSERT(offset_[i] + count[i] == offset_[i+1]);
+        DIALS_ASSERT(offset_[i] + count[i] == offset_[i + 1]);
       }
     }
 
@@ -111,14 +108,14 @@ namespace dials { namespace algorithms {
      * Get the indices for each job
      */
     af::const_ref<std::size_t> indices(std::size_t index) const {
-      DIALS_ASSERT(index < offset_.size()-1);
+      DIALS_ASSERT(index < offset_.size() - 1);
       std::size_t i0 = offset_[index];
-      std::size_t i1 = offset_[index+1];
+      std::size_t i1 = offset_[index + 1];
       DIALS_ASSERT(i1 >= i0);
       std::size_t off = i0;
       std::size_t num = i1 - i0;
       DIALS_ASSERT(off + num <= indices_.size());
-      return af::const_ref<std::size_t> (&indices_[off], num);
+      return af::const_ref<std::size_t>(&indices_[off], num);
     }
 
     af::shared<int2> frames_;
@@ -126,16 +123,10 @@ namespace dials { namespace algorithms {
     af::shared<std::size_t> indices_;
   };
 
-
   class ReflectionManagerPerImage {
   public:
-
-    ReflectionManagerPerImage(
-        int2 frames,
-        af::reflection_table data)
-      : lookup_(init(frames, data)),
-        data_(data),
-        finished_(lookup_.size(), false) {
+    ReflectionManagerPerImage(int2 frames, af::reflection_table data)
+        : lookup_(init(frames, data)), data_(data), finished_(lookup_.size(), false) {
       DIALS_ASSERT(finished_.size() > 0);
     }
 
@@ -189,7 +180,6 @@ namespace dials { namespace algorithms {
      * Accumulate the results.
      */
     void accumulate(std::size_t index, af::reflection_table result) {
-
       using namespace af::boost_python::flex_table_suite;
 
       // Check the input
@@ -206,13 +196,10 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Initialise the indexer
      */
-    ReflectionLookup2 init(
-        int2 frames,
-        af::reflection_table data) {
+    ReflectionLookup2 init(int2 frames, af::reflection_table data) {
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
       DIALS_ASSERT(data.contains("id"));
@@ -224,9 +211,8 @@ namespace dials { namespace algorithms {
     ReflectionLookup2 lookup_;
     af::reflection_table data_;
     af::shared<bool> finished_;
-
   };
 
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_MANAGER_H
+#endif  // DIALS_ALGORITHMS_INTEGRATION_MANAGER_H

@@ -10,6 +10,8 @@ from multiprocessing import Process
 import libtbx.load_env
 import libtbx.phil
 
+from dials.util import Sorry
+
 logger = logging.getLogger("dials.command_line.find_spots_server")
 
 help_message = """\
@@ -136,15 +138,15 @@ indexing_min_spots = 10
     if index and stats["n_spots_no_ice"] > indexing_min_spots:
         logging.basicConfig(stream=sys.stdout, level=logging.INFO)
         from dials.algorithms.indexing import indexer
+        from dials.command_line.index import phil_scope as index_phil_scope
 
-        interp = indexer.master_phil_scope.command_line_argument_interpreter()
+        interp = index_phil_scope.command_line_argument_interpreter()
         phil_scope, unhandled = interp.process_and_fetch(
             unhandled, custom_processor="collect_remaining"
         )
         logger.info("The following indexing parameters have been modified:")
-        indexer.master_phil_scope.fetch_diff(source=phil_scope).show()
+        index_phil_scope.fetch_diff(source=phil_scope).show()
         params = phil_scope.extract()
-        params.indexing.scan_range = []
 
         if (
             imageset.get_goniometer() is not None
@@ -155,7 +157,7 @@ indexing_min_spots = 10
             imageset.set_scan(None)
 
         try:
-            idxr = indexer.indexer_base.from_parameters(
+            idxr = indexer.Indexer.from_parameters(
                 reflections, experiments, params=params
             )
             indexing_results = []
@@ -184,9 +186,6 @@ indexing_min_spots = 10
         except Exception as e:
             logger.error(e)
             stats["error"] = str(e)
-            # stats.crystal = None
-            # stats.n_indexed = None
-            # stats.fraction_indexed = None
         finally:
             t3 = time.time()
             logger.info("Indexing took %.2f seconds" % (t3 - t2))

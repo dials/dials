@@ -11,7 +11,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
+from six.moves import cPickle as pickle
 
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse

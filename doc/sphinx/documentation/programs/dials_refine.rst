@@ -4,7 +4,7 @@ dials.refine
 Introduction
 ------------
 
-.. python_string:: dials.command_line.refine.help_message
+.. python_string:: dials.command_line.refine.__doc__
 
 Basic parameters
 ----------------

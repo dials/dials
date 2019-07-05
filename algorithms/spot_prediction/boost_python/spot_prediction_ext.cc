@@ -30,8 +30,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_pixel_labeller();
   void export_pixel_to_miller_index();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_spot_prediction_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_spot_prediction_ext) {
     tuple_mapping_fixed_capacity<scitbx::af::small<double, 2> >();
 
     export_index_generator();
@@ -47,4 +46,4 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_pixel_to_miller_index();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

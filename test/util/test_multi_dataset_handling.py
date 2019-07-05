@@ -4,7 +4,6 @@ Tests for dials.util.multi_dataset_handling functions
 from __future__ import absolute_import, division, print_function
 
 import pytest
-from dials.util import Sorry
 from dxtbx.model import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
@@ -71,7 +70,7 @@ def test_select_datasets_on_ids():
     assert list(experiments.identifiers()) == ["2", "4"]
     assert len(experiments) == 2
 
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         exclude_datasets = ["0"]
         use_datasets = ["2", "4"]
         experiments, refl = select_datasets_on_ids(
@@ -81,7 +80,7 @@ def test_select_datasets_on_ids():
             exclude_datasets=exclude_datasets,
         )
 
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         exclude_datasets = ["1"]
         experiments, refl = select_datasets_on_ids(
             experiments, reflections, exclude_datasets=exclude_datasets
@@ -92,15 +91,15 @@ def test_select_datasets_on_ids():
     assert exp is experiments
     assert refl is reflections
 
-    # test for Sorry raise if not all identifiers set
+    # test for ValueError raise if not all identifiers set
     experiments = empty_explist_3()
     experiments[0].identifier = "0"
     experiments[1].identifier = "2"
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         exp, refl = select_datasets_on_ids(experiments, reflections, use_datasets=["2"])
-    # test for Sorry raise if bad input
+    # test for ValueError raise if bad input
     experiments[2].identifier = "4"
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         exp, refl = select_datasets_on_ids(experiments, reflections, use_datasets=["3"])
 
     # test correct handling with multi-dataset table
@@ -176,25 +175,22 @@ def test_assign_unique_identifiers():
     reflections_multi[0].experiment_identifiers()[1] = "4"
     reflections_multi[0].experiment_identifiers()[4] = "2"
     # should pass experiments back if identifiers all already set
-    for exper, refl in zip(
-        [experiments, experiments_multi], [reflections, reflections_multi]
-    ):
-        exp, rts = assign_unique_identifiers(exper, refl)
-        expected_identifiers = ["0", "4", "2"]
-        # Check that identifiers are set in experiments and reflection table.
-        assert exp is exper
-        assert list(exp.identifiers()) == expected_identifiers
-        expected_ids = [0, 1, 4]
-        for i, refl in enumerate(rts):
-            id_ = refl["id"][0]
-            assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-            assert list(set(refl["id"])) == [id_]
-            assert id_ == expected_ids[i]
+    exp, rts = assign_unique_identifiers(experiments, reflections)
+    expected_identifiers = ["0", "4", "2"]
+    # Check that identifiers are set in experiments and reflection table.
+    assert exp is experiments
+    assert list(exp.identifiers()) == expected_identifiers
+    expected_ids = [0, 1, 4]
+    for i, refl in enumerate(rts):
+        id_ = refl["id"][0]
+        assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
+        assert list(set(refl["id"])) == [id_]
+        assert id_ == expected_ids[i]
 
-    # Test for correct Sorry raise if unqeual experiments and reflections
+    # Test for correct ValueError raise if unqeual experiments and reflections
     del reflections_multi[0].experiment_identifiers()[4]
     del reflections_multi[0]["id"][2]
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         exp, rts = assign_unique_identifiers(experiments_multi, reflections_multi)
 
     # Now test that if some are set, these are maintained and unique ids are
@@ -229,8 +225,8 @@ def test_assign_unique_identifiers():
     assert rts[2].experiment_identifiers()[2] == "10"
     assert rts[2]["id"][0] == 2
 
-    # Test raises Sorry when wrong number of identifiers given
-    with pytest.raises(Sorry):
+    # Test raises ValueError when wrong number of identifiers given
+    with pytest.raises(ValueError):
         exp, rts = assign_unique_identifiers(experiments, reflections, ["0", "1"])
 
 

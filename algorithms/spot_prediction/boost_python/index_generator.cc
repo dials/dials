@@ -16,17 +16,14 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_index_generator()
-  {
-    class_ <IndexGenerator> ("IndexGenerator")
-      .def(init <cctbx::uctbx::unit_cell const&,
-           cctbx::sgtbx::space_group_type const&,
-           double> ((
-        arg("unit_cell"),
-        arg("space_group_type"),
-        arg("resolution_d_min"))))
+  void export_index_generator() {
+    class_<IndexGenerator>("IndexGenerator")
+      .def(init<cctbx::uctbx::unit_cell const&,
+                cctbx::sgtbx::space_group_type const&,
+                double>(
+        (arg("unit_cell"), arg("space_group_type"), arg("resolution_d_min"))))
       .def("next", &IndexGenerator::next)
       .def("to_array", &IndexGenerator::to_array);
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

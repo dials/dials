@@ -1,0 +1,19 @@
+#!/bin/bash
+
+for repository in cctbx_project dxtbx; do
+  if [ -e $HOME/build_dials/modules/${repository} ] && [ ! -e $HOME/build_dials/modules/${repository}/.git ]; then
+    echo Cleaning existing cctbx_project directory
+    rm -rf $HOME/build_dials/modules/${repository}
+  fi
+  if [ ! -e $HOME/build_dials/modules/${repository} ]; then
+    echo Cloning ${repository} from scratch
+    git clone https://github.com/cctbx/${repository}.git --depth=1 $HOME/build_dials/modules/${repository}
+  fi
+
+  echo Checking out latest ${repository} commit
+  cd $HOME/build_dials/modules/${repository} || exit 1
+  git fetch origin master --depth=1 || exit 2
+  git checkout FETCH_HEAD || exit 3
+  echo -n "${repository} is at commit "
+  git show --oneline -s --no-abbrev-commit || exit 4
+done

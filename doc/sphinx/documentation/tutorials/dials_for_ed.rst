@@ -448,7 +448,7 @@ Indexing
 Refinement of the experimental geometry was stabilised by fixing the detector
 distance, and :math:`\tau_2` and :math:`\tau_3` rotations. To do this, a PHIL
 parameter file was created in each processing directory for use in indexing and
-refinement steps.
+static refinement steps.
 
 .. code-block:: bash
 
@@ -458,6 +458,7 @@ refinement steps.
       detector {
         fix_list = "Dist,Tau2,Tau3"
       }
+      scan_varying=false
     }
   }
   EOF

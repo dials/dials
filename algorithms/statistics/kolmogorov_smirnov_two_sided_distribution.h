@@ -43,9 +43,8 @@ namespace dials { namespace algorithms {
    * @returns The value of the CDF at x
    */
   template <typename RealType>
-  RealType cdf(
-      const kolmogorov_smirnov_two_sided_distribution<RealType> &dist,
-      const RealType &x) {
+  RealType cdf(const kolmogorov_smirnov_two_sided_distribution<RealType> &dist,
+               const RealType &x) {
     const RealType epsilon = std::numeric_limits<RealType>::epsilon();
     RealType y = -2.0 * x * x;
     RealType s = 0.0, t = 0.0;
@@ -55,10 +54,10 @@ namespace dials { namespace algorithms {
       s += sign * t;
       ++j;
       sign *= -1;
-    } while(s > 0.0 && (t / s) > epsilon);
+    } while (s > 0.0 && (t / s) > epsilon);
     return 1.0 - 2.0 * s;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_STATISTICS_KOLMOGOROV_SMIRNOV_TWO_SIDED_DISTRIBUTION_H
+#endif  // DIALS_ALGORITHMS_STATISTICS_KOLMOGOROV_SMIRNOV_TWO_SIDED_DISTRIBUTION_H

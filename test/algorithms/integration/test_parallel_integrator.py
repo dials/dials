@@ -94,9 +94,7 @@ class IntensityCalculatorFactory(object):
             ReferenceProfileData,
         )
         from dials.algorithms.profile_model.modeller import CircleSampler
-        from dials.array_family import flex
         from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
-        from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
         reference = data.reference[0]
         experiments = data.experiments
@@ -147,7 +145,6 @@ def test_gaussianrs_reciprocal_space_intensity_calculator(data):
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
     count = 0
-    nint = 0
     for r in reflections:
         try:
             algorithm(r, [])
@@ -166,7 +163,6 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
     count = 0
-    nint = 0
     for r in reflections:
         try:
             algorithm(r, [])
@@ -192,7 +188,6 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data)
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
     count = 0
-    nint = 0
     for r in reflections:
         try:
             algorithm(r, [])
@@ -221,10 +216,8 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
             break
     assert R is not None
 
-    s1 = R.get("s1")
     px = R.get("xyzcal.px")
     mm = R.get("xyzcal.mm")
-    sbox = R.get("shoebox")
 
     px1 = (px[0] - 3, px[1] - 3, px[2])
     px2 = (px[0] + 3, px[1] + 3, px[2])
@@ -313,7 +306,6 @@ def test_gaussianrs_profile_data_pickling(data):
     from dials.algorithms.integration.parallel_integrator import ReferenceProfileData
     from dials.algorithms.profile_model.modeller import CircleSampler
     from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
-    from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     reference = data.reference[0]
     experiments = data.experiments
@@ -351,7 +343,7 @@ def test_gaussianrs_profile_data_pickling(data):
 
     s = pickle.dumps(data_spec)
 
-    data_spec2 = pickle.loads(s)
+    pickle.loads(s)
 
 
 def test_gaussianrs_reference_profile_calculator(data):
@@ -378,7 +370,7 @@ def test_gaussianrs_reference_profile_calculator(data):
         p = profiles[i].reference()
         for j in range(len(p)):
             d = p.data(j)
-            m = p.mask(j)
+            p.mask(j)
             if len(d) != 0:
                 count += 1
 

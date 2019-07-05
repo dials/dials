@@ -27,21 +27,20 @@ namespace dials { namespace algorithms {
    * @returns The filtered image
    */
   template <typename T>
-  af::versa< T, af::c_grid<2> > median_filter(
-      const af::const_ref< T, af::c_grid<2> > &image,
-      int2 size) {
-
+  af::versa<T, af::c_grid<2> > median_filter(
+    const af::const_ref<T, af::c_grid<2> > &image,
+    int2 size) {
     // Check the input is valid
     DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< T, af::c_grid<2> > median(image.accessor(), T(0));
+    af::versa<T, af::c_grid<2> > median(image.accessor(), T(0));
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<T> pixels_array((2*size[0]+1)*(2*size[1]+1), T(0));
+    af::shared<T> pixels_array((2 * size[0] + 1) * (2 * size[1] + 1), T(0));
     af::ref<T> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
@@ -56,8 +55,7 @@ namespace dials { namespace algorithms {
           }
         }
         size_t n = npix / 2;
-        std::nth_element(pixels.begin(),
-          pixels.begin()+n, pixels.begin()+npix);
+        std::nth_element(pixels.begin(), pixels.begin() + n, pixels.begin() + npix);
         median(j, i) = pixels[n];
       }
     }
@@ -74,22 +72,21 @@ namespace dials { namespace algorithms {
    * @returns The filtered image
    */
   template <typename T>
-  af::versa< T, af::c_grid<2> > median_filter_masked(
-      const af::const_ref< T, af::c_grid<2> > &image,
-      const af::const_ref< bool, af::c_grid<2> > &mask,
-      int2 size) {
-
+  af::versa<T, af::c_grid<2> > median_filter_masked(
+    const af::const_ref<T, af::c_grid<2> > &image,
+    const af::const_ref<bool, af::c_grid<2> > &mask,
+    int2 size) {
     // Check the input is valid
     DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< T, af::c_grid<2> > median(image.accessor(), T(0));
+    af::versa<T, af::c_grid<2> > median(image.accessor(), T(0));
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<T> pixels_array((2*size[0]+1)*(2*size[1]+1), T(0));
+    af::shared<T> pixels_array((2 * size[0] + 1) * (2 * size[1] + 1), T(0));
     af::ref<T> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
@@ -107,8 +104,7 @@ namespace dials { namespace algorithms {
             }
           }
           size_t n = npix / 2;
-          std::nth_element(pixels.begin(),
-            pixels.begin()+n, pixels.begin()+npix);
+          std::nth_element(pixels.begin(), pixels.begin() + n, pixels.begin() + npix);
           median(j, i) = pixels[n];
         }
       }
@@ -118,6 +114,6 @@ namespace dials { namespace algorithms {
     return median;
   }
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_IMAGE_FILTER_MEDIAN_H
+#endif  // DIALS_ALGORITHMS_IMAGE_FILTER_MEDIAN_H

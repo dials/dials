@@ -61,14 +61,12 @@ class Script(object):
         imageset = experiments[0].imageset
 
         total_image = None
-        total_mask = None
         for i in range(len(imageset)):
             print(i)
             image = imageset.get_raw_data(i)
             mask = imageset.get_mask(i)
             if total_image is None:
                 total_image = image[0]
-                total_mask = mask[0]
             else:
                 total_image += image[0]
         total_image /= len(imageset)

@@ -7,6 +7,10 @@ __pycache__/
 .cache
 .pytest_cache
 
+# Python packaging
+/dist
+/dials.egg-info
+
 # Ignored Mathematica files shall be prefixed by _
 _*.nb
 *.fdb_latexmk
@@ -19,6 +23,9 @@ _*.nb
 .git-notifier*
 git-notifier.log
 .gitversion
+
+# Python3 migration testing
+.python3-test-failures.new
 
 doc/sphinx/build
 doc/sphinx/documentation/tutorials/logs

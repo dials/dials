@@ -12,16 +12,14 @@
 
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.indexing.indexer import indexer_base
+from dials.algorithms.indexing.indexer import Indexer
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 
 
-class indexer_known_orientation(indexer_base):
+class IndexerKnownOrientation(Indexer):
     def __init__(self, reflections, experiments, params, known_orientations):
         self.known_orientations = known_orientations
-        super(indexer_known_orientation, self).__init__(
-            reflections, experiments, params
-        )
+        super(IndexerKnownOrientation, self).__init__(reflections, experiments, params)
 
     def find_lattices(self):
         experiments = ExperimentList()

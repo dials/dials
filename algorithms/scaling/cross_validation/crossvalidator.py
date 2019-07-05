@@ -10,6 +10,8 @@ from scitbx.array_family import flex
 from libtbx.table_utils import simple_table
 from dials.algorithms.scaling.observers import register_merging_stats_observers
 
+import six
+
 
 class CrossValidator(object):
 
@@ -84,7 +86,7 @@ class CrossValidator(object):
         assert len(keys) == len(values)
         for i, v in enumerate(itertools.product(*values)):
             e = dict(zip(keys, v))
-            for k, val in e.iteritems():
+            for k, val in six.iteritems(e):
                 self.results_dict[i]["configuration"].append(str(k) + "=" + str(val))
 
     def add_results_to_results_dict(self, config_no, results):

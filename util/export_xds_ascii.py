@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from dials.util import Sorry
 from dials.util.filter_reflections import (
     filter_reflection_table,
     FilteringReductionMethods,
@@ -24,6 +23,11 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
 
     integrated_data = integrated_data.select(integrated_data["id"] >= 0)
     assert max(integrated_data["id"]) == 0
+
+    # export for xds_ascii should only be for non-scaled reflections
+    assert any(
+        [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
+    )
 
     integrated_data = filter_reflection_table(
         integrated_data,
@@ -65,7 +69,6 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
     unit_cell = experiment.crystal.get_unit_cell()
 
     from scitbx.array_family import flex
-    from math import sqrt
 
     assert not experiment.scan is None
     image_range = experiment.scan.get_image_range()
@@ -96,14 +99,12 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
         assert V.all_gt(0)
         V = var_model[0] * (V + var_model[1] * I * I)
         sigI = flex.sqrt(V)
-    elif "intensity.prf.value" in integrated_data:
+    else:
         I = integrated_data["intensity.prf.value"]
         V = integrated_data["intensity.prf.variance"]
         assert V.all_gt(0)
         V = var_model[0] * (V + var_model[1] * I * I)
         sigI = flex.sqrt(V)
-    else:
-        raise Sorry("""Data does not contain sum or prf reflections.""")
 
     fout = open(params.xds_ascii.hklout, "w")
 

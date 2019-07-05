@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 
-class neighbor_analysis(object):
+class NeighborAnalysis(object):
     def __init__(
         self,
         reflections,
@@ -93,7 +93,6 @@ class neighbor_analysis(object):
             )
         else:
             hst = flex.histogram(direct, n_slots=int(len(direct) / self.NNBIN))
-        centers = hst.slot_centers()
         if self.histogram_binning == "log":
             self.slot_start = flex.double(
                 [10 ** (s - 0.5 * hst.slot_width()) for s in hst.slot_centers()]
@@ -108,25 +107,6 @@ class neighbor_analysis(object):
             self.slot_width = hst.slot_width()
         self.relative_frequency = hst.slots().as_double() / self.slot_width
         highest_bin_height = flex.max(self.relative_frequency)
-
-        if False:  # to print out the histogramming analysis
-            smin, smax = flex.min(direct), flex.max(direct)
-            stats = flex.mean_and_variance(direct)
-            import sys
-
-            out = sys.stdout
-            print("     range:     %6.2f - %.2f" % (smin, smax), file=out)
-            print(
-                "     mean:      %6.2f +/- %6.2f on N = %d"
-                % (
-                    stats.mean(),
-                    stats.unweighted_sample_standard_deviation(),
-                    direct.size(),
-                ),
-                file=out,
-            )
-            hst.show(f=out, prefix="    ", format_cutoffs="%6.2f")
-            print("", file=out)
 
         if percentile is not None:
             # determine the nth-percentile direct-space distance
@@ -154,7 +134,7 @@ class neighbor_analysis(object):
     def plot_histogram(self, filename="nn_hist.png", figsize=(12, 8)):
         import matplotlib.pyplot as plt
 
-        fig = plt.figure(figsize=figsize)
+        plt.figure(figsize=figsize)
         plt.bar(
             self.slot_start,
             self.relative_frequency,

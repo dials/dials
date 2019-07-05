@@ -40,7 +40,6 @@ def generated_params():
         args=[], quick_parse=True, show_diff_phil=False
     )
     parameters.__inject__("model", "KB")
-    parameters.scaling_options.space_group = "P2"
     return parameters
 
 

@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import contextlib
 import sys
+import warnings
 
 from ._progress import progress  # noqa: F401, exported symbol
 
@@ -104,7 +105,26 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
 
 
 def halraiser(e):
-    """ Function to re-raise an exception with a useful message. """
+    """
+    Code:
+      try:
+        run()
+      except Exception as e:
+        halraiser(e)
+
+    can be rewritten as
+      with dials.util.show_mail_on_error():
+        run()
+
+    with the benefits of less boilerplate and that
+    halraiser() does not appear in the traceback
+    """
+    warnings.warn(
+        "halraiser() is deprecated. See https://github.com/dials/dials/commit/5c0d86142b8292f1017f5b0080b86917623dd4c9",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     text = "Please report this error to dials-support@lists.sourceforge.net:"
 
     if len(e.args) == 0:

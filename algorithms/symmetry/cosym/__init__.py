@@ -9,8 +9,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 import copy
 from collections import OrderedDict
 import math
@@ -22,10 +20,14 @@ from scitbx import matrix
 from cctbx import sgtbx
 import iotbx.phil
 
+from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
+from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+
+logger = logging.getLogger(__name__)
 
 phil_scope = iotbx.phil.parse(
     """\
@@ -43,6 +45,9 @@ min_cc_half = 0.6
   .type = float(value_min=0, value_max=1)
 
 lattice_group = None
+  .type = space_group
+
+space_group = None
   .type = space_group
 
 dimensions = Auto
@@ -124,7 +129,6 @@ class CosymAnalysis(symmetry_base, Subject):
           params (libtbx.phil.scope_extract): Parameters for the analysis.
 
         """
-        self.input_space_group = intensities[0].space_group()
         super(CosymAnalysis, self).__init__(
             intensities,
             normalisation=params.normalisation,
@@ -140,11 +144,45 @@ class CosymAnalysis(symmetry_base, Subject):
         )
 
         self.params = params
-        self.intensities = self.intensities.customized_copy(
-            space_group_info=self.input_space_group.change_basis(
-                self.cb_op_inp_min
-            ).info()
-        )
+        if self.params.space_group is not None:
+            best_subgroup = find_matching_symmetry(
+                self.intensities.unit_cell(), self.params.space_group.group()
+            )
+            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+            best_subsym = best_subgroup["best_subsym"]
+            cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+            ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+            cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
+            sg_cb_op_inp_primitive = (
+                self.params.space_group.change_of_basis_op_to_primitive_setting()
+            )
+            sg_primitive = self.params.space_group.change_basis(sg_cb_op_inp_primitive)
+            sg_best = sg_primitive.change_basis(
+                (cb_op_ref_primitive * cb_op_best_ref).inverse()
+            )
+            # best_subgroup above is the bravais type, so create thin copy here with the
+            # user-input space group instead
+            self.best_subgroup = {
+                "best_subsym": best_subsym.customized_copy(space_group_info=sg_best),
+                "cb_op_inp_best": cb_op_inp_best,
+            }
+            self.input_space_group = self.params.space_group.change_basis(
+                cb_op_inp_best.inverse()
+            ).group()
+            self.intensities = (
+                self.intensities.customized_copy(
+                    space_group_info=self.input_space_group.info()
+                )
+                .as_reference_setting()
+                .primitive_setting()
+            )
+            self.input_space_group = self.intensities.space_group()
+        else:
+            self.input_space_group = None
+            if self.params.lattice_group is not None:
+                self.intensities = (
+                    self.intensities.as_reference_setting().primitive_setting()
+                )
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -152,20 +190,18 @@ class CosymAnalysis(symmetry_base, Subject):
         else:
             dimensions = self.params.dimensions
         if self.params.lattice_group is not None:
-            lattice_group = (
+            self.lattice_group = (
                 self.params.lattice_group.group()
                 .build_derived_patterson_group()
                 .info()
                 .primitive_setting()
                 .group()
             )
-        else:
-            lattice_group = None
         self.target = target.Target(
             self.intensities,
             self.dataset_ids,
             min_pairs=self.params.min_pairs,
-            lattice_group=lattice_group,
+            lattice_group=self.lattice_group,
             dimensions=dimensions,
             weights=self.params.weights,
             nproc=self.params.nproc,
@@ -287,7 +323,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
-        if self.input_space_group.type().number() > 1:
+        if self.input_space_group is not None:
             self.best_solution = None
             self._symmetry_analysis = None
             return
@@ -300,6 +336,7 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         logger.info(str(self._symmetry_analysis))
         self.best_solution = self._symmetry_analysis.best_solution
+        self.best_subgroup = self.best_solution.subgroup
 
         cosets = sgtbx.cosets.left_decomposition(
             self.lattice_group, self.best_solution.subgroup["subsym"].space_group()
@@ -307,7 +344,10 @@ class CosymAnalysis(symmetry_base, Subject):
         self.params.cluster.n_clusters = len(cosets.partitions)
 
     def _space_group_for_dataset(self, dataset_id, sym_ops):
-        sg = copy.deepcopy(self.input_space_group)
+        if self.input_space_group is not None:
+            sg = copy.deepcopy(self.input_space_group)
+        else:
+            sg = sgtbx.space_group()
         ref_sym_op_id = None
         ref_cluster_id = None
         for sym_op_id in range(len(sym_ops)):
@@ -335,7 +375,6 @@ class CosymAnalysis(symmetry_base, Subject):
         for i_cluster in range(n_clusters):
             isel = (self.cluster_labels == i_cluster).iselection()
             dataset_ids = isel % len(self.input_intensities)
-            idx = flex.first_index(dataset_ids, dataset_id)
             sel = (dataset_ids == dataset_id).iselection()
             for s in sel:
                 sym_op_id = isel[s] // len(self.input_intensities)
@@ -345,7 +384,9 @@ class CosymAnalysis(symmetry_base, Subject):
                             cb_op = sgtbx.change_of_basis_op(
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
-                            reindexing_ops[i_cluster] = cb_op.as_xyz()
+                            reindexing_ops[i_cluster] = (
+                                cb_op * self.cb_op_inp_min
+                            ).as_xyz()
 
         return reindexing_ops
 
@@ -357,12 +398,9 @@ class CosymAnalysis(symmetry_base, Subject):
         else:
             self.cluster_labels = self._do_clustering(self.params.cluster.method)
 
-        space_groups = []
-
         sym_ops = [
             sgtbx.rt_mx(s).new_denominators(1, 12) for s in self.target.get_sym_ops()
         ]
-        self.space_groups = space_groups
 
         reindexing_ops = {}
         space_groups = {}
@@ -679,9 +717,6 @@ class SymmetryAnalysis(object):
             d["subgroup_scores"].append(dd)
 
         return d
-
-
-from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 
 
 class ScoreSymmetryElement(object):

@@ -46,7 +46,6 @@ def run(args):
     from dials.util.options import flatten_reflections
     from scitbx.array_family import flex
     from scitbx import matrix
-    from dials.util import Sorry
 
     parser = OptionParser(
         usage=usage,
@@ -91,7 +90,7 @@ def run(args):
             sel = flex.bool(len(reflection_list), False)
 
             xyzcal_px = None
-            xyzcal_px = None
+            xyzobs_px = None
 
             if "xyzcal.px" in reflection_list:
                 xyzcal_px = reflection_list["xyzcal.px"]
@@ -184,21 +183,9 @@ def run(args):
     # assert len(detector) == 1
     panel = detector[0]
     # if len(detector) > 1:
-    xmin = max(
-        [
-            detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
-            for i_panel in range(len(detector))
-        ]
-    )
     xmax = max(
         [
             detector[i_panel].get_image_size_mm()[0] + panel_origin_shifts[i_panel][0]
-            for i_panel in range(len(detector))
-        ]
-    )
-    ymax = max(
-        [
-            detector[i_panel].get_image_size_mm()[1] + panel_origin_shifts[i_panel][1]
             for i_panel in range(len(detector))
         ]
     )

@@ -11,8 +11,6 @@ namespace dials { namespace nexus {
 
   namespace detail {
 
-
-
     /* template <typename Object, typename Visitor> */
     /* void visitgroups(Object &obj, Visitor visitor) { */
     /*   for (std::size_t i = 0; i < obj.getNumObjs(); ++i) { */
@@ -54,7 +52,6 @@ namespace dials { namespace nexus {
     /*   visitgroups(obj, find_nxmx_entries_visitor<OutputIterator>(out)); */
     /* } */
 
-
     /* template <typename InputIterator, typename OutputIterator> */
     /* void find_nx_classes( */
     /*     const H5::CommonFG &obj, */
@@ -92,22 +89,22 @@ namespace dials { namespace nexus {
     /*   find_nx_classes(obj, names.begin(), names.end(), std::back_inserter(temp)); */
     /* } */
 
-/* def find_nx_mx_entries(nx_file, entry): */
-  /* ''' */
-  /* Find NXmx entries */
+    /* def find_nx_mx_entries(nx_file, entry): */
+    /* ''' */
+    /* Find NXmx entries */
 
-  /* ''' */
-  /* hits = [] */
-  /* def visitor(name, obj): */
+    /* ''' */
+    /* hits = [] */
+    /* def visitor(name, obj): */
     /* if "NX_class" in obj.attrs.keys(): */
-      /* if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]: */
-      /*   if "definition" in obj.keys(): */
-      /*     if obj["definition"].value == "NXmx": */
-      /*       hits.append(obj) */
-  /* nx_file[entry].visititems(visitor) */
-  /* return hits */
+    /* if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]: */
+    /*   if "definition" in obj.keys(): */
+    /*     if obj["definition"].value == "NXmx": */
+    /*       hits.append(obj) */
+    /* nx_file[entry].visititems(visitor) */
+    /* return hits */
 
-  }
+  }  // namespace detail
 
   /* class NXinstrument { */
   /* public: */
@@ -162,7 +159,6 @@ namespace dials { namespace nexus {
   /* class NXdata { */
   /* public: */
 
-
   /* }; */
 
   /* class NXmx { */
@@ -195,23 +191,16 @@ namespace dials { namespace nexus {
   /* }; */
 
   class Reader {
-
     Object root_;
 
   public:
-
-    Reader(const char *filename)
-      : root_(H5::File(filename, H5F_ACC_RDONLY)) {
-    }
+    Reader(const char *filename) : root_(H5::File(filename, H5F_ACC_RDONLY)) {}
 
     Object root() const {
       return root_;
     }
-
   };
 
+}}  // namespace dials::nexus
 
-}} // namespace dials::nexus
-
-
-#endif // DIALS_NEXUS_READER_H
+#endif  // DIALS_NEXUS_READER_H

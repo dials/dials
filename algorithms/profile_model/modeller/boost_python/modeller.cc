@@ -19,10 +19,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  struct ProfileModellerIfaceWrapper
-      : ProfileModellerIface,
-        wrapper<ProfileModellerIface> {
-
+  struct ProfileModellerIfaceWrapper : ProfileModellerIface,
+                                       wrapper<ProfileModellerIface> {
     void model(af::reflection_table reflections) {
       this->get_override("model")(reflections);
     }
@@ -68,15 +66,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
   };
 
-  struct EmpiricalProfileModellerWrapper
-      : EmpiricalProfileModeller,
-        wrapper<EmpiricalProfileModeller> {
-
-    EmpiricalProfileModellerWrapper(
-        std::size_t n,
-        int3 accessor,
-        double threshold)
-      : EmpiricalProfileModeller(n, accessor, threshold) {}
+  struct EmpiricalProfileModellerWrapper : EmpiricalProfileModeller,
+                                           wrapper<EmpiricalProfileModeller> {
+    EmpiricalProfileModellerWrapper(std::size_t n, int3 accessor, double threshold)
+        : EmpiricalProfileModeller(n, accessor, threshold) {}
 
     void model(af::reflection_table reflections) {
       this->get_override("model")(reflections);
@@ -93,13 +86,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     pointer copy() const {
       return this->get_override("copy")();
     }
-
   };
 
   struct MultiExpProfileModellerPickleSuite : boost::python::pickle_suite {
-
-    static
-    boost::python::tuple getstate(const MultiExpProfileModeller &obj) {
+    static boost::python::tuple getstate(const MultiExpProfileModeller &obj) {
       boost::python::list result;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         result.append(obj[i]);
@@ -107,8 +97,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       return boost::python::make_tuple(result);
     }
 
-    static
-    void setstate(MultiExpProfileModeller &obj, boost::python::tuple state) {
+    static void setstate(MultiExpProfileModeller &obj, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       boost::python::list result = extract<boost::python::list>(state[0]);
       for (std::size_t i = 0; i < boost::python::len(result); ++i) {
@@ -117,9 +106,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
   };
 
-  void export_modeller()
-  {
-
+  void export_modeller() {
     class_<ProfileModellerIfaceWrapper,
            boost::shared_ptr<ProfileModellerIfaceWrapper>,
            boost::noncopyable>("ProfileModellerIface")
@@ -133,22 +120,17 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("mask", pure_virtual(&ProfileModellerIface::mask))
       .def("size", pure_virtual(&ProfileModellerIface::size))
       .def("copy", pure_virtual(&ProfileModellerIface::copy))
-      .def("__len__", pure_virtual(&ProfileModellerIface::size))
-      ;
+      .def("__len__", pure_virtual(&ProfileModellerIface::size));
 
-    register_ptr_to_python< boost::shared_ptr<ProfileModellerIface> >();
+    register_ptr_to_python<boost::shared_ptr<ProfileModellerIface> >();
 
     class_<EmpiricalProfileModellerWrapper,
            boost::noncopyable,
            bases<ProfileModellerIface> >("EmpiricalProfileModeller", no_init)
-      .def(init<
-          std::size_t,
-          int3,
-          double>())
+      .def(init<std::size_t, int3, double>())
       .def("add", &EmpiricalProfileModeller::add)
       .def("valid", &EmpiricalProfileModeller::valid)
-      .def("n_reflections", &EmpiricalProfileModeller::n_reflections)
-      ;
+      .def("n_reflections", &EmpiricalProfileModeller::n_reflections);
 
     class_<MultiExpProfileModeller>("MultiExpProfileModeller")
       .def("add", &MultiExpProfileModeller::add)
@@ -162,7 +144,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__len__", &MultiExpProfileModeller::size)
       .def("copy", &MultiExpProfileModeller::copy)
       .def_pickle(MultiExpProfileModellerPickleSuite());
-      ;
+    ;
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

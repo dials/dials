@@ -24,16 +24,16 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::int3;
-  using scitbx::af::int2;
-  using scitbx::af::double3;
-  using scitbx::vec2;
-  using scitbx::vec3;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
-  using dxtbx::model::Scan;
   using dxtbx::model::Panel;
+  using dxtbx::model::Scan;
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::af::double3;
+  using scitbx::af::int2;
+  using scitbx::af::int3;
   using scitbx::constants::pi;
   using scitbx::constants::two_pi;
 
@@ -42,22 +42,19 @@ namespace dials { namespace algorithms {
    */
   class EwaldSphereSampler : public SamplerIface {
   public:
-
     /**
      * Initialise the sampler
      */
-    EwaldSphereSampler(
-          const boost::shared_ptr<BeamBase> beam,
-          const Detector &detector,
-          const Goniometer &goniometer,
-          const Scan &scan,
-          std::size_t num_phi)
+    EwaldSphereSampler(const boost::shared_ptr<BeamBase> beam,
+                       const Detector &detector,
+                       const Goniometer &goniometer,
+                       const Scan &scan,
+                       std::size_t num_phi)
         : beam_(beam),
           detector_(detector),
           goniometer_(goniometer),
           scan_(scan),
           num_phi_(num_phi) {
-
       // Check input
       DIALS_ASSERT(num_phi > 0);
 
@@ -75,10 +72,11 @@ namespace dials { namespace algorithms {
         const Panel &p = detector[i];
         std::size_t width = p.get_image_size()[0];
         std::size_t height = p.get_image_size()[1];
-        vec3<double> s1 = p.get_pixel_lab_coord(vec2<double>(0,0)).normalize();
-        vec3<double> s2 = p.get_pixel_lab_coord(vec2<double>(width,0)).normalize();
-        vec3<double> s3 = p.get_pixel_lab_coord(vec2<double>(0,height)).normalize();
-        vec3<double> s4 = p.get_pixel_lab_coord(vec2<double>(width,height)).normalize();
+        vec3<double> s1 = p.get_pixel_lab_coord(vec2<double>(0, 0)).normalize();
+        vec3<double> s2 = p.get_pixel_lab_coord(vec2<double>(width, 0)).normalize();
+        vec3<double> s3 = p.get_pixel_lab_coord(vec2<double>(0, height)).normalize();
+        vec3<double> s4 =
+          p.get_pixel_lab_coord(vec2<double>(width, height)).normalize();
         double z1 = s1 * zaxis_;
         double z2 = s2 * zaxis_;
         double z3 = s3 * zaxis_;
@@ -122,35 +120,35 @@ namespace dials { namespace algorithms {
       step1_[0] = std::acos(1 - area_one / two_pi);
       step2_[0] = two_pi;
       for (std::size_t k = 0; k < num_phi_; ++k) {
-        coord_[k*num_image][0] = 0;
-        coord_[k*num_image][1] = 0;
-        coord_[k*num_image][2] = scan_range_[0] + step_phi_*0.5;
-        indx1_[k*num_image] = 0;
+        coord_[k * num_image][0] = 0;
+        coord_[k * num_image][1] = 0;
+        coord_[k * num_image][2] = scan_range_[0] + step_phi_ * 0.5;
+        indx1_[k * num_image] = 0;
       }
       double sum = 0;
       for (std::size_t l = 1, i = 1; i < num1_.size(); ++i) {
-        sum += num1_[i-1];
+        sum += num1_[i - 1];
         double mul = num1_[i] / sum;
-        double x = (1 - (mul+1) * (1 - std::cos(step1_[i-1])));
+        double x = (1 - (mul + 1) * (1 - std::cos(step1_[i - 1])));
         if (x < -1) x = -1;
-        if (x >  1) x =  1;
+        if (x > 1) x = 1;
         step1_[i] = std::acos(x);
         step2_[i] = two_pi / num1_[i];
-        double c1 = (step1_[i] + step1_[i-1]) * 0.5;
+        double c1 = (step1_[i] + step1_[i - 1]) * 0.5;
         for (std::size_t j = 0; j < num1_[i]; ++j, ++l) {
           double c2 = (j + 0.5) * step2_[i];
           for (std::size_t k = 0; k < num_phi_; ++k) {
-            DIALS_ASSERT(l + k*num_image < coord_.size());
-            coord_[l+k*num_image][0] = c1;
-            coord_[l+k*num_image][1] = c2;
-            coord_[l+k*num_image][2] = scan_range_[0] + step_phi_*0.5;
-            indx1_[l+k*num_image] = i;
+            DIALS_ASSERT(l + k * num_image < coord_.size());
+            coord_[l + k * num_image][0] = c1;
+            coord_[l + k * num_image][1] = c2;
+            coord_[l + k * num_image][2] = scan_range_[0] + step_phi_ * 0.5;
+            indx1_[l + k * num_image] = i;
           }
         }
       }
 
       // Compute the nearest n profiles from a main index
-      neighbours_ = af::shared< af::shared<std::size_t> >(num_image * num_phi);
+      neighbours_ = af::shared<af::shared<std::size_t> >(num_image * num_phi);
       for (std::size_t iz = 0, l = 0; iz < num_phi_; ++iz) {
         for (std::size_t ix = 0; ix < num1_.size(); ++ix) {
           for (std::size_t iy = 0; iy < num1_[ix]; ++iy) {
@@ -160,21 +158,21 @@ namespace dials { namespace algorithms {
                 temp.push_back(index(1, j, iz));
               }
             } else if (ix == 1) {
-              temp.push_back(index(0,0,iz));
-              temp.push_back(index(1,(iy+1)%num1_[1],iz));
-              temp.push_back(index(1,(iy-1)%num1_[1],iz));
-              temp.push_back(index(2,2*iy,iz));
-              temp.push_back(index(2,2*iy+1,iz));
+              temp.push_back(index(0, 0, iz));
+              temp.push_back(index(1, (iy + 1) % num1_[1], iz));
+              temp.push_back(index(1, (iy - 1) % num1_[1], iz));
+              temp.push_back(index(2, 2 * iy, iz));
+              temp.push_back(index(2, 2 * iy + 1, iz));
             } else if (ix == 2) {
-              temp.push_back(index(1,(int)std::floor((double)iy/2),iz));
-              temp.push_back(index(2,(iy+1)%num1_[2],iz));
-              temp.push_back(index(2,(iy-1)%num1_[2],iz));
-              temp.push_back(index(3,2*iy,iz));
-              temp.push_back(index(3,2*iy+1,iz));
+              temp.push_back(index(1, (int)std::floor((double)iy / 2), iz));
+              temp.push_back(index(2, (iy + 1) % num1_[2], iz));
+              temp.push_back(index(2, (iy - 1) % num1_[2], iz));
+              temp.push_back(index(3, 2 * iy, iz));
+              temp.push_back(index(3, 2 * iy + 1, iz));
             } else if (ix == 3) {
-              temp.push_back(index(2,(int)std::floor((double)iy/2),iz));
-              temp.push_back(index(3,(iy+1)%num1_[3],iz));
-              temp.push_back(index(3,(iy-1)%num1_[3],iz));
+              temp.push_back(index(2, (int)std::floor((double)iy / 2), iz));
+              temp.push_back(index(3, (iy + 1) % num1_[3], iz));
+              temp.push_back(index(3, (iy - 1) % num1_[3], iz));
             } else {
               throw DIALS_ERROR("Programmer Error!!!!");
             }
@@ -191,7 +189,6 @@ namespace dials { namespace algorithms {
     std::size_t num_phi() const {
       return num_phi_;
     }
-
 
     /**
      * Get steps of profiles
@@ -220,14 +217,14 @@ namespace dials { namespace algorithms {
      * @returns The index of the reference profile
      */
     std::size_t nearest(std::size_t panel, double3 xyz) const {
-      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
-          vec2<double>(xyz[0], xyz[1])).normalize();
+      vec3<double> s1 =
+        detector_[panel].get_pixel_lab_coord(vec2<double>(xyz[0], xyz[1])).normalize();
       xyz[2] -= scan_range_[0];
       double z = s1 * zaxis_;
       double y = s1 * yaxis_;
       double x = s1 * xaxis_;
       double a = std::acos(z);
-      double b = std::atan2(y,x);
+      double b = std::atan2(y, x);
       int iz = (int)floor(xyz[2] / step_phi_);
       if (iz < 0) iz = 0;
       if (iz >= num_phi_) iz = num_phi_ - 1;
@@ -259,9 +256,8 @@ namespace dials { namespace algorithms {
     }
 
     af::shared<std::size_t> nearest_n_index(std::size_t index) const {
-      af::shared<std::size_t> result(
-          neighbours_[index].begin(),
-          neighbours_[index].end());
+      af::shared<std::size_t> result(neighbours_[index].begin(),
+                                     neighbours_[index].end());
       result.push_back(index);
       return result;
     }
@@ -273,25 +269,25 @@ namespace dials { namespace algorithms {
      * @returns The weight (between 1.0 and 0.0)
      */
     double weight(std::size_t index, std::size_t panel, double3 xyz) const {
-      vec3<double> s1 = detector_[panel].get_pixel_lab_coord(
-          vec2<double>(xyz[0], xyz[1])).normalize();
+      vec3<double> s1 =
+        detector_[panel].get_pixel_lab_coord(vec2<double>(xyz[0], xyz[1])).normalize();
       xyz[2] -= scan_range_[0];
       double z = s1 * zaxis_;
       double y = s1 * yaxis_;
       double x = s1 * xaxis_;
-      double p1 = pi/2 - std::acos(z);
-      double l1 = std::atan2(y,x);
+      double p1 = pi / 2 - std::acos(z);
+      double l1 = std::atan2(y, x);
       double3 c = coord_[index];
-      double p2 = pi/2 - c[0];
+      double p2 = pi / 2 - c[0];
       double l2 = c[1];
-      double q = std::sin(p1)*std::sin(p2) +
-        std::cos(p1)*std::cos(p2)*std::cos(std::abs(l1-l2));
-      if (q >  1) q =  1;
+      double q = std::sin(p1) * std::sin(p2)
+                 + std::cos(p1) * std::cos(p2) * std::cos(std::abs(l1 - l2));
+      if (q > 1) q = 1;
       if (q < -1) q = -1;
       std::size_t idx = indx1_[index];
-      double step = (idx == 0 ? 2 * step1_[idx] : step1_[idx] - step1_[idx-1]);
+      double step = (idx == 0 ? 2 * step1_[idx] : step1_[idx] - step1_[idx - 1]);
       double d = std::acos(q) / step;
-      return std::exp(-4.0*d*d*std::log(2.0));
+      return std::exp(-4.0 * d * d * std::log(2.0));
     }
 
     /**
@@ -308,9 +304,8 @@ namespace dials { namespace algorithms {
      * Return the neighbouring grid points.
      */
     af::shared<std::size_t> neighbours(std::size_t index) const {
-      af::shared<std::size_t> result(
-          neighbours_[index].begin(),
-          neighbours_[index].end());
+      af::shared<std::size_t> result(neighbours_[index].begin(),
+                                     neighbours_[index].end());
       return result;
     }
 
@@ -335,10 +330,8 @@ namespace dials { namespace algorithms {
       return scan_;
     }
 
-
   private:
-
-    std::size_t index(std::size_t ix, std::size_t iy,  std::size_t iz) const {
+    std::size_t index(std::size_t ix, std::size_t iy, std::size_t iz) const {
       int tot_sum = af::sum(num1_.const_ref());
       int par_sum = 0;
       for (std::size_t i = 0; i < ix; ++i) {
@@ -366,7 +359,6 @@ namespace dials { namespace algorithms {
     vec2<int> scan_range_;
   };
 
-}} // namespace dials::algorithms
-
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_EWALD_SPHERE_SAMPLER_H */

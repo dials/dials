@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 from math import sqrt
 import pytest
 from libtbx.test_utils import approx_equal
-from dials.util import Sorry
 from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -173,7 +172,7 @@ def test_errormodel(large_reflection_table, test_sg):
     """Test the initialisation and methods of the error model."""
 
     # first test get_error_model helper function.
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         em = get_error_model("bad")
     em = get_error_model("basic")
     em.min_reflections_required = 1

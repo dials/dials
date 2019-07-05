@@ -10,42 +10,38 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace util {
-    /**
-     * Calculate a randomly downscaled new image with the same dimensions
-     * as the input array.
-     */
+  /**
+   * Calculate a randomly downscaled new image with the same dimensions
+   * as the input array.
+   */
 
-    af::shared< int > scale_down_array(
-      const af::const_ref< int > &image,
-      const double scale_factor) {
+  af::shared<int> scale_down_array(const af::const_ref<int> &image,
+                                   const double scale_factor) {
+    // create the RNG
 
-      // create the RNG
+    boost::random::mt19937 gen(time(0));
+    boost::random::uniform_real_distribution<double> dist(0, 1);
 
-      boost::random::mt19937 gen(time(0));
-      boost::random::uniform_real_distribution<double> dist(0, 1);
+    // create the target array
 
-      // create the target array
+    af::shared<int> result(image.size(), 0);
 
-      af::shared< int > result(image.size(), 0);
+    // now iterate through the array & do what we need to do...
 
-      // now iterate through the array & do what we need to do...
-
-      for (int j = 0; j < image.size(); ++j) {
-        if (image[j] <= 0) {
-          result[j] = image[j];
-        } else {
-          for (int k = 0; k < image[j]; k++) {
-            if (dist(gen) < scale_factor) {
-              result[j] += 1;
-            }
+    for (int j = 0; j < image.size(); ++j) {
+      if (image[j] <= 0) {
+        result[j] = image[j];
+      } else {
+        for (int k = 0; k < image[j]; k++) {
+          if (dist(gen) < scale_factor) {
+            result[j] += 1;
           }
         }
       }
-
-      return result;
     }
-  }
-}
 
+    return result;
+  }
+}}  // namespace dials::util
 
 #endif

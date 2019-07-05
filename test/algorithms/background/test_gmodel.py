@@ -135,5 +135,4 @@ def test_robust(dials_data, model, tmpdir):
     mean_bg2 = integrated2["background.mean"]
     mean_bg4 = integrated4["background.mean"]
     scale4 = integrated4["background.scale"]
-    diff2 = flex.abs(mean_bg2 - mean_bg4)
     assert (scale4 > 0).count(False) == 0

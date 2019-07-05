@@ -20,9 +20,8 @@ from libtbx import easy_mp
 from libtbx.phil import parse
 from scitbx import lbfgs
 from scitbx.array_family import flex
-
-# use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
+from dials.algorithms.refinement import DialsRefineRuntimeError
 
 logger = logging.getLogger(__name__)
 
@@ -307,7 +306,6 @@ class Refinery(object):
         nr, nc = m.all()
 
         try:  # convert a flex.double matrix to sparse
-            nr, nc = m.all()
             from scitbx import sparse
 
             m2 = sparse.matrix(nr, nc)
@@ -491,11 +489,9 @@ class AdaptLbfgs(Refinery):
             max_iterations=self._max_iterations
         )
 
-        import cStringIO
+        from six.moves import cStringIO as StringIO
 
-        self._log_string = cStringIO.StringIO
-
-        return
+        self._log_string = StringIO
 
     def compute_functional_and_gradients(self):
         L, dL_dp, _ = self.compute_functional_gradients_and_curvatures()
@@ -721,7 +717,7 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                     result["weights"] = None
                     return
 
-                task_results = easy_mp.parallel_map(
+                easy_mp.parallel_map(
                     func=task_wrapper,
                     iterable=blocks,
                     processes=self._nproc,
@@ -983,8 +979,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # early test for linear independence, require all right hand side elements to be non-zero
         RHS = self.step_equations().right_hand_side()
         if RHS.count(0.0) > 0:
-            raise Exception(
-                r"""Sorry, there is at least one normal equation with a right hand side of zero,
+            raise DialsRefineRuntimeError(
+                r"""There is at least one normal equation with a right hand side of zero,
 meaning that the parameters are not all independent, and there is no unique
 solution.  Mathematically, some kind of row reduction needs to be performed
 before this can be solved."""

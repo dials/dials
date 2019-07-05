@@ -23,8 +23,8 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::vec3;
   using scitbx::vec2;
+  using scitbx::vec3;
   using scitbx::af::int2;
   using scitbx::af::int3;
 
@@ -37,21 +37,16 @@ namespace dials { namespace algorithms {
   template <>
   class LabelImageStack<2> {
   public:
-
     // Adjacency list type
-    typedef boost::adjacency_list<
-      boost::listS,
-      boost::vecS,
-      boost::undirectedS> AdjacencyList;
+    typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
+      AdjacencyList;
 
     /**
      * Initialise the class with the size of the desired image.
      * @param size The size of the images
      */
     LabelImageStack(int2 size)
-      : buffer_(size[1], af::init_functor_null<std::size_t>()),
-        size_(size),
-        k_(0) {}
+        : buffer_(size[1], af::init_functor_null<std::size_t>()), size_(size), k_(0) {}
 
     /**
      * @returns The image size
@@ -72,9 +67,8 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const af::const_ref< int, af::c_grid<2> > &image,
-                   const af::const_ref< bool, af::c_grid<2> > &mask) {
-
+    void add_image(const af::const_ref<int, af::c_grid<2> > &image,
+                   const af::const_ref<bool, af::c_grid<2> > &mask) {
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(size_));
@@ -84,7 +78,6 @@ namespace dials { namespace algorithms {
       for (std::size_t j = 0; j < size_[0]; ++j) {
         for (std::size_t i = 0; i < size_[1]; ++i) {
           if (mask(j, i)) {
-
             // Add the vertex
             vertex_a = add_vertex(graph_);
             coords_.push_back(vec3<int>(k_, j, i));
@@ -112,7 +105,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of valid point coordinates
      */
-    af::shared< vec3<int> > coords() const {
+    af::shared<vec3<int> > coords() const {
       return coords_;
     }
 
@@ -129,23 +122,20 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_),
-        af::init_functor_null<int>());
+      af::shared<int> labels(num_vertices(graph_), af::init_functor_null<int>());
       int num = boost::connected_components(graph_, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
     }
 
   private:
-
     AdjacencyList graph_;
-    af::shared< vec3<int> > coords_;
+    af::shared<vec3<int> > coords_;
     af::shared<int> values_;
     af::shared<std::size_t> buffer_;
     int2 size_;
     std::size_t k_;
   };
-
 
   /**
    * A class to do connected component labelling on a stack of images.
@@ -153,21 +143,18 @@ namespace dials { namespace algorithms {
   template <>
   class LabelImageStack<3> {
   public:
-
     // Adjacency list type
-    typedef boost::adjacency_list<
-      boost::listS,
-      boost::vecS,
-      boost::undirectedS> AdjacencyList;
+    typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
+      AdjacencyList;
 
     /**
      * Initialise the class with the size of the desired image.
      * @param size The size of the images
      */
     LabelImageStack(int2 size)
-      : buffer_(af::c_grid<2>(size), af::init_functor_null<std::size_t>()),
-        size_(size),
-        k_(0) {}
+        : buffer_(af::c_grid<2>(size), af::init_functor_null<std::size_t>()),
+          size_(size),
+          k_(0) {}
 
     /**
      * @returns The image size
@@ -188,9 +175,8 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const af::const_ref< int, af::c_grid<2> > &image,
-                   const af::const_ref< bool, af::c_grid<2> > &mask) {
-
+    void add_image(const af::const_ref<int, af::c_grid<2> > &image,
+                   const af::const_ref<bool, af::c_grid<2> > &mask) {
       // Check the input
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(size_));
@@ -200,7 +186,6 @@ namespace dials { namespace algorithms {
       for (std::size_t j = 0; j < size_[0]; ++j) {
         for (std::size_t i = 0; i < size_[1]; ++i) {
           if (mask(j, i)) {
-
             // Add the vertex
             vertex_a = add_vertex(graph_);
             coords_.push_back(vec3<int>(k_, j, i));
@@ -232,7 +217,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of valid point coordinates
      */
-    af::shared< vec3<int> > coords() const {
+    af::shared<vec3<int> > coords() const {
       return coords_;
     }
 
@@ -249,33 +234,28 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_),
-        af::init_functor_null<int>());
+      af::shared<int> labels(num_vertices(graph_), af::init_functor_null<int>());
       int num = boost::connected_components(graph_, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
     }
 
   private:
-
     AdjacencyList graph_;
-    af::shared< vec3<int> > coords_;
+    af::shared<vec3<int> > coords_;
     af::shared<int> values_;
-    af::versa< std::size_t, af::c_grid<2> > buffer_;
+    af::versa<std::size_t, af::c_grid<2> > buffer_;
     int2 size_;
     std::size_t k_;
   };
-
 
   /**
    * Class to do connected component labelling of input pixels and coords
    */
   class LabelPixels {
   public:
-
     /** @param size Size of the 3D volume (z, y, x) */
-    LabelPixels(int3 size)
-      : size_(size) {}
+    LabelPixels(int3 size) : size_(size) {}
 
     /** @returns The size of the 3D volume */
     int3 size() const {
@@ -288,7 +268,7 @@ namespace dials { namespace algorithms {
      * @param coords The pixel coords
      */
     void add_pixels(const af::const_ref<int> &values,
-                    const af::const_ref< vec3<int> > &coords) {
+                    const af::const_ref<vec3<int> > &coords) {
       DIALS_ASSERT(values.size() == coords.size());
       for (std::size_t i = 0; i < coords.size(); ++i) {
         const vec3<int> &xyz = coords[i];
@@ -304,7 +284,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of valid point coordinates
      */
-    af::shared< vec3<int> > coords() const {
+    af::shared<vec3<int> > coords() const {
       return coords_;
     }
 
@@ -321,17 +301,14 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-
       // Adjacency list type
-      typedef boost::adjacency_list<
-        boost::listS,
-        boost::vecS,
-        boost::undirectedS> AdjacencyList;
+      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
+        AdjacencyList;
 
       // Create a hash table of the points
       AdjacencyList graph(coords_.size());
-      boost::unordered_map< vec3<int>, int, Vec3IntHash> grid(
-        coords_.size(), Vec3IntHash(size_));
+      boost::unordered_map<vec3<int>, int, Vec3IntHash> grid(coords_.size(),
+                                                             Vec3IntHash(size_));
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         DIALS_ASSERT(grid[coords_[i]] == 0);
         grid[coords_[i]] = i + 1;
@@ -341,12 +318,12 @@ namespace dials { namespace algorithms {
       // and if they are in the list of pixels then add the edges.
       for (std::size_t i = 0; i < coords_.size(); ++i) {
         int j;
-        j = grid[vec3<int>(coords_[i][0]-1, coords_[i][1], coords_[i][2])];
-        if (j != 0) boost::add_edge(i, j-1, graph);
-        j = grid[vec3<int>(coords_[i][0], coords_[i][1]-1, coords_[i][2])];
-        if (j != 0) boost::add_edge(i, j-1, graph);
-        j = grid[vec3<int>(coords_[i][0], coords_[i][1], coords_[i][2]-1)];
-        if (j != 0) boost::add_edge(i, j-1, graph);
+        j = grid[vec3<int>(coords_[i][0] - 1, coords_[i][1], coords_[i][2])];
+        if (j != 0) boost::add_edge(i, j - 1, graph);
+        j = grid[vec3<int>(coords_[i][0], coords_[i][1] - 1, coords_[i][2])];
+        if (j != 0) boost::add_edge(i, j - 1, graph);
+        j = grid[vec3<int>(coords_[i][0], coords_[i][1], coords_[i][2] - 1)];
+        if (j != 0) boost::add_edge(i, j - 1, graph);
       }
 
       // Do the connected components
@@ -357,22 +334,21 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     // The hash function for the vec3<int> points
     struct Vec3IntHash {
       vec3<int> size_;
       Vec3IntHash(vec3<int> size) : size_(size) {}
       std::size_t operator()(vec3<int> const &x) const {
         boost::hash<int> hasher;
-        return hasher(x[0] + x[1]*size_[2] + x[2]*size_[1]*size_[2]);
+        return hasher(x[0] + x[1] * size_[2] + x[2] * size_[1] * size_[2]);
       }
     };
 
-    af::shared< vec3<int> > coords_;
+    af::shared<vec3<int> > coords_;
     af::shared<int> values_;
     int3 size_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_IMAGE_CONNECTED_COMPONENTS_CONNECTED_COMPONENTS_H */

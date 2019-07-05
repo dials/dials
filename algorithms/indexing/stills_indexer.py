@@ -3,28 +3,20 @@
 #
 
 from __future__ import absolute_import, division, print_function
+
+import math
 import logging
 
-logger = logging.getLogger(__name__)
-
-from dials.array_family import flex
-from dials.util import log
-
-debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 import libtbx
-from dials.util import Sorry
-from dials.algorithms.indexing.indexer import indexer_base
-from dials.algorithms.indexing.known_orientation import indexer_known_orientation
-from dials.algorithms.indexing.real_space_grid_search import (
-    indexer_real_space_grid_search,
-)
-from dials.algorithms.indexing.fft3d import indexer_fft3d
-from dials.algorithms.indexing.fft1d import indexer_fft1d
 from dxtbx.model.experiment_list import Experiment, ExperimentList
-from dials.algorithms.indexing.nave_parameters import nave_parameters
-import math
-from dials.algorithms.indexing.indexer import master_params
+from dials.array_family import flex
+from dials.algorithms.indexing.indexer import Indexer
+from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
+from dials.algorithms.indexing.lattice_search import BasisVectorSearch
+from dials.algorithms.indexing.nave_parameters import NaveParameters
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
+
+logger = logging.getLogger(__name__)
 
 
 def calc_2D_rmsd_and_displacements(reflections):
@@ -43,40 +35,35 @@ def calc_2D_rmsd_and_displacements(reflections):
 def plot_displacements(reflections, predictions, experiments):
     rmsd, displacements = calc_2D_rmsd_and_displacements(predictions)
 
-    if True:  # params.refinement.plot_residual_scatter:
-        from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
 
-        fig = plt.figure()
-        for cv in displacements:
-            plt.plot([cv[0]], [-cv[1]], "r.")
-        plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
-        plt.axes().set_aspect("equal")
-        plt.show()
-        plt.close()
+    plt.figure()
+    for cv in displacements:
+        plt.plot([cv[0]], [-cv[1]], "r.")
+    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.axes().set_aspect("equal")
+    plt.show()
+    plt.close()
 
-    if True:  # params.refinement.plot_residual_map:
-        from matplotlib import pyplot as plt
+    from matplotlib import pyplot as plt
 
-        PX = reflections["xyzobs.px.value"]
-        fig = plt.figure()
-        sz1, sz2 = experiments[0].detector[0].get_image_size()
-        for item, cv in zip(predictions, displacements):
-            plt.plot([item["xyzcal.px"][0]], [sz1 - item["xyzcal.px"][1]], "r.")
-            plt.plot(
-                [item["xyzobs.px.value"][0]], [sz1 - item["xyzobs.px.value"][1]], "g."
-            )
-            plt.plot(
-                [item["xyzcal.px"][0], item["xyzcal.px"][0] + 10.0 * cv[0]],
-                [sz1 - item["xyzcal.px"][1], sz1 - item["xyzcal.px"][1] - 10.0 * cv[1]],
-                "r-",
-            )
+    plt.figure()
+    sz1, sz2 = experiments[0].detector[0].get_image_size()
+    for item, cv in zip(predictions, displacements):
+        plt.plot([item["xyzcal.px"][0]], [sz1 - item["xyzcal.px"][1]], "r.")
+        plt.plot([item["xyzobs.px.value"][0]], [sz1 - item["xyzobs.px.value"][1]], "g.")
+        plt.plot(
+            [item["xyzcal.px"][0], item["xyzcal.px"][0] + 10.0 * cv[0]],
+            [sz1 - item["xyzcal.px"][1], sz1 - item["xyzcal.px"][1] - 10.0 * cv[1]],
+            "r-",
+        )
 
-        plt.xlim([0, experiments[0].detector[0].get_image_size()[0]])
-        plt.ylim([0, experiments[0].detector[0].get_image_size()[1]])
-        plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
-        plt.axes().set_aspect("equal")
-        plt.show()
-        plt.close()
+    plt.xlim([0, experiments[0].detector[0].get_image_size()[0]])
+    plt.ylim([0, experiments[0].detector[0].get_image_size()[1]])
+    plt.title(" %d spots, r.m.s.d. %5.2f pixels" % (len(displacements), rmsd))
+    plt.axes().set_aspect("equal")
+    plt.show()
+    plt.close()
 
 
 def e_refine(params, experiments, reflections, graph_verbose=False):
@@ -94,7 +81,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
         params, reflections, experiments, verbosity=1
     )
 
-    history = refiner.run()
+    refiner.run()
 
     ref_sel = refiner.selection_used_for_refinement()
     assert ref_sel.count(True) == len(reflections)
@@ -108,37 +95,14 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     return refiner
 
 
-class stills_indexer(indexer_base):
+class StillsIndexer(Indexer):
     """ Class for indexing stills """
-
-    @staticmethod
-    def from_parameters(
-        reflections, experiments, known_crystal_models=None, params=None
-    ):
-
-        if params is None:
-            params = master_params
-
-        if known_crystal_models is not None:
-            idxr = stills_indexer_known_orientation(
-                reflections, experiments, params, known_crystal_models
-            )
-        elif params.indexing.method == "fft3d":
-            idxr = stills_indexer_fft3d(reflections, experiments, params=params)
-        elif params.indexing.method == "fft1d":
-            idxr = stills_indexer_fft1d(reflections, experiments, params=params)
-        elif params.indexing.method == "real_space_grid_search":
-            idxr = stills_indexer_real_space_grid_search(
-                reflections, experiments, params=params
-            )
-
-        return idxr
 
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
             # The stills_indexer provides its own outlier rejection
             params.refinement.reflections.outlier.algorithm = "null"
-        indexer_base.__init__(self, reflections, experiments, params)
+        super(StillsIndexer, self).__init__(reflections, experiments, params)
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -148,13 +112,8 @@ class stills_indexer(indexer_base):
 
         experiments = ExperimentList()
 
-        had_refinement_error = False
-        have_similar_crystal_models = False
-
         while True:
             self.d_min = self.params.refinement_protocol.d_min_start
-            if had_refinement_error or have_similar_crystal_models:
-                break
             max_lattices = self.params.multiple_lattice_search.max_lattices
             if max_lattices is not None and len(experiments) >= max_lattices:
                 break
@@ -181,7 +140,7 @@ class stills_indexer(indexer_base):
             if len(experiments) == 0:
                 experiments.extend(self.find_lattices())
                 if len(experiments) == 0:
-                    raise Sorry("No suitable lattice could be found.")
+                    raise DialsIndexError("No suitable lattice could be found.")
             else:
                 try:
                     new = self.find_lattices()
@@ -207,80 +166,13 @@ class stills_indexer(indexer_base):
                 not self.params.stills.refine_candidates_with_known_symmetry
                 and self.params.known_symmetry.space_group is not None
             ):
-                # now apply the space group symmetry only after the first indexing
-                # need to make sure that the symmetrized orientation is similar to the P1 model
-                target_space_group = self.target_symmetry_primitive.space_group()
-                for i_cryst, cryst in enumerate(experiments.crystals()):
-                    if i_cryst >= n_lattices_previous_cycle:
-                        new_cryst, cb_op_to_primitive = self.apply_symmetry(
-                            cryst, target_space_group
-                        )
-                        if self.cb_op_primitive_inp is not None:
-                            new_cryst = new_cryst.change_basis(self.cb_op_primitive_inp)
-                            logger.info(new_cryst.get_space_group().info())
-                        cryst.update(new_cryst)
-                        cryst.set_space_group(
-                            self.params.known_symmetry.space_group.group()
-                        )
-                        for i_expt, expt in enumerate(experiments):
-                            if expt.crystal is not cryst:
-                                continue
-                            if not cb_op_to_primitive.is_identity_op():
-                                miller_indices = self.reflections[
-                                    "miller_index"
-                                ].select(self.reflections["id"] == i_expt)
-                                miller_indices = cb_op_to_primitive.apply(
-                                    miller_indices
-                                )
-                                self.reflections["miller_index"].set_selected(
-                                    self.reflections["id"] == i_expt, miller_indices
-                                )
-                            if self.cb_op_primitive_inp is not None:
-                                miller_indices = self.reflections[
-                                    "miller_index"
-                                ].select(self.reflections["id"] == i_expt)
-                                miller_indices = self.cb_op_primitive_inp.apply(
-                                    miller_indices
-                                )
-                                self.reflections["miller_index"].set_selected(
-                                    self.reflections["id"] == i_expt, miller_indices
-                                )
-
-            # discard nearly overlapping lattices on the same shot
-            if len(experiments) > 1:
-                from dials.algorithms.indexing.compare_orientation_matrices import (
-                    difference_rotation_matrix_axis_angle,
+                self._apply_symmetry_post_indexing(
+                    experiments, self.reflections, n_lattices_previous_cycle
                 )
 
-                cryst_b = experiments.crystals()[-1]
-                have_similar_crystal_models = False
-                for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
-                    R_ab, axis, angle, cb_op_ab = difference_rotation_matrix_axis_angle(
-                        cryst_a, cryst_b
-                    )
-                    min_angle = (
-                        self.params.multiple_lattice_search.minimum_angular_separation
-                    )
-                    if abs(angle) < min_angle:  # degrees
-                        logger.info(
-                            "Crystal models too similar, rejecting crystal %i:"
-                            % (len(experiments))
-                        )
-                        logger.info(
-                            "Rotation matrix to transform crystal %i to crystal %i"
-                            % (i_a + 1, len(experiments))
-                        )
-                        logger.info(R_ab)
-                        logger.info(
-                            "Rotation of %.3f degrees" % angle
-                            + " about axis (%.3f, %.3f, %.3f)" % axis
-                        )
-                        # show_rotation_matrix_differences([cryst_a, cryst_b])
-                        have_similar_crystal_models = True
-                        del experiments[-1]
-                        break
-                if have_similar_crystal_models:
-                    break
+            # discard nearly overlapping lattices on the same shot
+            if self._check_have_similar_crystal_models(experiments):
+                break
 
             self.indexed_reflections = self.reflections["id"] > -1
             if self.d_min is None:
@@ -350,7 +242,9 @@ class stills_indexer(indexer_base):
                         )
 
                     if len(refiners) == 0:
-                        raise Sorry("No isoforms had a lookup symbol that matched")
+                        raise DialsIndexError(
+                            "No isoforms had a lookup symbol that matched"
+                        )
                     positional_rmsds = [
                         math.sqrt(P.rmsds()[0] ** 2 + P.rmsds()[1] ** 2)
                         for P in refiners
@@ -427,7 +321,7 @@ class stills_indexer(indexer_base):
 
             if self.params.refinement_protocol.mode == "repredict_only":
 
-                from dials.algorithms.indexing.nave_parameters import nave_parameters
+                from dials.algorithms.indexing.nave_parameters import NaveParameters
                 from dials.algorithms.refinement.prediction.managed_predictors import (
                     ExperimentsPredictorFactory,
                 )
@@ -449,7 +343,7 @@ class stills_indexer(indexer_base):
                     refls = refined_reflections.select(
                         refined_reflections["id"] == expt_id
                     )
-                    nv = nave_parameters(
+                    nv = NaveParameters(
                         params=self.all_params,
                         experiments=refined_experiments[expt_id : expt_id + 1],
                         reflections=refls,
@@ -472,35 +366,13 @@ class stills_indexer(indexer_base):
                 except Exception as e:
                     s = str(e)
                     if len(experiments) == 1:
-                        raise Sorry(e)
-                    had_refinement_error = True
+                        raise DialsIndexRefineError(e.message)
                     logger.info("Refinement failed:")
                     logger.info(s)
                     del experiments[-1]
                     break
 
-            # sanity check for unrealistic unit cell volume increase during refinement
-            # usually this indicates too many parameters are being refined given the
-            # number of observations provided.
-            if (
-                not self.params.refinement_protocol.disable_unit_cell_volume_sanity_check
-            ):
-                for orig_expt, refined_expt in zip(experiments, refined_experiments):
-                    uc1 = orig_expt.crystal.get_unit_cell()
-                    uc2 = refined_expt.crystal.get_unit_cell()
-                    volume_change = abs(uc1.volume() - uc2.volume()) / uc1.volume()
-                    cutoff = 0.5
-                    if volume_change > cutoff:
-                        msg = "\n".join(
-                            (
-                                "Unrealistic unit cell volume increase during refinement of %.1f%%.",
-                                "Please try refining fewer parameters, either by enforcing symmetry",
-                                "constraints (space_group=) and/or disabling experimental geometry",
-                                "refinement (detector.fix=all and beam.fix=all). To disable this",
-                                "sanity check set disable_unit_cell_volume_sanity_check=True.",
-                            )
-                        ) % (100 * volume_change)
-                        raise Sorry(msg)
+            self._unit_cell_volume_sanity_check(experiments, refined_experiments)
 
             self.refined_reflections = refined_reflections.select(
                 refined_reflections["id"] > -1
@@ -525,28 +397,22 @@ class stills_indexer(indexer_base):
             ):
                 # Experimental geometry may have changed - re-map centroids to
                 # reciprocal space
-
-                spots_mm = self.reflections
-                self.reflections = flex.reflection_table()
-                for i, expt in enumerate(self.experiments):
-                    spots_sel = spots_mm.select(spots_mm["imageset_id"] == i)
-                    spots_sel.map_centroids_to_reciprocal_space(
-                        expt.detector, expt.beam, expt.goniometer
-                    )
-                    self.reflections.extend(spots_sel)
+                self.reflections = self._map_centroids_to_reciprocal_space(
+                    self.experiments, self.reflections
+                )
 
             # update for next cycle
             experiments = refined_experiments
             self.refined_experiments = refined_experiments
 
-        if not "refined_experiments" in locals():
-            raise Sorry("None of the experiments could refine.")
+        if self.refined_experiments is None:
+            raise DialsIndexRefineError("None of the experiments could refine.")
 
         # discard experiments with zero reflections after refinement
         id_set = set(self.refined_reflections["id"])
         if len(id_set) < len(self.refined_experiments):
             filtered_refined_reflections = flex.reflection_table()
-            for i in xrange(len(self.refined_experiments)):
+            for i in range(len(self.refined_experiments)):
                 if i not in id_set:
                     del self.refined_experiments[i]
             for old, new in zip(sorted(id_set), range(len(id_set))):
@@ -559,11 +425,11 @@ class stills_indexer(indexer_base):
 
         if len(self.refined_experiments) > 1:
             from dials.algorithms.indexing.compare_orientation_matrices import (
-                show_rotation_matrix_differences,
+                rotation_matrix_differences,
             )
 
-            show_rotation_matrix_differences(
-                self.refined_experiments.crystals(), out=info_handle
+            logger.info(
+                rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
         logger.info("Final refined crystal models:")
@@ -577,37 +443,8 @@ class stills_indexer(indexer_base):
         if (
             "xyzcal.mm" in self.refined_reflections
         ):  # won't be there if refine_all_candidates = False and no isoforms
-            self.refined_reflections["xyzcal.px"] = flex.vec3_double(
-                len(self.refined_reflections)
-            )
-            for i, imageset in enumerate(self.experiments.imagesets()):
-                imgset_sel = self.refined_reflections["imageset_id"] == i
-                # set xyzcal.px field in self.refined_reflections
-                refined_reflections = self.refined_reflections.select(imgset_sel)
-                panel_numbers = flex.size_t(refined_reflections["panel"])
-                xyzcal_mm = refined_reflections["xyzcal.mm"]
-                x_mm, y_mm, z_rad = xyzcal_mm.parts()
-                xy_cal_mm = flex.vec2_double(x_mm, y_mm)
-                xy_cal_px = flex.vec2_double(len(xy_cal_mm))
-                for i_panel in range(len(imageset.get_detector())):
-                    panel = imageset.get_detector()[i_panel]
-                    sel = panel_numbers == i_panel
-                    isel = sel.iselection()
-                    ref_panel = refined_reflections.select(panel_numbers == i_panel)
-                    xy_cal_px.set_selected(
-                        sel, panel.millimeter_to_pixel(xy_cal_mm.select(sel))
-                    )
-                x_px, y_px = xy_cal_px.parts()
-                scan = imageset.get_scan()
-                if scan is not None:
-                    z_px = scan.get_array_index_from_angle(z_rad, deg=False)
-                else:
-                    # must be a still image, z centroid not meaningful
-                    z_px = z_rad
-                xyzcal_px = flex.vec3_double(x_px, y_px, z_px)
-                self.refined_reflections["xyzcal.px"].set_selected(
-                    imgset_sel, xyzcal_px
-                )
+
+            self._xyzcal_mm_to_px(self.experiments, self.refined_reflections)
 
     def experiment_list_for_crystal(self, crystal):
         experiments = ExperimentList()
@@ -625,7 +462,6 @@ class stills_indexer(indexer_base):
         return experiments
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-        from dxtbx.model.experiment_list import Experiment, ExperimentList
         import copy
 
         logger.info("*" * 80)
@@ -634,16 +470,16 @@ class stills_indexer(indexer_base):
 
         from libtbx import group_args
 
-        class candidate_info(group_args):
+        class CandidateInfo(group_args):
             pass
 
         candidates = []
 
         params = copy.deepcopy(self.all_params)
 
-        n_cand = len(candidate_orientation_matrices)
-
         for icm, cm in enumerate(candidate_orientation_matrices):
+            if icm >= self.params.basis_vector_combinations.max_refine:
+                break
             # Index reflections in P1
             sel = self.reflections["id"] == -1
             refl = self.reflections.select(sel)
@@ -658,34 +494,34 @@ class stills_indexer(indexer_base):
                 self.params.stills.refine_candidates_with_known_symmetry
                 and self.params.known_symmetry.space_group is not None
             ):
-                target_space_group = self.target_symmetry_primitive.space_group()
-                new_crystal, cb_op_to_primitive = self.apply_symmetry(
-                    cm, target_space_group
+                new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                    cm
                 )
                 if new_crystal is None:
-                    print(
-                        "Cannot convert to target symmetry, candidate %d/%d"
-                        % (icm, n_cand)
-                    )
+                    logger.info("Cannot convert to target symmetry, candidate %d", icm)
                     continue
-                new_crystal = new_crystal.change_basis(self.cb_op_primitive_inp)
-                cm = candidate_orientation_matrices[icm] = new_crystal
+                new_crystal = new_crystal.change_basis(
+                    self._symmetry_handler.cb_op_primitive_inp
+                )
+                cm = new_crystal
                 experiments = self.experiment_list_for_crystal(cm)
 
                 if not cb_op_to_primitive.is_identity_op():
                     indexed["miller_index"] = cb_op_to_primitive.apply(
                         indexed["miller_index"]
                     )
-                if self.cb_op_primitive_inp is not None:
-                    indexed["miller_index"] = self.cb_op_primitive_inp.apply(
+                if self._symmetry_handler.cb_op_primitive_inp is not None:
+                    indexed[
+                        "miller_index"
+                    ] = self._symmetry_handler.cb_op_primitive_inp.apply(
                         indexed["miller_index"]
                     )
 
             if params.indexing.stills.refine_all_candidates:
                 try:
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d initial outlier identification"
-                        % (icm, n_cand)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d initial outlier identification",
+                        icm,
                     )
                     acceptance_flags = self.identify_outliers(
                         params, experiments, indexed
@@ -693,9 +529,9 @@ class stills_indexer(indexer_base):
                     # create a new "indexed" list with outliers thrown out:
                     indexed = indexed.select(acceptance_flags)
 
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d refinement before outlier rejection"
-                        % (icm, n_cand)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d refinement before outlier rejection",
+                        icm,
                     )
                     R = e_refine(
                         params=params,
@@ -711,20 +547,20 @@ class stills_indexer(indexer_base):
                     )
 
                     # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-                    nv0 = nave_parameters(
+                    nv0 = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
                         refinery=R,
                         graph_verbose=False,
                     )
-                    crystal_model_nv0 = nv0()
+                    nv0()
                     acceptance_flags_nv0 = nv0.nv_acceptance_flags
                     indexed = indexed.select(acceptance_flags & acceptance_flags_nv0)
 
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d after positional and delta-psi outlier rejection"
-                        % (icm, n_cand)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d after positional and delta-psi outlier rejection",
+                        icm,
                     )
                     R = e_refine(
                         params=params,
@@ -734,7 +570,7 @@ class stills_indexer(indexer_base):
                     )
                     ref_experiments = R.get_experiments()
 
-                    nv = nave_parameters(
+                    nv = NaveParameters(
                         params=params,
                         experiments=ref_experiments,
                         reflections=indexed,
@@ -748,16 +584,13 @@ class stills_indexer(indexer_base):
                         not self.params.stills.refine_candidates_with_known_symmetry
                         and self.params.known_symmetry.space_group is not None
                     ):
-                        target_space_group = (
-                            self.target_symmetry_primitive.space_group()
-                        )
-                        new_crystal, cb_op_to_primitive = self.apply_symmetry(
-                            crystal_model, target_space_group
+                        new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
+                            crystal_model
                         )
                         if new_crystal is None:
-                            print(
-                                "P1 refinement yielded model diverged from target, candidate %d/%d"
-                                % (icm, n_cand)
+                            logger.info(
+                                "P1 refinement yielded model diverged from target, candidate %d",
+                                icm,
                             )
                             continue
 
@@ -765,14 +598,14 @@ class stills_indexer(indexer_base):
                         R.predict_for_reflection_table(indexed)
                     )
                 except Exception as e:
-                    print("Couldn't refine candiate %d/%d, %s" % (icm, n_cand, str(e)))
+                    logger.info("Couldn't refine candiate %d, %s", icm, str(e))
                 else:
-                    print(
-                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d/%d done"
-                        % (icm, n_cand)
+                    logger.info(
+                        "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done",
+                        icm,
                     )
                     candidates.append(
-                        candidate_info(
+                        CandidateInfo(
                             crystal=crystal_model,
                             green_curve_area=nv.green_curve_area,
                             ewald_proximal_volume=nv.ewald_proximal_volume(),
@@ -794,7 +627,7 @@ class stills_indexer(indexer_base):
                 )
                 rmsd, _ = calc_2D_rmsd_and_displacements(ref_predictor(indexed))
                 candidates.append(
-                    candidate_info(
+                    CandidateInfo(
                         crystal=cm,
                         n_indexed=len(indexed),
                         rmsd=rmsd,
@@ -803,39 +636,41 @@ class stills_indexer(indexer_base):
                     )
                 )
         if len(candidates) == 0:
-            raise Sorry("No suitable indexing solution found")
+            raise DialsIndexError("No suitable indexing solution found")
 
-        print("**** ALL CANDIDATES:")
+        logger.info("**** ALL CANDIDATES:")
         for i, XX in enumerate(candidates):
-            print("\n****Candidate %d" % i, XX)
+            logger.info("\n****Candidate %d %s", i, XX)
             cc = XX.crystal
             if hasattr(cc, "get_half_mosaicity_deg"):
-                print("  half mosaicity %5.2f deg." % (cc.get_half_mosaicity_deg()))
-                print("  domain size %.0f Ang." % (cc.get_domain_size_ang()))
-        print("\n**** BEST CANDIDATE:")
+                logger.info(
+                    "  half mosaicity %5.2f deg.", (cc.get_half_mosaicity_deg())
+                )
+                logger.info("  domain size %.0f Ang.", (cc.get_domain_size_ang()))
+        logger.info("\n**** BEST CANDIDATE:")
 
         results = flex.double([c.rmsd for c in candidates])
         best = candidates[flex.min_index(results)]
-        print(best)
+        logger.info(best)
 
         if params.indexing.stills.refine_all_candidates:
             if best.rmsd > params.indexing.stills.rmsd_min_px:
-                raise Sorry("RMSD too high, %f" % best.rmsd)
+                raise DialsIndexError("RMSD too high, %f" % best.rmsd)
 
             if (
                 best.ewald_proximal_volume
                 > params.indexing.stills.ewald_proximal_volume_max
             ):
-                raise Sorry(
+                raise DialsIndexError(
                     "Ewald proximity volume too high, %f" % best.ewald_proximal_volume
                 )
 
             if len(candidates) > 1:
-                for i in xrange(len(candidates)):
+                for i in range(len(candidates)):
                     if i == flex.min_index(results):
                         continue
                     if best.ewald_proximal_volume > candidates[i].ewald_proximal_volume:
-                        print(
+                        logger.info(
                             "Couldn't figure out which candidate is best; picked the one with the best RMSD."
                         )
 
@@ -847,19 +682,19 @@ class stills_indexer(indexer_base):
         if not params.indexing.stills.candidate_outlier_rejection:
             return flex.bool(len(indexed), True)
 
-        print("$$$ stills_indexer::identify_outliers")
+        logger.info("$$$ stills_indexer::identify_outliers")
         refiner = e_refine(params, experiments, indexed, graph_verbose=False)
 
         RR = refiner.predict_for_reflection_table(indexed)
 
         px_sz = experiments[0].detector[0].get_pixel_size()
 
-        class match:
+        class Match(object):
             pass
 
         matches = []
         for item in RR:
-            m = match()
+            m = Match()
             m.x_obs = item["xyzobs.px.value"][0] * px_sz[0]
             m.y_obs = item["xyzobs.px.value"][1] * px_sz[1]
             m.x_calc = item["xyzcal.px"][0] * px_sz[0]
@@ -917,14 +752,14 @@ class stills_indexer(indexer_base):
         )
 
         # insert a round of Nave-outlier rejection on top of the r.m.s.d. rejection
-        nv0 = nave_parameters(
+        nv0 = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
             refinery=R,
             graph_verbose=False,
         )
-        crystal_model_nv0 = nv0()
+        nv0()
         acceptance_flags_nv0 = nv0.nv_acceptance_flags
         reflections = reflections.select(acceptance_flags & acceptance_flags_nv0)
 
@@ -936,7 +771,7 @@ class stills_indexer(indexer_base):
         )
         ref_experiments = R.get_experiments()
 
-        nv = nave_parameters(
+        nv = NaveParameters(
             params=self.all_params,
             experiments=ref_experiments,
             reflections=reflections,
@@ -960,19 +795,9 @@ class stills_indexer(indexer_base):
 """ Mixin class definitions that override the dials indexing class methods specific to stills """
 
 
-class stills_indexer_known_orientation(indexer_known_orientation, stills_indexer):
+class StillsIndexerKnownOrientation(IndexerKnownOrientation, StillsIndexer):
     pass
 
 
-class stills_indexer_real_space_grid_search(
-    stills_indexer, indexer_real_space_grid_search
-):
-    pass
-
-
-class stills_indexer_fft3d(stills_indexer, indexer_fft3d):
-    pass
-
-
-class stills_indexer_fft1d(stills_indexer, indexer_fft1d):
+class StillsIndexerBasisVectorSearch(StillsIndexer, BasisVectorSearch):
     pass

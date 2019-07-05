@@ -8,24 +8,11 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import pytest
-
-try:
-    import dials_data as pkg_dials_data
-
-    dials_data = pkg_dials_data.dials_data
-except ImportError:
-    pkg_dials_data = None
-
-    @pytest.fixture(scope="session")
-    def dials_data():
-        pytest.skip("Test requires python package dials_data")
+import six
 
 
 def pytest_addoption(parser):
     """Add a '--runslow' option to py.test."""
-    if pkg_dials_data:
-        pkg_dials_data.pytest_addoption(parser)
-
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
     )
@@ -40,6 +27,14 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
+
+
+def pytest_configure(config):
+    if six.PY3:
+        import dxtbx.tests.python3_test_filter as ptf
+
+        exp = ptf.Python3TestFailureExpectationPlugin(config)
+        config.pluginmanager.register(exp)
 
 
 @pytest.fixture(scope="session")

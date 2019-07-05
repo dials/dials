@@ -1,0 +1,3 @@
+Import("env")
+
+env.SharedLibrary(target="#/lib/dials_pychef_ext", source=["ext.cc"], LIBS=env["LIBS"])

@@ -88,7 +88,7 @@ one wishes to exclude a whole dataset or only part of a dataset.
 To exclude whole datasets, we can take advantage of the fact that unique
 experiment identifiers are assigned to the datasets as labels - these are
 currently assigned as strings of integers i.e. '0', '1', '2' etc. (these
-can also be assigned manually with :samp:`dev.dials.assign_experiment_identifiers`)
+can also be assigned manually with :samp:`dials.assign_experiment_identifiers`)
 The assignment of the identifiers can be seen in the scaling log / terminal
 output, in one of the first lines of output::
 

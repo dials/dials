@@ -187,6 +187,11 @@ class SingleUnitCellTie(object):
 
         return R
 
+    @property
+    def num_residuals(self):
+        """Get the number of residuals"""
+        return len(self._ties) - self._ties.count(None)
+
     def gradients(self):
         """For each residual, return the gradients dR/dp. Requires residuals to be
         called first"""
@@ -362,6 +367,11 @@ class MeanUnitCellTie(object):
             R.extend(r)
 
         return R
+
+    @property
+    def num_residuals(self):
+        """Get the number of residuals"""
+        return self.nrestraints_per_cell * self._nxls
 
     def _construct_grad_block(self, param_grads, i):
         """helper function to construct a block of gradients. The length of

@@ -114,6 +114,7 @@ def test_single_crystal_restraints_gradients():
 
     # get analytical values and gradients
     vals, grads, weights = rp.get_residuals_gradients_and_weights()
+    assert len(vals) == rp.num_residuals
 
     # get finite difference gradients
     p_vals = pred_param.get_param_vals()
@@ -268,6 +269,7 @@ def test_two_triclinic_crystals():
 
     # get analytical values and gradients
     vals, grads, weights = rp.get_residuals_gradients_and_weights()
+    assert len(vals) == rp.num_residuals
 
     # get finite difference gradients
     p_vals = pred_param.get_param_vals()
@@ -358,6 +360,7 @@ def test_10_crystals_with_stills_parameterisation(dials_regression):
 
     # get analytical values and gradients
     vals, grads, weights = rp.get_residuals_gradients_and_weights()
+    assert len(vals) == rp.num_residuals
 
     # get finite difference gradients
     p_vals = pred_param.get_param_vals()
@@ -451,6 +454,7 @@ def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regre
 
     # get analytical values and gradients
     vals, grads, weights = rp.get_residuals_gradients_and_weights()
+    assert len(vals) == rp.num_residuals
 
     # get finite difference gradients
     p_vals = pred_param.get_param_vals()

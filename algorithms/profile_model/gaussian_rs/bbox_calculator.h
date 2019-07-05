@@ -25,53 +25,43 @@
 #include <dials/algorithms/profile_model/gaussian_rs/coordinate_system.h>
 
 namespace dials {
-namespace algorithms {
-namespace profile_model {
-namespace gaussian_rs {
+  namespace algorithms {
+    namespace profile_model {
+      namespace gaussian_rs {
 
   // Use a load of stuff from other namespaces
-  using std::floor;
-  using std::ceil;
-  using scitbx::vec2;
-  using scitbx::vec3;
-  using scitbx::af::min;
-  using scitbx::af::max;
-  using scitbx::af::int6;
-  using scitbx::af::double2;
-  using scitbx::af::double3;
-  using scitbx::af::double4;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::af::double2;
+  using scitbx::af::double3;
+  using scitbx::af::double4;
+  using scitbx::af::int6;
+  using scitbx::af::max;
+  using scitbx::af::min;
+  using std::ceil;
+  using std::floor;
 
   /**
    * Interface for bounding box calculator.
    */
   class BBoxCalculatorIface {
   public:
-
     virtual ~BBoxCalculatorIface() {}
 
-    virtual int6 single(
-        vec3 <double> s1,
-        double frame,
-        std::size_t panel) const  = 0;
+    virtual int6 single(vec3<double> s1, double frame, std::size_t panel) const = 0;
 
-    virtual
-    af::shared<int6> array(
-        const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &frame,
-        const af::const_ref<std::size_t> &panel) const = 0;
+    virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
+                                   const af::const_ref<double> &frame,
+                                   const af::const_ref<std::size_t> &panel) const = 0;
   };
-
 
   /** Calculate the bounding box for each reflection */
   class BBoxCalculator3D : public BBoxCalculatorIface {
-
   public:
-
     /**
      * Initialise the bounding box calculation.
      * @param beam The beam parameters
@@ -86,12 +76,12 @@ namespace gaussian_rs {
                      const Scan &scan,
                      double delta_divergence,
                      double delta_mosaicity)
-      : s0_(beam.get_s0()),
-        m2_(gonio.get_rotation_axis()),
-        detector_(detector),
-        scan_(scan),
-        delta_divergence_(1, delta_divergence),
-        delta_mosaicity_(1, delta_mosaicity) {
+        : s0_(beam.get_s0()),
+          m2_(gonio.get_rotation_axis()),
+          detector_(detector),
+          scan_(scan),
+          delta_divergence_(1, delta_divergence),
+          delta_mosaicity_(1, delta_mosaicity) {
       DIALS_ASSERT(delta_divergence > 0.0);
       DIALS_ASSERT(delta_mosaicity > 0.0);
     }
@@ -110,12 +100,12 @@ namespace gaussian_rs {
                      const Scan &scan,
                      const af::const_ref<double> &delta_divergence,
                      const af::const_ref<double> &delta_mosaicity)
-      : s0_(beam.get_s0()),
-        m2_(gonio.get_rotation_axis()),
-        detector_(detector),
-        scan_(scan),
-        delta_divergence_(delta_divergence.begin(), delta_divergence.end()),
-        delta_mosaicity_(delta_mosaicity.begin(), delta_mosaicity.end()) {
+        : s0_(beam.get_s0()),
+          m2_(gonio.get_rotation_axis()),
+          detector_(detector),
+          scan_(scan),
+          delta_divergence_(delta_divergence.begin(), delta_divergence.end()),
+          delta_mosaicity_(delta_mosaicity.begin(), delta_mosaicity.end()) {
       DIALS_ASSERT(delta_divergence.all_gt(0.0));
       DIALS_ASSERT(delta_mosaicity.all_gt(0.0));
       DIALS_ASSERT(delta_divergence_.size() == delta_mosaicity_.size());
@@ -143,9 +133,7 @@ namespace gaussian_rs {
      * @param frame The predicted frame number
      * @returns A 6 element array: (minx, maxx, miny, maxy, minz, maxz)
      */
-    virtual
-    int6 single(vec3 <double> s1, double frame, std::size_t panel) const {
-
+    virtual int6 single(vec3<double> s1, double frame, std::size_t panel) const {
       // Ensure our values are ok
       DIALS_ASSERT(s1.length_sq() > 0);
 
@@ -208,16 +196,19 @@ namespace gaussian_rs {
       double4 x(xy1[0], xy2[0], xy3[0], xy4[0]);
       double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
       double2 z(z1, z2);
-      int6 bbox((int)floor(min(x)), (int)ceil(max(x)),
-                (int)floor(min(y)), (int)ceil(max(y)),
-                (int)floor(min(z)), (int)ceil(max(z)));
+      int6 bbox((int)floor(min(x)),
+                (int)ceil(max(x)),
+                (int)floor(min(y)),
+                (int)ceil(max(y)),
+                (int)floor(min(z)),
+                (int)ceil(max(z)));
 
       vec2<int> array_range = scan_.get_array_range();
       DIALS_ASSERT(bbox[4] <= frame && frame < bbox[5]);
       bbox[4] = std::max(bbox[4], array_range[0]);
-      bbox[4] = std::min(bbox[4], array_range[1]-1);
+      bbox[4] = std::min(bbox[4], array_range[1] - 1);
       bbox[5] = std::min(bbox[5], array_range[1]);
-      bbox[5] = std::max(bbox[5], array_range[0]+1);
+      bbox[5] = std::max(bbox[5], array_range[0] + 1);
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
       DIALS_ASSERT(bbox[5] > bbox[4]);
@@ -230,11 +221,9 @@ namespace gaussian_rs {
      * @param s1 The array of diffracted beam vectors
      * @param frame The array of frame numbers.
      */
-    virtual
-    af::shared<int6> array(
-        const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &frame,
-        const af::const_ref<std::size_t> &panel) const {
+    virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
+                                   const af::const_ref<double> &frame,
+                                   const af::const_ref<std::size_t> &panel) const {
       DIALS_ASSERT(s1.size() == frame.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
@@ -245,7 +234,6 @@ namespace gaussian_rs {
     }
 
   private:
-
     vec3<double> s0_;
     vec3<double> m2_;
     Detector detector_;
@@ -254,12 +242,9 @@ namespace gaussian_rs {
     af::shared<double> delta_mosaicity_;
   };
 
-
   /** Calculate the bounding box for each reflection */
   class BBoxCalculator2D : public BBoxCalculatorIface {
-
   public:
-
     /**
      * Initialise the bounding box calculation.
      * @param beam The beam parameters
@@ -271,9 +256,7 @@ namespace gaussian_rs {
                      const Detector &detector,
                      double delta_divergence,
                      double delta_mosaicity)
-      : s0_(beam.get_s0()),
-        detector_(detector),
-        delta_divergence_(delta_divergence) {
+        : s0_(beam.get_s0()), detector_(detector), delta_divergence_(delta_divergence) {
       DIALS_ASSERT(delta_divergence > 0.0);
       DIALS_ASSERT(delta_mosaicity >= 0.0);
     }
@@ -298,9 +281,7 @@ namespace gaussian_rs {
      * @param frame The predicted frame number
      * @returns A 6 element array: (minx, maxx, miny, maxy, minz, maxz)
      */
-    virtual
-    int6 single(vec3 <double> s1, double frame, std::size_t panel) const {
-
+    virtual int6 single(vec3<double> s1, double frame, std::size_t panel) const {
       // Ensure our values are ok
       DIALS_ASSERT(s1.length_sq() > 0);
 
@@ -332,9 +313,12 @@ namespace gaussian_rs {
       // Min's are rounded down to the nearest integer, Max's are rounded up
       double4 x(xy1[0], xy2[0], xy3[0], xy4[0]);
       double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
-      int6 bbox((int)floor(min(x)), (int)ceil(max(x)),
-                (int)floor(min(y)), (int)ceil(max(y)),
-                (int)floor(frame),      (int)floor(frame)+1);
+      int6 bbox((int)floor(min(x)),
+                (int)ceil(max(x)),
+                (int)floor(min(y)),
+                (int)ceil(max(y)),
+                (int)floor(frame),
+                (int)floor(frame) + 1);
       DIALS_ASSERT(bbox[1] > bbox[0]);
       DIALS_ASSERT(bbox[3] > bbox[2]);
       DIALS_ASSERT(bbox[5] > bbox[4]);
@@ -347,11 +331,9 @@ namespace gaussian_rs {
      * @param s1 The array of diffracted beam vectors
      * @param phi The array of rotation angles.
      */
-    virtual
-    af::shared<int6> array(
-        const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &frame,
-        const af::const_ref<std::size_t> &panel) const {
+    virtual af::shared<int6> array(const af::const_ref<vec3<double> > &s1,
+                                   const af::const_ref<double> &frame,
+                                   const af::const_ref<std::size_t> &panel) const {
       DIALS_ASSERT(s1.size() == frame.size());
       DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
@@ -362,7 +344,6 @@ namespace gaussian_rs {
     }
 
   private:
-
     vec3<double> s0_;
     Detector detector_;
     double delta_divergence_;
@@ -373,7 +354,6 @@ namespace gaussian_rs {
    */
   class BBoxMultiCalculator {
   public:
-
     /**
      * Add a bbox calculator to the list.
      */
@@ -396,11 +376,10 @@ namespace gaussian_rs {
      * @param phi The array of rotation angles.
      * @param panel The panel number
      */
-    af::shared<int6> operator()(
-        const af::const_ref< std::size_t > &id,
-        const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &phi,
-        const af::const_ref<std::size_t> &panel) const {
+    af::shared<int6> operator()(const af::const_ref<std::size_t> &id,
+                                const af::const_ref<vec3<double> > &s1,
+                                const af::const_ref<double> &phi,
+                                const af::const_ref<std::size_t> &panel) const {
       DIALS_ASSERT(s1.size() == id.size());
       DIALS_ASSERT(s1.size() == phi.size());
       DIALS_ASSERT(s1.size() == panel.size());
@@ -413,10 +392,9 @@ namespace gaussian_rs {
     }
 
   private:
-
-    std::vector< boost::shared_ptr<BBoxCalculatorIface> > compute_;
+    std::vector<boost::shared_ptr<BBoxCalculatorIface> > compute_;
   };
 
-}}}} // namespace dials::algorithms::profile_model::gaussian_rs
+}}}}  // namespace dials::algorithms::profile_model::gaussian_rs
 
-#endif // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H
+#endif  // DIALS_ALGORITHMS_PROFILE_MODEL_GAUSSIAN_RS_BBOX_CALCULATOR_H

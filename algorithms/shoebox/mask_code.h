@@ -15,14 +15,14 @@
 
 namespace dials { namespace algorithms { namespace shoebox {
 
-  using dials::model::MaskCode;
-  using dials::model::Valid;
   using dials::model::Background;
-  using dials::model::Foreground;
-  using dials::model::Strong;
   using dials::model::BackgroundUsed;
+  using dials::model::Foreground;
+  using dials::model::MaskCode;
   using dials::model::Overlapped;
+  using dials::model::Strong;
+  using dials::model::Valid;
 
-}}}; // namespace dials::algorithms::shoebox
+}}};  // namespace dials::algorithms::shoebox
 
 #endif /* DIALS_ALGORITHMS_SHOEBOX_MASK_CODE_H */

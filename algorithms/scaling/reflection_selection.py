@@ -180,7 +180,7 @@ min_per_area: \n%s\nn_resolution_bins: \n%s\nmin_per_class %s""",
             params.reflection_selection.quasi_random.min_per_area = [inital] * len(
                 reflections
             )
-            logger.warn(
+            logger.warning(
                 """Warning:
 Using quasi-random reflection selection with manual parameters, but length
 of min_per_area list (%s) not equal to number of reflection tables (%s).
@@ -195,7 +195,7 @@ Using first min_per_area value for all datasets.\n""",
             params.reflection_selection.quasi_random.n_resolution_bins = [
                 initial
             ] * len(reflections)
-            logger.warn(
+            logger.warning(
                 """Warning:
 Using quasi-random reflection selection with manual parameters, but length
 of n_resolution_bins list (%s) not equal to number of reflection tables (%s).
@@ -316,7 +316,7 @@ def select_connected_reflections_across_datasets(
                 "Could not find any cross-dataset connected reflections with min_multiplicity >= %s."
                 % min_multiplicity
             )
-        logger.warn(
+        logger.warning(
             """Warning:
 Could not select any reflections for <I/sI> > %s and min_multiplicity >= %s.
 Reducing Isigma_cutoff to zero to attempt continuation.""",
@@ -372,7 +372,7 @@ with a total number between %s and %s.""",
     total = flex.double(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
         total[i] = col.non_zeroes
-    perm = flex.sort_permutation(total, reverse=True, stable=True)
+    perm = flex.sort_permutation(total, reverse=True)
     sorted_class_matrix = segments_in_groups.select_columns(perm)
     # matrix of segment index vs asu groups
 
@@ -421,7 +421,7 @@ def select_highly_connected_reflections_in_bin(
     total = flex.int(segments_in_groups.n_cols, 0)
     for i, col in enumerate(segments_in_groups.cols()):
         total[i] = col.non_zeroes
-    perm = flex.sort_permutation(total, reverse=True, stable=True)
+    perm = flex.sort_permutation(total, reverse=True)
     sorted_class_matrix = segments_in_groups.select_columns(perm)
     # matrix of segment index vs asu groups
 

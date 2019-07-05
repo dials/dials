@@ -26,14 +26,11 @@ namespace dials { namespace algorithms { namespace background {
    */
   class NSigmaOutlierRejector : public OutlierRejector {
   public:
-
     /**
      * @param lower The lower n sigma
      * @param upper The upper n sigma
      */
-    NSigmaOutlierRejector(double lower, double upper)
-      : lower_(lower),
-        upper_(upper) {
+    NSigmaOutlierRejector(double lower, double upper) : lower_(lower), upper_(upper) {
       DIALS_ASSERT(0 <= lower);
       DIALS_ASSERT(0 <= upper);
     }
@@ -42,11 +39,8 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual
-    void mark(
-        const af::const_ref< double, af::c_grid<3> > &shoebox,
-        af::ref< int, af::c_grid<3> > mask) const {
-
+    virtual void mark(const af::const_ref<double, af::c_grid<3> > &shoebox,
+                      af::ref<int, af::c_grid<3> > mask) const {
       const int mask_code = shoebox::Valid | shoebox::Background;
 
       // Ensure data is correctly sized.
@@ -55,7 +49,8 @@ namespace dials { namespace algorithms { namespace background {
       // Copy valid pixels and indices into list
       af::shared<double> data;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
+        if ((mask[i] & mask_code) == mask_code
+            && (mask[i] & shoebox::Overlapped) == 0) {
           data.push_back(shoebox[i]);
         }
       }
@@ -71,7 +66,8 @@ namespace dials { namespace algorithms { namespace background {
 
       // Set rejected pixels as 'not background'
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if ((mask[i] & mask_code) == mask_code && (mask[i] & shoebox::Overlapped) == 0) {
+        if ((mask[i] & mask_code) == mask_code
+            && (mask[i] & shoebox::Overlapped) == 0) {
           if (p0 <= shoebox[i] && shoebox[i] <= p1) {
             mask[i] |= shoebox::BackgroundUsed;
           }
@@ -80,10 +76,9 @@ namespace dials { namespace algorithms { namespace background {
     }
 
   private:
-
     double lower_, upper_;
   };
 
-}}}
+}}}  // namespace dials::algorithms::background
 
 #endif /* DIALS_ALGORITHMS_BACKGROUND_NSIGMA_OUTLIER_REJECTOR_H */

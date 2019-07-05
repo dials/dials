@@ -3,19 +3,18 @@ Tests for the functions in dials.util.options
 """
 from __future__ import absolute_import, division, print_function
 
-import pytest
 from mock import Mock
 from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
 from dials.array_family import flex
 
 
-@pytest.mark.xfail(reason="https://github.com/dials/dials/issues/693")
-def test_not_master_h5(dials_data):
+def test_can_read_headerless_h5_and_no_detector_is_present(dials_data):
     data_h5 = dials_data("vmxi_thaumatin").join("image_15799_data_000001.h5").strpath
     parser = OptionParser(read_experiments=True, read_experiments_from_images=True)
     params, options = parser.parse_args([data_h5])
     experiments = flatten_experiments(params.input.experiments)
-    assert len(experiments) == 0
+    assert len(experiments) == 1
+    assert not experiments[0].detector
 
 
 def mock_reflection_file_object(id_=0, identifier=True):

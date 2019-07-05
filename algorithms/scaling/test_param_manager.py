@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 import pytest
 from mock import Mock
 from scitbx import sparse
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.active_parameter_managers import (
     multi_active_parameter_manager,
@@ -178,11 +177,11 @@ def test_concurrent_apm_factory():
     assert "absorption" in apm.components_list
 
     data_manager = mock_data_manager({})
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         apm_factory = ConcurrentAPMFactory(
             [data_manager], apm_type=active_parameter_manager
         )
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         apm_factory = ConcurrentAPMFactory(
             [data_manager], apm_type=active_parameter_manager, multi_mode=False
         )

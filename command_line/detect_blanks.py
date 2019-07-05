@@ -121,6 +121,7 @@ def blank_integrated_analysis(reflections, scan, phi_step, fractional_loss):
     n_images_per_step = iceil(phi_step / osc)
     phi_step = n_images_per_step * osc
 
+    array_range = scan.get_array_range()
     phi_min = flex.min(phi)
     phi_max = flex.max(phi)
     n_steps = int(round((phi_max - phi_min) / phi_step))
@@ -137,7 +138,6 @@ def blank_integrated_analysis(reflections, scan, phi_step, fractional_loss):
             mean_i_sigi.append(0)
         else:
             mean_i_sigi.append(flex.mean(i_sigi.select(sel)))
-    fractional_mean_i_sigi = mean_i_sigi / flex.max(mean_i_sigi)
 
     potential_blank_sel = mean_i_sigi <= (fractional_loss * flex.max(mean_i_sigi))
 
@@ -198,7 +198,6 @@ def run(args):
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     from dials.util import log
     import libtbx.load_env
@@ -229,7 +228,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 

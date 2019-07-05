@@ -1,13 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
+from random import sample
+
+from dials.algorithms.simulation.generate_test_reflections import (
+    random_background_plane2,
+)
+from dials.algorithms.shoebox import MaskCode
+from dials.array_family import flex
+from dials.algorithms.background.simple import TruncatedOutlierRejector
+from dials.algorithms.background.simple import NSigmaOutlierRejector
+from dials.algorithms.background.simple import NormalOutlierRejector
+
 
 def generate_shoebox(size, mean, nforeground, ninvalid):
-    from dials.algorithms.simulation.generate_test_reflections import (
-        random_background_plane2,
-    )
-    from dials.array_family import flex
-    from random import sample
-    from dials.algorithms.shoebox import MaskCode
 
     data = flex.double(flex.grid(size), 0.0)
     mask = flex.int(flex.grid(size), MaskCode.Valid | MaskCode.Background)
@@ -21,9 +26,6 @@ def generate_shoebox(size, mean, nforeground, ninvalid):
 
 
 def assert_basic_mask_is_correct(mask, ninvalid, nforeground):
-    from scitbx.array_family import flex
-    from dials.algorithms.shoebox import MaskCode
-
     invalid = flex.size_t(i for i in range(len(mask)) if not mask[i] & MaskCode.Valid)
     foreground = flex.size_t(
         i for i in range(len(mask)) if mask[i] & MaskCode.Foreground
@@ -49,8 +51,6 @@ def assert_basic_mask_is_correct(mask, ninvalid, nforeground):
 
 
 def test_truncated():
-    from dials.algorithms.background.simple import TruncatedOutlierRejector
-
     lower = 0.01
     upper = 0.01
     reject = TruncatedOutlierRejector(lower, upper)
@@ -60,8 +60,6 @@ def test_truncated():
     mean = 20
 
     def assert_is_correct(data, mask):
-        from dials.array_family import flex
-
         invalid, foreground, background, background_used, background_valid = assert_basic_mask_is_correct(
             mask, ninvalid, nforeground
         )
@@ -80,8 +78,6 @@ def test_truncated():
 
 
 def test_nsigma():
-    from dials.algorithms.background.simple import NSigmaOutlierRejector
-
     lower = 3.0
     upper = 3.0
     reject = NSigmaOutlierRejector(lower, upper)
@@ -91,8 +87,6 @@ def test_nsigma():
     mean = 20
 
     def assert_is_correct(data, mask):
-        from scitbx.array_family import flex
-
         invalid, foreground, background, background_used, background_valid = assert_basic_mask_is_correct(
             mask, ninvalid, nforeground
         )
@@ -114,8 +108,6 @@ def test_nsigma():
 
 
 def test_normal():
-    from dials.algorithms.background.simple import NormalOutlierRejector
-
     min_data = 10
     reject = NormalOutlierRejector(min_data)
     size = (9, 9, 9)
@@ -124,9 +116,7 @@ def test_normal():
     mean = 20
 
     def assert_is_correct(data, mask):
-        invalid, foreground, background, background_used, background_valid = assert_basic_mask_is_correct(
-            mask, ninvalid, nforeground
-        )
+        assert_basic_mask_is_correct(mask, ninvalid, nforeground)
 
     for i in range(10):
         data, mask = generate_shoebox(size, mean, nforeground, ninvalid)

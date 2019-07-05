@@ -23,8 +23,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_distance();
   void export_anisotropic_diffusion();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_image_filter_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_image_filter_ext) {
     export_summed_area();
     export_mean_and_variance();
     export_index_of_dispersion_filter();
@@ -34,4 +33,4 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_anisotropic_diffusion();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

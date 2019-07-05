@@ -2,10 +2,13 @@
 Observers for the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
-from collections import OrderedDict
+
 import logging
+from collections import OrderedDict
+
 from scitbx.array_family import flex
 from cctbx import uctbx
+from libtbx.table_utils import simple_table
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -23,8 +26,8 @@ from dials.report.plots import (
 )
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
-
 from jinja2 import Environment, ChoiceLoader, PackageLoader
+import six
 
 logger = logging.getLogger("dials")
 
@@ -93,11 +96,48 @@ class ScalingSummaryGenerator(Observer):
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
             logger.info("\n".join(msg))
+
+        # report on partiality of dataset
+        partials = flex.double()
+        for r in scaling_script.reflections:
+            if "partiality" in r:
+                partials.extend(r["partiality"])
+        not_full_sel = partials < 0.99
+        not_zero_sel = partials > 0.01
+        gt_half = partials > 0.5
+        lt_half = partials < 0.5
+        partial_gt_half_sel = not_full_sel & gt_half
+        partial_lt_half_sel = not_zero_sel & lt_half
+        logger.info("Summary of dataset partialities")
+        header = ["Partiality (p)", "n_refl"]
+        rows = [
+            ["all reflections", str(partials.size())],
+            ["p > 0.99", str(not_full_sel.count(False))],
+            ["0.5 < p < 0.99", str(partial_gt_half_sel.count(True))],
+            ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
+            ["p < 0.01", str(not_zero_sel.count(False))],
+        ]
+        st = simple_table(rows, header)
+        logger.info(st.format())
+        logger.info(
+            """
+Reflections below a partiality_cutoff of %s are not considered for any
+part of the scaling analysis or for the reporting of merging statistics.
+Additionally, if applicable, only reflections with a min_partiality > %s
+were considered for use when refining the scaling model.
+""",
+            scaling_script.params.cut_data.partiality_cutoff,
+            scaling_script.params.reflection_selection.min_partiality,
+        )
         if MergingStatisticsObserver().data:
             logger.info(
                 "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
             )
-            logger.info(MergingStatisticsObserver().make_statistics_summary())
+            logger.info(
+                MergingStatisticsObserver().make_statistics_summary(
+                    MergingStatisticsObserver().data["statistics"]
+                )
+            )
 
 
 @singleton
@@ -161,7 +201,7 @@ class ScalingModelObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
-            for name, plot in scaling_model_plots.iteritems():
+            for name, plot in six.iteritems(scaling_model_plots):
                 d.update({name + "_" + str(key): plot})
         graphs = {"scaling_model": d}
         return graphs
@@ -331,7 +371,7 @@ class MergingStatisticsObserver(Observer):
                 i_over_sig_i_vs_batch_plot(self.data["bm"], self.data["isigivsbatch"])
             )
             plotter = IntensityStatisticsPlots(
-                self.data["scaled_miller_array"], run_xtraige_analysis=False
+                self.data["scaled_miller_array"], run_xtriage_analysis=False
             )
             d["resolution_plots"].update(plotter.generate_resolution_dependent_plots())
             if d["resolution_plots"]["cc_one_half"]["data"][2]:
@@ -356,9 +396,9 @@ class MergingStatisticsObserver(Observer):
             d["anom_plots"].update(anom_plotter.make_plots())
         return d
 
-    def make_statistics_summary(self):
+    @staticmethod
+    def make_statistics_summary(result):
         """Format merging statistics information into an output string."""
-        result = self.data["statistics"]
         overall = result.overall
         # First make overall summary
         msg = (
@@ -399,9 +439,9 @@ class MergingStatisticsObserver(Observer):
             " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
             + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
         )
-        for bin_stats in self.data["statistics"].bins:
+        for bin_stats in result.bins:
             msg += bin_stats.format() + "\n"
-        msg += self.data["statistics"].overall.format() + "\n"
+        msg += result.overall.format() + "\n"
 
         # Now show estimated cutoffs, based on iotbx code
         def format_d_min(value):

@@ -318,7 +318,7 @@ class Cluster(object):
         ucs = Cluster.from_expts(
             refl_table=reflections, expts_list=experiments, n_images=n_max
         )
-        self.clusters, axes = ucs.ab_cluster(
+        self.clusters, _ = ucs.ab_cluster(
             threshold=threshold,
             log=True,  # log scale
             ax=plt.gca() if dendrogram else None,
@@ -536,7 +536,7 @@ class Script(object):
         # print number of reflections per experiment
         from libtbx.table_utils import simple_table
 
-        header = ["Experiment", "Nref"]
+        header = ["Experiment", "Number of reflections"]
         rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
         st = simple_table(rows, header)
         print(st.format())
@@ -666,10 +666,12 @@ class Script(object):
                 n_max=params.clustering.max_crystals,
             )
             n_clusters = len(clustered.clustered_frames)
-            if params.clustering.max_clusters is not None:
-                not_too_many = lambda keeps: len(keeps) < params.clustering.max_clusters
-            else:
-                not_too_many = lambda keeps: True
+
+            def not_too_many(keeps):
+                if params.clustering.max_clusters is not None:
+                    return len(keeps) < params.clustering.max_clusters
+                return True
+
             keep_frames = []
             sorted_keys = sorted(clustered.clustered_frames.keys())
             while len(clustered.clustered_frames) > 0 and not_too_many(keep_frames):

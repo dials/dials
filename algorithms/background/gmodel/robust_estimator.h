@@ -19,17 +19,10 @@
 
 namespace dials { namespace algorithms {
 
-
   class ExpectationTable {
   public:
-
     ExpectationTable()
-      : c_(-1),
-        max_(1000),
-        div_(100),
-        size_(max_ * div_),
-        epsi_table_(size_) {
-    }
+        : c_(-1), max_(1000), div_(100), size_(max_ * div_), epsi_table_(size_) {}
 
     void set_c(double c) {
       DIALS_ASSERT(c > 0);
@@ -46,7 +39,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     vec2<double> interpolate(double mu) const {
       DIALS_ASSERT(mu >= 0);
       std::size_t index = (std::size_t)std::floor(mu * div_);
@@ -65,16 +57,14 @@ namespace dials { namespace algorithms {
     int max_;
     int div_;
     std::size_t size_;
-    af::shared< vec2<double> > epsi_table_;
+    af::shared<vec2<double> > epsi_table_;
   };
 
-  inline
-  ExpectationTable get_expectation_table(double c) {
+  inline ExpectationTable get_expectation_table(double c) {
     static ExpectationTable table;
     table.set_c(c);
     return table;
   }
-
 
   /**
    * An algorithm to do robust generalized linear model as described in
@@ -82,9 +72,7 @@ namespace dials { namespace algorithms {
    * Models"
    */
   class robust_estimator {
-
   public:
-
     typedef scitbx::glmtbx::poisson family;
 
     /**
@@ -99,13 +87,12 @@ namespace dials { namespace algorithms {
      * @param tolerance The stopping critera
      * @param max_iter The maximum number of iterations
      */
-    robust_estimator(
-        const af::const_ref< double > &X,
-        const af::const_ref< double > &Y,
-        double B,
-        double c,
-        double tolerance,
-        std::size_t max_iter)
+    robust_estimator(const af::const_ref<double> &X,
+                     const af::const_ref<double> &Y,
+                     double B,
+                     double c,
+                     double tolerance,
+                     std::size_t max_iter)
         : beta_(B),
           niter_(0),
           error_(0),
@@ -152,8 +139,7 @@ namespace dials { namespace algorithms {
      * @param X The design matrix
      * @return The values
      */
-    af::shared<double> mu(
-        const af::const_ref< double > &X) const {
+    af::shared<double> mu(const af::const_ref<double> &X) const {
       af::shared<double> result(X.size());
       for (std::size_t i = 0; i < result.size(); ++i) {
         double eta = X[i] * beta_;
@@ -163,11 +149,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
-    void compute(
-        const af::const_ref< double > &X,
-        const af::const_ref< double > &Y) {
-
+    void compute(const af::const_ref<double> &X, const af::const_ref<double> &Y) {
       // Number of observations and coefficients
       std::size_t n_obs = X.size();
 
@@ -180,18 +162,16 @@ namespace dials { namespace algorithms {
 
       // Loop until we reach the maximum number of iterations
       for (niter_ = 0; niter_ < max_iter_; ++niter_) {
-
         // Initialize the sum to zero
         U = 0.0;
 
         // Build the matrices from the observations
         for (std::size_t i = 0; i < n_obs; ++i) {
-
           // Compute the values for eta
           double eta = X[i] * beta_;
 
           // Compute some required values
-          double mu  = family::linkinv(eta);
+          double mu = family::linkinv(eta);
           double var = mu;
           double dmu = family::dmu_deta(eta);
           SCITBX_ASSERT(var > 0);
@@ -238,11 +218,8 @@ namespace dials { namespace algorithms {
     double c_;
     double tolerance_;
     std::size_t max_iter_;
-
   };
 
+}}  // namespace dials::algorithms
 
-}} // namespace scitbx::glmtbx
-
-#endif // DIALS_ALGORITHMS_BACKGROUND_GMODEL_ROBUST_ESTIMATOR_H
-
+#endif  // DIALS_ALGORITHMS_BACKGROUND_GMODEL_ROBUST_ESTIMATOR_H

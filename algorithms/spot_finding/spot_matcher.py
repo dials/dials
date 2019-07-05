@@ -154,7 +154,5 @@ class SpotMatcher(object):
             else:
                 seen[p] = i
 
-        index = []
-        for k, v in seen.iteritems():
-            index.append(v)
+        index = list(seen.values())
         return index

@@ -16,10 +16,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_solve_quad()
-  {
-    def("solve_quad", reeke_detail::solve_quad,(
-      arg("a"), arg("b"), arg("c")));
+  void export_solve_quad() {
+    def("solve_quad", reeke_detail::solve_quad, (arg("a"), arg("b"), arg("c")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

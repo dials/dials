@@ -24,9 +24,8 @@ namespace dials { namespace model { namespace boost_python {
 
   template <typename FloatType>
   void MultiPanelImageVolume_update_reflection_info(
-      MultiPanelImageVolume<FloatType> image_volume,
-      af::reflection_table reflections) {
-
+    MultiPanelImageVolume<FloatType> image_volume,
+    af::reflection_table reflections) {
     // Check the input
     DIALS_ASSERT(reflections.contains("bbox"));
     DIALS_ASSERT(reflections.contains("panel"));
@@ -39,11 +38,11 @@ namespace dials { namespace model { namespace boost_python {
     af::ref<std::size_t> flags = reflections["flags"];
 
     // Set some information about number of pixels
-    af::ref<std::size_t> num_valid   = reflections["num_pixels.valid"];
-    af::ref<std::size_t> num_bg      = reflections["num_pixels.background"];
-    //af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
-    af::ref<std::size_t> num_fg      = reflections["num_pixels.foreground"];
-    af::ref<std::size_t> num_ol      = reflections["num_pixels.overlapped"];
+    af::ref<std::size_t> num_valid = reflections["num_pixels.valid"];
+    af::ref<std::size_t> num_bg = reflections["num_pixels.background"];
+    // af::ref<std::size_t> num_bg_used = reflections["num_pixels.background_used"];
+    af::ref<std::size_t> num_fg = reflections["num_pixels.foreground"];
+    af::ref<std::size_t> num_ol = reflections["num_pixels.overlapped"];
 
     // Set some background information
     af::ref<double> bg_mean = reflections["background.mean"];
@@ -58,7 +57,6 @@ namespace dials { namespace model { namespace boost_python {
 
     // Loop through each reflection
     for (std::size_t i = 0; i < panel.size(); ++i) {
-
       // Get the image volume
       ImageVolume<FloatType> v = image_volume.get(panel[i]);
       DIALS_ASSERT(v.is_consistent());
@@ -67,9 +65,9 @@ namespace dials { namespace model { namespace boost_python {
       int6 b = v.trim_bbox(bbox[i]);
 
       // Get the data arrays
-      af::versa < FloatType, af::c_grid<3> > data = v.extract_data(b);
-      af::versa < FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-      af::versa < int, af::c_grid<3> >       mask = v.extract_mask(b, i);
+      af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
+      af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
+      af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -88,11 +86,11 @@ namespace dials { namespace model { namespace boost_python {
         if ((mask[j] & Background) && !(mask[j] & Valid)) num6++;
         if ((mask[j] & Foreground) && !(mask[j] & Valid)) num7++;
       }
-      num_valid[i]   = num1;
-      num_bg[i]      = num2;
-      //num_bg_used[i] = num3;
-      num_fg[i]      = num4;
-      num_ol[i]      = num5;
+      num_valid[i] = num1;
+      num_bg[i] = num2;
+      // num_bg_used[i] = num3;
+      num_fg[i] = num4;
+      num_ol[i] = num5;
 
       // Set some flags
       if (num6 > 0) {
@@ -134,20 +132,14 @@ namespace dials { namespace model { namespace boost_python {
         bg_disp[i] = 0.0;
       }
     }
-
   }
 
   template <typename FloatType>
   void image_volume_wrapper(const char *name) {
-
     typedef ImageVolume<FloatType> Class;
 
     class_<Class>(name, no_init)
-      .def(init<
-          int,
-          int,
-          std::size_t,
-          std::size_t>())
+      .def(init<int, int, std::size_t, std::size_t>())
       .def("frame0", &Class::frame0)
       .def("frame1", &Class::frame1)
       .def("accessor", &Class::accessor)
@@ -159,14 +151,11 @@ namespace dials { namespace model { namespace boost_python {
       .def("is_consistent", &Class::is_consistent)
       .def("extract_data", &Class::extract_data)
       .def("extract_background", &Class::extract_background)
-      .def("extract_mask", &Class::extract_mask)
-      ;
-
+      .def("extract_mask", &Class::extract_mask);
   }
 
   template <typename FloatType>
   void multi_panel_image_volume_wrapper(const char *name) {
-
     typedef MultiPanelImageVolume<FloatType> Class;
 
     class_<Class>(name)
@@ -176,17 +165,16 @@ namespace dials { namespace model { namespace boost_python {
       .def("get", &Class::get)
       .def("set_image", &Class::template set_image<int>)
       .def("set_image", &Class::template set_image<double>)
-      .def("update_reflection_info", &MultiPanelImageVolume_update_reflection_info<FloatType>)
-      .def("__len__", &Class::size)
-      ;
+      .def("update_reflection_info",
+           &MultiPanelImageVolume_update_reflection_info<FloatType>)
+      .def("__len__", &Class::size);
   }
 
-  void export_image_volume()
-  {
+  void export_image_volume() {
     typedef ImageVolume<>::float_type FloatType;
 
     image_volume_wrapper<FloatType>("ImageVolume");
     multi_panel_image_volume_wrapper<FloatType>("MultiPanelImageVolume");
   }
 
-}}} // namespace dials::model::boost_python
+}}}  // namespace dials::model::boost_python

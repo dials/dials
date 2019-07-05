@@ -23,22 +23,20 @@ namespace dials { namespace algorithms {
 
   class RadialAverage {
   public:
-
-    RadialAverage(
-        boost::shared_ptr<BeamBase> beam,
-        const Detector &detector,
-        double vmin,
-        double vmax,
-        std::size_t num_bins)
-      : beam_(beam),
-        detector_(detector),
-        sum_(num_bins, 0),
-        weight_(num_bins, 0),
-        inv_d2_(num_bins, 0),
-        vmin_(vmin),
-        vmax_(vmax),
-        num_bins_(num_bins),
-        current_(0) {
+    RadialAverage(boost::shared_ptr<BeamBase> beam,
+                  const Detector &detector,
+                  double vmin,
+                  double vmax,
+                  std::size_t num_bins)
+        : beam_(beam),
+          detector_(detector),
+          sum_(num_bins, 0),
+          weight_(num_bins, 0),
+          inv_d2_(num_bins, 0),
+          vmin_(vmin),
+          vmax_(vmax),
+          num_bins_(num_bins),
+          current_(0) {
       DIALS_ASSERT(vmax > vmin);
       DIALS_ASSERT(num_bins > 0);
       for (std::size_t i = 0; i < inv_d2_.size(); ++i) {
@@ -46,27 +44,26 @@ namespace dials { namespace algorithms {
       }
     }
 
-    void add(
-        const af::const_ref< double, af::c_grid<2> > &data,
-        const af::const_ref< bool, af::c_grid<2> > &mask) {
+    void add(const af::const_ref<double, af::c_grid<2> > &data,
+             const af::const_ref<bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       vec3<double> s0 = beam_->get_s0();
-      const Panel& panel = detector_[current_++];
+      const Panel &panel = detector_[current_++];
       std::size_t height = panel.get_image_size()[1];
       std::size_t width = panel.get_image_size()[0];
       DIALS_ASSERT(data.accessor()[0] == height);
       DIALS_ASSERT(data.accessor()[1] == width);
       for (std::size_t j = 0; j < height; ++j) {
         for (std::size_t i = 0; i < width; ++i) {
-          if (mask(j,i)) {
-            double d = panel.get_resolution_at_pixel(s0, vec2<double>(i,j));
-            double d2 = (1.0 / (d*d));
+          if (mask(j, i)) {
+            double d = panel.get_resolution_at_pixel(s0, vec2<double>(i, j));
+            double d2 = (1.0 / (d * d));
             if (d2 >= vmin_ && d2 < vmax_) {
               double b = vmin_;
               double a = (vmax_ - vmin_) / num_bins_;
-              int index = std::floor((d2 - b)/a);
+              int index = std::floor((d2 - b) / a);
               DIALS_ASSERT(index >= 0 && index < num_bins_);
-              sum_[index] += data(j,i);
+              sum_[index] += data(j, i);
               weight_[index] += 1.0;
             }
           }
@@ -95,7 +92,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     boost::shared_ptr<BeamBase> beam_;
     Detector detector_;
     af::shared<double> sum_;
@@ -105,9 +101,8 @@ namespace dials { namespace algorithms {
     double vmax_;
     std::size_t num_bins_;
     std::size_t current_;
-
   };
 
-}}
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_BACKGROUND_RADIAL_AVERAGE_H */

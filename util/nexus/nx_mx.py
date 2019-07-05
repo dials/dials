@@ -1,5 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import math
+from copy import deepcopy
+
+from scitbx import matrix
+
 # Extensions to NXMX
 #
 #  "detector/underload" - trusted_range[0]
@@ -13,11 +18,6 @@ schema_url = (
 
 
 def convert_to_nexus_beam_direction(experiments):
-    from collections import defaultdict
-    from scitbx import matrix
-    from copy import deepcopy
-    from math import pi
-
     EPS = 1e-7
 
     zaxis = matrix.col((0, 0, -1))
@@ -57,7 +57,7 @@ def convert_to_nexus_beam_direction(experiments):
     for exp in experiments:
         d = matrix.col(exp.beam.get_direction()).normalize()
         angle = d.angle(zaxis, deg=False)
-        if abs(angle - pi) < EPS:
+        if abs(angle - math.pi) < EPS:
             axis = (1, 0, 0)
         elif abs(angle) < EPS:
             rotations.append(((0, 0, 0), 0))
@@ -78,8 +78,6 @@ def convert_to_nexus_beam_direction(experiments):
 
 
 def convert_from_nexus_beam_direction(experiments, rotations):
-    from scitbx import matrix
-
     EPS = 1e-7
 
     zaxis = matrix.col((0, 0, -1))
@@ -95,9 +93,6 @@ def convert_from_nexus_beam_direction(experiments, rotations):
 
 
 def polarization_normal_to_stokes(n, p):
-    from math import sin, cos, atan2, pi
-    from scitbx import matrix
-
     EPS = 1e-7
     ax = matrix.col((1, 0, 0))
     ay = matrix.col((0, 1, 0))
@@ -106,25 +101,21 @@ def polarization_normal_to_stokes(n, p):
     assert abs(n.dot(az)) < EPS
     I = 1.0
     X = 0.0
-    W = atan2(n.dot(ay), n.dot(ax)) - pi / 2
+    W = math.atan2(n.dot(ay), n.dot(ax)) - math.pi / 2
     S0 = I
-    S1 = I * p * cos(2 * W) * cos(2 * X)
-    S2 = I * p * sin(2 * W) * cos(2 * X)
-    S3 = I * p * sin(2 * X)
+    S1 = I * p * math.cos(2 * W) * math.cos(2 * X)
+    S2 = I * p * math.sin(2 * W) * math.cos(2 * X)
+    S3 = I * p * math.sin(2 * X)
     return S0, S1, S2, S3
 
 
 def polarization_stokes_to_normal(S0, S1, S2, S3):
-    from math import sqrt, atan2, sin, cos
-    from scitbx import matrix
-
     EPS = 1e-7
-    I = S0
-    p = sqrt(S1 * S1 + S2 * S2 + S3 * S3) / S0
-    W = atan2(S2, S1) * 0.5
-    X = atan2(S3, sqrt(S1 * S1 + S2 * S2)) * 0.5
+    p = math.sqrt(S1 * S1 + S2 * S2 + S3 * S3) / S0
+    W = math.atan2(S2, S1) * 0.5
+    X = math.atan2(S3, math.sqrt(S1 * S1 + S2 * S2)) * 0.5
     assert abs(X) < EPS
-    n = matrix.col((-sin(W), cos(W), 0.0)).normalize()
+    n = matrix.col((-math.sin(W), math.cos(W), 0.0)).normalize()
     return n, p
 
 
@@ -181,9 +172,6 @@ def get_nx_dials(handle, path):
 
 def dump_beam(entry, beam):
     """ Export the beam model. """
-    from scitbx import matrix
-    from math import sin, cos, pi
-
     EPS = 1e-7
 
     # Get the nx_beam
@@ -206,8 +194,6 @@ def dump_beam(entry, beam):
 
 
 def dump_detector(entry, detector, beam, imageset, scan):
-    from scitbx import matrix
-
     EPS = 1e-7
 
     # Get the detector
@@ -311,8 +297,6 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
 def dump_goniometer(entry, goniometer, scan):
     """ Export the goniometer model. """
-    from scitbx import matrix
-
     if scan is None or goniometer is None:
         return
 
@@ -480,15 +464,13 @@ def dump_details(entry):
 
 def load_beam(entry):
     from dxtbx.model import Beam
-    from math import sqrt, cos, sin, pi
-    from scitbx import matrix
 
     EPS = 1e-7
 
     # Get the nx_beam
     nx_sample = get_nx_sample(entry, "sample")
     nx_beam = get_nx_beam(nx_sample, "beam")
-    wavelength = nx_beam["incident_wavelength"].value
+    wavelength = nx_beam["incident_wavelength"][()]
     S0, S1, S2, S3 = tuple(nx_beam["incident_polarization_stokes"])
     n, p = polarization_stokes_to_normal(S0, S1, S2, S3)
     assert n.dot(matrix.col((0, 0, -1))) < EPS
@@ -499,19 +481,15 @@ def load_beam(entry):
 
 def load_detector(entry):
     from dxtbx.model import Detector
-    from scitbx import matrix
 
     # Get the detector module object
     nx_instrument = get_nx_instrument(entry, "instrument")
     nx_detector = get_nx_detector(nx_instrument, "detector")
-    assert nx_detector["depends_on"].value == "."
-    material = nx_detector["sensor_material"].value
-    det_type = nx_detector["type"].value
-    thickness = nx_detector["sensor_thickness"].value
-    trusted_range = (
-        nx_detector["underload"].value,
-        nx_detector["saturation_value"].value,
-    )
+    assert nx_detector["depends_on"][()] == "."
+    material = nx_detector["sensor_material"][()]
+    det_type = nx_detector["type"][()]
+    thickness = nx_detector["sensor_thickness"][()]
+    trusted_range = (nx_detector["underload"][()], nx_detector["saturation_value"][()])
 
     # The detector model
     detector = Detector()
@@ -526,7 +504,7 @@ def load_detector(entry):
         image_size = module["data_size"]
 
         # Set the module offset
-        offset_length = module["module_offset"].value
+        offset_length = module["module_offset"][()]
         assert module["module_offset"].attrs["depends_on"] == "."
         assert module["module_offset"].attrs["transformation_type"] == "translation"
         assert tuple(module["module_offset"].attrs["offset"]) == (0, 0, 0)
@@ -535,7 +513,7 @@ def load_detector(entry):
 
         # Write the fast pixel direction
         module_offset_path = str(module["module_offset"].name)
-        pixel_size_x = module["fast_pixel_direction"].value
+        pixel_size_x = module["fast_pixel_direction"][()]
         assert module["fast_pixel_direction"].attrs["depends_on"] == module_offset_path
         assert (
             module["fast_pixel_direction"].attrs["transformation_type"] == "translation"
@@ -544,7 +522,7 @@ def load_detector(entry):
         fast_axis = tuple(module["fast_pixel_direction"].attrs["vector"])
 
         # Write the slow pixel direction
-        pixel_size_y = module["slow_pixel_direction"].value
+        pixel_size_y = module["slow_pixel_direction"][()]
         assert module["slow_pixel_direction"].attrs["depends_on"] == module_offset_path
         assert (
             module["slow_pixel_direction"].attrs["transformation_type"] == "translation"
@@ -572,7 +550,6 @@ def load_detector(entry):
 
 def load_goniometer(entry):
     from dxtbx.model import Goniometer
-    from scitbx import matrix
 
     # Write out the rotation axis and oscillation
     nx_sample = get_nx_sample(entry, "sample")
@@ -595,7 +572,7 @@ def load_goniometer(entry):
     assert transformations["fixed_rotation"].attrs["offset_units"] == "mm"
     assert tuple(transformations["phi"].attrs["offset"]) == (0, 0, 0)
     axis = matrix.col(transformations["fixed_rotation"].attrs["vector"])
-    angle = transformations["fixed_rotation"].value
+    angle = transformations["fixed_rotation"][()]
     fixed_rotation = axis.axis_and_angle_as_r3_rotation_matrix(angle)
 
     assert transformations["setting_rotation"].attrs["depends_on"] == "."
@@ -605,7 +582,7 @@ def load_goniometer(entry):
     assert transformations["setting_rotation"].attrs["offset_units"] == "mm"
     assert tuple(transformations["phi"].attrs["offset"]) == (0, 0, 0)
     axis = matrix.col(transformations["setting_rotation"].attrs["vector"])
-    angle = transformations["setting_rotation"].value
+    angle = transformations["setting_rotation"][()]
     setting_rotation = axis.axis_and_angle_as_r3_rotation_matrix(angle)
 
     # Return the goniometer model
@@ -637,7 +614,6 @@ def load_scan(entry):
 def load_crystal(entry):
     from dxtbx.model import Crystal
     from scitbx.array_family import flex
-    from scitbx import matrix
     from cctbx import uctbx
     import numpy
 
@@ -645,13 +621,11 @@ def load_crystal(entry):
     nx_sample = get_nx_sample(entry, "sample")
 
     # Set the space group
-    space_group_symbol = nx_sample["unit_cell_group"].value
+    space_group_symbol = nx_sample["unit_cell_group"][()]
 
     # Get depends on
-    if nx_sample["depends_on"].value != ".":
-        assert nx_sample["depends_on"].value == str(
-            nx_sample["transformations/phi"].name
-        )
+    if nx_sample["depends_on"][()] != ".":
+        assert nx_sample["depends_on"][()] == str(nx_sample["transformations/phi"].name)
 
     # Read the average unit cell data
     average_unit_cell = flex.double(numpy.array(nx_sample["average_unit_cell"]))
@@ -711,7 +685,6 @@ def load_crystal(entry):
 
 
 def dump(entry, experiments):
-    from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
 
     print("Dumping NXmx")
@@ -822,7 +795,7 @@ def find_nx_mx_entries(nx_file, entry):
         if "NX_class" in obj.attrs.keys():
             if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]:
                 if "definition" in obj.keys():
-                    if obj["definition"].value == "NXmx":
+                    if obj["definition"][()] == "NXmx":
                         hits.append(obj)
 
     nx_file[entry].visititems(visitor)
@@ -837,14 +810,14 @@ def load(entry, exp_index):
 
     # Check file contains the feature
     assert "features" in entry
-    assert 6 in entry["features"].value
+    assert 6 in entry["features"][()]
 
     experiment_list = ExperimentList()
 
     # Find all the experiments
     entries = find_nx_mx_entries(entry, ".")
     if len(entries) > 1:
-        entries = sorted(entries, key=lambda x: x["dials/index"].value)
+        entries = sorted(entries, key=lambda x: x["dials/index"][()])
 
     assert len(entries) == len(exp_index)
     for nxmx, name in zip(entries, exp_index):
@@ -859,7 +832,7 @@ def load(entry, exp_index):
 
         # Get the definition
         definition = nxmx["definition"]
-        assert definition.value == "NXmx"
+        assert definition[()] == "NXmx"
         assert definition.attrs["version"] == 1
 
         # Get dials specific stuff
@@ -881,7 +854,7 @@ def load(entry, exp_index):
 
         # Get the original orientation (dials specific)
         transformations = get_nx_transformations(nx_dials, "transformations")
-        angle = transformations["angle"].value
+        angle = transformations["angle"][()]
         assert transformations["angle"].attrs["transformation_type"] == "rotation"
         axis = transformations["angle"].attrs["vector"]
         assert tuple(transformations["angle"].attrs["offset"]) == (0, 0, 0)
@@ -889,12 +862,12 @@ def load(entry, exp_index):
         assert transformations["angle"].attrs["depends_on"] == "."
         rotations.append((axis, angle))
 
-        # Get the tmeplate and imageset
+        # Get the template and imageset
         try:
             template = list(nx_dials["template"])
             image_range = None
         except Exception:
-            template = nx_dials["template"].value
+            template = nx_dials["template"][()]
             if template == "":
                 template = None
             if "range" in nx_dials["template"].attrs:
@@ -939,31 +912,31 @@ def load(entry, exp_index):
         crystal[ind[4]].append(i)
 
     # Set all the shared beams
-    for key, value in beam.iteritems():
+    for value in beam.values():
         b1 = experiment_list[value[0]].beam
         assert all(experiment_list[v].beam == b1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].beam = b1
     # Set all the shared detectors
-    for key, value in detector.iteritems():
+    for value in detector.values():
         d1 = experiment_list[value[0]].detector
         assert all(experiment_list[v].detector == d1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].detector = d1
     # Set all the shared goniometer
-    for key, value in goniometer.iteritems():
+    for value in goniometer.values():
         g1 = experiment_list[value[0]].goniometer
         assert all(experiment_list[v].goniometer == g1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].goniometer = g1
     # Set all the shared scans
-    for key, value in scan.iteritems():
+    for value in scan.values():
         s1 = experiment_list[value[0]].scan
         assert all(experiment_list[v].scan == s1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].scan = s1
     # Set all the shared crystals
-    for key, value in crystal.iteritems():
+    for value in crystal.values():
         c1 = experiment_list[value[0]].crystal
         assert all(experiment_list[v].crystal == c1 for v in value[1:])
         for v in value[1:]:

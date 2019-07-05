@@ -23,8 +23,9 @@ from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.algorithms.refinement import DialsRefineConfigError
 import libtbx
+from libtbx.introspection import machine_memory_info
 
 # The include scope directive does not work here. For example:
 #
@@ -228,13 +229,22 @@ class RefinerFactory(object):
                     exps_are_stills.append(False)
             else:
                 if exp.scan.get_oscillation()[1] <= 0.0:
-                    raise Sorry("Cannot refine a zero-width scan")
+                    raise DialsRefineConfigError("Cannot refine a zero-width scan")
                 exps_are_stills.append(False)
 
         # check experiment types are consistent
         if not all(exps_are_stills[0] == e for e in exps_are_stills):
-            raise Sorry("Cannot refine a mixture of stills and scans")
+            raise DialsRefineConfigError("Cannot refine a mixture of stills and scans")
         do_stills = exps_are_stills[0]
+
+        # If experiments are stills, ensure scan-varying refinement won't be attempted
+        if do_stills:
+            params.refinement.parameterisation.scan_varying = False
+
+        # Refiner does not accept scan_varying=Auto. This is a special case for
+        # doing macrocycles of refinement in dials.refine.
+        if params.refinement.parameterisation.scan_varying is libtbx.Auto:
+            params.refinement.parameterisation.scan_varying = False
 
         # calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
@@ -353,13 +363,40 @@ class RefinerFactory(object):
         )
         logger.debug("Refinement engine built")
 
+        nparam = len(pred_param)
+        ndim = target.dim
+        nref = len(refman.get_matches())
+        logger.info(
+            "There are {0} parameters to refine against {1} reflections in {2} dimensions".format(
+                nparam, nref, ndim
+            )
+        )
+        from dials.algorithms.refinement.engine import AdaptLstbx
+
+        if not params.refinement.parameterisation.sparse and isinstance(
+            refinery, AdaptLstbx
+        ):
+            dense_jacobian_gigabytes = (
+                nparam * nref * ndim * flex.double.element_size()
+            ) / 1e9
+            tot_memory_gigabytes = machine_memory_info().memory_total() / 1e9
+            # Report if the Jacobian requires a large amount of storage
+            if (
+                dense_jacobian_gigabytes > 0.2 * tot_memory_gigabytes
+                or dense_jacobian_gigabytes > 0.5
+            ):
+                logger.info(
+                    "Storage of the Jacobian matrix requires {0:.1f} GB".format(
+                        dense_jacobian_gigabytes
+                    )
+                )
+
         # build refiner interface and return
         if params.refinement.parameterisation.scan_varying:
             refiner = ScanVaryingRefiner
         else:
             refiner = Refiner
         return refiner(
-            reflections,
             experiments,
             pred_param,
             param_reporter,
@@ -444,6 +481,9 @@ class RefinerFactory(object):
             ]
         ):
             return None
+        if params.scan_varying:
+            logger.warning("Restraints will be ignored for scan_varying=True")
+            return None
 
         det_params = pred_param.get_detector_parameterisations()
         beam_params = pred_param.get_beam_parameterisations()
@@ -470,11 +510,11 @@ class RefinerFactory(object):
 
         for tie in cell_r.tie_to_target:
             if len(tie.values) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 cell parameters must be provided as the tie_to_target.values."
                 )
             if len(tie.sigmas) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 sigmas must be provided as the tie_to_target.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter."
@@ -487,7 +527,7 @@ class RefinerFactory(object):
 
         for tie in cell_r.tie_to_group:
             if len(tie.sigmas) != 6:
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "6 sigmas must be provided as the tie_to_group.sigmas. "
                     "Note that individual sigmas of 0.0 will remove "
                     "the restraint for the corresponding cell parameter."
@@ -618,7 +658,6 @@ class Refiner(object):
 
     def __init__(
         self,
-        reflections,
         experiments,
         pred_param,
         param_reporter,
@@ -629,7 +668,6 @@ class Refiner(object):
     ):
         """
         Mandatory arguments:
-          reflections - Input ReflectionList data
           experiments - a dxtbx ExperimentList object
           pred_param - An object derived from the PredictionParameterisation class
           param_reporter -A ParameterReporter object
@@ -655,6 +693,9 @@ class Refiner(object):
         self._param_report = param_reporter
 
         self._verbosity = verbosity
+
+        # Keep track of whether this is stills or scans type refinement
+        self.experiment_type = refman.experiment_type
 
         return
 
@@ -712,15 +753,13 @@ class Refiner(object):
             col_select = range(len(all_labels))
         sel = string_sel(col_select, all_labels)
         labels = [e for e, s in zip(all_labels, sel) if s]
-        num_cols = num_rows = len(labels)
+        num_cols = len(labels)
         if num_cols == 0:
             return None, None
 
         for k, corrmat in corrmats.items():
 
             assert corrmat.is_square_matrix()
-
-            from scitbx.array_family import flex
 
             idx = flex.bool(sel).iselection()
             sub_corrmat = flex.double(flex.grid(num_cols, num_cols))
@@ -781,7 +820,7 @@ class Refiner(object):
         rad2deg = 180 / pi
 
         # check if it makes sense to proceed
-        if not "out_of_sample_rmsd" in self._refinery.history:
+        if "out_of_sample_rmsd" not in self._refinery.history:
             return
         nref = len(self.get_free_reflections())
         if nref < 10:
@@ -857,7 +896,6 @@ class Refiner(object):
 
             scan = exp.scan
             try:
-                temp = scan.get_oscillation(deg=False)
                 images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
             except (AttributeError, ZeroDivisionError):
                 images_per_rad = None
@@ -911,7 +949,6 @@ class Refiner(object):
             )
         scan = self._experiments.scans()[0]
         try:
-            temp = scan.get_oscillation(deg=False)
             images_per_rad = 1.0 / abs(scan.get_oscillation(deg=False)[1])
         except AttributeError:
             images_per_rad = None
@@ -1100,28 +1137,29 @@ class ScanVaryingRefiner(Refiner):
             if A_list is not None:
                 exp.crystal.set_A_at_scan_points(A_list)
 
-            # Return early if not calculating scan-varying errors
-            if not self._pred_param.set_scan_varying_errors:
-                return
+            # Calculate scan-varying errors if requested
+            if self._pred_param.set_scan_varying_errors:
 
-            # get state covariance matrices the whole range of images. We select
-            # the first element of this at each image because crystal scan-varying
-            # parameterisations are not multi-state
-            state_cov_list = [
-                self._pred_param.calculate_model_state_uncertainties(
-                    obs_image_number=t, experiment_id=iexp
+                # get state covariance matrices the whole range of images. We select
+                # the first element of this at each image because crystal scan-varying
+                # parameterisations are not multi-state
+                state_cov_list = [
+                    self._pred_param.calculate_model_state_uncertainties(
+                        obs_image_number=t, experiment_id=iexp
+                    )
+                    for t in range(ar_range[0], ar_range[1] + 1)
+                ]
+                if "U_cov" in state_cov_list[0]:
+                    u_cov_list = [e["U_cov"] for e in state_cov_list]
+                else:
+                    u_cov_list = None
+
+                if "B_cov" in state_cov_list[0]:
+                    b_cov_list = [e["B_cov"] for e in state_cov_list]
+                else:
+                    b_cov_list = None
+
+                # return these to the model parameterisations to be set in the models
+                self._pred_param.set_model_state_uncertainties(
+                    u_cov_list, b_cov_list, iexp
                 )
-                for t in range(ar_range[0], ar_range[1] + 1)
-            ]
-            if "U_cov" in state_cov_list[0]:
-                u_cov_list = [e["U_cov"] for e in state_cov_list]
-            else:
-                u_cov_list = None
-
-            if "B_cov" in state_cov_list[0]:
-                b_cov_list = [e["B_cov"] for e in state_cov_list]
-            else:
-                b_cov_list = None
-
-            # return these to the model parameterisations to be set in the models
-            self._pred_param.set_model_state_uncertainties(u_cov_list, b_cov_list, iexp)

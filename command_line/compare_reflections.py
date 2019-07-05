@@ -24,10 +24,6 @@ class CompareReflections(object):
         # Get the intensities
         I1 = self.refl1["intensity.sum.value"]
         I2 = self.refl2["intensity.sum.value"]
-        S1 = flex.sqrt(self.refl1["intensity.sum.variance"])
-        S2 = flex.sqrt(self.refl2["intensity.sum.variance"])
-        xyz1 = self.refl1["xyzcal.px"]
-        xyz2 = self.refl2["xyzcal.px"]
 
         # Compute chunked statistics
         corr = []

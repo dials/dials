@@ -24,8 +24,8 @@ jobs:
          - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
 
          # Update CCTBX
-         - $HOME/build_dials/modules/dials/.travis/clean-cctbx
-         - $HOME/build_dials/modules/dials/.travis/update-cctbx
+         - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx
+         - $HOME/build_dials/modules/dials/.travis/update-cctbx-dxtbx
 
       before_script:
          # Enter CCTBX environment
@@ -74,7 +74,7 @@ jobs:
       script:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
-         - BOOST_ADAPTBX_FPE_DEFAULT=1 pytest -ra -n 2 --runslow
+         - pytest -ra -n 2 --runslow
 
     - name: "Flake8 - Python 2.7"
       addons: false
@@ -82,6 +82,7 @@ jobs:
       before_cache: false
       script:
          - .travis/run-flake8
+      if: type = pull_request
 
     - name: "Flake8 - Python 3.7"
       addons: false
@@ -91,8 +92,9 @@ jobs:
       python: 3.7
       script:
          - .travis/run-flake8
+      if: type = pull_request
 
 before_cache:
-  - $HOME/build_dials/modules/dials/.travis/clean-cctbx
+  - $HOME/build_dials/modules/dials/.travis/clean-cctbx-dxtbx
   - cd $HOME
   - rm -rf $HOME/build_dials/modules/dials

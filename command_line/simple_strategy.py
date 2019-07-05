@@ -61,11 +61,6 @@ def run(args):
         parser.print_help()
         exit(0)
 
-    imagesets = experiments.imagesets()
-
-    predicted_all = None
-    dose = flex.size_t()
-
     for i_expt, expt in enumerate(experiments):
         if params.space_group is not None:
             expt.crystal.set_space_group(params.space_group.group())
@@ -81,7 +76,6 @@ def run(args):
         expt2 = copy.deepcopy(expt)
         scan = expt2.scan
         gonio = expt2.goniometer
-        angles = gonio.get_angles()
         theta_max = strategy.theta_max
         fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
         setting_rotation = matrix.sqr(gonio.get_setting_rotation())
@@ -304,15 +298,14 @@ class ComputeStats(object):
         ma = miller.array(
             ms, data=flex.double(ms.size(), 1), sigmas=flex.double(ms.size(), 1)
         )
-        if 1:
-            merging = ma.merge_equivalents()
-            o = (
-                merging.array()
-                .customized_copy(data=merging.redundancies().data().as_double())
-                .as_mtz_dataset("I")
-                .mtz_object()
-            )
-            o.write("predicted.mtz")
+        merging = ma.merge_equivalents()
+        o = (
+            merging.array()
+            .customized_copy(data=merging.redundancies().data().as_double())
+            .as_mtz_dataset("I")
+            .mtz_object()
+        )
+        o.write("predicted.mtz")
 
         d_star_sq = ma.d_star_sq().data()
 

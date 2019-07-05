@@ -4,7 +4,6 @@ Test for the scaling weighting module.
 from __future__ import absolute_import, division, print_function
 import pytest
 from mock import Mock
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.weighting import (
     get_weighting_scheme,
@@ -76,5 +75,5 @@ def test_weighting_schemes(mock_Ih_table):
         + [1.0 / (1.0 + (2.0 / weights.c) ** 2)]
     )
 
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         weights = get_weighting_scheme(mock_Ih_table, "badchoice")

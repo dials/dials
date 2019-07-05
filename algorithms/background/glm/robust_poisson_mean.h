@@ -26,11 +26,9 @@ namespace dials { namespace algorithms {
    * Models"
    */
   class RobustPoissonMean {
-
     typedef scitbx::glmtbx::poisson family;
 
   public:
-
     /**
      * Compute the generalized linear model using iteratively reweighted least
      * squares. The input expects a design matrix of size (nobs, ncoef), a list
@@ -43,17 +41,12 @@ namespace dials { namespace algorithms {
      * @param tolerance The stopping critera
      * @param max_iter The maximum number of iterations
      */
-    RobustPoissonMean(
-        const af::const_ref< double > &Y,
-        double mean0,
-        double c,
-        double tolerance,
-        std::size_t max_iter)
-        : niter_(0),
-          error_(0),
-          c_(c),
-          tolerance_(tolerance),
-          max_iter_(max_iter) {
+    RobustPoissonMean(const af::const_ref<double> &Y,
+                      double mean0,
+                      double c,
+                      double tolerance,
+                      std::size_t max_iter)
+        : niter_(0), error_(0), c_(c), tolerance_(tolerance), max_iter_(max_iter) {
       SCITBX_ASSERT(Y.size() > 0);
       SCITBX_ASSERT(mean0 > 0);
       SCITBX_ASSERT(c > 0);
@@ -93,22 +86,18 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
-    void compute(
-        const af::const_ref< double > &Y) {
-
+    void compute(const af::const_ref<double> &Y) {
       // Number of observations and coefficients
       std::size_t n_obs = Y.size();
 
       // Loop until we reach the maximum number of iterations
       for (niter_ = 0; niter_ < max_iter_; ++niter_) {
-
         // Initialize the sum to zero
         double U = 0;
         double H = 0;
         double w = 1.0;
         double eta = beta_;
-        double mu  = family::linkinv(eta);
+        double mu = family::linkinv(eta);
         double var = family::variance(mu);
         double dmu = family::dmu_deta(eta);
         double phi = family::dispersion();
@@ -124,7 +113,6 @@ namespace dials { namespace algorithms {
 
         // Build the matrices from the observations
         for (std::size_t i = 0; i < n_obs; ++i) {
-
           // Compute some required values
           double res = (Y[i] - mu) / svar;
 
@@ -164,7 +152,6 @@ namespace dials { namespace algorithms {
     std::size_t max_iter_;
   };
 
+}}  // namespace dials::algorithms
 
-}} // namespace dials::algorithms
-
-#endif // SCITBX_GLMTBX_ROBUST_POISSON_MEAN_H
+#endif  // SCITBX_GLMTBX_ROBUST_POISSON_MEAN_H

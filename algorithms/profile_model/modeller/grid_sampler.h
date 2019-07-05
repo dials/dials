@@ -19,30 +19,25 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::int3;
-  using scitbx::af::int2;
   using scitbx::af::double3;
+  using scitbx::af::int2;
+  using scitbx::af::int3;
 
   /**
    * Class to sample reference profiles in a grid
    */
   class GridSampler : public SamplerIface {
   public:
-
     /**
      * Initialise the sampler
      * @param volume_size The size of the volume to sample
      * @param grid_size The number of grid points
      */
-    GridSampler(
-          int2 image_size,
-          int2 scan_range,
-          int3 grid_size)
-      : image_size_(image_size),
-        scan_range_(scan_range),
-        scan_size_(scan_range[1] - scan_range[0]),
-        grid_size_(grid_size) {
-
+    GridSampler(int2 image_size, int2 scan_range, int3 grid_size)
+        : image_size_(image_size),
+          scan_range_(scan_range),
+          scan_size_(scan_range[1] - scan_range[0]),
+          grid_size_(grid_size) {
       // Check some input
       DIALS_ASSERT(image_size_.all_gt(0));
       DIALS_ASSERT(grid_size_.all_gt(0));
@@ -141,8 +136,8 @@ namespace dials { namespace algorithms {
       double dx = (c[0] - xyz[0]) / step_size_[0];
       double dy = (c[1] - xyz[1]) / step_size_[1];
       double dz = (c[2] - xyz[2]) / step_size_[2];
-      double d = std::sqrt(dx*dx + dy*dy + dz*dz);
-      return std::exp(-4.0*d*d*std::log(2.0));
+      double d = std::sqrt(dx * dx + dy * dy + dz * dz);
+      return std::exp(-4.0 * d * d * std::log(2.0));
     }
 
     /**
@@ -181,11 +176,9 @@ namespace dials { namespace algorithms {
             int iii = i + ii;
             int jjj = j + jj;
             int kkk = k + kk;
-            if (iii >= 0 && iii < xs &&
-                jjj >= 0 && jjj < ys &&
-                kkk >= 0 && kkk < zs &&
-                !(kk == 0 && jj == 0 && ii == 0)) {
-              result.push_back(iii+jjj*xs+kkk*xs*ys);
+            if (iii >= 0 && iii < xs && jjj >= 0 && jjj < ys && kkk >= 0 && kkk < zs
+                && !(kk == 0 && jj == 0 && ii == 0)) {
+              result.push_back(iii + jjj * xs + kkk * xs * ys);
             }
           }
         }
@@ -194,7 +187,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Create a profile index
      */
@@ -209,7 +201,6 @@ namespace dials { namespace algorithms {
     double3 step_size_;
   };
 
-}} // namespace dials::algorithms
-
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_PROFILE_MODEL_MODELLER_GRID_SAMPLER_H */

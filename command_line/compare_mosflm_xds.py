@@ -8,6 +8,8 @@ from iotbx import mtz
 from cctbx.uctbx import unit_cell
 from scitbx import matrix
 
+from dials.array_family import flex  # import dependency
+
 
 def pull_reference_xds(integrate_hkl, d_min=0.0):
     """Generate reference data set from integrate.hkl, check out the calculated
@@ -90,7 +92,6 @@ def pull_reference(integrate_mtz):
 
     xyz = []
 
-    dx = b0.detlm()[1]
     dz = b0.phiend() - b0.phistt()
     z0 = b0.phistt()
 
@@ -118,7 +119,6 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
 
 
 def pull_calculated(integrate_pkl):
-    from dials.array_family import flex  # import dependency
     import six.moves.cPickle as pickle
 
     with open(integrate_pkl, "rb") as fh:
@@ -187,7 +187,6 @@ def R(calc, obs, scale=None):
 
 
 def compare_chunks(integrate_mtz, integrate_hkl):
-    from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
     uc = integrate_mtz_to_unit_cell(integrate_mtz)
@@ -254,8 +253,6 @@ def compare_chunks(integrate_mtz, integrate_hkl):
     # then extract the original observation structure
 
     print("Paired %d observations" % len(MOS))
-
-    scale = sum(MOS) / sum(XDS)
 
     chunks = [(i, i + 1000) for i in range(0, len(MOS), 1000)]
 

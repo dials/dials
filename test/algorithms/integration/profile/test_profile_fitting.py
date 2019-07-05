@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
-import pytest
-
 
 def evaluate_gaussian(x, a, x0, sx):
     assert len(x) == len(x0)
@@ -321,7 +319,6 @@ def test_with_flat_background_partial():
     mp = m[0:5, :, :]
     cp = c[0:5, :, :]
     bp = b[0:5, :, :]
-    c0p = c0[0:5, :, :]
 
     # Fit
     fit = ProfileFitter(cp, bp, mp, pp)
@@ -336,34 +333,6 @@ def test_with_flat_background_partial():
     eps = 1e-7
     assert abs(I[0] - Iknown) < eps
     assert abs(V[0] - Vknown) < eps
-
-
-@pytest.mark.xfail(
-    reason="Test disabled in https://github.com/dials/dials/commit/4ebc635e8f7e3f336d43e2d39d3aa6ddcebf1e6c#diff-6779b8e6a3661bc86fdc79ed15b5f9deR27"
-)
-def test_deconvolve_zero():
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
-
-    I0 = [1000, 2000, 3000]
-
-    # Create profile
-    p = generate_3_profiles()
-
-    # Copy profile
-    c = flex.double(flex.grid(40, 9, 9), 0)
-    b = flex.double(flex.grid(40, 9, 9), 0)
-    m = flex.bool(flex.grid(40, 9, 9), True)
-
-    # Fit
-    passed = False
-    with pytest.raises(Exception):
-        fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
-        V = fit.variance()
 
 
 def test_deconvolve_3_with_no_background():

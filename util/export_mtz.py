@@ -17,7 +17,6 @@ from dials.util.batch_handling import (
 
 from dials.util.ext import dials_u_to_mosflm
 from iotbx import mtz
-from dials.util import Sorry
 from scitbx import matrix
 
 try:
@@ -173,10 +172,7 @@ def _write_columns(mtz_file, dataset, integrated_data):
     # gather the required information for the reflection file
 
     nref = len(integrated_data["miller_index"])
-
-    # check reflections remain
-    if nref == 0:
-        raise Sorry("no reflections for export")
+    assert nref
     xdet, ydet, zdet = [
         flex.double(x) for x in integrated_data["xyzobs.px.value"].parts()
     ]
@@ -395,7 +391,7 @@ def export_mtz(integrated_data, experiment_list, params):
     image_ranges = get_image_ranges(experiment_list)
     if len(unique_offsets) != len(batch_offsets):
 
-        raise Sorry(
+        raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
                 str(item) for item, count in Counter(batch_offsets).items() if count > 1

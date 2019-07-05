@@ -23,11 +23,11 @@
 
 namespace dials { namespace algorithms { namespace background {
 
-  using scitbx::matrix::inversion_in_place;
-  using model::Valid;
   using model::Background;
   using model::BackgroundUsed;
   using model::Overlapped;
+  using model::Valid;
+  using scitbx::matrix::inversion_in_place;
 
   /**
    * Compute the background plane from a subset and select pixels within a few
@@ -36,14 +36,12 @@ namespace dials { namespace algorithms { namespace background {
    */
   class MosflmOutlierRejector : public OutlierRejector {
   public:
-
     /**
      * @param fraction The fraction to use in initial estimate
      * @param nsigma The threshold for outliers
      */
     MosflmOutlierRejector(double fraction, double n_sigma)
-      : fraction_(fraction),
-        n_sigma_(n_sigma) {
+        : fraction_(fraction), n_sigma_(n_sigma) {
       DIALS_ASSERT(fraction_ > 0 && fraction_ <= 1.0);
       DIALS_ASSERT(n_sigma_ > 0);
     }
@@ -52,11 +50,8 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual
-    void mark(
-        const af::const_ref< double, af::c_grid<3> > &data,
-        af::ref< int, af::c_grid<3> > mask) const {
-
+    virtual void mark(const af::const_ref<double, af::c_grid<3> > &data,
+                      af::ref<int, af::c_grid<3> > mask) const {
       // Check the input
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
 
@@ -64,10 +59,9 @@ namespace dials { namespace algorithms { namespace background {
       af::c_grid<2> accessor(data.accessor()[1], data.accessor()[2]);
       std::size_t xysize = accessor[0] * accessor[1];
       for (std::size_t i = 0; i < data.accessor()[0]; ++i) {
-
         // Get the 2D slices
-        af::const_ref< double, af::c_grid<2> > data_2d(&data[i*xysize], accessor);
-        af::ref< int, af::c_grid<2> > mask_2d(&mask[i*xysize], accessor);
+        af::const_ref<double, af::c_grid<2> > data_2d(&data[i * xysize], accessor);
+        af::ref<int, af::c_grid<2> > mask_2d(&mask[i * xysize], accessor);
 
         // Compute the initial mask using a subset of the available pixels
         compute_initial_mask(data_2d, mask_2d);
@@ -88,14 +82,12 @@ namespace dials { namespace algorithms { namespace background {
     }
 
   private:
-
     /**
      * Compare index array by pixel value
      */
     struct compare_pixel_value {
       af::const_ref<double> data_;
-      compare_pixel_value(const af::const_ref<double> &data)
-        : data_(data) {}
+      compare_pixel_value(const af::const_ref<double> &data) : data_(data) {}
       bool operator()(std::size_t a, std::size_t b) {
         return data_[a] < data_[b];
       }
@@ -105,9 +97,8 @@ namespace dials { namespace algorithms { namespace background {
      * Calculate the initial mask. Select the fraction of pixels with the lowest
      * intensity and then update the mask for those pixels.
      */
-    void compute_initial_mask(
-        const af::const_ref< double, af::c_grid<2> > &data,
-        af::ref< int, af::c_grid<2> > mask) const {
+    void compute_initial_mask(const af::const_ref<double, af::c_grid<2> > &data,
+                              af::ref<int, af::c_grid<2> > mask) const {
       int code = Valid | Background;
       std::vector<std::size_t> index;
       index.reserve(data.size());
@@ -120,8 +111,7 @@ namespace dials { namespace algorithms { namespace background {
       }
       DIALS_ASSERT(index.size() > 0);
       std::sort(index.begin(), index.end(), compare_pixel_value(data.as_1d()));
-      std::size_t nactive = (std::size_t)std::floor(
-          fraction_ * index.size() + 0.5);
+      std::size_t nactive = (std::size_t)std::floor(fraction_ * index.size() + 0.5);
       DIALS_ASSERT(nactive > 0 && nactive <= index.size());
       for (std::size_t i = 0; i < nactive; ++i) {
         mask[index[i]] |= BackgroundUsed;
@@ -131,20 +121,21 @@ namespace dials { namespace algorithms { namespace background {
     /**
      * Compute the background plane given shoebox data and mask
      */
-    void compute_background(
-        const af::const_ref< double, af::c_grid<2> > &data,
-        const af::const_ref< int, af::c_grid<2> > &mask,
-        double &a, double &b, double &c) const {
-      std::vector<double> A(3*3, 0);
+    void compute_background(const af::const_ref<double, af::c_grid<2> > &data,
+                            const af::const_ref<int, af::c_grid<2> > &mask,
+                            double &a,
+                            double &b,
+                            double &c) const {
+      std::vector<double> A(3 * 3, 0);
       std::vector<double> B(3, 0);
       int hy = data.accessor()[0] / 2;
       int hx = data.accessor()[1] / 2;
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
-          if (mask(j,i) & BackgroundUsed) {
+          if (mask(j, i) & BackgroundUsed) {
             double x = ((int)i - hx);
             double y = ((int)j - hy);
-            double p = data(j,i);
+            double p = data(j, i);
             A[0] += 1;
             A[1] += x;
             A[2] += y;
@@ -190,10 +181,11 @@ namespace dials { namespace algorithms { namespace background {
      * Compute the final mask. Check the data for outliers by looking at the
      * deviation of each point from the plane.
      */
-    void compute_final_mask(
-        const af::const_ref< double, af::c_grid<2> > &data,
-        af::ref< int, af::c_grid<2> > mask,
-        double a, double b, double c) const {
+    void compute_final_mask(const af::const_ref<double, af::c_grid<2> > &data,
+                            af::ref<int, af::c_grid<2> > mask,
+                            double a,
+                            double b,
+                            double c) const {
       std::size_t noutlier = 0;
       std::size_t nbackground = 0;
       double max_background = n_sigma_ * std::sqrt(std::abs(c));
@@ -202,17 +194,17 @@ namespace dials { namespace algorithms { namespace background {
       int hx = data.accessor()[1] / 2;
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
-          if ((mask(j,i) & code) == code && (mask(j,i) & Overlapped) == 0) {
+          if ((mask(j, i) & code) == code && (mask(j, i) & Overlapped) == 0) {
             double x = ((int)i - hx);
             double y = ((int)j - hy);
-            double p1 = data(j,i);
+            double p1 = data(j, i);
             double p2 = a * x + b * y + c;
             double d = std::abs(p1 - p2);
             if (d > max_background) {
-              mask(j,i) &= ~BackgroundUsed;
+              mask(j, i) &= ~BackgroundUsed;
               noutlier++;
             } else {
-              mask(j,i) |= BackgroundUsed;
+              mask(j, i) |= BackgroundUsed;
               nbackground++;
             }
           }
@@ -220,10 +212,9 @@ namespace dials { namespace algorithms { namespace background {
       }
     }
 
-
     double fraction_, n_sigma_;
   };
 
-}}} // namespace dials::algorithms::background
+}}}  // namespace dials::algorithms::background
 
-#endif // DIALS_ALGORITHMS_BACKGROUND_MOSFLM_OUTLIER_REJECTOR_H
+#endif  // DIALS_ALGORITHMS_BACKGROUND_MOSFLM_OUTLIER_REJECTOR_H

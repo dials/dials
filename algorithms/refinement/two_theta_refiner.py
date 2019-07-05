@@ -187,22 +187,6 @@ class TwoThetaTarget(Target):
 
         return
 
-    # XXXX FIXME In the base class this method is hardcoded to expect three
-    # types of residual: in X, Y, and Z. Better to make the base class behave
-    # with any number of types and remove this method
-    @staticmethod
-    def _build_jacobian(d2theta_dp, nelem=None, nparam=None):
-        """construct Jacobian from lists of gradient vectors. This method may be
-        overridden for the case where these vectors use sparse storage"""
-
-        jacobian = flex.double(flex.grid(nelem, nparam))
-        # loop over parameters
-        for i in range(nparam):
-            col = d2theta_dp[i]
-            jacobian.matrix_paste_column_in_place(col, i)
-
-        return jacobian
-
     @staticmethod
     def _extract_residuals_and_weights(matches):
 

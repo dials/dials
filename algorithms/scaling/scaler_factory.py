@@ -4,7 +4,6 @@ Collection of factories for creating the scalers.
 from __future__ import absolute_import, division, print_function
 import logging
 from libtbx import Auto
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.algorithms.scaling.scaler import MultiScaler, TargetScaler, SingleScaler
 from dials.algorithms.scaling.scaling_utilities import (
@@ -25,7 +24,8 @@ def create_scaler(params, experiments, reflections):
     """Read an experimentlist and list of reflection tables and return
     an appropriate scaler. Requires experiment identifiers are correctly set in
     the experiments and reflections."""
-
+    if not reflections:
+        raise ValueError("No reflection tables provided as input")
     if len(reflections) == 1:
         scaler = SingleScalerFactory.create(params, experiments[0], reflections[0])
     else:
@@ -39,10 +39,8 @@ def create_scaler(params, experiments, reflections):
             scaler = TargetScalerFactory.create(
                 params, experiments, reflections, is_scaled_list
             )
-        elif len(reflections) > 1:  # else just make one multiscaler for all refls
+        else:  # else just make one multiscaler for all refls
             scaler = MultiScalerFactory.create(params, experiments, reflections)
-        else:
-            raise Sorry("no reflection tables found to create a scaler")
     return scaler
 
 

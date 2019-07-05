@@ -14,17 +14,14 @@
 #include <cctbx/miller.h>
 #include <dials/error.h>
 
-namespace dials { namespace af {
-
-
-namespace boost_python {
+namespace dials { namespace af { namespace boost_python {
 
   using cctbx::uctbx::unit_cell;
 
   scitbx::af::shared<double> d(
-      const scitbx::af::const_ref<unit_cell> &self,
-      const scitbx::af::const_ref< cctbx::miller::index<> > &hkl,
-      const scitbx::af::const_ref<std::size_t> index) {
+    const scitbx::af::const_ref<unit_cell> &self,
+    const scitbx::af::const_ref<cctbx::miller::index<> > &hkl,
+    const scitbx::af::const_ref<std::size_t> index) {
     DIALS_ASSERT(index.size() == hkl.size());
     scitbx::af::shared<double> result(hkl.size());
     for (std::size_t i = 0; i < hkl.size(); ++i) {
@@ -35,15 +32,12 @@ namespace boost_python {
     return result;
   }
 
-  void export_flex_unit_cell()
-  {
+  void export_flex_unit_cell() {
     using namespace boost::python;
     using boost::python::arg;
     typedef scitbx::af::boost_python::flex_wrapper<unit_cell> f_w;
-    f_w::plain("unit_cell")
-      .def("d", &d, (arg("hkl"), arg("id")));
+    f_w::plain("unit_cell").def("d", &d, (arg("hkl"), arg("id")));
     ;
   }
 
-}}} // namespace scitbx::af::boost_python
-
+}}}  // namespace dials::af::boost_python

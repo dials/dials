@@ -22,10 +22,10 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::vec3;
   using dxtbx::model::BeamBase;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
+  using scitbx::vec3;
 
   /**
    * Compute the LP correction for a single reflection. Note that the
@@ -39,20 +39,19 @@ namespace dials { namespace algorithms {
    * @param s1 The incident beam vector
    * @returns L / P The correction factor
    */
-  double lp_correction(
-      vec3<double> s0,
-      vec3<double> pn,
-      double pf,
-      vec3<double> m2,
-      vec3<double> s1) {
+  double lp_correction(vec3<double> s0,
+                       vec3<double> pn,
+                       double pf,
+                       vec3<double> m2,
+                       vec3<double> s1) {
     double s1_length = s1.length();
     double s0_length = s0.length();
     DIALS_ASSERT(s1_length > 0 && s0_length > 0);
     double L = std::abs(s1 * (m2.cross(s0))) / (s0_length * s1_length);
     double P1 = ((pn * s1) / s1_length);
-    double P2 = (1.0 - 2.0*pf) * (1.0 - P1*P1);
+    double P2 = (1.0 - 2.0 * pf) * (1.0 - P1 * P1);
     double P3 = (s1 * s0 / (s1_length * s0_length));
-    double P4 = pf * (1.0 + P3*P3);
+    double P4 = pf * (1.0 + P3 * P3);
     double P = P2 + P4;
     DIALS_ASSERT(P != 0);
     return L / P;
@@ -69,18 +68,17 @@ namespace dials { namespace algorithms {
    * @param s1 The incident beam vector
    * @returns L / P The correction factor
    */
-  double stills_lp_correction(
-      vec3<double> s0,
-      vec3<double> pn,
-      double pf,
-      vec3<double> s1) {
+  double stills_lp_correction(vec3<double> s0,
+                              vec3<double> pn,
+                              double pf,
+                              vec3<double> s1) {
     double s1_length = s1.length();
     double s0_length = s0.length();
     DIALS_ASSERT(s1_length > 0 && s0_length > 0);
     double P1 = ((pn * s1) / s1_length);
-    double P2 = (1.0 - 2.0*pf) * (1.0 - P1*P1);
+    double P2 = (1.0 - 2.0 * pf) * (1.0 - P1 * P1);
     double P3 = (s1 * s0 / (s1_length * s0_length));
-    double P4 = pf * (1.0 + P3*P3);
+    double P4 = pf * (1.0 + P3 * P3);
     double P = P2 + P4;
     DIALS_ASSERT(P != 0);
     return 1.0 / P;
@@ -95,11 +93,7 @@ namespace dials { namespace algorithms {
    * @returns QE term which needs to be divided by (i.e. is efficiency)
    */
 
-  double qe_correction(
-    double mu,
-    double t0,
-    vec3<double> s1,
-    vec3<double> n) {
+  double qe_correction(double mu, double t0, vec3<double> s1, vec3<double> n) {
     DIALS_ASSERT(mu >= 0);
     DIALS_ASSERT(t0 >= 0);
     double cos_angle = cos(n.angle(s1));
@@ -113,52 +107,43 @@ namespace dials { namespace algorithms {
    */
   class Corrections {
   public:
-
     /**
      * @param beam The beam model.
      * @param goniometer The goniometer model.
      */
-    Corrections(
-          const BeamBase &beam,
-          const Goniometer &goniometer)
-      : s0_(beam.get_s0()),
-        pn_(beam.get_polarization_normal()),
-        pf_(beam.get_polarization_fraction()),
-        m2_(goniometer.get_rotation_axis()) {
+    Corrections(const BeamBase &beam, const Goniometer &goniometer)
+        : s0_(beam.get_s0()),
+          pn_(beam.get_polarization_normal()),
+          pf_(beam.get_polarization_fraction()),
+          m2_(goniometer.get_rotation_axis()) {
       // Deprecated constructor
     }
 
+    /**
+     * @param beam The beam model.
+     * @param goniometer The goniometer model.
+     * @param detector The detector model.
+     */
+    Corrections(const BeamBase &beam,
+                const Goniometer &goniometer,
+                const Detector &detector)
+        : s0_(beam.get_s0()),
+          pn_(beam.get_polarization_normal()),
+          pf_(beam.get_polarization_fraction()),
+          m2_(goniometer.get_rotation_axis()),
+          det_(detector) {}
 
     /**
      * @param beam The beam model.
      * @param goniometer The goniometer model.
      * @param detector The detector model.
      */
-    Corrections(
-          const BeamBase &beam,
-          const Goniometer &goniometer,
-          const Detector &detector)
-      : s0_(beam.get_s0()),
-        pn_(beam.get_polarization_normal()),
-        pf_(beam.get_polarization_fraction()),
-        m2_(goniometer.get_rotation_axis()),
-        det_(detector) {
-    }
-
-    /**
-     * @param beam The beam model.
-     * @param goniometer The goniometer model.
-     * @param detector The detector model.
-     */
-    Corrections(
-          const BeamBase &beam,
-          const Detector &detector)
-      : s0_(beam.get_s0()),
-        pn_(beam.get_polarization_normal()),
-        pf_(beam.get_polarization_fraction()),
-        m2_(0,0,0),
-        det_(detector) {
-    }
+    Corrections(const BeamBase &beam, const Detector &detector)
+        : s0_(beam.get_s0()),
+          pn_(beam.get_polarization_normal()),
+          pf_(beam.get_polarization_fraction()),
+          m2_(0, 0, 0),
+          det_(detector) {}
 
     /**
      * Perform the LP correction. If no rotation axis is specified then do the
@@ -182,14 +167,10 @@ namespace dials { namespace algorithms {
      */
     double qe(vec3<double> s1, size_t p) const {
       return qe_correction(
-          det_[p].get_mu(),
-          det_[p].get_thickness(),
-          s1,
-          det_[p].get_normal());
+        det_[p].get_mu(), det_[p].get_thickness(), s1, det_[p].get_normal());
     }
 
   private:
-
     vec3<double> s0_;
     vec3<double> pn_;
     double pf_;
@@ -197,13 +178,11 @@ namespace dials { namespace algorithms {
     Detector det_;
   };
 
-
   /**
    * A class to perform corrections for multiple experiments
    */
   class CorrectionsMulti {
   public:
-
     /**
      * Add another correction class
      * @param obj The correction class
@@ -224,9 +203,8 @@ namespace dials { namespace algorithms {
      * @param id The list of experiments ids
      * @param s1 The list of incident beam vectors
      */
-    af::shared<double> lp(
-        const af::const_ref<int> &id,
-        const af::const_ref< vec3<double> > &s1) const {
+    af::shared<double> lp(const af::const_ref<int> &id,
+                          const af::const_ref<vec3<double> > &s1) const {
       DIALS_ASSERT(id.size() == s1.size());
       af::shared<double> result(id.size(), 0);
       for (std::size_t i = 0; i < id.size(); ++i) {
@@ -243,10 +221,9 @@ namespace dials { namespace algorithms {
      * @param s1 The list of incident beam vectors
      * @param p The list of panels
      */
-    af::shared<double> qe(
-        const af::const_ref<int> &id,
-        const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<std::size_t> &p) const {
+    af::shared<double> qe(const af::const_ref<int> &id,
+                          const af::const_ref<vec3<double> > &s1,
+                          const af::const_ref<std::size_t> &p) const {
       DIALS_ASSERT(id.size() == s1.size());
       DIALS_ASSERT(id.size() == p.size());
       af::shared<double> result(id.size(), 0);
@@ -259,9 +236,8 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     std::vector<Corrections> compute_;
   };
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_CORRECTIONS_H
+#endif  // DIALS_ALGORITHMS_INTEGRATION_CORRECTIONS_H

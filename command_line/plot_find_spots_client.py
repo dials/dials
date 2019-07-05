@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
 from cctbx.array_family import flex
+from cctbx import uctbx
 
 help_message = """
 """
@@ -90,12 +91,7 @@ def run(args):
     matplotlib.use("Agg")
     from matplotlib import pyplot
 
-    blue = "#3498db"
     red = "#e74c3c"
-
-    marker = "o"
-    alpha = 0.5
-    lw = 0
 
     plot = True
     table = True
@@ -257,22 +253,14 @@ def run(args):
         else:
             values.reshape(flex.grid(grid))
 
-        Z = values.as_numpy_array()
-
-        # f, (ax1, ax2) = pyplot.subplots(2)
         f, ax1 = pyplot.subplots(1)
 
         mesh1 = ax1.pcolormesh(values.as_numpy_array(), cmap=cmap, vmin=vmin, vmax=vmax)
         mesh1.cmap.set_under(color=invalid, alpha=None)
         mesh1.cmap.set_over(color=invalid, alpha=None)
-        # mesh2 = ax2.contour(Z, cmap=cmap, vmin=vmin, vmax=vmax)
-        # mesh2 = ax2.contourf(Z, cmap=cmap, vmin=vmin, vmax=vmax)
         ax1.set_aspect("equal")
         ax1.invert_yaxis()
-        # ax2.set_aspect('equal')
-        # ax2.invert_yaxis()
         pyplot.colorbar(mesh1, ax=ax1)
-        # pyplot.colorbar(mesh2, ax=ax2)
         pyplot.savefig(file_name, dpi=600)
         pyplot.clf()
 
@@ -373,13 +361,6 @@ def run(args):
         for i, d_min in enumerate(
             (estimated_d_min, d_min_distl_method_1, d_min_distl_method_2)
         ):
-            from cctbx import uctbx
-
-            d_star_sq = uctbx.d_as_d_star_sq(d_min)
-            d_star_sq.set_selected(d_star_sq == 1, 0)
-            vmin = flex.min(d_star_sq.select(d_star_sq > 0))
-            vmax = flex.max(d_star_sq)
-
             vmin = flex.min(d_min.select(d_min > 0))
             vmax = flex.max(d_min)
             cmap = pyplot.get_cmap("%s_r" % params.cmap)
@@ -409,7 +390,6 @@ def run(args):
     if flex.max(n_indexed) > 0:
         pyplot.hexbin(n_spots, n_indexed, bins="log", cmap=pyplot.cm.jet, gridsize=50)
         pyplot.colorbar()
-        # pyplot.scatter(n_spots, n_indexed, marker=marker, alpha=alpha, c=blue, lw=lw)
         xlim = pyplot.xlim()
         ylim = pyplot.ylim()
         pyplot.plot([0, max(n_spots)], [0, max(n_spots)], c=red)
@@ -424,8 +404,6 @@ def run(args):
             n_spots, fraction_indexed, bins="log", cmap=pyplot.cm.jet, gridsize=50
         )
         pyplot.colorbar()
-        # pyplot.scatter(
-        # n_spots, fraction_indexed, marker=marker, alpha=alpha, c=blue, lw=lw)
         pyplot.xlim(0, pyplot.xlim()[1])
         pyplot.ylim(0, pyplot.ylim()[1])
         pyplot.xlabel("# spots")
@@ -437,8 +415,6 @@ def run(args):
             n_indexed, fraction_indexed, bins="log", cmap=pyplot.cm.jet, gridsize=50
         )
         pyplot.colorbar()
-        # pyplot.scatter(
-        # n_indexed, fraction_indexed, marker=marker, alpha=alpha, c=blue, lw=lw)
         pyplot.xlim(0, pyplot.xlim()[1])
         pyplot.ylim(0, pyplot.ylim()[1])
         pyplot.xlabel("# indexed")
@@ -448,8 +424,6 @@ def run(args):
 
         pyplot.hexbin(n_spots, n_lattices, bins="log", cmap=pyplot.cm.jet, gridsize=50)
         pyplot.colorbar()
-        # pyplot.scatter(
-        # n_spots, n_lattices, marker=marker, alpha=alpha, c=blue, lw=lw)
         pyplot.xlim(0, pyplot.xlim()[1])
         pyplot.ylim(0, pyplot.ylim()[1])
         pyplot.xlabel("# spots")
@@ -457,8 +431,6 @@ def run(args):
         pyplot.savefig("n_spots_vs_n_lattices.png")
         pyplot.clf()
 
-    # pyplot.scatter(
-    #  estimated_d_min, d_min_distl_method_1, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.hexbin(
         estimated_d_min,
         d_min_distl_method_1,
@@ -479,8 +451,6 @@ def run(args):
     pyplot.savefig("d_min_vs_distl_method_1.png")
     pyplot.clf()
 
-    # pyplot.scatter(
-    #  estimated_d_min, d_min_distl_method_2, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.hexbin(
         estimated_d_min,
         d_min_distl_method_2,
@@ -501,8 +471,6 @@ def run(args):
     pyplot.savefig("d_min_vs_distl_method_2.png")
     pyplot.clf()
 
-    # pyplot.scatter(
-    #  d_min_distl_method_1, d_min_distl_method_2, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.hexbin(
         d_min_distl_method_1,
         d_min_distl_method_2,
@@ -525,8 +493,6 @@ def run(args):
 
     pyplot.hexbin(n_spots, estimated_d_min, bins="log", cmap=pyplot.cm.jet, gridsize=50)
     pyplot.colorbar()
-    # pyplot.scatter(
-    # n_spots, estimated_d_min, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.xlim(0, pyplot.xlim()[1])
     pyplot.ylim(0, pyplot.ylim()[1])
     pyplot.xlabel("# spots")
@@ -538,8 +504,6 @@ def run(args):
         n_spots, d_min_distl_method_1, bins="log", cmap=pyplot.cm.jet, gridsize=50
     )
     pyplot.colorbar()
-    # pyplot.scatter(
-    # n_spots, d_min_distl_method_1, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.xlim(0, pyplot.xlim()[1])
     pyplot.ylim(0, pyplot.ylim()[1])
     pyplot.xlabel("# spots")
@@ -551,8 +515,6 @@ def run(args):
         n_spots, d_min_distl_method_2, bins="log", cmap=pyplot.cm.jet, gridsize=50
     )
     pyplot.colorbar()
-    # pyplot.scatter(
-    # n_spots, d_min_distl_method_2, marker=marker, alpha=alpha, c=blue, lw=lw)
     pyplot.xlim(0, pyplot.xlim()[1])
     pyplot.ylim(0, pyplot.ylim()[1])
     pyplot.xlabel("# spots")
@@ -592,8 +554,6 @@ def unit_cell_histograms(crystals):
     for i in range(6):
         histograms.append(flex.histogram(params[i], n_slots=100))
 
-    from cctbx import uctbx
-
     median_unit_cell = uctbx.unit_cell([flex.median(p) for p in params])
     modal_unit_cell = uctbx.unit_cell(
         [h.slot_centers()[flex.max_index(h.slots())] for h in histograms]
@@ -612,10 +572,6 @@ def plot_unit_cell_histograms(crystals):
     f, axes = pyplot.subplots(3, 2, sharey=False, sharex=False)
 
     blue = "#3498db"
-    red = "#e74c3c"
-
-    max_xticks = 5
-    xloc = pyplot.MaxNLocator(max_xticks)
 
     for i, hist in enumerate(histograms):
         col, row = divmod(i, 3)

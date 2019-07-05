@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
+from dials.array_family import flex
 from dials.util import Sorry
 
 logger = logging.getLogger("dials.command_line.integrate")
@@ -259,7 +260,6 @@ class Script(object):
         # Initialise the integrator
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.algorithms.integration.integrator import IntegratorFactory
-        from dials.array_family import flex
 
         # Modify experiment list if scan range is set.
         experiments, reference = self.split_for_scan_range(
@@ -438,7 +438,6 @@ class Script(object):
 
     def process_reference(self, reference):
         """ Load the reference spots. """
-        from dials.array_family import flex
         from time import time
         from dials.util import Sorry
 
@@ -539,7 +538,6 @@ class Script(object):
 
     def sample_predictions(self, experiments, predicted, params):
         """ Select a random sample of the predicted reflections to integrate. """
-        from dials.array_family import flex
 
         nref_per_degree = params.sampling.reflections_per_degree
         min_sample_size = params.sampling.minimum_sample_size
@@ -551,7 +549,6 @@ class Script(object):
         from math import pi
 
         RAD2DEG = 180.0 / pi
-        DEG2RAD = pi / 180.0
 
         working_isel = flex.size_t()
         for iexp, exp in enumerate(experiments):
@@ -598,7 +595,6 @@ class Script(object):
         """ Update experiments when scan range is set. """
         from dxtbx.model.experiment_list import ExperimentList
         from dxtbx.model.experiment_list import Experiment
-        from dials.array_family import flex
 
         # Only do anything is the scan range is set
         if scan_range is not None and len(scan_range) > 0:

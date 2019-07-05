@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.compare_mosflm_dials
 
+from dials.array_family import flex
+
 
 def pull_reference(integrate_mtz):
     """Generate reference data set from integrate.hkl, check out the calculated
@@ -47,7 +49,6 @@ def pull_reference(integrate_mtz):
 
     xyz = []
 
-    dx = b0.detlm()[1]
     dz = b0.phiend() - b0.phistt()
     z0 = b0.phistt()
 
@@ -77,7 +78,6 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
 
 
 def pull_calculated(integrate_pkl):
-    from dials.array_family import flex  # import dependency
     import six.moves.cPickle as pickle
     import math
 
@@ -156,7 +156,6 @@ def R(calc, obs, scale=None):
 
 def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
-    from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
     uc = integrate_mtz_to_unit_cell(integrate_mtz)
@@ -224,8 +223,6 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
     print("Paired %d observations" % len(MOS))
 
-    scale = sum(MOS) / sum(DIALS)
-
     chunks = [(i, i + 1000) for i in range(0, len(MOS), 1000)]
 
     ccs = []
@@ -235,17 +232,12 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
     for chunk in chunks:
         mos = MOS[chunk[0] : chunk[1]]
         dials = DIALS[chunk[0] : chunk[1]]
-        resols = resolutions[chunk[0] : chunk[1]]
 
         if len(mos) < 100:
             break
 
         c = cc(dials, mos)
         r, s = R(dials, mos)
-        uncomment_me = """
-    print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(mos),
-                                                min(resols), max(resols),
-                                                c, r, s)"""
         ccs.append(c)
         rs.append(r)
         ss.append(s)
@@ -265,9 +257,6 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
     pyplot.plot(chunks, rs, label="R")
     pyplot.plot(chunks, ss, label="K")
     pyplot.show()
-    # pyplot.legend()
-    # pyplot.savefig('plot-vs-mosflm.png')
-    # pyplot.close()
 
     return
 

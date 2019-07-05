@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+from dials.array_family import flex
+
 schema_url = "https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml"
 
 
@@ -45,8 +47,6 @@ def make_vlen_uint(handle, name, data, description, units=None):
 
 
 def write(handle, key, data):
-    from dials.array_family import flex
-
     if key == "miller_index":
         col1, col2, col3 = zip(*list(data))
         col1 = flex.int(col1)
@@ -191,7 +191,6 @@ def write(handle, key, data):
 
 
 def read(handle, key):
-    from dials.array_family import flex
     from dxtbx.format.nexus import convert_units
     import numpy as np
 
@@ -312,8 +311,6 @@ def read(handle, key):
 
 
 def dump(entry, reflections, experiments):
-    from dials.array_family import flex
-
     print("Dumping NXreflections")
 
     # Add the feature
@@ -363,8 +360,6 @@ def dump(entry, reflections, experiments):
 
 
 def load(entry):
-    from dials.array_family import flex
-
     print("Loading NXreflections")
 
     # Check the feature is present
@@ -377,7 +372,7 @@ def load(entry):
 
     # Get the definition
     definition = refls["definition"]
-    assert definition.value == "NXreflections"
+    assert definition[()] == "NXreflections"
     assert definition.attrs["version"] == 1
 
     # The paths to the experiments

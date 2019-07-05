@@ -15,8 +15,6 @@ from math import pi
 from math import ceil
 import logging
 
-logger = logging.getLogger(__name__)
-
 import libtbx
 from scitbx import matrix
 from dials.array_family import flex
@@ -26,17 +24,20 @@ from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
+from dials.algorithms.refinement import DialsRefineConfigError
+
+from libtbx.phil import parse
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_str as outlier_phil_str,
+)
+
+logger = logging.getLogger(__name__)
 
 # constants
 RAD2DEG = 180.0 / pi
 DEG2RAD = pi / 180.0
 
 # PHIL
-from libtbx.phil import parse
-from dials.algorithms.refinement.outlier_detection.outlier_base import (
-    phil_str as outlier_phil_str,
-)
-
 format_data = {"outlier_phil": outlier_phil_str}
 phil_str = (
     """
@@ -116,33 +117,6 @@ phil_str = (
 )
 phil_scope = parse(phil_str)
 
-# helper functions
-def calculate_entering_flags(reflections, experiments):
-    """calculate entering flags for all reflections, and set them as a column
-    of the reflection table."""
-
-    # Init entering flags. These are always False for experiments that have no
-    # rotation axis.
-    enterings = flex.bool(len(reflections), False)
-
-    for iexp, exp in enumerate(experiments):
-        gonio = exp.goniometer
-        if not gonio:
-            continue
-        axis = matrix.col(gonio.get_rotation_axis())
-        s0 = matrix.col(exp.beam.get_s0())
-        # calculate a unit vector normal to the spindle-beam plane for this
-        # experiment, such that the vector placed at the centre of the Ewald sphere
-        # points to the hemisphere in which reflections cross from inside to outside
-        # of the sphere (reflections are exiting). NB this vector is in +ve Y
-        # direction when using imgCIF coordinate frame.
-        vec = s0.cross(axis)
-        sel = reflections["id"] == iexp
-        to_update = reflections["s1"].select(sel).dot(vec) < 0.0
-        enterings.set_selected(sel, to_update)
-
-    return enterings
-
 
 class BlockCalculator(object):
     """Utility class to calculate and set columns in the provided reflection
@@ -177,7 +151,7 @@ class BlockCalculator(object):
         # scan edges
         start, stop = scan.get_oscillation_range(deg=False)
         if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise Sorry("The reflections do not fill the scan range.")
+            raise DialsRefineConfigError("The reflections do not fill the scan range.")
 
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
@@ -278,7 +252,7 @@ class ReflectionManagerFactory(object):
             refman = StillsReflectionManager
             # check incompatible weighting strategy
             if params.weighting_strategy.override == "statistical":
-                raise Sorry(
+                raise DialsRefineConfigError(
                     'The "statistical" weighting strategy is not compatible '
                     "with stills refinement"
                 )
@@ -290,7 +264,7 @@ class ReflectionManagerFactory(object):
                     'The "{0}" weighting strategy is not compatible with '
                     "scan refinement"
                 ).format(params.weighting_strategy.override)
-                raise Sorry(msg)
+                raise DialsRefineConfigError(msg)
 
         # set automatic outlier rejection options
         if params.outlier.algorithm in ("auto", libtbx.Auto):
@@ -384,6 +358,7 @@ class ReflectionManager(object):
     sampling to form the working subset."""
 
     _weighting_strategy = weighting_strategies.StatisticalWeightingStrategy()
+    experiment_type = "scans"
 
     def __init__(
         self,
@@ -455,9 +430,7 @@ class ReflectionManager(object):
         self._accepted_refs_size = len(refs_to_keep)
 
         # set entering flags for all reflections
-        reflections["entering"] = calculate_entering_flags(
-            reflections, self._experiments
-        )
+        reflections.calculate_entering_flags(self._experiments)
 
         # set observed frame numbers for all reflections if not already present
         calculate_frame_numbers(reflections, self._experiments)
@@ -614,9 +587,7 @@ class ReflectionManager(object):
 
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
-                from dials.util import Sorry
-
-                raise Sorry(
+                raise DialsRefineConfigError(
                     "Experiment id {0} contains no reflections with valid "
                     "scan angles".format(iexp)
                 )
@@ -897,6 +868,7 @@ class StillsReflectionManager(ReflectionManager):
     about X, Y, DelPsi residuals"""
 
     _weighting_strategy = weighting_strategies.StillsWeightingStrategy()
+    experiment_type = "stills"
 
     def _id_refs_to_keep(self, obs_data):
         """Create a selection of observations that pass certain conditions.
@@ -913,7 +885,6 @@ class StillsReflectionManager(ReflectionManager):
         # combine selections
         sel = sel1 & sel2
         inc = flex.size_t_range(len(obs_data)).select(sel)
-        obs_data = obs_data.select(sel)
 
         return inc
 

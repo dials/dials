@@ -3,11 +3,13 @@ Extension to general active parameter manager for scaling and function
 to use a scaler to determine the correct call to the apm factories.
 """
 from __future__ import absolute_import, division, print_function
+
 from dials.algorithms.scaling.active_parameter_managers import (
     active_parameter_manager,
     ConcurrentAPMFactory,
     ConsecutiveAPMFactory,
 )
+import six
 
 
 class scaling_active_parameter_manager(active_parameter_manager):
@@ -18,7 +20,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
 
     def __init__(self, components, selection_list):
         self.constant_g_values = None
-        for component, obj in components.iteritems():
+        for component, obj in six.iteritems(components):
             if not component in selection_list:
                 n_blocks = len(obj.n_refl)
                 if self.constant_g_values is None:
@@ -37,7 +39,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
             for n_refl in components[component].n_refl:
                 obs_in_component.append(n_refl)
             n_obs.append(obs_in_component)
-        assert all([i == n_obs[0] for i in n_obs])
+        assert all(i == n_obs[0] for i in n_obs)
         n_obs = []
         for component in components:
             n_obs.append(components[component].n_refl)

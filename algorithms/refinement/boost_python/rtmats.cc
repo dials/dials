@@ -16,12 +16,10 @@ using namespace boost::python;
 
 namespace dials { namespace refinement { namespace boost_python {
 
-  void export_rtmats()
-  {
-    def("dR_from_axis_and_angle", &dR_from_axis_and_angle, (
-      arg("axis"),
-      arg("angle"),
-      arg("deg") = false));
+  void export_rtmats() {
+    def("dR_from_axis_and_angle",
+        &dR_from_axis_and_angle,
+        (arg("axis"), arg("angle"), arg("deg") = false));
   }
 
-}}} // namespace dials::refinement::boost_python
+}}}  // namespace dials::refinement::boost_python

@@ -11,7 +11,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from time import time
 
 from dials_algorithms_integration_parallel_integrator_ext import *
 
@@ -353,11 +352,7 @@ class IntegrationJob(object):
         :return: The processed data
 
         """
-        from dials.array_family import flex
         from dials.algorithms.integration.processor import job
-
-        # Get the start time
-        start_time = time()
 
         # Set the global process ID
         job.index = self.index
@@ -554,9 +549,6 @@ class IntegrationManager(object):
         Initialise the processing
 
         """
-        # Get the start time
-        start_time = time()
-
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
@@ -574,9 +566,6 @@ class IntegrationManager(object):
         # close and reopen file.
         self.experiments.nullify_all_single_file_reader_format_instances()
 
-        # Set the initialization time
-        # self.time.initialize = time() - start_time
-
     def task(self, index):
         """
         Get a task.
@@ -587,7 +576,7 @@ class IntegrationManager(object):
         reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warn("*** WARNING: no reflections in job %d ***" % index)
+            logger.warning("*** WARNING: no reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = IntegrationJob(
@@ -621,14 +610,9 @@ class IntegrationManager(object):
         Finalize the processing and finish.
 
         """
-        # Get the start time
-        start_time = time()
-
         # Check manager is finished
         assert self.manager.finished(), "Manager is not finished"
 
-        # Update the time and finalized flag
-        # self.time.finalize = time() - start_time
         self.finalized = True
 
     def result(self):
@@ -697,8 +681,12 @@ class IntegrationManager(object):
             cutoff = int(block.threshold * len(nframes))
             block_size = nframes[cutoff] * 2
             if block_size > max_block_size:
-                logger.warn("Computed block size (%s) > maximum block size (%s).")
-                logger.warn(
+                logger.warning(
+                    "Computed block size (%s) > maximum block size (%s).",
+                    block_size,
+                    max_block_size,
+                )
+                logger.warning(
                     "Setting block size to maximum; some reflections may be partial"
                 )
                 block_size = max_block_size
@@ -841,11 +829,7 @@ class ReferenceCalculatorJob(object):
         :return: The processed data
 
         """
-        from dials.array_family import flex
         from dials.algorithms.integration.processor import job
-
-        # Get the start time
-        start_time = time()
 
         # Set the global process ID
         job.index = self.index
@@ -1057,9 +1041,6 @@ class ReferenceCalculatorManager(object):
         Initialise the processing
 
         """
-        # Get the start time
-        start_time = time()
-
         # Ensure the reflections contain bounding boxes
         assert "bbox" in self.reflections, "Reflections have no bbox"
 
@@ -1083,9 +1064,6 @@ class ReferenceCalculatorManager(object):
         # close and reopen file.
         self.experiments.nullify_all_single_file_reader_format_instances()
 
-        # Set the initialization time
-        # self.time.initialize = time() - start_time
-
     def task(self, index):
         """
         Get a task.
@@ -1096,7 +1074,7 @@ class ReferenceCalculatorManager(object):
         reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warn("*** WARNING: no reflections in job %d ***" % index)
+            logger.warning("*** WARNING: no reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = ReferenceCalculatorJob(
@@ -1125,27 +1103,17 @@ class ReferenceCalculatorManager(object):
         else:
             self.reference.accumulate(result.reference)
 
-        # self.time.read += result.read_time
-        # self.time.extract += result.extract_time
-        # self.time.process += result.process_time
-        # self.time.total += result.total_time
-
     def finalize(self):
         """
         Finalize the processing and finish.
 
         """
-        # Get the start time
-        start_time = time()
-
         # Check manager is finished
         assert self.manager.finished(), "Manager is not finished"
 
         # Set the reference profiles
         self.reference = self.reference.reference_profiles()
 
-        # Update the time and finalized flag
-        # self.time.finalize = time() - start_time
         self.finalized = True
 
     def result(self):
@@ -1214,8 +1182,12 @@ class ReferenceCalculatorManager(object):
             cutoff = int(block.threshold * len(nframes))
             block_size = nframes[cutoff] * 2
             if block_size > max_block_size:
-                logger.warn("Computed block size (%s) > maximum block size (%s).")
-                logger.warn(
+                logger.warning(
+                    "Computed block size (%s) > maximum block size (%s).",
+                    block_size,
+                    max_block_size,
+                )
+                logger.warning(
                     "Setting block size to maximum; some reflections may be partial"
                 )
                 block_size = max_block_size

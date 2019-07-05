@@ -1,0 +1,3 @@
+dials-data
+pytest
+pytest-randomly

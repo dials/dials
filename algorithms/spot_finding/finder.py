@@ -508,7 +508,7 @@ class ExtractSpots(object):
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
         if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warn(_no_multiprocessing_on_windows)
+            logger.warning(_no_multiprocessing_on_windows)
             mp_nproc = 1
             mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):
@@ -614,7 +614,7 @@ class ExtractSpots(object):
         mp_nproc = self.mp_nproc
         mp_njobs = self.mp_njobs
         if os.name == "nt" and (mp_nproc > 1 or mp_njobs > 1):
-            logger.warn(_no_multiprocessing_on_windows)
+            logger.warning(_no_multiprocessing_on_windows)
             mp_nproc = 1
             mp_njobs = 1
         if mp_nproc * mp_njobs > len(imageset):

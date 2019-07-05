@@ -86,6 +86,9 @@ class SpotFinderThreshold(_Extension):
         from dials.extensions.dispersion_spotfinder_threshold_ext import (
             DispersionSpotFinderThresholdExt,
         )
+        from dials.extensions.dispersion_extended_spotfinder_threshold_ext import (
+            DispersionExtendedSpotFinderThresholdExt,
+        )
         from dials.extensions.helen_spotfinder_threshold_ext import (
             HelenSpotFinderThresholdExt,
         )
@@ -95,6 +98,7 @@ class SpotFinderThreshold(_Extension):
 
         return [
             DispersionSpotFinderThresholdExt,
+            DispersionExtendedSpotFinderThresholdExt,
             HelenSpotFinderThresholdExt,
             GlobalSpotFinderThresholdExt,
         ]

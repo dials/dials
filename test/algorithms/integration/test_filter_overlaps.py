@@ -14,9 +14,6 @@ def test_for_overlaps(dials_regression):
 
     code_bgd = MaskCode.Background | MaskCode.Valid
 
-    def is_bgd(code):
-        return (code & code_bgd) == code_bgd
-
     code_overlap = code_fgd | code_bgd
 
     def is_overlap(code):

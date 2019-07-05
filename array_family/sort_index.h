@@ -20,13 +20,13 @@ namespace dials { namespace af {
    */
   template <class RandomAccessIterator>
   struct index_less {
-    index_less(const RandomAccessIterator &v) : v_(v) {}
+    index_less(const RandomAccessIterator& v) : v_(v) {}
 
     template <class IndexType>
-    bool operator() (const IndexType& x, const IndexType& y) const {
+    bool operator()(const IndexType& x, const IndexType& y) const {
       return v_[x] < v_[y];
     }
-    const RandomAccessIterator &v_;
+    const RandomAccessIterator& v_;
   };
 
   /**
@@ -35,11 +35,10 @@ namespace dials { namespace af {
    * @returns A sorted list of indices
    */
   template <typename IndexIterator, typename RandomAccessIterator>
-  void sort_index(IndexIterator begin, IndexIterator end,
-      RandomAccessIterator v) {
+  void sort_index(IndexIterator begin, IndexIterator end, RandomAccessIterator v) {
     std::sort(begin, end, index_less<RandomAccessIterator>(v));
   }
 
-}}
+}}  // namespace dials::af
 
 #endif /* DIALS_ARRAY_FAMILY_SORT_INDEX_H */

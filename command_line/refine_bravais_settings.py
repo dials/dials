@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import os
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
-from cStringIO import StringIO
-from libtbx.phil import command_line
+from six.moves import cStringIO as StringIO
 from dials.util import Sorry
 import iotbx.phil
 
@@ -238,25 +238,23 @@ def run(args=None):
     bravais_lattice_to_space_group_table(possible_bravais_settings)
     Lfat.labelit_printout(out=s)
     logger.info(s.getvalue())
-    from json import dumps
-    from os.path import join
+    import json
 
     prefix = params.output.prefix
     if prefix is None:
         prefix = ""
     summary_file = "%sbravais_summary.json" % prefix
     logger.info("Saving summary as %s" % summary_file)
-    open(join(params.output.directory, summary_file), "wb").write(dumps(Lfat.as_dict()))
+    with open(os.path.join(params.output.directory, summary_file), "wb") as fh:
+        json.dump(Lfat.as_dict(), fh)
     from dxtbx.serialize import dump
-    import copy
 
     for subgroup in Lfat:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.json" % (prefix, soln)
         logger.info("Saving solution %i as %s" % (soln, bs_json))
-        dump.experiment_list(expts, join(params.output.directory, bs_json))
-    return
+        dump.experiment_list(expts, os.path.join(params.output.directory, bs_json))
 
 
 if __name__ == "__main__":

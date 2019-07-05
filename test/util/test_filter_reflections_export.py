@@ -30,9 +30,8 @@ from __future__ import absolute_import, division, print_function
 
 import pytest
 import mock
-from dials.util import Sorry
 from dials.array_family import flex
-from dxtbx.model import Crystal
+from dxtbx.model import Crystal, Experiment, ExperimentList
 from cctbx import miller
 from dials.util.filter_reflections import (
     FilteringReductionMethods,
@@ -47,7 +46,7 @@ from dials.util.filter_reflections import (
     _sum_sum_partials,
     _sum_scale_partials,
     AllSumPrfScaleIntensityReducer,
-    integrated_data_to_filtered_miller_array,
+    filtered_arrays_from_experiments_reflections,
     NoProfilesException,
 )
 
@@ -120,12 +119,13 @@ def generate_test_reflections_for_scaling():
 fpath = "dials.util.filter_reflections"
 
 
-def test_integrated_data_to_filtered_miller_array():
+def test_filtered_arrays_from_experiments_reflections():
     """Test the creating of a miller array from crystal and reflection table."""
     refl = generate_integrated_test_reflections()
     refl["miller_index"] = flex.miller_index(
         [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (5, 0, 0), (6, 0, 0)]
     )
+    experiments = ExperimentList()
     exp_dict = {
         "__id__": "crystal",
         "real_space_a": [1.0, 0.0, 0.0],
@@ -134,23 +134,51 @@ def test_integrated_data_to_filtered_miller_array():
         "space_group_hall_symbol": " C 2y",
     }
     crystal = Crystal.from_dict(exp_dict)
+    experiments.append(Experiment(crystal=crystal))
 
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [4.6, 2.4, 2.5]  # same as calling filter
     # for export on scale intensity reducer.
     # now try for prf
     del refl["intensity.scale.value"]
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [1.0, 2.0, 3.0]  # same as calling filter
     # for export on prf + sum intensity reducer.
     # now just for sum
     del refl["intensity.prf.value"]
-    miller_set = integrated_data_to_filtered_miller_array(refl, crystal)
+    miller_set = filtered_arrays_from_experiments_reflections(experiments, [refl])[0]
     assert isinstance(miller_set, miller.set)
     assert list(miller_set.data()) == [11.0, 12.0, 13.0, 14.0]  # same as calling
     # filter for export on prf intensity reducer.
+
+    # Now try with a bad dataset - should be filtered.
+    refl = generate_integrated_test_reflections()
+    refl["miller_index"] = flex.miller_index(
+        [(1, 0, 0), (2, 0, 0), (3, 0, 0), (4, 0, 0), (5, 0, 0), (6, 0, 0)]
+    )
+    # Trigger filtering on prf/sum, but when prf is bad - should proceed with sum
+    refl.unset_flags(flex.bool(6, True), refl.flags.integrated_prf)
+    del refl["intensity.scale.value"]
+    refl2 = generate_integrated_test_reflections()
+    refl2["partiality"] = flex.double(6, 0.0)
+    experiments = ExperimentList()
+    experiments.append(Experiment(crystal=crystal))
+    experiments.append(Experiment(crystal=crystal))
+    miller_sets = filtered_arrays_from_experiments_reflections(
+        experiments, [refl, refl2], outlier_rejection_after_filter=True
+    )
+    assert len(miller_sets) == 1
+
+    experiments = ExperimentList()
+    experiments.append(Experiment(crystal=crystal))
+    experiments.append(Experiment(crystal=crystal))
+    refl2 = generate_integrated_test_reflections()
+    refl2["partiality"] = flex.double(6, 0.0)
+    with pytest.raises(ValueError):
+        refl["partiality"] = flex.double(6, 0.0)
+        _ = filtered_arrays_from_experiments_reflections(experiments, [refl, refl2])
 
 
 def test_IntensityReducer_instantiations():
@@ -393,7 +421,7 @@ def test_ScaleIntensityReducer():
         [2.3, 2.4, 2.5]
     )
     del reflections["inverse_scale_factor"]
-    with pytest.raises(Sorry):
+    with pytest.raises(AssertionError):
         reflections = ScaleIntensityReducer.reduce_on_intensities(reflections)
 
     reflections = generate_test_reflections_for_scaling()
@@ -405,7 +433,7 @@ def test_ScaleIntensityReducer():
         [2.1 / 25.0, 2.3 / 25.0, 2.4 / 100, 2.5 / 100, 2.6 / 100, 2.7 / 100]
     )
     del reflections["inverse_scale_factor"]
-    with pytest.raises(Sorry):
+    with pytest.raises(AssertionError):
         reflections = ScaleIntensityReducer.apply_scaling_factors(reflections)
 
     reflections = generate_test_reflections_for_scaling()
@@ -492,8 +520,35 @@ def test_filter_reflection_table():
     assert "intensity.sum.value" in reflections
     assert "intensity.prf.value" in reflections
     assert "intensity.scale.value" in reflections
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         reflections = filter_reflection_table(reflections, ["bad"])
+
+    # try filter with profile option and no profiles
+    reflections = generate_integrated_test_reflections()
+    reflections.unset_flags(
+        flex.bool(reflections.size(), True), reflections.flags.integrated_prf
+    )
+    reflections = filter_reflection_table(reflections, ["sum", "profile"])
+    # should try profile but fail and so retry with just sum
+    assert "intensity.sum.value" in reflections
+    assert not "intensity.prf.value" in reflections
+
+    reflections = generate_integrated_test_reflections()
+    reflections.unset_flags(
+        flex.bool(reflections.size(), True), reflections.flags.integrated_prf
+    )
+    reflections = filter_reflection_table(reflections, ["sum", "profile", "scale"])
+    # should try profile but fail and so retry with just sum
+    assert "intensity.sum.value" in reflections
+    assert not "intensity.prf.value" in reflections
+    assert "intensity.scale.value" in reflections
+
+    reflections = generate_integrated_test_reflections()
+    reflections.unset_flags(
+        flex.bool(reflections.size(), True), reflections.flags.integrated_prf
+    )
+    with pytest.raises(ValueError):
+        _ = filter_reflection_table(reflections, ["profile"])
 
 
 def return_reflections_side_effect(reflections, *args, **kwargs):
@@ -508,7 +563,7 @@ def test_checks_in_reduce_data_for_export():
     r["id"] = flex.int([-1, -1, -1])
     r["intensity.prf.value"] = flex.double(3, 1.0)
     r["intensity.prf.variance"] = flex.double(3, 1.0)
-    with pytest.raises(Sorry):
+    with pytest.raises(ValueError):
         r = PrfIntensityReducer.filter_for_export(r)
 
     # If no valid prf, should raise NoProfilesException
@@ -533,17 +588,17 @@ def test_checks_in_reduce_data_for_export():
     # What if all ice ring
     r = generate_simple_table()
     r.set_flags(flex.bool([True, True, True]), r.flags.in_powder_ring)
-    r = PrfIntensityReducer.filter_for_export(
-        r, filter_ice_rings=True, min_isigi=1.0, partiality_threshold=0.99
-    )
-    assert r.size() == 0  # Would we want it to raise a Sorry before this?
+    with pytest.raises(ValueError):
+        _ = PrfIntensityReducer.filter_for_export(
+            r, filter_ice_rings=True, min_isigi=1.0, partiality_threshold=0.99
+        )
 
     # What if none left on SigI
     r = generate_simple_table()
-    r = PrfIntensityReducer.filter_for_export(
-        r, filter_ice_rings=False, min_isigi=4.0, partiality_threshold=0.99
-    )
-    assert r.size() == 0  # Would we want it to raise a Sorry before this?
+    with pytest.raises(ValueError):
+        _ = PrfIntensityReducer.filter_for_export(
+            r, filter_ice_rings=False, min_isigi=4.0, partiality_threshold=0.99
+        )
 
 
 def test_partial_summing_functions():
@@ -625,6 +680,8 @@ def test_sum_partial_reflections():
     r["intensity.scale.variance"] = flex.double([1.0, 1.0, 1.0])
     r["partiality"] = flex.double(3, 1.0)
     r["identifier"] = flex.int([1, 2, 3])
+    r2 = sum_partial_reflections(r)
+    assert r2 is r
     assert list(r["identifier"]) == [1, 2, 3]
 
     # Add test to check calculation in case where both prf and sum - but this

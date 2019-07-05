@@ -6,7 +6,6 @@ from dxtbx.model.beam import Beam
 from scitbx import matrix
 from dxtbx.imageset import ImageSet
 from dxtbx.imageset import ImageSetData
-from dxtbx.format.Format import Masker
 from dxtbx.format.Format import Reader
 from dxtbx.model.experiment_list import ExperimentListFactory, ExperimentListDumper
 
@@ -101,9 +100,7 @@ def test_elliptical_distortion(run_in_tmpdir):
     b = Beam((0, 0, 1), 1.0)
 
     # Create and write out a experiments
-    imageset = ImageSet(
-        ImageSetData(Reader(["non-existent.cbf"]), Masker(["non-existent.cbf"]))
-    )
+    imageset = ImageSet(ImageSetData(Reader(["non-existent.cbf"]), None))
     imageset.set_detector(d)
     imageset.set_beam(b)
     experiments = ExperimentListFactory.from_imageset_and_crystal(imageset, None)

@@ -10,12 +10,11 @@ namespace dials { namespace nexus {
 
   class NXbeam {
   public:
-
     boost::optional<double> incident_wavelength;
     boost::optional<double> flux;
-    boost::optional< af::tiny<double,4> > incident_polarization_stokes;
+    boost::optional<af::tiny<double, 4> > incident_polarization_stokes;
   };
 
-}} // namespace dials::nexus
+}}  // namespace dials::nexus
 
-#endif // DIALS_NEXUS_NXBEAM_H
+#endif  // DIALS_NEXUS_NXBEAM_H

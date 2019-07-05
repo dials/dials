@@ -29,18 +29,16 @@ namespace dials { namespace algorithms {
    * @returns The filtered image
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<2> > mean_filter(
-      const af::const_ref< FloatType, af::c_grid<2> > &image,
-      int2 size) {
-
+  af::versa<FloatType, af::c_grid<2> > mean_filter(
+    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    int2 size) {
     // Check the input is valid
     DIALS_ASSERT(size.all_gt(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // Get the summed area image
-    af::versa< FloatType, af::c_grid<2> > mean =
-      summed_area<FloatType>(image, size);
-    FloatType inv_count = 1.0 / ((FloatType)(2*size[0]+1) * (2*size[1]+1));
+    af::versa<FloatType, af::c_grid<2> > mean = summed_area<FloatType>(image, size);
+    FloatType inv_count = 1.0 / ((FloatType)(2 * size[0] + 1) * (2 * size[1] + 1));
 
     // Calculate the mean at each point
     for (std::size_t i = 0; i < mean.size(); ++i) {
@@ -65,13 +63,16 @@ namespace dials { namespace algorithms {
    * @param mask The mask to use (0 = off, 1 == on)
    * @param size The size of the filter kernel (2 * size + 1)
    * @param min_count The minimum counts to use
+   * @param ignore_masked Ignore and set mean to zero if masked
    * @returns The filtered image
    */
   template <typename FloatType>
-  af::versa< FloatType, af::c_grid<2> > mean_filter_masked(
-      const af::const_ref< FloatType, af::c_grid<2> > &image,
-      af::ref< int, af::c_grid<2> > mask, int2 size, int min_count) {
-
+  af::versa<FloatType, af::c_grid<2> > mean_filter_masked(
+    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    af::ref<int, af::c_grid<2> > mask,
+    int2 size,
+    int min_count,
+    bool ignore_masked = true) {
     // Check the input is valid
     DIALS_ASSERT(size.all_ge(0));
     DIALS_ASSERT(image.accessor().all_gt(0));
@@ -85,23 +86,23 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the summed area under the mask
-    af::versa< int, af::c_grid<2> > summed_mask = summed_area<int>(mask, size);
+    af::versa<int, af::c_grid<2> > summed_mask = summed_area<int>(mask, size);
 
     // Ensure that all masked pixels are zero in the image and update the mask
-    af::versa< FloatType, af::c_grid<2> > temp(image.accessor(),
-      af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > temp(image.accessor(),
+                                              af::init_functor_null<FloatType>());
     for (std::size_t i = 0; i < image.size(); ++i) {
       temp[i] = image[i] * (mask[i] != 0);
       mask[i] *= (summed_mask[i] >= min_count);
     }
 
     // Calculate the summed area under the image
-    af::versa< FloatType, af::c_grid<2> > summed_image =
+    af::versa<FloatType, af::c_grid<2> > summed_image =
       summed_area<FloatType>(temp.const_ref(), size);
 
     // Calculate the mean filtered image
     for (std::size_t i = 0; i < image.size(); ++i) {
-      if (mask[i]) {
+      if ((!ignore_masked || mask[i]) && summed_mask[i] >= min_count) {
         summed_image[i] /= (FloatType)summed_mask[i];
       } else {
         summed_image[i] = 0.0;
@@ -112,14 +113,12 @@ namespace dials { namespace algorithms {
     return summed_image;
   }
 
-
   /**
    * A class to calculate the mean and variance filtered images.
    */
   template <typename FloatType = double>
   class MeanAndVarianceFilter {
   public:
-
     typedef FloatType value_type;
 
     /**
@@ -127,17 +126,15 @@ namespace dials { namespace algorithms {
      * @params image The image to filter
      * @param size The size of the filter kernel (2 * size + 1)
      */
-    MeanAndVarianceFilter(
-        const af::const_ref<FloatType, af::c_grid<2> > &image,
-        int2 size) {
-
+    MeanAndVarianceFilter(const af::const_ref<FloatType, af::c_grid<2> > &image,
+                          int2 size) {
       // Check the input is valid
       DIALS_ASSERT(size.all_gt(0));
       DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Calculate the squared image
-      af::versa< FloatType, af::c_grid<2> > image_sq(image.accessor(),
-        af::init_functor_null<FloatType>());
+      af::versa<FloatType, af::c_grid<2> > image_sq(image.accessor(),
+                                                    af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < image.size(); ++i) {
         image_sq[i] = image[i] * image[i];
       }
@@ -156,9 +153,9 @@ namespace dials { namespace algorithms {
      * Calculate the mean filtered image
      * @returns The mean filtered image.
      */
-    af::versa< FloatType, af::c_grid<2> > mean() const {
-      af::versa< FloatType, af::c_grid<2> > m(sum_.accessor(),
-        af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > mean() const {
+      af::versa<FloatType, af::c_grid<2> > m(sum_.accessor(),
+                                             af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         m[i] = sum_[i] * inv_count_;
       }
@@ -169,9 +166,9 @@ namespace dials { namespace algorithms {
      * Calculate the variance filtered image
      * @returns The variance filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > variance() const {
-      af::versa< FloatType, af::c_grid<2> > v(sum_.accessor(),
-        af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > variance() const {
+      af::versa<FloatType, af::c_grid<2> > v(sum_.accessor(),
+                                             af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_count_);
       }
@@ -182,9 +179,9 @@ namespace dials { namespace algorithms {
      * Calculate the sample variance filtered image
      * @returns The sample variance filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > sample_variance() const {
-      af::versa< FloatType, af::c_grid<2> > v(sum_.accessor(),
-        af::init_functor_null<FloatType>());
+    af::versa<FloatType, af::c_grid<2> > sample_variance() const {
+      af::versa<FloatType, af::c_grid<2> > v(sum_.accessor(),
+                                             af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_countm1_);
       }
@@ -194,10 +191,9 @@ namespace dials { namespace algorithms {
   private:
     FloatType inv_count_;
     FloatType inv_countm1_;
-    af::versa< FloatType, af::c_grid<2> > sum_;
-    af::versa< FloatType, af::c_grid<2> > sq_sum_;
+    af::versa<FloatType, af::c_grid<2> > sum_;
+    af::versa<FloatType, af::c_grid<2> > sq_sum_;
   };
-
 
   /**
    * Calculate the masked mean and variance box filtered image. The
@@ -216,7 +212,6 @@ namespace dials { namespace algorithms {
   template <typename FloatType = double>
   class MeanAndVarianceFilterMasked {
   public:
-
     typedef FloatType value_type;
 
     /**
@@ -226,13 +221,12 @@ namespace dials { namespace algorithms {
      * @param size The size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts to use
      */
-    MeanAndVarianceFilterMasked(
-        const af::const_ref< FloatType, af::c_grid<2> > &image,
-        const af::const_ref< int, af::c_grid<2> > &mask,
-        int2 size, int min_count)
-      : min_count_(min_count), mask_(mask.accessor()) {
-
-      const FloatType BIG = (1 << 24); // About 1.6m counts
+    MeanAndVarianceFilterMasked(const af::const_ref<FloatType, af::c_grid<2> > &image,
+                                const af::const_ref<int, af::c_grid<2> > &mask,
+                                int2 size,
+                                int min_count)
+        : min_count_(min_count), mask_(mask.accessor()) {
+      const FloatType BIG = (1 << 24);  // About 1.6m counts
 
       // Check the input is valid
       DIALS_ASSERT(size.all_gt(0));
@@ -249,17 +243,17 @@ namespace dials { namespace algorithms {
         min_count_ = (2 * size[0] + 1) * (2 * size[1] + 1);
       } else {
         DIALS_ASSERT(min_count_ <= (2 * size[0] + 1) * (2 * size[1] + 1)
-          && min_count_ > 1);
+                     && min_count_ > 1);
       }
 
       // Calculate the summed area under the mask
       summed_mask_ = summed_area<int>(mask, size);
 
       // Ensure that all masked pixels are zero in the image and update the mask
-      af::versa< FloatType, af::c_grid<2> > temp(image.accessor(),
-        af::init_functor_null<FloatType>());
-      af::versa< FloatType, af::c_grid<2> > image_sq(image.accessor(),
-        af::init_functor_null<FloatType>());
+      af::versa<FloatType, af::c_grid<2> > temp(image.accessor(),
+                                                af::init_functor_null<FloatType>());
+      af::versa<FloatType, af::c_grid<2> > image_sq(image.accessor(),
+                                                    af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < image.size(); ++i) {
         temp[i] = image[i] * (mask[i] != 0);
         mask_[i] *= (summed_mask_[i] >= min_count_);
@@ -274,8 +268,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The mean filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > mean() const {
-      af::versa< FloatType, af::c_grid<2> > m(summed_image_.accessor(), 0);
+    af::versa<FloatType, af::c_grid<2> > mean() const {
+      af::versa<FloatType, af::c_grid<2> > m(summed_image_.accessor(), 0);
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           m[i] = summed_image_[i] / summed_mask_[i];
@@ -287,8 +281,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The variance filtered image
      */
-    af::versa< FloatType, af::c_grid<2> > variance() const {
-      af::versa< FloatType, af::c_grid<2> > v(summed_image_.accessor(), 0);
+    af::versa<FloatType, af::c_grid<2> > variance() const {
+      af::versa<FloatType, af::c_grid<2> > v(summed_image_.accessor(), 0);
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           int c = summed_mask_[i];
@@ -303,9 +297,9 @@ namespace dials { namespace algorithms {
     /**
      * @returns The sample variance filtered image.
      */
-    af::versa< FloatType, af::c_grid<2> > sample_variance() const {
+    af::versa<FloatType, af::c_grid<2> > sample_variance() const {
       DIALS_ASSERT(min_count_ > 1);
-      af::versa< FloatType, af::c_grid<2> > v(summed_image_.accessor(), 0);
+      af::versa<FloatType, af::c_grid<2> > v(summed_image_.accessor(), 0);
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           int c = summed_mask_[i];
@@ -320,25 +314,25 @@ namespace dials { namespace algorithms {
     /**
      * @returns The counts per local area
      */
-    af::versa< int, af::c_grid<2> > count() const {
+    af::versa<int, af::c_grid<2> > count() const {
       return summed_mask_;
     }
 
     /**
      * @returns The update mask
      */
-    af::versa< int, af::c_grid<2> > mask() const {
+    af::versa<int, af::c_grid<2> > mask() const {
       return mask_;
     }
 
   private:
     int min_count_;
-    af::versa< int, af::c_grid<2> > mask_;
-    af::versa< int, af::c_grid<2> > summed_mask_;
-    af::versa< FloatType, af::c_grid<2> > summed_image_;
-    af::versa< FloatType, af::c_grid<2> > summed_image_sq_;
+    af::versa<int, af::c_grid<2> > mask_;
+    af::versa<int, af::c_grid<2> > summed_mask_;
+    af::versa<FloatType, af::c_grid<2> > summed_image_;
+    af::versa<FloatType, af::c_grid<2> > summed_image_sq_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_IMAGE_FILTER_MEAN_AND_VARIANCE_H */

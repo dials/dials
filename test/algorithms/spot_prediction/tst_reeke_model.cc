@@ -6,9 +6,9 @@
 using namespace dials::algorithms::reeke_detail;
 using namespace dials::algorithms;
 
+using scitbx::mat3;
 using scitbx::vec2;
 using scitbx::vec3;
-using scitbx::mat3;
 using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
 
 template <typename T>
@@ -31,10 +31,7 @@ public:
     source = vec3<double>(0, 0, -1);
 
     double a = 50;
-    ub_beg = mat3<double>(
-        1.0 / a, 0.0, 0.0,
-        0.0, 1.0 / a, 0.0,
-        0.0, 0.0, 1.0 / a);
+    ub_beg = mat3<double>(1.0 / a, 0.0, 0.0, 0.0, 1.0 / a, 0.0, 0.0, 0.0, 1.0 / a);
 
     mat3<double> r_osc = axis_and_angle_as_matrix(axis, 1.0, true);
     ub_end = r_osc * ub_beg;
@@ -52,9 +49,7 @@ public:
 
 class TestReekePermutation {
 public:
-
-  static
-  void run() {
+  static void run() {
     ReekeInput input;
 
     permute_matrix perm(input.ub_beg, input.ub_end, input.axis, input.source);
@@ -100,17 +95,14 @@ public:
   }
 };
 
-
 class TestReekeWithConstantP {
 public:
-
-  static
-  void run() {
+  static void run() {
     ReekeInput input;
 
     permute_matrix perm(input.ub_beg, input.ub_end, input.axis, input.source);
-    compute_constant_with_p cp(perm.rlv_beg, perm.rlv_end,
-        input.axis, input.source, input.source);
+    compute_constant_with_p cp(
+      perm.rlv_beg, perm.rlv_end, input.axis, input.source, input.source);
 
     DIALS_ASSERT(almost_equal(cp.cp_beg[0], 0.0004, 1e-7));
     DIALS_ASSERT(almost_equal(cp.cp_beg[1], 0.0, 1e-7));
@@ -134,23 +126,31 @@ public:
 
 class TestReekeModel {
 public:
-
-  static
-  void run() {
+  static void run() {
     ReekeInput input;
 
-    ReekeModel model(input.ub_beg, input.ub_end,
-                      input.axis, input.source, input.source,
-                      input.dmin, input.margin);
+    ReekeModel model(input.ub_beg,
+                     input.ub_end,
+                     input.axis,
+                     input.source,
+                     input.source,
+                     input.dmin,
+                     input.margin);
 
     DIALS_ASSERT(almost_equal(model.ewald_sphere_p_limits().first[0], -100.0, 1e-7));
     DIALS_ASSERT(almost_equal(model.ewald_sphere_p_limits().first[1], 0.0, 1e-7));
-    DIALS_ASSERT(almost_equal(model.ewald_sphere_p_limits().second[0], -99.99238475781956, 1e-7));
-    DIALS_ASSERT(almost_equal(model.ewald_sphere_p_limits().second[1], 0.007615242180436521, 1e-7));
-    DIALS_ASSERT(almost_equal(model.resolution_p_limits().first[0], -11.11111111111111, 1e-7));
-    DIALS_ASSERT(almost_equal(model.resolution_p_limits().first[1], -11.11111111111111, 1e-7));
-    DIALS_ASSERT(almost_equal(model.resolution_p_limits().second[0], -11.657895054618812, 1e-7));
-    DIALS_ASSERT(almost_equal(model.resolution_p_limits().second[1], -10.5609426155232, 1e-7));
+    DIALS_ASSERT(
+      almost_equal(model.ewald_sphere_p_limits().second[0], -99.99238475781956, 1e-7));
+    DIALS_ASSERT(almost_equal(
+      model.ewald_sphere_p_limits().second[1], 0.007615242180436521, 1e-7));
+    DIALS_ASSERT(
+      almost_equal(model.resolution_p_limits().first[0], -11.11111111111111, 1e-7));
+    DIALS_ASSERT(
+      almost_equal(model.resolution_p_limits().first[1], -11.11111111111111, 1e-7));
+    DIALS_ASSERT(
+      almost_equal(model.resolution_p_limits().second[0], -11.657895054618812, 1e-7));
+    DIALS_ASSERT(
+      almost_equal(model.resolution_p_limits().second[1], -10.5609426155232, 1e-7));
 
     vec2<int> p_lim = model.p_limits();
     DIALS_ASSERT(p_lim[0] == -12);
@@ -191,7 +191,7 @@ public:
     DIALS_ASSERT(model.r_limits(-8, 26)[1] == vec2<int>(6, 12));
     DIALS_ASSERT(model.r_limits(-8, 27)[0] == vec2<int>(-8, 0));
     DIALS_ASSERT(model.r_limits(-8, 27)[1] == vec2<int>(1, 9));
-    DIALS_ASSERT(model.r_limits(-8, 28)[0] == vec2<int>(-1,  2));
+    DIALS_ASSERT(model.r_limits(-8, 28)[0] == vec2<int>(-1, 2));
     DIALS_ASSERT(model.r_limits(-8, 28).size() == 1);
     DIALS_ASSERT(model.r_limits(-7, -25)[0] == vec2<int>(-6, 7));
     DIALS_ASSERT(model.r_limits(-7, -25).size() == 1);
@@ -211,7 +211,6 @@ public:
 };
 
 int main() {
-
   TestReekePermutation::run();
   TestReekeWithConstantP::run();
   TestReekeModel::run();

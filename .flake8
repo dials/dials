@@ -1,0 +1,7 @@
+# Configure flake8 with some defaults to reduce noise
+
+[flake8]
+# Black disagrees with flake8 on a few points. Ignore those.
+ignore = E203, E266, E501, W503
+max-line-length = 88
+

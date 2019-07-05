@@ -3,14 +3,15 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import logging
+import sys
 
 logger = logging.getLogger("dials.command_line.cosym")
 
 import iotbx.phil
-from cctbx import crystal, miller
 from cctbx import sgtbx
 from dxtbx.serialize import dump
 from dials.array_family import flex
+from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -18,15 +19,13 @@ from dials.util.multi_dataset_handling import (
     select_datasets_on_ids,
 )
 from dials.util.observer import Subject
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 
 
 phil_scope = iotbx.phil.parse(
     """\
-space_group = None
-  .type = space_group
-
 partiality_threshold = 0.99
   .type = float
   .help = "Use reflections with a partiality above the threshold."
@@ -102,8 +101,11 @@ class cosym(Subject):
         )
 
         # transform models into miller arrays
-        datasets = self._miller_arrays_from_experiments_reflections(
-            self._experiments, self._reflections
+        datasets = filtered_arrays_from_experiments_reflections(
+            self.experiments,
+            self.reflections,
+            outlier_rejection_after_filter=False,
+            partiality_threshold=params.partiality_threshold,
         )
 
         self.cosym_analysis = CosymAnalysis(datasets, self.params)
@@ -147,12 +149,9 @@ class cosym(Subject):
             logger.info(cb_op)
             logger.info(datasets)
 
-        if self.cosym_analysis.best_solution is not None:
-            subgroup = self.cosym_analysis.best_solution.subgroup
-        else:
-            subgroup = None
-
-        self._apply_reindexing_operators(reindexing_ops, subgroup=subgroup)
+        self._apply_reindexing_operators(
+            reindexing_ops, subgroup=self.cosym_analysis.best_subgroup
+        )
 
     def export(self):
         """Output the datafiles for cosym.
@@ -191,62 +190,12 @@ class cosym(Subject):
                         .space_group()
                         .build_derived_acentric_group()
                     )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
+                )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-
-    def _miller_arrays_from_experiments_reflections(self, experiments, reflections):
-        miller_arrays = []
-
-        for expt, refl in zip(experiments, reflections):
-            crystal_symmetry = crystal.symmetry(
-                unit_cell=expt.crystal.get_unit_cell(),
-                space_group=expt.crystal.get_space_group(),
-            )
-
-            from dials.util.filter_reflections import filter_reflection_table
-
-            if "intensity.scale.value" in refl:
-                intensity_choice = ["scale"]
-                intensity_to_use = "scale"
-            else:
-                assert "intensity.sum.value" in refl
-                intensity_choice = ["sum"]
-                if "intensity.prf.value" in refl:
-                    intensity_choice.append("profile")
-                    intensity_to_use = "prf"
-                else:
-                    intensity_to_use = "sum"
-
-            refl = filter_reflection_table(
-                refl,
-                intensity_choice,
-                min_isigi=-5,
-                filter_ice_rings=False,
-                combine_partials=True,
-                partiality_threshold=self.params.partiality_threshold,
-            )
-            assert refl.size() > 0
-            try:
-                data = refl["intensity." + intensity_to_use + ".value"]
-                variances = refl["intensity." + intensity_to_use + ".variance"]
-            except RuntimeError:
-                data = refl["intensity.sum.value"]
-                variances = refl["intensity.sum.variance"]
-
-            miller_indices = refl["miller_index"]
-            assert variances.all_gt(0)
-            sigmas = flex.sqrt(variances)
-
-            miller_set = miller.set(
-                crystal_symmetry, miller_indices, anomalous_flag=False
-            )
-            intensities = miller.array(miller_set, data=data, sigmas=sigmas)
-            intensities.set_observation_type_xray_intensity()
-            intensities.set_info(
-                miller.array_info(source="DIALS", source_type="pickle")
-            )
-            miller_arrays.append(intensities)
-
-        return miller_arrays
 
     def _map_to_primitive(self, experiments, reflections):
         identifiers = []
@@ -255,7 +204,6 @@ class cosym(Subject):
             cb_op_to_primitive = (
                 expt.crystal.get_crystal_symmetry().change_of_basis_op_to_primitive_setting()
             )
-            expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
             sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
             if sel.count(True):
                 logger.info(
@@ -263,8 +211,9 @@ class cosym(Subject):
                     sel.count(True),
                     expt.identifier,
                 )
-                refl = refl.select(sel)
+                refl = refl.select(~sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
+            expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
 
             if self.params.space_group is not None:
                 space_group_info = self.params.space_group.primitive_setting()
@@ -298,6 +247,11 @@ class cosym(Subject):
             if self.params.space_group is not None:
                 expt.crystal.set_space_group(
                     self.params.space_group.primitive_setting().group()
+                )
+                expt.crystal.set_unit_cell(
+                    expt.crystal.get_space_group().average_unit_cell(
+                        expt.crystal.get_unit_cell()
+                    )
                 )
             else:
                 expt.crystal.set_space_group(sgtbx.space_group())
@@ -404,12 +358,21 @@ def run(args):
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
-    reflections = parse_multiple_datasets(reflections)
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
 
-    cosym_instance = cosym(
-        experiments=experiments, reflections=reflections, params=params
-    )
+    reflections = parse_multiple_datasets(reflections)
+    if len(experiments) != len(reflections):
+        raise Sorry(
+            "Mismatched number of experiments and reflection tables found: %s & %s."
+            % (len(experiments), len(reflections))
+        )
+    try:
+        experiments, reflections = assign_unique_identifiers(experiments, reflections)
+        cosym_instance = cosym(
+            experiments=experiments, reflections=reflections, params=params
+        )
+    except ValueError as e:
+        raise Sorry(e)
+
     if params.output.html:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
@@ -417,6 +380,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    with show_mail_on_error():
+        run(sys.argv[1:])

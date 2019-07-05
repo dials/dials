@@ -81,7 +81,6 @@ class TestExact(object):
         from scitbx.array_family import flex
         from scitbx import matrix
 
-        slice_size = (1, size[1], size[2])
         data = flex.double(flex.grid(size), 0)
         mask = flex.bool(flex.grid(size), True)
         params = []
@@ -114,7 +113,6 @@ class TestExact(object):
         from scitbx.array_family import flex
         from scitbx import matrix
 
-        slice_size = (1, size[1], size[2])
         data = flex.double(flex.grid(size), 0)
         mask = flex.bool(flex.grid(size), True)
         a000 = random.uniform(bmin, bmax)
@@ -255,8 +253,6 @@ class TestPoisson(object):
         sboxes, masks = self.generate_background(self.size, 1000, ma, mb, mc, md)
 
         # Compute model
-        a, b, c, d = [], [], [], []
-        va, vb, vc, vd = [], [], [], []
         pa = []
         pv = []
         for i in range(1000):

@@ -9,7 +9,6 @@ have not changed format and so on.
 
 from __future__ import absolute_import, division, print_function
 
-import copy
 import six.moves.cPickle as pickle
 import os
 from libtbx import easy_run
@@ -31,13 +30,13 @@ def test1(dials_regression, run_in_tmpdir):
     # set some old defaults
     cmd = (
         "dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 "
-        + "outlier.separate_blocks=False "
+        + "outlier.separate_blocks=False scan_varying=False "
         + experiments_path
         + " "
         + pickle_path
     )
 
-    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
@@ -77,7 +76,7 @@ def test2(dials_regression, run_in_tmpdir):
         + experiments_path
         + " "
         + pickle_path
-        + " reflections_per_degree=50 "
+        + " scan_varying=False reflections_per_degree=50 "
         " outlier.algorithm=null close_to_spindle_cutoff=0.05"
     )
     cmd2 = (
@@ -91,8 +90,8 @@ def test2(dials_regression, run_in_tmpdir):
         " set_scan_varying_errors=True"
     )
 
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    result2 = easy_run.fully_buffered(command=cmd2).raise_if_errors()
+    easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    easy_run.fully_buffered(command=cmd2).raise_if_errors()
 
     # load and check results
     with open("history.pickle", "rb") as fh:
@@ -141,7 +140,7 @@ def test3(dials_regression, run_in_tmpdir):
         "crystal.orientation.smoother.interval_width_degrees=auto "
         "crystal.unit_cell.smoother.interval_width_degrees=auto"
     )
-    result1 = easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    easy_run.fully_buffered(command=cmd1).raise_if_errors()
 
     # load and check results
     with open("history.pickle", "rb") as fh:
@@ -165,110 +164,3 @@ def test3(dials_regression, run_in_tmpdir):
     assert unit_cell == pytest.approx(
         [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000], abs=1e-3
     )
-
-
-# Test the functionality of the parameter 'auto reduction' extension modules
-def test4():
-    from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
-    from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
-    from dials_refinement_helpers_ext import surpl_iter as surpl
-
-    # Borrowed from tst_reflection_table function tst_find_overlapping
-    from random import randint, uniform
-
-    N = 110
-    r = flex.reflection_table.empty_standard(N)
-    r["panel"] = flex.size_t([1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0] * 10)
-    r["id"] = flex.int([1, 2, 1, 1, 2, 0, 1, 1, 1, 0, 1] * 10)
-    exp_ids = flex.size_t([0, 1])
-    for i in xrange(N):
-        r["miller_index"][i] = (
-            int(i // 10) - 5,
-            i % 3,
-            i % 7,
-        )  # A nice bunch of miller indices
-
-    """
-   Filter out reflections to be used by refinement. Sorting of filtered reflections require
-   to allow C++ extension modules to give performance benefit. Sorting performed within the
-   _filter_reflections step by id, then by panel.
-  """
-    r_sorted = copy.deepcopy(r)
-    r_sorted.sort("id")
-    r_sorted.subsort("id", "panel")
-
-    # Test that the unfiltered/unsorted table becomes filtered/sorted for id
-    assert (r_sorted["id"] == r["id"].select(flex.sort_permutation(r["id"]))).count(
-        False
-    ) == 0
-    # as above for panel within each id
-    for ii in [0, 1, 2]:
-        r_id = r.select(r["id"] == ii)
-        r_sorted_id = r_sorted.select(r_sorted["id"] == ii)
-        assert (
-            r_sorted_id["panel"]
-            == r_id["panel"].select(flex.sort_permutation(r_id["panel"]))
-        ).count(False) == 0
-
-    ############################################################
-    # Cut-down original algorithm for AutoReduce._surplus_reflections
-    ############################################################
-    isel = flex.size_t()
-    for exp_id in exp_ids:
-        isel.extend((r["id"] == exp_id).iselection())
-    res0 = len(isel)
-
-    # Updated algorithm for _surplus_reflections, with templated id column for int and size_t
-    res1_unsrt_int = surpl(r["id"], exp_ids).result
-    res1_int = surpl(r_sorted["id"], exp_ids).result
-    res1_sizet = surpl(flex.size_t(list(r_sorted["id"])), exp_ids).result
-
-    # Check that unsorted list fails, while sorted succeeds for both int and size_t array types
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet
-
-    ############################################################
-    # Cut-down original algorithm for AutoReduce._unit_cell_surplus_reflections
-    ############################################################
-    ref = r_sorted.select(isel)
-    h = ref["miller_index"].as_vec3_double()
-    dB_dp = flex.mat3_double([(1, 2, 3, 4, 5, 6, 7, 8, 9), (0, 1, 0, 1, 0, 1, 0, 1, 0)])
-    nref_each_param = []
-    for der in dB_dp:
-        tst = (der * h).norms()
-        nref_each_param.append((tst > 0.0).count(True))
-    res0 = min(nref_each_param)
-
-    # Updated algorithm for _unit_cell_surplus_reflections
-    res1_unsrt_int = uc_surpl(r["id"], r["miller_index"], exp_ids, dB_dp).result
-    res1_int = uc_surpl(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
-    res1_sizet = uc_surpl(
-        flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp
-    ).result
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet
-
-    ############################################################
-    # Cut-down original algorithm for AutoReduce._panel_gp_surplus_reflections
-    ############################################################
-    isel = flex.size_t()
-    pnl_ids = [0, 1]
-    for exp_id in exp_ids:
-        sub_expID = (r["id"] == exp_id).iselection()
-        sub_panels_expID = r["panel"].select(sub_expID)
-        for pnl in pnl_ids:
-            isel.extend(sub_expID.select(sub_panels_expID == pnl))
-    nref = len(isel)
-    res0 = nref
-
-    # Updated algorithm for _panel_gp_surplus_reflections
-    res1_unsrt_int = pg_surpl(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
-    res1_int = pg_surpl(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
-    res1_sizet = pg_surpl(
-        flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0
-    ).result
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet

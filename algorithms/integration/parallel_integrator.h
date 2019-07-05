@@ -35,24 +35,22 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
-  using dxtbx::model::Scan;
   using dxtbx::model::Panel;
+  using dxtbx::model::Scan;
 
   using dxtbx::ImageSweep;
   using dxtbx::format::Image;
   using dxtbx::format::ImageTile;
 
-  using dials::model::Shoebox;
   using dials::model::AdjacencyList;
+  using dials::model::Shoebox;
 
   /**
    * Class to wrap logging
    */
   class Logger {
   public:
-
-    Logger(boost::python::object obj)
-      : obj_(obj) {}
+    Logger(boost::python::object obj) : obj_(obj) {}
 
     void info(const char *str) const {
       obj_.attr("info")(str);
@@ -63,18 +61,14 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     boost::python::object obj_;
-
   };
-
 
   /**
    * A class to store the image data buffer
    */
   class BufferBase {
   public:
-
     typedef Shoebox<>::float_type float_type;
 
     /**
@@ -99,22 +93,19 @@ namespace dials { namespace algorithms {
 
         // Allocate all the data buffers
         data_.push_back(
-            af::versa< float_type, af::c_grid<3> >(
-              af::c_grid<3>(zsize, ysize, xsize)));
+          af::versa<float_type, af::c_grid<3> >(af::c_grid<3>(zsize, ysize, xsize)));
 
         // Allocate the static mask buffer
         static_mask_.push_back(
-            af::versa< bool, af::c_grid<2> >(
-              af::c_grid<2>(ysize, xsize), true));
+          af::versa<bool, af::c_grid<2> >(af::c_grid<2>(ysize, xsize), true));
       }
 
       // Set the external mask
       if (!external_mask.empty()) {
         DIALS_ASSERT(external_mask.n_tiles() == static_mask_.size());
         for (std::size_t i = 0; i < external_mask.n_tiles(); ++i) {
-          set_external_mask_for_panel(
-              external_mask.tile(i).data().const_ref(),
-              static_mask_[i].ref());
+          set_external_mask_for_panel(external_mask.tile(i).data().const_ref(),
+                                      static_mask_[i].ref());
         }
       }
     }
@@ -168,7 +159,7 @@ namespace dials { namespace algorithms {
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< float_type, af::c_grid<3> > data(std::size_t panel) const {
+    af::const_ref<float_type, af::c_grid<3> > data(std::size_t panel) const {
       DIALS_ASSERT(panel < data_.size());
       return data_[panel].const_ref();
     }
@@ -177,13 +168,12 @@ namespace dials { namespace algorithms {
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< bool, af::c_grid<2> > static_mask(std::size_t panel) const {
+    af::const_ref<bool, af::c_grid<2> > static_mask(std::size_t panel) const {
       DIALS_ASSERT(panel < static_mask_.size());
       return static_mask_[panel].const_ref();
     }
 
   protected:
-
     /**
      * Copy the data from 1 panel
      * @param src The source
@@ -191,8 +181,8 @@ namespace dials { namespace algorithms {
      * @param index The image index
      */
     template <typename InputType, typename OutputType>
-    void copy(af::const_ref< InputType, af::c_grid<2> > src,
-              af::ref < OutputType, af::c_grid<3> > dst,
+    void copy(af::const_ref<InputType, af::c_grid<2> > src,
+              af::ref<OutputType, af::c_grid<3> > dst,
               std::size_t index) {
       std::size_t ysize = src.accessor()[0];
       std::size_t xsize = src.accessor()[1];
@@ -200,7 +190,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(src.accessor()[0] == dst.accessor()[1]);
       DIALS_ASSERT(src.accessor()[1] == dst.accessor()[2]);
       for (std::size_t j = 0; j < ysize * xsize; ++j) {
-        dst[index * (xsize*ysize) + j] = src[j];
+        dst[index * (xsize * ysize) + j] = src[j];
       }
     }
 
@@ -210,14 +200,13 @@ namespace dials { namespace algorithms {
      * @param index The image index
      */
     template <typename OutputType>
-    void apply_mask_to_all_pixels(
-          af::ref< OutputType, af::c_grid<3> > dst,
-          std::size_t index) {
+    void apply_mask_to_all_pixels(af::ref<OutputType, af::c_grid<3> > dst,
+                                  std::size_t index) {
       std::size_t ysize = dst.accessor()[1];
       std::size_t xsize = dst.accessor()[2];
       DIALS_ASSERT(index < dst.accessor()[0]);
       for (std::size_t j = 0; j < ysize * xsize; ++j) {
-        dst[index * (xsize*ysize) + j] = mask_value_;
+        dst[index * (xsize * ysize) + j] = mask_value_;
       }
     }
 
@@ -228,8 +217,8 @@ namespace dials { namespace algorithms {
      * @param index The image index
      */
     template <typename OutputType>
-    void apply_mask(af::const_ref< bool, af::c_grid<2> > src,
-                    af::ref< OutputType, af::c_grid<3> > dst,
+    void apply_mask(af::const_ref<bool, af::c_grid<2> > src,
+                    af::ref<OutputType, af::c_grid<3> > dst,
                     std::size_t index) {
       std::size_t ysize = src.accessor()[0];
       std::size_t xsize = src.accessor()[1];
@@ -238,7 +227,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(src.accessor()[1] == dst.accessor()[2]);
       for (std::size_t j = 0; j < ysize * xsize; ++j) {
         if (!src[j]) {
-          dst[index * (xsize*ysize) + j] = mask_value_;
+          dst[index * (xsize * ysize) + j] = mask_value_;
         }
       }
     }
@@ -249,27 +238,24 @@ namespace dials { namespace algorithms {
      * @param panel_static_mask The static mask
      */
     void set_external_mask_for_panel(
-            const af::const_ref< bool, af::c_grid<2> > &external_mask,
-            af::ref< bool, af::c_grid<2> > panel_static_mask) {
+      const af::const_ref<bool, af::c_grid<2> > &external_mask,
+      af::ref<bool, af::c_grid<2> > panel_static_mask) {
       DIALS_ASSERT(external_mask.accessor().all_eq(panel_static_mask.accessor()));
       for (std::size_t j = 0; j < external_mask.size(); ++j) {
         panel_static_mask[j] = external_mask[j] && panel_static_mask[j];
       }
     }
 
-    std::vector< af::versa< float_type, af::c_grid<3> > > data_;
-    std::vector< af::versa< bool, af::c_grid<2> > > static_mask_;
+    std::vector<af::versa<float_type, af::c_grid<3> > > data_;
+    std::vector<af::versa<bool, af::c_grid<2> > > static_mask_;
     float_type mask_value_;
-
   };
-
 
   /**
    * A class to store the image data circular buffer
    */
   class Buffer {
   public:
-
     typedef Shoebox<>::float_type float_type;
 
     /**
@@ -284,11 +270,7 @@ namespace dials { namespace algorithms {
            std::size_t num_buffer,
            float_type mask_value,
            const Image<bool> &external_mask)
-        : buffer_base_(
-            detector,
-            num_buffer,
-            mask_value,
-            external_mask),
+        : buffer_base_(detector, num_buffer, mask_value, external_mask),
           num_images_(num_images),
           num_buffer_(num_buffer),
           buffer_range_(0, num_buffer) {
@@ -313,7 +295,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The current buffer image range
      */
-    tiny<int,2> buffer_range() const {
+    tiny<int, 2> buffer_range() const {
       return buffer_range_;
     }
 
@@ -383,9 +365,8 @@ namespace dials { namespace algorithms {
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< float_type, af::c_grid<2> > data(
-        std::size_t panel,
-        std::size_t index) const {
+    af::const_ref<float_type, af::c_grid<2> > data(std::size_t panel,
+                                                   std::size_t index) const {
       DIALS_ASSERT(index < num_images_);
       DIALS_ASSERT(index >= buffer_range_[0]);
       DIALS_ASSERT(index < buffer_range_[1]);
@@ -393,40 +374,35 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(buffer_range_[1] <= num_images_);
       DIALS_ASSERT(buffer_range_[1] > buffer_range_[0]);
       DIALS_ASSERT(buffer_range_[1] - buffer_range_[0] == num_buffer_);
-      af::const_ref< float_type, af::c_grid<3> > data_buffer = buffer_base_.data(panel);
+      af::const_ref<float_type, af::c_grid<3> > data_buffer = buffer_base_.data(panel);
       std::size_t ysize = data_buffer.accessor()[1];
       std::size_t xsize = data_buffer.accessor()[2];
       std::size_t offset = (index % num_buffer_) * (ysize * xsize);
       DIALS_ASSERT(offset < data_buffer.size());
-      return af::const_ref< float_type, af::c_grid<2> >(
-          &data_buffer[offset],
-          af::c_grid<2>(ysize, xsize));
+      return af::const_ref<float_type, af::c_grid<2> >(&data_buffer[offset],
+                                                       af::c_grid<2>(ysize, xsize));
     }
 
     /**
      * @param The panel number
      * @returns The buffer for the panel
      */
-    af::const_ref< bool, af::c_grid<2> > static_mask(std::size_t panel) const {
+    af::const_ref<bool, af::c_grid<2> > static_mask(std::size_t panel) const {
       return buffer_base_.static_mask(panel);
     }
 
   protected:
-
     BufferBase buffer_base_;
     std::size_t num_images_;
     std::size_t num_buffer_;
-    tiny<int,2> buffer_range_;
-
+    tiny<int, 2> buffer_range_;
   };
-
 
   /**
    * A class to integrate a single reflection
    */
   class ReflectionIntegrator {
   public:
-
     /**
      * Initialise the integrator
      * @param compute_mask The mask calculation function
@@ -437,23 +413,22 @@ namespace dials { namespace algorithms {
      * @param underload The underload value
      * @param overload The overload value
      */
-    ReflectionIntegrator(
-          const MaskCalculatorIface &compute_mask,
-          const BackgroundCalculatorIface &compute_background,
-          const IntensityCalculatorIface &compute_intensity,
-          const Buffer &buffer,
-          int zstart,
-          double underload,
-          double overload,
-          bool debug)
-      : compute_mask_(compute_mask),
-        compute_background_(compute_background),
-        compute_intensity_(compute_intensity),
-        buffer_(buffer),
-        zstart_(zstart),
-        underload_(underload),
-        overload_(overload),
-        debug_(debug) {}
+    ReflectionIntegrator(const MaskCalculatorIface &compute_mask,
+                         const BackgroundCalculatorIface &compute_background,
+                         const IntensityCalculatorIface &compute_intensity,
+                         const Buffer &buffer,
+                         int zstart,
+                         double underload,
+                         double overload,
+                         bool debug)
+        : compute_mask_(compute_mask),
+          compute_background_(compute_background),
+          compute_intensity_(compute_intensity),
+          buffer_(buffer),
+          zstart_(zstart),
+          underload_(underload),
+          overload_(overload),
+          debug_(debug) {}
 
     /**
      * Integrate a reflection using the following procedure:
@@ -471,29 +446,18 @@ namespace dials { namespace algorithms {
      * @param adjacent_reflections The list of adjacent reflections
      */
 
-    void operator()(
-        std::size_t index,
-        af::ref<af::Reflection> reflection_list,
-        const AdjacencyList &adjacency_list) const {
-
+    void operator()(std::size_t index,
+                    af::ref<af::Reflection> reflection_list,
+                    const AdjacencyList &adjacency_list) const {
       af::Reflection reflection;
-      std::vector< af::Reflection > adjacent_reflections;
+      std::vector<af::Reflection> adjacent_reflections;
 
       // Get the reflection data
       get_reflection(
-          index,
-          reflection_list,
-          adjacency_list,
-          reflection,
-          adjacent_reflections);
+        index, reflection_list, adjacency_list, reflection, adjacent_reflections);
 
       // Extract the shoebox data
-      extract_shoebox(
-          buffer_,
-          reflection,
-          zstart_,
-          underload_,
-          overload_);
+      extract_shoebox(buffer_, reflection, zstart_, underload_, overload_);
 
       // Compute the mask
       compute_mask_(reflection);
@@ -502,7 +466,7 @@ namespace dials { namespace algorithms {
       // And compute the mask for these reflections too.
       for (std::size_t i = 0; i < adjacent_reflections.size(); ++i) {
         adjacent_reflections[i]["bbox"] = reflection.get<int6>("bbox");
-        adjacent_reflections[i]["shoebox"] = reflection.get< Shoebox<> >("shoebox");
+        adjacent_reflections[i]["shoebox"] = reflection.get<Shoebox<> >("shoebox");
         compute_mask_(adjacent_reflections[i], true);
       }
 
@@ -536,9 +500,7 @@ namespace dials { namespace algorithms {
       set_reflection(index, reflection_list, reflection);
     }
 
-
   protected:
-
     /**
      * Get the reflection data in a thread safe manner
      * @param index The reflection index
@@ -547,12 +509,11 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection data
      * @param adjacent_reflections The adjacent reflections
      */
-    void get_reflection(
-        std::size_t index,
-        const af::const_ref<af::Reflection> &reflection_list,
-        const AdjacencyList &adjacency_list,
-        af::Reflection &reflection,
-        std::vector<af::Reflection> &adjacent_reflections) const {
+    void get_reflection(std::size_t index,
+                        const af::const_ref<af::Reflection> &reflection_list,
+                        const AdjacencyList &adjacency_list,
+                        af::Reflection &reflection,
+                        std::vector<af::Reflection> &adjacent_reflections) const {
       DIALS_ASSERT(index < reflection_list.size());
 
       // Get the lock
@@ -577,10 +538,9 @@ namespace dials { namespace algorithms {
      * @param reflection_list The reflection list
      * @param reflection The reflection data
      */
-    void set_reflection(
-        std::size_t index,
-        af::ref<af::Reflection> reflection_list,
-        const af::Reflection &reflection) const {
+    void set_reflection(std::size_t index,
+                        af::ref<af::Reflection> reflection_list,
+                        const af::Reflection &reflection) const {
       DIALS_ASSERT(index < reflection_list.size());
       boost::lock_guard<boost::mutex> guard(mutex_);
       reflection_list[index] = reflection;
@@ -591,12 +551,10 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      * @param adjacent_reflections The adjancent reflections
      */
-    void finalize_shoebox(
-          af::Reflection &reflection,
-          std::vector<af::Reflection> &adjacent_reflections,
-          double underload,
-          double overload) const {
-
+    void finalize_shoebox(af::Reflection &reflection,
+                          std::vector<af::Reflection> &adjacent_reflections,
+                          double underload,
+                          double overload) const {
       // Inspect the pixels
       inspect_pixels(reflection, underload, overload);
 
@@ -608,20 +566,18 @@ namespace dials { namespace algorithms {
      * Inspect the pixel and mask values
      * @param reflection The reflection
      */
-    void inspect_pixels(
-          af::Reflection &reflection,
-          double underload,
-          double overload) const {
-
+    void inspect_pixels(af::Reflection &reflection,
+                        double underload,
+                        double overload) const {
       typedef Shoebox<>::float_type float_type;
 
       // Get the shoebox
-      Shoebox<> &sbox = reflection.get< Shoebox<> >("shoebox");
+      Shoebox<> &sbox = reflection.get<Shoebox<> >("shoebox");
       std::size_t flags = reflection.get<std::size_t>("flags");
 
       // Get the pixel data
-      af::const_ref< float_type, af::c_grid<3> > data = sbox.data.const_ref();
-      af::const_ref< int, af::c_grid<3> > mask = sbox.mask.const_ref();
+      af::const_ref<float_type, af::c_grid<3> > data = sbox.data.const_ref();
+      af::const_ref<int, af::c_grid<3> > mask = sbox.mask.const_ref();
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
 
       // Check pixel values
@@ -672,7 +628,6 @@ namespace dials { namespace algorithms {
         if ((m & mask_code4) == mask_code4) {
           n_foreground++;
         }
-
       }
 
       // Set some information in the reflection
@@ -688,10 +643,8 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      * @param adjacent_reflections The adjancent reflections
      */
-    void delete_shoebox(
-          af::Reflection &reflection,
-          std::vector<af::Reflection> &adjacent_reflections) const {
-
+    void delete_shoebox(af::Reflection &reflection,
+                        std::vector<af::Reflection> &adjacent_reflections) const {
       // Erase the shoebox from the reflection
       if (!debug_) {
         reflection.erase("shoebox");
@@ -704,19 +657,18 @@ namespace dials { namespace algorithms {
     /**
      * Extract the shoebox data from the buffer
      */
-    void extract_shoebox(
-          const Buffer &buffer,
-          af::Reflection &reflection,
-          int zstart,
-          double underload,
-          double overload) const {
+    void extract_shoebox(const Buffer &buffer,
+                         af::Reflection &reflection,
+                         int zstart,
+                         double underload,
+                         double overload) const {
       typedef af::const_ref<Buffer::float_type, af::c_grid<2> > data_buffer_type;
       std::size_t panel = reflection.get<std::size_t>("panel");
       int6 bbox = reflection.get<int6>("bbox");
       Shoebox<> shoebox(panel, bbox);
       shoebox.allocate();
-      af::ref< float, af::c_grid<3> > data = shoebox.data.ref();
-      af::ref< int,   af::c_grid<3> > mask = shoebox.mask.ref();
+      af::ref<float, af::c_grid<3> > data = shoebox.data.ref();
+      af::ref<int, af::c_grid<3> > mask = shoebox.mask.ref();
       int x0 = bbox[0];
       int x1 = bbox[1];
       int y0 = bbox[2];
@@ -743,19 +695,15 @@ namespace dials { namespace algorithms {
           for (std::size_t i = 0; i < xsize; ++i) {
             int jj = y0 + j;
             int ii = x0 + i;
-            if (jj >= 0 &&
-                ii >= 0 &&
-                jj < data_buffer.accessor()[0] &&
-                ii < data_buffer.accessor()[1]) {
+            if (jj >= 0 && ii >= 0 && jj < data_buffer.accessor()[0]
+                && ii < data_buffer.accessor()[1]) {
               double d = data_buffer(jj, ii);
-              int m = (d > underload && d < overload)
-                ? Valid
-                : 0;
-              data(k,j,i) = d;
-              mask(k,j,i) = m;
+              int m = (d > underload && d < overload) ? Valid : 0;
+              data(k, j, i) = d;
+              mask(k, j, i) = m;
             } else {
-              data(k,j,i) = 0;
-              mask(k,j,i) = 0;
+              data(k, j, i) = 0;
+              mask(k, j, i) = 0;
             }
           }
         }
@@ -767,11 +715,10 @@ namespace dials { namespace algorithms {
      * Compute the centroid
      */
     void compute_centroid(af::Reflection &reflection) const {
-
       using dials::model::Centroid;
 
       // Get the shoebox and compute centroid
-      Shoebox<> shoebox = reflection.get< Shoebox<> >("shoebox");
+      Shoebox<> shoebox = reflection.get<Shoebox<> >("shoebox");
       Centroid centroid = shoebox.centroid_foreground_minus_background();
 
       // Set the centroid values
@@ -783,7 +730,6 @@ namespace dials { namespace algorithms {
      * Compute the summed intensity
      */
     void compute_summed_intensity(af::Reflection &reflection) const {
-
       using dials::model::Intensity;
 
       // Get flags and reset
@@ -792,7 +738,7 @@ namespace dials { namespace algorithms {
       flags &= ~af::FailedDuringSummation;
 
       // Get the shoebox and compute the summed intensity
-      Shoebox<> shoebox = reflection.get< Shoebox<> >("shoebox");
+      Shoebox<> shoebox = reflection.get<Shoebox<> >("shoebox");
       Intensity intensity = shoebox.summed_intensity();
 
       // Set the intensities
@@ -821,22 +767,19 @@ namespace dials { namespace algorithms {
     mutable boost::mutex mutex_;
   };
 
-
   /**
    * a class to sort the indices of all reflections that are fully recorded
    * after a particular image.
    */
   class Lookup {
   public:
-
     /**
      * @param bbox the bounding boxs
      * @param zstart the first frame number
      * @param n the number of frames
      */
     Lookup(af::const_ref<int6> bbox, int zstart, std::size_t n)
-      : indices_(bbox.size()) {
-
+        : indices_(bbox.size()) {
       // fill the index array
       for (std::size_t i = 0; i < indices_.size(); ++i) {
         indices_[i] = i;
@@ -845,7 +788,7 @@ namespace dials { namespace algorithms {
       // sort the indices by the final frame number
       std::sort(indices_.begin(), indices_.end(), sort_by_frame(bbox));
       DIALS_ASSERT(bbox[indices_.front()][5] - zstart >= 1);
-      DIALS_ASSERT(bbox[indices_.back()][5]  - zstart <= n);
+      DIALS_ASSERT(bbox[indices_.back()][5] - zstart <= n);
 
       // create an offset array that records the positions in the index array
       // where the frame increments such that
@@ -853,7 +796,7 @@ namespace dials { namespace algorithms {
       std::size_t i = 0;
       offset_.push_back(0);
       for (std::size_t j = 0; j < n; ++j) {
-        while (i < indices_.size() && bbox[indices_[i]][5] - zstart <= j+1) i++;
+        while (i < indices_.size() && bbox[indices_[i]][5] - zstart <= j + 1) i++;
         offset_.push_back(i);
       }
       DIALS_ASSERT(offset_.size() == n + 1);
@@ -865,15 +808,14 @@ namespace dials { namespace algorithms {
      * @returns the indices for a given frame
      */
     af::const_ref<std::size_t> indices(std::size_t z) const {
-      DIALS_ASSERT(z < offset_.size()-1);
-      DIALS_ASSERT(offset_[z+1] >= offset_[z]);
+      DIALS_ASSERT(z < offset_.size() - 1);
+      DIALS_ASSERT(offset_[z + 1] >= offset_[z]);
       std::size_t i = offset_[z];
-      std::size_t n = offset_[z+1] - i;
+      std::size_t n = offset_[z + 1] - i;
       return af::const_ref<std::size_t>(&indices_[i], n);
     }
 
   private:
-
     /**
      * helper function to sort by final bbox frame
      */
@@ -898,27 +840,20 @@ namespace dials { namespace algorithms {
    */
   class BufferManager {
   public:
-
     /**
      * Create the buffer manager
      * @param buffer The buffer to manage
      * @param bbox The bounding box
      * @param first_image The first image
      */
-    BufferManager(
-          Buffer &buffer,
-          const af::const_ref<int6> &bbox,
-          const af::const_ref<std::size_t> &flags,
-          int first_image)
-      : buffer_(buffer),
-        notifier_(
-            bbox,
-            flags,
-            first_image,
-            buffer.num_images(),
-            buffer.num_buffer()),
-        first_image_(first_image),
-        max_images_(buffer.num_buffer()) {}
+    BufferManager(Buffer &buffer,
+                  const af::const_ref<int6> &bbox,
+                  const af::const_ref<std::size_t> &flags,
+                  int first_image)
+        : buffer_(buffer),
+          notifier_(bbox, flags, first_image, buffer.num_images(), buffer.num_buffer()),
+          first_image_(first_image),
+          max_images_(buffer.num_buffer()) {}
 
     /**
      * Copy the image to the buffer when we are able to accept more images
@@ -927,7 +862,8 @@ namespace dials { namespace algorithms {
      */
     void copy_when_ready(const Image<double> &data, std::size_t index) {
       if (index >= max_images_) {
-        while (!notifier_.complete(buffer_.buffer_range()[0]));
+        while (!notifier_.complete(buffer_.buffer_range()[0]))
+          ;
       }
       buffer_.copy(data, index);
     }
@@ -940,7 +876,8 @@ namespace dials { namespace algorithms {
      */
     void copy_when_ready(const Image<double> &data, bool mask, std::size_t index) {
       if (index >= max_images_) {
-        while (!notifier_.complete(buffer_.buffer_range()[0]));
+        while (!notifier_.complete(buffer_.buffer_range()[0]))
+          ;
       }
       buffer_.copy(data, mask, index);
     }
@@ -951,9 +888,12 @@ namespace dials { namespace algorithms {
      * @param mask The image mask
      * @param index The image index
      */
-    void copy_when_ready(const Image<double> &data, const Image<bool> &mask, std::size_t index) {
+    void copy_when_ready(const Image<double> &data,
+                         const Image<bool> &mask,
+                         std::size_t index) {
       if (index >= max_images_) {
-        while (!notifier_.complete(buffer_.buffer_range()[0]));
+        while (!notifier_.complete(buffer_.buffer_range()[0]))
+          ;
       }
       buffer_.copy(data, mask, index);
     }
@@ -967,7 +907,8 @@ namespace dials { namespace algorithms {
     template <typename ThreadPoolType, typename Function>
     void post(ThreadPoolType &pool, Function function, int bbox_first_image) {
       DIALS_ASSERT(bbox_first_image >= first_image_);
-      pool.post(JobWrapper<Function>(function, notifier_, bbox_first_image-first_image_));
+      pool.post(
+        JobWrapper<Function>(function, notifier_, bbox_first_image - first_image_));
     }
 
     /**
@@ -981,14 +922,12 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-
     /**
      * A class to notify the buffer manager when all jobs that need to access an
      * image have completed so that the image can be deleted.
      */
     class Notifier {
     public:
-
       /**
        * Init the counters
        * @param bbox The reflection bbox
@@ -1071,9 +1010,8 @@ namespace dials { namespace algorithms {
       }
 
     protected:
-
       int first_image_;
-      boost::ptr_vector < boost::atomic<int> > counter_;
+      boost::ptr_vector<boost::atomic<int> > counter_;
     };
 
     /**
@@ -1082,7 +1020,6 @@ namespace dials { namespace algorithms {
     template <typename Function>
     class JobWrapper {
     public:
-
       /**
        * Construct
        * @param function The function to call
@@ -1090,9 +1027,7 @@ namespace dials { namespace algorithms {
        * @param index The image index
        */
       JobWrapper(Function function, Notifier &notifier, std::size_t index)
-        : function_(function),
-          notifier_(notifier),
-          index_(index) {}
+          : function_(function), notifier_(notifier), index_(index) {}
 
       /**
        * Call the function and notify
@@ -1113,13 +1048,11 @@ namespace dials { namespace algorithms {
     std::size_t max_images_;
   };
 
-
   /**
    * A class to perform parallel integration
    */
   class ParallelIntegrator {
   public:
-
     /**
      * Do the integration
      * @param reflections The reflection table
@@ -1133,18 +1066,16 @@ namespace dials { namespace algorithms {
      * @param use_dynamic_mask Use the dynamic mask if present
      * @param debug Add debug output
      */
-    ParallelIntegrator(
-          af::reflection_table reflections,
-          ImageSweep imageset,
-          const MaskCalculatorIface &compute_mask,
-          const BackgroundCalculatorIface &compute_background,
-          const IntensityCalculatorIface &compute_intensity,
-          const Logger &logger,
-          std::size_t nthreads,
-          std::size_t buffer_size,
-          bool use_dynamic_mask,
-          bool debug) {
-
+    ParallelIntegrator(af::reflection_table reflections,
+                       ImageSweep imageset,
+                       const MaskCalculatorIface &compute_mask,
+                       const BackgroundCalculatorIface &compute_background,
+                       const IntensityCalculatorIface &compute_intensity,
+                       const Logger &logger,
+                       std::size_t nthreads,
+                       std::size_t buffer_size,
+                       bool use_dynamic_mask,
+                       bool debug) {
       using dials::algorithms::shoebox::find_overlapping_multi_panel;
 
       // Check the input
@@ -1166,15 +1097,16 @@ namespace dials { namespace algorithms {
       // Get the starting frame and the underload/overload values
       int zstart = scan.get_array_range()[0];
       double underload = detector[0].get_trusted_range()[0];
-      double overload  = detector[0].get_trusted_range()[1];
+      double overload = detector[0].get_trusted_range()[1];
       DIALS_ASSERT(underload < overload);
       for (std::size_t i = 1; i < detector.size(); ++i) {
         DIALS_ASSERT(underload == detector[i].get_trusted_range()[0]);
-        DIALS_ASSERT(overload  == detector[i].get_trusted_range()[1]);
+        DIALS_ASSERT(overload == detector[i].get_trusted_range()[1]);
       }
 
       // Get the reflection flags and bbox
-      af::const_ref<std::size_t> panel = reflections.get<std::size_t>("panel").const_ref();
+      af::const_ref<std::size_t> panel =
+        reflections.get<std::size_t>("panel").const_ref();
       af::const_ref<int6> bbox = reflections.get<int6>("bbox").const_ref();
       af::ref<std::size_t> flags = reflections.get<std::size_t>("flags").ref();
 
@@ -1186,11 +1118,7 @@ namespace dials { namespace algorithms {
 
       // Allocate the array for the image data
       Buffer buffer(
-          detector,
-          zsize,
-          buffer_size,
-          underload,
-          imageset.get_static_mask());
+        detector, zsize, buffer_size, underload, imageset.get_static_mask());
 
       // If we have shoeboxes then delete
       if (reflections.contains("shoebox")) {
@@ -1213,29 +1141,27 @@ namespace dials { namespace algorithms {
 
       // Create the reflection integrator. This class is called for each
       // reflection to integrate the data
-      ReflectionIntegrator integrator(
-          compute_mask,
-          compute_background,
-          compute_intensity,
-          buffer,
-          zstart,
-          underload,
-          overload,
-          debug);
+      ReflectionIntegrator integrator(compute_mask,
+                                      compute_background,
+                                      compute_intensity,
+                                      buffer,
+                                      zstart,
+                                      underload,
+                                      overload,
+                                      debug);
 
       // Do the integration
-      process(
-          lookup,
-          integrator,
-          buffer,
-          reflection_array.ref(),
-          overlaps,
-          imageset,
-          bbox,
-          flags,
-          nthreads,
-          use_dynamic_mask,
-          logger);
+      process(lookup,
+              integrator,
+              buffer,
+              reflection_array.ref(),
+              overlaps,
+              imageset,
+              bbox,
+              flags,
+              nthreads,
+              use_dynamic_mask,
+              logger);
 
       // Transform the row major reflection array to the reflection table
       reflections_ = reflection_table_from_array(reflection_array.const_ref());
@@ -1252,8 +1178,8 @@ namespace dials { namespace algorithms {
      * Static method to get the memory in bytes needed
      * @param imageset the imageset class
      */
-    static
-    std::size_t compute_required_memory(ImageSweep imageset, std::size_t block_size) {
+    static std::size_t compute_required_memory(ImageSweep imageset,
+                                               std::size_t block_size) {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
       Detector detector = *imageset.get_detector();
@@ -1275,10 +1201,8 @@ namespace dials { namespace algorithms {
      * @param imageset the imageset class
      * @param max_memory_usage The maximum memory usage
      */
-    static
-    std::size_t compute_max_block_size(
-        ImageSweep imageset,
-        std::size_t max_memory_usage) {
+    static std::size_t compute_max_block_size(ImageSweep imageset,
+                                              std::size_t max_memory_usage) {
       DIALS_ASSERT(max_memory_usage > 0);
       DIALS_ASSERT(imageset.get_detector() != NULL);
       Detector detector = *imageset.get_detector();
@@ -1295,7 +1219,6 @@ namespace dials { namespace algorithms {
     }
 
   protected:
-
     /**
      * Reset the reflection flags
      */
@@ -1316,19 +1239,17 @@ namespace dials { namespace algorithms {
      * 5. For each complete reflection post a reflection integration job to the
      *    thread pool.
      */
-    void process(
-        const Lookup &lookup,
-        const ReflectionIntegrator &integrator,
-        Buffer &buffer,
-        af::ref< af::Reflection > reflections,
-        const AdjacencyList &overlaps,
-        ImageSweep imageset,
-        af::const_ref<int6> bbox,
-        af::const_ref<std::size_t> flags,
-        std::size_t nthreads,
-        bool use_dynamic_mask,
-        const Logger &logger) const {
-
+    void process(const Lookup &lookup,
+                 const ReflectionIntegrator &integrator,
+                 Buffer &buffer,
+                 af::ref<af::Reflection> reflections,
+                 const AdjacencyList &overlaps,
+                 ImageSweep imageset,
+                 af::const_ref<int6> bbox,
+                 af::const_ref<std::size_t> flags,
+                 std::size_t nthreads,
+                 bool use_dynamic_mask,
+                 const Logger &logger) const {
       using dials::util::ThreadPool;
 
       // Create the thread pool
@@ -1343,14 +1264,14 @@ namespace dials { namespace algorithms {
 
       // Loop through all the images
       for (std::size_t i = 0; i < zsize; ++i) {
-
         // Copy the image to the buffer. If the image number is greater than the
         // buffer size (i.e. we are now deleting old images) then wait for the
         // threads to finish so that we don't end up reading the wrong data
         if (imageset.is_marked_for_rejection(i)) {
           bm.copy_when_ready(imageset.get_corrected_data(i), false, i);
         } else if (use_dynamic_mask) {
-          bm.copy_when_ready(imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
+          bm.copy_when_ready(
+            imageset.get_corrected_data(i), imageset.get_dynamic_mask(i), i);
         } else {
           bm.copy_when_ready(imageset.get_corrected_data(i), i);
         }
@@ -1361,7 +1282,6 @@ namespace dials { namespace algorithms {
         // Iterate through the reflection indices
         std::size_t count = 0;
         for (std::size_t j = 0; j < indices.size(); ++j) {
-
           // Get the reflection index
           std::size_t k = indices[j];
 
@@ -1379,23 +1299,18 @@ namespace dials { namespace algorithms {
           // Post the integration job
           bm.post(
             pool,
-            boost::bind(
-              &ReflectionIntegrator::operator(),
-              boost::ref(integrator),
-              k,
-              af::ref<af::Reflection>(&reflections[0], reflections.size()),
-              boost::ref(overlaps)),
+            boost::bind(&ReflectionIntegrator::operator(),
+                        boost::ref(integrator),
+                        k,
+                        af::ref<af::Reflection>(&reflections[0], reflections.size()),
+                        boost::ref(overlaps)),
             bbox[k][4]);
         }
 
         // Print some output
         std::ostringstream ss;
-        ss << "Integrating "
-           << std::setw(5)
-           << count
-           << " reflections on image "
-           << std::setw(6)
-           << zstart + i;
+        ss << "Integrating " << std::setw(5) << count << " reflections on image "
+           << std::setw(6) << zstart + i;
         logger.info(ss.str().c_str());
       }
 
@@ -1406,20 +1321,17 @@ namespace dials { namespace algorithms {
     af::reflection_table reflections_;
   };
 
-
   /**
    * A class to manage jobs
    */
   class SimpleBlockList {
   public:
-
-
     /**
      * Compute the blocks
      * @param range The range of frames
      * @param block_size The size of the blocks
      */
-    SimpleBlockList(tiny<int,2> range, int block_size) {
+    SimpleBlockList(tiny<int, 2> range, int block_size) {
       construct_block_list(range, block_size);
       construct_frame_to_block_lookup();
     }
@@ -1428,15 +1340,15 @@ namespace dials { namespace algorithms {
      * Set the blocks
      * @params blocks The list of blocks
      */
-    SimpleBlockList(const af::const_ref< tiny<int,2> > &blocks) {
+    SimpleBlockList(const af::const_ref<tiny<int, 2> > &blocks) {
       DIALS_ASSERT(blocks.size() > 0);
       DIALS_ASSERT(blocks[0][1] > blocks[0][0]);
       blocks_.push_back(blocks[0]);
       for (std::size_t i = 1; i < blocks.size(); ++i) {
         DIALS_ASSERT(blocks[i][1] > blocks[i][0]);
-        DIALS_ASSERT(blocks[i][0] > blocks[i-1][0]);
-        DIALS_ASSERT(blocks[i][1] > blocks[i-1][1]);
-        DIALS_ASSERT(blocks[i][0] <= blocks[i-1][1]);
+        DIALS_ASSERT(blocks[i][0] > blocks[i - 1][0]);
+        DIALS_ASSERT(blocks[i][1] > blocks[i - 1][1]);
+        DIALS_ASSERT(blocks[i][0] <= blocks[i - 1][1]);
         blocks_.push_back(blocks[i]);
       }
       construct_frame_to_block_lookup();
@@ -1445,7 +1357,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The requested job
      */
-    tiny<int,2> operator[](std::size_t index) const {
+    tiny<int, 2> operator[](std::size_t index) const {
       DIALS_ASSERT(index < blocks_.size());
       return blocks_[index];
     }
@@ -1463,7 +1375,7 @@ namespace dials { namespace algorithms {
      */
     int last_frame() const {
       DIALS_ASSERT(blocks_.size() > 0);
-      return blocks_[blocks_.size()-1][1];
+      return blocks_[blocks_.size() - 1][1];
     }
 
     /**
@@ -1484,7 +1396,7 @@ namespace dials { namespace algorithms {
         index = 0;
       }
       if (index >= frame_to_block_lookup_.size()) {
-        index = frame_to_block_lookup_.size()-1;
+        index = frame_to_block_lookup_.size() - 1;
       }
       DIALS_ASSERT(index >= 0);
       DIALS_ASSERT(index < frame_to_block_lookup_.size());
@@ -1492,14 +1404,12 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     /**
      * Construct the block list
      * @param range The range of frames
      * @param block_size The block size
      */
-    void construct_block_list(tiny<int,2> range, int block_size) {
-
+    void construct_block_list(tiny<int, 2> range, int block_size) {
       // Check some input
       int frame0 = range[0];
       int frame1 = range[1];
@@ -1517,10 +1427,9 @@ namespace dials { namespace algorithms {
       // otherwise compute the blocks
       if (block_size == 1) {
         for (int f = frame0; f < frame1; ++f) {
-          blocks_.push_back(tiny<int,2>(f, f+1));
+          blocks_.push_back(tiny<int, 2>(f, f + 1));
         }
       } else {
-
         // Compute the half block size such that images are divided between
         // blocks more evenly spaced
         int nblocks = (int)std::ceil(2.0 * nframes / (double)block_size);
@@ -1547,9 +1456,9 @@ namespace dials { namespace algorithms {
         DIALS_ASSERT(indices.size() > 2);
         for (std::size_t i = 0; i < indices.size() - 2; ++i) {
           int i1 = indices[i];
-          int i2 = indices[i+2];
+          int i2 = indices[i + 2];
           DIALS_ASSERT(i2 > i1);
-          blocks_.push_back(tiny<int,2>(i1, i2));
+          blocks_.push_back(tiny<int, 2>(i1, i2));
         }
         DIALS_ASSERT(blocks_.size() > 0);
       }
@@ -1559,14 +1468,13 @@ namespace dials { namespace algorithms {
      * Construct the frame to block lookup table
      */
     void construct_frame_to_block_lookup() {
-
       // Check all the jobs overlap and are in order
-      for (std::size_t i = 0; i < blocks_.size()-1; ++i) {
+      for (std::size_t i = 0; i < blocks_.size() - 1; ++i) {
         DIALS_ASSERT(blocks_[i][0] < blocks_[i][1]);
-        DIALS_ASSERT(blocks_[i+1][0] < blocks_[i+1][1]);
-        DIALS_ASSERT(blocks_[i][0] < blocks_[i+1][0]);
-        DIALS_ASSERT(blocks_[i][1] >= blocks_[i+1][0]);
-        DIALS_ASSERT(blocks_[i][1] < blocks_[i+1][1]);
+        DIALS_ASSERT(blocks_[i + 1][0] < blocks_[i + 1][1]);
+        DIALS_ASSERT(blocks_[i][0] < blocks_[i + 1][0]);
+        DIALS_ASSERT(blocks_[i][1] >= blocks_[i + 1][0]);
+        DIALS_ASSERT(blocks_[i][1] < blocks_[i + 1][1]);
       }
 
       // set the first and last frames
@@ -1582,7 +1490,7 @@ namespace dials { namespace algorithms {
         int z1 = blocks_[closest_index][1];
         double zc = (z0 + z1) / 2.0;
         double closest_distance = std::abs(zc - (frame + 0.5));
-        for (std::size_t i = closest_index+1; i < blocks_.size(); ++i) {
+        for (std::size_t i = closest_index + 1; i < blocks_.size(); ++i) {
           int zz0 = blocks_[i][0];
           int zz1 = blocks_[i][1];
           double zzc = (zz0 + zz1) / 2.0;
@@ -1596,15 +1504,11 @@ namespace dials { namespace algorithms {
         }
         frame_to_block_lookup_.push_back(closest_index);
       }
-
     }
 
-    std::vector< tiny<int,2> > blocks_;
-    std::vector< std::size_t > frame_to_block_lookup_;
+    std::vector<tiny<int, 2> > blocks_;
+    std::vector<std::size_t> frame_to_block_lookup_;
   };
-
-
-
 
   /**
    * A lookup class to split reflections along job boundaries and to gives
@@ -1612,19 +1516,13 @@ namespace dials { namespace algorithms {
    */
   class SimpleReflectionLookup {
   public:
-
     /**
      * Construct the lookup
      * @param blocks The block list
      * @param data The reflections
      */
-    SimpleReflectionLookup(
-          const SimpleBlockList &blocks,
-          af::reflection_table data)
-        : blocks_(blocks),
-          first_frame_(0),
-          last_frame_(0) {
-
+    SimpleReflectionLookup(const SimpleBlockList &blocks, af::reflection_table data)
+        : blocks_(blocks), first_frame_(0), last_frame_(0) {
       // Split the reflections along block boundaries
       data_ = split_reflections(data);
 
@@ -1646,9 +1544,8 @@ namespace dials { namespace algorithms {
      */
     af::const_ref<std::size_t> indices(std::size_t index) const {
       DIALS_ASSERT(index < block_to_reflection_lookup_.size());
-      return af::const_ref<std::size_t>(
-          &block_to_reflection_lookup_[index][0],
-          block_to_reflection_lookup_[index].size());
+      return af::const_ref<std::size_t>(&block_to_reflection_lookup_[index][0],
+                                        block_to_reflection_lookup_[index].size());
     }
 
     /**
@@ -1665,12 +1562,11 @@ namespace dials { namespace algorithms {
      * @param index The block index
      * @returns The frames in the block
      */
-    tiny<int,2> block_range(std::size_t index) const {
+    tiny<int, 2> block_range(std::size_t index) const {
       return blocks_[index];
     }
 
   protected:
-
     /**
      * Create the lookup of reflections in each job
      */
@@ -1693,7 +1589,7 @@ namespace dials { namespace algorithms {
         int z1 = bbox[i][5];
         int zc = (int)std::floor((z0 + z1) / 2.0);
         int index = block_index(zc);
-        tiny<int,2> block = block_range(index);
+        tiny<int, 2> block = block_range(index);
         DIALS_ASSERT(z0 >= block[0]);
         DIALS_ASSERT(z1 <= block[1]);
         DIALS_ASSERT(index < block_to_reflection_lookup_.size());
@@ -1707,7 +1603,6 @@ namespace dials { namespace algorithms {
      * @returns The split reflection table
      */
     af::reflection_table split_reflections(af::reflection_table data) const {
-
       // Check input
       DIALS_ASSERT(data.is_consistent());
       DIALS_ASSERT(data.size() > 0);
@@ -1728,7 +1623,7 @@ namespace dials { namespace algorithms {
         int z0 = std::max(f0, bbox[i][4]);
         int z1 = std::min(f1, bbox[i][5]);
         DIALS_ASSERT(z0 < z1);
-        std::vector< tiny<int,2> > splits;
+        std::vector<tiny<int, 2> > splits;
         split_at_boundaries(z0, z1, std::back_inserter(splits));
         DIALS_ASSERT(splits.size() > 0);
         for (std::size_t j = 0; j < splits.size(); ++j) {
@@ -1750,9 +1645,9 @@ namespace dials { namespace algorithms {
 
       // Set the new bounding boxes
       af::boost_python::flex_table_suite::setitem_column(
-          data, "bbox", bbox_new.const_ref());
+        data, "bbox", bbox_new.const_ref());
       af::boost_python::flex_table_suite::setitem_column(
-          data, "partial_id", indices.const_ref());
+        data, "partial_id", indices.const_ref());
 
       // Return the data
       return data;
@@ -1764,7 +1659,6 @@ namespace dials { namespace algorithms {
      * @returns The split reflection table
      */
     af::reflection_table select_in_range_reflections(af::reflection_table data) const {
-
       using namespace af::boost_python::flex_table_suite;
 
       // Check if any need to be removed
@@ -1785,7 +1679,6 @@ namespace dials { namespace algorithms {
       return select_rows_index(data, indices.const_ref());
     }
 
-
     /**
      * Split a reflection at block boundaries so that most of the reflection is
      * recorded within a single block. Works recursively.
@@ -1800,7 +1693,7 @@ namespace dials { namespace algorithms {
       // Compute the block closest to the centre
       int zc = (int)std::floor((z0 + z1) / 2.0);
       int index = block_index(zc);
-      tiny<int,2> block = block_range(index);
+      tiny<int, 2> block = block_range(index);
       DIALS_ASSERT(block[0] < block[1]);
 
       // Get the min and max frame range
@@ -1815,7 +1708,7 @@ namespace dials { namespace algorithms {
       }
 
       // Append the new frame range
-      *out++ = tiny<int,2>(zmin, zmax);
+      *out++ = tiny<int, 2>(zmin, zmax);
 
       // If the reflection extends above the block range
       // then split at the upper boundary
@@ -1828,30 +1721,26 @@ namespace dials { namespace algorithms {
     int first_frame_;
     int last_frame_;
     af::reflection_table data_;
-    std::vector< std::vector<std::size_t> > block_to_reflection_lookup_;
+    std::vector<std::vector<std::size_t> > block_to_reflection_lookup_;
   };
-
 
   /**
    * A class to manage the reflections
    */
   class SimpleReflectionManager {
   public:
-
     /**
      * Construct from the job list and reflection data
      * @param jobs The job list
      * @param data The reflection data
      */
-    SimpleReflectionManager(
-          const SimpleBlockList &blocks,
-          af::reflection_table data,
-          std::size_t njobs)
-      : lookup_(blocks, data),
-        njobs_(std::min(njobs, blocks.size())),
-        finished_(njobs_, false),
-        job_blocks_(njobs_) {
-
+    SimpleReflectionManager(const SimpleBlockList &blocks,
+                            af::reflection_table data,
+                            std::size_t njobs)
+        : lookup_(blocks, data),
+          njobs_(std::min(njobs, blocks.size())),
+          finished_(njobs_, false),
+          job_blocks_(njobs_) {
       DIALS_ASSERT(njobs_ > 0);
       std::size_t nblocks = blocks.size();
       DIALS_ASSERT(nblocks > 0);
@@ -1906,22 +1795,22 @@ namespace dials { namespace algorithms {
     /**
      * @returns The block
      */
-    tiny<int,2> block(std::size_t index) const {
+    tiny<int, 2> block(std::size_t index) const {
       return lookup_.block_range(index);
     }
 
     /**
      * @returns The job
      */
-    tiny<int,2> job(std::size_t index) const {
+    tiny<int, 2> job(std::size_t index) const {
       DIALS_ASSERT(index < job_blocks_.size());
       int i0 = job_blocks_[index][0];
-      int i1 = job_blocks_[index][1]-1;
+      int i1 = job_blocks_[index][1] - 1;
       DIALS_ASSERT(i0 <= i1);
       int f0 = block(i0)[0];
       int f1 = block(i1)[1];
       DIALS_ASSERT(f0 < f1);
-      return tiny<int,2>(f0, f1);
+      return tiny<int, 2>(f0, f1);
     }
 
     /**
@@ -1940,8 +1829,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(index < finished_.size());
 
       // Get the job range
-      tiny<int,2> frame = job(index);
-      tiny<int,2> blocks = job_blocks_[index];
+      tiny<int, 2> frame = job(index);
+      tiny<int, 2> blocks = job_blocks_[index];
       DIALS_ASSERT(frame[0] < frame[1]);
       DIALS_ASSERT(blocks[0] < blocks[1]);
 
@@ -1953,17 +1842,15 @@ namespace dials { namespace algorithms {
       }
 
       // Select reflections to process in block
-      af::reflection_table data = select_rows_index(
-          lookup_.data(),
-          indices.const_ref());
+      af::reflection_table data =
+        select_rows_index(lookup_.data(), indices.const_ref());
 
       // Select other reflections from adjacent blocks. These reflections will
       // not be processed but will be used in finding adjacent reflections.
       // First select reflections from the block before.
       if (blocks[0] > 0) {
-        af::reflection_table temp = select_rows_index(
-            lookup_.data(),
-            lookup_.indices(blocks[0]-1));
+        af::reflection_table temp =
+          select_rows_index(lookup_.data(), lookup_.indices(blocks[0] - 1));
         af::ref<int6> bbox = temp["bbox"];
         af::ref<std::size_t> flags = temp["flags"];
         af::shared<std::size_t> selection;
@@ -1982,9 +1869,8 @@ namespace dials { namespace algorithms {
 
       // Now select reflections from the block after
       if (blocks[1] < size()) {
-        af::reflection_table temp = select_rows_index(
-            lookup_.data(),
-            lookup_.indices(blocks[1]));
+        af::reflection_table temp =
+          select_rows_index(lookup_.data(), lookup_.indices(blocks[1]));
         af::ref<int6> bbox = temp["bbox"];
         af::ref<std::size_t> flags = temp["flags"];
         af::shared<std::size_t> selection;
@@ -2014,8 +1900,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(finished_[index] == false);
 
       // Get the job range
-      tiny<int,2> frame = job(index);
-      tiny<int,2> blocks = job_blocks_[index];
+      tiny<int, 2> frame = job(index);
+      tiny<int, 2> blocks = job_blocks_[index];
       DIALS_ASSERT(frame[0] < frame[1]);
       DIALS_ASSERT(blocks[0] < blocks[1]);
 
@@ -2044,14 +1930,12 @@ namespace dials { namespace algorithms {
     }
 
   private:
-
     SimpleReflectionLookup lookup_;
     std::size_t njobs_;
     af::shared<bool> finished_;
-    af::shared< tiny<int,2> > job_blocks_;
-
+    af::shared<tiny<int, 2> > job_blocks_;
   };
 
-}}
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_PARALLEL_INTEGRATOR_H
+#endif  // DIALS_ALGORITHMS_INTEGRATION_PARALLEL_INTEGRATOR_H

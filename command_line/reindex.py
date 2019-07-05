@@ -26,7 +26,7 @@ from dxtbx.serialize import dump
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
-from dials.util.filter_reflections import integrated_data_to_filtered_miller_array
+from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 
 help_message = """
 
@@ -186,12 +186,11 @@ experiments file must also be specified with the option: reference= """
             params.reference.reflections
         )
 
-        test_crystal = experiments.crystals()[0]
         test_reflections = reflections[0]
 
         if (
             reference_crystal.get_space_group().type().number()
-            != test_crystal.get_space_group().type().number()
+            != experiments.crystals()[0].get_space_group().type().number()
         ):
             raise Sorry("Space group of input does not match reference")
 
@@ -225,12 +224,18 @@ experiments file must also be specified with the option: reference= """
             )
 
         # Make miller array of the two datasets
-        test_miller_set = integrated_data_to_filtered_miller_array(
-            test_reflections, test_crystal
-        )
-        reference_miller_set = integrated_data_to_filtered_miller_array(
-            reference_reflections, reference_crystal
-        )
+        try:
+            test_miller_set = filtered_arrays_from_experiments_reflections(
+                experiments, [test_reflections]
+            )[0]
+        except ValueError:
+            raise Sorry("No reflections remain after filtering the test dataset")
+        try:
+            reference_miller_set = filtered_arrays_from_experiments_reflections(
+                reference_experiments, [reference_reflections]
+            )[0]
+        except ValueError:
+            raise Sorry("No reflections remain after filtering the reference dataset")
 
         from dials.algorithms.symmetry.reindex_to_reference import (
             determine_reindex_operator_against_reference,

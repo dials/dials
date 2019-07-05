@@ -67,7 +67,7 @@ class CentroidOutlier(object):
     def set_verbosity(self, verbosity):
         self._verbosity = verbosity
 
-    def _detect_outliers(cols):
+    def _detect_outliers(self, cols):
         """Perform outlier detection using the input cols and return a flex.bool
         indicating which rows in the cols are considered outlying. cols should be
         a list of flex arrays of equal lengths"""

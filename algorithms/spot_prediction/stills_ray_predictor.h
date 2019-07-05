@@ -24,10 +24,10 @@
 
 namespace dials { namespace algorithms {
 
-  using std::sqrt;
-  using scitbx::vec3;
-  using scitbx::mat3;
   using dials::model::Ray;
+  using scitbx::mat3;
+  using scitbx::vec3;
+  using std::sqrt;
 
   /**
    *  Predict for a relp based on the current states of models of the
@@ -43,17 +43,14 @@ namespace dials { namespace algorithms {
    */
   class StillsRayPredictor {
   public:
-
     typedef cctbx::miller::index<> miller_index;
 
-    StillsRayPredictor(vec3<double> s0)
-      : s0_(s0) {
+    StillsRayPredictor(vec3<double> s0) : s0_(s0) {
       DIALS_ASSERT(s0_.length() > 0.0);
       unit_s0_ = s0_.normalize();
     }
 
     Ray operator()(miller_index h, mat3<double> ub) {
-
       // Calculate the reciprocal space vector and required unit vectors
       vec3<double> q = ub * h;
       DIALS_ASSERT(q.length() > 0);
@@ -64,7 +61,7 @@ namespace dials { namespace algorithms {
       double qq = q.length_sq();
       double lambda = 1. / s0_.length();
       double a = 0.5 * qq * lambda;
-      double tmp = qq - a*a;
+      double tmp = qq - a * a;
       DIALS_ASSERT(tmp > 0.0);
       double b = std::sqrt(tmp);
       vec3<double> r = -1.0 * a * unit_s0_ + b * c0;
@@ -72,7 +69,7 @@ namespace dials { namespace algorithms {
       // Calculate delpsi value
       vec3<double> q0 = q.normalize();
       vec3<double> q1 = q0.cross(e1).normalize();
-      delpsi_ = -1.0 * atan2(r*q1, r*q0);
+      delpsi_ = -1.0 * atan2(r * q1, r * q0);
 
       // Calculate the Ray (default zero angle and 'entering' as false)
       vec3<double> s1 = (s0_ + r).normalize() * s0_.length();
@@ -104,17 +101,14 @@ namespace dials { namespace algorithms {
    */
   class SphericalRelpStillsRayPredictor {
   public:
-
     typedef cctbx::miller::index<> miller_index;
 
-    SphericalRelpStillsRayPredictor(vec3<double> s0)
-      : s0_(s0) {
+    SphericalRelpStillsRayPredictor(vec3<double> s0) : s0_(s0) {
       DIALS_ASSERT(s0_.length() > 0.0);
       unit_s0_ = s0_.normalize();
     }
 
     Ray operator()(miller_index h, mat3<double> ub) {
-
       // Calculate the reciprocal space vector and required unit vectors
       vec3<double> q = ub * h;
       vec3<double> e1 = q.cross(unit_s0_).normalize();
@@ -124,7 +118,7 @@ namespace dials { namespace algorithms {
       double qq = q.length_sq();
       double s0len = s0_.length();
       double a = 0.5 * qq / s0len;
-      double tmp = qq - a*a;
+      double tmp = qq - a * a;
       DIALS_ASSERT(tmp > 0.0);
       double b = std::sqrt(tmp);
       vec3<double> r = -1.0 * a * unit_s0_ + b * c0;
@@ -132,7 +126,7 @@ namespace dials { namespace algorithms {
       // Calculate delpsi value
       vec3<double> q0 = q.normalize();
       vec3<double> q1 = q0.cross(e1).normalize();
-      delpsi_ = -1.0 * atan2(r*q1, r*q0);
+      delpsi_ = -1.0 * atan2(r * q1, r * q0);
 
       // Calculate epsilon value
       double qs0 = q * s0_;
@@ -160,6 +154,6 @@ namespace dials { namespace algorithms {
     double epsilon_;
   };
 
-}} // namespace dials::algorithms
+}}  // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_STILLS_RAY_PREDICTOR_H
+#endif  // DIALS_ALGORITHMS_SPOT_PREDICTION_STILLS_RAY_PREDICTOR_H

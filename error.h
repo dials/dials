@@ -17,61 +17,53 @@
 
 #define DIALS_CHECK_POINT \
   std::cout << __FILE__ << "(" << __LINE__ << ")" << std::endl << std::flush
-#define DIALS_CHECK_POINT_MSG(msg) \
-  std::cout << msg << " @ " __FILE__ << "(" << __LINE__ << ")" << std::endl << std::flush
+#define DIALS_CHECK_POINT_MSG(msg)                                          \
+  std::cout << msg << " @ " __FILE__ << "(" << __LINE__ << ")" << std::endl \
+            << std::flush
 #define DIALS_EXAMINE(A) \
   std::cout << "variable " << #A << ": " << A << std::endl << std::flush
 
 //! Common dials namespace.
 namespace dials {
 
-  //! All dials exceptions are derived from this class.
-  class error : public ::scitbx::error_base<error>
-  {
-    public:
+//! All dials exceptions are derived from this class.
+class error : public ::scitbx::error_base<error> {
+public:
+  //! General dials error message.
+  explicit error(std::string const& msg) throw()
+      : ::scitbx::error_base<error>("dials", msg) {}
 
-      //! General dials error message.
-      explicit
-      error(std::string const& msg) throw()
-        : ::scitbx::error_base<error>("dials", msg)
-      {}
-
-      //! Error message with file name and line number.
-      /*! Used by the macros below.
-       */
-      error(const char* file, long line, std::string const& msg = "",
-            bool internal = true) throw()
-        : ::scitbx::error_base<error>("dials", file, line, msg, internal)
-      {}
-  };
-
-  //! Special class for "Index out of range." exceptions.
-  /*! These exceptions are propagated to Python as IndexError.
+  //! Error message with file name and line number.
+  /*! Used by the macros below.
    */
-  class error_index : public error
-  {
-    public:
-      //! Default constructor. The message may be customized.
-      explicit
-      error_index(std::string const& msg = "Index out of range.") throw()
-        : error(msg)
-      {}
-  };
+  error(const char* file,
+        long line,
+        std::string const& msg = "",
+        bool internal = true) throw()
+      : ::scitbx::error_base<error>("dials", file, line, msg, internal) {}
+};
 
-} // namespace dials
+//! Special class for "Index out of range." exceptions.
+/*! These exceptions are propagated to Python as IndexError.
+ */
+class error_index : public error {
+public:
+  //! Default constructor. The message may be customized.
+  explicit error_index(std::string const& msg = "Index out of range.") throw()
+      : error(msg) {}
+};
+
+}  // namespace dials
 
 //! For throwing an error exception with file name, line number, and message.
-#define DIALS_ERROR(msg) \
-  SCITBX_ERROR_UTILS_REPORT(dials::error, msg)
+#define DIALS_ERROR(msg) SCITBX_ERROR_UTILS_REPORT(dials::error, msg)
 //! For throwing an "Internal Error" exception.
-#define DIALS_INTERNAL_ERROR() \
-  SCITBX_ERROR_UTILS_REPORT_INTERNAL(dials::error)
+#define DIALS_INTERNAL_ERROR() SCITBX_ERROR_UTILS_REPORT_INTERNAL(dials::error)
 //! For throwing a "Not implemented" exception.
-#define DIALS_NOT_IMPLEMENTED() \
-  SCITBX_ERROR_UTILS_REPORT_NOT_IMPLEMENTED(dials::error)
+#define DIALS_NOT_IMPLEMENTED() SCITBX_ERROR_UTILS_REPORT_NOT_IMPLEMENTED(dials::error)
 
 //! Custom dials assertion.
 #define DIALS_ASSERT(assertion) \
   SCITBX_ERROR_UTILS_ASSERT(dials::error, DIALS_ASSERT, assertion)
 
-#endif // DIALS_ERROR_H
+#endif  // DIALS_ERROR_H

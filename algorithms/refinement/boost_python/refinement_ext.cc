@@ -19,8 +19,7 @@ namespace dials { namespace refinement { namespace boost_python {
   void export_uc_surpl_iter();
   void export_surpl_iter();
 
-  BOOST_PYTHON_MODULE(dials_refinement_helpers_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_refinement_helpers_ext) {
     export_parameterisation_helpers();
     export_gallego_yezzi();
     export_mahalanobis();
@@ -34,4 +33,4 @@ namespace dials { namespace refinement { namespace boost_python {
     export_uc_surpl_iter();
     export_surpl_iter();
   }
-}}} // namespace dials::refinement::boost_python
+}}}  // namespace dials::refinement::boost_python

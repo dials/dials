@@ -4,8 +4,17 @@
 
 from __future__ import absolute_import, division, print_function
 
+import sys
+
+import libtbx.load_env
 import libtbx.phil
 from scitbx.array_family import flex
+from cctbx import uctbx
+
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+from dials.util.options import flatten_reflections
+from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 
 help_message = """
 
@@ -18,11 +27,6 @@ phil_scope = libtbx.phil.parse(
 
 
 def run(args):
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
-    import libtbx.load_env
 
     usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
 
@@ -43,9 +47,6 @@ def run(args):
         parser.print_help()
         exit(0)
 
-    from dials.algorithms.shadowing.filter import filter_shadowed_reflections
-
-    imagesets = experiments.imagesets()
     reflections = reflections[0]
     shadowed = filter_shadowed_reflections(experiments, reflections)
 
@@ -59,7 +60,7 @@ def run(args):
     )
 
     expt = experiments[0]
-    x, y, z = reflections["xyzcal.px"].parts()
+    z = reflections["xyzcal.px"].parts()[-1]
     z_ = z * expt.scan.get_oscillation()[1]
     zmin, zmax = expt.scan.get_oscillation_range()
 
@@ -67,7 +68,6 @@ def run(args):
     # hist_scan_angle.show()
 
     uc = experiments[0].crystal.get_unit_cell()
-    d_spacings = uc.d(reflections["miller_index"])
     ds2 = uc.d_star_sq(reflections["miller_index"])
 
     hist_res = flex.histogram(
@@ -87,7 +87,6 @@ def run(args):
         range=((flex.min(z_), flex.max(z_)), (flex.min(ds2), flex.max(ds2))),
     )
     yticks_dsq = flex.double(plt.yticks()[0])
-    from cctbx import uctbx
 
     yticks_d = uctbx.d_star_sq_as_d(yticks_dsq)
     plt.axes().set_yticklabels(["%.2f" % y for y in yticks_d])
@@ -116,6 +115,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

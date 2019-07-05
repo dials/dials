@@ -1,8 +1,16 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
+
+import logging
+import math
+
+import libtbx.phil
+from scitbx import matrix
+from scitbx.array_family import flex
+
+from dials.util.reciprocal_lattice import Render3d
 
 try:
     import matplotlib
@@ -12,21 +20,26 @@ except ImportError:
 # Offline backend
 matplotlib.use("Agg")
 
-import logging
-
 logger = logging.getLogger("dials.command_line.rl_png")
 
-import libtbx.phil
-from scitbx import matrix
-from scitbx.array_family import flex
+help_message = """
+Generate a png of the strong spots from spotfinding in reciprocal space.
 
-from dials.command_line.reciprocal_lattice_viewer import render_3d
-from dials.command_line.reciprocal_lattice_viewer import help_message
+Examples::
 
+  dials.rl_png experiments.json strong.pickle
+
+  dials.rl_png experiments.json indexed.pickle
+
+"""
 
 phil_scope = libtbx.phil.parse(
     """
-include scope dials.command_line.reciprocal_lattice_viewer.phil_scope
+include scope dials.util.reciprocal_lattice.phil_scope
+
+marker_size = 5
+  .type = int(value_min=1)
+
 basis_vector_search {
   n_solutions = 3
     .type = int
@@ -40,17 +53,9 @@ plot {
 )
 
 
-def settings():
-    return phil_scope.fetch().extract()
-
-
-class ReciprocalLatticePng(render_3d):
+class ReciprocalLatticePng(Render3d):
     def __init__(self, settings=None):
-        render_3d.__init__(self)
-        if settings is not None:
-            self.settings = settings
-        else:
-            self.settings = settings()
+        Render3d.__init__(self, settings=settings)
         self.viewer = PngScene(settings=self.settings)
 
 
@@ -73,14 +78,16 @@ class PngScene(object):
         self.points = points
 
     def set_colors(self, colors):
-        import math
-
         # convert whites to black (background is white)
         colors.set_selected((colors.norms() == math.sqrt(3)), (0, 0, 0))
         self.colors = colors
 
     def set_palette(self, palette):
         self.palette = palette
+
+    def set_reciprocal_lattice_vectors(self, *args, **kwargs):
+        # we do not draw reciprocal lattice vectors at this time
+        pass
 
     def project_2d(self, n):
         d = self.points.dot(n.elems)
@@ -121,17 +128,13 @@ class PngScene(object):
         pyplot.close()
 
 
-def run(args):
-
+def run():
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     from dials.util import log
-    import libtbx.load_env
 
-    usage = "%s [options] experiments.json reflections.pickle" % (
-        libtbx.env.dispatcher_name
-    )
+    usage = "dials.rl_png [options] experiments.json reflections.pickle"
 
     parser = OptionParser(
         usage=usage,
@@ -155,7 +158,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -164,7 +167,7 @@ def run(args):
     imagesets = experiments.imagesets()
 
     f = ReciprocalLatticePng(settings=params)
-    f.load_models(imagesets, reflections, None)
+    f.load_models(experiments, reflections)
 
     imageset = imagesets[0]
     rotation_axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
@@ -173,9 +176,6 @@ def run(args):
     e1 = rotation_axis.normalize()
     e2 = s0.normalize()
     e3 = e1.cross(e2).normalize()
-    # print e1
-    # print e2
-    # print e3
 
     f.viewer.plot("rl_rotation_axis.png", n=e1.elems)
     f.viewer.plot("rl_beam_vector", n=e2.elems)
@@ -186,9 +186,6 @@ def run(args):
     if experiments.crystals().count(None) < len(experiments):
         for i, c in enumerate(experiments.crystals()):
             A = matrix.sqr(c.get_A())
-            astar = A[:3]
-            bstar = A[3:6]
-            cstar = A[6:9]
 
             direct_matrix = A.inverse()
             a = direct_matrix[:3]
@@ -208,8 +205,6 @@ def run(args):
 
         hardcoded_phil = dps_phil_scope.extract()
         hardcoded_phil.d_min = params.d_min
-
-        imageset = imagesets[0]
 
         if "imageset_id" not in reflections:
             reflections["imageset_id"] = reflections["id"]
@@ -239,14 +234,8 @@ def run(args):
         solutions = [matrix.col(v) for v in result["solutions"]]
         for i in range(min(n_solutions, len(solutions))):
             v = solutions[i]
-            # if i > 0:
-            # for v1 in solutions[:i-1]:
-            # angle = v.angle(v1, deg=True)
-            # print angle
             f.viewer.plot("rl_solution_%s.png" % (i + 1), n=v.elems)
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    run()

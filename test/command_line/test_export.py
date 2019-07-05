@@ -73,7 +73,6 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     joint_refl.as_file("tmp_refl.pickle")
 
     # Now run
-    os.environ["DIALS_EXPORT_DO_NOT_CHECK_FORMAT"] = "True"
     result = procrunner.run(
         [
             "dials.export",
@@ -82,6 +81,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
             "format=mtz",
             "mtz.hklout=unmerged.mtz",
         ],
+        environment_override={"DIALS_EXPORT_DO_NOT_CHECK_FORMAT": "True"},
         working_directory=run_in_tmpdir.strpath,
     )
     assert result["exitcode"] == 0

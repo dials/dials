@@ -26,19 +26,19 @@
 
 namespace dials { namespace algorithms { namespace filter {
 
-  using scitbx::vec2;
-  using scitbx::vec3;
-  using scitbx::af::tiny;
-  using scitbx::af::small;
-  using scitbx::af::int6;
-  using dxtbx::model::Goniometer;
-  using dxtbx::model::BeamBase;
-  using dxtbx::model::Detector;
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::algorithms::profile_model::gaussian_rs::zeta_factor;
-  using dials::model::Valid;
   using dials::model::Foreground;
   using dials::model::Shoebox;
+  using dials::model::Valid;
+  using dxtbx::model::BeamBase;
+  using dxtbx::model::Detector;
+  using dxtbx::model::Goniometer;
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::af::int6;
+  using scitbx::af::small;
+  using scitbx::af::tiny;
 
   /**
    * Calculate the zeta factor and check its absolute value is above the
@@ -49,9 +49,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param zeta_min The minimum allowed zeta value
    * @returns True/False, zeta is valid
    */
-  inline
-  bool is_zeta_valid(vec3<double> m2, vec3<double> s0, vec3<double> s1,
-      double zeta_min) {
+  inline bool is_zeta_valid(vec3<double> m2,
+                            vec3<double> s0,
+                            vec3<double> s1,
+                            double zeta_min) {
     return std::abs(zeta_factor(m2, s0, s1)) >= zeta_min;
   }
 
@@ -62,8 +63,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param zeta_min The minimum allowed zeta value
    * @returns True/False, zeta is valid
    */
-  inline
-  bool is_zeta_valid(const CoordinateSystem &cs, double zeta_min) {
+  inline bool is_zeta_valid(const CoordinateSystem &cs, double zeta_min) {
     return std::abs(cs.zeta()) >= zeta_min;
   }
 
@@ -76,9 +76,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param zeta_min The minimum allowed zeta value
    * @returns True/False, zeta is valid
    */
-  inline
-  bool is_zeta_valid(const Goniometer &g, const BeamBase &b, vec3<double> s1,
-      double zeta_min) {
+  inline bool is_zeta_valid(const Goniometer &g,
+                            const BeamBase &b,
+                            vec3<double> s1,
+                            double zeta_min) {
     return is_zeta_valid(g.get_rotation_axis(), b.get_s0(), s1, zeta_min);
   }
 
@@ -95,9 +96,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the small angle approximation is valid
    */
-  inline
-  bool is_xds_small_angle_valid(vec3<double> m2, vec3<double> s0,
-      vec3<double> s1, double delta_m) {
+  inline bool is_xds_small_angle_valid(vec3<double> m2,
+                                       vec3<double> s0,
+                                       vec3<double> s1,
+                                       double delta_m) {
     vec3<double> ps = (s1 - s0).normalize();
     vec3<double> e1 = s1.cross(s0).normalize();
     vec3<double> e3 = (s1 + s0).normalize();
@@ -105,7 +107,7 @@ namespace dials { namespace algorithms { namespace filter {
     double m2e3 = m2 * e3;
     double m2ps = m2 * ps;
     double c3 = -std::abs(delta_m);
-    return (m2e1*m2e1 + 2.0*c3*m2e3*m2ps - c3*c3) >= 0.0;
+    return (m2e1 * m2e1 + 2.0 * c3 * m2e3 * m2ps - c3 * c3) >= 0.0;
   }
 
   /**
@@ -119,8 +121,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the small angle approximation is valid
    */
-  inline
-  bool is_xds_small_angle_valid(const CoordinateSystem &cs, double delta_m) {
+  inline bool is_xds_small_angle_valid(const CoordinateSystem &cs, double delta_m) {
     vec3<double> m2 = cs.m2();
     vec3<double> ps = cs.p_star().normalize();
     vec3<double> e1 = cs.e1_axis();
@@ -129,7 +130,7 @@ namespace dials { namespace algorithms { namespace filter {
     double m2e3 = m2 * e3;
     double m2ps = m2 * ps;
     double c3 = -std::abs(delta_m);
-    return (m2e1*m2e1 + 2.0*c3*m2e3*m2ps - c3*c3) >= 0.0;
+    return (m2e1 * m2e1 + 2.0 * c3 * m2e3 * m2ps - c3 * c3) >= 0.0;
   }
 
   /**
@@ -145,11 +146,11 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the small angle approximation is valid
    */
-  inline
-  bool is_xds_small_angle_valid(const Goniometer &g, const BeamBase &b,
-      vec3<double> s1, double delta_m) {
-    return is_xds_small_angle_valid(g.get_rotation_axis(), b.get_s0(),
-      s1, delta_m);
+  inline bool is_xds_small_angle_valid(const Goniometer &g,
+                                       const BeamBase &b,
+                                       vec3<double> s1,
+                                       double delta_m) {
+    return is_xds_small_angle_valid(g.get_rotation_axis(), b.get_s0(), s1, delta_m);
   }
 
   /**
@@ -161,9 +162,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the angle is valid
    */
-  inline
-  bool is_xds_angle_valid(vec3<double> m2, vec3<double> s0, vec3<double> s1,
-      double delta_m) {
+  inline bool is_xds_angle_valid(vec3<double> m2,
+                                 vec3<double> s0,
+                                 vec3<double> s1,
+                                 double delta_m) {
     vec3<double> ps = (s1 - s0).normalize();
     vec3<double> e1 = s1.cross(s0).normalize();
     vec3<double> e3 = (s1 + s0).normalize();
@@ -174,7 +176,7 @@ namespace dials { namespace algorithms { namespace filter {
     if (m2e1 == 0) {
       return false;
     }
-    double rt = std::sqrt(m2e1*m2e1 + m2e3_m2ps*m2e3_m2ps);
+    double rt = std::sqrt(m2e1 * m2e1 + m2e3_m2ps * m2e3_m2ps);
     double tandphi0 = (m2e3_m2ps + rt) / m2e1;
     double tandphi1 = (m2e3_m2ps - rt) / m2e1;
     double dphi0 = 2.0 * std::atan(tandphi0);
@@ -193,8 +195,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the angle is valid
    */
-  inline
-  bool is_xds_angle_valid(const CoordinateSystem &cs, double delta_m) {
+  inline bool is_xds_angle_valid(const CoordinateSystem &cs, double delta_m) {
     vec3<double> m2 = cs.m2();
     vec3<double> ps = cs.p_star().normalize();
     vec3<double> e1 = cs.e1_axis();
@@ -206,7 +207,7 @@ namespace dials { namespace algorithms { namespace filter {
     if (m2e1 == 0) {
       return false;
     }
-    double rt = std::sqrt(m2e1*m2e1 + m2e3_m2ps*m2e3_m2ps);
+    double rt = std::sqrt(m2e1 * m2e1 + m2e3_m2ps * m2e3_m2ps);
     double tandphi0 = (m2e3_m2ps + rt) / m2e1;
     double tandphi1 = (m2e3_m2ps - rt) / m2e1;
     double dphi0 = 2.0 * std::atan(tandphi0);
@@ -227,9 +228,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param delta_m The mosaicity * n_sigma
    * @returns True/False, the angle is valid
    */
-  inline
-  bool is_xds_angle_valid(const Goniometer &g, const BeamBase &b,
-      vec3<double> s1, double delta_m) {
+  inline bool is_xds_angle_valid(const Goniometer &g,
+                                 const BeamBase &b,
+                                 vec3<double> s1,
+                                 double delta_m) {
     return is_xds_angle_valid(g.get_rotation_axis(), b.get_s0(), s1, delta_m);
   }
 
@@ -241,10 +243,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param s1 The list of beam vectors
    * @param min_zeta The minimum zeta value
    */
-  inline
-  af::shared<bool> by_zeta(const Goniometer &g, const BeamBase &b,
-      const af::const_ref< vec3<double> > &s1,
-      double min_zeta) {
+  inline af::shared<bool> by_zeta(const Goniometer &g,
+                                  const BeamBase &b,
+                                  const af::const_ref<vec3<double> > &s1,
+                                  double min_zeta) {
     af::shared<bool> result(s1.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
       if (!is_zeta_valid(g, b, s1[i], min_zeta)) {
@@ -262,9 +264,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param s1 The list of beam vector
    * @param delta_m The mosaicity * n_sigma
    */
-  inline
-  af::shared<bool> by_xds_small_angle(const Goniometer &g, const BeamBase &b,
-      const af::const_ref< vec3<double> > s1, double delta_m) {
+  inline af::shared<bool> by_xds_small_angle(const Goniometer &g,
+                                             const BeamBase &b,
+                                             const af::const_ref<vec3<double> > s1,
+                                             double delta_m) {
     af::shared<bool> result(s1.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
       if (!is_xds_small_angle_valid(g, b, s1[i], delta_m)) {
@@ -282,9 +285,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param s1 The list of beam vectors
    * @param delta_m The mosaicity * n_sigma
    */
-  inline
-  af::shared<bool> by_xds_angle(const Goniometer &g, const BeamBase &b,
-      const af::const_ref< vec3<double> > s1, double delta_m) {
+  inline af::shared<bool> by_xds_angle(const Goniometer &g,
+                                       const BeamBase &b,
+                                       const af::const_ref<vec3<double> > s1,
+                                       double delta_m) {
     af::shared<bool> result(s1.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
       if (!is_xds_angle_valid(g, b, s1[i], delta_m)) {
@@ -298,11 +302,8 @@ namespace dials { namespace algorithms { namespace filter {
    * Filter the reflection list based on the bounding box volume
    * @param bboxes The list of bounding boxes
    */
-  inline
-  af::shared<bool> by_bbox_volume(
-      const af::const_ref<int6> &bboxes,
-      std::size_t num_bins) {
-
+  inline af::shared<bool> by_bbox_volume(const af::const_ref<int6> &bboxes,
+                                         std::size_t num_bins) {
     // Check the bins are correct
     DIALS_ASSERT(num_bins > 0);
 
@@ -312,7 +313,7 @@ namespace dials { namespace algorithms { namespace filter {
     int min_volume = std::numeric_limits<int>::max(), max_volume = 0;
     for (std::size_t i = 0; i < bboxes.size(); ++i) {
       int6 bbox = bboxes[i];
-      volume[i] = (bbox[1]-bbox[0]) * (bbox[3]-bbox[2]) * (bbox[5]-bbox[4]);
+      volume[i] = (bbox[1] - bbox[0]) * (bbox[3] - bbox[2]) * (bbox[5] - bbox[4]);
       if (volume[i] < min_volume) min_volume = volume[i];
       if (volume[i] > max_volume) max_volume = volume[i];
     }
@@ -347,10 +348,9 @@ namespace dials { namespace algorithms { namespace filter {
    * nbins = cube_root(nref)
    * @param bboxes The list of bounding boxes
    */
-  inline
-  af::shared<bool> by_bbox_volume(const af::const_ref<int6> &bboxes) {
-    std::size_t num = (std::size_t)(std::exp((1.0/3.0) *
-      std::log((double)bboxes.size())));
+  inline af::shared<bool> by_bbox_volume(const af::const_ref<int6> &bboxes) {
+    std::size_t num =
+      (std::size_t)(std::exp((1.0 / 3.0) * std::log((double)bboxes.size())));
     return by_bbox_volume(bboxes, num);
   }
 
@@ -361,13 +361,13 @@ namespace dials { namespace algorithms { namespace filter {
    * @param scan_range The scan range
    * @returns True/False
    */
-  inline
-  bool is_bbox_outside_image_range(int6 bbox, tiny<std::size_t, 2> image_size,
-      int2 scan_range) {
+  inline bool is_bbox_outside_image_range(int6 bbox,
+                                          tiny<std::size_t, 2> image_size,
+                                          int2 scan_range) {
     DIALS_ASSERT(image_size.size() == 2);
-    return bbox[0] < 0 || bbox[1] > (int)image_size[1] ||
-           bbox[2] < 0 || bbox[3] > (int)image_size[0] ||
-           bbox[4] < scan_range[0] || bbox[5] > scan_range[1];
+    return bbox[0] < 0 || bbox[1] > (int)image_size[1] || bbox[2] < 0
+           || bbox[3] > (int)image_size[0] || bbox[4] < scan_range[0]
+           || bbox[5] > scan_range[1];
   }
 
   /**
@@ -376,9 +376,9 @@ namespace dials { namespace algorithms { namespace filter {
    * @param mask The mask array
    * @returns True/False
    */
-  inline
-  bool does_bbox_contain_bad_pixels(int6 bbox,
-      const af::const_ref< bool, af::c_grid<2> > &mask) {
+  inline bool does_bbox_contain_bad_pixels(
+    int6 bbox,
+    const af::const_ref<bool, af::c_grid<2> > &mask) {
     for (int j = bbox[2]; j < bbox[3]; ++j) {
       for (int i = bbox[0]; i < bbox[1]; ++i) {
         if (mask(j, i) == false) {
@@ -396,13 +396,11 @@ namespace dials { namespace algorithms { namespace filter {
    * @param scan_range The scan range
    * @returns True/False
    */
-  inline
-  bool is_bbox_valid(int6 bbox,
-      const af::const_ref< bool, af::c_grid<2> > &mask,
-      int2 scan_range) {
-    return !(is_bbox_outside_image_range(
-        bbox, mask.accessor(), scan_range) ||
-        does_bbox_contain_bad_pixels(bbox, mask));
+  inline bool is_bbox_valid(int6 bbox,
+                            const af::const_ref<bool, af::c_grid<2> > &mask,
+                            int2 scan_range) {
+    return !(is_bbox_outside_image_range(bbox, mask.accessor(), scan_range)
+             || does_bbox_contain_bad_pixels(bbox, mask));
   }
 
   /**
@@ -411,11 +409,10 @@ namespace dials { namespace algorithms { namespace filter {
    * @param mask The detector mask
    * @param scan_range The scan range
    */
-  inline
-  af::shared<bool> by_detector_mask(
-      const af::const_ref<int6> bboxes,
-      const af::const_ref< bool, af::c_grid<2> > &mask,
-      int2 scan_range) {
+  inline af::shared<bool> by_detector_mask(
+    const af::const_ref<int6> bboxes,
+    const af::const_ref<bool, af::c_grid<2> > &mask,
+    int2 scan_range) {
     af::shared<bool> result(bboxes.size());
     for (std::size_t i = 0; i < bboxes.size(); ++i) {
       result[i] = is_bbox_valid(bboxes[i], mask, scan_range);
@@ -423,12 +420,11 @@ namespace dials { namespace algorithms { namespace filter {
     return result;
   }
 
-  inline
-  af::shared<bool> by_detector_mask_multipanel(
-      const af::const_ref<std::size_t> &panel,
-      const af::const_ref<int6> bboxes,
-      const af::const_ref< af::const_ref<bool, af::c_grid<2> > > &mask,
-      int2 scan_range) {
+  inline af::shared<bool> by_detector_mask_multipanel(
+    const af::const_ref<std::size_t> &panel,
+    const af::const_ref<int6> bboxes,
+    const af::const_ref<af::const_ref<bool, af::c_grid<2> > > &mask,
+    int2 scan_range) {
     DIALS_ASSERT(panel.size() == bboxes.size());
     af::shared<bool> result(bboxes.size());
     for (std::size_t i = 0; i < bboxes.size(); ++i) {
@@ -444,19 +440,18 @@ namespace dials { namespace algorithms { namespace filter {
    * @param reflections The reflection list
    * @param max_separation The maximum allowed separation
    */
-  inline
-  af::shared<bool> by_centroid_prediction_separation(
-      const af::const_ref< vec3<double> > &xyzobs,
-      const af::const_ref< vec3<double> > &xyzcal,
-      double max_separation) {
+  inline af::shared<bool> by_centroid_prediction_separation(
+    const af::const_ref<vec3<double> > &xyzobs,
+    const af::const_ref<vec3<double> > &xyzcal,
+    double max_separation) {
     DIALS_ASSERT(xyzobs.size() == xyzcal.size());
     af::shared<bool> result(xyzobs.size(), true);
     for (std::size_t i = 0; i < result.size(); ++i) {
       vec3<double> obs = xyzobs[i];
       vec3<double> cal = xyzcal[i];
-      double sep = std::sqrt((obs[0] - cal[0]) * (obs[0] - cal[0]) +
-                             (obs[1] - cal[1]) * (obs[1] - cal[1]) +
-                             (obs[2] - cal[2]) * (obs[2] - cal[2]));
+      double sep = std::sqrt((obs[0] - cal[0]) * (obs[0] - cal[0])
+                             + (obs[1] - cal[1]) * (obs[1] - cal[1])
+                             + (obs[2] - cal[2]) * (obs[2] - cal[2]));
       if (sep > max_separation) {
         result[i] = false;
       }
@@ -473,12 +468,13 @@ namespace dials { namespace algorithms { namespace filter {
    * @param d_min The maximum resolution
    * @param d_max The minimum resolution
    */
-  inline
-  af::shared<bool> by_resolution_at_centroid(
-      const af::const_ref<std::size_t> &panel,
-      const af::const_ref< vec3<double> > &xyz,
-      const BeamBase &beam, const Detector &detector,
-      double d_min, double d_max) {
+  inline af::shared<bool> by_resolution_at_centroid(
+    const af::const_ref<std::size_t> &panel,
+    const af::const_ref<vec3<double> > &xyz,
+    const BeamBase &beam,
+    const Detector &detector,
+    double d_min,
+    double d_max) {
     DIALS_ASSERT(panel.size() == xyz.size());
     vec3<double> s0 = beam.get_s0();
     if (d_max < 0) {
@@ -488,7 +484,7 @@ namespace dials { namespace algorithms { namespace filter {
     for (std::size_t i = 0; i < result.size(); ++i) {
       DIALS_ASSERT(panel[i] < detector.size());
       double resolution = detector[panel[i]].get_resolution_at_pixel(
-          s0, vec2<double>(xyz[i][0], xyz[i][1]));
+        s0, vec2<double>(xyz[i][0], xyz[i][1]));
       if (resolution < d_min || resolution > d_max) {
         result[i] = false;
       }
@@ -496,11 +492,9 @@ namespace dials { namespace algorithms { namespace filter {
     return result;
   }
 
-  inline
-  af::shared<bool> by_shoebox_mask(
-      const af::const_ref< Shoebox<> > shoeboxes,
-      int2 image_size,
-      int2 scan_range) {
+  inline af::shared<bool> by_shoebox_mask(const af::const_ref<Shoebox<> > shoeboxes,
+                                          int2 image_size,
+                                          int2 scan_range) {
     af::shared<bool> result(shoeboxes.size(), true);
     for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
       Shoebox<> sbox = shoeboxes[i];
@@ -521,7 +515,6 @@ namespace dials { namespace algorithms { namespace filter {
     return result;
   }
 
-
-}}} // namespace dials::algorithms::filter
+}}}  // namespace dials::algorithms::filter
 
 #endif /* DIALS_ALGORITHMS_FILTER_H */

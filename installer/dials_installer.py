@@ -172,9 +172,13 @@ class installer(install_distribution.installer):
         rmdir("base/share/hdf5_examples")
         rmdir("base/share/man")
         rmdir("build/dials_data")
+        rmdir("build/precommitbx")
         rmdir("build/regression_data")
         rmdir("build/xia2_regression")
-        for p in [
+        for f in ("setpaths", "setpaths_debug", "setpaths_all", "unsetpaths"):
+            for ext in (".sh", ".csh"):
+                rmfile(os.path.join("build", f + ext))
+        for p in (
             "chrono",
             "date_time",
             "detail",
@@ -184,7 +188,7 @@ class installer(install_distribution.installer):
             "system",
             "thread",
             "timer",
-        ]:
+        ):
             rmdir(os.path.join("modules/boost/libs", p, "example"))
             rmdir(os.path.join("modules/boost/libs", p, "doc"))
             rmdir(os.path.join("modules/boost/libs", p, "test"))

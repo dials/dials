@@ -123,7 +123,7 @@ class Target(object):
         self.dim = dimensions
         logger.info("Using %i dimensions for analysis" % self.dim)
 
-    def _generate_twin_operators(self, lattice_symmetry_max_delta=3.0):
+    def _generate_twin_operators(self, lattice_symmetry_max_delta=5.0):
         # see also mmtbx.scaling.twin_analyses.twin_laws
         cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
         if self._lattice_group is None:
@@ -165,14 +165,11 @@ class Target(object):
 
     def _compute_rij_wij(self, use_cache=True):
         """Compute the rij_wij matrix."""
-        group = flex.bool(self._lattices.size(), True)
-
-        n_lattices = group.count(True)
+        n_lattices = self._lattices.size()
         n_sym_ops = len(self._sym_ops)
 
         NN = n_lattices * n_sym_ops
 
-        index_selected = group.iselection()
         self.rij_matrix = flex.double(flex.grid(NN, NN), 0.0)
         if self._weights is None:
             self.wij_matrix = None

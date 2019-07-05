@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
-
-logger = logging.getLogger(__name__)
 
 from scitbx.array_family import flex
 from dials.algorithms.spot_finding.per_image_analysis import ice_rings_selection
-from dials.algorithms.indexing.nearest_neighbor import neighbor_analysis
+from dials.algorithms.indexing.nearest_neighbor import NeighborAnalysis
+from dials.algorithms.indexing import DialsIndexError
+
+logger = logging.getLogger(__name__)
 
 
 def find_max_cell(
@@ -49,23 +49,13 @@ def find_max_cell(
         reflections = reflections.select(~overlap_sel)
     logger.debug("%i reflections remain for max_cell identification" % len(reflections))
 
-    assert (
-        len(reflections) > 0
-    ), "Too few spots remaining for nearest neighbour analysis (%d)" % len(reflections)
-    # The nearest neighbour analysis gets fooled when the same part of
-    # reciprocal space has been measured twice as this introduced small
-    # random differences in position between reflections measured twice.
-    # Therefore repeat the nearest neighbour analysis several times in small
-    # wedges where there shouldn't be any overlap in reciprocal space
-    # from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
-    if "entering" in reflections:
-        entering_flags = reflections["entering"]
-    else:
-        entering_flags = flex.bool(len(reflections), False)
+    if not len(reflections):
+        raise DialsIndexError(
+            "Too few spots remaining for nearest neighbour analysis (%d)"
+            % len(reflections)
+        )
 
-    phi_deg = reflections["xyzobs.mm.value"].parts()[2] * (180 / math.pi)
-
-    NN = neighbor_analysis(
+    NN = NeighborAnalysis(
         reflections,
         step_size=step_size,
         max_height_fraction=max_height_fraction,

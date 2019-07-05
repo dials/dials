@@ -24,20 +24,18 @@ namespace dials { namespace algorithms { namespace shoebox {
    * A class to check for and mark overloaded pixels
    */
   class OverloadChecker {
-
     /**
      * The internal class used to do the checking
      */
     class Checker {
     public:
-
       typedef Shoebox<>::float_type float_type;
 
       /**
        * @param overload - The overload values for each pixel
        */
       Checker(const af::const_ref<double> &overload)
-        : overload_(overload.begin(), overload.end()) {}
+          : overload_(overload.begin(), overload.end()) {}
 
       /**
        * Mark all pixels that are overloaded as invalid
@@ -45,10 +43,9 @@ namespace dials { namespace algorithms { namespace shoebox {
        * @param data The data array
        * @param mask The mask array
        */
-      bool operator()(
-          std::size_t panel,
-          const af::const_ref< float_type, af::c_grid<3> > &data,
-          af::ref<int,af::c_grid<3> > mask) const {
+      bool operator()(std::size_t panel,
+                      const af::const_ref<float_type, af::c_grid<3> > &data,
+                      af::ref<int, af::c_grid<3> > mask) const {
         DIALS_ASSERT(panel < overload_.size());
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         DIALS_ASSERT(data.size() == mask.size());
@@ -64,12 +61,10 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
 
     private:
-
       af::shared<double> overload_;
     };
 
   public:
-
     /**
      * Add the overload values for this detector
      * @param overload The overloads for each panel
@@ -84,18 +79,15 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param shoebox The shoebox data
      * @returns flex.bool True contains outliers
      */
-    af::shared<bool> operator()(
-        const af::const_ref<int> id,
-        af::ref< Shoebox <> > shoebox) const {
+    af::shared<bool> operator()(const af::const_ref<int> id,
+                                af::ref<Shoebox<> > shoebox) const {
       DIALS_ASSERT(id.size() == shoebox.size());
       af::shared<bool> result(id.size(), false);
       for (std::size_t i = 0; i < id.size(); ++i) {
         DIALS_ASSERT(id[i] >= 0);
         DIALS_ASSERT(id[i] < checker_.size());
         result[i] = checker_[id[i]](
-            shoebox[i].panel,
-            shoebox[i].data.const_ref(),
-            shoebox[i].mask.ref());
+          shoebox[i].panel, shoebox[i].data.const_ref(), shoebox[i].mask.ref());
       }
       return result;
     }
@@ -104,6 +96,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::vector<Checker> checker_;
   };
 
-}}} // namespace dials::algorithms::shoebox
+}}}  // namespace dials::algorithms::shoebox
 
-#endif // DIALS_ALGORITHMS_SHOEBOX_OVERLOAD_CHECKER_H
+#endif  // DIALS_ALGORITHMS_SHOEBOX_OVERLOAD_CHECKER_H

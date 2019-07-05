@@ -1,2 +1,7 @@
 [tool.black]
-include='\.pyi?$|/SConscript$'
+include='\.pyi?$|/SConscript$|/libtbx_config$'
+
+[tool.towncrier]
+package = "dials"
+package_dir = ".."
+filename = "CHANGELOG.rst"

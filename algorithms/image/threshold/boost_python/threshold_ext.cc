@@ -18,10 +18,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_unimodal();
   void export_local();
 
-  BOOST_PYTHON_MODULE(dials_algorithms_image_threshold_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_image_threshold_ext) {
     export_unimodal();
     export_local();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}  // namespace dials::algorithms::boost_python

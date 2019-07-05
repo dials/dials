@@ -24,7 +24,7 @@ namespace dials { namespace algorithms { namespace polygon {
   double simple_area(const PolygonType &poly) {
     typedef typename PolygonType::value_type vertex_type;
     double a = 0.0;
-    vertex_type v0 = poly[poly.size()-1];
+    vertex_type v0 = poly[poly.size() - 1];
     for (std::size_t j = 0; j < poly.size(); ++j) {
       vertex_type v1 = poly[j];
       a += v0[0] * v1[1] - v1[0] * v0[1];
@@ -33,6 +33,6 @@ namespace dials { namespace algorithms { namespace polygon {
     return a * 0.5;
   }
 
-}}} // namespace dials::algorithms::polygon
+}}}  // namespace dials::algorithms::polygon
 
 #endif /* DIALS_ALGORITHMS_POLYGON_AREA_H */

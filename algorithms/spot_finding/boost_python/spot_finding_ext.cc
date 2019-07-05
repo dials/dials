@@ -16,13 +16,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  BOOST_PYTHON_MODULE(dials_algorithms_spot_finding_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_algorithms_spot_finding_ext) {
     class_<StrongSpotCombiner>("StrongSpotCombiner")
       .def("add", &StrongSpotCombiner::add)
-      .def("shoeboxes", &StrongSpotCombiner::shoeboxes)
-      ;
-
+      .def("shoeboxes", &StrongSpotCombiner::shoeboxes);
   }
 
-}}}
+}}}  // namespace dials::algorithms::boost_python

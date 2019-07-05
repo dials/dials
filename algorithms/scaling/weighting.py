@@ -3,7 +3,6 @@ Weighting scheme definitions for scaling.
 """
 from __future__ import absolute_import, division, print_function
 from dials.array_family import flex
-from dials.util import Sorry
 
 
 def get_weighting_scheme(Ih_table, weighting_scheme):
@@ -19,7 +18,7 @@ def get_weighting_scheme(Ih_table, weighting_scheme):
     if weighting_scheme == "huber":
         return HuberWeights(Ih_table)
     else:
-        raise Sorry("Weighting scheme not recognised.")
+        raise ValueError("Invalid choice of weighting scheme: %s" % weighting_scheme)
 
 
 class WeightingBase(object):

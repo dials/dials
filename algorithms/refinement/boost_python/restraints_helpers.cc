@@ -16,13 +16,9 @@ using namespace boost::python;
 
 namespace dials { namespace refinement { namespace boost_python {
 
-  void export_calculate_cell_gradients()
-  {
+  void export_calculate_cell_gradients() {
     class_<CalculateCellGradients>("CalculateCellGradients", no_init)
-      .def(init<mat3<double>,
-                af::const_ref< mat3 <double> > >((
-        arg("B"),
-        arg("dB_dp"))))
+      .def(init<mat3<double>, af::const_ref<mat3<double> > >((arg("B"), arg("dB_dp"))))
       .def("da_dp", &CalculateCellGradients::da_dp)
       .def("db_dp", &CalculateCellGradients::db_dp)
       .def("dc_dp", &CalculateCellGradients::dc_dp)
@@ -31,4 +27,4 @@ namespace dials { namespace refinement { namespace boost_python {
       .def("dcc_dp", &CalculateCellGradients::dcc_dp);
   }
 
-}}} // namespace dials::refinement::boost_python
+}}}  // namespace dials::refinement::boost_python

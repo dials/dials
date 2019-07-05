@@ -18,8 +18,7 @@ namespace dials_scaling { namespace boost_python {
   void export_calc_lookup_index();
   void export_create_sph_harm_lookup_table();
 
-  BOOST_PYTHON_MODULE(dials_scaling_ext)
-  {
+  BOOST_PYTHON_MODULE(dials_scaling_ext) {
     export_elementwise_square();
     export_sph_harm_table();
     export_rotate_vectors_about_axis();
@@ -34,4 +33,4 @@ namespace dials_scaling { namespace boost_python {
     export_create_sph_harm_lookup_table();
   }
 
-}} // namespace dials_scaling::boost_python
+}}  // namespace dials_scaling::boost_python

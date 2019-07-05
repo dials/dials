@@ -104,6 +104,13 @@ class determine_space_group(symmetry_base):
 
         a = flex.double()
         b = flex.double()
+        ma_tmp = self.intensities.customized_copy(
+            crystal_symmetry=crystal.symmetry(
+                space_group=self.lattice_group,
+                unit_cell=self.intensities.unit_cell(),
+                assert_is_compatible_unit_cell=False,
+            )
+        ).map_to_asu()
         for i in range(binner.n_bins_all()):
             count = binner.counts()[i]
             if count == 0:
@@ -111,13 +118,6 @@ class determine_space_group(symmetry_base):
             bin_isel = binner.array_indices(i)
             p = flex.random_permutation(count)
             p = p[: 2 * (count // 2)]  # ensure even count
-            ma_tmp = self.intensities.customized_copy(
-                crystal_symmetry=crystal.symmetry(
-                    space_group=self.lattice_group,
-                    unit_cell=self.intensities.unit_cell(),
-                    assert_is_compatible_unit_cell=False,
-                )
-            ).map_to_asu()
             ma_a = ma_tmp.select(bin_isel.select(p[: count // 2]))
             ma_b = ma_tmp.select(bin_isel.select(p[count // 2 :]))
             # only choose pairs of reflections that don't have the same indices
@@ -157,15 +157,6 @@ class determine_space_group(symmetry_base):
 
         assert fit.is_well_defined()
         self.cc_sig_fac = fit.slope()
-
-        if 0:
-            from matplotlib import pyplot as plt
-
-            plt.plot(x, y)
-            plt.plot(
-                plt.xlim(), [fit.slope() * x_ + fit.y_intercept() for x_ in plt.xlim()]
-            )
-            plt.show()
 
     def _estimate_cc_true(self):
 
@@ -337,7 +328,7 @@ class determine_space_group(symmetry_base):
                     "% .2f" % score.cc_for.coefficient(),
                     "% .2f" % score.cc_against.coefficient(),
                     "%.1f" % score.subgroup["max_angular_difference"],
-                    "%s" % (score.subgroup["cb_op_inp_best"] * self.cb_op_inp_min),
+                    "%s" % (score.subgroup["cb_op_inp_best"]),
                 )
             )
         output.append("Scoring all possible sub-groups")
@@ -351,8 +342,7 @@ class determine_space_group(symmetry_base):
             "Unit cell: %s" % self.best_solution.subgroup["best_subsym"].unit_cell()
         )
         output.append(
-            "Reindex operator: %s"
-            % (self.best_solution.subgroup["cb_op_inp_best"] * self.cb_op_inp_min)
+            "Reindex operator: %s" % (self.best_solution.subgroup["cb_op_inp_best"])
         )
         output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
         output.append("Laue group confidence: %.3f" % self.best_solution.confidence)

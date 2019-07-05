@@ -10,23 +10,29 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
-from dials.command_line.reciprocal_lattice_viewer import render_3d
+import json
+
+from dials.array_family import flex
 
 
-class ReciprocalLatticeJson(render_3d):
-    def __init__(self, settings=None):
-        render_3d.__init__(self)
-        if settings is not None:
-            self.settings = settings
-        else:
-            from dials.command_line.reciprocal_lattice_viewer import settings
+class ReciprocalLatticeJson(object):
+    def __init__(self, experiments, reflections):
+        self.experiments = experiments
+        self.reflections = self._map_centroids_to_reciprocal_space(
+            experiments, reflections
+        )
 
-            self.settings = settings()
-
-    def load_models(self, imagesets, reflections):
-        self.imagesets = imagesets
-        self.reflections_input = reflections
-        self.map_points_to_reciprocal_space()
+    def _map_centroids_to_reciprocal_space(self, experiments, reflections):
+        refl = reflections
+        reflections = flex.reflection_table()
+        for i, expt in enumerate(self.experiments):
+            refl_sel = refl.select(refl["imageset_id"] == i)
+            refl_sel.centroid_px_to_mm(expt.detector, expt.scan)
+            refl_sel.map_centroids_to_reciprocal_space(
+                expt.detector, expt.beam, expt.goniometer
+            )
+            reflections.extend(refl_sel)
+        return reflections
 
     def as_dict(self, n_digits=None):
         rlp = self.reflections["rlp"]
@@ -47,8 +53,6 @@ class ReciprocalLatticeJson(render_3d):
         return d
 
     def as_json(self, filename=None, compact=False, n_digits=None, experiments=None):
-        import json
-
         d = self.as_dict(n_digits=n_digits)
         if experiments:
             d["experiments"] = experiments.to_dict()
@@ -56,11 +60,8 @@ class ReciprocalLatticeJson(render_3d):
             text = json.dumps(d, separators=(",", ":"), ensure_ascii=True)
         else:
             text = json.dumps(d, separators=(",", ": "), indent=1, ensure_ascii=True)
-
         if filename is not None:
-            from libtbx import smart_open
-
-            with smart_open.for_writing(filename) as f:
+            with open(filename, "wb") as f:
                 f.write(text)
         else:
             return text

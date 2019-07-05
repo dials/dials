@@ -7,12 +7,8 @@ using namespace boost::python;
 
 namespace dials { namespace refinement { namespace boost_python {
 
-  void export_gallego_yezzi()
-  {
-    def("dRq_de", &dRq_de, (
-      arg("theta"),
-      arg("e1"),
-      arg("q")));
+  void export_gallego_yezzi() {
+    def("dRq_de", &dRq_de, (arg("theta"), arg("e1"), arg("q")));
   }
 
-}}} // namespace dials::refinement::boost_python
+}}}  // namespace dials::refinement::boost_python
