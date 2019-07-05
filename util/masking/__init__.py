@@ -12,9 +12,18 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 
+from cctbx import crystal
 from iotbx.phil import parse
-from scitbx.array_family import flex
+
+from dials.array_family import flex
+from dials.util.ext import ResolutionMaskGenerator
+from dxtbx.masking import (
+    mask_untrusted_rectangle,
+    mask_untrusted_circle,
+    mask_untrusted_polygon,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +110,6 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
     Generate a set of resolution ranges from the ice ring parameters
 
     """
-    from cctbx import crystal
-    from math import sqrt
-
     if params.filter is True:
 
         # Get the crystal symmetry
@@ -129,8 +135,8 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
             d_sq_inv = 1.0 / (d ** 2)
             d_sq_inv_min = d_sq_inv - half_width
             d_sq_inv_max = d_sq_inv + half_width
-            d_min = sqrt(1.0 / d_sq_inv_min)
-            d_max = sqrt(1.0 / d_sq_inv_max)
+            d_min = math.sqrt(1.0 / d_sq_inv_min)
+            d_max = math.sqrt(1.0 / d_sq_inv_max)
             yield (d_min, d_max)
 
 
@@ -143,12 +149,6 @@ class MaskGenerator(object):
 
     def generate(self, imageset):
         """ Generate the mask. """
-        from dials.util.ext import ResolutionMaskGenerator
-        from dials.util.ext import mask_untrusted_rectangle
-        from dials.util.ext import mask_untrusted_circle
-        from dials.util.ext import mask_untrusted_polygon
-        from dials.array_family import flex
-
         # Get the detector and beam
         detector = imageset.get_detector()
         beam = imageset.get_beam()
@@ -280,176 +280,3 @@ class MaskGenerator(object):
 
         # Return the mask
         return tuple(masks)
-
-
-class GoniometerShadowMaskGenerator(object):
-    def __init__(self, goniometer, extrema_at_datum, axis):
-        self.goniometer = goniometer
-        self._extrema_at_datum = extrema_at_datum
-        self.axis = axis
-
-    def extrema_at_scan_angle(self, scan_angle):
-        from scitbx import matrix
-
-        axes = self.goniometer.get_axes()
-        angles = self.goniometer.get_angles()
-        scan_axis = self.goniometer.get_scan_axis()
-        angles[scan_axis] = scan_angle
-        extrema = self._extrema_at_datum.deep_copy()
-
-        for i in range(len(axes)):
-            sel = self.axis <= i
-            rotation = matrix.col(axes[i]).axis_and_angle_as_r3_rotation_matrix(
-                angles[i], deg=True
-            )
-            extrema.set_selected(sel, rotation.elems * extrema.select(sel))
-
-        return extrema
-
-    def project_extrema(self, detector, scan_angle):
-        from dials.util.ext import is_inside_polygon
-
-        coords = self.extrema_at_scan_angle(scan_angle)
-        shadow_boundary = []
-
-        for p_id, p in enumerate(detector):
-            # project coordinates onto panel plane
-            a = p.get_D_matrix() * coords
-            x, y, z = a.parts()
-            valid = z > 0
-            x.set_selected(valid, x.select(valid) / z.select(valid))
-            y.set_selected(valid, y.select(valid) / z.select(valid))
-
-            if valid.count(True) < 3:
-                # no shadow projected onto this panel
-                shadow_boundary.append(flex.vec2_double())
-                continue
-
-            # Compute convex hull of shadow points
-            points = flex.vec2_double(x.select(valid), y.select(valid))
-            shadow = flex.vec2_double(convex_hull(points))
-            shadow *= 1 / p.get_pixel_size()[0]
-
-            shadow_orig = shadow.deep_copy()
-
-            for i in (0, p.get_image_size()[0]):
-                points = flex.vec2_double(
-                    flex.double(p.get_image_size()[1], i),
-                    flex.double_range(0, p.get_image_size()[1]),
-                )
-                inside = is_inside_polygon(shadow_orig, points)
-                # only add those points needed to define vertices of shadow
-                inside_isel = inside.iselection()
-                outside_isel = (~inside).iselection()
-                while inside_isel.size():
-                    j = inside_isel[0]
-                    shadow.append(points[j])
-                    outside_isel = outside_isel.select(outside_isel > j)
-                    if outside_isel.size() == 0:
-                        shadow.append(points[inside_isel[-1]])
-                        break
-                    sel = inside_isel >= outside_isel[0]
-                    if sel.count(True) == 0:
-                        shadow.append(points[inside_isel[-1]])
-                        break
-                    inside_isel = inside_isel.select(sel)
-
-            for i in (0, p.get_image_size()[1]):
-                points = flex.vec2_double(
-                    flex.double_range(0, p.get_image_size()[0]),
-                    flex.double(p.get_image_size()[0], i),
-                )
-                inside = is_inside_polygon(shadow_orig, points)
-                # only add those points needed to define vertices of shadow
-                inside_isel = inside.iselection()
-                outside_isel = (~inside).iselection()
-                while inside_isel.size():
-                    j = inside_isel[0]
-                    shadow.append(points[j])
-                    outside_isel = outside_isel.select(outside_isel > j)
-                    if outside_isel.size() == 0:
-                        shadow.append(points[inside_isel[-1]])
-                        break
-                    sel = inside_isel >= outside_isel[0]
-                    if sel.count(True) == 0:
-                        shadow.append(points[inside_isel[-1]])
-                        break
-                    inside_isel = inside_isel.select(sel)
-
-            # Select only those vertices that are within the panel dimensions
-            n_px = p.get_image_size()
-            x, y = shadow.parts()
-            valid = (x >= 0) & (x <= n_px[0]) & (y >= 0) & (y <= n_px[1])
-            shadow = shadow.select(valid)
-
-            # sort vertices clockwise from centre of mass
-            from scitbx.math import principal_axes_of_inertia_2d
-
-            com = principal_axes_of_inertia_2d(shadow).center_of_mass()
-            sx, sy = shadow.parts()
-            shadow = shadow.select(
-                flex.sort_permutation(flex.atan2(sy - com[1], sx - com[0]))
-            )
-
-            shadow_boundary.append(shadow)
-
-        return shadow_boundary
-
-    def get_mask(self, detector, scan_angle):
-        shadow_boundary = self.project_extrema(detector, scan_angle)
-        from dials.util.ext import mask_untrusted_polygon
-
-        mask = []
-        for panel_id in range(len(detector)):
-            m = None
-            if shadow_boundary[panel_id].size() > 3:
-                m = flex.bool(
-                    flex.grid(reversed(detector[panel_id].get_image_size())), True
-                )
-                mask_untrusted_polygon(m, shadow_boundary[panel_id])
-            mask.append(m)
-        return mask
-
-
-# https://en.wikibooks.org/wiki/Algorithm_Implementation/Geometry/Convex_hull/Monotone_chain#Python
-# https://github.com/thepracticaldev/orly-full-res/blob/master/copyingandpasting-big.png
-def convex_hull(points):
-    """Computes the convex hull of a set of 2D points.
-
-    Input: an iterable sequence of (x, y) pairs representing the points.
-    Output: a list of vertices of the convex hull in counter-clockwise order,
-      starting from the vertex with the lexicographically smallest coordinates.
-    Implements Andrew's monotone chain algorithm. O(n log n) complexity.
-    """
-
-    # Sort the points lexicographically (tuples are compared lexicographically).
-    # Remove duplicates to detect the case we have just one unique point.
-    points = sorted(set(points))
-
-    # Boring case: no points or a single point, possibly repeated multiple times.
-    if len(points) <= 1:
-        return points
-
-    # 2D cross product of OA and OB vectors, i.e. z-component of their 3D cross product.
-    # Returns a positive value, if OAB makes a counter-clockwise turn,
-    # negative for clockwise turn, and zero if the points are collinear.
-    def cross(o, a, b):
-        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
-
-    # Build lower hull
-    lower = []
-    for p in points:
-        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
-            lower.pop()
-        lower.append(p)
-
-    # Build upper hull
-    upper = []
-    for p in reversed(points):
-        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
-            upper.pop()
-        upper.append(p)
-
-    # Concatenation of the lower and upper hulls gives the convex hull.
-    # Last point of each list is omitted because it is repeated at the beginning of the other list.
-    return lower[:-1] + upper[:-1]
