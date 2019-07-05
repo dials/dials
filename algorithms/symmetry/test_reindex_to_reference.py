@@ -7,13 +7,12 @@ from dials.util import Sorry
 
 from cctbx import sgtbx
 
-from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.reindex_to_reference import (
     determine_reindex_operator_against_reference,
 )
 
 
-def test_determine_reindex_operator_against_reference():
+def test_determine_reindex_operator_against_reference(generate_test_data):
     """Test that the correct reindex operator is returned by the function."""
 
     # create a test dataset of random intensities

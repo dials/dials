@@ -5,7 +5,6 @@ import pytest
 import libtbx
 from cctbx import sgtbx
 
-from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.cosym import phil_scope
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 
@@ -28,6 +27,7 @@ from dials.algorithms.symmetry.cosym import CosymAnalysis
     ],
 )
 def test_cosym(
+    generate_test_data,
     space_group,
     unit_cell,
     dimensions,
@@ -40,15 +40,15 @@ def test_cosym(
 
     matplotlib.use("Agg")
 
+    expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
     datasets, expected_reindexing_ops = generate_test_data(
-        space_group=sgtbx.space_group_info(symbol=space_group).group(),
+        space_group=expected_space_group,
         unit_cell=unit_cell,
         unit_cell_volume=10000,
         d_min=1.5,
         map_to_p1=True,
         sample_size=sample_size,
     )
-    expected_space_group = sgtbx.space_group_info(symbol=space_group).group()
 
     # Workaround fact that the minimum cell reduction can occassionally be unstable
     # The input *should* be already the minimum cell, but for some combinations of unit
