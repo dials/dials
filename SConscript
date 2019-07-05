@@ -40,7 +40,6 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
     env.SConscript("viewer/SConscript", exports={"env": env})
     # env.SConscript('nexus/SConscript', exports={ 'env' : env })
     env.SConscript("util/SConscript", exports={"env": env})
-    env.SConscript("util/masking/SConscript", exports={"env": env})
 
     autocomplete_scons = os.path.join(
         libtbx.env.under_build(os.path.join("dials", "autocomplete")), "SConscript"
