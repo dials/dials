@@ -7,7 +7,7 @@ import pytest
 import dxtbx
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.format.FormatCBFCspad import FormatCBFCspadInMemory
-from dxtbx.imageset import ImageSet, ImageSetData, MemMasker, MemReader
+from dxtbx.imageset import ImageSet, ImageSetData, MemReader
 from libtbx import easy_run
 from libtbx.phil import parse
 
@@ -53,7 +53,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     mem_img = FormatCBFCspadInMemory(mem_img._cbf_handle)
     mem_img._raw_data = raw_data
     mem_img._cbf_handle = None  # drop the file handle to prevent swig errors
-    imgset = ImageSet(ImageSetData(MemReader([mem_img]), MemMasker([mem_img])))
+    imgset = ImageSet(ImageSetData(MemReader([mem_img]), None))
     imgset.set_beam(mem_img.get_beam())
     imgset.set_detector(mem_img.get_detector())
     experiments = ExperimentListFactory.from_imageset_and_crystal(imgset, None)
