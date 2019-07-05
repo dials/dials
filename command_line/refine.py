@@ -498,7 +498,7 @@ def run(args=None, phil=working_phil):
                 params.output.matches
             )
         )
-        matches.as_pickle(params.output.matches)
+        matches.as_file(params.output.matches)
 
     # Create correlation plots
     if params.output.correlation_plot.filename is not None:
