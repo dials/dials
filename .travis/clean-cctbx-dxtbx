@@ -5,6 +5,6 @@ for repository in cctbx_project dxtbx; do
     echo Cleaning ${repository} repository
     cd $HOME/build_dials/modules/${repository} || exit 1
     git reset --hard HEAD
-    git clean -dffx
+    git clean -dffxq
   fi
 done
