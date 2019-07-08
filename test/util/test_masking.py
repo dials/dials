@@ -44,14 +44,15 @@ def test_dynamic_shadowing(
         detector = imageset.get_detector()
         scan = imageset.get_scan()
         masker = imageset.masker()
-        assert masker is not None
-        mask = masker.get_mask(detector, scan.get_oscillation()[0])
-        assert len(mask) == len(detector)
-        # only shadowed pixels masked
-        assert mask[0].count(False) == count_only_shadow, (
-            mask[0].count(False),
-            count_only_shadow,
-        )
+        if shadowing is not False:
+            assert masker is not None
+            mask = masker.get_mask(detector, scan.get_oscillation()[0])
+            assert len(mask) == len(detector)
+            # only shadowed pixels masked
+            assert mask[0].count(False) == count_only_shadow, (
+                mask[0].count(False),
+                count_only_shadow,
+            )
         mask = imageset.get_mask(0)
 
         # dead pixels, pixels in gaps, etc also masked
