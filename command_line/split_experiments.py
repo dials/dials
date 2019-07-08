@@ -46,7 +46,14 @@ class Script(object):
 
         template = "{prefix}_{index:0{maxindexlength:d}d}.{extension}"
           .type = str
-          .help = "Template string for output filenames"
+          .expert_level = 2
+          .help = "Template python format string for output filenames."
+                  "Replaced variables are prefix (with"
+                  "output.{experiments_prefix, reflections_prefix}),"
+                  "index (number of split experiment), maxindexlength"
+                  "(number of digits of total number of split experiments)"
+                  "and extension (default file extension for model and"
+                  "reflection files)"
 
         chunk_size = None
           .type = int
