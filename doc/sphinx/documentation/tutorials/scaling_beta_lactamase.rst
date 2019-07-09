@@ -21,22 +21,22 @@ cell.
 
 Scaling is dependent on the space group symmetry assigned, which can be assessed
 now that we have integrated intensities. Therefore first we shall run :samp:`dials.symmetry`
-on the :samp:`integrated.pickle` and :samp:`integrated_experiments.json` files::
+on the :samp:`integrated.refl` and :samp:`integrated.expt` files::
 
-  dials.symmetry integrated_experiments.json integrated.pickle
+  dials.symmetry integrated.expt integrated.refl
 
 As can be seen from the output, the best solution is given by :samp:`C 1 2/m 1`,
 in agreement with the result from :samp:`dials.refine_bravais_settings`.
 
 To run scaling, any reflection files containing integrated reflections can be
 passed to :samp:`dials.scale`. In the example below, we shall use the output files of
-:samp:`dials.symmetry`, :samp:`reindexed_experiments.json` and
-:samp:`reindexed_reflections.pickle`. When run, :samp:`dials.scale` performs scaling
+:samp:`dials.symmetry`, :samp:`symmetrized.expt` and
+:samp:`symmetrized.refl`. When run, :samp:`dials.scale` performs scaling
 on the dataset, and calculates an inverse scale factor for
 each reflection (i.e. the corrected intensities are given by
 :math:`I^{cor}_i = I^{obs}_i / g_i`). The updated dataset is saved to
-:samp:`scaled.pickle`, while details of the scaling model are saved in an
-updated experiments file :samp:`scaled_experiments.json`. This can then be
+:samp:`scaled.refl`, while details of the scaling model are saved in an
+updated experiments file :samp:`scaled.expt`. This can then be
 used to produce an MTZ file for structure solution.
 
 The scaling process
@@ -53,7 +53,7 @@ and scattered beam vector relative to the crystal (:samp:`absorption_term`).
 
 Let's run :samp:`dials.scale` on the Beta-lactamase dataset, using a :samp:`d_min` cutoff::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4
 
 As can be seen from the log, a subset of reflections are selected to be used in
 scale factor determination, which helps to speed up the algorithm. In a typical
@@ -116,7 +116,7 @@ component is accounting for variation that could be described only by a scale
 and absorption term. To test this, we can repeat the scaling process but turn
 off the :samp:`decay_term`::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4 decay_term=False
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4 decay_term=False
 
 ::
 
@@ -161,7 +161,7 @@ structural solution.
 To obtain an unmerged mtz file, :samp:`dials.export` should be run, passing in
 the output from scaling, with the option :samp:`intensity=scale`::
 
-  dials.export scaled.pickle scaled_experiments.json intensity=scale
+  dials.export scaled.refl scaled.expt intensity=scale
 
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
 .. _pointless: http://www.ccp4.ac.uk/html/pointless.html

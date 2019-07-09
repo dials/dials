@@ -49,8 +49,8 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
@@ -60,7 +60,7 @@ def test(dials_regression, run_in_tmpdir):
     assert result["stderr"] == ""
 
     refined_experiments = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
+        "refined.expt", check_format=False
     )
 
     # Check results are as expected
@@ -110,13 +110,13 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history1.pickle",
-            "output.experiments=refined_experiments1.json",
-            "output.reflections=refined1.pickle",
+            "output.experiments=refined1.expt",
+            "output.reflections=refined1.refl",
         ]
     )
     assert result["exitcode"] == 0
@@ -144,13 +144,13 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
             "history=history2.pickle",
-            "output.experiments=refined_experiments2.json",
-            "output.reflections=refined2.pickle",
+            "output.experiments=refined2.expt",
+            "output.reflections=refined2.refl",
         ]
     )
     assert result["exitcode"] == 0
@@ -158,10 +158,10 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
 
     # Load results
     refined_experiments1 = ExperimentListFactory.from_json_file(
-        "refined_experiments1.json", check_format=False
+        "refined1.expt", check_format=False
     )
     refined_experiments2 = ExperimentListFactory.from_json_file(
-        "refined_experiments2.json", check_format=False
+        "refined2.expt", check_format=False
     )
     with open("history1.pickle", "rb") as f:
         history1 = pickle.load(f)

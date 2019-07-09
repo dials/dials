@@ -39,13 +39,13 @@ each panel of the reference detector.
 
 Example::
 
-  dev.dials.plot_detector_shifts level0.json level1.json
+  dev.dials.plot_detector_shifts level0.expt level1.expt
 
 Here level0 might contain a hierarchical detector refined at hierarchy_level=0
-(i.e. bulk movements), while level1.json may contain a detector with metrology
-refined one level below that, starting from level0.json. The resulting plot
+(i.e. bulk movements), while level1.expt may contain a detector with metrology
+refined one level below that, starting from level0.expt. The resulting plot
 will show the shifts that occurred during the refinement that resulted in
-level1.json.
+level1.expt.
 """
 
 phil_scope = phil.parse(
@@ -331,7 +331,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: {0} [options] [param.phil] experiments1.json " "experiments2.json"
+            "usage: {0} [options] [param.phil] experiments1.expt " "experiments2.expt"
         ).format(libtbx.env.dispatcher_name)
 
         parser = OptionParser(

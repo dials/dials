@@ -17,7 +17,6 @@ from dials.algorithms.integration import filtering
 from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
-import libtbx.load_env
 from cctbx import uctbx
 
 
@@ -44,22 +43,22 @@ reflection file.
 
 Examples::
 
-  dials.filter_reflections refined.pickle \
+  dials.filter_reflections refined.refl \
     flag_expression=used_in_refinement
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.refl \
     flag_expression="integrated & ~reference_spot"
 
-  dials.filter_reflections integrated.pickle \
+  dials.filter_reflections integrated.refl \
     flag_expression="indexed & (failed_during_summation | failed_during_profile_fitting)"
 
-  dials.filter_reflections indexed.pickle experiments.json \
+  dials.filter_reflections indexed.refl indexed.expt \
     d_max=20 d_min=2.5
 """
 
 phil_str = """
     output {
-    reflections = 'filtered.pickle'
+    reflections = 'filtered.refl'
         .type = str
         .help = "The filtered reflections output filename"
     }
@@ -419,7 +418,7 @@ def run():
     phil_scope = parse(phil_str, process_includes=True)
 
     # The script usage
-    usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+    usage = "usage: dials.filter_reflections [options] experiment.expt"
 
     # Create the parser
     parser = OptionParser(

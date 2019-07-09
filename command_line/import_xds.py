@@ -67,7 +67,7 @@ class SpotXDSImporter(object):
 
         # Output the table to pickle file
         if params.output.filename is None:
-            params.output.filename = "spot_xds.pickle"
+            params.output.filename = "spot_xds.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
         table.as_pickle(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
@@ -143,7 +143,7 @@ class IntegrateHKLImporter(object):
 
         # Output the table to pickle file
         if params.output.filename is None:
-            params.output.filename = "integrate_hkl.pickle"
+            params.output.filename = "integrate_hkl.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
         table.as_pickle(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
@@ -257,7 +257,7 @@ class XDSFileImporter(object):
 
         # Write the experiment list to a JSON or pickle file
         if params.output.filename is None:
-            params.output.filename = "experiments.json"
+            params.output.filename = "xds_models.expt"
         print("-" * 80)
         print("Writing experiments to %s" % params.output.filename)
         dump = ExperimentListDumper(experiments)

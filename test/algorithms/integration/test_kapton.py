@@ -76,12 +76,12 @@ def test_kapton(run_in_tmpdir):
     with open("params_without_kapton.phil", "w") as fout:
         fout.write(stills_process_input.as_str())
         fout.write(
-            "output.integrated_filename=without_kapton.mpack\noutput.integrated_experiments_filename=without_kapton.json"
+            "output.integrated_filename=without_kapton.mpack\noutput.integrated_experiments_filename=without_kapton.expt"
         )
     with open("params_with_kapton.phil", "w") as fout:
         fout.write(stills_process_input.as_str() + kapton_input.as_str())
         fout.write(
-            "output.integrated_filename=with_kapton.mpack\noutput.integrated_experiments_filename=with_kapton.json"
+            "output.integrated_filename=with_kapton.mpack\noutput.integrated_experiments_filename=with_kapton.expt"
         )
 
     command_without_kapton = "dials.stills_process %s params_without_kapton.phil" % (
@@ -101,11 +101,11 @@ def test_kapton(run_in_tmpdir):
     # Now compare the 2 experimental results
     # Currently just comparing the median values to get a sense of the effect if the kapton and whether it is being applied correctly
     expt_without_kapton = ExperimentListFactory.from_json_file(
-        "without_kapton.json", check_format=False
+        "without_kapton.expt", check_format=False
     )
     refl_without_kapton = flex.reflection_table.from_file("without_kapton.mpack")
     expt_with_kapton = ExperimentListFactory.from_json_file(
-        "with_kapton.json", check_format=False
+        "with_kapton.expt", check_format=False
     )
     refl_with_kapton = flex.reflection_table.from_file("with_kapton.mpack")
 

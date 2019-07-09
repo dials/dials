@@ -81,7 +81,7 @@ if __name__ == "__main__":
     import libtbx.load_env
 
     usage = (
-        "usage: %s [options] reflections1.pickle reflections2.pickle"
+        "usage: %s [options] reflections1.refl reflections2.refl"
         % libtbx.env.dispatcher_name
     )
     parser = OptionParser(usage)

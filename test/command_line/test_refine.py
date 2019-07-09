@@ -41,9 +41,9 @@ def test1(dials_regression, run_in_tmpdir):
     reg_exp = ExperimentListFactory.from_json_file(
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
     )[0]
-    ref_exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
-    )[0]
+    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[
+        0
+    ]
 
     # test refined models against expected
     assert reg_exp.crystal == ref_exp.crystal
@@ -70,7 +70,7 @@ def test2(dials_regression, run_in_tmpdir):
     for pth in (experiments_path, pickle_path):
         assert os.path.exists(pth)
 
-    # scan-static refinement first to get refined_experiments.json as start point
+    # scan-static refinement first to get refined.expt as start point
     cmd1 = (
         "dials.refine "
         + experiments_path
@@ -80,7 +80,7 @@ def test2(dials_regression, run_in_tmpdir):
         " outlier.algorithm=null close_to_spindle_cutoff=0.05"
     )
     cmd2 = (
-        "dials.refine refined_experiments.json "
+        "dials.refine refined.expt "
         + pickle_path
         + " scan_varying=true output.history=history.pickle"
         " reflections_per_degree=50"
@@ -114,7 +114,7 @@ def test2(dials_regression, run_in_tmpdir):
     assert approx_equal(history["rmsd"], expected_rmsds)
 
     # check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_pickle("refined.pickle")
+    rt = flex.reflection_table.from_pickle("refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
 
@@ -157,9 +157,9 @@ def test3(dials_regression, run_in_tmpdir):
     assert approx_equal(history["rmsd"], expected_rmsds)
 
     # check the refined unit cell
-    ref_exp = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
-    )[0]
+    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[
+        0
+    ]
     unit_cell = ref_exp.crystal.get_unit_cell().parameters()
     assert unit_cell == pytest.approx(
         [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000], abs=1e-3

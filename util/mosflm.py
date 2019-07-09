@@ -29,7 +29,7 @@ def dump(experiments, directory):
         goniometer = experiment.goniometer
 
         # XXX imageset is getting the experimental geometry from the image files
-        # rather than the input experiments.json file
+        # rather than the input models.expt file
         imageset = experiment.imageset
 
         from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame

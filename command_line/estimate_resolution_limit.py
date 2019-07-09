@@ -30,7 +30,7 @@ plot=False
 def run(args):
     import libtbx.load_env
 
-    usage = "%s experiments.json indexed.pickle [options]" % libtbx.env.dispatcher_name
+    usage = "dev.dials.estimate_resolution_limit indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
         usage=usage,

@@ -8,21 +8,21 @@ file containing a scaled dataset.
 Any number of datasets can be scaled against the reference dataset at once,
 giving the same scaling result as if each dataset were scaled as an independent
 job. The only difference is that all scaled datasets would be output in one
-scaled.pickle and scaled_experiments.json, which may be more or less convenient
+scaled.refl and scaled.expt, which may be more or less convenient
 for further processing.
 
 Scaling against a dials reference dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In this example, reference_reflections.pickle and reference_experiments.json are
+In this example, reference.refl and reference.expt are
 from a dataset that has already been scaled with dials.scale. To scale another
-dataset (datafiles integrated.pickle, integrated_experiments.json) against this
+dataset (datafiles integrated.refl, integrated.expt) against this
 target/reference, one should use the following command::
 
-  dials.scale only_target=True integrated.pickle integrated_experiments.json reference_reflections.pickle reference_experiments.json
+  dials.scale only_target=True integrated.refl integrated.expt reference.refl reference.expt
 
 This will scale the intensities of the dataset to agree as closely as possible
 with the intensities of the reference dataset, and save the scaled dataset to
-scaled.pickle, scaled_experiments.json (the reference files are unchanged).
+scaled.refl, scaled.expt (the reference files are unchanged).
 The :samp:`only_target=True` command is important, else all the data will be
 scaled together and output in a joint output file.
 
@@ -32,10 +32,10 @@ In this case, it is assumed that the intensity and variance columns of the mtz
 file have already been scaled. Targeted scaling would be run with the following
 command::
 
-  dials.scale integrated.pickle integrated_experiments.json target_mtz=scaled.mtz
+  dials.scale integrated.refl integrated.expt target_mtz=scaled.mtz
 
 The targeted scaling algorithm is the same regardless of the target datafile type,
-likewise the scaled dataset will be saved to scaled.pickle and scaled_experiments.json.
+likewise the scaled dataset will be saved to scaled.refl and scaled.expt.
 
 
 General considerations for suitable options

@@ -20,7 +20,7 @@ def test_import_integrate_hkl(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("integrate_hkl.pickle").open("rb") as fh:
+    with tmpdir.join("integrate_hkl.refl").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -45,7 +45,7 @@ def test_import_spot_xds(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
+    with tmpdir.join("spot_xds.refl").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -69,7 +69,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    with tmpdir.join("spot_xds.pickle").open("rb") as fh:
+    with tmpdir.join("spot_xds.refl").open("rb") as fh:
         table = pickle.load(fh)
 
     assert "miller_index" in table
@@ -86,7 +86,7 @@ def test_from_xds_files(dials_data, tmpdir):
         [
             "dials.import_xds",
             "input.method=experiment",
-            "output.filename=import_experiments.json",
+            "output.filename=import_xds.expt",
             dials_data("centroid_test_data"),
         ],
         working_directory=tmpdir,
@@ -94,4 +94,4 @@ def test_from_xds_files(dials_data, tmpdir):
     assert result["exitcode"] == 0
     assert result["stderr"] == ""
 
-    assert tmpdir.join("import_experiments.json").check(file=1)
+    assert tmpdir.join("import_xds.expt").check(file=1)

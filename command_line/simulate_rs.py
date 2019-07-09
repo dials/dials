@@ -25,7 +25,7 @@ class Script(object):
         phil_scope = parse(
             """
 
-      output = simulated.pickle
+      output = simulated.refl
         .type = str
         .help = "The output pickle file"
 
@@ -64,7 +64,7 @@ class Script(object):
         )
 
         # Create the option parser
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
         self.parser = OptionParser(
             usage=usage, phil=phil_scope, read_experiments=True, check_format=False
         )

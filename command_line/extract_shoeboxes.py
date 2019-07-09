@@ -24,7 +24,7 @@ extracts pixels from the images. The shoeboxes are then saved to file.
 
 Examples::
 
-dials.extract_shoeboxes experiments.json reflections.pickle
+dials.extract_shoeboxes models.expt observations.refl
 
 """
 
@@ -41,7 +41,7 @@ phil_scope = parse(
     .help = "Pad the reflection as background"
 
   output {
-    reflections = 'shoeboxes.pickle'
+    reflections = 'shoeboxes.refl'
       .type = str
       .help = "The integrated output filename"
   }
@@ -60,8 +60,8 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiment.json reflections.pickle"
-            % libtbx.env.dispatcher_name
+            "usage: dials.extract_shoeboxes [options] experiment.expt observations.refl"
+            
         )
 
         # Create the parser

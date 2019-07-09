@@ -30,28 +30,28 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 
 help_message = """
 
-This program can be used to re-index an experiments.json and/or indexed.pickle
+This program can be used to re-index an indexed.expt and/or indexed.refl
 file from one setting to another. The change of basis operator can be
 provided in h,k,l, or a,b,c or x,y,z conventions. By default the change of
-basis operator will also be applied to the space group in the experiments.json
+basis operator will also be applied to the space group in the indexed.expt
 file, however, optionally, a space group (including setting) to be applied
 AFTER applying the change of basis operator can be provided.
 Alternatively, to reindex an integated dataset in the case of indexing abiguity,
-a reference dataset (experiments.json and reflection.pickle) in the same space
+a reference dataset (models.expt and reflection.refl) in the same space
 group can be specified. In this case, any potential twin operators are tested,
 and the dataset is reindexed to the setting that gives the highest correlation
 with the reference dataset.
 
 Examples::
 
-  dials.reindex experiments.json change_of_basis_op=b+c,a+c,a+b
+  dials.reindex indexed.expt change_of_basis_op=b+c,a+c,a+b
 
-  dials.reindex indexed.pickle change_of_basis_op=-b,a+b+2*c,-a
+  dials.reindex indexed.refl change_of_basis_op=-b,a+b+2*c,-a
 
-  dials.reindex experiments.json index.pickle change_of_basis_op=l,h,k
+  dials.reindex indexed.expt indexed.refl change_of_basis_op=l,h,k
 
-  dials.reindex experiments.json index.pickle reference.experiments=ref_experiments.json
-    reference.reflections=ref_reflections.pickle
+  dials.reindex indexed.expt indexed.refl reference.experiments=reference.expt
+    reference.reflections=reference.refl
 
 """
 
@@ -74,11 +74,11 @@ reference {
     .help = "Reference reflections to allow reindexing to consistent index between datasets."
 }
 output {
-  experiments = reindexed_experiments.json
+  experiments = reindexed.expt
     .type = str
     .help = "The filename for reindexed experimental models"
 
-  reflections = reindexed_reflections.pickle
+  reflections = reindexed.refl
     .type = str
     .help = "The filename for reindexed reflections"
 }
@@ -138,7 +138,7 @@ def run(args):
     import libtbx.load_env
     from dials.util import Sorry
 
-    usage = "%s [options] experiments.json indexed.pickle" % libtbx.env.dispatcher_name
+    usage = "dials.reindex [options] indexed.expt indexed.refl"
 
     parser = OptionParser(
         usage=usage,

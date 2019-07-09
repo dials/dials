@@ -19,12 +19,12 @@ class Script(object):
 
         usage = (
             "usage: %prog [options] [param.phil] "
-            "sweep.json crystal.json intensities.mtz"
+            "sweep.expt crystal.expt intensities.mtz"
         )
 
         phil_scope = parse(
             """
-      output = simulated.pickle
+      output = simulated.refl
         .type = str
         .help = "The filename for the simulated reflections"
     """

@@ -29,7 +29,7 @@ def run(args):
     from dials.util.options import OptionParser
     import libtbx.load_env
 
-    usage = "%s [options] find_spots.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] find_spots.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
 

@@ -12,7 +12,7 @@ reflection file per output experiment file.
 
 Example::
 
-  dials.split_experiments combined_experiments.json combined_reflections.pickle
+  dials.split_experiments combined.expt combined.refl
 
 """
 
@@ -36,11 +36,11 @@ class Script(object):
                 "experiments that reference a single detector model."
 
       output {
-        experiments_prefix = experiments
+        experiments_prefix = split
           .type = str
           .help = "Filename prefix for the split experimental models"
 
-        reflections_prefix = reflections
+        reflections_prefix = split
           .type = str
           .help = "Filename prefix for the split reflections"
 
@@ -73,8 +73,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.expt experiments2.expt reflections1.refl "
+            "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -116,7 +116,7 @@ class Script(object):
 
         import math
 
-        experiments_template = "%s_%%0%sd%s.json" % (
+        experiments_template = "%s_%%0%sd%s.expt" % (
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.experiments_suffix)
@@ -124,7 +124,7 @@ class Script(object):
             else "",
         )
 
-        reflections_template = "%s_%%0%sd%s.pickle" % (
+        reflections_template = "%s_%%0%sd%s.refl" % (
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.reflections_suffix)

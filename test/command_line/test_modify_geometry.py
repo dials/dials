@@ -11,7 +11,7 @@ def test_modify_geometry(dials_regression, run_in_tmpdir):
         dials_regression, "experiment_test_data/kappa_experiments.json"
     )
 
-    new_expt_json = os.path.join(os.getcwd(), "modified_experiments.json")
+    new_expt_json = os.path.join(os.getcwd(), "modified.expt")
 
     cmd = "dials.modify_geometry %s angles=10,20,30" % orig_expt_json
     result = easy_run.fully_buffered(cmd).raise_if_errors()

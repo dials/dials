@@ -18,7 +18,7 @@ with ersatz miniCBF header. Can be used e.g. with HDF5 format data.
 
 Examples::
 
-  dials.convert_to_cbf experiments.json prefix=data_as_cbf
+  dials.convert_to_cbf models.expt prefix=data_as_cbf
 
 """
 
@@ -56,7 +56,7 @@ def run():
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
 
-    usage = "%s [options] experiments.json" % libtbx.env.dispatcher_name
+    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

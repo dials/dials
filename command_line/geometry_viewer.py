@@ -581,7 +581,7 @@ def run(args):
     import libtbx.load_env
     import os
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "dials.geometry_viewer [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

@@ -23,8 +23,8 @@ combinations of experiments can be created by repeat runs.
 
 Examples::
 
-  dials.combine_experiments experiments_0.json experiments_1.json \\
-    reflections_0.pickle reflections_1.pickle \\
+  dials.combine_experiments experiments_0.expt experiments_1.expt \\
+    reflections_0.refl reflections_1.refl \\
     reference_from_experiment.beam=0 \\
     reference_from_experiment.detector=0
 
@@ -112,11 +112,11 @@ phil_scope = parse(
   }
 
   output {
-    experiments_filename = combined_experiments.json
+    experiments_filename = combined.expt
       .type = str
       .help = "The filename for combined experimental models"
 
-    reflections_filename = combined_reflections.pickle
+    reflections_filename = combined.refl
       .type = str
       .help = "The filename for combined reflections"
 
@@ -344,8 +344,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..." % libtbx.env.dispatcher_name
+            "experiments1.expt experiments2.expt reflections1.refl "
+            "reflections2.refl..." % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -628,8 +628,8 @@ class Script(object):
                     sub_refls = reflections.select(reflections["id"] == sub_idx)
                     sub_refls["id"] = flex.int(len(sub_refls), sub_id)
                     batch_refls.extend(sub_refls)
-                exp_filename = os.path.splitext(exp_name)[0] + "_%03d.json" % i
-                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.pickle" % i
+                exp_filename = os.path.splitext(exp_name)[0] + "_%03d.expt" % i
+                ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
 
         def combine_in_clusters(
@@ -646,10 +646,10 @@ class Script(object):
                     cluster_expts.append(expts)
                     cluster_refls.extend(refls)
                 exp_filename = os.path.splitext(exp_name)[0] + (
-                    "_cluster%d.json" % (end_count - cluster)
+                    "_cluster%d.expt" % (end_count - cluster)
                 )
                 ref_filename = os.path.splitext(refl_name)[0] + (
-                    "_cluster%d.pickle" % (end_count - cluster)
+                    "_cluster%d.refl" % (end_count - cluster)
                 )
                 result.append(
                     (cluster_expts, cluster_refls, exp_filename, ref_filename)

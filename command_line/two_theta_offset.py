@@ -15,7 +15,7 @@ from libtbx.phil import parse
 
 help_message = """
 
-dials.two_theta_offset experiment_one.json experiment_two.json
+dials.two_theta_offset experiment_one.expt experiment_two.expt
 
 """
 
@@ -46,7 +46,7 @@ class Script(object):
 
         # The script usage
         usage = (
-            "usage: %s [options] experiment_one.json experiment_two.json"
+            "usage: %s [options] experiment_one.expt experiment_two.expt"
             % libtbx.env.dispatcher_name
         )
 

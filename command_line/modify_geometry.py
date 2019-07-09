@@ -10,7 +10,7 @@ phil_scope = libtbx.phil.parse(
     """
 include scope dials.util.options.geometry_phil_scope
 output {
-  experiments = modified_experiments.json
+  experiments = modified.expt
     .type = path
 }
 """,
@@ -25,7 +25,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

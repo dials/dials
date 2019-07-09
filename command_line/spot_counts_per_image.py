@@ -23,9 +23,9 @@ generates a plot of the per-image statistics (plot=image.png).
 
 Examples::
 
-  dials.spot_counts_per_image experiments.json strong.pickle
+  dials.spot_counts_per_image imported.expt strong.refl
 
-  dials.spot_counts_per_image experiments.json strong.pickle plot=per_image.png
+  dials.spot_counts_per_image imported.expt strong.refl plot=per_image.png
 
 """
 
@@ -52,7 +52,7 @@ id = None
 def run(args):
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
+    usage = "dials.spot_counts_per_image [options] imported.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

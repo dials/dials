@@ -23,7 +23,7 @@ This program averages images and makes a radial average over resolution shells
 
 Examples::
 
-dev.dials.make_radial_average experiments.json
+dev.dials.make_radial_average models.expt
 
 """
 
@@ -68,7 +68,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: dev.dials.make_radial_average [options] models.expt"
 
         # Create the parser
         self.parser = OptionParser(

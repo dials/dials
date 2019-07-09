@@ -34,9 +34,9 @@ estimated standard deviation.
 
 Examples::
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle
+  dials.two_theta_refine integrated.expt integrated.refl
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle \
+  dials.two_theta_refine integrated.expt integrated.refl \
     correlation_plot.filename=corrplot.png cif=refined_cell.cif
 """
 
@@ -47,7 +47,7 @@ phil_scope = parse(
     """
 
   output {
-    experiments = refined_cell.json
+    experiments = refined_cell.expt
       .type = str
       .help = "The filename for experimental models including refined cells"
 
@@ -144,7 +144,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "models.expt observations.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

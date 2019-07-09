@@ -12,10 +12,10 @@ def test_convert_to_cbf(dials_data, filename, tmpdir):
     )
     result.check_returncode()
     assert not result.stderr
-    assert tmpdir.join("imported_experiments.json").check()
+    assert tmpdir.join("imported.expt").check()
 
     result = procrunner.run(
-        ["dials.convert_to_cbf", "imported_experiments.json"], working_directory=tmpdir
+        ["dials.convert_to_cbf", "imported.expt"], working_directory=tmpdir
     )
     result.check_returncode()
     assert not result.stderr

@@ -45,21 +45,21 @@ RAD2DEG = 180 / math.pi
 help_message = """
 
 Generates a html report given the output of various DIALS programs
-(reflections.pickle and/or experiments.json).
+(observations.refl and/or models.expt).
 
 Examples::
 
-  dials.report strong.pickle
+  dials.report strong.refl
 
-  dials.report indexed.pickle
+  dials.report indexed.refl
 
-  dials.report refined.pickle
+  dials.report refined.refl
 
-  dials.report integrated.pickle
+  dials.report integrated.refl
 
-  dials.report refined_experiments.json
+  dials.report refined.expt
 
-  dials.report integrated.pickle integrated_experiments.json
+  dials.report integrated.refl integrated.expt
 
 """
 
@@ -2424,7 +2424,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
+        usage = "usage: dials.report [options] observations.refl"
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

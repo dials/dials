@@ -43,7 +43,7 @@ if __name__ == "__main__":
     from dials.util import Sorry
 
     if len(sys.argv) != 2:
-        raise RuntimeError("%s strong.pickle")
+        raise RuntimeError("%s strong.refl")
 
     from dials.array_family import flex
 

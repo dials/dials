@@ -57,11 +57,11 @@ phil_scope = parse(
 
   output {
 
-    experiments = "filtered_experiments.json"
+    experiments = "filtered.expt"
       .type = str
       .help = "The filtered experiments file"
 
-    reflections = "filtered_reflections.pickle"
+    reflections = "filtered.refl"
       .type = str
       .help = "The filtered reflections file"
 
@@ -538,7 +538,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = "dials.compute_delta_cchalf [options] scaled_experiments.json scaled.pickle"
+    usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
     parser = OptionParser(
         usage=usage,

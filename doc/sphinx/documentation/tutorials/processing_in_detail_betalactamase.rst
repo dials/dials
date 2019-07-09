@@ -39,7 +39,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that metadata are read for all the images, and a file
-describing their contents (:ref:`datablock.json <datablock-json>`) is written::
+describing their contents (:ref:`datablock.expt <datablock-json>`) is written::
 
     dials.import tutorial-data/summed/C2sum_1*.cbf.gz
 
@@ -52,7 +52,7 @@ Now is a good point to take a first look at the data using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
 the data is sensible and to anticipate any problems in processing::
 
-  dials.image_viewer datablock.json
+  dials.image_viewer datablock.expt
 
 You will be presented with the main image viewer screen:
 
@@ -86,14 +86,14 @@ speed this up:
         :linenos:
 
 Once this has completed, a new :ref:`reflection file <reflection_pickle>`
-'``strong.pickle``' is written, containing a record of every spot found.
+'``strong.refl``' is written, containing a record of every spot found.
 
 The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is
 not as fast as viewers such as ADXV, however it does integrate well with
 DIALS data files. Having found strong spots open the image viewer again,
 but giving it the newly found reflection list::
 
-  dials.image_viewer datablock.json strong.pickle
+  dials.image_viewer datablock.expt strong.refl
 
 Adjust the brightness so that you can see the spots, then zoom in so
 that you can see the clustered individual pixels of a single spot.
@@ -126,7 +126,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions::
 
-  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+  dials.reciprocal_lattice_viewer datablock.expt strong.refl
 
 .. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
 
@@ -160,8 +160,8 @@ using space group P1.
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
-:ref:`experiments.json <experiments_json>` containing the tuned
-experimental model and determined parameters, and a ``indexed.pickle``
+:ref:`indexed.expt <experiments_json>` containing the tuned
+experimental model and determined parameters, and a ``indexed.refl``
 reflection file, including index data from the best fit.
 
 It is worth reading through this output to understand what the indexing
@@ -234,7 +234,7 @@ care needs to be taken in selecting the strategy used by ``dials.index``.
 
 After indexing it can be useful to inspect the reciprocal lattice again::
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+  dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
 Now indexed/unindexed spots are differentiated by colour, and it is possible
 to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`
@@ -275,10 +275,10 @@ finding procedure (uncorrected and unscaled) but provides a very useful
 check to see if the data does appear to adhere to the proposed symmetry
 operators.
 
-A separate ``bravais_setting_N.json`` experiments file is written for
+A separate ``bravais_setting_N.expt`` experiments file is written for
 each plausible lattice type, corresponding to the solution index. In this
 example we choose to continue processing with
-:samp:`bravais_setting_2.json`, which is the highest symmetry suggested
+:samp:`bravais_setting_2.expt`, which is the highest symmetry suggested
 result - the options 3, 4, 5 have higher symmetries, but at the cost of
 a steep jump in RMSd's and worsening of fit.
 
@@ -286,14 +286,14 @@ In cases where the change of basis operator to the chosen setting is the
 identity operator (:samp:`a,b,c`) we can proceed directly to further
 refinement. However, we notice that the change of basis operator for our
 chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
-:ref:`indexed.pickle <reflection_pickle>` file output by using
+:ref:`indexed.refl <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
 .. literalinclude:: logs_detail_betalactamase/dials.reindex.cmd
 
-This outputs the file :file:`reindexed_reflections.pickle` which we now
+This outputs the file :file:`reindexed.refl` which we now
 use as input to downstream programs, in place of the original
-:file:`indexed.pickle`.
+:file:`indexed.refl`.
 
 .. _detailbetal-sec-refinement:
 
@@ -329,8 +329,8 @@ from ``dials.refine_bravais_settings`` run:
 
 
 This uses all reflections in refinement rather than a subset and provided a
-small reduction in RMSDs, writing the results out to ``refined_experiments.json``
-and ``refined.pickle``.
+small reduction in RMSDs, writing the results out to ``refined.expt``
+and ``refined.refl``.
 
 However, the refined model is still static over
 the whole dataset. We may want to do an additional refinement job to fit a
@@ -354,8 +354,8 @@ previous job:
     .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
         :linenos:
 
-which writes over the ``refined_experiments.json`` and
-``refined.pickle`` from the previous refinement step. By default the
+which writes over the ``refined.expt`` and
+``refined.refl`` from the previous refinement step. By default the
 scan-varying refinement looks for smooth changes over an interval of 36°
 intervals, to avoid fitting unphysical models to noise, though this
 parameter can be tuned. We can use the :ref:`betalactamase-html-report`,
@@ -392,19 +392,19 @@ number of processors used to speed the job up.
         :linenos:
 
 Checking the log output, we see that after loading in the reference
-reflections from :file:`refined.pickle`, new predictions are made up to the
+reflections from :file:`refined.refl`, new predictions are made up to the
 highest resolution at the corner of the detector. This is fine, but if we
 wanted to we could have adjusted the resolution limits using parameters
 :samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
 made using the scan-varying crystal model recorded in
-:file:`refined_experiments.json`. This ensures that prediction is made using
+:file:`refined.expt`. This ensures that prediction is made using
 the smoothly varying lattice and orientation that we determined in the
 refinement step. As this scan-varying model was determined in advance of
 integration, each of the integration jobs is independent and we can take
 advantage of true parallelism during processing.
 
 The profile model is calculated from the reflections in
-:file:`refined.pickle`. First reflections with a too small 'zeta'
+:file:`refined.refl`. First reflections with a too small 'zeta'
 factor are filtered out. This essentially removes reflections that are too
 close to the spindle axis. In general these reflections require significant
 Lorentz corrections and as a result have less trustworthy intensities anyway.
@@ -440,7 +440,7 @@ intensities, and for all reflections, not just the strong spots. So, it is
 prudent to repeat the assessment to see if there is any indication that our
 initial assessment should be revised.::
 
-  dials.symmetry integrated_experiments.json integrated.pickle
+  dials.symmetry integrated.expt integrated.refl
 
 The symmetry analysis scores all possible symmetry operations by looking at
 the intensities of reflections that would be equivalent under that operation.
@@ -484,7 +484,7 @@ and scattered beam vector relative to the crystal. In this example, we shall
 scale the dataset using the output of dials.symmetry with a resolution cutoff of
 1.4 Angstrom::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4
 
 As can be seen from the output text, 70 parameters are used to parameterise the
 scaling model for this dataset. Outlier rejection is performed at several stages,
@@ -522,7 +522,7 @@ periodicity similar to the scale term. There is certainly no strong B-factor
 reduction as a function of rotation angle, which would have suggested radiation
 damage. The scaling can be repeated, omitting the :samp:`decay_term`::
 
-  dials.scale reindexed_experiments.json reindexed_reflections.pickle d_min=1.4 decay_term=False
+  dials.scale symmetrized.expt symmetrized.refl d_min=1.4 decay_term=False
 
 ::
 
@@ -554,7 +554,7 @@ within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with::
 
-  dials.report scaled_experiments.json scaled.pickle
+  dials.report scaled.expt scaled.refl
 
 which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
 
@@ -613,7 +613,7 @@ and aimless_.
 2) export the scaled intensities for further downstream processing, making sure to
 include the :samp:`intensity=scale` option::
 
-  dials.export scaled.pickle scaled_experiments.json intensity=scale
+  dials.export scaled.refl scaled.expt intensity=scale
 
 Here is the output for exporting after integration, showing the reflection file statistics.
 

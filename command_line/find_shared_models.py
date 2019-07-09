@@ -22,9 +22,9 @@ This program attempts to find sets of images with shared models
 
 Examples::
 
-  dials.find_shared_models experiments.json
+  dials.find_shared_models models.expt
 
-  dials.find_shared_models experiments1.json experiments2.json
+  dials.find_shared_models experiments1.expt experiments2.expt
 
 """
 
@@ -62,7 +62,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json " % libtbx.env.dispatcher_name
+            "models.expt " % libtbx.env.dispatcher_name
         )
 
         # Initialise the base class

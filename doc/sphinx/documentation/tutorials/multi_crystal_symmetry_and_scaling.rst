@@ -56,7 +56,7 @@ producing useful plots and output files.
 To run :samp:`xia2.multiplex`, we must provide the path to the input integrated files from
 :samp:`dials.integrate`::
 
-  xia2.multiplex ../tutorial-data/ccp4/integrated_files/{reflections_*.pickle,experiments_*.json}
+  xia2.multiplex ../tutorial-data/ccp4/integrated_files/{reflections_*.refl,experiments_*.expt}
 
 This runs :samp:`dials.cosym`, :samp:`dials.symmetry`, :samp:`dials.scale`,
 calculates a resolution limit and reruns :samp:`dials.scale` with a resolution cutoff. The
@@ -134,7 +134,7 @@ Manual reprocessing
 Let's try running :samp:`dials.symmetry` again on the output of the first scaling run
 (before any resolution cutoff has been applied)::
 
-  dials.symmetry 4_scaled_experiments.json 4_scaled_reflections.pickle
+  dials.symmetry 4_scaled.expt 4_scaled.refl
 
   Scoring all possible sub-groups
   ---------------------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ analysis. Now the correct solution is easily found with a very high likelihood,
 that's much better! We can now run scaling again on the output of :samp:`dials.symmetry`.
 Let's also output the results to an unmerged mtz so that we can later create a report::
 
-  dials.scale reindexed_reflections.pickle reindexed_experiments.json unmerged_mtz=rescaled.mtz
+  dials.scale symmetrized.refl symmetrized.expt unmerged_mtz=rescaled.mtz
 
 From the output, you can see that the merging statistics are significantly better
 than before, with high correlation coefficients close to 1. At this point we could
@@ -172,7 +172,7 @@ resolution so it is unneccesary in this case.
 
 To get a useful summary report, we can generate a dials-report or a xia2-report::
 
-  dials.report scaled.pickle scaled_experiments.json
+  dials.report scaled.refl scaled.expt
 
   xia2.report rescaled.mtz
 
@@ -187,7 +187,7 @@ We can get some useful information about the agreement between datasets by
 running the program :samp:`dials.compute_delta_cchalf`. This program implements
 a version of the algorithms described in Assmann_ *et al.* ::
 
-  dials.compute_delta_cchalf scaled.pickle scaled_experiments.json
+  dials.compute_delta_cchalf scaled.refl scaled.expt
 
   # Datasets: 4
   # Reflections: 222934
@@ -216,7 +216,7 @@ To see the effect of removing the last dataset (dataset '3'), we can rerun
 provide the identifier of the dataset that we want to exclude, which are usually
 a string of integers ('0', '1', '2' ... based on the order of input)::
 
-  dials.scale scaled.pickle scaled_experiments.json exclude_datasets=3 unmerged_mtz=scaled.mtz
+  dials.scale scaled.refl scaled.expt exclude_datasets=3 unmerged_mtz=scaled.mtz
 
 We could have also excluded a subset of images, for example using the option
 :samp:`exclude_images=3:301:600` to exclude the last 300 images of dataset 3.
