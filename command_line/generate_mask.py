@@ -40,7 +40,6 @@ import six.moves.cPickle as pickle
 
 import dials.util
 import dials.util.log
-import libtbx.load_env
 import libtbx.phil as phil
 from dials.util.masking import MaskGenerator
 from dials.util.options import OptionParser, flatten_experiments

@@ -17,7 +17,6 @@ from dials.algorithms.integration import filtering
 from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
-import libtbx.load_env
 from cctbx import uctbx
 
 
@@ -419,7 +418,7 @@ def run():
     phil_scope = parse(phil_str, process_includes=True)
 
     # The script usage
-    usage = "usage: dials.filter_reflections [options] experiment.expt" 
+    usage = "usage: dials.filter_reflections [options] experiment.expt"
 
     # Create the parser
     parser = OptionParser(

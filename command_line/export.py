@@ -675,7 +675,6 @@ class JsonExporter(object):
 
 
 if __name__ == "__main__":
-    import libtbx.load_env
     from dials.util.options import (
         OptionParser,
         flatten_experiments,
