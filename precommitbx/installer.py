@@ -187,7 +187,7 @@ def precommitbx_template(python):
             "  echo No pre-commit configuration. Skipping pre-commit checks.",
             "  exit 0",
             "fi",
-            'if grep -q "language_version.\+libtbx.python" .pre-commit-config.yaml; then',
+            r'if grep -q "language_version.\+libtbx.python" .pre-commit-config.yaml; then',
             "  echo Repository contains legacy pre-commit configuration. Skipping pre-commit checks.",
             "  exit 0",
             "fi",
@@ -340,7 +340,7 @@ def download_libffi():
     archive = precommit_home / "libffi-{}.tar.gz".format(libffi_source_version)
     if archive.check() and archive.size() == libffi_source_size:
         return archive
-    url = "ftp://sourceware.org/pub/libffi/libffi-{0}.tar.gz".format(
+    url = "ftp://sourceware.org/pub/libffi/libffi-{}.tar.gz".format(
         libffi_source_version
     )
     download("Downloading libffi", url, libffi_source_size, archive, step="libffi")

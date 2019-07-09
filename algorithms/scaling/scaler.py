@@ -192,7 +192,7 @@ class ScalerBase(Subject):
             ft = time.time()
             logger.info("Time taken for refinement %s", (ft - st))
             refinery.return_scaler()
-            logger.info(("\n" + "=" * 80 + "\n"))
+            logger.info("\n" + "=" * 80 + "\n")
 
     @Subject.notify_event(event="performed_error_analysis")
     def perform_error_optimisation(
@@ -295,10 +295,8 @@ class SingleScaler(ScalerBase):
             self._global_Ih_table = None
             self.scaling_selection = ~self.outliers
         logger.info(
-            (
                 "Completed preprocessing and initialisation for this dataset.\n"
                 "\n" + "=" * 80 + "\n"
-            )
         )
         log_memory_usage()
 
@@ -720,10 +718,8 @@ class MultiScalerBase(ScalerBase):
         self.global_Ih_table.calc_Ih()
         if self.verbosity <= 1:
             logger.info(
-                (
                     "Scale factors determined during minimisation have now been\n"
                     "applied to all datasets.\n"
-                )
             )
 
     def adjust_variances(self):
@@ -736,16 +732,12 @@ class MultiScalerBase(ScalerBase):
                 and self.params.weighting.output_optimised_vars
             ):
                 logger.info(
-                    (
                         "The error model has been used to adjust the variances for all \n"
                         "applicable datasets. \n"
-                    )
                 )
             logger.info(
-                (
                     "The variances have been adjusted to account for the uncertainty \n"
                     "in the scaling model for all datasets. \n"
-                )
             )
 
     def clean_reflection_tables(self):
@@ -999,7 +991,7 @@ class MultiScaler(MultiScalerBase):
             self.verbosity -= 1
             for scaler in self.active_scalers:
                 scaler.verbosity -= 1
-        logger.info(("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n"))
+        logger.info("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n")
         log_memory_usage()
 
     def combine_intensities(self):
@@ -1136,10 +1128,8 @@ class NullScaler(ScalerBase):
         self.scaling_selection = flex.bool(self.n_suitable_refl, True)
         logger.info("Target dataset contains %s reflections", self.n_suitable_refl)
         logger.info(
-            (
                 "Completed preprocessing and initialisation for this dataset."
                 "\n\n" + "=" * 80 + "\n"
-            )
         )
 
     @property

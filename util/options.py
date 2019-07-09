@@ -841,7 +841,7 @@ class OptionParser(OptionParserBase):
         # Print the diff phil
         if show_diff_phil:
             diff_phil_str = self.diff_phil.as_str()
-            if diff_phil_str is not "":
+            if diff_phil_str != "":
                 print("The following parameters have been modified:\n")
                 print(diff_phil_str)
 
@@ -1087,9 +1087,9 @@ class OptionParser(OptionParserBase):
         print(' case "$1" in')
         _tree_to_bash("", tree)
 
-        toplevelset = tree[""] | set(
-            [p + "=" for p, exp in parameter_expansion_list.items() if exp is not None]
-        )
+        toplevelset = tree[""] | {
+            p + "=" for p, exp in parameter_expansion_list.items() if exp is not None
+        }
 
         print("\n  *)")
         print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
@@ -1112,7 +1112,7 @@ def flatten_reflections(filename_object_list):
     if len(tables) > 1:
         new_id_ = 0
         for table in tables:
-            table_id_values = sorted(list(set(table["id"]).difference(set([-1]))))
+            table_id_values = sorted(list(set(table["id"]).difference({-1})))
             highest_new_id = new_id_ + len(table_id_values) - 1
             expt_ids_dict = table.experiment_identifiers()
             new_ids_dict = {}

@@ -51,7 +51,7 @@ class ErrorModelTarget(object):
                 [self.compute_restraints_functional_gradients_and_curvatures()[0]]
             )
         )
-        self._rmsds = [(flex.sum((R)) / n) ** 0.5]
+        self._rmsds = [(flex.sum(R) / n) ** 0.5]
         return self._rmsds
 
     def achieved(self):

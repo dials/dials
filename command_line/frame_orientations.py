@@ -95,7 +95,7 @@ class Script(object):
             "Angle from\nprevious (deg)",
         ]
         for iexp, exp in enumerate(experiments):
-            print("For Experiment id = {0}".format(iexp))
+            print("For Experiment id = {}".format(iexp))
             print(exp.beam)
             print(exp.crystal)
             print(exp.scan)
@@ -146,7 +146,7 @@ class Script(object):
             plt.xlabel("Image number")
             plt.ylabel(r"Angle from previous image $\left(^\circ\right)$")
             plt.title(r"Angle between neighbouring images")
-            print("Saving plot to {0}".format(self.params.plot_filename))
+            print("Saving plot to {}".format(self.params.plot_filename))
             plt.savefig(self.params.plot_filename)
 
         print()

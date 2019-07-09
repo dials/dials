@@ -72,7 +72,7 @@ class Script(object):
             return
 
         experiments = flatten_experiments(params.input.experiments)
-        print("{0} experiments loaded".format(len(experiments)))
+        print("{} experiments loaded".format(len(experiments)))
 
         us0_vecs = self.extract_us0_vecs(experiments)
         e_vecs = self.extract_rotation_axes(experiments)
@@ -114,7 +114,7 @@ class Script(object):
             try:
                 axes.append(matrix.col(exp.goniometer.get_rotation_axis()))
             except AttributeError:
-                raise Sorry("Experiment with id {0} has no goniometer".format(iexp))
+                raise Sorry("Experiment with id {} has no goniometer".format(iexp))
         return axes
 
 

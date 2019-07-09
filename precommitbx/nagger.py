@@ -68,7 +68,7 @@ def nag():
     import dials.precommitbx.installer
 
     def fprint(text=""):
-        print("= {0:<56s} =".format(text))
+        print("= {:<56s} =".format(text))
 
     print(dials.precommitbx.installer.YELLOW + "=" * 60)
     fprint()

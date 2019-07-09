@@ -16,7 +16,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) != 5:
-        raise RuntimeError("%s in_\%04d.cbf out_\%04d.cbf start end" % sys.argv[0])
+        raise RuntimeError(r"%s in_\%04d.cbf out_\%04d.cbf start end" % sys.argv[0])
     in_template = sys.argv[1]
     out_template = sys.argv[2]
     start = int(sys.argv[3])

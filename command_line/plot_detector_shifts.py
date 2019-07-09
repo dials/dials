@@ -397,7 +397,7 @@ class Script(object):
 
         # first the plots using offsets in local fast, slow, normal frames
         for direction in ["fast", "slow", "normal"]:
-            print("Doing plot of offsets in the {0} direction".format(direction))
+            print("Doing plot of offsets in the {} direction".format(direction))
             if self.params.plot_type == "panel_grid":
                 plot_grid_of_panels(dat, grid_size[0], grid_size[1], direction, tag)
             elif self.params.plot_type == "spherical_polar":
@@ -406,7 +406,7 @@ class Script(object):
         # now plots using offsets in the laboratory frame
         for direction in ["x", "y", "z"]:
             print(
-                "Doing plot of offsets in the laboratory {0} direction".format(
+                "Doing plot of offsets in the laboratory {} direction".format(
                     direction
                 )
             )

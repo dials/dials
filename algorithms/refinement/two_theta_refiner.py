@@ -91,7 +91,7 @@ class TwoThetaReflectionManager(ReflectionManager):
         w_2theta = l["2theta.weights"]
 
         msg = (
-            "\nSummary statistics for {0} observations".format(nref)
+            "\nSummary statistics for {} observations".format(nref)
             + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]

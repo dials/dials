@@ -138,7 +138,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -176,14 +176,14 @@ class Script(object):
         logger.info("\n" + "-" * 80)
         reflections.as_pickle(params.output.reflections)
         logger.info(
-            "Saved {0} reflections to {1}".format(
+            "Saved {} reflections to {}".format(
                 len(reflections), params.output.reflections
             )
         )
 
         # Save the experiments
         if params.output.experiments:
-            logger.info("Saving experiments to {0}".format(params.output.experiments))
+            logger.info("Saving experiments to {}".format(params.output.experiments))
             dump = ExperimentListDumper(experiments)
             dump.as_file(params.output.experiments)
 

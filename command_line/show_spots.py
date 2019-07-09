@@ -51,4 +51,4 @@ if __name__ == "__main__":
     try:
         show_spots(strong_spots)
     except KeyError:
-        raise Sorry("{0} does not contain pixel centroid data".format(sys.argv[1]))
+        raise Sorry("{} does not contain pixel centroid data".format(sys.argv[1]))

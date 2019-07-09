@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) != 6:
         raise RuntimeError(
-            "%s in_\%04d.cbf out_\%04d.cbf start end scale" % sys.argv[0]
+            r"%s in_\%04d.cbf out_\%04d.cbf start end scale" % sys.argv[0]
         )
     in_template = sys.argv[1]
     out_template = sys.argv[2]

@@ -269,7 +269,7 @@ class Processor(object):
             mp_njobs = int(math.ceil(len(self.manager) / mp_nproc))
         logger.info(self.manager.summary())
         if mp_njobs > 1:
-            assert mp_method is not "none" and mp_method is not None
+            assert mp_method != "none" and mp_method is not None
             logger.info(
                 " Using %s with %d parallel job(s) and %d processes per node\n"
                 % (mp_method, mp_njobs, mp_nproc)

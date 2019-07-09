@@ -96,7 +96,7 @@ def save_plots(params, raw, smoothed, suffix=""):
         plt.text(
             0.2,
             0.9,
-            "interval width: {0:.3f}".format(x_interval),
+            "interval width: {:.3f}".format(x_interval),
             transform=line.axes.transAxes,
             color="c",
         )
@@ -105,7 +105,7 @@ def save_plots(params, raw, smoothed, suffix=""):
 
     # write them out
     fname = "x-residual-analysis" + suffix + "." + params.output.format
-    print("Saving {0}".format(fname))
+    print("Saving {}".format(fname))
     plt.savefig(fname)
 
     # Y residuals plot
@@ -133,7 +133,7 @@ def save_plots(params, raw, smoothed, suffix=""):
         plt.text(
             0.2,
             0.9,
-            "interval width: {0:.3f}".format(y_interval),
+            "interval width: {:.3f}".format(y_interval),
             transform=line.axes.transAxes,
             color="c",
         )
@@ -142,7 +142,7 @@ def save_plots(params, raw, smoothed, suffix=""):
 
     # write them out
     fname = "y-residual-analysis" + suffix + "." + params.output.format
-    print("Saving {0}".format(fname))
+    print("Saving {}".format(fname))
     plt.savefig(fname)
 
     # phi residuals plot
@@ -170,7 +170,7 @@ def save_plots(params, raw, smoothed, suffix=""):
         plt.text(
             0.2,
             0.9,
-            "interval width: {0:.3f}".format(phi_interval),
+            "interval width: {:.3f}".format(phi_interval),
             transform=line.axes.transAxes,
             color="c",
         )
@@ -179,7 +179,7 @@ def save_plots(params, raw, smoothed, suffix=""):
 
     # write them out
     fname = "phi-residual-analysis" + suffix + "." + params.output.format
-    print("Saving {0}".format(fname))
+    print("Saving {}".format(fname))
     plt.savefig(fname)
 
     return
@@ -223,7 +223,7 @@ def run(args):
         save_plots(params, results_r[0], results_s[0])
     else:
         for i, (r_r, r_s) in enumerate(zip(results_r, results_s)):
-            suffix = "_exp_{0}".format(i)
+            suffix = "_exp_{}".format(i)
             save_plots(params, r_r, r_s, suffix=suffix)
 
     # TODO: print tables of data from the analysis

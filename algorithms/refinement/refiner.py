@@ -386,7 +386,7 @@ class RefinerFactory(object):
                 or dense_jacobian_gigabytes > 0.5
             ):
                 logger.info(
-                    "Storage of the Jacobian matrix requires {0:.1f} GB".format(
+                    "Storage of the Jacobian matrix requires {:.1f} GB".format(
                         dense_jacobian_gigabytes
                     )
                 )
@@ -428,7 +428,7 @@ class RefinerFactory(object):
             params.refinement.parameterisation.sparse and params.refinement.mp.nproc > 1
         ):
             logger.warning(
-                "Could not set sparse=True and nproc={0}".format(
+                "Could not set sparse=True and nproc={}".format(
                     params.refinement.mp.nproc
                 )
             )
@@ -956,7 +956,7 @@ class Refiner(object):
         for idetector, detector in enumerate(self._experiments.detectors()):
             if len(detector) == 1:
                 continue
-            logger.info("\nDetector {0} RMSDs by panel:".format(idetector + 1))
+            logger.info("\nDetector {} RMSDs by panel:".format(idetector + 1))
 
             header = ["Panel\nid", "Nref"]
             for (name, units) in zip(self._target.rmsd_names, self._target.rmsd_units):

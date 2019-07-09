@@ -218,7 +218,7 @@ class ScanVaryingCrystalAnalyser(object):
                 "volume": vol,
             }
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -360,7 +360,7 @@ the refinement algorithm accounting for unmodelled features in the data.
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)

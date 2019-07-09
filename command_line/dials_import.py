@@ -790,7 +790,7 @@ class Script(object):
             else:
                 num_stills += 1
             num_images += len(e.imageset)
-        format_list = set(str(e.imageset.get_format_class()) for e in experiments)
+        format_list = {str(e.imageset.get_format_class()) for e in experiments}
 
         # Print out some bulk info
         logger.info("-" * 80)

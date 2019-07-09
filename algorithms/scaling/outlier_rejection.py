@@ -118,7 +118,7 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
     else:
         msg = "A round of outlier rejection has been performed, \n"
     n_outliers = sum([len(i) for i in outlier_index_arrays])
-    msg += "{0} outliers have been identified. \n".format(n_outliers)
+    msg += "{} outliers have been identified. \n".format(n_outliers)
     logger.info(msg)
     return outlier_index_arrays
 

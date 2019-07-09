@@ -165,7 +165,7 @@ def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
             j0, j1 = bbox_3[2] - bbox_1[2], bbox_3[3] - bbox_1[2]
             i0, i1 = bbox_3[0] - bbox_1[0], bbox_3[1] - bbox_1[0]
             intersect_mask = expected_mask[k0:k1, j0:j1, i0:i1]
-            intersect_mask_1d = intersect_mask.reshape((-1))
+            intersect_mask_1d = intersect_mask.reshape(-1)
             intersect_mask_1d[ind] = 0
             intersect_mask[:, :] = intersect_mask_1d.reshape(intersect_mask.shape)
             expected_mask[k0:k1, j0:j1, i0:i1] = intersect_mask

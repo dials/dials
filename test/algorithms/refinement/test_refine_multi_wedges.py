@@ -31,11 +31,11 @@ def test(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
+            "experiments={}/data/sweep_%03d/experiments.json".format(data_dir) % n
             for n in selection
         ]
         + [
-            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
+            "reflections={}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
             for n in selection
         ]
     )

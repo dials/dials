@@ -275,7 +275,7 @@ def test_centroid_masked():
     from scitbx import matrix
 
     for shoebox, (XC, I) in random_shoeboxes(10):
-        centroid = shoebox.centroid_masked((1 << 0))
+        centroid = shoebox.centroid_masked(1 << 0)
         assert shoebox.is_consistent()
         assert abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0
 

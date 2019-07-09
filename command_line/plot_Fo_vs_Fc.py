@@ -194,7 +194,7 @@ class Script(object):
             y = self.model_fit(x)
             ax.plot(x, y, c="0.0", linewidth=0.8)
 
-        print("Saving plot to {0}".format(self.params.plot_filename))
+        print("Saving plot to {}".format(self.params.plot_filename))
         plt.savefig(self.params.plot_filename)
 
     def run(self):
