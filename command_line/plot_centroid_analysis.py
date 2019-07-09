@@ -196,7 +196,6 @@ def run(args):
     )
     from dials.util.options import OptionParser
     from dials.util.options import flatten_reflections
-    from dials.util import Sorry
 
     parser = OptionParser(
         usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message

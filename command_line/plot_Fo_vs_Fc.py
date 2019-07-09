@@ -92,7 +92,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from libtbx.phil import parse
-        import libtbx.load_env
 
         # The phil scope
         phil_scope = parse(
@@ -140,8 +139,6 @@ class Script(object):
 
         self.model_fit = None
 
-        return
-
     def _extract_data_from_mtz(self):
         try:
             m = mtz.object(self.params.hklin)
@@ -166,8 +163,6 @@ class Script(object):
 
         self.fobs = fobs.data()
         self.fc = fc.amplitudes().data()
-
-        return
 
     def _plot(self):
         fig = plt.figure()
@@ -243,8 +238,6 @@ class Script(object):
 
         if self.params.plot_filename:
             self._plot()
-
-        return
 
 
 if __name__ == "__main__":

@@ -392,8 +392,6 @@ class XDSFileImporter(object):
         # set the scan-varying crystal
         experiment.crystal.set_A_at_scan_points(A_list)
 
-        return
-
 
 class Script(object):
     """ A class to encapsulate the script. """
@@ -474,7 +472,6 @@ class Script(object):
     def select_importer(self, args):
         from os.path import split
         from dxtbx.model.experiment_list import ExperimentListFactory
-        import libtbx.load_env
 
         path, filename = split(args[0])
         if filename == "SPOT.XDS":

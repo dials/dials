@@ -59,7 +59,6 @@ class Script(object):
         """Execute the script."""
 
         from dials.util.options import flatten_experiments
-        from dials.util import Sorry
         from dials.array_family import flex
 
         # Parse the command line
@@ -102,8 +101,6 @@ class Script(object):
                 + fmt.format(mv.unweighted_sample_standard_deviation())
             )
             print()
-
-        return
 
     def extract_us0_vecs(self, experiments):
         return [matrix.col(e.beam.get_unit_s0()) for e in experiments]

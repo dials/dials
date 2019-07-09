@@ -108,8 +108,8 @@ class ScalingTarget(object):
         gsq = Ih_table.inverse_scale_factors ** 2 * Ih_table.weights
         sumgsq = gsq * Ih_table.h_index_matrix
         dIh = (
-                Ih_table.intensities
-                - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
+            Ih_table.intensities
+            - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
         ) * Ih_table.weights
         jacobian = calc_jacobian(
             Ih_table.derivatives.transpose(),

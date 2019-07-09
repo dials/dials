@@ -13,8 +13,7 @@ Usage: dials.frame_orientations refined_experiments.json
 
 from __future__ import division, print_function, absolute_import
 import sys
-from dials.util import Sorry
-from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
+from dials.util.options import flatten_experiments, OptionParser
 from libtbx.table_utils import simple_table
 from scitbx import matrix
 import matplotlib
@@ -29,7 +28,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from libtbx.phil import parse
-        import libtbx.load_env
 
         # The phil scope
         phil_scope = parse(
@@ -63,8 +61,6 @@ class Script(object):
             check_format=False,
             epilog=__doc__,
         )
-
-        return
 
     def run(self):
         """Execute the script."""
@@ -150,8 +146,6 @@ class Script(object):
             plt.savefig(self.params.plot_filename)
 
         print()
-
-        return
 
 
 def extract_experiment_data(exp, scale=1):

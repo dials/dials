@@ -226,9 +226,7 @@ class Script(object):
                 else:
                     ext = "_sliced.json"
                 output_experiments_filename = bname + ext
-            print(
-                "Saving sliced experiments to {}".format(output_experiments_filename)
-            )
+            print("Saving sliced experiments to {}".format(output_experiments_filename))
 
             from dxtbx.model.experiment_list import ExperimentListDumper
 

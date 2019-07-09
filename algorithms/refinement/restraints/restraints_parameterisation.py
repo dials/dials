@@ -269,9 +269,7 @@ class RestraintsParameterisation(object):
     @property
     def num_residuals(self):
         """Get the total number of residuals across all parameterised restraints"""
-        n_single = sum(
-            e.restraint.num_residuals for e in self._single_model_restraints
-        )
+        n_single = sum(e.restraint.num_residuals for e in self._single_model_restraints)
         n_group = sum(e.restraint.num_residuals for e in self._group_model_restraints)
         return n_single + n_group
 

@@ -257,7 +257,7 @@ def corrgram(corrmat, labels):
     nr = corrmat.all()[0]
     assert nr == len(labels)
 
-    from math import pi, sqrt
+    from math import sqrt
 
     try:
         import matplotlib

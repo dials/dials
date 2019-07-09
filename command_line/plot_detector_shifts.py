@@ -406,9 +406,7 @@ class Script(object):
         # now plots using offsets in the laboratory frame
         for direction in ["x", "y", "z"]:
             print(
-                "Doing plot of offsets in the laboratory {} direction".format(
-                    direction
-                )
+                "Doing plot of offsets in the laboratory {} direction".format(direction)
             )
             if self.params.plot_type == "panel_grid":
                 plot_grid_of_panels(dat, grid_size[0], grid_size[1], direction, tag)

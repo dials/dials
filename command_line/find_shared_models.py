@@ -76,7 +76,6 @@ class Script(object):
         from dxtbx.imageset import ImageSweep
         from time import time
         from dials.util import log
-        from dials.util import Sorry
         import datetime
 
         start_time = time()

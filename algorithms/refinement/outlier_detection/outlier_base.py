@@ -266,9 +266,7 @@ class CentroidOutlier(object):
 
         if self.nreject == 0:
             return False
-        logger.info(
-            "{} reflections have been flagged as outliers".format(self.nreject)
-        )
+        logger.info("{} reflections have been flagged as outliers".format(self.nreject))
         logger.debug("Outlier rejections per job:")
         st = simple_table(rows, header)
         logger.debug(st.format())

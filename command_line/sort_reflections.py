@@ -79,7 +79,7 @@ class Sort(object):
 
     def run(self):
         """Execute the script."""
-        from dials.array_family import flex  # import dependency
+        from dials.array_family import flex  # noqa: F401, import dependency
         from dials.util.options import flatten_reflections
         from dials.util import Sorry
 
@@ -111,8 +111,6 @@ class Sort(object):
         if params.output:
             print("Saving reflections to {}".format(params.output))
             reflections.as_pickle(params.output)
-
-        return
 
 
 if __name__ == "__main__":

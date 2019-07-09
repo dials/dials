@@ -418,9 +418,7 @@ class MergingStatisticsObserver(Observer):
             sep="\n",
         )
         if overall.n_neg_sigmas > 0:
-            msg += "SigI < 0 (rejected): {} observations\n".format(
-                overall.n_neg_sigmas
-            )
+            msg += "SigI < 0 (rejected): {} observations\n".format(overall.n_neg_sigmas)
         if overall.n_rejected_before_merge > 0:
             msg += "I < -3*SigI (rejected): {} observations\n".format(
                 overall.n_rejected_before_merge
