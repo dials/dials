@@ -11,6 +11,7 @@
 principally ReflectionManager."""
 from __future__ import absolute_import, division, print_function
 
+import copy
 from math import pi
 from math import ceil
 import logging
@@ -132,8 +133,6 @@ class BlockCalculator(object):
         # do not create block column in the reflection table yet, in case we don't
         # need it at all
 
-        return
-
     def _create_block_columns(self):
         """Create a column to contain the block number."""
 
@@ -141,7 +140,6 @@ class BlockCalculator(object):
 
         self._reflections["block"] = flex.size_t(len(self._reflections))
         self._reflections["block_centre"] = flex.double(len(self._reflections))
-        return
 
     @staticmethod
     def _check_scan_range(exp_phi, scan):
@@ -407,9 +405,9 @@ class ReflectionManager(object):
         # modules to allow for nlogn subselection of values used in refinement.
         l_id = reflections["id"]
         id0 = l_id[0]
-        for ii in xrange(1, len(l_id)):
-            if id0 <= l_id[ii]:
-                id0 = l_id[ii]
+        for id_x in l_id[1:]:
+            if id0 <= id_x:
+                id0 = id_x
             else:
                 reflections.sort("id")  # Ensuring the ref_table is sorted by id
                 reflections.subsort(
@@ -457,8 +455,6 @@ class ReflectionManager(object):
 
         # not known until the manager is finalised
         self._sample_size = None
-
-        return
 
     def get_centroid_analyser(self, debug=False):
         """Create a CentroidAnalysis object for the current reflections"""
@@ -537,8 +533,6 @@ class ReflectionManager(object):
         self._create_working_set()
 
         logger.debug("Working set size = %d observations", self.get_sample_size())
-
-        return
 
     def _id_refs_to_keep(self, obs_data):
         """Create a selection of observations that pass certain conditions.
@@ -666,8 +660,6 @@ class ReflectionManager(object):
         self._free_reflections = self._reflections.select(free_sel)
         self._reflections = self._reflections.select(working_isel)
 
-        return
-
     def get_accepted_refs_size(self):
         """Return the number of observations that pass inclusion criteria and
         can potentially be used for refinement"""
@@ -689,8 +681,6 @@ class ReflectionManager(object):
         causing problems in refinement.
 
         """
-        import copy
-
         sort_obs = copy.deepcopy(obs)
         if angular:
             sort_obs.sort("phi_resid", reverse=True)
@@ -835,8 +825,6 @@ class ReflectionManager(object):
         logger.debug(simple_table(rows, header).format())
         logger.debug("")
 
-        return
-
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
         predictions"""
@@ -847,7 +835,6 @@ class ReflectionManager(object):
 
         mask = reflections.get_flags(reflections.flags.used_in_refinement)
         reflections.unset_flags(mask, reflections.flags.used_in_refinement)
-        return
 
     def get_obs(self):
         """Get the list of managed observations"""
@@ -974,5 +961,3 @@ class StillsReflectionManager(ReflectionManager):
             )
         logger.debug(simple_table(rows, header).format())
         logger.debug("")
-
-        return

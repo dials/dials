@@ -84,9 +84,9 @@ class Target(object):
         # construct a lookup for the separate lattices
         last_id = -1
         self._lattices = flex.int()
-        for n in xrange(len(self._lattice_ids)):
-            if self._lattice_ids[n] != last_id:
-                last_id = self._lattice_ids[n]
+        for n, lid in enumerate(self._lattice_ids):
+            if lid != last_id:
+                last_id = lid
                 self._lattices.append(n)
 
         self._sym_ops = set(["x,y,z"])
