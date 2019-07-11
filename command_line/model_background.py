@@ -87,7 +87,7 @@ phil_scope = parse(
       .type = choice
       .help = "The filter to use on the polar transformed image"
 
-    kernel_size = 10
+    kernel_size = 50
       .type = int(value_min=0)
       .help = "The kernel size for the median filter"
 
