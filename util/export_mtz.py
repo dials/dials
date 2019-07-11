@@ -115,25 +115,6 @@ class MADMergedMTZWriter(MergedMTZWriter):
         )
 
 
-def make_merged_mtz_file(
-    merged_array,
-    merged_anomalous_array=None,
-    amplitudes=None,
-    anomalous_amplitudes=None,
-):
-    """Make an mtz object for the data, adding the date, time and program."""
-
-    assert merged_array.is_xray_intensity_array()
-
-    mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
-    mtz_writer.add_crystal(crystal_name="DIALS")
-    mtz_writer.add_dataset(
-        merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
-    )
-
-    return mtz_writer.mtz_file
-
-
 def _add_batch(
     mtz,
     experiment,

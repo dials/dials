@@ -56,13 +56,8 @@ phil_scope = phil.parse(
 )
 
 
-def run_sys_abs_checks(experiments, reflections, d_min=None, significance_level=0.95):
-    """Check for systematic absences in the data for the laue group.
-
-    Select the good data, merge, test screw axes and score possible space
-    groups. The crystals are updated with the most likely space group.
-    """
-
+def _prepare_merged_reflection_table(experiments, reflections, d_min=None):
+    """Filter the data and prepare a reflection table with merged data."""
     if (
         "inverse_scale_factor" in reflections[0]
         and "intensity.scale.value" in reflections[0]
@@ -100,8 +95,18 @@ def run_sys_abs_checks(experiments, reflections, d_min=None, significance_level=
     merged_reflections["intensity"] = merged.data()
     merged_reflections["variance"] = merged.sigmas() ** 2
     merged_reflections["miller_index"] = merged.indices()
+    return merged_reflections
 
+
+def run_sys_abs_checks(experiments, merged_reflections, significance_level=0.95):
+    """Check for systematic absences in the data for the laue group.
+
+    Using a reflection table containing merged data, test screw axes and score
+    possible space groups. The crystals are updated with the most likely space
+    group.
+    """
     # Get the laue class from the space group.
+    space_group = experiments[0].crystal.get_space_group()
     laue_group = str(space_group.build_derived_patterson_group().info())
     logger.info("Laue group: %s", laue_group)
     if laue_group not in laue_groups:
@@ -211,11 +216,15 @@ def run(args=None):
         )
 
     try:
-        run_sys_abs_checks(
-            experiments, reflections, params.d_min, float(params.significance_level)
+        merged_reflections = _prepare_merged_reflection_table(
+            experiments, reflections, params.d_min
         )
     except ValueError as e:
         raise Sorry(e)
+
+    run_sys_abs_checks(
+        experiments, merged_reflections, float(params.significance_level)
+    )
 
     if params.output.html:
         ScrewAxisObserver().generate_html_report(params.output.html)
