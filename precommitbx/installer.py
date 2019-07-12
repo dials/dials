@@ -631,6 +631,16 @@ def main():
     print()
     print("Repositories:")
     repositories = list_all_repository_candidates()
+    if "install" in sys.argv:
+        paths = sys.argv[1:]
+        paths.remove("install")
+        for path in paths:
+            path = py.path.local(".").join(path, abs=1)
+            if path.basename in repositories:
+                base = path.strpath
+            else:
+                base = path.basename
+            repositories[base] = path
     for module in sorted(repositories):
         if not repositories[module].join(".pre-commit-config.yaml").check():
             print(repo_prefix.format(module), repo_no_precommit)
