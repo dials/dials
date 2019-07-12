@@ -12,7 +12,7 @@ import sys
 from dials.util import log, show_mail_on_error, Sorry
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
-from dials.util.filter_reflections import ScaleIntensityReducer, PrfIntensityReducer
+from dials.util.filter_reflections import filter_reflection_table
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
@@ -68,22 +68,21 @@ def run_sys_abs_checks(experiments, reflections, d_min=None, significance_level=
         "inverse_scale_factor" in reflections[0]
         and "intensity.scale.value" in reflections[0]
     ):
-        reducer = ScaleIntensityReducer
         logger.info("Attempting to perform absence checks on scaled data")
-        reflections = reducer.reduce_on_intensities(reflections[0])
+        reflections = filter_reflection_table(
+            reflections[0], intensity_choice=["scale"], d_min=d_min
+        )
         reflections["intensity"] = reflections["intensity.scale.value"]
         reflections["variance"] = reflections["intensity.scale.variance"]
     else:
-        reducer = PrfIntensityReducer
         logger.info(
             "Attempting to perform absence checks on unscaled profile-integrated data"
         )
-        reflections = reducer.reduce_on_intensities(reflections[0])
+        reflections = filter_reflection_table(
+            reflections[0], intensity_choice=["profile"], d_min=d_min
+        )
         reflections["intensity"] = reflections["intensity.prf.value"]
         reflections["variance"] = reflections["intensity.prf.variance"]
-
-    if d_min:
-        reflections = reducer.filter_on_d_min(reflections, d_min)
 
     # now merge
     space_group = experiments[0].crystal.get_space_group()
