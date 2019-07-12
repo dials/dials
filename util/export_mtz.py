@@ -31,6 +31,109 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+class MTZWriter(object):
+
+    """Class to help with adding metadata, crystals and datasets to an mtz file object."""
+
+    def __init__(self, space_group, unit_cell=None):
+        """If a unit cell is provided, will be used as default unless specified
+        for each crystal."""
+        mtz_file = mtz.object()
+        mtz_file.set_title("From %s" % env.dispatcher_name)
+        date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
+        if time.strftime("%Z") != "GMT":
+            date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
+        mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
+        mtz_file.set_space_group_info(space_group.info())
+        self.mtz_file = mtz_file
+        if unit_cell:
+            self.unit_cell = unit_cell
+        self.current_crystal = None
+        self.current_dataset = None
+        self.n_crystals = 0
+        self.n_datasets = 0
+        self._suffix = ""
+
+    def add_crystal(self, crystal_name=None, unit_cell=None):
+        """Add a crystal to the mtz file object."""
+        if not unit_cell:
+            if not self.unit_cell:
+                raise ValueError("Unit cell must be provided.")
+            else:
+                unit_cell = self.unit_cell
+        if not crystal_name:
+            crystal_name = "crystal_%s" % str(self.n_crystals + 1)
+        self.current_crystal = self.mtz_file.add_crystal(
+            crystal_name, "DIALS", unit_cell.parameters()
+        )
+        self.n_crystals += 1
+
+    def add_dataset(self, wavelength):
+        self.current_dataset = self.current_crystal.add_dataset("FROMDIALS", wavelength)
+        self.n_datasets += 1
+
+
+class MergedMTZWriter(MTZWriter):
+
+    """Mtz writer for merged data."""
+
+    def add_dataset(
+        self, merged, anom=None, amplitudes=None, anom_amp=None, wavelength=1
+    ):
+        """Add a merged dataset to the most recent crystal."""
+        self.current_dataset = self.current_crystal.add_dataset("FROMDIALS", wavelength)
+        self.current_dataset.add_miller_array(merged, "IMEAN" + self._suffix)
+        if anom:
+            self.current_dataset.add_miller_array(anom, "I" + self._suffix)
+            self.current_dataset.add_miller_array(
+                anom.multiplicities(),
+                column_root_label="N" + self._suffix,
+                column_types="I",
+            )
+        if amplitudes:
+            self.current_dataset.add_miller_array(amplitudes, "F" + self._suffix)
+        if anom_amp:
+            self.current_dataset.add_miller_array(anom_amp, "F" + self._suffix)
+        self.n_datasets += 1
+
+
+class MADMergedMTZWriter(MergedMTZWriter):
+
+    """Mtz writer for multi-wavelength merged data."""
+
+    def add_dataset(
+        self, wavelength, merged, anom=None, amplitudes=None, anom_amp=None, suffix=None
+    ):
+        """Add a merged dataset to the most recent crystal.
+
+        Need to provide or generate a suffix so that don't have the same column
+        names in different datasets."""
+        if not suffix:
+            self._suffix = "_WAVE%s" % str(self.n_datasets + 1)
+        super(MADMergedMTZWriter, self).add_dataset(
+            merged, anom, amplitudes, anom_amp, wavelength
+        )
+
+
+def make_merged_mtz_file(
+    merged_array,
+    merged_anomalous_array=None,
+    amplitudes=None,
+    anomalous_amplitudes=None,
+):
+    """Make an mtz object for the data, adding the date, time and program."""
+
+    assert merged_array.is_xray_intensity_array()
+
+    mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
+    mtz_writer.add_crystal(crystal_name="DIALS")
+    mtz_writer.add_dataset(
+        merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
+    )
+
+    return mtz_writer.mtz_file
+
+
 def _add_batch(
     mtz,
     experiment,
@@ -415,12 +518,7 @@ def export_mtz(integrated_data, experiment_list, params):
         )
 
     # Create the mtz file
-    mtz_file = mtz.object()
-    mtz_file.set_title("from dials.export_mtz")
-    date_str = time.strftime("%Y-%m-%d at %H:%M:%S %Z")
-    if time.strftime("%Z") != "GMT":
-        date_str += time.strftime("  (%Y-%m-%d at %H:%M:%S %Z)", time.gmtime())
-    mtz_file.add_history("From %s, run on %s" % (dials_version(), date_str))
+    mtz_writer = MTZWriter(experiment_list[0].crystal.get_space_group())
 
     # FIXME TODO for more than one experiment into an MTZ file:
     #
@@ -429,6 +527,7 @@ def export_mtz(integrated_data, experiment_list, params):
     #   integrated at the same time
     # ✓ decide a sensible BATCH increment to apply to the BATCH value between
     #   experiments and add this
+
     for id_ in expids_in_table.keys():
         # Grab our subset of the data
         loc = expids_in_list.index(
@@ -461,13 +560,12 @@ def export_mtz(integrated_data, experiment_list, params):
             experiment.data["miller_index"]
         )
 
-        s0 = experiment.beam.get_s0()
-        s0n = matrix.col(s0).normalize().elems
+        s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
         logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
 
         for i in range(image_range[0], image_range[1] + 1):
             _add_batch(
-                mtz_file,
+                mtz_writer.mtz_file,
                 experiment,
                 wavelength,
                 dataset_id,
@@ -489,14 +587,11 @@ def export_mtz(integrated_data, experiment_list, params):
         else:
             experiment.data["ROT"] = z
 
-    # Update the mtz general information now we've processed the experiments
-    mtz_file.set_space_group_info(experiment_list[0].crystal.get_space_group().info())
-    unit_cell = experiment_list[0].crystal.get_unit_cell()
-    mtz_crystal = mtz_file.add_crystal(
-        params.mtz.crystal_name, "DIALS", unit_cell.parameters()
-    )
+    mtz_writer.add_crystal(
+        params.mtz.crystal_name, experiment_list[0].crystal.get_unit_cell()
+    )  # Note: add unit cell here as may have changed basis since creating mtz.
     for wavelength in wavelengths.iterkeys():
-        mtz_dataset = mtz_crystal.add_dataset("FROMDIALS", wavelength)
+        mtz_writer.add_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
     combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
@@ -510,13 +605,14 @@ def export_mtz(integrated_data, experiment_list, params):
     ), "Lost rows in split/combine"
 
     # Write all the data and columns to the mtz file
-    _write_columns(mtz_file, mtz_dataset, combined_data)
+    _write_columns(mtz_writer.mtz_file, mtz_writer.current_dataset, combined_data)
 
     logger.info(
         "Saving {} integrated reflections to {}".format(
             len(combined_data["id"]), params.mtz.hklout
         )
     )
+    mtz_file = mtz_writer.mtz_file
     mtz_file.write(params.mtz.hklout)
 
     return mtz_file

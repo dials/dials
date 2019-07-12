@@ -16,8 +16,6 @@ from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.command_line.scale import Script
-from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
-from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 import procrunner
 
 
@@ -155,38 +153,6 @@ def generate_test_input(n=1):
 def return_first_arg_side_effect(*args):
     """Side effect for overriding the call to reject_outliers."""
     return args[0]
-
-
-def test_scale_merging_stats():
-    """Test the merging stats method of dials.scale script"""
-    params = generated_param()
-    exp = generated_exp()
-    reflections = flex.reflection_table()
-    reflections["intensity.scale.value"] = flex.double([1.0, 2.0, 3.0, 4.0])
-    reflections["intensity.scale.variance"] = flex.double([1.0, 2.0, 3.0, 4.0])
-    reflections["miller_index"] = flex.miller_index(
-        [(0, 0, 1), (0, 0, 1), (0, 0, 2), (0, 0, 2)]
-    )
-    reflections["id"] = flex.int([0, 0, 0, 0])
-    reflections["inverse_scale_factor"] = flex.double([0.5, 0.4, 0.9, 1.0])
-    reflections["xyzobs.px.value"] = flex.vec3_double(
-        [(0, 0, 0.5), (0, 0, 1.5), (0, 0, 2.5), (0, 0, 3.5)]
-    )
-    reflections.set_flags(flex.bool(4, False), reflections.flags.bad_for_scaling)
-    params.output.merging.nbins = 1
-    scaled_array = scaled_data_as_miller_array([reflections], exp)
-    merging_statistics_result = Script.merging_stats_from_scaled_array(
-        scaled_array, params
-    )
-    assert merging_statistics_result is not None
-
-    # test for sensible return if small dataset with no equivalent reflections
-    reflections["miller_index"] = flex.miller_index(
-        [(0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 0, 4)]
-    )
-    scaled_array = scaled_data_as_miller_array([reflections], exp)
-    with pytest.raises(DialsMergingStatisticsError):
-        _ = Script.merging_stats_from_scaled_array(scaled_array, params)
 
 
 def test_scale_script_prepare_input():

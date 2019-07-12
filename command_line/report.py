@@ -23,9 +23,10 @@ from cctbx import uctbx
 import dials.util.banner  # noqa: F401 - Importing means that it prints
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import (
-    calculate_single_merging_stats,
+    merging_stats_from_scaled_array,
     scaled_data_as_miller_array,
 )
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.algorithms.scaling.plots import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
@@ -2097,12 +2098,13 @@ def merging_stats_results(reflections, experiments):
 
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
-    result = calculate_single_merging_stats(
-        reflections, experiments[0], use_internal_variance=False
-    )
-    anom_result = calculate_single_merging_stats(
-        reflections, experiments[0], use_internal_variance=False, anomalous=True
-    )
+    scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    try:
+        result, anom_result = merging_stats_from_scaled_array(scaled_array)
+    except DialsMergingStatisticsError as e:
+        print(e)
+        return [], [], {}, {}
+
     is_centric = experiments[0].crystal.get_space_group().is_centric()
 
     resolution_plots = OrderedDict()
@@ -2421,7 +2423,6 @@ class Script(object):
     def __init__(self):
         """ Initialise the script. """
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # Create the parser
         usage = "usage: dials.report [options] observations.refl"

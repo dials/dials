@@ -180,3 +180,39 @@ def _batch_bins_and_data(batches, values, function_to_apply):
             if i_ref < n_ref:
                 current_batch = batches[i_batch_start]
     return batch_bins, data
+
+
+def make_merging_statistics_summary(dataset_statistics):
+    """Format merging statistics information into an output string."""
+
+    from libtbx.str_utils import make_sub_header
+    from cStringIO import StringIO
+
+    # Here use a StringIO rather than passing log.info_handle to get
+    # around excessive padding/whitespace.
+    # Avoid using result.show as don't want redundancies printed.
+    out = StringIO()
+    output = []
+
+    # First make summary
+    make_sub_header("Merging statistics", out=out)
+    dataset_statistics.overall.show_summary(out=out)
+    output.append(out.getvalue())
+
+    # Next make statistics by resolution bin.
+    msg = "\nStatistics by resolution bin:\n"
+    msg += (
+        " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
+        + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+    )
+    for bin_stats in dataset_statistics.bins:
+        msg += bin_stats.format() + "\n"
+    msg += dataset_statistics.overall.format() + "\n"
+    output.append(msg)
+
+    # Finally show estimated cutoffs
+    out = StringIO()
+    dataset_statistics.show_estimated_cutoffs(out=out)
+    output.append(out.getvalue())
+
+    return "\n".join(output)
