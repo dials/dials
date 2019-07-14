@@ -139,7 +139,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < result.size(); ++i) {
         if (num_[i] >= min_images) {
           result[i] = (sum_sq_[i] - sum_[i] * sum_[i] / num_[i]) / num_[i];
-        
+
           // Sometimes this becomes < 0 due to numerical instability
           if (result[i] < 0) {
             result[i] = 0;

@@ -56,9 +56,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = (
-            "usage: dials.create_profile_model [options] models.expt spots.refl"
-        )
+        usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
         self.parser = OptionParser(
             usage=usage,
             epilog=help_message,

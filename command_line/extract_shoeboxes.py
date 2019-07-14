@@ -61,7 +61,6 @@ class Script(object):
         # The script usage
         usage = (
             "usage: dials.extract_shoeboxes [options] experiment.expt observations.refl"
-            
         )
 
         # Create the parser

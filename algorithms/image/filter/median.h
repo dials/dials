@@ -69,7 +69,7 @@ namespace dials { namespace algorithms {
    * @param image The image to filter
    * @param mask The image mask
    * @param size The size of the filter kernel
-   * @param periodic Wrap the filter 
+   * @param periodic Wrap the filter
    * @returns The filtered image
    */
   template <typename T>

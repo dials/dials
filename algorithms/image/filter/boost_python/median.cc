@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     def("median_filter",
         &median_filter_masked<T>,
-        (arg("image"), arg("mask"), arg("kernel"), arg("periodic")=false));
+        (arg("image"), arg("mask"), arg("kernel"), arg("periodic") = false));
   }
 
   void export_median() {
