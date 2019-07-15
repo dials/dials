@@ -110,7 +110,7 @@ phil_str = (
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"
               "interval width. This can then be analysed with"
-              "dev.dials.plot_centroid_analysis"
+              "dev.dials.plot_centroid_analysis (requires dials_scratch repository)."
       .type = bool
       .expert_level = 2
 
