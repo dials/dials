@@ -5,13 +5,13 @@ import logging
 import math
 
 import dials.util.version
-from dials.array_family import flex
 from dials.util.filter_reflections import filter_reflection_table
 import iotbx.cif.model
 from cctbx.sgtbx import bravais_types
 from cctbx import miller
 from cctbx import crystal as cctbxcrystal
 from iotbx.merging_statistics import dataset_statistics
+from libtbx import Auto
 
 logger = logging.getLogger(__name__)
 RAD2DEG = 180.0 / math.pi
@@ -28,12 +28,26 @@ class MMCIFOutputFile(object):
         """
         self._cif = iotbx.cif.model.cif()
         self.params = params
-        self.filename = params.mmcif.hklout
 
     def write(self, experiments, reflections):
         """
         Write the experiments and reflections to file
         """
+
+        # if mmmcif filename is auto, then choose scaled.cif or integrated.cif
+        if self.params.mmcif.hklout in (None, Auto, "auto"):
+            if ("intensity.scale.value" in reflections) and (
+                "intensity.scale.variance" in reflections
+            ):
+                filename = "scaled.cif"
+                logger.info(
+                    "Data appears to be scaled, setting mmcif.hklout = 'scaled_unmerged.cif'"
+                )
+            else:
+                filename = "integrated.cif"
+                logger.info(
+                    "Data appears to be unscaled, setting mmcif.hklout = 'integrated.cif'"
+                )
 
         # Select reflections
         selection = reflections.get_flags(reflections.flags.integrated, all=True)
@@ -289,8 +303,8 @@ class MMCIFOutputFile(object):
         self._cif["dials"] = cif_block
 
         # Print to file
-        with open(self.filename, "w") as fh:
+        with open(filename, "w") as fh:
             self._cif.show(out=fh)
 
         # Log
-        logger.info("Wrote reflections to %s" % self.filename)
+        logger.info("Wrote reflections to %s" % filename)

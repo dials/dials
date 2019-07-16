@@ -5,7 +5,7 @@ import os
 import procrunner
 import pytest
 from dxtbx.serialize.load import _decode_dict
-from dxtbx.serialize import load, dump
+from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
 from iotbx import mtz
@@ -69,7 +69,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     joint_refl = flex.reflection_table()
     for r in refls:
         joint_refl.extend(r)
-    dump.experiment_list(exps, "tmp_exp.expt")
+    exps.as_json("tmp_exp.expt")
     joint_refl.as_pickle("tmp_refl.refl")
 
     # Now run

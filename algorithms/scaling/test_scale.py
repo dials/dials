@@ -10,7 +10,7 @@ import pytest
 
 from libtbx import easy_run, phil
 from dials.util import Sorry
-from dxtbx.serialize import load, dump
+from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
@@ -533,7 +533,7 @@ def test_multi_scale(dials_regression, run_in_tmpdir):
     # fake a multi-wavelength case
     exps[0].beam.set_wavelength(0.5)
     exps[1].beam.set_wavelength(1.0)
-    dump.experiment_list(exps, "tmp_exp.expt")
+    exps.as_json("tmp_exp.expt")
     extra_args = [
         "export_mtz_only=True",
         "unmerged_mtz='unmerged_1.mtz unmerged_2.mtz'",
