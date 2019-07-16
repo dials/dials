@@ -4,6 +4,7 @@ import pytest
 
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
+from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
 from dials.algorithms.symmetry.determine_space_group import (
     ScoreCorrelationCoefficient,
     ScoreSubGroup,
@@ -56,7 +57,7 @@ def test_score_correlation_coefficient():
 
 
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"][:])
-def test_score_symmetry_element_subgroup(generate_intensities, space_group):
+def test_score_symmetry_element_subgroup(space_group):
     sgi = sgtbx.space_group_info(symbol=space_group)
     sg = sgi.group()
     cs = sgi.any_compatible_crystal_symmetry(volume=10000)
