@@ -110,9 +110,9 @@ class render_3d(object):
                 p.set_frame(p.get_fast_axis(), p.get_slow_axis(), new_origin.elems)
 
         gonio_masker = (
-            self.imageset.masker()
-            .format_class(self.imageset.paths()[0], **self.imageset.data().get_params())
-            .get_goniometer_shadow_masker(goniometer=gonio)
+            self.imageset.get_format_class()
+            .get_instance(self.imageset.paths()[0], **self.imageset.data().get_params())
+            .get_masker(goniometer=gonio)
         )
         if gonio_masker is None:
             return
@@ -578,7 +578,6 @@ def run(args):
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
     import os
 
     usage = "dials.geometry_viewer [options] models.expt"
