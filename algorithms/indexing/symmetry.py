@@ -262,12 +262,16 @@ def refine_subgroup(args):
         logger = logging.getLogger()
         level = logger.getEffectiveLevel()
         logger.setLevel(logging.ERROR)
-        iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
-        params.refinement.reflections.outlier.tukey.iqr_multiplier = 2 * iqr_multiplier
+        outlier_algorithm = params.refinement.reflections.outlier.algorithm
+        params.refinement.reflections.outlier.algorithm = "null"
+        sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
         refinery, refined, outliers = refine(
-            params, used_reflections, experiments, verbosity=refiner_verbosity
+            params,
+            used_reflections.select(sel),
+            experiments,
+            verbosity=refiner_verbosity,
         )
-        params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
+        params.refinement.reflections.outlier.algorithm = outlier_algorithm
         refinery, refined, outliers = refine(
             params,
             used_reflections,
