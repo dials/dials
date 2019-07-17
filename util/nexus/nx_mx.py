@@ -55,7 +55,7 @@ def convert_to_nexus_beam_direction(experiments):
     # Rotate the beams
     rotations = []
     for exp in experiments:
-        d = matrix.col(exp.beam.get_direction()).normalize()
+        d = matrix.col(exp.beam.get_sample_to_source_direction()).normalize()
         angle = d.angle(zaxis, deg=False)
         if abs(angle - math.pi) < EPS:
             axis = (1, 0, 0)
@@ -69,7 +69,7 @@ def convert_to_nexus_beam_direction(experiments):
         if exp.goniometer:
             exp.goniometer.rotate_around_origin(axis, angle, deg=False)
         exp.crystal.rotate_around_origin(axis, angle, deg=False)
-        d = matrix.col(exp.beam.get_direction())
+        d = matrix.col(exp.beam.get_sample_to_source_direction())
         assert abs(d.angle(zaxis)) < EPS
         rotations.append((axis, angle))
 
@@ -82,7 +82,7 @@ def convert_from_nexus_beam_direction(experiments, rotations):
 
     zaxis = matrix.col((0, 0, -1))
     for exp, (axis, angle) in zip(experiments, rotations):
-        d = matrix.col(exp.beam.get_direction()).normalize()
+        d = matrix.col(exp.beam.get_sample_to_source_direction()).normalize()
         assert abs(d.angle(zaxis)) < EPS
         exp.beam.rotate_around_origin(axis, angle, deg=False)
         exp.detector.rotate_around_origin(axis, angle, deg=False)
@@ -179,7 +179,7 @@ def dump_beam(entry, beam):
     nx_beam = get_nx_beam(nx_sample, "beam")
 
     # Generate the stokes polarization parameters
-    d = matrix.col(beam.get_direction()).normalize()
+    d = matrix.col(beam.get_sample_to_source_direction()).normalize()
     n = matrix.col(beam.get_polarization_normal()).normalize()
     p = beam.get_polarization_fraction()
     assert abs(n.dot(d)) < EPS

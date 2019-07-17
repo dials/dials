@@ -54,7 +54,10 @@ def run_single(experiments1, filename):
         b1 = exp1.beam
         b2 = exp2.beam
         assert all(
-            abs(d1 - d2) < EPS for d1, d2 in zip(b1.get_direction(), b2.get_direction())
+            abs(d1 - d2) < EPS
+            for d1, d2 in zip(
+                b1.get_sample_to_source_direction(), b2.get_sample_to_source_direction()
+            )
         )
         assert abs(b1.get_wavelength() - b2.get_wavelength()) < EPS
         assert (

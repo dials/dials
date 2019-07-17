@@ -132,7 +132,7 @@ def test_override_geometry(dials_data, tmpdir):
     scan = imgset.get_scan()
 
     assert beam.get_wavelength() == 2
-    assert beam.get_direction() == (-1, 0, 0)
+    assert beam.get_sample_to_source_direction() == (-1, 0, 0)
     assert detector[0].get_name() == "New panel"
     assert detector[0].get_type() == "New type"
     assert detector[0].get_pixel_size() == (10, 20)

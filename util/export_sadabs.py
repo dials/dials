@@ -68,7 +68,7 @@ def export_sadabs(integrated_data, experiment_list, params):
 
     axis = matrix.col(experiment.goniometer.get_rotation_axis_datum())
 
-    beam = matrix.col(experiment.beam.get_direction())
+    beam = matrix.col(experiment.beam.get_sample_to_source_direction())
     s0 = matrix.col(experiment.beam.get_s0())
 
     F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
