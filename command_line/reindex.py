@@ -306,9 +306,14 @@ experiments file must also be specified with the option: reference= """
             cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
             if params.space_group is not None:
                 a, b, c = cryst_reindexed.get_real_space_vectors()
+                A_varying = [
+                    cryst_reindexed.get_A_at_scan_point(i)
+                    for i in range(cryst_reindexed.num_scan_points)
+                ]
                 cryst_reindexed = Crystal(
                     a, b, c, space_group=params.space_group.group()
                 )
+                cryst_reindexed.set_A_at_scan_points(A_varying)
             crystal.update(cryst_reindexed)
 
             print("Old crystal:")
