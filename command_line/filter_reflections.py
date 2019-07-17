@@ -133,7 +133,7 @@ def eval_flag_expression(expression, reflections):
 
         # Extract next token, catching unmatched brackets
         try:
-            toknum, tokval, _, _, _ = g.next()
+            toknum, tokval, _, _, _ = next(g)
         except TokenError:
             raise Sorry("errors found in {}".format(expression))
         except StopIteration:

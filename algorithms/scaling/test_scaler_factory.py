@@ -197,14 +197,13 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
     test_refl, exp = test_refl_and_exp(mock_scaling_component)
     # Test that all required attributes get added with standard params.
     assert all(
-        (not test_refl.has_key(i))
-        for i in ["inverse_scale_factor", "intensity", "variance"]
+        (i not in test_refl) for i in ["inverse_scale_factor", "intensity", "variance"]
     )
     # Test default, (no split into free set)
     ss = SingleScalerFactory.create(generated_param, exp, test_refl)
     assert isinstance(ss, SingleScaler)
     assert all(
-        ss.reflection_table.has_key(i)
+        i in ss.reflection_table
         for i in ["inverse_scale_factor", "intensity", "variance"]
     )
 
