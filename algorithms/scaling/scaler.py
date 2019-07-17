@@ -253,7 +253,7 @@ class SingleScaler(ScalerBase):
         created using the SingleScalerFactory.
         """
         assert all(
-            reflection_table.has_key(i)
+            i in reflection_table
             for i in ["inverse_scale_factor", "intensity", "variance", "id"]
         )
         super(SingleScaler, self).__init__()
