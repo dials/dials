@@ -146,10 +146,10 @@ class SignificanceFilter(object):
                     )
                 )
 
-                table_row.append("%.1f" % (avg_i))
-                table_row.append("%.1f" % (avg_i_sigi))
+                table_row.append("%.2f" % (avg_i))
+                table_row.append("%.2f" % (avg_i_sigi))
                 table_row.append("%3d" % n_bright)
-                table_row.append("%.1f" % (rmsd_obs))
+                table_row.append("%.2f" % (rmsd_obs))
                 table_data.append(table_row)
 
             # Throw out bins that go back above the cutoff after the first non-passing bin is found
