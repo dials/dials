@@ -1,5 +1,6 @@
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.generate_bias_lookup_table
-
+"""
+Code to generate lookup values for algorithms/image/centroid/bias.h.
+"""
 from __future__ import absolute_import, division, print_function
 
 
