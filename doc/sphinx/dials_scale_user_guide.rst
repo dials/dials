@@ -103,8 +103,8 @@ Alternatively, one can use the option :samp:`use_datasets`::
   dials.scale ...... use_datasets="1 3"
 
 These datasets are removed at the start of the program before scaling occurs,
-and will not be contained in the output :samp:`scaled.pickle` and
-:samp:`scaled_experiments.json`.
+and will not be contained in the output :samp:`scaled.refl` and
+:samp:`scaled.expt`.
 
 To help with excluding parts of a dataset, image exclusion can be performed
 using the command-line syntax :samp:`exclude_images="exp_id:start:stop"`. Here

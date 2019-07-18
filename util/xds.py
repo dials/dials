@@ -31,7 +31,7 @@ def dump(experiments, reflections, directory):
             if not os.path.isdir(sub_dir):
                 os.makedirs(sub_dir)
             # XXX imageset is getting the experimental geometry from the image files
-            # rather than the input experiments.json file
+            # rather than the input models.expt file
             imageset = experiment.imageset
             imageset.set_detector(experiment.detector)
             imageset.set_beam(experiment.beam)

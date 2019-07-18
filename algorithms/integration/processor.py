@@ -269,7 +269,7 @@ class Processor(object):
             mp_njobs = int(math.ceil(len(self.manager) / mp_nproc))
         logger.info(self.manager.summary())
         if mp_njobs > 1:
-            assert mp_method is not "none" and mp_method is not None
+            assert mp_method != "none" and mp_method is not None
             logger.info(
                 " Using %s with %d parallel job(s) and %d processes per node\n"
                 % (mp_method, mp_njobs, mp_nproc)
@@ -526,9 +526,9 @@ class Task(object):
                 output = output.split_by_experiment_id()
                 for table in output:
                     i = table["id"][0]
-                    table.as_pickle("shoeboxes_%d_%d.pickle" % (self.index, i))
+                    table.as_pickle("shoeboxes_%d_%d.refl" % (self.index, i))
             else:
-                output.as_pickle("shoeboxes_%d.pickle" % self.index)
+                output.as_pickle("shoeboxes_%d.refl" % self.index)
 
         # Delete the shoeboxes
         if self.params.debug.separate_files or not self.params.debug.output:

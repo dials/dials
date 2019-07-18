@@ -16,8 +16,8 @@ from dials.array_family import flex
 
 help_message = """
 
-This program takes as input the output of dials.index, i.e. experiments.json
-and indexed.pickle files. Full refinement of the crystal and experimental
+This program takes as input the output of dials.index, i.e. indexed.expt
+and indexed.refl files. Full refinement of the crystal and experimental
 geometry parameters will be performed (by default) in all Bravais settings
 that are consistent with the input primitive unit cell. A table is printed
 containing various information for each potential Bravais setting, including
@@ -27,19 +27,19 @@ predicted spot centroids, the refined unit cell parameters in each Bravais
 setting, and the change of basis operator to transform from the triclinic cell
 to each Bravais setting.
 
-The program also generates a .json file for each Bravais setting, e.g.
-bravais_setting_1.json, which is equivalent to the input experiments.json, but
+The program also generates a .expt file for each Bravais setting, e.g.
+bravais_setting_1.expt, which is equivalent to the input indexed.expt, but
 with the crystal model refined in the chosen Bravais setting. These
-bravais_setting_*.json files are suitable as input to dials.refine or
-dials.integrate, although the indexed.pickle file will need to be re-indexed
+bravais_setting_*.expt files are suitable as input to dials.refine or
+dials.integrate, although the indexed.refl file will need to be re-indexed
 using dials.reindex if the change of basis operator (cb_op) for the chosen
 Bravais setting is not the identity operator (a,b,c).
 
 Examples::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
-  dials.refine_bravais_settings experiments.json indexed.pickle nproc=4
+  dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 
 """
 
@@ -135,7 +135,7 @@ def run(args=None):
     from dials.util import log
     import libtbx.load_env
 
-    usage = "%s experiments.json indexed.pickle [options]" % libtbx.env.dispatcher_name
+    usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
         usage=usage,
@@ -157,7 +157,7 @@ def run(args=None):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -234,7 +234,7 @@ def run(args=None):
         refiner_verbosity=params.verbosity,
     )
     s = StringIO()
-    possible_bravais_settings = set(solution["bravais"] for solution in Lfat)
+    possible_bravais_settings = {solution["bravais"] for solution in Lfat}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
     Lfat.labelit_printout(out=s)
     logger.info(s.getvalue())
@@ -252,7 +252,7 @@ def run(args=None):
     for subgroup in Lfat:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
-        bs_json = "%sbravais_setting_%i.json" % (prefix, soln)
+        bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s" % (soln, bs_json))
         dump.experiment_list(expts, os.path.join(params.output.directory, bs_json))
 

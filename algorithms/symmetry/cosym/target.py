@@ -37,7 +37,7 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        """"Intialise a Target object.
+        r""""Intialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -84,16 +84,14 @@ class Target(object):
         # construct a lookup for the separate lattices
         last_id = -1
         self._lattices = flex.int()
-        for n in xrange(len(self._lattice_ids)):
-            if self._lattice_ids[n] != last_id:
-                last_id = self._lattice_ids[n]
+        for n, lid in enumerate(self._lattice_ids):
+            if lid != last_id:
+                last_id = lid
                 self._lattices.append(n)
 
-        self._sym_ops = set(["x,y,z"])
+        self._sym_ops = {"x,y,z"}
         self._lattice_group = lattice_group
-        self._sym_ops.update(
-            set([op.as_xyz() for op in self._generate_twin_operators()])
-        )
+        self._sym_ops.update({op.as_xyz() for op in self._generate_twin_operators()})
         if dimensions is None:
             dimensions = max(2, len(self._sym_ops))
         self.set_dimensions(dimensions)

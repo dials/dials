@@ -5,8 +5,6 @@ import random
 
 
 def random_shoeboxes(num, mask=False):
-    from random import randint, uniform
-
     for i in range(num):
         x0 = random.randint(0, 100)
         y0 = random.randint(0, 100)
@@ -139,7 +137,6 @@ def test_offset():
 
 
 def test_size():
-    from random import randint
     from dials.model.data import Shoebox
 
     for i in range(10):
@@ -240,7 +237,6 @@ def test_does_bbox_contain_bad_pixels():
 
 def test_count_mask_values():
     from dials.model.data import Shoebox
-    from random import randint, sample
 
     for i in range(10):
         x0 = random.randint(0, 90)
@@ -275,7 +271,7 @@ def test_centroid_masked():
     from scitbx import matrix
 
     for shoebox, (XC, I) in random_shoeboxes(10):
-        centroid = shoebox.centroid_masked((1 << 0))
+        centroid = shoebox.centroid_masked(1 << 0)
         assert shoebox.is_consistent()
         assert abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0
 
@@ -319,7 +315,6 @@ def test_flatten():
 def test_all_foreground_valid():
     import six.moves.cPickle as pickle
     from dials.test.model.data.all_foreground_valid_data import data
-    from dials.model.data import Shoebox
 
     shoeboxes = pickle.loads(data)
     for i in xrange(len(shoeboxes)):

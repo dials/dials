@@ -58,7 +58,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,
@@ -83,7 +83,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -159,12 +159,12 @@ def plot_uc_histograms(
         )
         ax[0][i].set_xlim(ax[1][i].get_xlim())
 
-    ax[0][0].set_ylabel("b ($\AA$)")
-    ax[0][1].set_ylabel("c ($\AA$)")
-    ax[0][2].set_ylabel("a ($\AA$)")
-    ax[1][0].set_xlabel("a ($\AA$)")
-    ax[1][1].set_xlabel("b ($\AA$)")
-    ax[1][2].set_xlabel("c ($\AA$)")
+    ax[0][0].set_ylabel(r"b ($\AA$)")
+    ax[0][1].set_ylabel(r"c ($\AA$)")
+    ax[0][2].set_ylabel(r"a ($\AA$)")
+    ax[1][0].set_xlabel(r"a ($\AA$)")
+    ax[1][1].set_xlabel(r"b ($\AA$)")
+    ax[1][2].set_xlabel(r"c ($\AA$)")
 
     f.savefig(plot_name)
     plt.tight_layout()
@@ -223,9 +223,9 @@ def plot_uc_vs_detector_distance(
     )
 
     ax1.set_ylabel("Detector distance (mm)")
-    ax1.set_xlabel("a ($\AA$)")
-    ax2.set_xlabel("b ($\AA$)")
-    ax3.set_xlabel("c ($\AA$)")
+    ax1.set_xlabel(r"a ($\AA$)")
+    ax2.set_xlabel(r"b ($\AA$)")
+    ax3.set_xlabel(r"c ($\AA$)")
     ax4.set_xlabel("Detector distance (mm)")
 
     f.savefig(filename)

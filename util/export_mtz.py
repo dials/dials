@@ -18,6 +18,7 @@ from dials.util.batch_handling import (
 from dials.util.ext import dials_u_to_mosflm
 from iotbx import mtz
 from scitbx import matrix
+from libtbx import env, Auto
 
 try:
     from math import isclose
@@ -312,6 +313,21 @@ def export_mtz(integrated_data, experiment_list, params):
     """Export data from integrated_data corresponding to experiment_list to an
     MTZ file hklout."""
 
+    # if mtz filename is auto, then choose scaled.mtz or integrated.mtz
+    if params.mtz.hklout in (None, Auto, "auto"):
+        if ("intensity.scale.value" in integrated_data) and (
+            "intensity.scale.variance" in integrated_data
+        ):
+            params.mtz.hklout = "scaled.mtz"
+            logger.info(
+                "Data appears to be scaled, setting mtz.hklout = 'scaled_unmerged.mtz'"
+            )
+        else:
+            params.mtz.hklout = "integrated.mtz"
+            logger.info(
+                "Data appears to be unscaled, setting mtz.hklout = 'integrated.mtz'"
+            )
+
     # First get the experiment identifier information out of the data
     expids_in_table = integrated_data.experiment_identifiers()
     if not list(expids_in_table.keys()):
@@ -488,9 +504,7 @@ def export_mtz(integrated_data, experiment_list, params):
         for k, v in experiment.data.items():
             combined_data[k].extend(v)
     # ALL columns must be the same length
-    assert (
-        len(set(len(v) for v in combined_data.values())) == 1
-    ), "Column length mismatch"
+    assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
     assert len(combined_data["id"]) == len(
         integrated_data["id"]
     ), "Lost rows in split/combine"

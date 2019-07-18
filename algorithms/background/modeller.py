@@ -79,7 +79,7 @@ class FinalizeModel(object):
         if self.kernel_size > 0:
             if self.filter_type == "median":
                 logger.info("Applying median filter")
-                data = median_filter(data, mask, (self.kernel_size, 0))
+                data = median_filter(data, mask, (self.kernel_size, 0), periodic=True)
                 sub_data = data.as_1d().select(mask.as_1d())
                 logger.info("Median polar image statistics:")
                 logger.info("  min:  %d" % int(flex.min(sub_data)))
@@ -125,9 +125,8 @@ class FinalizeModel(object):
         logger.info("")
 
         # Fill in any discontinuities
-        # FIXME NEED TO HANDLE DISCONTINUITY
-        # mask = ~self.transform.discontinuity()[:-1,:-1]
-        # data = diffusion_fill(data, mask, self.niter)
+        mask = ~self.transform.discontinuity()[:-1, :-1]
+        data = diffusion_fill(data, mask, self.niter)
 
         # Get and apply the mask
         mask = self.experiment.imageset.get_mask(0)[0]
@@ -324,6 +323,10 @@ class BackgroundModeller(object):
         logger.info("")
         logger.info(heading("Modelling background"))
         logger.info("")
+
+        # Expand n_sigma
+        for expt in self.experiments:
+            expt.profile._n_sigma += 2
 
         # Compute some reflection properties
         self.reflections.compute_zeta_multi(self.experiments)

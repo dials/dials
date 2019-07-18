@@ -189,19 +189,19 @@ class AutoReduce(object):
             if net_nref < nref_deficit:
                 nref_deficit = net_nref
                 weak = p
-                name = "Beam{0}".format(i + 1)
+                name = "Beam{}".format(i + 1)
         for i, p in enumerate(self.xl_ori_params):
             net_nref = self._surplus_reflections(p)
             if net_nref < nref_deficit:
                 nref_deficit = net_nref
                 weak = p
-                name = "Crystal{0} orientation".format(i + 1)
+                name = "Crystal{} orientation".format(i + 1)
         for i, p in enumerate(self.xl_uc_params):
             net_nref = self._unit_cell_surplus_reflections(p)
             if net_nref < nref_deficit:
                 nref_deficit = net_nref
                 weak = p
-                name = "Crystal{0} unit cell".format(i + 1)
+                name = "Crystal{} unit cell".format(i + 1)
         for i, p in enumerate(self.det_params):
             try:
                 pnl_groups = p.get_panel_ids_by_group()
@@ -220,13 +220,13 @@ class AutoReduce(object):
                     weak = p
                     panels = None
                     pnl_gp = None
-                    name = "Detector{0}".format(i + 1)
+                    name = "Detector{}".format(i + 1)
         for i, p in enumerate(self.gon_params):
             net_nref = self._surplus_reflections(p)
             if net_nref < nref_deficit:
                 nref_deficit = net_nref
                 weak = p
-                name = "Goniometer{0}".format(i + 1)
+                name = "Goniometer{}".format(i + 1)
         return {
             "parameterisation": weak,
             "panels": panels,
@@ -255,7 +255,7 @@ class AutoReduce(object):
                             + "\nAttempting reduction of non-essential parameters"
                         )
                         names = cls._filter_parameter_names(dp)
-                        prefix = "Group{0}".format(igp + 1)
+                        prefix = "Group{}".format(igp + 1)
                         reduce_this_group = [prefix + e for e in reduce_list]
                         to_fix |= flex.bool(string_sel(reduce_this_group, names))
                         # try again, and fail if still unsuccessful
@@ -265,7 +265,7 @@ class AutoReduce(object):
                             raise DialsRefineConfigError(msg + "\nFailing.")
             except AttributeError:
                 if self._surplus_reflections(dp) < 0:
-                    mdl = "Detector{0}".format(i + 1)
+                    mdl = "Detector{}".format(i + 1)
                     msg = self._failmsg.format(mdl)
                     raise DialsRefineConfigError(msg)
             dp.set_fixed(to_fix)
@@ -285,19 +285,19 @@ class AutoReduce(object):
 
         for i, bp in enumerate(self.beam_params):
             if self._surplus_reflections(bp) < 0:
-                mdl = "Beam{0}".format(i + 1)
+                mdl = "Beam{}".format(i + 1)
                 msg = self._failmsg.format(mdl)
                 raise DialsRefineConfigError(msg)
 
         for i, xlo in enumerate(self.xl_ori_params):
             if self._surplus_reflections(xlo) < 0:
-                mdl = "Crystal{0} orientation".format(i + 1)
+                mdl = "Crystal{} orientation".format(i + 1)
                 msg = self._failmsg.format(mdl)
                 raise DialsRefineConfigError(msg)
 
         for i, xluc in enumerate(self.xl_uc_params):
             if self._unit_cell_surplus_reflections(xluc) < 0:
-                mdl = "Crystal{0} unit cell".format(i + 1)
+                mdl = "Crystal{} unit cell".format(i + 1)
                 msg = self._failmsg.format(mdl)
                 raise DialsRefineConfigError(msg)
 
@@ -312,13 +312,13 @@ class AutoReduce(object):
                         raise DialsRefineConfigError(msg)
             except AttributeError:
                 if self._surplus_reflections(dp) < 0:
-                    mdl = "Detector{0}".format(i + 1)
+                    mdl = "Detector{}".format(i + 1)
                     msg = self._failmsg.format(mdl)
                     raise DialsRefineConfigError(msg)
 
         for i, gonp in enumerate(self.gon_params):
             if self._surplus_reflections(gonp) < 0:
-                mdl = "Goniometer{0}".format(i + 1)
+                mdl = "Goniometer{}".format(i + 1)
                 msg = self._failmsg.format(mdl)
                 raise DialsRefineConfigError(msg)
 
@@ -338,7 +338,7 @@ class AutoReduce(object):
             if self._surplus_reflections(bp) >= 0:
                 tmp.append(bp)
             else:
-                mdl = "Beam{0}".format(i + 1)
+                mdl = "Beam{}".format(i + 1)
                 msg = warnmsg.format(mdl)
                 logger.warning(msg)
         self.beam_params = tmp
@@ -348,7 +348,7 @@ class AutoReduce(object):
             if self._surplus_reflections(xlo) >= 0:
                 tmp.append(xlo)
             else:
-                mdl = "Crystal{0} orientation".format(i + 1)
+                mdl = "Crystal{} orientation".format(i + 1)
                 msg = warnmsg.format(mdl)
                 logger.warning(msg)
         self.xl_ori_params = tmp
@@ -358,7 +358,7 @@ class AutoReduce(object):
             if self._unit_cell_surplus_reflections(xluc) >= 0:
                 tmp.append(xluc)
             else:
-                mdl = "Crystal{0} unit cell".format(i + 1)
+                mdl = "Crystal{} unit cell".format(i + 1)
                 msg = warnmsg.format(mdl)
                 logger.warning(msg)
         self.xl_uc_params = tmp
@@ -381,13 +381,13 @@ class AutoReduce(object):
                 if dp.num_free() > 0:
                     tmp.append(dp)
                 else:
-                    msg = "No parameters remain free for Detector{0}".format(i + 1)
+                    msg = "No parameters remain free for Detector{}".format(i + 1)
                     logger.warning(msg)
             except AttributeError:
                 if self._surplus_reflections(dp) >= 0:
                     tmp.append(dp)
                 else:
-                    mdl = "Detector{0}".format(i + 1)
+                    mdl = "Detector{}".format(i + 1)
                     msg = warnmsg.format(mdl)
                     logger.warning(msg)
         self.det_params = tmp
@@ -397,7 +397,7 @@ class AutoReduce(object):
             if self._surplus_reflections(gonp) >= 0:
                 tmp.append(gonp)
             else:
-                mdl = "Goniometer{0}".format(i + 1)
+                mdl = "Goniometer{}".format(i + 1)
                 msg = warnmsg.format(mdl)
                 logger.warning(msg)
         self.gon_params = tmp

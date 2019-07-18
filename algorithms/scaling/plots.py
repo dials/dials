@@ -32,7 +32,7 @@ def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
         np.linspace(
             valid_osc[0],
             valid_osc[1],
-            int(((valid_osc[1] - valid_osc[0]) / 0.1)) + 1,
+            int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
             endpoint=True,
         )
     )  # Make a grid of

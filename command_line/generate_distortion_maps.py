@@ -9,13 +9,13 @@ import libtbx.load_env
 help_message = """
 
 Generate dx.pickle, dy.pickle distortion maps for a detector model picked up
-from an image file or experiment.json. These maps can be used to
+from an image file or experiment.expt. These maps can be used to
 represent distortion within the millimetre to pixel mapping
 
 Examples::
 
   {0} image_001.cbf dx=0.5 dy=1.5
-  {0} experiments.json mode=ellipse phi=0 l2=0.95
+  {0} models.expt mode=ellipse phi=0 l2=0.95
 
 """.format(
     libtbx.env.dispatcher_name

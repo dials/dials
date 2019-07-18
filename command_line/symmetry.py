@@ -62,9 +62,9 @@ output {
     .type = str
   debug_log = dials.symmetry.debug.log
     .type = str
-  experiments = "reindexed_experiments.json"
+  experiments = "symmetrized.expt"
     .type = path
-  reflections = "reindexed_reflections.pickle"
+  reflections = "symmetrized.refl"
     .type = path
   json = dials.symmetry.json
     .type = path
@@ -163,13 +163,13 @@ reflections.
 
 Examples::
 
-  dials.symmetry experiments.json reflections.pickle
+  dials.symmetry models.expt observations.refl
 
 """
 
 
 def run(args):
-    usage = "dials.symmetry [options] experiments.json reflections.pickle"
+    usage = "dials.symmetry [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,
@@ -193,7 +193,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 

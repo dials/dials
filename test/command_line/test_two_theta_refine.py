@@ -38,7 +38,7 @@ def test(dials_regression, run_in_tmpdir):
     # work in a temporary directory
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
     ref_exp = ExperimentListFactory.from_json_file(
-        "refined_cell.json", check_format=False
+        "refined_cell.expt", check_format=False
     )
 
     xls = ref_exp.crystals()

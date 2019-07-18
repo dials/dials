@@ -303,7 +303,7 @@ class PhysicalScalingModel(ScalingModelBase):
         current_osc_range = conf["valid_osc_range"]
         # calculate one osc as don't have access to scan object here
         one_osc = (conf["valid_osc_range"][1] - conf["valid_osc_range"][0]) / (
-            (conf["valid_image_range"][1] - (conf["valid_image_range"][0] - 1))
+            conf["valid_image_range"][1] - (conf["valid_image_range"][0] - 1)
         )
         new_osc_range = (
             (new_image_range[0] - current_image_range[0]) * one_osc,
@@ -501,7 +501,7 @@ class ArrayScalingModel(ScalingModelBase):
         current_osc_range = conf["valid_osc_range"]
         # calculate one osc as don't have access to scan object here
         one_osc = (conf["valid_osc_range"][1] - conf["valid_osc_range"][0]) / (
-            (conf["valid_image_range"][1] - (conf["valid_image_range"][0] - 1))
+            conf["valid_image_range"][1] - (conf["valid_image_range"][0] - 1)
         )
         new_osc_range = (
             (new_image_range[0] - current_image_range[0]) * one_osc,

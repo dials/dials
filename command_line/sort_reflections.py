@@ -23,7 +23,7 @@ Utility script to sort reflection tables by the values in a column.
 
 Example::
 
-  %s key=miller_index output=sorted.pickle
+  %s key=miller_index output=sorted.refl
 
 """
     % libtbx.env.dispatcher_name
@@ -50,7 +50,7 @@ class Sort(object):
         .type = bool
         .help = "Reverse the sort direction"
 
-      output = sorted.pickle
+      output = sorted.refl
         .type = str
         .help = "The output reflection filename"
 
@@ -60,7 +60,7 @@ class Sort(object):
         # The script usage
         usage = (
             """
-      usage: %s [options] reflections.pickle
+      usage: %s [options] observations.refl
 
     """
             % libtbx.env.dispatcher_name
@@ -79,7 +79,7 @@ class Sort(object):
 
     def run(self):
         """Execute the script."""
-        from dials.array_family import flex  # import dependency
+        from dials.array_family import flex  # noqa: F401, import dependency
         from dials.util.options import flatten_reflections
         from dials.util import Sorry
 
@@ -109,10 +109,8 @@ class Sort(object):
 
         # Save sorted reflections to file
         if params.output:
-            print("Saving reflections to {0}".format(params.output))
+            print("Saving reflections to {}".format(params.output))
             reflections.as_pickle(params.output)
-
-        return
 
 
 if __name__ == "__main__":

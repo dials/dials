@@ -199,11 +199,9 @@ def quasi_normalisation(reflection_table, experiment):
         n_refl_shells = 10
     else:
         logger.info(
-            (
-                "No normalised intensity values were calculated, as an insufficient\n"
-                "number of reflections were detected. All normalised intensity \n"
-                "values will be set to 1 to allow use in scaling model determination. \n"
-            )
+            "No normalised intensity values were calculated, as an insufficient\n"
+            "number of reflections were detected. All normalised intensity \n"
+            "values will be set to 1 to allow use in scaling model determination. \n"
         )
         reflection_table["Esq"] = flex.double(reflection_table.size(), 1.0)
         return reflection_table

@@ -5,7 +5,7 @@ import os
 """ Test the situation that led to https://github.com/dials/dials/issues/423.
 In that case instantiating a Refiner for an experiment list with an I23
 detector model caused the panel origins to move before any refinement took
-place. This occured because for the input experiments.json the root frame for
+place. This occured because for the input models.expt the root frame for
 the hierarchical detector is on source side of the laboratory frame origin, not
 on the detector side. Prior to the fix this resulted in incorrect calculation
 of the offsets of all panels from the root frame.

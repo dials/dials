@@ -16,7 +16,7 @@ noise being identified as diffraction spots.
 
 Examples::
 
-  dials.estimate_gain experiments.json
+  dials.estimate_gain models.expt
 
 """
 
@@ -130,7 +130,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
 def run(args):
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % libtbx.env.dispatcher_name
+    usage = "dials.estimate_gain [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

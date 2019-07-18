@@ -45,21 +45,21 @@ RAD2DEG = 180 / math.pi
 help_message = """
 
 Generates a html report given the output of various DIALS programs
-(reflections.pickle and/or experiments.json).
+(observations.refl and/or models.expt).
 
 Examples::
 
-  dials.report strong.pickle
+  dials.report strong.refl
 
-  dials.report indexed.pickle
+  dials.report indexed.refl
 
-  dials.report refined.pickle
+  dials.report refined.refl
 
-  dials.report integrated.pickle
+  dials.report integrated.refl
 
-  dials.report refined_experiments.json
+  dials.report refined.expt
 
-  dials.report integrated.pickle integrated_experiments.json
+  dials.report integrated.refl integrated.expt
 
 """
 
@@ -218,7 +218,7 @@ class ScanVaryingCrystalAnalyser(object):
                 "volume": vol,
             }
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -360,7 +360,7 @@ the refinement algorithm accounting for unmodelled features in the data.
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)
@@ -2424,7 +2424,7 @@ class Script(object):
         import libtbx.load_env
 
         # Create the parser
-        usage = "usage: %s [options] reflections.pickle" % libtbx.env.dispatcher_name
+        usage = "usage: dials.report [options] observations.refl"
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,

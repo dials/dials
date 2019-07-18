@@ -61,7 +61,7 @@ def combined_table_to_batch_dependent_properties(
 ):
     """Extract batch dependent properties from a combined reflection table."""
     tables = []
-    for id_ in set(combined_table["id"]).difference(set([-1])):
+    for id_ in set(combined_table["id"]).difference({-1}):
         tables.append(combined_table.select(combined_table["id"] == id_))
 
     return reflection_tables_to_batch_dependent_properties(

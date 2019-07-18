@@ -2,13 +2,14 @@
 Tests for the dials.report.plots module.
 """
 from __future__ import absolute_import, division, print_function
+
+import itertools
 import random
-import pytest
+
 import mock as mock
+import pytest
 from cctbx import miller, crystal
 from cctbx.array_family import flex
-from iotbx.merging_statistics import dataset_statistics
-from dials.util.batch_handling import batch_manager
 from dials.report.plots import (
     ResolutionPlotsAndStats,
     i_over_sig_i_vs_batch_plot,
@@ -17,6 +18,8 @@ from dials.report.plots import (
     i_over_sig_i_vs_i_plot,
     AnomalousPlotter,
 )
+from dials.util.batch_handling import batch_manager
+from iotbx.merging_statistics import dataset_statistics
 
 
 @pytest.fixture
@@ -211,7 +214,7 @@ def batch_manager_fix():
     """Make a batch manager fixture"""
 
     batch_params = [{"id": 0, "range": [0, 10]}, {"id": 1, "range": [100, 110]}]
-    batches = flex.int(range(0, 10) + range(100, 110))
+    batches = flex.int(itertools.chain(range(0, 10), range(100, 110)))
     return batch_manager(batches, batch_params)
 
 

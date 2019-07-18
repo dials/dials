@@ -56,8 +56,6 @@ def test_translate(dials_regression, run_in_tmpdir):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""
 
-    dials_regression = "~/sw/cctbx/modules/dials_regression"
-
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "image_examples", "DLS_I04")
     image_path = os.path.join(data_dir, "grid_full_cbf_0005.cbf")
@@ -69,18 +67,16 @@ def test_translate(dials_regression, run_in_tmpdir):
     # Import without correction
     cmd = ("dials.import {0}").format(image_path)
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    experiments = ExperimentListkFactory.from_serialized_format("experiments.json")[0]
+    experiments = ExperimentListFactory.from_serialized_format("imported.expt")[0]
     det1 = experiments.detectors()[0]
 
     # Import with correction
     cmd = (
         "dials.import {0} dx=dx.pickle dy=dy.pickle "
-        "output.experiments=corrected_experiments.json"
+        "output.experiments=corrected.expt"
     ).format(image_path)
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-    experiments2 = ExperimentListFactory.from_serialized_format(
-        "corrected_experiments.json"
-    )[0]
+    experiments2 = ExperimentListFactory.from_serialized_format("corrected.expt")[0]
     det2 = experiments2.detectors()[0]
 
     # FIXME, why doesn't db2 have dx, dy set?
@@ -105,7 +101,7 @@ def test_elliptical_distortion(run_in_tmpdir):
     imageset.set_beam(b)
     experiments = ExperimentListFactory.from_imageset_and_crystal(imageset, None)
     dump = ExperimentListDumper(experiments)
-    dump.as_file("dummy_experiments.json")
+    dump.as_file("dummy.expt")
 
     # Centre of distortion will be the far corner from the origin of the first
     # panel
@@ -113,7 +109,7 @@ def test_elliptical_distortion(run_in_tmpdir):
 
     # Generate distortion maps
     cmd = (
-        "dials.generate_distortion_maps dummy_experiments.json "
+        "dials.generate_distortion_maps dummy.expt "
         "mode=ellipse centre_xy={},{} "
         "phi=0 l1=1.0 l2=0.95"
     ).format(*centre_xy)

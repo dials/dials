@@ -3,17 +3,25 @@ from __future__ import absolute_import, division, print_function
 
 import functools
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_on_error
+from dials.util.export_mtz import match_wavelengths
+from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentList
+
 
 help_message = """
 
 Utility script to split experiments and reflections from single files into
 multiple files with one experiment per output experiment file and one
-reflection file per output experiment file.
+reflection file per output experiment file. Alternative options include
+splitting by unique detector model or splitting by wavelength. The data
+can also be split into chunks rather than individual output files if
+required.
 
 Example::
 
-  dials.split_experiments combined_experiments.json combined_reflections.pickle
+  dials.split_experiments combined.expt combined.refl
 
 """
 
@@ -34,13 +42,16 @@ class Script(object):
                 "there are five detector models in the input data, five"
                 "sets of files will be produced, each containing"
                 "experiments that reference a single detector model."
-
+      by_wavelength = False
+        .type = bool
+        .help = "If True, group experiments by wavelength, from low to high"
+                "(using a relative tolerance of 1e-4 to match wavelengths)."
       output {
-        experiments_prefix = experiments
+        experiments_prefix = split
           .type = str
           .help = "Filename prefix for the split experimental models"
 
-        reflections_prefix = reflections
+        reflections_prefix = split
           .type = str
           .help = "Filename prefix for the split reflections"
 
@@ -76,8 +87,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: dials.split_experiments [options] [param.phil] "
-            "experiments1.json experiments2.json reflections1.pickle "
-            "reflections2.pickle..."
+            "experiments1.expt experiments2.expt reflections1.refl "
+            "reflections2.refl..."
         )
 
         # Create the parser
@@ -93,11 +104,8 @@ class Script(object):
     def run(self):
         """Execute the script."""
 
-        from dials.util.options import flatten_reflections, flatten_experiments
-        from dials.array_family import flex
-
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=True)
+        params, _ = self.parser.parse_args(show_diff_phil=True)
 
         # Try to load the models and data
         if not params.input.experiments:
@@ -121,18 +129,15 @@ class Script(object):
             params.output.template.format,
             prefix=params.output.experiments_prefix,
             maxindexlength=len(str(len(experiments))),
-            extension="json",
+            extension="expt",
         )
 
         reflections_template = functools.partial(
             params.output.template.format,
             prefix=params.output.reflections_prefix,
             maxindexlength=len(str(len(experiments))),
-            extension="pickle",
+            extension="refl",
         )
-
-        from dxtbx.model.experiment_list import ExperimentList
-        from dxtbx.serialize import dump
 
         if params.output.chunk_sizes:
             if not sum(params.output.chunk_sizes) == len(experiments):
@@ -141,7 +146,44 @@ class Script(object):
                     % (sum(params.output.chunk_sizes), len(experiments))
                 )
 
-        if params.by_detector:
+        if params.by_wavelength:
+            if reflections:
+                if not reflections.experiment_identifiers().keys():
+                    raise Sorry(
+                        "Unable to split by wavelength as no experiment "
+                        "identifiers are set in the reflection table."
+                    )
+            if all(experiments.identifiers() == ""):
+                raise Sorry(
+                    "Unable to split by wavelength as no experiment "
+                    "identifiers are set in the experiment list."
+                )
+
+            wavelengths = match_wavelengths(experiments)
+            for i, wl in enumerate(sorted(wavelengths.keys())):
+                expids = []
+                new_exps = ExperimentList()
+                exp_nos = wavelengths[wl]
+                for j in exp_nos:
+                    expids.append(experiments[j].identifier)  # string
+                    new_exps.append(experiments[j])
+
+                experiment_filename = experiments_template % i
+                print(
+                    "Saving experiments with wavelength %s to %s"
+                    % (wl, experiment_filename)
+                )
+                new_exps.as_json(experiment_filename)
+                if reflections:
+                    refls = reflections.select_on_experiment_identifiers(expids)
+                    reflections_filename = reflections_template % i
+                    print(
+                        "Saving reflections with wavelength %s to %s"
+                        % (wl, reflections_filename)
+                    )
+                    refls.as_pickle(reflections_filename)
+
+        elif params.by_detector:
             assert (
                 not params.output.chunk_size
             ), "chunk_size + by_detector is not implemented"
@@ -200,9 +242,7 @@ class Script(object):
             for i, detector in enumerate(experiments.detectors()):
                 experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
-                dump.experiment_list(
-                    split_data[detector]["experiments"], experiment_filename
-                )
+                split_data[detector]["experiments"].as_json(experiment_filename)
 
                 if reflections is not None:
                     reflections_filename = reflections_template(index=i)
@@ -212,13 +252,11 @@ class Script(object):
                     )
                     split_data[detector]["reflections"].as_pickle(reflections_filename)
         elif params.output.chunk_size or params.output.chunk_sizes:
-            from dxtbx.model.experiment_list import ExperimentList
-            from dxtbx.serialize import dump
 
             def save_chunk(chunk_id, expts, refls):
                 experiment_filename = experiments_template(index=chunk_id)
                 print("Saving chunk %d to %s" % (chunk_id, experiment_filename))
-                dump.experiment_list(expts, experiment_filename)
+                expts.as_json(experiment_filename)
                 if refls is not None:
                     reflections_filename = reflections_template(index=chunk_id)
                     print(
@@ -275,12 +313,10 @@ class Script(object):
                 save_chunk(chunk_counter, chunk_expts, chunk_refls)
         else:
             for i, experiment in enumerate(experiments):
-                from dxtbx.model.experiment_list import ExperimentList
-                from dxtbx.serialize import dump
 
                 experiment_filename = experiments_template(index=i)
                 print("Saving experiment %d to %s" % (i, experiment_filename))
-                dump.experiment_list(ExperimentList([experiment]), experiment_filename)
+                ExperimentList([experiment]).as_json(experiment_filename)
 
                 if reflections is not None:
                     reflections_filename = reflections_template(index=i)
@@ -303,8 +339,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    import dials.util
-
-    with dials.util.show_mail_on_error():
+    with show_mail_on_error():
         script = Script()
         script.run()

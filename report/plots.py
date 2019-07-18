@@ -731,7 +731,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                         "tickvals": self.d_star_sq_tickvals,
                         "ticktext": self.d_star_sq_ticktext,
                     },
-                    "yaxis": {"title": "Multiplicity"},
+                    "yaxis": {"title": "Multiplicity", "rangemode": "tozero"},
                 },
             }
         }

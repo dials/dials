@@ -28,11 +28,11 @@ Examples::
 
   dials.image_viewer image.cbf
 
-  dials.image_viewer experiments.json
+  dials.image_viewer models.expt
 
-  dials.image_viewer experiments.json strong.pickle
+  dials.image_viewer models.expt strong.refl
 
-  dials.image_viewer experiments.json integrated.pickle
+  dials.image_viewer models.expt integrated.refl
 
 """
 
@@ -101,7 +101,7 @@ masking {
 }
 
 output {
-  mask = mask.pickle
+  mask = pixels.mask
     .type = path
     .help = "Name of output mask file"
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     usage_message = (
         """
-    %s experiments.json [reflections.pickle]
+    %s models.expt [observations.refl]
   """
         % libtbx.env.dispatcher_name
     )

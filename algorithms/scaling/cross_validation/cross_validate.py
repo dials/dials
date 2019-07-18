@@ -166,7 +166,7 @@ def cross_validate(params, cross_validator):
 
     finish_time = time.time()
     logger.info(
-        "\nCross-validation finished.\nTotal time taken: {0:.4f}s ".format(
+        "\nCross-validation finished.\nTotal time taken: {:.4f}s ".format(
             finish_time - start_time
         )
     )

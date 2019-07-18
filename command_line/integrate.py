@@ -26,18 +26,18 @@ is called with an experiment list outputted from dials.index or dials.refine and
 a corresponding set of strong spots from which a profile model is calculated.
 The program will output a set of integrated reflections and an experiment list
 with additional profile model data. The data can be reintegrated using the same
-profile model by inputting this integrated_experiments.json file back into
+profile model by inputting this integrated.expt file back into
 dials.integate.
 
 Examples::
 
-  dials.integrate experiments.json indexed.pickle
+  dials.integrate models.expt refined.refl
 
-  dials.integrate experiments.json indexed.pickle output.reflections=integrated.pickle
+  dials.integrate models.expt refined.refl output.reflections=integrated.refl
 
-  dials.integrate experiments.json indexed.pickle profile.fitting=False
+  dials.integrate models.expt refined.refl profile.fitting=False
 
-  dials.integrate experiments.json indexed.pickle background.algorithm=glm
+  dials.integrate models.expt refined.refl background.algorithm=glm
 
 """
 
@@ -48,11 +48,11 @@ phil_scope = parse(
     """
 
   output {
-    experiments = 'integrated_experiments.json'
+    experiments = 'integrated.expt'
       .type = str
       .help = "The experiments output filename"
 
-    reflections = 'integrated.pickle'
+    reflections = 'integrated.refl'
       .type = str
       .help = "The integrated output filename"
 
@@ -145,7 +145,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: dials.integrate [options] models.expt"
 
         # Create the parser
         self.parser = OptionParser(
@@ -200,7 +200,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 

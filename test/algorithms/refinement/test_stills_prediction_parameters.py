@@ -281,7 +281,7 @@ def test_stills_pred_param(tc):
                 assert flex.max(flex.abs(norm_error)) < 30
             except AssertionError as e:
                 e.args += (
-                    "extreme normalised error value: {0}".format(
+                    "extreme normalised error value: {}".format(
                         flex.max(flex.abs(norm_error))
                     ),
                 )
@@ -302,7 +302,7 @@ def test_stills_pred_param(tc):
                 try:
                     assert n_outliers < 250
                 except AssertionError as e:
-                    e.args += ("too many outliers rejected: {0}".format(n_outliers),)
+                    e.args += ("too many outliers rejected: {}".format(n_outliers),)
                     raise e
 
                 print(

@@ -80,7 +80,7 @@ class CentroidOutlier(object):
         Return True if any outliers were detected, otherwise False"""
 
         logger.info(
-            "Detecting centroid outliers using the {0} algorithm".format(
+            "Detecting centroid outliers using the {} algorithm".format(
                 type(self).__name__
             )
         )
@@ -266,9 +266,7 @@ class CentroidOutlier(object):
 
         if self.nreject == 0:
             return False
-        logger.info(
-            "{0} reflections have been flagged as outliers".format(self.nreject)
-        )
+        logger.info("{} reflections have been flagged as outliers".format(self.nreject))
         logger.debug("Outlier rejections per job:")
         st = simple_table(rows, header)
         logger.debug(st.format())
@@ -443,9 +441,9 @@ class CentroidOutlierFactory(object):
             raise RuntimeError("outlier.algorithm not recognised")
 
         # construct kwargs from the algo_params scope
-        kwargs = dict(
-            (k, v) for k, v in algo_params.__dict__.items() if not k.startswith("_")
-        )
+        kwargs = {
+            k: v for k, v in algo_params.__dict__.items() if not k.startswith("_")
+        }
 
         if not params.outlier.separate_blocks:
             params.outlier.block_width = None

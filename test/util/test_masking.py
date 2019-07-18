@@ -44,14 +44,15 @@ def test_dynamic_shadowing(
         detector = imageset.get_detector()
         scan = imageset.get_scan()
         masker = imageset.masker()
-        assert masker is not None
-        mask = masker.get_mask(detector, scan.get_oscillation()[0])
-        assert len(mask) == len(detector)
-        # only shadowed pixels masked
-        assert mask[0].count(False) == count_only_shadow, (
-            mask[0].count(False),
-            count_only_shadow,
-        )
+        if shadowing is not False:
+            assert masker is not None
+            mask = masker.get_mask(detector, scan.get_oscillation()[0])
+            assert len(mask) == len(detector)
+            # only shadowed pixels masked
+            assert mask[0].count(False) == count_only_shadow, (
+                mask[0].count(False),
+                count_only_shadow,
+            )
         mask = imageset.get_mask(0)
 
         # dead pixels, pixels in gaps, etc also masked
@@ -74,7 +75,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
 
     result = fully_buffered("dials.import %s" % path).raise_if_errors()
     result = fully_buffered(
-        "dials.shadow_plot imported_experiments.json json=shadow.json"
+        "dials.shadow_plot imported.expt json=shadow.json"
     ).raise_if_errors()
     assert os.path.exists("scan_shadow_plot.png")
     assert os.path.exists("shadow.json")
@@ -84,7 +85,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
         assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
 
     fully_buffered(
-        "dials.shadow_plot imported_experiments.json mode=2d plot=shadow_2d.png"
+        "dials.shadow_plot imported.expt mode=2d plot=shadow_2d.png"
     ).raise_if_errors()
     assert os.path.exists("shadow_2d.png")
 

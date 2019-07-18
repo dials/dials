@@ -73,5 +73,3 @@ def test_masked_filter():
                     pixels = sorted(list(pixels))
                     value = pixels[len(pixels) // 2]
                 assert result[j, i] == pytest.approx(value, abs=eps)
-            else:
-                assert result[j, i] == pytest.approx(0.0, abs=eps)

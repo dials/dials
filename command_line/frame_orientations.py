@@ -8,13 +8,12 @@ orientation is expressed as a zone axis (a direction referenced to the direct
 lattice) [uvw] giving the beam direction with respect to the crystal lattice.
 Take into account any scan-varying models.
 
-Usage: dials.frame_orientations refined_experiments.json
+Usage: dials.frame_orientations refined.expt
 """
 
 from __future__ import division, print_function, absolute_import
 import sys
-from dials.util import Sorry
-from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
+from dials.util.options import flatten_experiments, OptionParser
 from libtbx.table_utils import simple_table
 from scitbx import matrix
 import matplotlib
@@ -29,7 +28,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from libtbx.phil import parse
-        import libtbx.load_env
 
         # The phil scope
         phil_scope = parse(
@@ -51,9 +49,9 @@ class Script(object):
         # The script usage
         import __main__
 
-        usage = (
-            "usage: dials.python {0} refined_experiments.json " "refined.pickle"
-        ).format(__main__.__file__)
+        usage = ("usage: dials.python {0} refined.expt refined.refl").format(
+            __main__.__file__
+        )
 
         # Create the parser
         self.parser = OptionParser(
@@ -63,8 +61,6 @@ class Script(object):
             check_format=False,
             epilog=__doc__,
         )
-
-        return
 
     def run(self):
         """Execute the script."""
@@ -95,7 +91,7 @@ class Script(object):
             "Angle from\nprevious (deg)",
         ]
         for iexp, exp in enumerate(experiments):
-            print("For Experiment id = {0}".format(iexp))
+            print("For Experiment id = {}".format(iexp))
             print(exp.beam)
             print(exp.crystal)
             print(exp.scan)
@@ -146,12 +142,10 @@ class Script(object):
             plt.xlabel("Image number")
             plt.ylabel(r"Angle from previous image $\left(^\circ\right)$")
             plt.title(r"Angle between neighbouring images")
-            print("Saving plot to {0}".format(self.params.plot_filename))
+            print("Saving plot to {}".format(self.params.plot_filename))
             plt.savefig(self.params.plot_filename)
 
         print()
-
-        return
 
 
 def extract_experiment_data(exp, scale=1):

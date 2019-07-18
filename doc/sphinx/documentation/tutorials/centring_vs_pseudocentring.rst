@@ -12,9 +12,9 @@ through that first to fix the incorrect beam centre recorded in the image
 headers and produce a correct indexing solution. Following those steps to the
 end, you will have two files:
 
-* :file:`bravais_setting_5.json` - the experimental geometry including a crystal
+* :file:`bravais_setting_5.expt` - the experimental geometry including a crystal
   model with a primitive orthorhombic lattice
-* :file:`indexed.pickle` - the spot list from indexing
+* :file:`indexed.refl` - the spot list from indexing
 
 Viewing these files using the :program:`dials.image_viewer` and the reciprocal
 lattice points in the :program:`dials.reciprocal_lattice_viewer` reveals the
@@ -45,7 +45,7 @@ from :program:`Pointless` and :program:`cTruncate`.
 
 First the reciprocal lattice::
 
-  dials.reciprocal_lattice_viewer bravais_setting_5.json indexed.pickle
+  dials.reciprocal_lattice_viewer bravais_setting_5.expt indexed.refl
 
 .. image:: /figures/dpf3_oP_lo_res.png
 
@@ -59,7 +59,7 @@ pseudocentred lattice.
 
 Now the image viewer::
 
-  dials.image_viewer bravais_setting_5.json indexed.pickle
+  dials.image_viewer bravais_setting_5.expt indexed.refl
 
 .. image:: /figures/dpf3_oP_im5.png
 
@@ -82,7 +82,7 @@ lattice as an option, it is easy to convert the current primitive solution.
 First, note that for the currently chosen basis, the centring operation should
 be on the A face, not the conventional C face::
 
-  dials.reindex bravais_setting_5.json space_group=A222
+  dials.reindex bravais_setting_5.expt space_group=A222
 
 Here is part of the output::
 
@@ -96,12 +96,12 @@ include those which are now disallowed by the centring operation. An easy
 way to fix this is simply to reindex the spot list using the new model. We
 also request output of the unindexed reflections to explore later::
 
-  dials.index reindexed_experiments.json strong.pickle output.unindexed_reflections=unindexed.pickle
+  dials.index reindexed.expt strong.refl output.unindexed_reflections=unindexed.refl
 
 This produces a properly indexed spot list, but the space group is in an
 unconventional setting. We can fix this as follows::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
 Solution 5 is what we want::
 
@@ -118,10 +118,10 @@ Solution 5 is what we want::
 The table tells us that the indexed spots need a change of basis to be
 consistent with the conventional oC lattice::
 
-  dials.reindex indexed.pickle change_of_basis_op=b-c,b+c,a
+  dials.reindex indexed.refl change_of_basis_op=b-c,b+c,a
 
-This gives us :file:`reindexed_reflections.pickle`. Before passing this along with
-:file:`bravais_setting_5.json` to refinement and then to integration it is worth
+This gives us :file:`reindexed.refl`. Before passing this along with
+:file:`bravais_setting_5.expt` to refinement and then to integration it is worth
 exploring this result with :program:`dials.image_viewer` and
 :program:`dials.reciprocal_lattice_viewer`.
 
@@ -145,7 +145,7 @@ oC lattice do themselves form an orthorhombic lattice. In views from the
 third lattice in some parts of reciprocal space. We might try to index these
 lattices now::
 
-  dials.index optimized_datablock.json unindexed.pickle output.experiments=minor.json output.reflections=minor.pickle unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
+  dials.index optimised.expt unindexed.refl output.experiments=minor.expt output.reflections=minor.refl unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
 
 Here is some output::
 
@@ -167,11 +167,11 @@ separate crystallite, rotated about 11 degrees from the first and therefore
 easily disentangled from the others. We can combine this result with the
 previous one::
 
-  dials.combine_experiments bravais_setting_5.json reindexed_reflections.pickle minor.json minor.pickle beam=0 detector=0 scan=0 goniometer=0 compare_models=False
+  dials.combine_experiments bravais_setting_5.expt reindexed.refl minor.expt minor.refl beam=0 detector=0 scan=0 goniometer=0 compare_models=False
 
 Here, the ``beam=0`` etc. specify that the combined result should have all
 experimental models apart from the crystal taken from the first experiment,
-which is the one described by :file:`bravais_setting_5.json`. The option
+which is the one described by :file:`bravais_setting_5.expt`. The option
 ``compare_models=False`` is required in order to force this. The result is
 about 65000 indexed reflections, split between three lattices::
 
@@ -187,7 +187,7 @@ Here is a view of reciprocal space, aligned down the shared :math:`c^\star`
 axes of the oC lattice, and its complement, the oP lattice that indexes the
 disallowed reflections::
 
-  dials.reciprocal_lattice_viewer combined_experiments.json combined_reflections.pickle
+  dials.reciprocal_lattice_viewer combined.expt combined.refl
 
 .. image:: /figures/dpf3_3lattices.png
 
@@ -200,7 +200,7 @@ spots found) in latter half of the dataset (images 100 onwards).
 We can see this more directly if we create an HTML report for the combined
 experiments::
 
-  dials.report combined_experiments.json combined_reflections.pickle
+  dials.report combined.expt combined.refl
 
 Load the resulting :file:`dials-report.html` in a web browser. This includes
 a useful plot of the number of indexed reflections for each lattice versus

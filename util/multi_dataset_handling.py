@@ -48,7 +48,7 @@ def parse_multiple_datasets(reflections):
     single_reflection_tables = []
     dataset_id_list = []
     for refl_table in reflections:
-        dataset_ids = set(refl_table["id"]).difference(set([-1]))
+        dataset_ids = set(refl_table["id"]).difference({-1})
         dataset_id_list.extend(list(dataset_ids))
         if len(dataset_ids) > 1:
             logger.info(

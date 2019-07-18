@@ -22,9 +22,9 @@ reflections used in refinement.
 
 Examples::
 
-  dials.refine experiments.json indexed.pickle
+  dials.refine indexed.expt indexed.refl
 
-  dials.refine experiments.json indexed.pickle scan_varying=(False/True/Auto)
+  dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
 
 """
 
@@ -47,11 +47,11 @@ phil_scope = libtbx.phil.parse(
     """
 
   output {
-    experiments = refined_experiments.json
+    experiments = refined.expt
       .type = str
       .help = "The filename for refined experimental models"
 
-    reflections = refined.pickle
+    reflections = refined.refl
       .type = str
       .help = "The filename for reflections with updated predictions"
 
@@ -233,7 +233,7 @@ def run_macrocycle(params, reflections, experiments):
     if nexp == 1:
         logger.info("Performing refinement of a single Experiment...")
     else:
-        logger.info("Performing refinement of {0} Experiments...".format(nexp))
+        logger.info("Performing refinement of {} Experiments...".format(nexp))
 
     # Refine and get the refinement history
     try:
@@ -323,7 +323,7 @@ def run_dials_refine(experiments, reflections, params):
         experiments = refiner.get_experiments()
     else:
         for i in range(params.n_static_macrocycles):
-            logger.info("\nStatic refinement macrocycle {0}".format(i + 1))
+            logger.info("\nStatic refinement macrocycle {}".format(i + 1))
             refiner, reflections, history = run_macrocycle(
                 params, reflections, experiments
             )
@@ -366,7 +366,7 @@ def run(args=None, phil=working_phil):
     # The script usage
     usage = (
         "usage: %s [options] [param.phil] "
-        "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+        "models.expt observations.refl" % libtbx.env.dispatcher_name
     )
 
     # Create the parser
@@ -439,7 +439,7 @@ def run(args=None, phil=working_phil):
     # Write table of centroids to file, if requested
     if params.output.centroids:
         logger.info(
-            "Writing table of centroids to '{0}'".format(params.output.centroids)
+            "Writing table of centroids to '{}'".format(params.output.centroids)
         )
         write_centroids_table(refiner, params.output.centroids)
 
@@ -458,7 +458,7 @@ def run(args=None, phil=working_phil):
             )
             if text:
                 logger.info(
-                    "Writing scan-varying parameter table to {0}".format(
+                    "Writing scan-varying parameter table to {}".format(
                         params.output.parameter_table
                     )
                 )
@@ -470,7 +470,7 @@ def run(args=None, phil=working_phil):
 
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
-    logger.info("Saving refined experiments to {0}".format(output_experiments_filename))
+    logger.info("Saving refined experiments to {}".format(output_experiments_filename))
     from dxtbx.model.experiment_list import ExperimentListDumper
 
     dump = ExperimentListDumper(experiments)
@@ -480,7 +480,7 @@ def run(args=None, phil=working_phil):
     # this off if it is a time-consuming step)
     if params.output.reflections:
         logger.info(
-            "Saving reflections with updated predictions to {0}".format(
+            "Saving reflections with updated predictions to {}".format(
                 params.output.reflections
             )
         )
@@ -494,7 +494,7 @@ def run(args=None, phil=working_phil):
     if params.output.matches:
         matches = refiner.get_matches()
         logger.info(
-            "Saving matches (use for debugging purposes) to {0}".format(
+            "Saving matches (use for debugging purposes) to {}".format(
                 params.output.matches
             )
         )
@@ -542,7 +542,7 @@ def run(args=None, phil=working_phil):
                     for k, corrmat in corrmats.items():
                         corrmats[k] = corrmat.as_scitbx_matrix()
                     logger.info(
-                        "Saving parameter correlation matrices to {0}".format(mat_fname)
+                        "Saving parameter correlation matrices to {}".format(mat_fname)
                     )
                     pickle.dump({"corrmats": corrmats, "labels": labels}, handle)
 
@@ -558,12 +558,12 @@ def run(args=None, phil=working_phil):
     if params.output.history:
         with open(params.output.history, "wb") as handle:
             logger.info(
-                "Saving refinement step history to {0}".format(params.output.history)
+                "Saving refinement step history to {}".format(params.output.history)
             )
             pickle.dump(history, handle)
 
     # Log the total time taken
-    logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+    logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

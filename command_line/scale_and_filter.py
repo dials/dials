@@ -63,10 +63,10 @@ output {
     debug.log = dials.scale.debug.log
       .type = str
       .help = "The debug log filename"
-    experiments = "scaled_experiments.json"
+    experiments = "scaled.expt"
       .type = str
       .help = "Option to set filepath for output json."
-    reflections = "scaled.pickle"
+    reflections = "scaled.refl"
       .type = str
       .help = "Option to set filepath for output pickle file of scaled
                intensities."
@@ -588,9 +588,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = (
-        "dials.scale_and_filter [options] integrated_experiments.json integrated.pickle"
-    )
+    usage = "dials.scale_and_filter [options] integrated.expt integrated.refl"
 
     parser = OptionParser(
         usage=usage,

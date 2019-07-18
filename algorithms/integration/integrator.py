@@ -72,7 +72,7 @@ def generate_phil_scope():
 
         reference {
 
-          filename = "reference_profiles.pickle"
+          filename = "reference_profiles.refl"
             .type = str
             .help = "The filename for the reference profiles"
 
@@ -92,11 +92,11 @@ def generate_phil_scope():
         separate_files = True
           .type = bool
           .help = "If this is true, the shoeboxes are saved in separate files"
-                  "from the output integrated.pickle file. This is necessary"
+                  "from the output integrated.refl file. This is necessary"
                   "in most cases since the amount of memory used by the"
                   "shoeboxes is typically greater than the available system"
                   "memory. If, however, you know that memory is not an issue,"
-                  "you can saved the shoeboxes in the integrated.pickle file"
+                  "you can saved the shoeboxes in the integrated.refl file"
                   "by setting this option to False. This only works if the debug"
                   "output is during integrated and not modelling."
 
@@ -327,7 +327,7 @@ class Parameters(object):
         self.integration = processor.Parameters()
         self.filter = Parameters.Filter()
         self.profile = Parameters.Profile()
-        self.debug_reference_filename = "reference_profiles.pickle"
+        self.debug_reference_filename = "reference_profiles.refl"
         self.debug_reference_output = False
 
     @staticmethod

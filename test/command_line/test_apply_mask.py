@@ -6,7 +6,7 @@ import procrunner
 def test(dials_data, tmpdir):
     input_filename = dials_data("centroid_test_data").join("datablock.json").strpath
     mask_filename = dials_data("centroid_test_data").join("lookup_mask.pickle").strpath
-    output_filename = tmpdir.join("output_experiments.json").strpath
+    output_filename = tmpdir.join("output.expt").strpath
 
     result = procrunner.run(
         [
@@ -35,7 +35,7 @@ def test(dials_data, tmpdir):
 def test_experiments(dials_data, tmpdir):
     input_filename = dials_data("centroid_test_data").join("experiments.json").strpath
     mask_filename = dials_data("centroid_test_data").join("lookup_mask.pickle").strpath
-    output_filename = tmpdir.join("output_experiments.json").strpath
+    output_filename = tmpdir.join("output.expt").strpath
 
     result = procrunner.run(
         [

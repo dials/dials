@@ -15,9 +15,9 @@ Generate a 1d or 2d goniometer detector shadow plot for a given experiment list.
 
 Examples::
 
-  dials.shadow_plot experiments.json
+  dials.shadow_plot models.expt
 
-  dials.shadow_plot experiments.json mode=2d
+  dials.shadow_plot models.expt mode=2d
 
 """
 
@@ -49,7 +49,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "dials.shadow_plot [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

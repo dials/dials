@@ -6,7 +6,6 @@ import sys
 import iotbx.phil
 from dials.util.options import flatten_experiments
 from dials.util.options import OptionParser
-import libtbx.load_env
 from dials.util import Sorry
 
 help_message = """
@@ -21,7 +20,7 @@ Examples::
 
   dials.export_bitmaps image.cbf
 
-  dials.export_bitmaps experiments.json
+  dials.export_bitmaps models.expt
 
   dials.export_bitmaps image.cbf display=variance colour_scheme=inverse_greyscale
 
@@ -92,7 +91,7 @@ colour_schemes = {"greyscale": 0, "rainbow": 1, "heatmap": 2, "inverse_greyscale
 
 
 def run(args):
-    usage = "%s [options] experiments.json | image.cbf" % libtbx.env.dispatcher_name
+    usage = "dials.export_bitmaps [options] models.expt | image.cbf"
 
     parser = OptionParser(
         usage=usage,

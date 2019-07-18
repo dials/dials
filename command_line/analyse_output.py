@@ -34,11 +34,11 @@ Generate a number of analysis plots from input integrated or indexed reflections
 
 Examples::
 
-  dials.analyse_output indexed.pickle
+  dials.analyse_output indexed.refl
 
-  dials.analyse_output refined.pickle
+  dials.analyse_output refined.refl
 
-  dials.analyse_output integrated.pickle
+  dials.analyse_output integrated.refl
 
 """
 
@@ -564,17 +564,17 @@ class CentroidAnalyser(object):
         pyplot.axhline(0, color="grey")
         ax.scatter(phi, mean_residuals_x)
         ax.set_xlabel("phi (deg)")
-        ax.set_ylabel("mean $\Delta$ x (mm)")
+        ax.set_ylabel(r"mean $\Delta$ x (mm)")
         ax = fig.add_subplot(312)
         pyplot.axhline(0, color="grey")
         ax.scatter(phi, mean_residuals_y)
         ax.set_xlabel("phi (deg)")
-        ax.set_ylabel("mean $\Delta$ y (mm)")
+        ax.set_ylabel(r"mean $\Delta$ y (mm)")
         ax = fig.add_subplot(313)
         pyplot.axhline(0, color="grey")
         ax.scatter(phi, mean_residuals_phi)
         ax.set_xlabel("phi (deg)")
-        ax.set_ylabel("mean $\Delta$ phi (deg)")
+        ax.set_ylabel(r"mean $\Delta$ phi (deg)")
         pyplot.savefig(os.path.join(self.directory, "centroid_mean_diff_vs_phi.png"))
         pyplot.close()
 
@@ -1395,7 +1395,7 @@ def run():
     from dials.util.options import OptionParser
 
     # Create the parser
-    usage = "usage: dials.analyse_output [options] reflections.pickle"
+    usage = "usage: dials.analyse_output [options] observations.refl"
     parser = OptionParser(
         usage=usage, phil=phil_scope, read_reflections=True, epilog=help_message
     )

@@ -34,9 +34,9 @@ estimated standard deviation.
 
 Examples::
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle
+  dials.two_theta_refine integrated.expt integrated.refl
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle \
+  dials.two_theta_refine integrated.expt integrated.refl \
     correlation_plot.filename=corrplot.png cif=refined_cell.cif
 """
 
@@ -47,7 +47,7 @@ phil_scope = parse(
     """
 
   output {
-    experiments = refined_cell.json
+    experiments = refined_cell.expt
       .type = str
       .help = "The filename for experimental models including refined cells"
 
@@ -144,7 +144,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "models.expt observations.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -531,7 +531,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -556,7 +556,7 @@ class Script(object):
         if nexp == 1:
             logger.info("Performing refinement of a single Experiment...")
         else:
-            logger.info("Performing refinement of {0} Experiments...".format(nexp))
+            logger.info("Performing refinement of {} Experiments...".format(nexp))
 
         # Refine and get the refinement history
         history = refiner.run()
@@ -575,7 +575,7 @@ class Script(object):
         # Save the refined experiments to file
         output_experiments_filename = params.output.experiments
         logger.info(
-            "Saving refined experiments to {0}".format(output_experiments_filename)
+            "Saving refined experiments to {}".format(output_experiments_filename)
         )
         from dxtbx.model.experiment_list import ExperimentListDumper
 
@@ -626,7 +626,7 @@ class Script(object):
                         for k, corrmat in corrmats.items():
                             corrmats[k] = corrmat.as_scitbx_matrix()
                         logger.info(
-                            "Saving parameter correlation matrices to {0}".format(
+                            "Saving parameter correlation matrices to {}".format(
                                 mat_fname
                             )
                         )
@@ -650,7 +650,7 @@ class Script(object):
             self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
 
         # Log the total time taken
-        logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+        logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

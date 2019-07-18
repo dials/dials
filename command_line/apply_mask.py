@@ -18,7 +18,7 @@ from iotbx.phil import parse
 
 help_message = """
 
-This program augments a experiements JSON file with one or more masks specified by the
+This program augments a experiments JSON file with one or more masks specified by the
 user.  Its only function is to input the mask file paths to the experiments JSON file,
 but means that the user does not have to edit the experiments file by hand.
 
@@ -27,9 +27,9 @@ imagesets (sweeps) appear in the experiments JSON file.
 
 Examples::
 
-    dials.apply_mask experiments.json input.mask=mask.pickle
+    dials.apply_mask models.expt input.mask=pixels.mask
 
-    dials.apply_mask experiments.json input.mask=mask1.pickle input.mask=mask2.pickle
+    dials.apply_mask models.expt input.mask=pixels1.mask input.mask=pixels2.mask
 
 """
 
@@ -43,7 +43,7 @@ phil_scope = parse(
         }
 
         output {
-            experiments = masked_experiments.json
+            experiments = masked.expt
                 .type = str
                 .help = "Name of output experiments file"
         }
@@ -62,8 +62,7 @@ class Script(object):
 
         # Create the parser
         usage = (
-            "usage: %s experiments.json input.mask=mask.pickle"
-            % libtbx.env.dispatcher_name
+            "usage: %s models.expt input.mask=pixels.mask" % libtbx.env.dispatcher_name
         )
         self.parser = OptionParser(
             usage=usage, epilog=help_message, phil=phil_scope, read_experiments=True

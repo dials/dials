@@ -39,7 +39,7 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  dials.search_beam_position experiments.json strong.pickle
+  dials.search_beam_position imported.expt strong.refl
 
 """
 
@@ -78,7 +78,7 @@ seed = 42
   .type = int(value_min=0)
 
 output {
-  experiments = optimized_experiments.json
+  experiments = optimised.expt
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
@@ -517,7 +517,7 @@ def discover_better_experimental_model(
 
 
 def run(args):
-    usage = "dials.search_beam_position [options] experiments.json strong.pickle"
+    usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

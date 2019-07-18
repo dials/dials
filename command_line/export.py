@@ -15,6 +15,7 @@ import logging
 import sys
 
 from libtbx.phil import parse
+from libtbx import Auto
 
 logger = logging.getLogger("dials.command_line.export")
 
@@ -27,16 +28,16 @@ The output formats currently supported are:
 
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
-but unscaled data, the required input is an experiments.json file and an
-integrated.pickle file. For exporting scaled data, the required input is an
-experiments.json file and a scaled.pickle file, also passing the option
+but unscaled data, the required input is a models.expt file and an
+integrated.refl file. For exporting scaled data, the required input is a
+models.expt file and a scaled.pickle file, also passing the option
 intensity=scale.
 
-NXS format exports the files as an NXmx file. The required input is an
-experiments.json file and an integrated.pickle file.
+NXS format exports the files as an NXmx file. The required input is a
+models.expt file and an integrated.refl file.
 
-MMCIF format exports the files as an mmcif file. The required input is an
-experiments.json file and an integrated.pickle file.
+MMCIF format exports the files as an mmcif file. The required input is a
+models.expt file and an integrated.refl file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -48,34 +49,34 @@ EvalCCD for input to SADABS.
 
 MOSFLM format exports the files as an index.mat mosflm-format matrix file and a
 mosflm.in file containing basic instructions for input to mosflm. The required
-input is an experiments.json file.
+input is an models.expt file.
 
-XDS format exports an experiments.json file as XDS.INP and XPARM.XDS files. If a
+XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
 reflection pickle is given it will be exported as a SPOT.XDS file.
 
 Examples::
 
   # Export to mtz
-  dials.export experiments.json integrated.pickle
-  dials.export experiments.json integrated.pickle mtz.hklout=integrated.mtz
-  dials.export experiments.json scaled.pickle intensity=scale mtz.hklout=scaled.mtz
+  dials.export models.expt integrated.refl
+  dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export models.expt scaled.pickle intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export experiments.json integrated.pickle format=nxs
-  dials.export experiments.json integrated.pickle format=nxs nxs.hklout=integrated.nxs
+  dials.export models.expt integrated.refl format=nxs
+  dials.export models.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export experiments.json integrated.pickle format=mmcif
-  dials.export experiments.json integrated.pickle format=mmcif mmcif.hklout=integrated.mmcif
+  dials.export models.expt integrated.refl format=mmcif
+  dials.export models.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to mosflm
-  dials.export experiments.json integrated.pickle format=mosflm
+  dials.export models.expt integrated.refl format=mosflm
 
   # Export to xds
   dials.export strong.pickle format=xds
   dials.export indexed.pickle format=xds
-  dials.export experiments.json format=xds
-  dials.export experiments.json indexed.pickle format=xds
+  dials.export models.expt format=xds
+  dials.export models.expt indexed.pickle format=xds
 
 """
 
@@ -86,10 +87,12 @@ phil_scope = parse(
     .type = choice
     .help = "The output file format"
 
-  intensity = *profile *sum scale
+  intensity = *auto profile sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
-            scale, profile, sum, profile+sum, sum+profile+scale."
+            scale, profile, sum, profile+sum, sum+profile+scale. Auto will
+            default to scale or profile+sum depending on if the data are scaled."
+
 
   debug = False
     .type = bool
@@ -129,9 +132,10 @@ phil_scope = parse(
       .type = float
       .help = "Filter out reflections with d-spacing below d_min"
 
-    hklout = integrated.mtz
+    hklout = auto
       .type = path
-      .help = "The output MTZ file"
+      .help = "The output MTZ filename, defaults to integrated.mtz or scaled_unmerged.mtz"
+              "depending on if the input data are scaled."
 
     crystal_name = XTAL
       .type = str
@@ -170,9 +174,10 @@ phil_scope = parse(
 
   mmcif {
 
-    hklout = integrated.cif
+    hklout = auto
       .type = path
-      .help = "The output CIF file"
+      .help = "The output CIF file, defaults to integrated.cif or scaled_unmerged.cif
+        depending on if the data are scaled."
 
   }
 
@@ -675,7 +680,6 @@ class JsonExporter(object):
 
 
 if __name__ == "__main__":
-    import libtbx.load_env
     from dials.util.options import (
         OptionParser,
         flatten_experiments,
@@ -686,9 +690,7 @@ if __name__ == "__main__":
     from dials.util import Sorry
     import os
 
-    usage = "%s experiments.json reflections.pickle [options]" % (
-        libtbx.env.dispatcher_name
-    )
+    usage = "dials.export models.expt reflections.pickle [options]"
 
     # Create the option parser
     if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):
@@ -733,6 +735,19 @@ if __name__ == "__main__":
     # Get the experiments and reflections
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
+    # do auto intepreting of intensity choice:
+    # note that this may still fail certain checks further down the processing,
+    # but these are the defaults to try
+    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
+        if ("intensity.scale.value" in reflections[0]) and (
+            "intensity.scale.variance" in reflections[0]
+        ):
+            params.intensity = ["scale"]
+            logger.info("Data appears to be scaled, setting intensity = scale")
+        else:
+            params.intensity = ["profile", "sum"]
+            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
 
     # Choose the exporter
     if params.format == "mtz":

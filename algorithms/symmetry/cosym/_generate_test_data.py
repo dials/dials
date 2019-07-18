@@ -62,8 +62,8 @@ def generate_test_data(
             data=(1.0 - twin_fraction) * intensities.data()
             + twin_fraction * intensities_twin.data(),
             sigmas=flex.sqrt(
-                flex.pow2(((1.0 - twin_fraction) * intensities.sigmas()))
-                + flex.pow2((twin_fraction * intensities_twin.sigmas()))
+                flex.pow2((1.0 - twin_fraction) * intensities.sigmas())
+                + flex.pow2(twin_fraction * intensities_twin.sigmas())
             ),
         )
         intensities = twinned_miller

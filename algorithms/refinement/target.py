@@ -685,7 +685,7 @@ class SparseGradientsMixin:
 
         nref = int(nelem / len(grads_each_dim))
 
-        blocks = [sparse.matrix(nref, nparam) for g in grads_each_dim]
+        blocks = [sparse.matrix(nref, nparam) for _ in grads_each_dim]
         jacobian = sparse.matrix(nelem, nparam)
 
         # loop over parameters, building full width blocks of the full Jacobian

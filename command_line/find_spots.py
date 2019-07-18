@@ -20,7 +20,7 @@ logger = logging.getLogger("dials.command_line.find_spots")
 help_message = """
 
 This program tries to find strong spots on a sequence of images. The program can
-be called with either a "experiments.json" file or a sequence of image files (see
+be called with either a "models.expt" file or a sequence of image files (see
 help for dials.import for more information about how images are imported). Spot
 finding will be done against each logically grouped set of images given. Strong
 pixels will be found on each image and spots will be formed from connected
@@ -29,7 +29,7 @@ be done in 3D.
 
 Once a set of spots have been found, their centroids and intensities will be
 calculated. They will then be filtered according to the particular preferences
-of the user. The output will be a file (strong.pickle) containing a list of spot
+of the user. The output will be a file (strong.refl) containing a list of spot
 centroids and intensities which can be used in the dials.index program. To view
 a list of parameters for spot finding use the --show-config option.
 
@@ -39,9 +39,9 @@ Examples::
 
   dials.find_spots imager_00*.cbf
 
-  dials.find_spots experiments.json
+  dials.find_spots models.expt
 
-  dials.find_spots experiments.json output.reflections=strong.pickle
+  dials.find_spots models.expt output.reflections=strong.refl
 
 """
 
@@ -52,7 +52,7 @@ phil_scope = parse(
     """
 
   output {
-    reflections = 'strong.pickle'
+    reflections = 'strong.refl'
       .type = str
       .help = "The output filename"
 
@@ -100,8 +100,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "{experiments.json | image1.file [image2.file ...]}"
-            % libtbx.env.dispatcher_name
+            "{models.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
         )
 
         # Initialise the base class
@@ -138,7 +137,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -176,14 +175,14 @@ class Script(object):
         logger.info("\n" + "-" * 80)
         reflections.as_pickle(params.output.reflections)
         logger.info(
-            "Saved {0} reflections to {1}".format(
+            "Saved {} reflections to {}".format(
                 len(reflections), params.output.reflections
             )
         )
 
         # Save the experiments
         if params.output.experiments:
-            logger.info("Saving experiments to {0}".format(params.output.experiments))
+            logger.info("Saving experiments to {}".format(params.output.experiments))
             dump = ExperimentListDumper(experiments)
             dump.as_file(params.output.experiments)
 
