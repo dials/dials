@@ -515,8 +515,10 @@ class Script(object):
 
             log.config(params.verbosity, info=info_path, debug=debug_path)
 
-            if size <= 2: # client/server only makes sense for n>2
-                subset = [item for i, item in enumerate(iterable) if (i + rank) % size == 0]
+            if size <= 2:  # client/server only makes sense for n>2
+                subset = [
+                    item for i, item in enumerate(iterable) if (i + rank) % size == 0
+                ]
                 do_work(rank, subset)
             else:
                 if rank == 0:
@@ -524,32 +526,35 @@ class Script(object):
                     for item in iterable:
                         print("Getting next available process")
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Process %s is ready, sending %s\n"%(rankreq, item[0]))
-                        comm.send(item,dest=rankreq)
+                        print("Process %s is ready, sending %s\n" % (rankreq, item[0]))
+                        comm.send(item, dest=rankreq)
                     # send a stop command to each process
                     print("MPI DONE, sending stops\n")
-                    for rankreq in range(size-1):
+                    for rankreq in range(size - 1):
                         rankreq = comm.recv(source=MPI.ANY_SOURCE)
-                        print("Sending stop to %d\n"%rankreq)
-                        comm.send('endrun',dest=rankreq)
+                        print("Sending stop to %d\n" % rankreq)
+                        comm.send("endrun", dest=rankreq)
                     print("All stops sent.")
                 else:
                     # client process
                     while True:
-                      # inform the server this process is ready for an event
-                      print("Rank %d getting next task"%rank)
-                      comm.send(rank,dest=0)
-                      print("Rank %d waiting for response"%rank)
-                      item = comm.recv(source=0)
-                      if item == 'endrun':
-                          print("Rank %d recieved endrun"%rank)
-                          break
-                      print("Rank %d beginning processing"%rank)
-                      try:
-                          do_work(rank, [item])
-                      except Exception as e:
-                          print("Rank %d unhandled exception processing event"%rank, str(e))
-                      print("Rank %d event pocessed"%rank)
+                        # inform the server this process is ready for an event
+                        print("Rank %d getting next task" % rank)
+                        comm.send(rank, dest=0)
+                        print("Rank %d waiting for response" % rank)
+                        item = comm.recv(source=0)
+                        if item == "endrun":
+                            print("Rank %d received endrun" % rank)
+                            break
+                        print("Rank %d beginning processing" % rank)
+                        try:
+                            do_work(rank, [item])
+                        except Exception as e:
+                            print(
+                                "Rank %d unhandled exception processing event" % rank,
+                                str(e),
+                            )
+                        print("Rank %d event processed" % rank)
         else:
             from dxtbx.command_line.image_average import splitit
 
