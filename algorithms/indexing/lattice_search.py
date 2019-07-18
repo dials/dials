@@ -107,7 +107,7 @@ for entry_point in pkg_resources.iter_entry_points(
 basis_vector_search_phil_scope.adopt_scope(
     libtbx.phil.parse(
         "method = "
-        + " ".join(("*" + m if m == "fft3d" else m for m in methods))
+        + " ".join("*" + m if m == "fft3d" else m for m in methods)
         + "\n    .type = choice"
     )
 )

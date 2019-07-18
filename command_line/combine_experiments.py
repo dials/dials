@@ -396,32 +396,32 @@ class Script(object):
             try:
                 ref_beam = flat_exps[ref_beam].beam
             except IndexError:
-                raise Sorry("{0} is not a valid experiment ID".format(ref_beam))
+                raise Sorry("{} is not a valid experiment ID".format(ref_beam))
 
         if ref_goniometer is not None:
             try:
                 ref_goniometer = flat_exps[ref_goniometer].goniometer
             except IndexError:
-                raise Sorry("{0} is not a valid experiment ID".format(ref_goniometer))
+                raise Sorry("{} is not a valid experiment ID".format(ref_goniometer))
 
         if ref_scan is not None:
             try:
                 ref_scan = flat_exps[ref_scan].scan
             except IndexError:
-                raise Sorry("{0} is not a valid experiment ID".format(ref_scan))
+                raise Sorry("{} is not a valid experiment ID".format(ref_scan))
 
         if ref_crystal is not None:
             try:
                 ref_crystal = flat_exps[ref_crystal].crystal
             except IndexError:
-                raise Sorry("{0} is not a valid experiment ID".format(ref_crystal))
+                raise Sorry("{} is not a valid experiment ID".format(ref_crystal))
 
         if ref_detector is not None:
             assert not params.reference_from_experiment.average_detector
             try:
                 ref_detector = flat_exps[ref_detector].detector
             except IndexError:
-                raise Sorry("{0} is not a valid experiment ID".format(ref_detector))
+                raise Sorry("{} is not a valid experiment ID".format(ref_detector))
         elif params.reference_from_experiment.average_detector:
             # Average all of the detectors together
             from scitbx.matrix import col
@@ -721,10 +721,10 @@ class Script(object):
         # save output
         from dxtbx.model.experiment_list import ExperimentListDumper
 
-        print("Saving combined experiments to {0}".format(exp_name))
+        print("Saving combined experiments to {}".format(exp_name))
         dump = ExperimentListDumper(experiments)
         dump.as_json(exp_name)
-        print("Saving combined reflections to {0}".format(refl_name))
+        print("Saving combined reflections to {}".format(refl_name))
         reflections.as_pickle(refl_name)
 
 

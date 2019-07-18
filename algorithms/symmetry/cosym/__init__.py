@@ -522,12 +522,10 @@ class CosymAnalysis(symmetry_base, Subject):
         }
 
         if self._symmetry_analysis is not None:
-            d["sym_op_scores"] = dict(
-                (
-                    (str(sym_op), score.as_dict())
-                    for sym_op, score in self._symmetry_analysis.sym_op_scores.items()
-                )
-            )
+            d["sym_op_scores"] = {
+                str(sym_op): score.as_dict()
+                for sym_op, score in self._symmetry_analysis.sym_op_scores.items()
+            }
             d["subgroup_scores"] = [
                 score.as_dict() for score in self._symmetry_analysis.subgroup_scores
             ]

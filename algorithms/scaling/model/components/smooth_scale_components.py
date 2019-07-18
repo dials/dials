@@ -148,7 +148,7 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
 
     @ScaleComponentBase.data.setter
     def data(self, data):
-        assert set(data.keys()) == set(["x"]), set(data.keys())
+        assert set(data.keys()) == {"x"}, set(data.keys())
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -229,7 +229,7 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
 
     @ScaleComponentBase.data.setter
     def data(self, data):
-        assert set(data.keys()) == set(["x", "d"]), set(data.keys())
+        assert set(data.keys()) == {"x", "d"}, set(data.keys())
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -298,7 +298,7 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
 
     @ScaleComponentBase.data.setter
     def data(self, data):
-        assert set(data.keys()) == set(["x", "y"]), set(data.keys())
+        assert set(data.keys()) == {"x", "y"}, set(data.keys())
         self._data = data
 
     def set_new_parameters(self, new_parameters, shape):
@@ -448,7 +448,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
 
     @ScaleComponentBase.data.setter
     def data(self, data):
-        assert set(data.keys()) == set(["x", "y", "z"]), set(data.keys())
+        assert set(data.keys()) == {"x", "y", "z"}, set(data.keys())
         self._data = data
 
     @property

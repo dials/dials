@@ -582,7 +582,7 @@ class ReflectionManager(object):
             # sanity check to catch a mutilated scan that does not make sense
             if passed2.count(True) == 0:
                 raise DialsRefineConfigError(
-                    "Experiment id {0} contains no reflections with valid "
+                    "Experiment id {} contains no reflections with valid "
                     "scan angles".format(iexp)
                 )
 
@@ -723,7 +723,7 @@ class ReflectionManager(object):
         w_x, w_y, w_phi = l["xyzobs.mm.weights"].parts()
 
         msg = (
-            "\nSummary statistics for {0} observations".format(nref)
+            "\nSummary statistics for {} observations".format(nref)
             + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
@@ -891,7 +891,7 @@ class StillsReflectionManager(ReflectionManager):
         w_delpsi = l["delpsical.weights"]
 
         msg = (
-            "\nSummary statistics for {0} observations".format(nref)
+            "\nSummary statistics for {} observations".format(nref)
             + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]

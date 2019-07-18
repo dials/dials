@@ -157,7 +157,7 @@ def run(args=None):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -234,7 +234,7 @@ def run(args=None):
         refiner_verbosity=params.verbosity,
     )
     s = StringIO()
-    possible_bravais_settings = set(solution["bravais"] for solution in Lfat)
+    possible_bravais_settings = {solution["bravais"] for solution in Lfat}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
     Lfat.labelit_printout(out=s)
     logger.info(s.getvalue())

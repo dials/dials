@@ -418,15 +418,13 @@ class MergingStatisticsObserver(Observer):
             sep="\n",
         )
         if overall.n_neg_sigmas > 0:
-            msg += "SigI < 0 (rejected): {0} observations\n".format(
-                overall.n_neg_sigmas
-            )
+            msg += "SigI < 0 (rejected): {} observations\n".format(overall.n_neg_sigmas)
         if overall.n_rejected_before_merge > 0:
-            msg += "I < -3*SigI (rejected): {0} observations\n".format(
+            msg += "I < -3*SigI (rejected): {} observations\n".format(
                 overall.n_rejected_before_merge
             )
         if overall.n_rejected_after_merge > 0:
-            msg += "I < -3*SigI (rejected): {0} reflections\n".format(
+            msg += "I < -3*SigI (rejected): {} reflections\n".format(
                 overall.n_rejected_after_merge
             )
         msg += "{sep}R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}".format(

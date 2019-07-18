@@ -504,9 +504,7 @@ def export_mtz(integrated_data, experiment_list, params):
         for k, v in experiment.data.items():
             combined_data[k].extend(v)
     # ALL columns must be the same length
-    assert (
-        len(set(len(v) for v in combined_data.values())) == 1
-    ), "Column length mismatch"
+    assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
     assert len(combined_data["id"]) == len(
         integrated_data["id"]
     ), "Lost rows in split/combine"

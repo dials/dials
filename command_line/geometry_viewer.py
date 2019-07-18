@@ -122,7 +122,7 @@ class render_3d(object):
         )
         points.insert(0, (0, 0, 0))
 
-        line_i_seqs = flex.vec2_double(((0, i) for i in range(1, points.size())))
+        line_i_seqs = flex.vec2_double((0, i) for i in range(1, points.size()))
         line_i_seqs += (self.viewer.points.size(), self.viewer.points.size())
         for i_seqs in line_i_seqs:
             self.viewer.line_i_seqs.append([int(i_seq) for i_seq in i_seqs])

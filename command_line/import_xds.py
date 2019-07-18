@@ -34,7 +34,7 @@ class SpotXDSImporter(object):
             miller_index = handle.miller_index
         except AttributeError:
             miller_index = None
-        Command.end("Read {0} spots from SPOT.XDS file.".format(len(centroid)))
+        Command.end("Read {} spots from SPOT.XDS file.".format(len(centroid)))
 
         # Create the reflection list
         Command.start("Creating reflection list")
@@ -139,7 +139,7 @@ class IntegrateHKLImporter(object):
         table["intensity.prf.variance"] = (sigma * peak / rlp) ** 2
         table["lp"] = 1.0 / rlp
         table["d"] = flex.double(uc.d(h) for h in hkl)
-        Command.end("Created table with {0} reflections".format(len(table)))
+        Command.end("Created table with {} reflections".format(len(table)))
 
         # Output the table to pickle file
         if params.output.filename is None:
@@ -392,8 +392,6 @@ class XDSFileImporter(object):
         # set the scan-varying crystal
         experiment.crystal.set_A_at_scan_points(A_list)
 
-        return
-
 
 class Script(object):
     """ A class to encapsulate the script. """
@@ -474,7 +472,6 @@ class Script(object):
     def select_importer(self, args):
         from os.path import split
         from dxtbx.model.experiment_list import ExperimentListFactory
-        import libtbx.load_env
 
         path, filename = split(args[0])
         if filename == "SPOT.XDS":

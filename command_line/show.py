@@ -219,7 +219,7 @@ def show_experiments(experiments, show_scan_varying=False):
 
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
-        if expt.identifier is not "":
+        if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
         text.append(str(expt.detector))
         text.append(

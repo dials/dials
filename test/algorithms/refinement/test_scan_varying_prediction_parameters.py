@@ -211,7 +211,7 @@ def test(cmdline_overrides=[]):
             for (a, b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
         except AssertionError:
-            print("Failure for {0}".format(p_names[i]))
+            print("Failure for {}".format(p_names[i]))
             raise
 
     # return to the initial state

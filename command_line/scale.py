@@ -212,7 +212,7 @@ class Script(Subject):
             logger.info(e)
 
         # All done!
-        logger.info("\nTotal time taken: {0:.4f}s ".format(time.time() - start_time))
+        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     @staticmethod

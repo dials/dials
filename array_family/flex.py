@@ -1097,7 +1097,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         detectors = [expr.detector for expr in experiments]
         checker = OverloadChecker()
         for detector in detectors:
-            checker.add(flex.double((p.get_trusted_range()[1] for p in detector)))
+            checker.add(flex.double(p.get_trusted_range()[1] for p in detector))
         result = checker(self["id"], self["shoebox"])
         self.set_flags(result, self.flags.overloaded)
         return result
@@ -1361,7 +1361,7 @@ Found %s"""
         data in the table. Primarily to call as saving data to give a
         consistent table and map.
         """
-        dataset_ids_in_table = set(self["id"]).difference(set([-1]))
+        dataset_ids_in_table = set(self["id"]).difference({-1})
         dataset_ids_in_map = set(self.experiment_identifiers().keys())
         ids_to_remove = dataset_ids_in_map.difference(dataset_ids_in_table)
         for i in ids_to_remove:

@@ -129,12 +129,12 @@ class ProgressBar:
         if self._title:
             left_str += self._title + ": "
 
-        left_str += "{0: >3}%".format(percent)
+        left_str += "{: >3}%".format(percent)
 
         # Add a spinner
         if self._spinner:
             left_str += " "
-            left_str += "[ {0} ]".format("-\|/"[percent % 4])
+            left_str += "[ {} ]".format(r"-\|/"[percent % 4])
 
         # Add a timer
         if self._estimate_time:
@@ -143,7 +143,7 @@ class ProgressBar:
                 n_seconds_left = "?"
             else:
                 n_seconds_left = int(ceil(n_seconds_left))
-            right_str = " " + "est: {0}s".format(n_seconds_left) + right_str
+            right_str = " " + "est: {}s".format(n_seconds_left) + right_str
 
         # Add a bar
         if self._bar:
@@ -172,7 +172,7 @@ class ProgressBar:
 
         if self._estimate_time:
             # Get the time string
-            time_string = "{0:.2f}s".format(self._timer.get_elapsed_time())
+            time_string = "{:.2f}s".format(self._timer.get_elapsed_time())
 
             # Truncate the string
             max_length = self._length - self._indent - len(time_string) - 1
@@ -246,7 +246,7 @@ class Command(object):
         if cls.print_time:
 
             # Get the time string
-            time_string = "{0:.2f}s".format(time.time() - cls._start_time)
+            time_string = "{:.2f}s".format(time.time() - cls._start_time)
 
             # Truncate the string
             max_length = cls.max_length - cls.indent - len(time_string) - 1

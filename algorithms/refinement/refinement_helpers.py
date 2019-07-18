@@ -257,7 +257,7 @@ def corrgram(corrmat, labels):
     nr = corrmat.all()[0]
     assert nr == len(labels)
 
-    from math import pi, sqrt
+    from math import sqrt
 
     try:
         import matplotlib
@@ -330,7 +330,7 @@ def string_sel(l, full_names, prefix=""):
     # expand elements of the list that are comma separated strings and remove
     # braces/brackets
     l = [s.strip("(){}[]") for e in l for s in str(e).split(",")]
-    l = [e for e in l if e is not ""]
+    l = [e for e in l if e != ""]
     for e in l:
         try:
             i = int(e)
