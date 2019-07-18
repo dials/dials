@@ -338,7 +338,7 @@ def _centroid_analysis(options, experiments, reflection_manager):
     for i, a in enumerate(analysis):
         intervals = [a.get("x_interval"), a.get("y_interval"), a.get("phi_interval")]
         try:
-            min_interval = min(filter(None, intervals))
+            min_interval = min([_f for _f in intervals if _f])
         except ValueError:
             # empty list - analysis was unable to suggest a suitable interval
             # width. Default to the safest case
