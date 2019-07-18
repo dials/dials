@@ -10,6 +10,7 @@ from dials.algorithms.scaling.scaling_library import (
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.report.analysis import make_merging_statistics_summary
+from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
 
 logger = logging.getLogger("dials")
@@ -28,7 +29,6 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
     # now add each wavelength.
     for wavelength, exp_nos in wavelengths.iteritems():
         expids = []
-        from dxtbx.model import ExperimentList
 
         new_exps = ExperimentList()
         for i in exp_nos:
@@ -56,7 +56,6 @@ def make_merged_mtz_file(
     """Make an mtz object for the data, adding the date, time and program."""
 
     assert merged_array.is_xray_intensity_array()
-    assert merged_anomalous_array.is_xray_intensity_array()
 
     mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
     mtz_writer.add_crystal(crystal_name="DIALS")
