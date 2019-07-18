@@ -10,10 +10,8 @@ def test_dials_show(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(
-        [_f for _f in (s.rstrip() for s in result["stdout"].split("\n")) if _f]
-    )
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -80,10 +78,8 @@ def test_dials_show_i04_weak_data(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(
-        [_f for _f in (s.rstrip() for s in result["stdout"].split("\n")) if _f]
-    )
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -133,16 +129,11 @@ Goniometer:
 def test_dials_show_centroid_test_data(dials_data):
     result = procrunner.run(
         ["dials.show"]
-        + [
-            f.strpath
-            for f in dials_data("centroid_test_data").listdir("centroid_*.cbf")
-        ],
+        + list(dials_data("centroid_test_data").listdir("centroid_*.cbf")),
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(
-        [_f for _f in (s.rstrip() for s in result["stdout"].split("\n")) if _f]
-    )
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -198,10 +189,8 @@ def test_dials_show_multi_panel_i23(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(
-        [_f for _f in (s.rstrip() for s in result["stdout"].split("\n")) if _f]
-    )
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
 
     assert (
         "\n".join(output[4:25])
@@ -281,16 +270,12 @@ Goniometer:
 def test_dials_show_reflection_table(dials_data):
     """Test the output of dials.show on a reflection_table pickle file"""
     result = procrunner.run(
-        [
-            "dials.show",
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
-        ],
+        ["dials.show", dials_data("centroid_test_data").join("integrated.pickle")],
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(
-        [_f for _f in (s.rstrip() for s in result["stdout"].split("\n")) if _f]
-    )
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+
     assert output[4] == "Reflection list contains 2269 reflections"
     headers = ["Column", "min", "max", "mean"]
     for header in headers:

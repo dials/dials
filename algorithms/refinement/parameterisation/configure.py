@@ -336,9 +336,9 @@ def _centroid_analysis(options, experiments, reflection_manager):
     # for each of the residuals in x, y and phi, as long as this is not smaller
     # than either the outlier rejection block width, or 9.0 degrees.
     for i, a in enumerate(analysis):
-        intervals = [a.get("x_interval"), a.get("y_interval"), a.get("phi_interval")]
+        intervals = (a.get("x_interval"), a.get("y_interval"), a.get("phi_interval"))
         try:
-            min_interval = min([_f for _f in intervals if _f])
+            min_interval = min(_f for _f in intervals if _f is not None)
         except ValueError:
             # empty list - analysis was unable to suggest a suitable interval
             # width. Default to the safest case
