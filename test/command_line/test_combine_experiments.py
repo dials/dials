@@ -10,10 +10,8 @@ import procrunner
 
 import pytest
 
-from dials.util import Sorry
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.serialize import dump
-
+from dials.util import Sorry
 from dials.array_family import flex
 import dials.command_line.combine_experiments as combine_experiments
 
@@ -113,7 +111,7 @@ def test(dials_regression, run_in_tmpdir):
     # Set half of the experiments to the new detector
     for i in xrange(len(exp) // 2):
         exp[i].detector = detector
-    dump.experiment_list(exp, "modded.expt")
+    exp.as_json("modded.expt")
 
     result = procrunner.run(
         [
@@ -143,7 +141,7 @@ def test(dials_regression, run_in_tmpdir):
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
     reflections.as_pickle("assigned.refl")
-    dump.experiment_list(explist, "assigned.expt")
+    explist.as_json("assigned.expt")
 
     result = procrunner.run(
         ["dials.split_experiments", "assigned.expt", "assigned.refl"]
@@ -171,7 +169,7 @@ def test(dials_regression, run_in_tmpdir):
     moddedlist = ExperimentListFactory.from_json_file("modded.expt", check_format=False)
     for i, exp in enumerate(moddedlist):
         exp.identifier = str(i * 2)
-    dump.experiment_list(moddedlist, "modded.expt")
+    moddedlist.as_json("modded.expt")
 
     result = procrunner.run(
         [
