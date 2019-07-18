@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
-import re
-import logging
 
-logger = logging.getLogger(__name__)
+import logging
+import re
 
 import libtbx  # for libtbx.Auto
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -63,6 +62,8 @@ format_data = {
     "constr_phil": constr_phil_str,
     "sv_phil": sv_phil_str,
 }
+
+logger = logging.getLogger(__name__)
 
 phil_str = (
     """
@@ -285,6 +286,7 @@ phil_str = (
     % format_data
 )
 phil_scope = parse(phil_str)
+
 
 # A helper function for parameter fixing
 def _filter_parameter_names(parameterisation):
