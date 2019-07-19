@@ -122,6 +122,7 @@ test/algorithms/refinement/test_constraints.py::test_constrained_refinement
 test/algorithms/refinement/test_cspad_refinement.py::test1
 test/algorithms/refinement/test_detector_parameters.py::test
 test/algorithms/refinement/test_dials-423.py::test_run
+test/algorithms/refinement/test_multi_experiment_refinement.py::test
 test/algorithms/refinement/test_multi_panel_detector_parameterisation.py::test
 test/algorithms/refinement/test_parameter_auto_reduction.py::test_auto_reduction_parameter_extension_modules_part1
 test/algorithms/refinement/test_parameter_auto_reduction.py::test_auto_reduction_parameter_extension_modules_part2
