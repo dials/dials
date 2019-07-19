@@ -13,8 +13,6 @@ cache:
   timeout: 1000
 
 jobs:
-  allow_failures:
-    - python: 3.6
   include:
     - stage: build
       install:
