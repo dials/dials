@@ -343,6 +343,8 @@ def test_dials_show_image_statistics(dials_regression):
         == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
     )
 
+
+def test_dials_show_image_statistics_with_no_image_data(dials_regression):
     # Example where image data doesn't exist
     path = os.path.join(
         dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
@@ -351,4 +353,4 @@ def test_dials_show_image_statistics(dials_regression):
         ["dials.show", "show_image_statistics=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert result["exitcode"] and result["stderr"]
+    assert result["exitcode"] == 1 and result["stderr"]
