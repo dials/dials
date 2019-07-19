@@ -8,6 +8,7 @@ import gc
 import json
 import libtbx
 from libtbx import phil
+from cStringIO import StringIO
 from dials.util import log, show_mail_on_error, Sorry
 from dials.array_family import flex
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
@@ -28,7 +29,6 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     assign_unique_identifiers,
 )
-from dials.util.export_mtz import match_wavelengths, make_merged_mtz_file
 from dials.algorithms.scaling.scaling_utilities import (
     save_experiments,
     save_reflections,
@@ -127,15 +127,11 @@ phil_scope = phil.parse(
       .type = str
       .help = "Filename for html report."
     unmerged_mtz = None
-      .type = strings
+      .type = str
       .help = "Filename to export an unmerged_mtz file using dials.export."
-              "Multiple names can be given to enable separated mtz export in"
-              "the case of multiple wavelengths."
     merged_mtz = None
-      .type = strings
-      .help = "Filename to export a merged_mtz file. Multiple names can be"
-              "given to enable separated mtz export in the case of multiple"
-              "wavelengths."
+      .type = str
+      .help = "Filename to export a merged_mtz file."
     crystal_name = XTAL
       .type = str
       .help = "The crystal name to be exported in the mtz file metadata"
@@ -547,26 +543,7 @@ prepare the data in the correct space group.\n"""
             _export_unmerged_mtz(params, experiments, reflections[0])
 
         if params.output.merged_mtz:
-            if len(params.output.merged_mtz) > 1:
-                _export_multi_merged_mtz(params, experiments, reflections[0])
-            else:
-                scaled_array = scaled_data_as_miller_array(reflections, experiments)
-                merged = scaled_array.merge_equivalents(
-                    use_internal_variance=params.output.use_internal_variance
-                ).array()
-                merged_anom = (
-                    scaled_array.as_anomalous_array()
-                    .merge_equivalents(
-                        use_internal_variance=params.output.use_internal_variance
-                    )
-                    .array()
-                )
-                mtz_file = make_merged_mtz_file(merged, merged_anom)
-                logger.info(
-                    "\nSaving output to a merged mtz file to %s.\n",
-                    params.output.merged_mtz[0],
-                )
-                mtz_file.write(params.output.merged_mtz[0])
+            _export_merged_mtz(params, experiments, reflections[0])
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
@@ -626,57 +603,30 @@ may be best to rerun scaling from this point for an improved model.""",
             _export_unmerged_mtz(self.params, self.experiments, joint_table)
 
         if self.params.output.merged_mtz:
-            if len(self.params.output.merged_mtz) > 1:
-                _export_multi_merged_mtz(self.params, self.experiments, joint_table)
-            else:
-                anomalous_scaled = scaled_data_as_miller_array(
-                    [joint_table], self.experiments, anomalous_flag=True
-                )
-                merged = self.scaled_miller_array.merge_equivalents(
-                    use_internal_variance=self.params.output.use_internal_variance
-                ).array()
-                merged_anom = anomalous_scaled.merge_equivalents(
-                    use_internal_variance=self.params.output.use_internal_variance
-                ).array()
-                mtz_file = make_merged_mtz_file(merged, merged_anom)
-                logger.info(
-                    "\nSaving output to a merged mtz file to %s.\n",
-                    self.params.output.merged_mtz[0],
-                )
-                mtz_file.write(self.params.output.merged_mtz[0])
+            _export_merged_mtz(self.params, self.experiments, joint_table)
 
 
-def _export_multi_merged_mtz(params, experiments, reflection_table):
-    from dxtbx.model import ExperimentList
+def _export_merged_mtz(params, experiments, joint_table):
+    """Export merged data."""
+    # call dials.merge
+    from dials.command_line.merge import merge_data_to_mtz
+    from dials.command_line.merge import phil_scope as merge_phil_scope
 
-    wavelengths = match_wavelengths(experiments)
-    assert len(params.output.merged_mtz) == len(wavelengths.keys())
-    for filename, wavelength in zip(params.output.merged_mtz, wavelengths.keys()):
-        exps = ExperimentList()
-        ids = []
-        for i, exp in enumerate(experiments):
-            if i in wavelengths[wavelength]:
-                exps.append(exp)
-                ids.append(exp.identifier)
-        refls = reflection_table.select_on_experiment_identifiers(ids)
-        scaled_array = scaled_data_as_miller_array([refls], exps)
-        merged = scaled_array.merge_equivalents(
-            use_internal_variance=params.output.use_internal_variance
-        ).array()
-        merged_anom = (
-            scaled_array.as_anomalous_array()
-            .merge_equivalents(
-                use_internal_variance=params.output.use_internal_variance
-            )
-            .array()
-        )
-        mtz_file = make_merged_mtz_file(merged, merged_anom)
-        logger.info("\nSaving output to a merged mtz file to %s.\n", filename)
-        mtz_file.write(filename)
+    merge_params = merge_phil_scope.extract()
+    merge_params.truncate = False
+    merge_params.reporting.wilson_stats = False
+    merge_params.reporting.merging_stats = False
+    merge_params.assess_space_group = False
+    mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
+    logger.info("\nWriting reflections to %s", (params.output.merged_mtz))
+    out = StringIO()
+    mtz_file.show_summary(out=out)
+    logger.info(out.getvalue())
+    mtz_file.write(params.output.merged_mtz)
 
 
 def _export_unmerged_mtz(params, experiments, reflection_table):
-    """Export data to unmerged_mtz format (as single file or split by wavelength)."""
+    """Export data to unmerged_mtz format."""
     from dials.command_line.export import MTZExporter
     from dials.command_line.export import phil_scope as export_phil_scope
 
@@ -687,34 +637,12 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
     export_params.mtz.crystal_name = params.output.crystal_name
     if params.cut_data.d_min:
         export_params.mtz.d_min = params.cut_data.d_min
-    if len(params.output.unmerged_mtz) > 1:
-        from dxtbx.model import ExperimentList
-
-        wavelengths = match_wavelengths(experiments)
-        assert len(params.output.unmerged_mtz) == len(wavelengths.keys())
-        for filename, wavelength in zip(params.output.unmerged_mtz, wavelengths.keys()):
-            export_params.mtz.hklout = filename
-            logger.info("\nSaving output to an unmerged mtz file to %s.", filename)
-            exps = ExperimentList()
-            ids = []
-            for i, exp in enumerate(experiments):
-                if i in wavelengths[wavelength]:
-                    exps.append(exp)
-                    ids.append(exp.identifier)
-            exporter = MTZExporter(
-                export_params,
-                exps,
-                [reflection_table.select_on_experiment_identifiers(ids)],
-            )
-            exporter.export()
-    else:
-        logger.info(
-            "\nSaving output to an unmerged mtz file to %s.",
-            params.output.unmerged_mtz[0],
-        )
-        export_params.mtz.hklout = params.output.unmerged_mtz[0]
-        exporter = MTZExporter(export_params, experiments, [reflection_table])
-        exporter.export()
+    logger.info(
+        "\nSaving output to an unmerged mtz file to %s.", params.output.unmerged_mtz
+    )
+    export_params.mtz.hklout = params.output.unmerged_mtz
+    exporter = MTZExporter(export_params, experiments, [reflection_table])
+    exporter.export()
 
 
 def run_scaling(params, experiments, reflections):
