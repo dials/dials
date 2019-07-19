@@ -325,3 +325,30 @@ def test_dials_show_reflection_table(dials_data):
     ]
     for (name, out) in zip(row_names, output[8:-1]):
         assert name in out
+
+
+def test_dials_show_image_statistics(dials_regression):
+    # Run on one multi-panel image
+    path = os.path.join(
+        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
+    )
+    result = procrunner.run(
+        ["dials.show", "show_image_statistics=true", path],
+        environment_override={"DIALS_NOBANNER": "1"},
+    )
+    assert not result["exitcode"] and not result["stderr"]
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert (
+        output[-1]
+        == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
+    )
+
+    # Example where image data doesn't exist
+    path = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
+    )
+    result = procrunner.run(
+        ["dials.show", "show_image_statistics=true", path],
+        environment_override={"DIALS_NOBANNER": "1"},
+    )
+    assert result["exitcode"] and result["stderr"]

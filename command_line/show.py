@@ -8,6 +8,7 @@ import numpy
 from libtbx import table_utils
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
+from dials.util import Sorry
 
 help_message = """
 
@@ -281,12 +282,14 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
             for i in range(len(expt.imageset)):
                 filename = expt.imageset.get_path(i)
                 el = ExperimentListFactory.from_filenames((filename,))
+                if len(el) == 0:
+                    raise Sorry("Cannot find image {0}".format(filename))
                 pnl_data = el.imagesets()[0].get_raw_data(0)
                 if not isinstance(pnl_data, tuple):
                     pnl_data = (pnl_data,)
                 flat_data = pnl_data[0].as_1d()
                 for p in pnl_data[1:]:
-                    flat_data.extend(p)
+                    flat_data.extend(p.as_1d())
                 fns = five_number_summary(flat_data)
                 text.append(
                     "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
