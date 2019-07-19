@@ -21,7 +21,6 @@ from cctbx import uctbx
 
 
 logger = logging.getLogger("dials")
-info_handle = log.info_handle(logger)
 
 help_message = """
 

@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# log.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -99,7 +88,7 @@ def config(verbosity=1, name="dials", info=None, debug=None):
     }
     logging.config.dictConfig(config_dict)
     logging.getLogger("dxtbx").setLevel(logging.DEBUG)
-    import dials.util.banner
+    import dials.util.banner  # noqa: F401; lgtm; imported for side-effects
 
 
 def config_simple_stdout(name="dials"):
@@ -129,7 +118,7 @@ def config_simple_stdout(name="dials"):
         }
     )
 
-    import dials.util.banner
+    import dials.util.banner  # noqa: F401; lgtm; imported for side-effects
 
 
 class CacheHandler(logging.Handler):
@@ -176,49 +165,3 @@ def config_simple_cached():
             },
         }
     )
-
-
-class LoggerIO(object):
-    """ Wrap the logger with file type object """
-
-    def __init__(self, logger, level):
-        """
-        Initialise the logger io
-
-        :param level: The logging level
-
-        """
-        self.logger = logger
-        self.level = level
-
-    def write(self, buf):
-        """
-        Write to the logger
-
-        :param buf: The buffer
-
-        """
-        self.logger.log(self.level, buf)
-
-    def flush(self):
-        """
-        Flush (don't do anything)
-
-        """
-        pass
-
-
-def info_handle(logger):
-    """
-    :return: A handle to an INFO logger file object
-
-    """
-    return LoggerIO(logger, logging.INFO)
-
-
-def debug_handle(logger):
-    """
-    :return: A handle to an DEBUG logger file object
-
-    """
-    return LoggerIO(logger, logging.DEBUG)

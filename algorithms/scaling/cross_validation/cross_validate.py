@@ -41,11 +41,9 @@ import itertools
 import time
 
 from libtbx import phil
-from dials.util import log
 import six
 
 logger = logging.getLogger("dials")
-info_handle = log.info_handle(logger)
 
 phil_scope = phil.parse(
     """

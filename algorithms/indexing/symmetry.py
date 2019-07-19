@@ -10,18 +10,15 @@ from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx import lattice_symmetry
+from dials.algorithms.indexing import DialsIndexError
+from dxtbx.model import Crystal
 from rstbx.symmetry.subgroup import MetricSubgroup
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
+from six.moves import StringIO
 import scitbx.matrix
 
-from dxtbx.model import Crystal
-
-from dials.util import log
-from dials.algorithms.indexing import DialsIndexError
-
 logger = logging.getLogger(__name__)
-debug_handle = log.debug_handle(logger)
 
 
 def dials_crystal_from_orientation(crystal_orientation, space_group):
@@ -497,11 +494,17 @@ class SymmetryHandler(object):
             )
 
             if self.target_symmetry_reference_setting is not None:
-                logger.debug("Target symmetry (reference setting):")
+                debug_handle = StringIO()
                 self.target_symmetry_reference_setting.show_summary(f=debug_handle)
+                logger.debug(
+                    "Target symmetry (reference setting):\n" + debug_handle.getvalue()
+                )
             if self.target_symmetry_primitive is not None:
-                logger.debug("Target symmetry (primitive cell):")
+                debug_handle = StringIO()
                 self.target_symmetry_primitive.show_summary(f=debug_handle)
+                logger.debug(
+                    "Target symmetry (primitive cell):\n" + debug_handle.getvalue()
+                )
             logger.debug(
                 "cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive)
             )

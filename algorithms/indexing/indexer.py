@@ -12,27 +12,24 @@
 
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
+import math
 
-import libtbx
 import iotbx.phil
-from dxtbx.model import ExperimentList
-
+import libtbx
 from dials.array_family import flex
 from dials.algorithms.indexing import assign_indices
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
 from dials.algorithms.indexing.symmetry import SymmetryHandler
-from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.max_cell import find_max_cell
-from dials.util import log
-from dials.util import Sorry
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
+from dials.util import Sorry
+from dxtbx.model import ExperimentList
 
 logger = logging.getLogger(__name__)
-debug_handle = log.debug_handle(logger)
 
 
 max_cell_phil_str = """\

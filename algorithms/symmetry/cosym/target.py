@@ -1,22 +1,16 @@
 """Target function for cosym analysis."""
 from __future__ import absolute_import, division, print_function
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 import copy
+import logging
 import math
-
-from dials.util import log
-
-debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 
 from cctbx.array_family import flex
 from cctbx import sgtbx
 from cctbx import miller
 import cctbx.sgtbx.cosets
+
+logger = logging.getLogger(__name__)
 
 
 class Target(object):

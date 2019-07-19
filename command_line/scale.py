@@ -89,7 +89,6 @@ Incremental scaling (with different options per dataset)::
 
 
 logger = logging.getLogger("dials")
-info_handle = log.info_handle(logger)
 phil_scope = phil.parse(
     """
   debug = False
