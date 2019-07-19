@@ -253,6 +253,7 @@ test/command_line/test_search_beam_position.py::test_search_small_molecule
 test/command_line/test_show.py::test_dials_show
 test/command_line/test_show.py::test_dials_show_centroid_test_data
 test/command_line/test_show.py::test_dials_show_i04_weak_data
+test/command_line/test_show.py::test_dials_show_image_statistics
 test/command_line/test_show.py::test_dials_show_multi_panel_i23
 test/command_line/test_show.py::test_dials_show_reflection_table
 test/command_line/test_slice_sweep.py::test_slice_sweep_and_compare_with_expected_results
