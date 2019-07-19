@@ -838,6 +838,12 @@ class OptionParser(OptionParserBase):
             quick_parse=quick_parse,
         )
 
+        # If there is a phil verbosity setting then add both together
+        # and share the value between them
+        if options.verbose and hasattr(params, "verbosity"):
+            params.verbosity += options.verbose
+            options.verbose = params.verbosity
+
         # Print the diff phil
         if show_diff_phil:
             diff_phil_str = self.diff_phil.as_str()
@@ -910,7 +916,7 @@ class OptionParser(OptionParserBase):
                     )
 
             # Otherwise (or if asked for verbosity), list the validation errors
-            if valid and (not non_valid or verbosity):
+            if valid and (not non_valid or verbosity > 1):
                 msg.append(
                     "  {} did not appear to conform to any{} expected format:".format(
                         arg, " other" if non_valid else ""
