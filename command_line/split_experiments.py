@@ -29,8 +29,6 @@ Example::
 class Script(object):
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-
         # The phil scope
         phil_scope = parse(
             """
@@ -168,7 +166,7 @@ class Script(object):
                     expids.append(experiments[j].identifier)  # string
                     new_exps.append(experiments[j])
 
-                experiment_filename = experiments_template % i
+                experiment_filename = experiments_template(index=i)
                 print(
                     "Saving experiments with wavelength %s to %s"
                     % (wl, experiment_filename)
@@ -176,7 +174,7 @@ class Script(object):
                 new_exps.as_json(experiment_filename)
                 if reflections:
                     refls = reflections.select_on_experiment_identifiers(expids)
-                    reflections_filename = reflections_template % i
+                    reflections_filename = reflections_template(index=i)
                     print(
                         "Saving reflections with wavelength %s to %s"
                         % (wl, reflections_filename)
