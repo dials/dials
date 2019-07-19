@@ -1,0 +1,7 @@
+#!/bin/bash
+
+[[ -z $(git status -s) ]] || {
+  echo "Working directory is dirty:"
+  git status -s
+  exit 1
+}
