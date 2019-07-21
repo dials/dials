@@ -442,7 +442,7 @@ class CentroidOutlierFactory(object):
 
         # construct kwargs from the algo_params scope
         kwargs = {
-            k: v for k, v in list(algo_params.__dict__.items()) if not k.startswith("_")
+            k: v for k, v in algo_params.__dict__.items() if not k.startswith("_")
         }
 
         if not params.outlier.separate_blocks:

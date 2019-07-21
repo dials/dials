@@ -65,7 +65,7 @@ class Reasons(object):
     def __repr__(self):
         reasonlist = [
             "criterion: %s, reflections: %s\n" % (k, v)
-            for (k, v) in list(self.reasons.items())
+            for (k, v) in self.reasons.items()
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)

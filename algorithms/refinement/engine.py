@@ -356,7 +356,7 @@ class Refinery(object):
 
         nparam = len(self._parameters)
 
-        for k, v in list(packed_mats.items()):
+        for k, v in packed_mats.items():
             corr_mat = flex.double(flex.grid(nparam, nparam))
             i = 0
             for row in range(nparam):

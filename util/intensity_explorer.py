@@ -100,7 +100,7 @@ class IntensityDist(object):
             sg = expt.crystal.get_space_group().make_tidy()
             self.rtables[sg].extend(rtable.select(sel))
         # Map Miller indices to asymmetric unit.
-        for space_group, rtable in list(self.rtables.items()):
+        for space_group, rtable in self.rtables.items():
             # TODO Handle anomalous flag sensibly.  Currently assumes not anomalous.
             miller.map_to_asu(space_group.type(), False, rtable["miller_index.asu"])
 
@@ -112,7 +112,7 @@ class IntensityDist(object):
         self._probplot_data()
 
         self.rtable = flex.reflection_table()
-        for rtable in list(self.rtables.values()):
+        for rtable in self.rtables.values():
             self.rtable.extend(rtable)
 
         if not outfile:
@@ -147,7 +147,7 @@ class IntensityDist(object):
         :type keep_singles: bool
         """
 
-        for key, rtable in list(self.rtables.items()):
+        for key, rtable in self.rtables.items():
             # Sort the reflection table for speedier iteration.
             rtable.sort("miller_index.asu")
             # Record the positions of any multiplicity-1 reflections.
@@ -305,7 +305,7 @@ class IntensityDist(object):
             "stddev": "intensity.mean.variance",
         }[uncertainty]
 
-        for key, rtable in list(self.rtables.items()):
+        for key, rtable in self.rtables.items():
             try:
                 uncertainty_value = flex.sqrt(rtable[uncertainty_name])
             except KeyError:
@@ -328,7 +328,7 @@ class IntensityDist(object):
 
         import scipy.stats
 
-        for key, rtable in list(self.rtables.items()):
+        for key, rtable in self.rtables.items():
             order = flex.sort_permutation(rtable["intensity.z_score"])
             osm = flex.double(rtable.size(), 0)
             probplot = scipy.stats.probplot(rtable["intensity.z_score"], fit=False)

@@ -264,7 +264,7 @@ class SingleScaler(ScalerBase):
         self._space_group = self.experiment.crystal.get_space_group()
         n_model_params = sum([val.n_params for val in self.components.values()])
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
-        self._initial_keys = [key for key in list(reflection_table.keys())]
+        self._initial_keys = [key for key in reflection_table.keys()]
         self._reflection_table = reflection_table
         self._Ih_table = None  # stores data for reflections used for minimisation
         self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
@@ -649,7 +649,7 @@ class SingleScaler(ScalerBase):
         ]
         if "Esq" in self.reflection_table:
             del self.reflection_table["Esq"]
-        for key in list(self.reflection_table.keys()):
+        for key in self.reflection_table.keys():
             if key not in self._initial_keys:
                 del self._reflection_table[key]
 
@@ -1112,7 +1112,7 @@ class NullScaler(ScalerBase):
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
         self._reflection_table = reflection
-        self._initial_keys = [key for key in list(self._reflection_table.keys())]
+        self._initial_keys = [key for key in self._reflection_table.keys()]
         self.n_suitable_refl = self._reflection_table.size()
         self._reflection_table["inverse_scale_factor"] = flex.double(
             self.n_suitable_refl, 1.0

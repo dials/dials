@@ -527,7 +527,7 @@ def run(args=None, phil=working_phil):
             if [corrmats, labels].count(None) == 0:
                 from dials.algorithms.refinement.refinement_helpers import corrgram
 
-                for resid_name, corrmat in list(corrmats.items()):
+                for resid_name, corrmat in corrmats.items():
                     plot_fname = fname_base + "_" + resid_name + ext
                     plt = corrgram(corrmat, labels)
                     if plt is not None:
@@ -539,7 +539,7 @@ def run(args=None, phil=working_phil):
                         num_plots += 1
                 mat_fname = fname_base + ".pickle"
                 with open(mat_fname, "wb") as handle:
-                    for k, corrmat in list(corrmats.items()):
+                    for k, corrmat in corrmats.items():
                         corrmats[k] = corrmat.as_scitbx_matrix()
                     logger.info(
                         "Saving parameter correlation matrices to {}".format(mat_fname)

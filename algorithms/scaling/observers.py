@@ -213,7 +213,7 @@ class ScalingModelObserver(Observer):
         msg = ""
         if "est_standard_devs" in first_model[component]:
             p_sigmas = flex.double()
-            for model in list(self.data.values()):
+            for model in self.data.values():
                 for component in model["configuration_parameters"]["corrections"]:
                     if "est_standard_devs" in model[component]:
                         params = flex.double(model[component]["parameters"])

@@ -520,8 +520,8 @@ def _export_multi_merged_mtz(params, experiments, reflection_table):
     from dxtbx.model import ExperimentList
 
     wavelengths = match_wavelengths(experiments)
-    assert len(params.output.merged_mtz) == len(list(wavelengths.keys()))
-    for filename, wavelength in zip(params.output.merged_mtz, list(wavelengths.keys())):
+    assert len(params.output.merged_mtz) == len(wavelengths.keys())
+    for filename, wavelength in zip(params.output.merged_mtz, wavelengths.keys()):
         exps = ExperimentList()
         ids = []
         for i, exp in enumerate(experiments):
@@ -561,8 +561,8 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
         from dxtbx.model import ExperimentList
 
         wavelengths = match_wavelengths(experiments)
-        assert len(params.output.unmerged_mtz) == len(list(wavelengths.keys()))
-        for filename, wavelength in zip(params.output.unmerged_mtz, list(wavelengths.keys())):
+        assert len(params.output.unmerged_mtz) == len(wavelengths.keys())
+        for filename, wavelength in zip(params.output.unmerged_mtz, wavelengths.keys()):
             export_params.mtz.hklout = filename
             logger.info("\nSaving output to an unmerged mtz file to %s.", filename)
             exps = ExperimentList()

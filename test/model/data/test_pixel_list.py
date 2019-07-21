@@ -47,7 +47,7 @@ def test_add_image():
         pl = PixelList(sf + i, image, mask)
         count += len(mask.as_1d().select(mask.as_1d()))
         labeller.add(pl)
-    assert len(list(labeller.values())) == count
+    assert len(labeller.values()) == count
 
 
 def test_labels_3d():

@@ -524,7 +524,7 @@ class CosymAnalysis(symmetry_base, Subject):
         if self._symmetry_analysis is not None:
             d["sym_op_scores"] = {
                 str(sym_op): score.as_dict()
-                for sym_op, score in list(self._symmetry_analysis.sym_op_scores.items())
+                for sym_op, score in self._symmetry_analysis.sym_op_scores.items()
             }
             d["subgroup_scores"] = [
                 score.as_dict() for score in self._symmetry_analysis.subgroup_scores
@@ -582,7 +582,7 @@ class SymmetryAnalysis(object):
 
     def _score_symmetry_elements(self):
         self.sym_op_scores = OrderedDict()
-        for op, cos_angle in list(self._sym_ops_cos_angle.items()):
+        for op, cos_angle in self._sym_ops_cos_angle.items():
             cc_true = 1
             cc = flex.mean(cos_angle)
             score = ScoreSymmetryElement(cc, sigma_cc=0.1, cc_true=cc_true)
@@ -619,7 +619,7 @@ class SymmetryAnalysis(object):
     def sym_ops_table(self):
         header = ("likelihood", "Z-CC", "CC", "", "Operator")
         rows = [header]
-        for score in list(self.sym_op_scores.values()):
+        for score in self.sym_op_scores.values():
             rows.append(
                 (
                     "%.3f" % score.likelihood,
@@ -701,7 +701,7 @@ class SymmetryAnalysis(object):
         d = {"cb_op_inp_min": self.cb_op_inp_min.as_xyz()}
 
         d["sym_op_scores"] = []
-        for rt_mx, score in list(self.sym_op_scores.items()):
+        for rt_mx, score in self.sym_op_scores.items():
             dd = score.as_dict()
             dd["operator"] = rt_mx.as_xyz()
             d["sym_op_scores"].append(dd)

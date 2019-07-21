@@ -912,31 +912,31 @@ def load(entry, exp_index):
         crystal[ind[4]].append(i)
 
     # Set all the shared beams
-    for value in list(beam.values()):
+    for value in beam.values():
         b1 = experiment_list[value[0]].beam
         assert all(experiment_list[v].beam == b1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].beam = b1
     # Set all the shared detectors
-    for value in list(detector.values()):
+    for value in detector.values():
         d1 = experiment_list[value[0]].detector
         assert all(experiment_list[v].detector == d1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].detector = d1
     # Set all the shared goniometer
-    for value in list(goniometer.values()):
+    for value in goniometer.values():
         g1 = experiment_list[value[0]].goniometer
         assert all(experiment_list[v].goniometer == g1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].goniometer = g1
     # Set all the shared scans
-    for value in list(scan.values()):
+    for value in scan.values():
         s1 = experiment_list[value[0]].scan
         assert all(experiment_list[v].scan == s1 for v in value[1:])
         for v in value[1:]:
             experiment_list[v].scan = s1
     # Set all the shared crystals
-    for value in list(crystal.values()):
+    for value in crystal.values():
         c1 = experiment_list[value[0]].crystal
         assert all(experiment_list[v].crystal == c1 for v in value[1:])
         for v in value[1:]:

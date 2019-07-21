@@ -243,7 +243,7 @@ class Script(object):
         # get a list of the ids from the reflection table corresponding to exp_ids
         identifiers = []
         for expit in exp_identifiers:
-            for k in list(reflections.experiment_identifiers().keys()):
+            for k in reflections.experiment_identifiers().keys():
                 if reflections.experiment_identifiers()[k] == expit:
                     identifiers.append(k)
                     break

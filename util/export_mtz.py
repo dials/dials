@@ -463,7 +463,7 @@ def export_mtz(integrated_data, experiment_list, params):
             )
 
         wavelengths = match_wavelengths(experiment_list)
-        if len(list(wavelengths.keys())) > 1:
+        if len(wavelengths.keys()) > 1:
             logger.info(
                 "Multiple wavelengths found: \n%s",
                 "\n".join(
@@ -513,7 +513,7 @@ def export_mtz(integrated_data, experiment_list, params):
         raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
-                str(item) for item, count in list(Counter(batch_offsets).items()) if count > 1
+                str(item) for item, count in Counter(batch_offsets).items() if count > 1
             )
         )
 
@@ -594,12 +594,12 @@ def export_mtz(integrated_data, experiment_list, params):
         mtz_writer.add_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
-    combined_data = {k: v.deep_copy() for k, v in list(experiment_list[0].data.items())}
+    combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
     for experiment in experiment_list[1:]:
-        for k, v in list(experiment.data.items()):
+        for k, v in experiment.data.items():
             combined_data[k].extend(v)
     # ALL columns must be the same length
-    assert len({len(v) for v in list(combined_data.values())}) == 1, "Column length mismatch"
+    assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
     assert len(combined_data["id"]) == len(
         integrated_data["id"]
     ), "Lost rows in split/combine"

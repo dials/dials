@@ -57,7 +57,7 @@ def test_cosym(
     cb_op_inp_min = datasets[0].crystal_symmetry().change_of_basis_op_to_minimum_cell()
     expected_reindexing_ops = {
         (sgtbx.change_of_basis_op(cb_op) * cb_op_inp_min).as_xyz(): dataset_ids
-        for cb_op, dataset_ids in list(expected_reindexing_ops.items())
+        for cb_op, dataset_ids in expected_reindexing_ops.items()
     }
 
     params = phil_scope.extract()
@@ -94,8 +94,8 @@ def test_cosym(
     assert len(reindexing_ops) == len(expected_reindexing_ops)
     assert sorted(reindexing_ops.keys()) == sorted(expected_reindexing_ops.keys())
 
-    for ridx_set in list(reindexing_ops.values()):
-        for expected_set in list(expected_reindexing_ops.values()):
+    for ridx_set in reindexing_ops.values():
+        for expected_set in expected_reindexing_ops.values():
             assert (len(ridx_set.symmetric_difference(expected_set)) == 0) or (
                 len(ridx_set.intersection(expected_set)) == 0
             )

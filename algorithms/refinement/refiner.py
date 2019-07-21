@@ -757,7 +757,7 @@ class Refiner(object):
         if num_cols == 0:
             return None, None
 
-        for k, corrmat in list(corrmats.items()):
+        for k, corrmat in corrmats.items():
 
             assert corrmat.is_square_matrix()
 

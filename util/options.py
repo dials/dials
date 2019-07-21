@@ -1041,7 +1041,7 @@ class OptionParser(OptionParserBase):
 
             result = {"": top_elements}
             # Revursively process each group
-            for n, x in list(subpaths.items()):
+            for n, x in subpaths.items():
                 result[n] = construct_completion_tree(x)
 
             return result
@@ -1063,7 +1063,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_expansion ()")
         print("{")
         print(' case "$1" in')
-        for p, exp in list(parameter_expansion_list.items()):
+        for p, exp in parameter_expansion_list.items():
             if exp is not None:
                 print("\n  %s=)" % p)
                 print('   _dials_autocomplete_values="%s=";;' % exp)
@@ -1094,7 +1094,7 @@ class OptionParser(OptionParserBase):
         _tree_to_bash("", tree)
 
         toplevelset = tree[""] | {
-            p + "=" for p, exp in list(parameter_expansion_list.items()) if exp is not None
+            p + "=" for p, exp in parameter_expansion_list.items() if exp is not None
         }
 
         print("\n  *)")

@@ -1106,7 +1106,7 @@ class SpotFrame(XrayFrame):
                 self.draw_all_pix_timer.start()
                 if len(all_pix_data) > 1:
                     if not self.display_foreground_circles_patch:
-                        for key, value in list(all_pix_data.items()):
+                        for key, value in all_pix_data.items():
                             base_color = self.prediction_colours[key][1:]
                             # dim the color so it stands apart from the prediction
                             r = base_color[0:2]
@@ -1130,7 +1130,7 @@ class SpotFrame(XrayFrame):
                     else:
                         e1 = matrix.col((1.0, 0.0))
                         e2 = matrix.col((0.0, 1.0))
-                        for key, value in list(all_foreground_circles.items()):
+                        for key, value in all_foreground_circles.items():
                             base_color = self.prediction_colours[key][1:]
                             positions = [i["position"] for i in value]
                             good_radius = flex.mean(
@@ -1420,7 +1420,7 @@ class SpotFrame(XrayFrame):
                                     if len(all_pix_data) > 1:
                                         # look for overlapped pixels
                                         found_it = False
-                                        for key, value in list(all_pix_data.items()):
+                                        for key, value in all_pix_data.items():
                                             if (x_, y_) in value:
                                                 value.pop(value.index((x_, y_)))
                                                 found_it = True

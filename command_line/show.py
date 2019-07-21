@@ -310,11 +310,11 @@ def _create_flag_count_table(table):
     numpy_flags = table["flags"].as_numpy_array()
     flag_count = {
         flag: numpy.sum(numpy_flags & value != 0)
-        for value, flag in list(table.flags.values.items())
+        for value, flag in table.flags.values.items()
     }
 
     # Work out the numeric-value order of the flags
-    flag_order = sorted(list(table.flags.values.values()), key=lambda x: x.real)
+    flag_order = sorted(table.flags.values.values(), key=lambda x: x.real)
 
     # Build the actual table
     flag_rows = [["Flag", "Count", "%"]]
