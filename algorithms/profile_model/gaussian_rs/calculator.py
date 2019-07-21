@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-#
-# profile_model.py
-#
 #  Copyright (C) 2013 Diamond Light Source
 #
 #  Author: James Parkhurst
@@ -668,8 +664,8 @@ class ScanVaryingProfileModelCalculator(object):
 
         # The range of frames
         z0, z1 = scan.get_array_range()
-        min_z = min(index_list.keys())
-        max_z = max(index_list.keys())
+        min_z = min(index_list)
+        max_z = max(index_list)
         assert z0 == min_z
         assert z1 == max_z + 1
 

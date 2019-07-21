@@ -207,7 +207,7 @@ def test_json(dials_data, tmpdir):
 
     with tmpdir.join("rlp.json").open("rb") as f:
         d = json.load(f, object_hook=_decode_dict)
-    assert list(d.keys()) == ["imageset_id", "experiments", "rlp", "experiment_id"], list(d.keys())
+    assert list(d.keys()) == ["imageset_id", "experiments", "rlp", "experiment_id"]
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0

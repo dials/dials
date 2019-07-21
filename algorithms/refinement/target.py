@@ -12,13 +12,12 @@ principally Target and ReflectionManager."""
 
 # python and cctbx imports
 from __future__ import absolute_import, division, print_function
-from math import pi, sqrt, floor
+
+import abc
+import math
+
 from scitbx.array_family import flex
 from scitbx import sparse
-import abc
-
-# constants
-RAD_TO_DEG = 180.0 / pi
 
 # PHIL
 from libtbx.phil import parse
@@ -51,6 +50,9 @@ phil_str = """
       .type = int(value_min=1)
 """
 phil_scope = parse(phil_str)
+
+# constants
+RAD_TO_DEG = 180.0 / math.pi
 
 
 class TargetFactory(object):
@@ -168,8 +170,6 @@ class Target(object):
         # a cutoff is required
         self._gradient_calculation_blocksize = gradient_calculation_blocksize
 
-        return
-
     @property
     def dim(self):
         """Get the number of dimensions of the target function"""
@@ -221,8 +221,6 @@ class Target(object):
 
         # collect the matches
         self.update_matches(force=True)
-
-        return
 
     def predict_for_free_reflections(self):
         """perform prediction for the reflections not used for refinement"""
@@ -310,8 +308,6 @@ class Target(object):
 
         if not self._matches or force:
             self._matches = self._reflection_manager.get_matches()
-
-        return
 
     def compute_functional_gradients_and_curvatures(self, block=None):
         """calculate the value of the target function and its gradients. Set
@@ -419,14 +415,16 @@ class Target(object):
 
         if self._gradient_calculation_blocksize:
             nblocks = int(
-                floor(len(self._matches) * nproc / self._gradient_calculation_blocksize)
+                math.floor(
+                    len(self._matches) * nproc / self._gradient_calculation_blocksize
+                )
             )
         else:
             nblocks = nproc
         # ensure at least 100 reflections per block
         nblocks = min(nblocks, int(len(self._matches) / 100))
         nblocks = max(nblocks, 1)
-        blocksize = int(floor(len(self._matches) / nblocks))
+        blocksize = int(math.floor(len(self._matches) / nblocks))
         blocks = []
         for block_num in range(nblocks - 1):
             start = block_num * blocksize
@@ -624,8 +622,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             assert len(absolute_cutoffs) == 3
             self._binsize_cutoffs = absolute_cutoffs
 
-        return
-
     @staticmethod
     def _extract_residuals_and_weights(matches):
 
@@ -655,7 +651,11 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         resid_phi = flex.sum(reflections["phi_resid2"])
         n = len(reflections)
 
-        rmsds = (sqrt(resid_x / n), sqrt(resid_y / n), sqrt(resid_phi / n))
+        rmsds = (
+            math.sqrt(resid_x / n),
+            math.sqrt(resid_y / n),
+            math.sqrt(resid_phi / n),
+        )
         return rmsds
 
     def achieved(self):

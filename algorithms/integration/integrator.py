@@ -1,5 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
+import logging
+import math
+import random
+
+import six.moves.cPickle as pickle
 from dials_algorithms_integration_integrator_ext import *
 from dials.algorithms.integration.processor import Processor3D
 from dials.algorithms.integration.processor import ProcessorFlat3D
@@ -9,10 +15,9 @@ from dials.algorithms.integration.processor import ProcessorStills
 from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
 from dials.algorithms.integration.image_integrator import ImageIntegrator
+from dials.array_family import flex
 from dials.util import phil
 from dials.util import Sorry
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -219,12 +224,9 @@ def hist(data, width=80, symbol="#", prefix=""):
     :return: The histogram string
 
     """
-    from collections import Counter
-    from math import log10, floor
-
     assert len(data) > 0, "Need > 0 reflections"
     assert width > 0, "Width should be > 0"
-    count = Counter(data)
+    count = collections.Counter(data)
     count = sorted(count.items())
     frame, count = zip(*count)
     min_frame = min(frame)
@@ -236,8 +238,8 @@ def hist(data, width=80, symbol="#", prefix=""):
     if max_frame == 0:
         num_frame_zeros = 1
     else:
-        num_frame_zeros = int(floor(log10(max_frame))) + 1
-    num_count_zeros = int(floor(log10(max_count))) + 1
+        num_frame_zeros = int(math.floor(math.log10(max_frame))) + 1
+    num_count_zeros = int(math.floor(math.log10(max_count))) + 1
     assert num_frame_zeros > 0, "Num should be > 0"
     assert num_count_zeros > 0, "Num should be > 0"
     num_hist = width - (num_frame_zeros + num_count_zeros + 5) - len(prefix)
@@ -420,10 +422,7 @@ class InitializerRot(object):
     def __call__(self, reflections):
         """
         Do some pre-processing.
-
         """
-        from dials.array_family import flex
-
         # Compute some reflection properties
         reflections.compute_zeta_multi(self.experiments)
         reflections.compute_d(self.experiments)
@@ -457,10 +456,7 @@ class InitializerStills(object):
     def __call__(self, reflections):
         """
         Do some pre-processing.
-
         """
-        from dials.array_family import flex
-
         # Compute some reflection properties
         reflections.compute_d(self.experiments)
         reflections.compute_bbox(self.experiments)
@@ -673,8 +669,6 @@ class ProfileModellerExecutor(Executor):
         :param reflections: The reflections to process
 
         """
-        from dials.array_family import flex
-
         # Check if pixels are overloaded
         reflections.is_overloaded(self.experiments)
 
@@ -785,8 +779,6 @@ class ProfileValidatorExecutor(Executor):
         :param reflections: The reflections to process
 
         """
-        from dials.array_family import flex
-
         # Check if pixels are overloaded
         reflections.is_overloaded(self.experiments)
 
@@ -1015,16 +1007,13 @@ class Integrator(object):
         from dials.algorithms.integration.report import ProfileValidationReport
         from dials.util.command_line import heading
         from dials.util import pprint
-        from random import shuffle, seed
-        from math import floor, ceil
-        from dials.array_family import flex
         from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
         from dials.algorithms.integration.validation import (
             ValidatedMultiExpProfileModeller,
         )
 
         # Ensure we get the same random sample each time
-        seed(0)
+        random.seed(0)
 
         # Init the report
         self.profile_model_report = None
@@ -1104,17 +1093,19 @@ class Integrator(object):
                 if self.params.profile.validation.number_of_partitions > 1:
                     n = len(reference)
                     k_max = int(
-                        floor(n / self.params.profile.validation.min_partition_size)
+                        math.floor(
+                            n / self.params.profile.validation.min_partition_size
+                        )
                     )
                     if k_max < self.params.profile.validation.number_of_partitions:
                         num_folds = k_max
                     else:
                         num_folds = self.params.profile.validation.number_of_partitions
                     if num_folds > 1:
-                        indices = (list(range(num_folds)) * int(ceil(n / num_folds)))[
-                            0:n
-                        ]
-                        shuffle(indices)
+                        indices = (
+                            list(range(num_folds)) * int(math.ceil(n / num_folds))
+                        )[0:n]
+                        random.shuffle(indices)
                         reference["profile.index"] = flex.size_t(indices)
                     if num_folds < 1:
                         num_folds = 1
@@ -1148,7 +1139,7 @@ class Integrator(object):
                 # Finalize the profile models for validation
                 assert len(profile_fitter_list) > 0, "No profile fitters"
                 profile_fitter = None
-                for index, pf in profile_fitter_list.items():
+                for pf in profile_fitter_list.values():
                     if pf is None:
                         continue
                     if profile_fitter is None:
@@ -1173,8 +1164,6 @@ class Integrator(object):
                                 p.append(None)
                     reference_debug.append(p)
                     with open(self.params.debug_reference_filename, "wb") as outfile:
-                        import six.moves.cPickle as pickle
-
                         pickle.dump(reference_debug, outfile)
 
                 for i in range(len(finalized_profile_fitter)):
@@ -1407,8 +1396,6 @@ class Integrator3DThreaded(object):
         Initialise the integrator
 
         """
-        from dials.array_family import flex
-
         # Compute some reflection properties
         self.reflections.compute_zeta_multi(self.experiments)
         self.reflections.compute_d(self.experiments)
@@ -1448,9 +1435,6 @@ class Integrator3DThreaded(object):
         from dials.algorithms.integration.report import ProfileModelReport
         from dials.util.command_line import heading
         from dials.util import pprint
-        from random import shuffle, seed
-        from math import floor, ceil
-        from dials.array_family import flex
 
         # Init the report
         self.profile_model_report = None
@@ -1605,7 +1589,6 @@ class Integrator3DThreaded(object):
 class IntegratorFactory(object):
     """
     A factory for creating integrators.
-
     """
 
     @staticmethod
@@ -1617,13 +1600,10 @@ class IntegratorFactory(object):
         :param experiments: The list of experiments
         :param reflections: The reflections to integrate
         :return: The integrator class
-
         """
         from dials.algorithms.integration.filtering import IceRingFilter
         import dials.extensions
-        from dials.array_family import flex
         from dials.util import Sorry
-        import six.moves.cPickle as pickle
 
         # Check each experiment has an imageset
         for exp in experiments:

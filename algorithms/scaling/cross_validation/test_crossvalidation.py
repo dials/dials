@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
+
 import mock
-from mock import MagicMock
-from libtbx import phil
 import pytest
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.cross_validation.crossvalidator import (
     DialsScaleCrossValidator,
 )
 from dials.algorithms.scaling.cross_validation.cross_validate import cross_validate
+from libtbx import phil
 
 
 def generated_param():
@@ -139,7 +139,7 @@ def test_dialsscalecrossvalidator():
     reflections = []
 
     def mock_script():
-        script = MagicMock()
+        script = mock.MagicMock()
         script.scaler.final_rmsds = [1.0, 2.0, 3.0, 4.0]
         return script
 

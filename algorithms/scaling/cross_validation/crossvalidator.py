@@ -3,13 +3,14 @@ This module defines an abstract CrossValidator and an implementation of a
 cross validator for dials.scale
 """
 from __future__ import absolute_import, division, print_function
+
 import abc
 import itertools
 from copy import deepcopy
-from scitbx.array_family import flex
-from libtbx.table_utils import simple_table
-from dials.algorithms.scaling.observers import register_merging_stats_observers
 
+from dials.algorithms.scaling.observers import register_merging_stats_observers
+from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 import six
 
 
