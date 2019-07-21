@@ -528,7 +528,7 @@ def export_mtz(integrated_data, experiment_list, params):
     # ✓ decide a sensible BATCH increment to apply to the BATCH value between
     #   experiments and add this
 
-    for id_ in list(expids_in_table.keys()):
+    for id_ in expids_in_table.keys():
         # Grab our subset of the data
         loc = expids_in_list.index(
             expids_in_table[id_]
@@ -590,7 +590,7 @@ def export_mtz(integrated_data, experiment_list, params):
     mtz_writer.add_crystal(
         params.mtz.crystal_name, experiment_list[0].crystal.get_unit_cell()
     )  # Note: add unit cell here as may have changed basis since creating mtz.
-    for wavelength in wavelengths.keys():
+    for wavelength in wavelengths:
         mtz_writer.add_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
@@ -623,7 +623,7 @@ def match_wavelengths(experiments):
     wavelengths = OrderedDict()
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
-        matches = [isclose(w, k, rel_tol=1e-4) for k in list(wavelengths.keys())]
+        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths]
         if not any(matches):
             wavelengths[w] = [i]
         else:

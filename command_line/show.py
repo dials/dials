@@ -503,7 +503,7 @@ def show_reflections(
             text.append(_create_flag_count_table(rlist))
 
         if show_identifiers:
-            if list(rlist.experiment_identifiers().keys()):
+            if rlist.experiment_identifiers():
                 text.append(
                     """Experiment identifiers id-map values:\n%s"""
                     % (
@@ -512,7 +512,7 @@ def show_reflections(
                             + str(k)
                             + " -> experiment identifier:"
                             + str(rlist.experiment_identifiers()[k])
-                            for k in list(rlist.experiment_identifiers().keys())
+                            for k in rlist.experiment_identifiers()
                         )
                     )
                 )

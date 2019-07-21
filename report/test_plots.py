@@ -57,7 +57,7 @@ def test_AnomalousPlotter():
     plotter = AnomalousPlotter(iobs)
     d = plotter.make_plots()
     expected = ["normal_distribution_plot_highres", "anom_correl_plot"]
-    keys = list(d.keys())
+    keys = d.keys()
     for k in expected:
         assert k in keys
         assert d[k]["data"][0]["x"]  # check some data there

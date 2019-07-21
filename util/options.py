@@ -1049,7 +1049,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_flags ()")
         print("{")
         print(' case "$1" in')
-        for p in list(parameter_choice_list.keys()):
+        for p in parameter_choice_list:
             print("\n  %s)" % p)
             print(
                 '   _dials_autocomplete_values="%s";;'
@@ -1075,7 +1075,7 @@ class OptionParser(OptionParserBase):
         tree = construct_completion_tree(parameter_list)
 
         def _tree_to_bash(prefix, tree):
-            for subkey in list(tree.keys()):
+            for subkey in tree:
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
                     print("\n  %s*)" % (prefix + subkey + "."))

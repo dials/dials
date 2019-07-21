@@ -33,7 +33,7 @@ def test_run(dials_regression, run_in_tmpdir):
     # Check the reflections are OK
     assert reflections1.nrows() == reflections2.nrows()
     assert reflections1.ncols() == reflections2.ncols()
-    for key in list(reflections1.keys()):
+    for key in reflections1.keys():
         data1 = reflections1[key]
         data2 = reflections2[key]
         assert data1.__class__ == data2.__class__

@@ -87,7 +87,7 @@ def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
     with open("bravais_summary.json", "rb") as fh:
         bravais_summary = json.load(fh)
     for i in range(1, 23):
-        assert str(i) in list(bravais_summary.keys())
+        assert str(i) in bravais_summary
 
     assert bravais_summary["9"]["unit_cell"] == pytest.approx(
         [7.31, 7.31, 6.82, 90.00, 90.00, 90.00], abs=1e-1
@@ -178,7 +178,7 @@ def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
     with open("bravais_summary.json", "rb") as fh:
         bravais_summary = json.load(fh)
     for i in range(1, 5):
-        assert str(i) in list(bravais_summary.keys())
+        assert str(i) in bravais_summary
 
     assert bravais_summary["5"]["unit_cell"] == pytest.approx(
         [4.75863, 4.75863, 12.9885, 90, 90, 120], abs=1e-1

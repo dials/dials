@@ -134,7 +134,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
             )
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             exp.identifier = identifiers[i]
-            for k in list(refl.experiment_identifiers().keys()):
+            for k in refl.experiment_identifiers().keys():
                 del refl.experiment_identifiers()[k]
             refl.experiment_identifiers()[i] = identifiers[i]
             refl["id"] = flex.int(refl.size(), i)

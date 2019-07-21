@@ -344,7 +344,7 @@ class Target(object):
             grads = [result[key] for key in self._grad_names]
 
             # reset result
-            for k in list(result.keys()):
+            for k in result:
                 result[k] = None
 
             # add new keys

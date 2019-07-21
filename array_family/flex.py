@@ -1245,7 +1245,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             if "id" in self:
                 index = set(self["id"])
                 for i in index:
-                    assert i in list(identifiers.keys()), (i, list(identifiers.keys()))
+                    assert i in identifiers, (i, list(identifiers))
         if experiments is not None:
             if len(identifiers) > 0:
                 assert len(identifiers) == len(experiments), (
@@ -1303,7 +1303,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # First get the reverse of the map i.e. ids for a given exp_identifier
         id_values = []
         for exp_id in list_of_identifiers:
-            for k in list(self.experiment_identifiers().keys()):
+            for k in self.experiment_identifiers().keys():
                 if self.experiment_identifiers()[k] == exp_id:
                     id_values.append(k)
                     break
@@ -1322,7 +1322,7 @@ Found %s"""
             sel.set_selected(id_sel, True)
         self = self.select(sel)
         # Remove entries from the experiment_identifiers map
-        for k in list(self.experiment_identifiers().keys()):
+        for k in self.experiment_identifiers().keys():
             if k not in id_values:
                 del self.experiment_identifiers()[k]
         return self
@@ -1336,7 +1336,7 @@ Found %s"""
         assert "id" in self
         id_values = []
         for exp_id in list_of_identifiers:
-            for k in list(self.experiment_identifiers().keys()):
+            for k in self.experiment_identifiers().keys():
                 if self.experiment_identifiers()[k] == exp_id:
                     id_values.append(k)
                     break
@@ -1376,7 +1376,7 @@ Found %s"""
             (v, k) for k, v in self.experiment_identifiers()
         )
         orig_id = self["id"].deep_copy()
-        for k in list(self.experiment_identifiers().keys()):
+        for k in self.experiment_identifiers().keys():
             del self.experiment_identifiers()[k]
         for i_exp, exp_id in enumerate(reverse_map.keys()):
             sel_exp = orig_id == reverse_map[exp_id]

@@ -269,7 +269,7 @@ def test_iteration():
 
     # Try iterating keys
     k = []
-    for key in list(table.keys()):
+    for key in table.keys():
         k.append(key)
     assert len(k) == 3
     assert k.count("col1") == 1
@@ -1248,7 +1248,7 @@ def test_experiment_identifiers():
     id1 = table.experiment_identifiers()
     id2 = table2.experiment_identifiers()
 
-    for i in list(id1.keys()):
+    for i in id1.keys():
         assert id1[i] == id2[i]
 
     other_table = flex.reflection_table()
@@ -1262,7 +1262,7 @@ def test_experiment_identifiers():
     id1 = table.experiment_identifiers()
     id2 = table2.experiment_identifiers()
 
-    for i in list(id1.keys()):
+    for i in id1.keys():
         assert id1[i] == id2[i]
 
     other_table = flex.reflection_table()
@@ -1328,7 +1328,7 @@ def test_select_remove_on_experiment_identifiers():
     assert list(table.experiment_identifiers().values()) == ["abcd", "mnop"]
     # test that the function doesn't fail if no identifiers set
     table1 = copy.deepcopy(table)
-    for k in list(table1.experiment_identifiers().keys()):
+    for k in table1.experiment_identifiers().keys():
         del table1.experiment_identifiers()[k]
     table1.reset_ids()
     assert list(table1.experiment_identifiers().keys()) == []
@@ -1392,7 +1392,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     refl.centroid_px_to_mm(detector, scan=scan)
 
     for k in ("xyzobs.mm.value", "xyzobs.mm.variance"):
-        assert k in list(refl.keys())
+        assert k in refl
 
     assert refl["xyzobs.mm.value"][0] == pytest.approx(
         (199.43400000000003, 11.908133333333334, 1.4324789835743459)
@@ -1404,7 +1404,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
 
     for k in ("s1", "rlp"):
-        assert k in list(refl.keys())
+        assert k in refl
 
     assert refl["s1"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, -0.8272574664632307)

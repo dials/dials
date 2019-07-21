@@ -126,7 +126,7 @@ class cosym(Subject):
 
         space_groups = {}
         reindexing_ops = {}
-        for dataset_id in self.cosym_analysis.reindexing_ops.keys():
+        for dataset_id in self.cosym_analysis.reindexing_ops:
             if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
                 cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
                 reindexing_ops.setdefault(cb_op, [])

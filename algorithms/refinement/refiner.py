@@ -175,7 +175,7 @@ class RefinerFactory(object):
         # for this except that 's1' is optional in the input so would want
         # to copy that in like this if present anyway
         for k in cols:
-            if k in list(reflections.keys()):
+            if k in reflections:
                 rt[k] = reflections[k]
 
         return rt
