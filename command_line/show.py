@@ -512,7 +512,7 @@ def show_reflections(
                             + str(k)
                             + " -> experiment identifier:"
                             + str(rlist.experiment_identifiers()[k])
-                            for k in rlist.experiment_identifiers()
+                            for k in rlist.experiment_identifiers().keys()
                         )
                     )
                 )
