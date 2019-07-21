@@ -2126,7 +2126,7 @@ def merging_stats_results(reflections, experiments):
 
 
 def intensity_statistics(reflections, experiments):
-    if not "inverse_scale_factor" in reflections:
+    if "inverse_scale_factor" not in reflections:
         return {}, {}, {}
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
@@ -2446,8 +2446,6 @@ class Script(object):
         if len(params.input.reflections) != 1 and not len(params.input.experiments):
             self.parser.print_help()
             exit(0)
-
-        from dials.util.options import flatten_reflections, flatten_experiments
 
         reflections = flatten_reflections(params.input.reflections)
         experiments = flatten_experiments(params.input.experiments)

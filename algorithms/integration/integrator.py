@@ -385,7 +385,7 @@ class Parameters(object):
 
         # Get the min zeta filter
         result.filter.min_zeta = params.filter.min_zeta
-        if params.filter.ice_rings == True:
+        if params.filter.ice_rings is True:
             result.filter.powder_filter = IceRingFilter()
 
         # Get post-integration overlap filtering parameters

@@ -56,7 +56,7 @@ def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
         [57.78, 57.78, 150.0, 90.0, 90.0, 90.0], abs=1e-1
     )
     assert bravais_summary["9"]["bravais"] == "tP"
-    assert bravais_summary["9"]["recommended"] == True
+    assert bravais_summary["9"]["recommended"] is True
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
@@ -94,7 +94,7 @@ def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
     )
     assert bravais_summary["9"]["bravais"] == "tI"
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.103, abs=1e-2)
-    assert bravais_summary["9"]["recommended"] == True
+    assert bravais_summary["9"]["recommended"] is True
 
 
 def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
@@ -137,8 +137,8 @@ def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
     )
     assert bravais_summary["5"]["bravais"] == "oP"
     assert bravais_summary["5"]["rmsd"] == pytest.approx(0.1200, abs=1e-2)
-    assert bravais_summary["5"]["recommended"] == True
-    assert bravais_summary["9"]["recommended"] == False
+    assert bravais_summary["5"]["recommended"] is True
+    assert bravais_summary["9"]["recommended"] is False
 
 
 def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
@@ -185,4 +185,4 @@ def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
     )
     assert bravais_summary["5"]["bravais"] == "hR"
     assert bravais_summary["5"]["rmsd"] == pytest.approx(0.104, abs=1e-2)
-    assert bravais_summary["5"]["recommended"] == True
+    assert bravais_summary["5"]["recommended"] is True

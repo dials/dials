@@ -134,7 +134,7 @@ class Script(object):
             params.output.reflections_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.reflections_suffix)
-            if params.output.reflections_suffix != None
+            if params.output.reflections_suffix is not None
             else "",
         )
 

@@ -178,7 +178,7 @@ def test_dialsscalecrossvalidator():
     params = crossvalidator.set_parameter(params, "outlier_zmax", 7.53)
     assert params.scaling_options.outlier_zmax == 7.53
     with pytest.raises(AssertionError):
-        params = crossvalidator.set_parameter(params, "bad_parameter", 7.53)
+        _ = crossvalidator.set_parameter(params, "bad_parameter", 7.53)
 
     # defer testing of run_script to command line tests
 

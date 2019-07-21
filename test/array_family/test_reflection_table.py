@@ -45,7 +45,7 @@ def test_init():
 
     # test with invalid columns
     with pytest.raises(RuntimeError):
-        table = flex.reflection_table(
+        _ = flex.reflection_table(
             [
                 ("col1", flex.int(10)),
                 ("col2", flex.double(20)),
@@ -740,7 +740,6 @@ def test_extract_shoeboxes():
     npanels = 2
     width = 1000
     height = 1000
-    nrefl = 10000
     frame0 = 10
     frame1 = 100
     nrefl = 1000

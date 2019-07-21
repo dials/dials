@@ -2,48 +2,39 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
+
 import procrunner
 import pytest
-from dxtbx.serialize.load import _decode_dict
-from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
+from dxtbx.serialize.load import _decode_dict
+from dxtbx.serialize import load
 from iotbx import mtz
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
 
 
-def test_nxs(dials_data, tmpdir):
-    # Call dials.export
+def run_export(export_format, dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.export",
-            "format=nxs",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            "format=" + export_format,
+            dials_data("centroid_test_data").join("experiments.json"),
+            dials_data("centroid_test_data").join("integrated.pickle"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.nxs").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated." + export_format).check(file=1)
+
+
+def test_nxs(dials_data, tmpdir):
+    run_export("nxs", dials_data, tmpdir)
 
 
 def test_mtz(dials_data, tmpdir):
-    # Call dials.export
-    result = procrunner.run(
-        [
-            "dials.export",
-            "format=mtz",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
-        ],
-        working_directory=tmpdir.strpath,
-    )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.mtz").check(file=1)
+    run_export("mtz", dials_data, tmpdir)
 
 
 def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):

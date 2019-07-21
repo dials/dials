@@ -367,7 +367,7 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
 
     def OnLeftButUp(self, event):
         self.Bdwn = False
-        Mouse_Pos_x, Mouse_Pos_y = event.GetPosition()
+        _ = event.GetPosition()
 
     def set_scroll_content(self):
         self.img_lst_v_sizer.Clear(True)
@@ -468,7 +468,7 @@ class buttons_panel(wx.Panel):
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
         self.my_sizer.Add(Show_Its_CheckBox, proportion=0, flag=wx.ALIGN_TOP, border=5)
 
-        if self.parent_panel.segn_lst_in != None:
+        if self.parent_panel.segn_lst_in is not None:
             Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
             Show_Msk_CheckBox.SetValue(True)
             Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)

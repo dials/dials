@@ -199,7 +199,7 @@ class RestraintsParameterisation(object):
                 raise DialsRefineConfigError(
                     "Parameterisation already restrained. Cannot create "
                     "additional group restraint for experiment(s) {}".format(
-                        str(param_i.parameterisation.get_experiment_ids())
+                        str(experiment_ids)
                     )
                 )
 
