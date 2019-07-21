@@ -134,7 +134,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
             )
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             exp.identifier = identifiers[i]
-            for k in refl.experiment_identifiers().keys():
+            for k in list(refl.experiment_identifiers().keys()):
                 del refl.experiment_identifiers()[k]
             refl.experiment_identifiers()[i] = identifiers[i]
             refl["id"] = flex.int(refl.size(), i)
@@ -161,8 +161,8 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
                 refl.experiment_identifiers()[i] = strid
                 unique_id += 1
             else:
-                k = refl.experiment_identifiers().keys()[0]
-                expid = refl.experiment_identifiers().values()[0]
+                k = list(refl.experiment_identifiers().keys())[0]
+                expid = list(refl.experiment_identifiers().values())[0]
                 del refl.experiment_identifiers()[k]
                 refl.experiment_identifiers()[i] = expid
             refl["id"] = flex.int(refl.size(), i)

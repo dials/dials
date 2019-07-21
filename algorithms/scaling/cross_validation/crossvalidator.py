@@ -103,7 +103,7 @@ class CrossValidator(object):
         monitored_values = []
 
         # Construct the rows, using the metadata from the results dict
-        for v in self.results_dict.itervalues():
+        for v in self.results_dict.values():
             config_str = " ".join(v["configuration"])
             vals, stds = [], []
             for i, name in enumerate(self.results_metadata["names"]):

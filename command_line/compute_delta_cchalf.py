@@ -243,7 +243,7 @@ class Script(object):
         # get a list of the ids from the reflection table corresponding to exp_ids
         identifiers = []
         for expit in exp_identifiers:
-            for k in reflections.experiment_identifiers().keys():
+            for k in list(reflections.experiment_identifiers().keys()):
                 if reflections.experiment_identifiers()[k] == expit:
                     identifiers.append(k)
                     break
@@ -518,7 +518,7 @@ class Script(object):
     def plot_data(self):
         """Plot histogram and line plot of cc half values."""
         fig, ax = pylab.subplots()
-        ax.hist(self.delta_cchalf_i.values())
+        ax.hist(list(self.delta_cchalf_i.values()))
         ax.set_xlabel("Delta CC 1/2")
         fig.savefig("plot1.png")
 

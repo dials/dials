@@ -2087,7 +2087,7 @@ class ScalingModelAnalyser(object):
                 if model is not None:
                     if model.id_ == "physical":
                         scaling_model_plots = plot_scaling_models(model.to_dict())
-                        for name, plot in scaling_model_plots.iteritems():
+                        for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})
         return {"scaling_model": d}
 

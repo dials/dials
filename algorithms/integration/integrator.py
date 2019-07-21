@@ -1148,7 +1148,7 @@ class Integrator(object):
                 # Finalize the profile models for validation
                 assert len(profile_fitter_list) > 0, "No profile fitters"
                 profile_fitter = None
-                for index, pf in profile_fitter_list.iteritems():
+                for index, pf in profile_fitter_list.items():
                     if pf is None:
                         continue
                     if profile_fitter is None:

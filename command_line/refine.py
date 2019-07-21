@@ -248,8 +248,8 @@ def run_macrocycle(params, reflections, experiments):
     # just copy over the columns of interest or columns that may have been
     # updated, leaving behind things added by e.g. scan-varying refinement
     # such as 'block', the U, B and UB matrices and gradients.
-    for key in preds.keys():
-        if key in reflections.keys() or key in [
+    for key in list(preds.keys()):
+        if key in list(reflections.keys()) or key in [
             "s1",
             "xyzcal.mm",
             "xyzcal.px",
@@ -527,7 +527,7 @@ def run(args=None, phil=working_phil):
             if [corrmats, labels].count(None) == 0:
                 from dials.algorithms.refinement.refinement_helpers import corrgram
 
-                for resid_name, corrmat in corrmats.items():
+                for resid_name, corrmat in list(corrmats.items()):
                     plot_fname = fname_base + "_" + resid_name + ext
                     plt = corrgram(corrmat, labels)
                     if plt is not None:
@@ -539,7 +539,7 @@ def run(args=None, phil=working_phil):
                         num_plots += 1
                 mat_fname = fname_base + ".pickle"
                 with open(mat_fname, "wb") as handle:
-                    for k, corrmat in corrmats.items():
+                    for k, corrmat in list(corrmats.items()):
                         corrmats[k] = corrmat.as_scitbx_matrix()
                     logger.info(
                         "Saving parameter correlation matrices to {}".format(mat_fname)

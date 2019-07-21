@@ -615,7 +615,7 @@ class _Tiles(object):
             and self.raw_image.__class__.__name__.find("CSPadDetector") >= 0
         ):
             key_count = -1
-            for key, asic in self.raw_image._tiles.iteritems():
+            for key, asic in self.raw_image._tiles.items():
                 key_count += 1
                 focus = asic.focus()
                 for slow in range(0, focus[0], 20):
@@ -632,7 +632,7 @@ class _Tiles(object):
             from cxi_xdr_xes.cftbx.spotfinder.speckfinder import spotfind_readout
 
             key_count = -1
-            for key, asic in self.raw_image._tiles.iteritems():
+            for key, asic in self.raw_image._tiles.items():
                 key_count += 1
                 indexing = spotfind_readout(
                     readout=asic, peripheral_margin=params.spotfinder.peripheral_margin

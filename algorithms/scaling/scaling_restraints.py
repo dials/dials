@@ -78,7 +78,7 @@ class ScalingRestraints(object):
             restraints_vector = flex.double([])
             jacobian = sparse.matrix(n_restraints, apm.n_active_params)
             cumul_restr_pos = 0
-            for comp in apm.components.itervalues():
+            for comp in apm.components.values():
                 restraints = comp["object"].calculate_jacobian_restraints()
                 if restraints:
                     jacobian.assign_block(
@@ -100,7 +100,7 @@ class ScalingRestraints(object):
         (of the scaling model for the individual dataset)."""
         residuals = flex.double([])
         gradient_vector = flex.double([])
-        for comp in apm.components.itervalues():
+        for comp in apm.components.values():
             resid = comp["object"].calculate_restraints()
             if resid:
                 gradient_vector.extend(resid[1])

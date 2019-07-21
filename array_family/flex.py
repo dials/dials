@@ -601,7 +601,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -621,7 +621,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -716,7 +716,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -736,7 +736,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -1240,12 +1240,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
-            values = identifiers.values()
+            values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
                 index = set(self["id"])
                 for i in index:
-                    assert i in identifiers.keys(), (i, list(identifiers.keys()))
+                    assert i in list(identifiers.keys()), (i, list(identifiers.keys()))
         if experiments is not None:
             if len(identifiers) > 0:
                 assert len(identifiers) == len(experiments), (
@@ -1255,7 +1255,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 assert len(identifiers) == len(set(experiments.identifiers()))
                 for experiment in experiments:
                     assert (
-                        experiment.identifier in identifiers.values()
+                        experiment.identifier in list(identifiers.values())
                     ), experiment.identifier
 
     def are_experiment_identifiers_consistent(self, experiments=None):
@@ -1303,7 +1303,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # First get the reverse of the map i.e. ids for a given exp_identifier
         id_values = []
         for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
+            for k in list(self.experiment_identifiers().keys()):
                 if self.experiment_identifiers()[k] == exp_id:
                     id_values.append(k)
                     break
@@ -1322,7 +1322,7 @@ Found %s"""
             sel.set_selected(id_sel, True)
         self = self.select(sel)
         # Remove entries from the experiment_identifiers map
-        for k in self.experiment_identifiers().keys():
+        for k in list(self.experiment_identifiers().keys()):
             if k not in id_values:
                 del self.experiment_identifiers()[k]
         return self
@@ -1336,7 +1336,7 @@ Found %s"""
         assert "id" in self
         id_values = []
         for exp_id in list_of_identifiers:
-            for k in self.experiment_identifiers().keys():
+            for k in list(self.experiment_identifiers().keys()):
                 if self.experiment_identifiers()[k] == exp_id:
                     id_values.append(k)
                     break
@@ -1376,7 +1376,7 @@ Found %s"""
             (v, k) for k, v in self.experiment_identifiers()
         )
         orig_id = self["id"].deep_copy()
-        for k in self.experiment_identifiers().keys():
+        for k in list(self.experiment_identifiers().keys()):
             del self.experiment_identifiers()[k]
         for i_exp, exp_id in enumerate(reverse_map.keys()):
             sel_exp = orig_id == reverse_map[exp_id]

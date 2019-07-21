@@ -208,12 +208,12 @@ class ScalingModelObserver(Observer):
 
     def return_model_error_summary(self):
         """Get a summary of the error distribution of the models."""
-        first_model = self.data.values()[0]
+        first_model = list(self.data.values())[0]
         component = first_model["configuration_parameters"]["corrections"][0]
         msg = ""
         if "est_standard_devs" in first_model[component]:
             p_sigmas = flex.double()
-            for model in self.data.values():
+            for model in list(self.data.values()):
                 for component in model["configuration_parameters"]["corrections"]:
                     if "est_standard_devs" in model[component]:
                         params = flex.double(model[component]["parameters"])

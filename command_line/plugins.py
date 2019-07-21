@@ -24,7 +24,7 @@ def installation_is_valid():
 
     :return: True if so, False otherwise
     """
-    for ep, ep_dict in known_entry_points.items():
+    for ep, ep_dict in list(known_entry_points.items()):
         required_plugins = set(ep_dict.get("required", []))
         if not required_plugins:
             continue
@@ -48,7 +48,7 @@ known_entry_points = {
 }
 
 if __name__ == "__main__":
-    for ep, ep_dict in known_entry_points.items():
+    for ep, ep_dict in list(known_entry_points.items()):
         print(
             "{BOLD}{ep}{NC}  {ep_dict[description]}".format(
                 BOLD=BOLD, NC=NC, ep=ep, ep_dict=ep_dict

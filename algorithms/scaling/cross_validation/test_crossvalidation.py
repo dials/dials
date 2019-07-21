@@ -34,20 +34,20 @@ def test_crossvalidator():
     # test the create_results_dict method
     crossvalidator = DialsScaleCrossValidator(experiments, reflections)
     crossvalidator.create_results_dict(1)
-    assert len(crossvalidator.results_dict.keys()) == 1
+    assert len(list(crossvalidator.results_dict.keys())) == 1
     assert (
-        len(crossvalidator.results_dict[0].keys())
+        len(list(crossvalidator.results_dict[0].keys()))
         == len(crossvalidator.results_metadata["names"]) + 1
     )
     crossvalidator = DialsScaleCrossValidator(experiments, reflections)
     crossvalidator.create_results_dict(2)
-    assert len(crossvalidator.results_dict.keys()) == 2
+    assert len(list(crossvalidator.results_dict.keys())) == 2
     assert (
-        len(crossvalidator.results_dict[0].keys())
+        len(list(crossvalidator.results_dict[0].keys()))
         == len(crossvalidator.results_metadata["names"]) + 1
     )
     assert (
-        len(crossvalidator.results_dict[1].keys())
+        len(list(crossvalidator.results_dict[1].keys()))
         == len(crossvalidator.results_metadata["names"]) + 1
     )
 

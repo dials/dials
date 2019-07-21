@@ -18,7 +18,7 @@ class basis_function(object):
         block, returning each as a list of values from the components."""
         scales = []
         derivatives = []
-        for component in apm.components.itervalues():
+        for component in apm.components.values():
             sdc = component["object"].calculate_scales_and_derivatives(block_id)
             scales.append(sdc[0])
             derivatives.append(sdc[1])

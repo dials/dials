@@ -262,9 +262,9 @@ class SingleScaler(ScalerBase):
         self.active_scalers = [self]
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
-        n_model_params = sum([val.n_params for val in self.components.itervalues()])
+        n_model_params = sum([val.n_params for val in self.components.values()])
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
-        self._initial_keys = [key for key in reflection_table.keys()]
+        self._initial_keys = [key for key in list(reflection_table.keys())]
         self._reflection_table = reflection_table
         self._Ih_table = None  # stores data for reflections used for minimisation
         self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
@@ -426,7 +426,7 @@ class SingleScaler(ScalerBase):
         n_start = 0
         all_scales = flex.double([])
         all_invsfvars = flex.double([])
-        n_param_tot = sum([c.n_params for c in self.components.itervalues()])
+        n_param_tot = sum([c.n_params for c in self.components.values()])
         for i in range(1, n_blocks + 1):  # do calc in blocks for speed/memory
             n_end = int(i * self.n_suitable_refl / n_blocks)
             block_isel = flex.size_t(range(n_start, n_end))
@@ -435,7 +435,7 @@ class SingleScaler(ScalerBase):
             scales_list = []
             derivs_list = []
             jacobian = sparse.matrix(block_isel.size(), n_param_tot)
-            for component in self.components.itervalues():
+            for component in self.components.values():
                 component.update_reflection_data(block_selections=[block_isel])
                 comp_scales, d = component.calculate_scales_and_derivatives(block_id=0)
                 scales_list.append(comp_scales)
@@ -564,7 +564,7 @@ class SingleScaler(ScalerBase):
         """Use the data in the Ih_table to update the model data."""
         assert self.Ih_table is not None
         block_selections = self.Ih_table.get_block_selections_for_dataset(dataset=0)
-        for component in self.components.itervalues():
+        for component in self.components.values():
             component.update_reflection_data(block_selections=block_selections)
 
     def _create_Ih_table(self):
@@ -649,7 +649,7 @@ class SingleScaler(ScalerBase):
         ]
         if "Esq" in self.reflection_table:
             del self.reflection_table["Esq"]
-        for key in self.reflection_table.keys():
+        for key in list(self.reflection_table.keys()):
             if key not in self._initial_keys:
                 del self._reflection_table[key]
 
@@ -796,7 +796,7 @@ class MultiScalerBase(ScalerBase):
     def _update_model_data(self):
         for i, scaler in enumerate(self.active_scalers):
             block_selections = self.Ih_table.get_block_selections_for_dataset(i)
-            for component in scaler.components.itervalues():
+            for component in scaler.components.values():
                 component.update_reflection_data(block_selections=block_selections)
 
     def set_outliers(self):
@@ -1112,7 +1112,7 @@ class NullScaler(ScalerBase):
         self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
         self._reflection_table = reflection
-        self._initial_keys = [key for key in self._reflection_table.keys()]
+        self._initial_keys = [key for key in list(self._reflection_table.keys())]
         self.n_suitable_refl = self._reflection_table.size()
         self._reflection_table["inverse_scale_factor"] = flex.double(
             self.n_suitable_refl, 1.0

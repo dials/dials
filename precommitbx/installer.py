@@ -78,13 +78,13 @@ class ProgressOverall(object):
     def __init__(self):
         self._status = {}
         self._bar = None
-        for package, steps in {
+        for package, steps in list({
             "Python": 5,
             "OpenSSL": 5,
             "libffi": 5,
             "SQLite": 5,
             "Precommitbx": 1,
-        }.items():
+        }.items()):
             self._status[package] = {"total": steps, "complete": 0, "partial": 0}
 
     def start(self):
@@ -95,7 +95,7 @@ class ProgressOverall(object):
             desc="Setting up precommitbx",
             leave=True,
             smoothing=0.1,
-            total=100 * sum(x["total"] for x in self._status.values()),
+            total=100 * sum(x["total"] for x in list(self._status.values())),
         )
 
     def done_part(self, package, partial):
@@ -123,7 +123,7 @@ class ProgressOverall(object):
         self._update()
 
     def _update(self):
-        n = int(100 * sum(p["complete"] + p["partial"] for p in self._status.values()))
+        n = int(100 * sum(p["complete"] + p["partial"] for p in list(self._status.values())))
         if n > self._bar.n:
             self._bar.n = n
             self._bar.refresh()

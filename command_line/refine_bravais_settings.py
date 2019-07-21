@@ -110,7 +110,7 @@ def bravais_lattice_to_space_groups(chiral_only=True):
 def bravais_lattice_to_space_group_table(bravais_settings=None, chiral_only=True):
     bravais_lattice_to_sg = bravais_lattice_to_space_groups(chiral_only=chiral_only)
     logger.info("Chiral space groups corresponding to each Bravais lattice:")
-    for bravais_lattice, space_groups in bravais_lattice_to_sg.iteritems():
+    for bravais_lattice, space_groups in bravais_lattice_to_sg.items():
         if bravais_settings is not None and bravais_lattice not in bravais_settings:
             continue
         logger.info(

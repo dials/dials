@@ -147,7 +147,7 @@ class Script(object):
 
         if params.by_wavelength:
             if reflections:
-                if not reflections.experiment_identifiers().keys():
+                if not list(reflections.experiment_identifiers().keys()):
                     raise Sorry(
                         "Unable to split by wavelength as no experiment "
                         "identifiers are set in the reflection table."
@@ -211,11 +211,11 @@ class Script(object):
                         "Adding reflections for experiment %d to %s"
                         % (i, reflections_filename)
                     )
-                    if reflections.experiment_identifiers().keys():
+                    if list(reflections.experiment_identifiers().keys()):
                         # first find which id value corresponds to experiment in question
                         identifier = experiment.identifier
                         id_ = None
-                        for k in reflections.experiment_identifiers().keys():
+                        for k in list(reflections.experiment_identifiers().keys()):
                             if reflections.experiment_identifiers()[k] == identifier:
                                 id_ = k
                                 break
@@ -225,7 +225,7 @@ class Script(object):
                             )
                         ref_sel = reflections.select(reflections["id"] == id_)
                         # now reset ids and reset/update identifiers map
-                        for k in ref_sel.experiment_identifiers().keys():
+                        for k in list(ref_sel.experiment_identifiers().keys()):
                             del ref_sel.experiment_identifiers()[k]
                         new_id = len(split_data[experiment.detector]["experiments"]) - 1
                         ref_sel["id"] = flex.int(len(ref_sel), new_id)
@@ -273,11 +273,11 @@ class Script(object):
             for i, experiment in enumerate(experiments):
                 chunk_expts.append(experiment)
                 if reflections:
-                    if reflections.experiment_identifiers().keys():
+                    if list(reflections.experiment_identifiers().keys()):
                         # first find which id value corresponds to experiment in question
                         identifier = experiment.identifier
                         id_ = None
-                        for k in reflections.experiment_identifiers().keys():
+                        for k in list(reflections.experiment_identifiers().keys()):
                             if reflections.experiment_identifiers()[k] == identifier:
                                 id_ = k
                                 break
@@ -287,7 +287,7 @@ class Script(object):
                             )
                         ref_sel = reflections.select(reflections["id"] == id_)
                         # now reset ids and reset/update identifiers map
-                        for k in ref_sel.experiment_identifiers().keys():
+                        for k in list(ref_sel.experiment_identifiers().keys()):
                             del ref_sel.experiment_identifiers()[k]
                         new_id = len(chunk_expts) - 1
                         ref_sel["id"] = flex.int(len(ref_sel), new_id)
@@ -324,9 +324,9 @@ class Script(object):
                         % (i, reflections_filename)
                     )
                     ref_sel = reflections.select(reflections["id"] == i)
-                    if ref_sel.experiment_identifiers().keys():
+                    if list(ref_sel.experiment_identifiers().keys()):
                         identifier = ref_sel.experiment_identifiers()[i]
-                        for k in ref_sel.experiment_identifiers().keys():
+                        for k in list(ref_sel.experiment_identifiers().keys()):
                             del ref_sel.experiment_identifiers()[k]
                         ref_sel["id"] = flex.int(ref_sel.size(), 0)
                         ref_sel.experiment_identifiers()[0] = identifier

@@ -207,7 +207,7 @@ def test_json(dials_data, tmpdir):
 
     with tmpdir.join("rlp.json").open("rb") as f:
         d = json.load(f, object_hook=_decode_dict)
-    assert d.keys() == ["imageset_id", "experiments", "rlp", "experiment_id"], d.keys()
+    assert list(d.keys()) == ["imageset_id", "experiments", "rlp", "experiment_id"], list(d.keys())
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0
@@ -236,9 +236,9 @@ def test_json_shortened(dials_data, tmpdir):
 
     with tmpdir.join("integrated.json").open("rb") as f:
         d = json.load(f)
-    assert "imageset_id" in d.keys()
-    assert "rlp" in d.keys()
-    assert "experiment_id" in d.keys()
+    assert "imageset_id" in list(d.keys())
+    assert "rlp" in list(d.keys())
+    assert "experiment_id" in list(d.keys())
     assert d["rlp"][:3] == [-0.5975, -0.6141, 0.4702], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0

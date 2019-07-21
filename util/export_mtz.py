@@ -463,13 +463,13 @@ def export_mtz(integrated_data, experiment_list, params):
             )
 
         wavelengths = match_wavelengths(experiment_list)
-        if len(wavelengths.keys()) > 1:
+        if len(list(wavelengths.keys())) > 1:
             logger.info(
                 "Multiple wavelengths found: \n%s",
                 "\n".join(
                     "  Wavlength: %.5f, experiment numbers: %s "
                     % (k, ",".join(map(str, v)))
-                    for k, v in wavelengths.iteritems()
+                    for k, v in wavelengths.items()
                 ),
             )
     else:
@@ -513,7 +513,7 @@ def export_mtz(integrated_data, experiment_list, params):
         raise ValueError(
             "Duplicate batch offsets detected: %s"
             % ", ".join(
-                str(item) for item, count in Counter(batch_offsets).items() if count > 1
+                str(item) for item, count in list(Counter(batch_offsets).items()) if count > 1
             )
         )
 
@@ -528,20 +528,20 @@ def export_mtz(integrated_data, experiment_list, params):
     # ✓ decide a sensible BATCH increment to apply to the BATCH value between
     #   experiments and add this
 
-    for id_ in expids_in_table.keys():
+    for id_ in list(expids_in_table.keys()):
         # Grab our subset of the data
         loc = expids_in_list.index(
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
-        if len(wavelengths.keys()) > 1:
-            for i, (wl, exps) in enumerate(wavelengths.iteritems()):
+        if len(list(wavelengths.keys())) > 1:
+            for i, (wl, exps) in enumerate(wavelengths.items()):
                 if loc in exps:
                     wavelength = wl
                     dataset_id = i + 1
                     break
         else:
-            wavelength = wavelengths.keys()[0]
+            wavelength = list(wavelengths.keys())[0]
             dataset_id = 1
         reflections = integrated_data.select(integrated_data["id"] == id_)
         batch_offset = batch_offsets[loc]
@@ -590,16 +590,16 @@ def export_mtz(integrated_data, experiment_list, params):
     mtz_writer.add_crystal(
         params.mtz.crystal_name, experiment_list[0].crystal.get_unit_cell()
     )  # Note: add unit cell here as may have changed basis since creating mtz.
-    for wavelength in wavelengths.iterkeys():
+    for wavelength in wavelengths.keys():
         mtz_writer.add_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
-    combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
+    combined_data = {k: v.deep_copy() for k, v in list(experiment_list[0].data.items())}
     for experiment in experiment_list[1:]:
-        for k, v in experiment.data.items():
+        for k, v in list(experiment.data.items()):
             combined_data[k].extend(v)
     # ALL columns must be the same length
-    assert len({len(v) for v in combined_data.values()}) == 1, "Column length mismatch"
+    assert len({len(v) for v in list(combined_data.values())}) == 1, "Column length mismatch"
     assert len(combined_data["id"]) == len(
         integrated_data["id"]
     ), "Lost rows in split/combine"
@@ -623,10 +623,10 @@ def match_wavelengths(experiments):
     wavelengths = OrderedDict()
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
-        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths.keys()]
+        matches = [isclose(w, k, rel_tol=1e-4) for k in list(wavelengths.keys())]
         if not any(matches):
             wavelengths[w] = [i]
         else:
-            match_w = wavelengths.keys()[matches.index(True)]
+            match_w = list(wavelengths.keys())[matches.index(True)]
             wavelengths[match_w].append(i)
     return wavelengths

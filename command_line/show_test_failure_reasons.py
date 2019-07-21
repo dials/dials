@@ -31,7 +31,7 @@ for test in tree.iter("testcase"):
             "text": broken.text,
         }
 
-top_causes = sorted(((v, k) for k, v in cause.items()), reverse=True)
+top_causes = sorted(((v, k) for k, v in list(cause.items())), reverse=True)
 
 
 def filtered_output(output):

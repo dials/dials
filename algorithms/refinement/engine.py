@@ -113,7 +113,7 @@ class Journal(dict):
         """Add an element to the end of each of the columns. Fail if any columns
         are the wrong length"""
 
-        for k in self.keys():
+        for k in list(self.keys()):
             assert len(self[k]) == self._nrows
             self[k].append(None)
         self._nrows += 1
@@ -126,7 +126,7 @@ class Journal(dict):
 
         if self._nrows == 0:
             return None
-        for k in self.keys():
+        for k in list(self.keys()):
             assert len(self[k]) == self._nrows
             self[k].pop()
         self._nrows -= 1
@@ -356,7 +356,7 @@ class Refinery(object):
 
         nparam = len(self._parameters)
 
-        for k, v in packed_mats.items():
+        for k, v in list(packed_mats.items()):
             corr_mat = flex.double(flex.grid(nparam, nparam))
             i = 0
             for row in range(nparam):

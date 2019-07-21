@@ -240,7 +240,7 @@ def plot_number_of_crystals(experiments):
         image_to_expts.setdefault(img, [])
         image_to_expts[img].append(expt)
 
-    n_crystals_per_image = flex.int(len(expts) for expts in image_to_expts.itervalues())
+    n_crystals_per_image = flex.int(len(expts) for expts in image_to_expts.values())
     nmax = flex.max(n_crystals_per_image)
     hist = flex.histogram(n_crystals_per_image.as_double(), 0, nmax, n_slots=nmax)
     # hist.show()

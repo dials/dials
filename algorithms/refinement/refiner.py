@@ -175,7 +175,7 @@ class RefinerFactory(object):
         # for this except that 's1' is optional in the input so would want
         # to copy that in like this if present anyway
         for k in cols:
-            if k in reflections.keys():
+            if k in list(reflections.keys()):
                 rt[k] = reflections[k]
 
         return rt
@@ -757,7 +757,7 @@ class Refiner(object):
         if num_cols == 0:
             return None, None
 
-        for k, corrmat in corrmats.items():
+        for k, corrmat in list(corrmats.items()):
 
             assert corrmat.is_square_matrix()
 

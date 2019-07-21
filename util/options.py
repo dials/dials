@@ -1041,7 +1041,7 @@ class OptionParser(OptionParserBase):
 
             result = {"": top_elements}
             # Revursively process each group
-            for n, x in subpaths.items():
+            for n, x in list(subpaths.items()):
                 result[n] = construct_completion_tree(x)
 
             return result
@@ -1049,7 +1049,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_flags ()")
         print("{")
         print(' case "$1" in')
-        for p in parameter_choice_list.keys():
+        for p in list(parameter_choice_list.keys()):
             print("\n  %s)" % p)
             print(
                 '   _dials_autocomplete_values="%s";;'
@@ -1063,7 +1063,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_expansion ()")
         print("{")
         print(' case "$1" in')
-        for p, exp in parameter_expansion_list.items():
+        for p, exp in list(parameter_expansion_list.items()):
             if exp is not None:
                 print("\n  %s=)" % p)
                 print('   _dials_autocomplete_values="%s=";;' % exp)
@@ -1075,7 +1075,7 @@ class OptionParser(OptionParserBase):
         tree = construct_completion_tree(parameter_list)
 
         def _tree_to_bash(prefix, tree):
-            for subkey in tree.keys():
+            for subkey in list(tree.keys()):
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
                     print("\n  %s*)" % (prefix + subkey + "."))
@@ -1094,7 +1094,7 @@ class OptionParser(OptionParserBase):
         _tree_to_bash("", tree)
 
         toplevelset = tree[""] | {
-            p + "=" for p, exp in parameter_expansion_list.items() if exp is not None
+            p + "=" for p, exp in list(parameter_expansion_list.items()) if exp is not None
         }
 
         print("\n  *)")
@@ -1134,7 +1134,7 @@ def flatten_reflections(filename_object_list):
                 new_id_ -= 1
             new_id_ = highest_new_id + 1
             if new_ids_dict:
-                for i, v in new_ids_dict.iteritems():
+                for i, v in new_ids_dict.items():
                     expt_ids_dict[i] = v
     return tables
 

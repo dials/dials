@@ -42,7 +42,7 @@ def test_basis_function(small_reflection_table):
     components["scale"].data = {"id": rt["id"]}
     components["decay"].data = {"d": rt["d"], "id": rt["id"]}
     components["abs"].data = {"id": rt["id"]}
-    for component in components.itervalues():
+    for component in components.values():
         component.update_reflection_data()  # Add some data to components.
 
     apm = scaling_active_parameter_manager(components, ["decay", "scale"])

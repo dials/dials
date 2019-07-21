@@ -229,7 +229,7 @@ class RestraintsParameterisation(object):
 
         # select the right parameterisations, if they exist
         if experiment_ids == "all":
-            param_indices = self._exp_to_xluc_param.values()
+            param_indices = list(self._exp_to_xluc_param.values())
         else:
             param_indices = []
             for exp_id in experiment_ids:

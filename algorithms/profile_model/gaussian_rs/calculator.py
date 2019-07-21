@@ -668,8 +668,8 @@ class ScanVaryingProfileModelCalculator(object):
 
         # The range of frames
         z0, z1 = scan.get_array_range()
-        min_z = min(index_list.iterkeys())
-        max_z = max(index_list.iterkeys())
+        min_z = min(index_list.keys())
+        max_z = max(index_list.keys())
         assert z0 == min_z
         assert z1 == max_z + 1
 
