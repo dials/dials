@@ -130,7 +130,7 @@ def show_beam(detector, beam):
         uniq_pnls = set(pnl)
         if len(uniq_pnls) > 1 or min(uniq_pnls) < 0:
             return s
-        if any([e == (None, None) for e in xy]):
+        if any(e == (None, None) for e in xy):
             return s
         pnl = list(uniq_pnls)[0]
         x_mm, y_mm = zip(*xy)
@@ -176,7 +176,6 @@ def run(args):
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
-    import libtbx.load_env
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
@@ -432,7 +431,7 @@ def show_reflections(
 
         rows = [["Column", "min", "max", "mean"]]
         for k, col in rlist.cols():
-            if k in formats and not "%" in formats.get(k, "%s"):
+            if k in formats and "%" not in formats.get(k, "%s"):
                 # Allow blanking out of entries that wouldn't make sense
                 rows.append(
                     [

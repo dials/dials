@@ -229,7 +229,6 @@ def hist(data, width=80, symbol="#", prefix=""):
     count = collections.Counter(data)
     count = sorted(count.items())
     frame, count = zip(*count)
-    min_frame = min(frame)
     max_frame = max(frame)
     min_count = min(count)
     max_count = max(count)
@@ -430,7 +429,6 @@ class InitializerRot(object):
 
         # Filter the reflections by zeta
         mask = flex.abs(reflections["zeta"]) < self.params.filter.min_zeta
-        num_ignore = mask.count(True)
         reflections.set_flags(mask, reflections.flags.dont_integrate)
 
         # Filter the reflections by powder ring
@@ -1277,7 +1275,6 @@ class Integrator(object):
     def summary(self, block_size, block_size_units):
         """ Print a summary of the integration stuff. """
         from libtbx.table_utils import format as table
-        from dials.util.command_line import heading
 
         # Compute the task table
         if self._experiments.all_stills():
@@ -1405,7 +1402,6 @@ class Integrator3DThreaded(object):
         mask = (
             flex.abs(self.reflections["zeta"]) < self.params.integration.filter.min_zeta
         )
-        num_ignore = mask.count(True)
         self.reflections.set_flags(mask, self.reflections.flags.dont_integrate)
 
         # Filter the reflections by powder ring
@@ -1432,9 +1428,7 @@ class Integrator3DThreaded(object):
         )
         from dials.algorithms.integration.parallel_integrator import IntegratorProcessor
         from dials.algorithms.integration.report import IntegrationReport
-        from dials.algorithms.integration.report import ProfileModelReport
         from dials.util.command_line import heading
-        from dials.util import pprint
 
         # Init the report
         self.profile_model_report = None
@@ -1493,24 +1487,7 @@ class Integrator3DThreaded(object):
 
             # Get the reference profiles
             self.reference_profiles = reference_calculator.profiles()
-
-            # Print the modeller report
-            # self.profile_model_report = ProfileModelReport(
-            #   self.experiments,
-            #   reference_profiles,
-            #   reference)
-            # logger.info("")
-            # logger.info(self.profile_model_report.as_str(prefix=' '))
-
-            # Print the time info
-            # logger.info("")
-            # logger.info("Timing information for reference profile formation")
-            # logger.info(str(time_info))
-            # logger.info("")
-
         else:
-
-            # Set reference profiles to None
             self.reference_profiles = None
 
         logger.info("=" * 80)
@@ -1560,7 +1537,6 @@ class Integrator3DThreaded(object):
     def summary(self, block_size, block_size_units):
         """ Print a summary of the integration stuff. """
         from libtbx.table_utils import format as table
-        from dials.util.command_line import heading
 
         # Compute the task table
         if self._experiments.all_stills():
@@ -1601,7 +1577,6 @@ class IntegratorFactory(object):
         :param reflections: The reflections to integrate
         :return: The integrator class
         """
-        from dials.algorithms.integration.filtering import IceRingFilter
         import dials.extensions
         from dials.util import Sorry
 

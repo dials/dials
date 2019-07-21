@@ -126,7 +126,7 @@ class Script(object):
             params.output.experiments_prefix,
             int(math.floor(math.log10(len(experiments))) + 1),
             ("_" + params.output.experiments_suffix)
-            if params.output.experiments_suffix != None
+            if params.output.experiments_suffix is not None
             else "",
         )
 

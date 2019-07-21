@@ -24,7 +24,7 @@ def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
     ]
     command = " ".join(commands)
     print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("tst_bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
@@ -67,7 +67,7 @@ def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
     commands = ["dials.refine_bravais_settings", pickle_path, experiments_path]
     command = " ".join(commands)
     print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
@@ -109,7 +109,7 @@ def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
     ]
     command = " ".join(commands)
     print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load
@@ -148,7 +148,7 @@ def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
     commands = ["dials.refine_bravais_settings", pickle_path, experiments_path]
     command = " ".join(commands)
     print(command)
-    result = easy_run.fully_buffered(command=command).raise_if_errors()
+    easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 5):
         assert os.path.exists("bravais_setting_%i.expt" % i)
     from dxtbx.serialize import load

@@ -73,10 +73,8 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
         dials_regression, "shadow_test_data/DLS_I04_SmarGon/Th_3_O45_C45_P48_1_0500.cbf"
     )
 
-    result = fully_buffered("dials.import %s" % path).raise_if_errors()
-    result = fully_buffered(
-        "dials.shadow_plot imported.expt json=shadow.json"
-    ).raise_if_errors()
+    fully_buffered("dials.import %s" % path).raise_if_errors()
+    fully_buffered("dials.shadow_plot imported.expt json=shadow.json").raise_if_errors()
     assert os.path.exists("scan_shadow_plot.png")
     assert os.path.exists("shadow.json")
     with open("shadow.json", "rb") as f:

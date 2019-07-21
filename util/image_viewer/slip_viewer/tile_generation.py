@@ -125,7 +125,7 @@ def _get_flex_image_multipanel(
         try:
             beam_center += col(panel.get_beam_centre_lab(beam.get_s0()))
             npanels += 1
-        except RuntimeError as e:  # catch DXTBX_ASSERT for no intersection
+        except RuntimeError:  # catch DXTBX_ASSERT for no intersection
             pass
     beam_center /= npanels / 1e-3
 
@@ -723,7 +723,6 @@ class _Tiles(object):
         Arguments are in image pixel coordinates (starting from 1,1).
         """
 
-        d_min = None
         detector = self.raw_image.get_detector()
         beam = self.raw_image.get_beam()
         if detector is None or beam is None:

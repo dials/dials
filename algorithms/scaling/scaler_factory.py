@@ -104,7 +104,7 @@ class SingleScalerFactory(ScalerFactory):
 
         reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
 
-        if not "inverse_scale_factor" in reflection_table:
+        if "inverse_scale_factor" not in reflection_table:
             reflection_table["inverse_scale_factor"] = flex.double(
                 reflection_table.size(), 1.0
             )

@@ -103,7 +103,6 @@ def plot_uc_histograms(
     from matplotlib import pyplot as plt
 
     plt.style.use("ggplot")
-    uc_labels = ["a", "b", "c"]
     f, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
     a, b, c = uc_params[:3]
 
@@ -181,7 +180,6 @@ def plot_uc_vs_detector_distance(
     from matplotlib import pyplot as plt
 
     plt.style.use("ggplot")
-    uc_labels = ["a", "b", "c"]
     f = plt.figure(figsize=(12, 8))
     ax1 = plt.subplot2grid((2, 3), (0, 0))
     ax2 = plt.subplot2grid((2, 3), (0, 1), sharey=ax1)

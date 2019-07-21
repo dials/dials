@@ -345,7 +345,7 @@ class Importer(object):
         for argument in args:
             try:
                 self.reflections.append(converter.from_string(argument))
-            except pickle_errors as e:
+            except pickle_errors:
                 self._handle_converter_error(
                     argument,
                     pickle.UnpicklingError("Appears to be an invalid pickle file"),

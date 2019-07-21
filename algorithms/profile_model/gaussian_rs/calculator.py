@@ -66,7 +66,6 @@ class ComputeEsdBeamDivergence(object):
 
         # Get the reflection columns
         shoebox = reflections["shoebox"]
-        bbox = reflections["bbox"]
         xyz = reflections["xyzobs.px.value"]
 
         # Loop through all the reflections
@@ -87,7 +86,6 @@ class ComputeEsdBeamDivergence(object):
             # FIXME maybe I note in Kabsch (2010) s3.1 step (v) is
             # background subtraction, appears to be missing here.
             mask = shoebox[r].mask != 0
-            coords = shoebox[r].coords(mask)
             values = shoebox[r].values(mask)
             s1 = shoebox[r].beam_vectors(detector, mask)
 
@@ -258,9 +256,6 @@ class ComputeEsdReflectingRange(object):
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
 
             from dials.array_family import flex
-
-            # Get the oscillation width
-            dphi2 = scan.get_oscillation(deg=False)[1] / 2.0
 
             # Calculate a list of angles and zeta's
             tau, zeta = self._calculate_tau_and_zeta(
