@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import iotbx.phil
-from dials.util.options import OptionParser, flatten_experiments
 from dials.util import Sorry
+from dials.util.options import OptionParser, flatten_experiments
 from scitbx.array_family import flex
 
 help_message = """
@@ -63,20 +65,19 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
         nsigma_s = 3
         global_threshold = 0
 
-        kabsch_debug_list = []
-        for i_panel in range(len(detector)):
-            kabsch_debug_list.append(
-                DispersionThresholdDebug(
-                    raw_data[i_panel].as_double(),
-                    mask[i_panel],
-                    gain_map[i_panel],
-                    kernel_size,
-                    nsigma_b,
-                    nsigma_s,
-                    global_threshold,
-                    min_local,
-                )
+        kabsch_debug_list = [
+            DispersionThresholdDebug(
+                raw_data[i_panel].as_double(),
+                mask[i_panel],
+                gain_map[i_panel],
+                kernel_size,
+                nsigma_b,
+                nsigma_s,
+                global_threshold,
+                min_local,
             )
+            for i_panel in range(len(detector))
+        ]
 
         dispersion = flex.double()
         for kabsch in kabsch_debug_list:
@@ -128,8 +129,6 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
 
 
 def run(args):
-    import libtbx.load_env
-
     usage = "dials.estimate_gain [options] models.expt"
 
     parser = OptionParser(
@@ -169,10 +168,6 @@ def run(args):
         imageset, params.kernel_size, params.output.gain_map, params.max_images
     )
 
-    return
-
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

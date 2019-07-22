@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# LIBTBX_SET_DISPATCHER_NAME dials.frame_orientations
-
 """
 Print a table of the orientation for every image of a dataset. The
 orientation is expressed as a zone axis (a direction referenced to the direct
@@ -12,7 +10,10 @@ Usage: dials.frame_orientations refined.expt
 """
 
 from __future__ import division, print_function, absolute_import
+
 import sys
+
+import dials.util
 from dials.util.options import flatten_experiments, OptionParser
 from libtbx.table_utils import simple_table
 from scitbx import matrix
@@ -46,12 +47,7 @@ class Script(object):
             process_includes=True,
         )
 
-        # The script usage
-        import __main__
-
-        usage = ("usage: dials.python {0} refined.expt refined.refl").format(
-            __main__.__file__
-        )
+        usage = "dials.frame_orientations refined.expt refined.refl"
 
         # Create the parser
         self.parser = OptionParser(
@@ -76,13 +72,12 @@ class Script(object):
         experiments = flatten_experiments(self.params.input.experiments)
         nexp = len(experiments)
         if nexp == 0:
-            print("No Experiments found in the input")
             self.parser.print_help()
-            return
+            sys.exit("No Experiments found in the input")
 
         # Set up a plot if requested
         if self.params.plot_filename:
-            fig = plt.figure()
+            plt.figure()
 
         header = [
             "Image",
@@ -168,17 +163,17 @@ def extract_experiment_data(exp, scale=1):
             s0 = matrix.col(beam.get_s0_at_scan_point(i))
             directions.append(s0.normalize())
     else:
-        directions = [matrix.col(beam.get_unit_s0()) for i in images]
+        directions = [matrix.col(beam.get_unit_s0()) for _ in images]
 
     if gonio.num_scan_points > 0:
-        S_mats = []
-        for i in range(gonio.num_scan_points - 1):
-            S = matrix.sqr(gonio.get_setting_rotation_at_scan_point(i))
-            S_mats.append(S)
+        S_mats = [
+            matrix.sqr(gonio.get_setting_rotation_at_scan_point(i))
+            for i in range(gonio.num_scan_points - 1)
+        ]
     else:
-        S_mats = [matrix.sqr(gonio.get_setting_rotation()) for i in images]
+        S_mats = [matrix.sqr(gonio.get_setting_rotation()) for _ in images]
 
-    F_mats = [matrix.sqr(gonio.get_fixed_rotation()) for i in images]
+    F_mats = [matrix.sqr(gonio.get_fixed_rotation()) for _ in images]
     array_range = scan.get_array_range()
     R_mats = []
     axis = matrix.col(gonio.get_rotation_axis_datum())
@@ -188,27 +183,22 @@ def extract_experiment_data(exp, scale=1):
         R_mats.append(R)
 
     if crystal.num_scan_points > 0:
-        UB_mats = []
-        for i in range(crystal.num_scan_points - 1):
-            UB = matrix.sqr(crystal.get_A_at_scan_point(i))
-            UB_mats.append(UB)
+        UB_mats = [
+            matrix.sqr(crystal.get_A_at_scan_point(i))
+            for i in range(crystal.num_scan_points - 1)
+        ]
     else:
-        UB_mats = [matrix.sqr(crystal.get_A()) for i in images]
+        UB_mats = [matrix.sqr(crystal.get_A()) for _ in images]
 
     assert len(directions) == len(S_mats) == len(F_mats) == len(R_mats) == len(UB_mats)
 
-    setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-    rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
-
     # Construct full setting matrix for each image
-    SRFUB = []
-    for S, R, F, UB in zip(S_mats, R_mats, F_mats, UB_mats):
-        SRFUB.append(S * R * F * UB)
+    SRFUB = (S * R * F * UB for S, R, F, UB in zip(S_mats, R_mats, F_mats, UB_mats))
 
     # SFRUB is the orthogonalisation matrix for the reciprocal space laboratory
     # frame. We want the real space fractionalisation matrix, which is its
     # transpose (https://dials.github.io/documentation/conventions.html)
-    frac_mats = [m.transpose() for m in SRFUB]
+    frac_mats = (m.transpose() for m in SRFUB)
 
     zone_axes = [frac * (d * scale) for frac, d in zip(frac_mats, directions)]
 
@@ -216,10 +206,6 @@ def extract_experiment_data(exp, scale=1):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

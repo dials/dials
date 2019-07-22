@@ -1,14 +1,6 @@
-#
-# spot_matcher.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
+
+from scitbx.array_family import flex
 
 
 class SpotMatcher(object):
@@ -19,39 +11,29 @@ class SpotMatcher(object):
         Setup the algorithm
 
         :param max_separation: Max pixel dist between predicted and observed spot
-
         """
         # Set the algorithm parameters
         self._max_separation = max_separation
 
     def __call__(self, observed, predicted):
-        """i
+        """
         Match the observed reflections with the predicted.
 
         :param observed: The list of observed reflections.
         :param predicted: The list of predicted reflections.
 
         :returns: The list of matched reflections
-
         """
         from dials.array_family import flex
 
         # Find the nearest neighbours and distances
-        # Command.start('Finding nearest neighbours')
         nn, dist = self._find_nearest_neighbours(observed, predicted)
-        # Command.end('Found nearest neighbours')
 
         # Filter the matches by distance
-        # Command.start('Filtering matches by distance')
         index = self._filter_by_distance(nn, dist)
-        # Command.end('Filtered {0} matches by distance'.format(len(index)))
 
         # Filter out duplicates to just leave the closest pairs
-        # Command.start('Removing duplicate matches')
-        len_index = len(index)
         index = self._filter_duplicates(index, nn, dist)
-        len_diff = len_index - len(index)
-        # Command.end('Removed {0} duplicate match(es)'.format(len_diff))
 
         # Copy all of the reflection data for the matched reflections
         return flex.size_t(index), flex.size_t([nn[i] for i in index])
@@ -64,10 +46,7 @@ class SpotMatcher(object):
         :param predicted: The predicted reflections
 
         :returns: (nearest neighbours, distance)
-
         """
-        from scitbx.array_family import flex
-
         # Get the predicted coordinates
         predicted_panel = predicted["panel"]
         predicted_xyz = predicted["xyzcal.px"]
@@ -104,10 +83,8 @@ class SpotMatcher(object):
         :param predicted: The predicted reflections
 
         :returns: (nearest neighbours, distance)
-
         """
         from annlib_ext import AnnAdaptor
-        from scitbx.array_family import flex
 
         # Create the KD Tree
         ann = AnnAdaptor(pxyz.as_double().as_1d(), 3)
@@ -126,12 +103,9 @@ class SpotMatcher(object):
         :param dist: The distances
 
         :returns: A reduced list of nearest neighbours
-
         """
-        from scitbx.array_family import flex
-
-        index = list(range(len(nn)))
-        return flex.int([i for i in index if dist[i] <= self._max_separation])
+        index = range(len(nn))
+        return flex.int(i for i in index if dist[i] <= self._max_separation)
 
     def _filter_duplicates(self, index, nn, dist):
         """

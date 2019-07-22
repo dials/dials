@@ -249,7 +249,6 @@ class PredictionParameterisation(object):
         ):
             tmp = [next(it) for i in range(model.num_free())]
             model.set_param_vals(tmp)
-        return
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of parameter values of the
@@ -269,7 +268,6 @@ class PredictionParameterisation(object):
         ):
             tmp = [next(it) for i in range(model.num_free())]
             model.set_param_esds(tmp)
-        return
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Take a variance-covariance matrix of all free parameters (probably
@@ -297,7 +295,6 @@ class PredictionParameterisation(object):
                 for i_state, state_cov in enumerate(state_covs):
                     model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
             i += n
-        return
 
     def get_gradients(self, reflections, callback=None):
         """Calculate gradients of the prediction formula with respect to each
@@ -542,7 +539,7 @@ class PredictionParameterisation(object):
             if len(isel) == 0:
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
-                if callback is not None:
+                if callback:
                     for _ in range(bp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
@@ -599,7 +596,7 @@ class PredictionParameterisation(object):
             if len(isel) == 0:
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
-                if callback is not None:
+                if callback:
                     for _ in range(xlop.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
@@ -656,7 +653,7 @@ class PredictionParameterisation(object):
             if len(isel) == 0:
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
-                if callback is not None:
+                if callback:
                     for _ in range(xlucp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
@@ -713,7 +710,7 @@ class PredictionParameterisation(object):
             if len(isel) == 0:
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
-                if callback is not None:
+                if callback:
                     for _ in range(gonp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
@@ -764,12 +761,7 @@ class SparseGradientVectorMixin(object):
 
         from scitbx import sparse
 
-        new_results = []
-        for i in range(n):
-            result = {}
-            for key in keys:
-                result[key] = sparse.matrix_column(m)
-            new_results.append(result)
+        new_results = [{key: sparse.matrix_column(m) for key in keys} for _ in range(n)]
         results.extend(new_results)
 
         return results
@@ -838,7 +830,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
             )
             print(matrix.col(reflections["s1"][imin]).accute_angle(vecn))
             raise e
-        return
 
     def _beam_derivatives(
         self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None

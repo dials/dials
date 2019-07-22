@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+
 import pytest
 from dials.algorithms.refinement.reflection_manager import (
     phil_scope as refman_phil_scope,
@@ -70,11 +71,8 @@ def test_check_and_fail(tc):
         reflection_manager=tc.refman,
     )
 
-    try:
+    with pytest.raises(DialsRefineConfigError):
         ar.check_and_fail()
-    except DialsRefineConfigError:
-        return
-    raise RuntimeError
 
 
 def test_check_and_fix(tc):

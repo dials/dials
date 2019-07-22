@@ -18,10 +18,11 @@ be given, alongside the termination criteria and output options for this program
 
 from __future__ import absolute_import, division, print_function
 
-import logging
 import json
+import logging
+import math
 from collections import OrderedDict
-from math import ceil
+
 import numpy as np
 import matplotlib
 import libtbx.phil
@@ -159,7 +160,7 @@ class AnalysisResults(object):
             "initial_n_reflections": self.initial_n_reflections,
             "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
             "cycle_results": OrderedDict(
-                [(i + 1, val) for i, val in enumerate(self.cycle_results)]
+                (i + 1, val) for i, val in enumerate(self.cycle_results)
             ),
             "final_stats": self.final_stats,
         }
@@ -336,7 +337,7 @@ class ScaleAndFilter(object):
         ]
 
         n_removed = (
-            sum([res["n_removed"] for res in results.get_cycle_results()])
+            sum(res["n_removed"] for res in results.get_cycle_results())
             + cycle_results["n_removed"]
         )
         percent_removed = n_removed / results.initial_n_reflections * 100
@@ -391,16 +392,16 @@ def make_histogram_plots(
         assert n <= n_cols * n_rows
     else:
         if n_cols:
-            n_rows = int(ceil(n / n_cols))
+            n_rows = int(math.ceil(n / n_cols))
         else:
-            n_cols = int(ceil(n_rows))
+            n_cols = int(math.ceil(n_rows))
     n_cols = int(n_cols)
     n_rows = int(n_rows)
     grid = gridspec.GridSpec(n_rows, n_cols)
     plt.figure(figsize=(5 * n_cols * scale, 5 * n_rows * scale))
     axs = [plt.subplot(grid[int(c // n_cols), int(c % n_cols)]) for c in range(n)]
 
-    colors = [(color_list * int(ceil(n / len(color_list))))[i] for i in range(n)]
+    colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
     # colors = [color_list[i%7] for i in range(n)]
     ordinal = lambda n: "%d%s" % (
         n,
@@ -463,7 +464,7 @@ def make_merging_stats_plots(
     axs = [plt.subplot(grid[int(c // 3), int(c % 3)]) for c in range(3)]
     n_datasets = len(merging_stats)
     colors = [
-        (color_list * int(ceil(n_datasets / len(color_list))))[i]
+        (color_list * int(math.ceil(n_datasets / len(color_list))))[i]
         for i in range(len(merging_stats))
     ]
     colors[-1] = "k"

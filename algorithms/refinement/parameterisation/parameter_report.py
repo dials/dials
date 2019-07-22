@@ -1,12 +1,3 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -75,7 +66,7 @@ class ParameterReporter(object):
         return self._length
 
     def _indent(self, string):
-        return "\n".join(["    " + e for e in str(string).split("\n")])
+        return "\n".join("    " + e for e in str(string).split("\n"))
 
     def __str__(self):
 

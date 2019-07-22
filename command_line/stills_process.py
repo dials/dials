@@ -1,16 +1,21 @@
 #!/usr/bin/env python
-#
-# LIBTBX_SET_DISPATCHER_NAME dials.stills_process
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 import os
+import sys
+import tarfile
+import time
+import six.moves.cPickle as pickle
+from six.moves import StringIO
 
+import dials.util
+from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.utils import Abort, Sorry
-from dials.array_family import flex
 
 logger = logging.getLogger("dials.command_line.stills_process")
 
@@ -240,12 +245,9 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # The script usage
-        usage = (
-            "usage: %s [options] [param.phil] filenames" % libtbx.env.dispatcher_name
-        )
+        usage = "usage: dials.stills_process [options] [param.phil] filenames"
 
         self.tag = None
         self.reference_detector = None
@@ -282,9 +284,7 @@ class Script(object):
     def run(self):
         """Execute the script."""
         from dials.util import log
-        from time import time
         from libtbx import easy_mp
-        import copy
 
         # Parse the command line
         params, options, all_paths = self.parser.parse_args(
@@ -305,7 +305,7 @@ class Script(object):
         self.options = options
         self.params = params
 
-        st = time()
+        st = time.time()
 
         # Configure logging
         log.config(
@@ -481,8 +481,6 @@ class Script(object):
                 info_path = ""
                 debug_path = ""
             else:
-                import sys
-
                 log_path = os.path.join(
                     params.output.logging_dir, "log_rank%04d.out" % rank
                 )
@@ -533,7 +531,7 @@ class Script(object):
 
         # Total Time
         logger.info("")
-        logger.info("Total Time Taken = %f seconds" % (time() - st))
+        logger.info("Total Time Taken = %f seconds" % (time.time() - st))
 
 
 class Processor(object):
@@ -754,9 +752,7 @@ class Processor(object):
         pass
 
     def find_spots(self, experiments):
-        from time import time
-
-        st = time()
+        st = time.time()
 
         logger.info("*" * 80)
         logger.info("Finding Strong Spots")
@@ -782,15 +778,13 @@ class Processor(object):
                 self.save_reflections(observed, self.params.output.strong_filename)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time() - st))
+        logger.info("Time Taken = %f seconds" % (time.time() - st))
         return observed
 
     def index(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
-        from time import time
-        import copy
 
-        st = time()
+        st = time.time()
 
         logger.info("*" * 80)
         logger.info("Indexing Strong Spots")
@@ -855,15 +849,14 @@ class Processor(object):
             indexed = filtered
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time() - st))
+        logger.info("Time Taken = %f seconds" % (time.time() - st))
         return experiments, indexed
 
     def refine(self, experiments, centroids):
         if self.params.dispatch.refine:
             from dials.algorithms.refinement import RefinerFactory
-            from time import time
 
-            st = time()
+            st = time.time()
 
             logger.info("*" * 80)
             logger.info("Refining Model")
@@ -924,14 +917,12 @@ class Processor(object):
 
         if self.params.dispatch.refine:
             logger.info("")
-            logger.info("Time Taken = %f seconds" % (time() - st))
+            logger.info("Time Taken = %f seconds" % (time.time() - st))
 
         return experiments, centroids
 
     def integrate(self, experiments, indexed):
-        from time import time
-
-        st = time()
+        st = time.time()
 
         logger.info("*" * 80)
         logger.info("Integrating Reflections")
@@ -1087,7 +1078,7 @@ class Processor(object):
         logger.info(log_str)
 
         logger.info("")
-        logger.info("Time Taken = %f seconds" % (time() - st))
+        logger.info("Time Taken = %f seconds" % (time.time() - st))
         return integrated
 
     def write_integration_pickles(self, integrated, experiments, callback=None):
@@ -1105,13 +1096,11 @@ class Processor(object):
             return
 
         if self.params.output.integration_pickle is not None:
-
             from libtbx import easy_pickle
             from xfel.command_line.frame_extractor import ConstructFrame
 
             # Split everything into separate experiments for pickling
-            for e_number in range(len(experiments)):
-                experiment = experiments[e_number]
+            for e_number, experiment in enumerate(experiments):
                 e_selection = integrated["id"] == e_number
                 reflections = integrated.select(e_selection)
 
@@ -1160,11 +1149,9 @@ class Processor(object):
 
     def process_reference(self, reference):
         """ Load the reference spots. """
-        from time import time
-
         if reference is None:
             return None, None
-        st = time()
+        st = time.time()
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
@@ -1198,17 +1185,15 @@ class Processor(object):
             )
         logger.info(" using %d indexed reflections" % len(reference))
         logger.info(" found %d junk reflections" % len(rubbish))
-        logger.info(" time taken: %g" % (time() - st))
+        logger.info(" time taken: %g" % (time.time() - st))
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
         """ Save the reflections to file. """
-        from time import time
-
-        st = time()
+        st = time.time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
         reflections.as_pickle(filename)
-        logger.info(" time taken: %g" % (time() - st))
+        logger.info(" time taken: %g" % (time.time() - st))
 
     def finalize(self):
         """ Perform any final operations """
@@ -1320,8 +1305,6 @@ class Processor(object):
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:
-                import tarfile, StringIO, time, cPickle as pickle
-
                 tar_template_integration_pickle = self.params.output.integration_pickle.replace(
                     "%d", "%s"
                 )
@@ -1336,7 +1319,7 @@ class Processor(object):
                 for i, (fname, d) in enumerate(
                     zip(self.all_int_pickle_filenames, self.all_int_pickles)
                 ):
-                    string = StringIO.StringIO(pickle.dumps(d, protocol=2))
+                    string = StringIO(pickle.dumps(d, protocol=2))
                     info = tarfile.TarInfo(name=fname)
                     info.size = len(string.buf)
                     info.mtime = time.time()
@@ -1345,10 +1328,6 @@ class Processor(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

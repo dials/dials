@@ -389,28 +389,6 @@ class Statistics(object):
                         "line": {"width": 1, "dash": "dot"},
                     }
                 )
-                # if anomalous:
-                # completeness_data.append({
-                #'x': x,
-                #'y': list(self.iboth_comp_bins[j:j+1,:].as_1d()),
-                #'type': 'scatter',
-                #'name': 'dI' + bin_range_suffix,
-                #'line': {'width': 1, 'dash': 'dot'},
-                # })
-                # completeness_data.append({
-                #'x': x,
-                #'y': list(self.iplus_comp_bins[j:j+1,:].as_1d()),
-                #'type': 'scatter',
-                #'name': 'I+' + bin_range_suffix,
-                #'line': {'width': 1, 'dash': 'dot'},
-                # })
-                # completeness_data.append({
-                #'x': x,
-                #'y': list(self.iminus_comp_bins[j:j+1,:].as_1d()),
-                #'type': 'scatter',
-                #'name': 'I-' + bin_range_suffix,
-                #'line': {'width': 1, 'dash': 'dot'},
-                # })
 
         d = {
             "scp_vs_dose": {

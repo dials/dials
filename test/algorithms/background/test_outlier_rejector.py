@@ -1,25 +1,24 @@
 from __future__ import absolute_import, division, print_function
 
-from random import sample
+import random
 
 from dials.algorithms.simulation.generate_test_reflections import (
     random_background_plane2,
 )
 from dials.algorithms.shoebox import MaskCode
-from dials.array_family import flex
 from dials.algorithms.background.simple import TruncatedOutlierRejector
 from dials.algorithms.background.simple import NSigmaOutlierRejector
 from dials.algorithms.background.simple import NormalOutlierRejector
+from dials.array_family import flex
 
 
 def generate_shoebox(size, mean, nforeground, ninvalid):
-
     data = flex.double(flex.grid(size), 0.0)
     mask = flex.int(flex.grid(size), MaskCode.Valid | MaskCode.Background)
     random_background_plane2(data, mean, 0, 0, 0)
-    for i in sample(list(range(len(data))), ninvalid):
+    for i in random.sample(range(len(data)), ninvalid):
         mask[i] &= ~MaskCode.Valid
-    for i in sample(list(range(len(data))), nforeground):
+    for i in random.sample(range(len(data)), nforeground):
         mask[i] |= MaskCode.Foreground
         mask[i] &= ~MaskCode.Background
     return data, mask
@@ -122,10 +121,3 @@ def test_normal():
         data, mask = generate_shoebox(size, mean, nforeground, ninvalid)
         reject(data, mask)
         assert_is_correct(data, mask)
-
-
-if __name__ == "__main__":
-
-    test_truncated()
-    test_nsigma()
-    test_normal()

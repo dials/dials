@@ -5,9 +5,6 @@ import sys
 
 import procrunner
 import pytest
-from dxtbx.model.detector import DetectorFactory
-from dxtbx.model.beam import BeamFactory
-from dxtbx.model.scan import ScanFactory
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
@@ -18,7 +15,7 @@ def plot_beam_centre_error(ideal_bc, obs_bc):
     obs_x, obs_y = zip(*obs_bc)
     del_x = [a - b for a, b in zip(obs_x, ideal_x)]
     del_y = [a - b for a, b in zip(obs_y, ideal_y)]
-    scan_points = list(range(len(ideal_x)))
+    scan_points = range(len(ideal_x))
     plt.plot(scan_points, del_x, scan_points, del_y)
     plt.xlabel("Scan point")
     plt.ylabel("Beam centre residual (obs - ideal) (pixels)")
@@ -49,7 +46,7 @@ def test_refinement_and_compare_with_known_truth(dials_regression, run_in_tmpdir
             "beam.fix=wavelength",
         ]
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[0]
     beam, detector = exp.beam, exp.detector
 

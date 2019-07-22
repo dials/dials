@@ -2,9 +2,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
-from libtbx.phil import parse
+import dials.util
 from dials.util import Sorry
+from libtbx.phil import parse
 
 help_message = """
 
@@ -219,8 +221,6 @@ class CombineWithReference(object):
             self.average_detector = params.reference_from_experiment.average_detector
         else:
             self.average_detector = False
-
-        return
 
     def __call__(self, experiment):
         from dxtbx.model.experiment_list import BeamComparison
@@ -549,8 +549,6 @@ class Script(object):
             subset_exp = ExperimentList()
             subset_refls = flex.reflection_table()
             if params.output.n_subset_method == "random":
-                import random
-
                 n_picked = 0
                 indices = list(range(len(experiments)))
                 while n_picked < params.output.n_subset:
@@ -619,7 +617,9 @@ class Script(object):
             from dxtbx.command_line.image_average import splitit
 
             for i, indices in enumerate(
-                splitit(list(range(len(experiments))), (len(experiments) // batch_size) + 1)
+                splitit(
+                    list(range(len(experiments))), (len(experiments) // batch_size) + 1
+                )
             ):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
@@ -636,12 +636,11 @@ class Script(object):
             experiments_l, reflections_l, exp_name, refl_name, end_count
         ):
             result = []
-            for cluster in range(len(experiments_l)):
+            for cluster, experiment in enumerate(experiments_l):
                 cluster_expts = ExperimentList()
                 cluster_refls = flex.reflection_table()
-                for i in range(len(experiments_l[cluster])):
+                for i, expts in enumerate(experiment):
                     refls = reflections_l[cluster][i]
-                    expts = experiments_l[cluster][i]
                     refls["id"] = flex.int(len(refls), i)
                     cluster_expts.append(expts)
                     cluster_refls.extend(refls)
@@ -691,13 +690,12 @@ class Script(object):
                 params.output.reflections_filename,
                 n_clusters,
             )
-            for i in range(len(list_of_combined)):
-                savable_tuple = list_of_combined[i]
+            for saveable_tuple in list_of_combined:
                 if params.output.max_batch_size is None:
-                    self._save_output(*savable_tuple)
+                    self._save_output(*saveable_tuple)
                 else:
                     save_in_batches(
-                        *savable_tuple, batch_size=params.output.max_batch_size
+                        *saveable_tuple, batch_size=params.output.max_batch_size
                     )
         else:
             if params.output.max_batch_size is None:
@@ -729,10 +727,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

@@ -1,14 +1,14 @@
 from __future__ import division, print_function, absolute_import
+
 import os
-import pytest
+
 import libtbx
-from dxtbx.model.experiment_list import ExperimentListFactory
-
-# from libtbx import easy_run
+import pytest
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.phil import parse
 
 
-@pytest.mark.skip("test disabled for now as xfel_regression needed")
 def test_kapton(run_in_tmpdir):
     """ Test script for kapton correction applied to integrated data.
         Currently only testing kapton 2019 correction on rayonix-340 at LCLS
@@ -16,9 +16,8 @@ def test_kapton(run_in_tmpdir):
     xfel_regression = libtbx.env.find_in_repositories(
         relative_path="xfel_regression", test=os.path.isdir
     )
-    if xfel_regression is None:
-        print("Skipping kapton regression test: xfel_regression not present")
-        return
+    if not xfel_regression:
+        pytest.skip("test requires xfel_regression")
 
     kapton_test_data = os.path.join(xfel_regression, "kapton_test_data", "rayonix340")
     image_file = os.path.join(kapton_test_data, "hit-20181213155134902.cbf")
@@ -28,7 +27,6 @@ def test_kapton(run_in_tmpdir):
     # Create phil files for the two sitations being tests
     #  a. without kapton
     #  b. with kapton
-    from libtbx.phil import parse
 
     stills_process_input = parse(
         """spotfinder.lookup.mask=%s\n
@@ -135,15 +133,14 @@ def test_kapton(run_in_tmpdir):
         count += 1
 
     # Now compare results between uncorrected and corrected data
-    from libtbx.test_utils import approx_equal
 
     # x < 0 where the kapton shadow is
     assert without_kapton_medians[0] < with_kapton_medians[0]
     # x > 0 where no kapton shadow present
-    assert approx_equal(without_kapton_medians[1], with_kapton_medians[1], eps=1.0e-1)
+    assert without_kapton_medians[1] == pytest.approx(with_kapton_medians[1], abs=0.1)
     # y < 0; kapton correction should average out but should be slightly higher
-    assert approx_equal(without_kapton_medians[2], with_kapton_medians[2], eps=5.0)
+    assert without_kapton_medians[2] == pytest.approx(with_kapton_medians[2], abs=5.0)
     assert without_kapton_medians[2] < with_kapton_medians[2]
     # y < 0; kapton correction should average out but should be slightly higher
-    assert approx_equal(without_kapton_medians[3], with_kapton_medians[3], eps=5.0)
+    assert without_kapton_medians[3] == pytest.approx(with_kapton_medians[3], abs=5.0)
     assert without_kapton_medians[3] < with_kapton_medians[3]

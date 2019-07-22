@@ -1,18 +1,11 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Provides a class for producing efficient looping limits for reflection
 prediction based on the Reeke algorithm (see Mosflm)"""
 
 from __future__ import absolute_import, division, print_function
+
+import math
+
 from scitbx import matrix
-from math import sqrt, sin, asin, fabs
 
 
 def solve_quad(a, b, c):
@@ -25,7 +18,7 @@ def solve_quad(a, b, c):
         sign = cmp(b, 0)
         if sign == 0:
             sign = 1.0
-        q = -0.5 * (b + sign * sqrt(discriminant))
+        q = -0.5 * (b + sign * math.sqrt(discriminant))
         x1 = q / a if a != 0 else None
         x2 = c / q if q != 0 else None
         return [x1, x2]
@@ -44,7 +37,7 @@ class reeke_model:
 
         # the source vector and wavelength
         self._source = -s0
-        self._wavelength = 1 / sqrt(s0.dot(s0))
+        self._wavelength = 1 / math.sqrt(s0.dot(s0))
         self._wavelength_sq = self._wavelength ** 2
 
         # the rotation axis
@@ -179,8 +172,6 @@ class reeke_model:
         # looping p limits
         self._p_lim = None
 
-        return
-
     def get_source(self):
         return self._source
 
@@ -211,7 +202,7 @@ class reeke_model:
         rl_dirs = [matrix.col(v).normalize() for v in ub.transpose().as_list_of_lists()]
 
         # Find reciprocal lattice axis closest to source direction
-        along_beam = [fabs(rl_dirs[j].dot(self._source)) for j in range(3)]
+        along_beam = [math.fabs(rl_dirs[j].dot(self._source)) for j in range(3)]
         index_of_p = along_beam.index(max(along_beam))
 
         # Swap order to put the 'p' axis first
@@ -221,7 +212,7 @@ class reeke_model:
 
         # Now find which of the two remaining reciprocal lattice axes is
         # closest to the rotation axis.
-        along_spindle = [fabs(rl_dirs[j].dot(self._axis)) for j in (1, 2)]
+        along_spindle = [math.fabs(rl_dirs[j].dot(self._axis)) for j in (1, 2)]
 
         index_of_r = along_spindle.index(max(along_spindle)) + 1
         index_of_r = indices[index_of_r]
@@ -305,16 +296,16 @@ class reeke_model:
         # FIXME is there a more efficient way to get sin_2theta?
         sin_theta = 0.5 * self._wavelength * self._dstarmax
         assert abs(sin_theta) <= 1.0  # sanity check
-        sin_2theta = sin(2.0 * asin(sin_theta))
+        sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
         e = 2.0 * sin_theta ** 2 * dp_beg
-        f = sin_2theta * sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
+        f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
         e = 2.0 * sin_theta ** 2 * dp_end
-        f = sin_2theta * sqrt(max(1.0 / self._wavelength_sq - dp_end ** 2, 0))
+        f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_end ** 2, 0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_end = tuple(sorted(limits))
@@ -553,7 +544,7 @@ class reeke_model:
                     if item[0] is None:
                         continue
 
-                    r_seq = list(range(item[0], item[1] + 1))
+                    r_seq = range(item[0], item[1] + 1)
                     r_trials += [e for e in r_seq if e not in r_trials]
 
                 for r in r_trials:
