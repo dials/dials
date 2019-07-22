@@ -1566,10 +1566,6 @@ class PySlip(_BufferedCanvas):
 
             layer.show_levels = show_levels
 
-            # if layer was visible, refresh display
-            if visible:
-                self.Update()
-
     def SetLayerSelectable(self, id, selectable=False):
         """Update the .selectable attribute for a layer.
 
@@ -1717,8 +1713,8 @@ class PySlip(_BufferedCanvas):
                         dc.DrawCircle(x + x_off, y + y_off, radius)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-            dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+            dc_w2 = dc_w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+            dc_h2 = dc_h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
             dc_h -= 1
             dc_w -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1785,8 +1781,8 @@ class PySlip(_BufferedCanvas):
                     lines.append(p_lonlat)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-            dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+            dc_w2 = dc_w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+            dc_h2 = dc_h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1839,8 +1835,8 @@ class PySlip(_BufferedCanvas):
         # draw images on map/view
         if map_rel:
             for (lon, lat, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                h2 = h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                w2 = w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                h2 = h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
                 pt = self.ConvertGeo2ViewMasked((lon, lat))
                 if pt:
                     (x, y) = pt
@@ -1848,11 +1844,11 @@ class PySlip(_BufferedCanvas):
                     dc.DrawBitmap(bmap, x, y, False)
         else:
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-            dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+            dc_w2 = dc_w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+            dc_h2 = dc_h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
             for (x, y, bmap, w, h, place, x_off, y_off, idata) in images:
-                w2 = w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                h2 = h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                w2 = w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                h2 = h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
                 exec(self.image_view_placement[place])
                 dc.DrawBitmap(bmap, x, y, False)
 
@@ -1908,16 +1904,20 @@ class PySlip(_BufferedCanvas):
 
                     # place the text relative to hotpoint
                     (w, h, _, _) = dc.GetFullTextExtent(tdata)
-                    w2 = w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                    h2 = h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                    w2 = (
+                        w / 2
+                    )  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                    h2 = (
+                        h / 2
+                    )  # noqa; lgtm[py/unused-local-variable] self-modifying code
                     exec(self.text_map_placement[place])
                     dc.SetTextForeground(textcolour)
                     dc.DrawText(tdata, x, y)
         else:
             # we need the size of the DC
             (dc_w, dc_h) = dc.GetSize()
-            dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-            dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+            dc_w2 = dc_w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+            dc_h2 = dc_h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
             dc_w -= 1
             dc_h -= 1
             dc = wx.GCDC(dc)  # allow transparent colours
@@ -1957,8 +1957,8 @@ class PySlip(_BufferedCanvas):
 
                 # place the text relative to hotpoint
                 (w, h, _, _) = dc.GetFullTextExtent(tdata)  # size of text
-                w2 = w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                h2 = h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                w2 = w / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                h2 = h / 2  # noqa; lgtm[py/unused-local-variable] self-modifying code
                 exec(self.text_view_placement[place])
                 dc.SetTextForeground(textcolour)
                 dc.DrawText(tdata, x, y)
@@ -2108,7 +2108,7 @@ class PySlip(_BufferedCanvas):
             if self.is_box_select:
                 # set select box point 2 at mouse position
                 (self.sbox_w, self.sbox_h) = (x - self.sbox_1_x, y - self.sbox_1_y)
-            elif not self.last_drag_x is None:
+            elif self.last_drag_x is not None:
                 # no, just a map drag
                 self.was_dragging = True
                 dx = self.last_drag_x - x
@@ -2593,8 +2593,12 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                dc_w2 = (  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                    dc_w / 2
+                )
+                dc_h2 = (  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                    dc_h / 2
+                )
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p
@@ -2644,8 +2648,12 @@ class PySlip(_BufferedCanvas):
             for p in layer.data:
                 dc = wx.BufferedPaintDC(self, self.buffer)
                 (dc_w, dc_h) = dc.GetSize()
-                dc_w2 = dc_w / 2  # lgtm[py/unused-local-variable] self-modifying code
-                dc_h2 = dc_h / 2  # lgtm[py/unused-local-variable] self-modifying code
+                dc_w2 = (  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                    dc_w / 2
+                )
+                dc_h2 = (  # noqa; lgtm[py/unused-local-variable] self-modifying code
+                    dc_h / 2
+                )
                 dc_h -= 1
                 dc_w -= 1
                 (x, y, place, _, _, x_off, y_off, pdata) = p
