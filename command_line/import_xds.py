@@ -172,7 +172,7 @@ class IntegrateHKLImporter(object):
         # assert that this should just be a simple integer rotation matrix
         # i.e. reassignment of a, b, c so...
 
-        return matrix.sqr(list(map(int, list(map(round, (dA.inverse() * xA).elems)))))
+        return matrix.sqr([int(round(e)) for e in (dA.inverse() * xA).elems])
 
 
 class XDSFileImporter(object):
@@ -346,10 +346,10 @@ class XDSFileImporter(object):
 
         # conversions to numeric
         try:
-            blocks = [list(map(int, block.split("..."))) for block in blocks]
-            a_axis = [list(map(float, axis.split())) for axis in a_axis]
-            b_axis = [list(map(float, axis.split())) for axis in b_axis]
-            c_axis = [list(map(float, axis.split())) for axis in c_axis]
+            blocks = [[int(b) for b in block.split("...")] for block in blocks]
+            a_axis = [[float(a) for a in axis.split()] for axis in a_axis]
+            b_axis = [[float(b) for b in axis.split()] for axis in b_axis]
+            c_axis = [[float(c) for c in axis.split()] for axis in c_axis]
             xds_beam = [float(e) for e in xds_beam]
             xds_axis = [float(e) for e in xds_axis]
         except ValueError:
