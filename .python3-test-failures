@@ -46,7 +46,9 @@ algorithms/scaling/test_scale.py::test_multi_scale
 algorithms/scaling/test_scale.py::test_multi_scale_exclude_images
 algorithms/scaling/test_scale.py::test_scale_and_filter
 algorithms/scaling/test_scale.py::test_scale_array
-algorithms/scaling/test_scale.py::test_scale_cross_validate
+algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-absorption_term-None]
+algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-model-physical array]
+algorithms/scaling/test_scale.py::test_scale_cross_validate[single-None-None]
 algorithms/scaling/test_scale.py::test_scale_optimise_errors
 algorithms/scaling/test_scale.py::test_scale_physical
 algorithms/scaling/test_scale.py::test_targeted_scaling
@@ -176,6 +178,7 @@ test/command_line/test_assign_experiment_identifiers.py::test_assign_identifiers
 test/command_line/test_check_indexing_symmetry.py::test
 test/command_line/test_combine_experiments.py::test
 test/command_line/test_combine_experiments.py::test_failed_tolerance_error
+test/command_line/test_compute_delta_cchalf.py::test_compute_delta_cchalf_scaled_data
 test/command_line/test_cosym.py::test_cosym[None]
 test/command_line/test_cosym.py::test_cosym[P 1]
 test/command_line/test_cosym.py::test_cosym[P 4]
@@ -242,6 +245,7 @@ test/command_line/test_reindex.py::test_reindex
 test/command_line/test_reindex.py::test_reindex_against_reference
 test/command_line/test_reindex.py::test_reindex_multi_sweep
 test/command_line/test_report.py::test_report_integrated_data
+test/command_line/test_report.py::test_report_scaled_data
 test/command_line/test_rl_png.py::test_rl_png_imported_experiments
 test/command_line/test_rl_png.py::test_rl_png_refinement_data
 test/command_line/test_rs_mapper.py::test_rs_mapper
@@ -255,6 +259,7 @@ test/command_line/test_show.py::test_dials_show_centroid_test_data
 test/command_line/test_show.py::test_dials_show_i04_weak_data
 test/command_line/test_show.py::test_dials_show_image_statistics
 test/command_line/test_show.py::test_dials_show_multi_panel_i23
+test/command_line/test_show.py::test_dials_show_on_scaled_data
 test/command_line/test_show.py::test_dials_show_reflection_table
 test/command_line/test_slice_sweep.py::test_slice_sweep_and_compare_with_expected_results
 test/command_line/test_sort_reflections.py::test_default_sort_on_miller_index
