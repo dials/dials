@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 # Tests for RestraintsParameterisation and associated classes used in refinement
 
-from builtins import range
 import math
 import os
 import random

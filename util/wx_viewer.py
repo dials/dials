@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 # This code is based on:
 #   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
 
-from builtins import range
 import gltbx.util
 from gltbx.gl import *
 from gltbx.glu import *

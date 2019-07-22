@@ -2,7 +2,6 @@
 entering the Ewald sphere is done the right way round"""
 
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import math
 import sys
 import pytest

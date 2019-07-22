@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import wx
 from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 

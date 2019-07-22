@@ -10,7 +10,6 @@
 from __future__ import absolute_import, division, print_function
 
 
-from builtins import range
 class Simulator(object):
     """ Class to help with simulation from reciprocal space. """
 

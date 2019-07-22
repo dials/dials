@@ -9,7 +9,6 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
-from builtins import range
 from dials.array_family import flex
 from dials.viewer.from_flex_to_wxbitmap import wxbitmap_convert
 

@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
-from builtins import range
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
 from dials.algorithms.shoebox import MaskCode

@@ -18,7 +18,6 @@ be given, alongside the termination criteria and output options for this program
 
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import logging
 import json
 from collections import OrderedDict

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, division, print_function
-from builtins import range
 from copy import deepcopy
 import pytest
 from mock import Mock

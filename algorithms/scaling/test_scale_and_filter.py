@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 # test that compute_delta_cchalf returns required values
-from builtins import range
 import pytest
 import mock
 from libtbx import phil

@@ -9,7 +9,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from dials.array_family import flex
 from scitbx import matrix
 from dials.algorithms.refinement import DialsRefineConfigError

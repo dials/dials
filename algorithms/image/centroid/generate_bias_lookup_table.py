@@ -4,7 +4,6 @@ Code to generate lookup values for algorithms/image/centroid/bias.h.
 from __future__ import absolute_import, division, print_function
 
 
-from builtins import range
 def sum_of_erf(mu, sigma, N=1000):
     """
     Compute the sum of erf term

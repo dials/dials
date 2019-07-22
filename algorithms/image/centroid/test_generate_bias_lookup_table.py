@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import pytest
 from dials.algorithms.image.centroid.generate_bias_lookup_table import (
     compute_lookup_table,

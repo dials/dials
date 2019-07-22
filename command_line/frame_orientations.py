@@ -12,7 +12,6 @@ Usage: dials.frame_orientations refined.expt
 """
 
 from __future__ import division, print_function, absolute_import
-from builtins import range
 import sys
 from dials.util.options import flatten_experiments, OptionParser
 from libtbx.table_utils import simple_table

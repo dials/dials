@@ -1,6 +1,5 @@
 """Tests for dials.report.analysis module"""
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import pytest
 from mock import mock
 from cctbx import miller

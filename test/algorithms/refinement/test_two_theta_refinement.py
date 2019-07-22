@@ -13,7 +13,6 @@ Test refinement of a crystal unit cell using a two theta target.
 """
 
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import os
 from libtbx.test_utils import approx_equal
 from math import pi

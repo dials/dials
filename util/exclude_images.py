@@ -4,7 +4,6 @@ command line option, as well as obtaining a selection to use for selecting
 the corresponding reflections.
 """
 from __future__ import absolute_import, division, print_function
-from builtins import range
 from dials.array_family import flex
 from orderedset import OrderedSet
 import iotbx.phil

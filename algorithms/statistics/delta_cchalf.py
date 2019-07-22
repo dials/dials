@@ -12,7 +12,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import logging
 from collections import defaultdict
 from math import sqrt, floor

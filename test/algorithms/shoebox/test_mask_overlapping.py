@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 
-from builtins import range
 def predict_reflections(sweep, crystal):
     from dials.algorithms import shoebox
     from dials.array_family import flex

@@ -12,7 +12,6 @@ cctbx.python tst_multi_panel_detector_parameterisation.py "random_seed=3"
 
 # Python and cctbx imports
 from __future__ import absolute_import, division, print_function
-from builtins import range
 from math import pi
 from scitbx import matrix
 from dials.array_family import flex

@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 
-from builtins import range
 import math
 
 from dials.algorithms.shoebox import MaskCode

@@ -1,5 +1,4 @@
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import libtbx.phil
 from dials.util import log
 

@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from dials_algorithms_integration_integrator_ext import *
 from dials.algorithms.integration.processor import Processor3D
 from dials.algorithms.integration.processor import ProcessorFlat3D

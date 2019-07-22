@@ -2,7 +2,6 @@
 Tests for the scaler factory classes and helper functions.
 """
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import pytest
 from libtbx import phil
 from dxtbx.model import Crystal

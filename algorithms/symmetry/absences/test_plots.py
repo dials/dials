@@ -1,5 +1,4 @@
 """Test the plotting module from systematic_absences."""
-from builtins import range
 from dials.algorithms.symmetry.absences.plots import plot_screw_axes, color_axis_data
 
 

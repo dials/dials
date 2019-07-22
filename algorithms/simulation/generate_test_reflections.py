@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from libtbx.phil import parse
 
 master_phil = parse(

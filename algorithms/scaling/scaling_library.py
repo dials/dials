@@ -9,7 +9,6 @@ necessary), and return common dials objects such as reflection tables and
 ExperimentLists.
 """
 from __future__ import absolute_import, division, print_function
-from builtins import range
 from copy import deepcopy
 import logging
 import pkg_resources

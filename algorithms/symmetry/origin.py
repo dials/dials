@@ -15,7 +15,6 @@
 from __future__ import absolute_import, division, print_function
 
 
-from builtins import range
 def cctbx_crystal_from_dials(crystal):
     space_group = crystal.get_space_group()
     unit_cell = crystal.get_unit_cell()

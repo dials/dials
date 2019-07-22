@@ -4,7 +4,6 @@ to use a scaler to determine the correct call to the apm factories.
 """
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from dials.algorithms.scaling.active_parameter_managers import (
     active_parameter_manager,
     ConcurrentAPMFactory,

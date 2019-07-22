@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 # modified version of the ab_cluster function so we can access the scipy dendrogram object
-from builtins import range
 from xfel.clustering.cluster import Cluster
 
 import logging

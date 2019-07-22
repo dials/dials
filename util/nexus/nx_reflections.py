@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from dials.array_family import flex
 
 schema_url = "https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml"

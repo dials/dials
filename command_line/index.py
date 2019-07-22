@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
-from builtins import range
 import copy
 import logging
 

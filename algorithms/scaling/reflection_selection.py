@@ -62,7 +62,6 @@ are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import logging
 from math import pi, floor
 import libtbx

@@ -1,7 +1,6 @@
 """This module defines some useful header functions for CBF files."""
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 from scitbx import matrix
 import pycbf
 import numpy

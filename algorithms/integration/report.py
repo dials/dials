@@ -9,7 +9,6 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import collections
 from dials.array_family import flex
 from dials.array_family.flex import Binner

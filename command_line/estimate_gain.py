@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-from builtins import range
 import iotbx.phil
 from dials.util.options import OptionParser, flatten_experiments
 from dials.util import Sorry

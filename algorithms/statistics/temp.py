@@ -51,7 +51,6 @@ from __future__ import absolute_import, division, print_function
 # return p * e
 
 
-from builtins import range
 def compute_lz(z):
     from math import sqrt, pi, exp
 

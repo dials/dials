@@ -3,7 +3,6 @@ This module defines an abstract CrossValidator and an implementation of a
 cross validator for dials.scale
 """
 from __future__ import absolute_import, division, print_function
-from builtins import range
 import abc
 import itertools
 from copy import deepcopy
