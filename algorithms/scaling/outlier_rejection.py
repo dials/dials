@@ -8,6 +8,7 @@ and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import abc
 import logging
 from scitbx.array_family import flex

@@ -1,6 +1,7 @@
 #!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import os
 
 from libtbx.phil import parse
@@ -552,7 +553,7 @@ class Script(object):
                 import random
 
                 n_picked = 0
-                indices = range(len(experiments))
+                indices = list(range(len(experiments)))
                 while n_picked < params.output.n_subset:
                     idx = indices.pop(random.randint(0, len(indices) - 1))
                     subset_exp.append(experiments[idx])
@@ -574,7 +575,7 @@ class Script(object):
                         sel |= reflections["panel"] == p
                     refls_subset = reflections.select(sel)
                 refl_counts = flex.int()
-                for expt_id in xrange(len(experiments)):
+                for expt_id in range(len(experiments)):
                     refl_counts.append(
                         len(refls_subset.select(refls_subset["id"] == expt_id))
                     )
@@ -599,7 +600,7 @@ class Script(object):
                 sig_filter = SignificanceFilter(params.output)
                 refls_subset = sig_filter(experiments, reflections)
                 refl_counts = flex.int()
-                for expt_id in xrange(len(experiments)):
+                for expt_id in range(len(experiments)):
                     refl_counts.append(
                         len(refls_subset.select(refls_subset["id"] == expt_id))
                     )
@@ -619,7 +620,7 @@ class Script(object):
             from dxtbx.command_line.image_average import splitit
 
             for i, indices in enumerate(
-                splitit(range(len(experiments)), (len(experiments) // batch_size) + 1)
+                splitit(list(range(len(experiments))), (len(experiments) // batch_size) + 1)
             ):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
@@ -636,10 +637,10 @@ class Script(object):
             experiments_l, reflections_l, exp_name, refl_name, end_count
         ):
             result = []
-            for cluster in xrange(len(experiments_l)):
+            for cluster in range(len(experiments_l)):
                 cluster_expts = ExperimentList()
                 cluster_refls = flex.reflection_table()
-                for i in xrange(len(experiments_l[cluster])):
+                for i in range(len(experiments_l[cluster])):
                     refls = reflections_l[cluster][i]
                     expts = experiments_l[cluster][i]
                     refls["id"] = flex.int(len(refls), i)
@@ -691,7 +692,7 @@ class Script(object):
                 params.output.reflections_filename,
                 n_clusters,
             )
-            for i in xrange(len(list_of_combined)):
+            for i in range(len(list_of_combined)):
                 savable_tuple = list_of_combined[i]
                 if params.output.max_batch_size is None:
                     self._save_output(*savable_tuple)

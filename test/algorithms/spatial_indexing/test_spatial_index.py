@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import random
 
 from dials.algorithms.spatial_indexing import make_spatial_index

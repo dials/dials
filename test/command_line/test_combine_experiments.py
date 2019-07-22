@@ -4,6 +4,7 @@ Test combination of multiple experiments and reflections files.
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import copy
 import os
 import procrunner
@@ -21,7 +22,7 @@ def test(dials_regression, run_in_tmpdir):
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
 
-    input_range = range(2, 49)
+    input_range = list(range(2, 49))
     for i in (8, 10, 15, 16, 34, 39, 45):
         input_range.remove(i)
 
@@ -109,7 +110,7 @@ def test(dials_regression, run_in_tmpdir):
     x, y, z = panel.get_origin()
     panel.set_frame(panel.get_fast_axis(), panel.get_slow_axis(), (x, y, z + 10))
     # Set half of the experiments to the new detector
-    for i in xrange(len(exp) // 2):
+    for i in range(len(exp) // 2):
         exp[i].detector = detector
     exp.as_json("modded.expt")
 

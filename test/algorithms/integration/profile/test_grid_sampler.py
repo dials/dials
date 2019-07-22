@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 import random
 
@@ -58,7 +59,7 @@ def test_indexing():
 
     eps = 1e-10
 
-    for x0, y0, z0, i in zip(xp, yp, zp, range(len(sampler))):
+    for x0, y0, z0, i in zip(xp, yp, zp, list(range(len(sampler)))):
         x1, y1, z1 = sampler.coord(i)
         assert abs(x0 - x1) <= eps
         assert abs(y0 - y1) <= eps

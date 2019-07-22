@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def spot_counts_per_image_plot(reflections, **kwargs):
     if len(reflections) == 0:
         return "\n"
@@ -31,7 +32,7 @@ def flex_histogram(z, char="*", width=60, height=10):
     min_z = flex.min(z)
     max_z = flex.max(z)
 
-    epsilon = flex.double(n % 2 for n in xrange(len(z)))
+    epsilon = flex.double(n % 2 for n in range(len(z)))
     epsilon = (epsilon / 2) - 0.25
     z += epsilon
 

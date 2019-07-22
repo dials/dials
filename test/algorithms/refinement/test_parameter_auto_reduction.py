@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import copy
 import pytest
 from dials.algorithms.refinement.reflection_manager import (
@@ -222,7 +223,7 @@ def setup_test_sorting():
     r["panel"] = flex.size_t([1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0] * 10)
     r["id"] = flex.int([1, 2, 1, 1, 2, 0, 1, 1, 1, 0, 1] * 10)
     exp_ids = flex.size_t([0, 1])
-    for i in xrange(N):
+    for i in range(N):
         r["miller_index"][i] = (
             int(i // 10) - 5,
             i % 3,

@@ -4,6 +4,7 @@ refiner which components of the model are to be refined.
 """
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 from collections import OrderedDict
 

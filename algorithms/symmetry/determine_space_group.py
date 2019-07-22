@@ -1,6 +1,7 @@
 """Algorithms for determination of Laue group symmetry."""
 from __future__ import division, absolute_import, print_function
 
+from builtins import range
 import logging
 
 logger = logging.getLogger(__name__)

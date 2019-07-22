@@ -10,6 +10,7 @@
 #  included in the root directory of this package.
 #
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import collections
 import logging
 from math import sqrt
@@ -338,7 +339,7 @@ class Script(object):
         from low to high based on deltacchalf values."""
         datasets = list(delta_cchalf_i.keys())
         sorted_index = sorted(
-            range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]]
+            list(range(len(datasets))), key=lambda x: delta_cchalf_i[datasets[x]]
         )
 
         # sorted by deltacchalf from low to high

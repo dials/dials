@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 import math
 from time import time
@@ -728,7 +729,7 @@ class Manager(object):
         from itertools import groupby
 
         groups = groupby(
-            range(len(self.experiments)),
+            list(range(len(self.experiments))),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
         )
         self.jobs = JobList()

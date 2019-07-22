@@ -21,6 +21,7 @@ the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import abc
 from dials.array_family import flex
 from scitbx import sparse

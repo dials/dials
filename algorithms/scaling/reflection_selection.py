@@ -62,6 +62,7 @@ are those which are selected by either method - inter-dataset connectedness or
 intra-dataset connectedness.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import logging
 from math import pi, floor
 import libtbx
@@ -408,7 +409,7 @@ def select_highly_connected_reflections_in_bin(
     if sel.count(True) == 0:
         return None, None
 
-    Ih_table_block.Ih_table["loc_indices"] = flex.size_t(range(0, Ih_table_block.size))
+    Ih_table_block.Ih_table["loc_indices"] = flex.size_t(list(range(0, Ih_table_block.size)))
     Ih_table_block = Ih_table_block.select_on_groups(sel)
 
     from scitbx import sparse
@@ -465,7 +466,7 @@ def _loop_over_class_matrix(
     """Build up the reflectio set by looping over the class matrix."""
     total_in_classes = sorted_class_matrix.col(0).as_dense_vector()
     defecit = flex.double(sorted_class_matrix.n_rows, 0)
-    cols_not_used = flex.size_t(range(1, sorted_class_matrix.n_cols))
+    cols_not_used = flex.size_t(list(range(1, sorted_class_matrix.n_cols)))
     total_deficit = 0
     while (
         flex.min(total_in_classes) < min_per_area

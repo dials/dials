@@ -18,6 +18,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 import math
 
@@ -355,7 +356,7 @@ class ComputeEsdReflectingRange(object):
             # Compute intensity
             self.K = flex.double()
             for i0, i1 in zip(self.indices[:-1], self.indices[1:]):
-                selection = flex.size_t(range(i0, i1))
+                selection = flex.size_t(list(range(i0, i1)))
                 self.K.append(flex.sum(self.n.select(selection)))
 
             # Set the starting values to try 1, 3 degrees seems sensible for
@@ -421,7 +422,7 @@ class ComputeEsdReflectingRange(object):
             #
             L = 0
             for j, (i0, i1) in enumerate(zip(self.indices[:-1], self.indices[1:])):
-                selection = flex.size_t(range(i0, i1))
+                selection = flex.size_t(list(range(i0, i1)))
                 zj = zi.select(selection)
                 nj = n.select(selection)
                 kj = K[j]

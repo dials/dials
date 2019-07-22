@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import copy
 import os
 import pytest
@@ -64,10 +65,10 @@ def test_vs_old(data):
     r_old = data.reflections
     r_new = data.predict_new()
     index1 = flex.size_t(
-        sorted(range(len(r_old)), key=lambda x: r_old["miller_index"][x])
+        sorted(list(range(len(r_old))), key=lambda x: r_old["miller_index"][x])
     )
     index2 = flex.size_t(
-        sorted(range(len(r_new)), key=lambda x: r_new["miller_index"][x])
+        sorted(list(range(len(r_new))), key=lambda x: r_new["miller_index"][x])
     )
     r_old = r_old.select(index1)
     r_new = r_new.select(index2)
@@ -95,10 +96,10 @@ def test_with_old_index_generator(data):
     r_old = predict.for_ub_old_index_generator(data.experiments[0].crystal.get_A())
     r_new = predict.for_ub(data.experiments[0].crystal.get_A())
     index1 = flex.size_t(
-        sorted(range(len(r_old)), key=lambda x: r_old["miller_index"][x])
+        sorted(list(range(len(r_old))), key=lambda x: r_old["miller_index"][x])
     )
     index2 = flex.size_t(
-        sorted(range(len(r_new)), key=lambda x: r_new["miller_index"][x])
+        sorted(list(range(len(r_new))), key=lambda x: r_new["miller_index"][x])
     )
     r_old = r_old.select(index1)
     r_new = r_new.select(index2)

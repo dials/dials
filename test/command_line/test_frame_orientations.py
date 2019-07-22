@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import pytest
 from dials.command_line.frame_orientations import extract_experiment_data
 
@@ -25,7 +26,7 @@ def test_extract_experiment_data():
         image_range=(1, 91),
         exposure_times=0.1,
         oscillation=(0, 1.0),
-        epochs=range(91),
+        epochs=list(range(91)),
         deg=True,
     )
 

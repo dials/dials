@@ -11,6 +11,7 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.import
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 
 import libtbx.load_env
@@ -391,7 +392,7 @@ class ManualGeometryUpdater(object):
         first, last = scan.get_image_range()
         sweep = ImageSetFactory.make_sweep(
             template=imageset.get_template(),
-            indices=range(first, last + 1),
+            indices=list(range(first, last + 1)),
             format_class=imageset.get_format_class(),
             beam=beam,
             detector=detector,

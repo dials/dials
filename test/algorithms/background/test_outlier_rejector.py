@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from random import sample
 
 from dials.algorithms.simulation.generate_test_reflections import (
@@ -17,9 +18,9 @@ def generate_shoebox(size, mean, nforeground, ninvalid):
     data = flex.double(flex.grid(size), 0.0)
     mask = flex.int(flex.grid(size), MaskCode.Valid | MaskCode.Background)
     random_background_plane2(data, mean, 0, 0, 0)
-    for i in sample(range(len(data)), ninvalid):
+    for i in sample(list(range(len(data))), ninvalid):
         mask[i] &= ~MaskCode.Valid
-    for i in sample(range(len(data)), nforeground):
+    for i in sample(list(range(len(data))), nforeground):
         mask[i] |= MaskCode.Foreground
         mask[i] &= ~MaskCode.Background
     return data, mask

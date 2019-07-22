@@ -1,6 +1,7 @@
 """Calculations relevant to reporting."""
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from cctbx import miller
 from scitbx.array_family import flex
 

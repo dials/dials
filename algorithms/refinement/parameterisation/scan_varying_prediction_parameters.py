@@ -8,6 +8,7 @@
 #
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from math import floor
 from scitbx import matrix
 from dials.array_family import flex
@@ -318,7 +319,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             self._current_frame = {}
 
             # get state and derivatives for each block
-            for block in xrange(flex.min(blocks), flex.max(blocks) + 1):
+            for block in range(flex.min(blocks), flex.max(blocks) + 1):
 
                 # determine the subset of reflections this affects
                 subsel = isel.select(blocks == block)

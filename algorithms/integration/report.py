@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import collections
 from dials.array_family import flex
 from dials.array_family.flex import Binner
@@ -24,7 +25,7 @@ def flex_ios(val, var):
     """
     assert len(val) == len(var)
     result = flex.double(len(val), 0)
-    indices = flex.size_t(range(len(val))).select(var > 0)
+    indices = flex.size_t(list(range(len(val)))).select(var > 0)
     val = val.select(indices)
     var = var.select(indices)
     assert var.all_gt(0)
@@ -267,7 +268,7 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     except Exception:
         array_range = (0, len(experiment.imageset))
     frame_binner = Binner(
-        flex.int(range(array_range[0], array_range[1] + 1)).as_double()
+        flex.int(list(range(array_range[0], array_range[1] + 1))).as_double()
     )
 
     # Create the overall report

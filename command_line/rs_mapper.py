@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 
 import dials.algorithms.rs_mapper as recviewer
@@ -144,7 +145,7 @@ class Script(object):
         S = s1 - s0
         npoints = self.grid.all()[0]
 
-        for i in xrange(len(imageset)):
+        for i in range(len(imageset)):
             step = 2 * rec_range / npoints
             axis = imageset.get_goniometer().get_rotation_axis()
             osc_range = imageset.get_scan(i).get_oscillation_range()

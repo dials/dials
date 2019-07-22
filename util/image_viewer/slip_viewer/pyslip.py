@@ -20,6 +20,7 @@ difficulty for most uses is to generate the map tiles.
 [1] http://wiki.openstreetmap.org/index.php/Slippy_Map
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from six.moves import range
 
 
@@ -1486,7 +1487,7 @@ class PySlip(_BufferedCanvas):
 
         # prepare the show_level value
         if show_levels is None:
-            show_levels = range(self.min_level, self.max_level + 1)
+            show_levels = list(range(self.min_level, self.max_level + 1))
 
         # create layer, add unique ID to Z order list
         l = _Layer(
@@ -1562,7 +1563,7 @@ class PySlip(_BufferedCanvas):
 
             # prepare the show_level value
             if show_levels is None:
-                show_levels = range(self.min_level, self.max_level + 1)[:]
+                show_levels = list(range(self.min_level, self.max_level + 1))[:]
 
             layer.show_levels = show_levels
 
@@ -2411,7 +2412,7 @@ class PySlip(_BufferedCanvas):
             x_offset + self.view_width + self.tile_size_x - 1
         ) / self.tile_size_x
         stop_x_tile = int(stop_x_tile)
-        col_list = range(start_x_tile, stop_x_tile)
+        col_list = list(range(start_x_tile, stop_x_tile))
         x_pix = start_x_tile * self.tile_size_y - x_offset
 
         # NKS No wrapping or hard boundaries
@@ -2421,7 +2422,7 @@ class PySlip(_BufferedCanvas):
             y_offset + self.view_height + self.tile_size_y - 1
         ) / self.tile_size_y
         stop_y_tile = int(stop_y_tile)
-        row_list = range(start_y_tile, stop_y_tile)
+        row_list = list(range(start_y_tile, stop_y_tile))
         y_pix_start = start_y_tile * self.tile_size_y - y_offset
 
         # start pasting tiles onto the view

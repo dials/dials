@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import os
 import sys
 
@@ -18,7 +19,7 @@ def plot_beam_centre_error(ideal_bc, obs_bc):
     obs_x, obs_y = zip(*obs_bc)
     del_x = [a - b for a, b in zip(obs_x, ideal_x)]
     del_y = [a - b for a, b in zip(obs_y, ideal_y)]
-    scan_points = range(len(ideal_x))
+    scan_points = list(range(len(ideal_x)))
     plt.plot(scan_points, del_x, scan_points, del_y)
     plt.xlabel("Scan point")
     plt.ylabel("Beam centre residual (obs - ideal) (pixels)")

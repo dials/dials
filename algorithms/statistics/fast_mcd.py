@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from math import floor
 from scitbx.array_family import flex
 from dials_refinement_helpers_ext import maha_dist_sq as maha_dist_sq_cpp
@@ -315,7 +316,7 @@ class FastMCD(object):
         whole dataset"""
 
         trials = []
-        for i in xrange(self._n_trials):
+        for i in range(self._n_trials):
 
             H1 = self.form_initial_subset(h=self._h, data=self._data)
             T1, S1 = self.means_and_covariance(H1)
@@ -323,7 +324,7 @@ class FastMCD(object):
 
             # perform concentration steps
             detScurr, Tcurr, Scurr = detS1, T1, S1
-            for j in xrange(self._k1):  # take maximum of k1 steps
+            for j in range(self._k1):  # take maximum of k1 steps
 
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
@@ -340,9 +341,9 @@ class FastMCD(object):
         # choose 10 trials with the lowest detS3
         trials.sort(key=lambda x: x[0])
         best_trials = []
-        for i in xrange(10):
+        for i in range(10):
             detCurr, Tcurr, Scurr = trials[i]
-            for j in xrange(self._k3):  # take maximum of k3 steps
+            for j in range(self._k3):  # take maximum of k3 steps
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()
@@ -382,7 +383,7 @@ class FastMCD(object):
 
             h_sub = int(len(group[0]) * h_frac)
             gp_trials = []
-            for i in xrange(n_trials):
+            for i in range(n_trials):
 
                 H1 = self.form_initial_subset(h=h_sub, data=group)
                 T1, S1 = self.means_and_covariance(H1)
@@ -390,7 +391,7 @@ class FastMCD(object):
 
                 # perform concentration steps
                 detScurr, Tcurr, Scurr = detS1, T1, S1
-                for j in xrange(self._k1):  # take k1 steps
+                for j in range(self._k1):  # take k1 steps
 
                     Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
                     Tnew, Snew = self.means_and_covariance(Hnew)
@@ -415,7 +416,7 @@ class FastMCD(object):
         for trial in trials:
 
             detScurr, Tcurr, Scurr = trial
-            for j in xrange(self._k2):  # take k2 steps
+            for j in range(self._k2):  # take k2 steps
 
                 Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
@@ -456,9 +457,9 @@ class FastMCD(object):
         n_reps = 1 if self._n > 5000 else 10
 
         best_trials = []
-        for i in xrange(n_reps):
+        for i in range(n_reps):
             detCurr, Tcurr, Scurr = mrgd_trials[i]
-            for j in xrange(k4):  # take maximum of k4 steps
+            for j in range(k4):  # take maximum of k4 steps
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()

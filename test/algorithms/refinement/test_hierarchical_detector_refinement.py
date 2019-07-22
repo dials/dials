@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import copy
 import math
 import os
@@ -96,7 +97,7 @@ def test1(dials_regression):
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)

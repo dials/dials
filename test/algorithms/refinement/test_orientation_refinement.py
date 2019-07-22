@@ -11,6 +11,7 @@ cctbx.python tst_orientation_refinement.py \
 
 # Python and cctbx imports
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import sys
 
 
@@ -90,7 +91,7 @@ def test(args=[]):
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)

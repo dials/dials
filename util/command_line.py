@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import time
 
 from dials.util import debug_console
@@ -27,7 +28,7 @@ def parse_range_list_string(string):
         if len(items[i]) == 1:
             items[i] = [int(items[i][0])]
         elif len(items[i]) == 2:
-            items[i] = range(int(items[i][0]), int(items[i][1]) + 1)
+            items[i] = list(range(int(items[i][0]), int(items[i][1]) + 1))
         else:
             raise SyntaxError
     items = [item for sublist in items for item in sublist]

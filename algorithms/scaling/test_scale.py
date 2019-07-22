@@ -4,6 +4,7 @@ Test the command line script dials.scale, for successful completion.
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import json
 import os
 import pytest

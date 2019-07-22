@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 
 from cctbx.crystal import symmetry
@@ -56,7 +57,7 @@ class SignificanceFilter(object):
             "",
         ]
 
-        for exp_id in xrange(len(experiments)):
+        for exp_id in range(len(experiments)):
             print("*" * 80)
             print("Significance filtering experiment", exp_id)
             table_data = []
@@ -155,7 +156,7 @@ class SignificanceFilter(object):
             # Throw out bins that go back above the cutoff after the first non-passing bin is found
             acceptable_resolution_bins = [
                 acceptable_resolution_bins[i]
-                for i in xrange(len(acceptable_resolution_bins))
+                for i in range(len(acceptable_resolution_bins))
                 if False not in acceptable_resolution_bins[: i + 1]
             ]
 

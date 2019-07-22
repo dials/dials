@@ -4,6 +4,7 @@ https://github.com/dials/dials/issues/511"""
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import pytest
 from math import pi
 from dials.algorithms.refinement.reflection_manager import BlockCalculator
@@ -42,7 +43,7 @@ def create_experiments(image_start=1):
         image_range=(image_start, image_start + 720 - 1),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 

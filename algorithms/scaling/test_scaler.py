@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import pytest
 from mock import Mock, MagicMock
 from scitbx import sparse
@@ -25,7 +26,7 @@ from dials.algorithms.scaling.scaler import (
 def side_effect_update_var(variances, intensities):
     """Side effect to mock configure reflection table
     call during initialisation."""
-    return flex.double(range(1, len(variances) + 1))
+    return flex.double(list(range(1, len(variances) + 1)))
 
 
 @pytest.fixture
@@ -612,7 +613,7 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     # up the test to use two different error models.
     scaler.update_error_model(mock_errormodel, apply_to_reflection_table=True)
     assert list(block.variances) == list(original_vars)
-    newvars = flex.double(range(1, 8))
+    newvars = flex.double(list(range(1, 8)))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
     assert list(block.weights) == list(1.0 / newvars)
     assert scaler.experiment.scaling_model.error_model is mock_errormodel
@@ -622,7 +623,7 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     scaler.global_Ih_table.reset_error_model()
     scaler.update_error_model(mock_errormodel2, apply_to_reflection_table=True)
     assert list(block.variances) == list(original_vars)
-    newvars = flex.double(range(1, 9))
+    newvars = flex.double(list(range(1, 9)))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
     # [2, 3, 4, 5, 6, 7, 8] < set these in ^ these positions (taking into account
     # the one non-suitable refl at index 5)

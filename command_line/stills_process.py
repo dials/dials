@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 import os
 
@@ -767,10 +768,10 @@ class Processor(object):
 
         # Reset z coordinates for dials.image_viewer; see Issues #226 for details
         xyzobs = observed["xyzobs.px.value"]
-        for i in xrange(len(xyzobs)):
+        for i in range(len(xyzobs)):
             xyzobs[i] = (xyzobs[i][0], xyzobs[i][1], 0)
         bbox = observed["bbox"]
-        for i in xrange(len(bbox)):
+        for i in range(len(bbox)):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
         if self.params.output.composite_output:
@@ -1057,7 +1058,7 @@ class Processor(object):
 
         rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
         log_str = "RMSD indexed (px): %f\n" % (rmsd_indexed)
-        for i in xrange(6):
+        for i in range(6):
             bright_integrated = integrated.select(
                 (
                     integrated["intensity.sum.value"]
@@ -1110,7 +1111,7 @@ class Processor(object):
             from xfel.command_line.frame_extractor import ConstructFrame
 
             # Split everything into separate experiments for pickling
-            for e_number in xrange(len(experiments)):
+            for e_number in range(len(experiments)):
                 experiment = experiments[e_number]
                 e_selection = integrated["id"] == e_number
                 reflections = integrated.select(e_selection)
@@ -1224,8 +1225,8 @@ class Processor(object):
                 size = comm.Get_size()  # size: number of processes running in this job
 
                 if rank % stride == 0:
-                    subranks = [rank + i for i in xrange(1, stride) if rank + i < size]
-                    for i in xrange(len(subranks)):
+                    subranks = [rank + i for i in range(1, stride) if rank + i < size]
+                    for i in range(len(subranks)):
                         logger.info("Rank %d waiting for sender" % rank)
                         sender, indexed_experiments, indexed_reflections, integrated_experiments, integrated_reflections, int_pickles, int_pickle_filenames = comm.recv(
                             source=MPI.ANY_SOURCE

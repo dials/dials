@@ -1,4 +1,5 @@
 """Test scoring of screw axes."""
+from builtins import range
 from dials.array_family import flex
 from dials.algorithms.symmetry.absences.screw_axes import (
     ScrewAxis41c,
@@ -11,7 +12,7 @@ from dials.algorithms.symmetry.absences.screw_axes import (
 def make_test_data_LCY_21c():
     """Real data from LCY (P212121)."""
     r = flex.reflection_table()
-    miller_ax_vals = range(2, 17)
+    miller_ax_vals = list(range(2, 17))
     i = [243.42, 0.95, 841.09, 4.08, 6780.07, 0.12, 19517.36, 0.10]
     i += [45.17, 1.60, 1056.85, 5.88, 7054.45, 7.77, 284.67]
     # separate to avoid black formatting
@@ -27,7 +28,7 @@ def make_test_data_thermo_61c():
     """Real data from thermolysin (P6122), has a large intensity in (0, 0, 11),
     (an outlier?) so good for testing resiliance to outliers."""
     r = flex.reflection_table()
-    miller_ax_vals = range(2, 37)
+    miller_ax_vals = list(range(2, 37))
     i = [-0.007, -0.011, 0.044, 0.065, 1.388, 0.009, -0.005, 0.039, 0.056]
     i += [1.619, 163.471, 0.024, -0.024, 0.047, 0.027, -0.023, 0.09, 0.037]
     i += [0.024, -0.007, -0.024, 0.323, 15.846, 0.177, 0.042, 0.139, 0.37]
@@ -46,7 +47,7 @@ def make_test_data_thaumatin_41c():
     """Real thaumatin data (P41212). Nice example of 41 screw axis,
     in trouble if we can't get this one right!"""
     r = flex.reflection_table()
-    miller_ax_vals = range(1, 87)
+    miller_ax_vals = list(range(1, 87))
     i = [-0.006, -0.027, -0.016, 0.094, 0.012, 0.041, 0.039, 605.708, -0.01]
     i += [0.058, 0.005, 406.319, 0.047, 0.043, 0.082, 0.754, 0.101, 0.126]
     i += [-0.17, 1.381, 0.149, -0.177, 0.175, 25.368, 0.007, 0.442, -0.753]

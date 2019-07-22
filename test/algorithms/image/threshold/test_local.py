@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from numpy.random import poisson
 from random import randint
 from math import exp

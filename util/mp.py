@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def parallel_map(
     func,
     iterable,
@@ -278,7 +279,7 @@ if __name__ == "__main__":
     def func(x):
         return x
 
-    iterable = range(100)
+    iterable = list(range(100))
 
     multi_node_parallel_map(
         func,

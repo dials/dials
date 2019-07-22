@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 # Tests for RestraintsParameterisation and associated classes used in refinement
 
+from builtins import range
 import math
 import os
 import random
@@ -63,7 +64,7 @@ def test_single_crystal_restraints_gradients():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -204,7 +205,7 @@ def test_two_triclinic_crystals():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 

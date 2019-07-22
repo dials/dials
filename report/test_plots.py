@@ -3,6 +3,7 @@ Tests for the dials.report.plots module.
 """
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import itertools
 import random
 
@@ -214,14 +215,14 @@ def batch_manager_fix():
     """Make a batch manager fixture"""
 
     batch_params = [{"id": 0, "range": [0, 10]}, {"id": 1, "range": [100, 110]}]
-    batches = flex.int(itertools.chain(range(0, 10), range(100, 110)))
+    batches = flex.int(itertools.chain(list(range(0, 10)), list(range(100, 110))))
     return batch_manager(batches, batch_params)
 
 
 def test_i_over_sig_i_vs_batch_plot(batch_manager_fix):
     """Test the IsigI batch plot"""
     bm = batch_manager_fix
-    isigi = flex.double(range(0, 20))
+    isigi = flex.double(list(range(0, 20)))
     d = i_over_sig_i_vs_batch_plot(bm, isigi)
     assert list(d["i_over_sig_i_vs_batch"]["data"][0]["x"]) == list(bm.reduced_batches)
     assert list(d["i_over_sig_i_vs_batch"]["data"][0]["y"]) == list(isigi)
@@ -231,8 +232,8 @@ def test_scale_rmerge_vs_batch_plot(batch_manager_fix):
     """Test the scale and rmerge batch plot. Should have the option
     to plot without scales (for xia2)."""
     bm = batch_manager_fix
-    rmergevsb = flex.double(range(0, 20))
-    scalesvsb = flex.double(range(1, 21))
+    rmergevsb = flex.double(list(range(0, 20)))
+    scalesvsb = flex.double(list(range(1, 21)))
     d = scale_rmerge_vs_batch_plot(bm, rmergevsb, scalesvsb)
     assert list(d["scale_rmerge_vs_batch"]["data"][0]["x"]) == list(bm.reduced_batches)
     assert list(d["scale_rmerge_vs_batch"]["data"][1]["x"]) == list(bm.reduced_batches)

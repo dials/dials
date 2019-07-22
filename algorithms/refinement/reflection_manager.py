@@ -11,6 +11,7 @@
 principally ReflectionManager."""
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import copy
 from math import pi
 from math import ceil
@@ -175,7 +176,7 @@ class BlockCalculator(object):
             _width = cmp(stop, start) * width + 1e-11
             half_width = width * (0.5 - 1e-11)  # ensure round down behaviour
 
-            block_starts = [start + n * _width for n in xrange(nblocks)]
+            block_starts = [start + n * _width for n in range(nblocks)]
             block_centres = [
                 exp.scan.get_array_index_from_angle(e + half_width, deg=False)
                 for e in block_starts
@@ -210,7 +211,7 @@ class BlockCalculator(object):
             frames = flex.floor(frames).iround()
 
             start, stop = flex.min(frames), flex.max(frames)
-            frame_range = range(start, stop + 1)
+            frame_range = list(range(start, stop + 1))
 
             for f_num, f in enumerate(frame_range):
                 sub_isel = isel.select(frames == f)
@@ -781,7 +782,7 @@ class ReflectionManager(object):
             "phi_obs\nweight",
         ]
         rows = []
-        for i in xrange(20):
+        for i in range(20):
             e = sl[i]
             x_obs, y_obs, phi_obs = e["xyzobs.mm.value"]
             rows.append(
@@ -804,7 +805,7 @@ class ReflectionManager(object):
         sl = self._sort_obs_by_residual(sl, angular=True)
         logger.debug("\nReflections with the worst 20 angular residuals:")
         rows = []
-        for i in xrange(20):
+        for i in range(20):
             e = sl[i]
             x_obs, y_obs, phi_obs = e["xyzobs.mm.value"]
             rows.append(
@@ -944,7 +945,7 @@ class StillsReflectionManager(ReflectionManager):
             "y_obs\nweight",
         ]
         rows = []
-        for i in xrange(20):
+        for i in range(20):
             e = sl[i]
             x_obs, y_obs, _ = e["xyzobs.mm.value"]
             rows.append(

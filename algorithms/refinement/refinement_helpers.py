@@ -10,6 +10,7 @@
 """Auxiliary functions for the refinement package"""
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from math import sin, cos
 from scitbx import matrix
 from scitbx.array_family import flex  # import dependency
@@ -274,8 +275,8 @@ def corrgram(corrmat, labels):
     ax = plt.subplot(1, 1, 1, aspect="equal")
     clrmap = cm.get_cmap("bwr")
 
-    for x in xrange(nr):
-        for y in xrange(nr):
+    for x in range(nr):
+        for y in range(nr):
             d = corrmat[x, y]
             d_abs = abs(d)
             circ = plt.Circle((x, y), radius=0.9 * sqrt(d_abs) / 2)
@@ -288,12 +289,12 @@ def corrgram(corrmat, labels):
     ax.set_ylim(-0.5, nr - 0.5)
 
     ax.xaxis.tick_top()
-    xtickslocs = range(len(labels))
+    xtickslocs = list(range(len(labels)))
     ax.set_xticks(xtickslocs)
     ax.set_xticklabels(labels, rotation=30, fontsize="small", ha="left")
 
     ax.invert_yaxis()
-    ytickslocs = range(len(labels))
+    ytickslocs = list(range(len(labels)))
     ax.set_yticks(ytickslocs)
     ax.set_yticklabels(labels, fontsize="small")
 

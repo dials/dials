@@ -12,6 +12,7 @@ defined for targeted scaling.
 """
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import abc
 import logging
 import time
@@ -429,7 +430,7 @@ class SingleScaler(ScalerBase):
         n_param_tot = sum([c.n_params for c in self.components.itervalues()])
         for i in range(1, n_blocks + 1):  # do calc in blocks for speed/memory
             n_end = int(i * self.n_suitable_refl / n_blocks)
-            block_isel = flex.size_t(range(n_start, n_end))
+            block_isel = flex.size_t(list(range(n_start, n_end)))
             n_start = n_end
             scales = flex.double(block_isel.size(), 1.0)
             scales_list = []

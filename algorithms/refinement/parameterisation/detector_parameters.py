@@ -10,6 +10,7 @@
 #
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from scitbx import matrix
 from scitbx.array_family import flex
 
@@ -556,9 +557,9 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         self._multi_state_derivatives = [
             [
                 matrix.sqr(ret[j * len(self._offsets) + i])
-                for j in xrange(len(self._param))
+                for j in range(len(self._param))
             ]
-            for i in xrange(len(self._offsets))
+            for i in range(len(self._offsets))
         ]
 
         return

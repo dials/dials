@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import random
 
 from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map

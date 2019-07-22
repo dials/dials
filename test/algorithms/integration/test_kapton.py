@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+from builtins import range
 import os
 import pytest
 import libtbx
@@ -121,7 +122,7 @@ def test_kapton(run_in_tmpdir):
             for panel_id, panel in enumerate(experiment.detector):
                 panel_refls = refls.select(refls["panel"] == panel_id)
                 x, y, z = panel_refls["xyzobs.px.value"].parts()
-                for i in xrange(len(panel_refls)):
+                for i in range(len(panel_refls)):
                     lab_x, lab_y, lab_z = panel.get_pixel_lab_coord((x[i], y[i]))
                     all_x.append(lab_x)
                     all_y.append(lab_y)

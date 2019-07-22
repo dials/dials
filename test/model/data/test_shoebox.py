@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 import random
 
@@ -317,7 +318,7 @@ def test_all_foreground_valid():
     from dials.test.model.data.all_foreground_valid_data import data
 
     shoeboxes = pickle.loads(data)
-    for i in xrange(len(shoeboxes)):
+    for i in range(len(shoeboxes)):
         if i < 4:
             assert not shoeboxes[i].all_foreground_valid()
         else:

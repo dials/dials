@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 
 from dials_algorithms_background_modeller_ext import *

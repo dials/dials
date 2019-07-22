@@ -6,6 +6,7 @@ symmetry equivalent reflections, as required for scaling.
 """
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from orderedset import OrderedSet
 from dials.array_family import flex
 from cctbx import miller, crystal, uctbx
@@ -136,7 +137,7 @@ class IhTable(object):
             data_for_block = data.select(block.block_selections[dataset_id])
             start = block.dataset_info[dataset_id]["start_index"]
             end = block.dataset_info[dataset_id]["end_index"]
-            sel = flex.size_t(range(start, end))
+            sel = flex.size_t(list(range(start, end)))
             block.Ih_table[column].set_selected(sel, data_for_block)
             if column == "variance":
                 block.Ih_table["weights"].set_selected(sel, 1.0 / data_for_block)
@@ -299,7 +300,7 @@ class IhTable(object):
         if indices_array:
             r["loc_indices"] = indices_array
         else:
-            r["loc_indices"] = flex.size_t(range(r.size()))
+            r["loc_indices"] = flex.size_t(list(range(r.size())))
         r = r.select(perm)
         r["dataset_id"] = flex.int(r.size(), dataset_id)
         # if data are sorted by asu_index, then up until boundary, should be in same
@@ -466,7 +467,7 @@ Datasets must be added in correct order: expected: %s, this dataset: %s""" % (
         if "loc_indices" in reflections:
             self.block_selections[dataset_id] = reflections["loc_indices"]
         else:
-            self.block_selections[dataset_id] = flex.int(range(len(reflections)))
+            self.block_selections[dataset_id] = flex.int(list(range(len(reflections))))
         if self._setup_info["next_dataset"] == len(self.block_selections):
             self._complete_setup()
 
@@ -573,7 +574,7 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
             if miller_idx in target_asu_Ih_dict:
                 i = location_in_unscaled_array
                 new_Ih_values.set_selected(
-                    flex.size_t(range(i, i + n_in_group)),
+                    flex.size_t(list(range(i, i + n_in_group))),
                     flex.double(n_in_group, target_asu_Ih_dict[miller_idx]),
                 )
             location_in_unscaled_array += n_in_group

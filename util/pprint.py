@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def profile2d(p, vmin=None, vmax=None):
     from dials.array_family import flex
     import string

@@ -2,6 +2,7 @@
 between two vectors with respect to each element of the vectors"""
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from scitbx import matrix
 from random import uniform
 import math
@@ -109,6 +110,6 @@ def _test():
 
 def test_should_succeed_in_95_percent_of_cases():
     ntests = 1000
-    results = [_test() for i in xrange(ntests)]
+    results = [_test() for i in range(ntests)]
     nsuccess = results.count(True)
     assert nsuccess > 0.95 * ntests

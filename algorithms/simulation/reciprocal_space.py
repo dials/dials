@@ -10,6 +10,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 class Simulator(object):
     """ Class to help with simulation from reciprocal space. """
 
@@ -209,7 +210,7 @@ class Simulator(object):
         refl.del_selected(flex.size_t(index))
 
         # Sample if specified
-        index = random.sample(range(len(refl)), N)
+        index = random.sample(list(range(len(refl))), N)
         refl = refl.select(flex.size_t(index))
 
         # Compute the bounding box

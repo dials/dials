@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from dials_pychef_ext import *
 
 from cctbx.array_family import flex
@@ -163,8 +164,8 @@ class Statistics(object):
             )
             # graph_columns = [[0,1,2,3,4]]
             graph_columns = [
-                [0] + range(self.n_bins + 1, self.n_bins + 5),
-                range(self.n_bins + 1),
+                [0] + list(range(self.n_bins + 1, self.n_bins + 5)),
+                list(range(self.n_bins + 1)),
             ]
         else:
             column_labels = (
@@ -178,7 +179,7 @@ class Statistics(object):
             column_formats = (
                 ["%8.1f"] + ["%5.3f" for i in range(self.n_bins)] + ["%5.3f"]
             )
-            graph_columns = [[0, self.n_bins + 1], range(self.n_bins + 1)]
+            graph_columns = [[0, self.n_bins + 1], list(range(self.n_bins + 1))]
 
         table_completeness = table_data(
             title=title,
@@ -187,7 +188,7 @@ class Statistics(object):
             graph_names=graph_names,
             graph_columns=graph_columns,
         )
-        for i in xrange(self.n_steps):
+        for i in range(self.n_steps):
             if anomalous:
                 row = (
                     [i * self.range_width + self.range_min]
@@ -221,7 +222,7 @@ class Statistics(object):
         )
         column_formats = ["%8.1f"] + ["%7.4f" for i in range(self.n_bins + 1)]
         graph_names = ["Rcp(d)", "Rcp(d), in resolution shells"]
-        graph_columns = [[0, self.n_bins + 1], range(self.n_bins + 1)]
+        graph_columns = [[0, self.n_bins + 1], list(range(self.n_bins + 1))]
 
         table_rcp = table_data(
             title=title,
@@ -230,10 +231,10 @@ class Statistics(object):
             graph_names=graph_names,
             graph_columns=graph_columns,
         )
-        for i in xrange(self.n_steps):
+        for i in range(self.n_steps):
             row = (
                 [i * self.range_width + self.range_min]
-                + [self.rcp_bins[j, i] for j in xrange(self.binner.n_bins_used())]
+                + [self.rcp_bins[j, i] for j in range(self.binner.n_bins_used())]
                 + [self.rcp[i]]
             )
             table_rcp.add_row(row)
@@ -252,7 +253,7 @@ class Statistics(object):
         )
         column_formats = ["%8.1f"] + ["%7.4f" for i in range(self.n_bins + 1)]
         graph_names = ["Scp(d)", "Scp(d), in resolution shells"]
-        graph_columns = [[0, self.n_bins + 1], range(self.n_bins + 1)]
+        graph_columns = [[0, self.n_bins + 1], list(range(self.n_bins + 1))]
 
         table_scp = table_data(
             title=title,
@@ -261,10 +262,10 @@ class Statistics(object):
             graph_names=graph_names,
             graph_columns=graph_columns,
         )
-        for i in xrange(self.n_steps):
+        for i in range(self.n_steps):
             row = (
                 [i * self.range_width + self.range_min]
-                + [self.scp_bins[j, i] for j in xrange(self.binner.n_bins_used())]
+                + [self.scp_bins[j, i] for j in range(self.binner.n_bins_used())]
                 + [self.scp[i]]
             )
             table_scp.add_row(row)
@@ -286,14 +287,14 @@ class Statistics(object):
             graph_names=graph_names,
             graph_columns=graph_columns,
         )
-        for i in xrange(self.n_steps):
+        for i in range(self.n_steps):
             row = [i * self.range_width + self.range_min, self.rd[i]]
             table_rd.add_row(row)
 
         return table_rd.format_loggraph()
 
     def to_dict(self):
-        x = [i * self.range_width + self.range_min for i in xrange(self.n_steps)]
+        x = [i * self.range_width + self.range_min for i in range(self.n_steps)]
         scp_data = []
         rcp_data = []
         rd_data = []
@@ -359,7 +360,7 @@ class Statistics(object):
             )
 
         if self.binner.n_bins_used() > 1:
-            for j in xrange(self.binner.n_bins_used()):
+            for j in range(self.binner.n_bins_used()):
                 bin_range_suffix = " (%.2f-%.2f A)" % self.binner.bin_d_range(j + 1)
                 scp_data.append(
                     {

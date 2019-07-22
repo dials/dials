@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def gz_open(filename, mode):
     import gzip
 

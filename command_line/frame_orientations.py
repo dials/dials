@@ -12,6 +12,7 @@ Usage: dials.frame_orientations refined.expt
 """
 
 from __future__ import division, print_function, absolute_import
+from builtins import range
 import sys
 from dials.util.options import flatten_experiments, OptionParser
 from libtbx.table_utils import simple_table
@@ -157,7 +158,7 @@ def extract_experiment_data(exp, scale=1):
     gonio = exp.goniometer
 
     image_range = scan.get_image_range()
-    images = range(image_range[0], image_range[1] + 1)
+    images = list(range(image_range[0], image_range[1] + 1))
 
     if beam.num_scan_points > 0:
         # There is one more scan point than the number of images. For simplicity,

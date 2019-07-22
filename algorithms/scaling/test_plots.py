@@ -3,6 +3,7 @@ Tests for the dials.algorithms.scaling.plots module
 """
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
     plot_outliers,
@@ -49,7 +50,7 @@ def test_plot_scaling_models():
 
 
 def test_normal_probability_plot():
-    data = {"delta_hl": range(20)}
+    data = {"delta_hl": list(range(20))}
     d = normal_probability_plot(data)
     assert "normal_distribution_plot" in d
 

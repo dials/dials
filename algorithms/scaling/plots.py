@@ -3,6 +3,7 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from collections import OrderedDict
 import math as pymath
 import numpy as np
@@ -389,7 +390,7 @@ def normal_probability_plot(data):
         a = 0.5
 
     y = flex.sorted(flex.double(data["delta_hl"]))
-    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
 
     H, xedges, yedges = np.histogram2d(np.array(x), y.as_numpy_array(), bins=(200, 200))
     nonzeros = np.nonzero(H)

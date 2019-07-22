@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from dials.array_family import flex
 from scitbx import matrix
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -543,7 +544,7 @@ class PredictionParameterisation(object):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for _ in xrange(bp.num_free()):
+                    for _ in range(bp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:
@@ -600,7 +601,7 @@ class PredictionParameterisation(object):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for _ in xrange(xlop.num_free()):
+                    for _ in range(xlop.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:
@@ -657,7 +658,7 @@ class PredictionParameterisation(object):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for _ in xrange(xlucp.num_free()):
+                    for _ in range(xlucp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:
@@ -714,7 +715,7 @@ class PredictionParameterisation(object):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for _ in xrange(gonp.num_free()):
+                    for _ in range(gonp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:

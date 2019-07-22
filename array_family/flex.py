@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import builtins
 import collections
 import logging
@@ -346,13 +347,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         if "px" in key:
             spots = [
                 detector[table["panel"][i]].get_pixel_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
         else:
             assert "mm" in key
             spots = [
                 detector[table["panel"][i]].get_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
 
         min_f = max_f = min_s = max_s = 0
@@ -496,7 +497,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             if order is None:
                 perm = flex.size_t(
                     builtins.sorted(
-                        range(len(self)), key=lambda x: data[x], reverse=reverse
+                        list(range(len(self))), key=lambda x: data[x], reverse=reverse
                     )
                 )
             else:
@@ -509,7 +510,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
                 perm = flex.size_t(
                     builtins.sorted(
-                        range(len(self)),
+                        list(range(len(self))),
                         key=lambda x: data[x],
                         cmp=compare,
                         reverse=reverse,
@@ -631,7 +632,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Sort by self index
         sort_index = flex.size_t(
-            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
+            builtins.sorted(list(range(len(sind))), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -746,7 +747,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Sort by self index
         sort_index = flex.size_t(
-            builtins.sorted(range(len(sind)), key=lambda x: sind[x])
+            builtins.sorted(list(range(len(sind))), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
         oind = oind.select(sort_index)
@@ -1159,7 +1160,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
         # Group according to imageset
         if experiments is not None:
-            groups = groupby(range(len(experiments)), lambda x: experiments[x].imageset)
+            groups = groupby(list(range(len(experiments))), lambda x: experiments[x].imageset)
 
             # Get the experiment ids we're to treat together
             lookup = {}
@@ -1622,7 +1623,7 @@ class reflection_table_selector(object):
             raise RuntimeError("Unknown column type")
         mask2 = self.op(data, self.value)
         if mask1 is not None:
-            mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
+            mask1.set_selected(size_t(list(range(len(mask1)))).select(mask1), mask2)
         else:
             mask1 = mask2
         return mask1

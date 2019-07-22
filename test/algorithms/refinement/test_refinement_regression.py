@@ -6,6 +6,7 @@ parameters using generated reflection positions from ideal geometry.
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def test():
     # Python and cctbx imports
     from math import pi
@@ -125,7 +126,7 @@ def test():
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
 

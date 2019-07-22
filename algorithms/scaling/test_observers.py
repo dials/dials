@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import os
 import mock
 from cctbx import miller
@@ -189,7 +190,7 @@ def test_ScalingOutlierObserver():
 
 def test_ErrorModelObserver():
     """Test that the observer correctly logs data when passed a scaler."""
-    delta_hl = flex.double(range(10))
+    delta_hl = flex.double(list(range(10)))
 
     scaler = mock.Mock()
     scaler.experiment.scaling_model.error_model.delta_hl = delta_hl

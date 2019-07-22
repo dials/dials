@@ -2,6 +2,7 @@
 entering the Ewald sphere is done the right way round"""
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import math
 import sys
 import pytest
@@ -65,7 +66,7 @@ def test():
         image_range=(1, 300),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(300),
+        epochs=list(range(300)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)

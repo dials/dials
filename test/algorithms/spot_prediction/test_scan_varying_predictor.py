@@ -5,6 +5,7 @@ predictor.
 
 # Python and cctbx imports
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import sys
 from math import pi
 from scitbx import matrix
@@ -53,7 +54,7 @@ def setup_models(args):
         image_range=(1, 180),
         exposure_times=0.1,
         oscillation=(0, 1.0),
-        epochs=range(180),
+        epochs=list(range(180)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)

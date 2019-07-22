@@ -4,6 +4,7 @@ Unit testing for the export_mtz.py routines
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import itertools
 
 import dials.util.export_mtz as export_mtz

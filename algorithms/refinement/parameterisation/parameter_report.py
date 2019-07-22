@@ -10,6 +10,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 class ParameterReporter(object):
     """
     Keeps a record of all the ModelParameterisations and
@@ -129,7 +130,7 @@ class ParameterReporter(object):
         image number, if scan-varying parameters are present. Otherwise returns
         None"""
 
-        image_numbers = range(image_range[0], image_range[1] + 1)
+        image_numbers = list(range(image_range[0], image_range[1] + 1))
         columns = [TableColumn("Image", image_numbers)]
 
         for parameterisation in (

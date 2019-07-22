@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import sys
 import pytest
 
@@ -56,7 +57,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
         # Make a scan of 1-20 * 0.5 deg images
         sf = ScanFactory()
-        self.scan = sf.make_scan((1, 20), 0.5, (0, 0.5), range(20))
+        self.scan = sf.make_scan((1, 20), 0.5, (0, 0.5), list(range(20)))
 
         # Generate an ExperimentList
         self.experiments = ExperimentList()

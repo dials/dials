@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 
 from dials.algorithms.shoebox import MaskCode
@@ -467,20 +468,20 @@ class image_kapton_correction(object):
                     self.kapton_params[i] + self.kapton_params_sigmas[j]
                     if j == i
                     else self.kapton_params[i]
-                    for i in xrange(4)
+                    for i in range(4)
                 ]
-                for j in xrange(4)
+                for j in range(4)
             ]
             self.kapton_params_mins = [
                 [
                     max(self.kapton_params[i] - self.kapton_params_sigmas[j], 0.001)
                     if j == i
                     else self.kapton_params[i]
-                    for i in xrange(3)
+                    for i in range(3)
                 ]
                 + [a]
-                for j in xrange(3)
-            ] + [[self.kapton_params[i] for i in xrange(3)] + [a - sig_a]]
+                for j in range(3)
+            ] + [[self.kapton_params[i] for i in range(3)] + [a - sig_a]]
 
     def __call__(self, plot=False):
         def correction_and_within_spot_sigma(params_version, variance_within_spot=True):
@@ -506,7 +507,7 @@ class image_kapton_correction(object):
 
             if variance_within_spot:
                 mask_code = MaskCode.Foreground | MaskCode.Valid
-                for iref in xrange(len(self.reflections_sele)):
+                for iref in range(len(self.reflections_sele)):
                     kapton_correction_vector = flex.double()
                     # foreground: integration mask
                     shoebox = self.reflections_sele[iref]["shoebox"]

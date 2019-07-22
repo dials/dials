@@ -6,6 +6,7 @@ inverse scale factors and derivatives with respect to the component
 parameters.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from math import floor, ceil
 from scitbx import sparse
 from dials.array_family import flex

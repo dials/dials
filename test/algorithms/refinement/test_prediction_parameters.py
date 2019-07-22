@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import math
 import sys
 
@@ -72,7 +73,7 @@ def test():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 

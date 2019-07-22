@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import os
 import matplotlib
 
@@ -117,7 +118,7 @@ class Script(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
@@ -169,7 +170,7 @@ class Script(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if params.orientation_decomposition.relative_to_static_orientation:
@@ -210,7 +211,7 @@ class Script(object):
                 print("Ignoring scan-static beam")
                 continue
 
-            scan_pts = range(beam.num_scan_points)
+            scan_pts = list(range(beam.num_scan_points))
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             p = detector.get_panel_intersection(beam.get_s0())
             if p < 0:

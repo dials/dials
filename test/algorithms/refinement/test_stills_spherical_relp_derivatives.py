@@ -4,6 +4,7 @@ Test derivatives typed up in dials_regression/doc/notes/prediction/stills_predic
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import sys
 
 import pytest
@@ -266,7 +267,7 @@ def test():
         image_range=(1, 1),
         exposure_times=0.1,
         oscillation=(0, 3.0),
-        epochs=range(1),
+        epochs=list(range(1)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)

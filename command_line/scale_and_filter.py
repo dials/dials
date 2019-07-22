@@ -18,6 +18,7 @@ be given, alongside the termination criteria and output options for this program
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 import json
 from collections import OrderedDict
@@ -538,7 +539,7 @@ def make_reduction_plots(
     valid_image_ranges = get_valid_image_ranges(experiments)
     expids = [exp.identifier for exp in experiments]
     # first plot all initial image ranges
-    x1 = range(len(analysis_results.initial_expids_and_image_ranges))
+    x1 = list(range(len(analysis_results.initial_expids_and_image_ranges)))
     y1_tops = []
     y1_bottoms = []
     initial_expids = []

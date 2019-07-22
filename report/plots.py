@@ -4,6 +4,7 @@ This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from collections import OrderedDict
 import numpy as np
 from cctbx import uctbx
@@ -1053,7 +1054,7 @@ https://doi.org/10.1107/S0907444905036693
             a = 0.5
 
         y = flex.sorted(delta)
-        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
 
         H, xedges, yedges = np.histogram2d(
             np.array(x), y.as_numpy_array(), bins=(200, 200)

@@ -4,6 +4,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import iotbx.phil
 from scitbx.array_family import flex
 from dials.util import Sorry
@@ -71,7 +72,7 @@ def run(args):
     imageset = imagesets[0]
 
     first, last = imageset.get_scan().get_image_range()
-    images = range(first, last + 1)
+    images = list(range(first, last + 1))
 
     if params.images:
         if min(params.images) < first or max(params.images) > last:

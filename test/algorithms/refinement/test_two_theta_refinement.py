@@ -13,6 +13,7 @@ Test refinement of a crystal unit cell using a two theta target.
 """
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import os
 from libtbx.test_utils import approx_equal
 from math import pi
@@ -114,7 +115,7 @@ def test_fd_derivatives():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -239,7 +240,7 @@ def test_refinement(dials_regression):
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)

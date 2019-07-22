@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import iotbx.phil
 from dials.util.options import OptionParser, flatten_experiments
 from dials.util import Sorry
@@ -45,7 +46,7 @@ def estimate_gain(imageset, kernel_size=(10, 10), output_gain_map=None, max_imag
 
     gains = flex.double()
 
-    for image_no in xrange(len(imageset)):
+    for image_no in range(len(imageset)):
         raw_data = imageset.get_raw_data(image_no)
 
         gain_value = 1

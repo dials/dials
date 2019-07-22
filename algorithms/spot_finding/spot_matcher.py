@@ -11,6 +11,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 class SpotMatcher(object):
     """Match the observed with predicted spots."""
 
@@ -88,7 +89,7 @@ class SpotMatcher(object):
             oxyz = observed_xyz.select(oind)
             try:
                 nn, d = self._find_nearest_neighbours_single(oxyz, pxyz)
-                indices = flex.size_t(range(len(pind))).select(pind)
+                indices = flex.size_t(list(range(len(pind)))).select(pind)
                 indices = indices.select(flex.size_t(list(nn)))
                 nn_all.extend(indices)
                 dd_all.extend(d)
@@ -130,7 +131,7 @@ class SpotMatcher(object):
         """
         from scitbx.array_family import flex
 
-        index = range(len(nn))
+        index = list(range(len(nn)))
         return flex.int([i for i in index if dist[i] <= self._max_separation])
 
     def _filter_duplicates(self, index, nn, dist):

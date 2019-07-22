@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from .slip_viewer.frame import chooser_wrapper as _chooser_wrapper
 
 try:
@@ -69,7 +70,7 @@ class spot_wrapper(object):
 
         imagesets = self.frame.imagesets
         for imageset in imagesets:
-            for idx in xrange(len(imageset.indices())):
+            for idx in range(len(imageset.indices())):
                 self.frame.add_file_name_or_data(chooser_wrapper(imageset, idx))
         # Make sure we load the first image as the current one
         self.frame.load_image(chooser_wrapper(imagesets[0], 0))

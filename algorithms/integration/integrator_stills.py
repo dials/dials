@@ -11,6 +11,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 class ReflectionBlockIntegratorStills(object):
     """ A class to perform the integration. """
 
@@ -88,7 +89,7 @@ class IntegratorStills(object):
 
             bboxes = flex.int6()
             for i, ref in enumerate(predicted):
-                nn_pred = [matcheddata[A.nn[i * 10 + j]] for j in xrange(10)]
+                nn_pred = [matcheddata[A.nn[i * 10 + j]] for j in range(10)]
                 nn_ref = [
                     reference[reference["miller_index"].first_index(r["miller_index"])]
                     for r in nn_pred

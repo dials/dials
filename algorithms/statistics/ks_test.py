@@ -1,19 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def kstest_greater(dist, data):
-    Dplus = (range(1.0, N + 1) / N - cdfvals).max()
+    Dplus = (list(range(1.0, N + 1)) / N - cdfvals).max()
     return Dplus, distributions.ksone.sf(Dplus, N)
 
 
 def kstest_less(dist, data):
-    Dminus = (cdfvals - range(0.0, N) / N).max()
+    Dminus = (cdfvals - list(range(0.0, N)) / N).max()
     return Dminus, distributions.ksone.sf(Dminus, N)
 
 
 def kstest_two_sided(dist, data):
-    Dplus = (range(1.0, N + 1) / N - cdfvals).max()
-    Dminus = (cdfvals - range(0.0, N) / N).max()
+    Dplus = (list(range(1.0, N + 1)) / N - cdfvals).max()
+    Dminus = (cdfvals - list(range(0.0, N)) / N).max()
     D = max(Dplus, Dminus)
     if mode == "asymp":
         return D, distributions, kswobjgn.sf(D * np.sqrt(N))

@@ -6,6 +6,7 @@ Only the crystal is perturbed while the beam and detector are known.
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 def test(args=[]):
     # Python and cctbx imports
     from math import pi
@@ -77,7 +78,7 @@ def test(args=[]):
         image_range=(1, 1),
         exposure_times=0.1,
         oscillation=(0, 1.5),
-        epochs=range(1),
+        epochs=list(range(1)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)

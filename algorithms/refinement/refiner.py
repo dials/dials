@@ -14,6 +14,7 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import copy
 import logging
 
@@ -750,7 +751,7 @@ class Refiner(object):
         from dials.algorithms.refinement.refinement_helpers import string_sel
 
         if col_select is None:
-            col_select = range(len(all_labels))
+            col_select = list(range(len(all_labels)))
         sel = string_sel(col_select, all_labels)
         labels = [e for e, s in zip(all_labels, sel) if s]
         num_cols = len(labels)
@@ -1118,7 +1119,7 @@ class ScanVaryingRefiner(Refiner):
     def _update_models(self):
         for iexp, exp in enumerate(self._experiments):
             ar_range = exp.scan.get_array_range()
-            obs_image_numbers = range(ar_range[0], ar_range[1] + 1)
+            obs_image_numbers = list(range(ar_range[0], ar_range[1] + 1))
 
             # write scan-varying s0 vectors back to beam models
             s0_list = self._pred_param.get_varying_s0(obs_image_numbers, iexp)

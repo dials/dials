@@ -11,6 +11,7 @@
 from __future__ import absolute_import, division, print_function
 
 
+from builtins import range
 class ValidatedMultiExpProfileModeller(object):
     """
     A class to wrap profile modeller for validation
@@ -52,7 +53,7 @@ class ValidatedMultiExpProfileModeller(object):
         else:
             for i, modeller in enumerate(self.modellers):
                 mask = reflections["profile.index"] != i
-                indices = flex.size_t(range(len(mask))).select(mask)
+                indices = flex.size_t(list(range(len(mask)))).select(mask)
                 if len(indices) > 0:
                     subsample = reflections.select(indices)
                     modeller.model(subsample)
@@ -68,7 +69,7 @@ class ValidatedMultiExpProfileModeller(object):
         results = []
         for i, modeller in enumerate(self.modellers):
             mask = reflections["profile.index"] != i
-            indices = flex.size_t(range(len(mask))).select(mask)
+            indices = flex.size_t(list(range(len(mask)))).select(mask)
             if len(indices) > 0:
                 subsample = reflections.select(indices)
                 modeller.validate(subsample)

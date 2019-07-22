@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 import logging
 from math import pi
 
@@ -97,7 +98,7 @@ class CentroidOutlier(object):
         jobs = []
         if self._separate_experiments:
             # split the data set by experiment id
-            for iexp in xrange(nexp):
+            for iexp in range(nexp):
                 sel = all_data["id"] == iexp
                 job = {
                     "id": iexp,
@@ -123,7 +124,7 @@ class CentroidOutlier(object):
                 data = job["data"]
                 iexp = job["id"]
                 indices = job["indices"]
-                for ipanel in xrange(flex.max(data["panel"]) + 1):
+                for ipanel in range(flex.max(data["panel"]) + 1):
                     sel = data["panel"] == ipanel
                     job = {
                         "id": iexp,
@@ -161,7 +162,7 @@ class CentroidOutlier(object):
                 nblocks = max(1, nblocks)
                 real_width = phi_range / nblocks
                 block_end = 0.0
-                for iblock in xrange(nblocks - 1):  # all except the last block
+                for iblock in range(nblocks - 1):  # all except the last block
                     block_start = iblock * real_width
                     block_end = (iblock + 1) * real_width
                     sel = (phi >= (phi_low + block_start)) & (

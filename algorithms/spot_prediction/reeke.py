@@ -11,6 +11,7 @@
 prediction based on the Reeke algorithm (see Mosflm)"""
 
 from __future__ import absolute_import, division, print_function
+from builtins import range
 from scitbx import matrix
 from math import sqrt, sin, asin, fabs
 
@@ -216,7 +217,7 @@ class reeke_model:
 
         # Swap order to put the 'p' axis first
         rl_dirs[0], rl_dirs[index_of_p] = rl_dirs[index_of_p], rl_dirs[0]
-        indices = range(3)
+        indices = list(range(3))
         indices[0], indices[index_of_p] = indices[index_of_p], indices[0]
 
         # Now find which of the two remaining reciprocal lattice axes is
@@ -553,7 +554,7 @@ class reeke_model:
                     if item[0] is None:
                         continue
 
-                    r_seq = range(item[0], item[1] + 1)
+                    r_seq = list(range(item[0], item[1] + 1))
                     r_trials += [e for e in r_seq if e not in r_trials]
 
                 for r in r_trials:

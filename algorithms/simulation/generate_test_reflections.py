@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+from builtins import range
 from libtbx.phil import parse
 
 master_phil = parse(
@@ -219,7 +220,7 @@ def simple_gaussian_spots(params):
             sz = params.mask_nsigma * params.spot_size.z
 
             # The x, y, z indices
-            z, y, x = zip(*itertools.product(*(range(n) for n in mask.all())))
+            z, y, x = zip(*itertools.product(*(list(range(n)) for n in mask.all())))
             xyz = flex.vec3_double(flex.double(x), flex.double(y), flex.double(z))
 
             # Calculate SUM(((xj - xj0) / sxj)**2) for each element

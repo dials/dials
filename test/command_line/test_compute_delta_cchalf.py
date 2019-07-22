@@ -1,5 +1,6 @@
 """Tests for dials.compute_delta_cchalf."""
 from __future__ import absolute_import, division, print_function
+from builtins import range
 import copy
 import os
 import procrunner
