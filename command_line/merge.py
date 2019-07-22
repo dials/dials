@@ -132,7 +132,7 @@ can be processed with dials.merge"""
         "intensity.scale.variance",
         "inverse_scale_factor",
     ]:
-        if not k in reflections[0]:
+        if k not in reflections[0]:
             raise Sorry(
                 """%s not found in the reflection table. Only scaled data can be processed
 with dials.merge"""

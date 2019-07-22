@@ -418,7 +418,7 @@ prepare the data in the correct space group.\n"""
             logger.info("Finished running dials.cosym, continuing with scaling.\n")
 
         #### Make sure all experiments in same space group
-        sgs = [e.crystal.get_space_group().type().number() for e in experiments]
+        sgs = [expt.crystal.get_space_group().type().number() for expt in experiments]
         if len(set(sgs)) > 1:
             raise Sorry(
                 """The experiments have different space groups:

@@ -45,8 +45,8 @@ def test_merge(dials_data, tmpdir):
         labels.extend(ma.info().labels)
     assert all(x in labels for x in mean_labels)
     assert all(x in labels for x in anom_labels)
-    assert all(not x in labels for x in amp_labels)
-    assert all(not x in labels for x in anom_amp_labels)
+    assert all(x not in labels for x in amp_labels)
+    assert all(x not in labels for x in anom_amp_labels)
 
     # now try with no anomalous option
     command = ["dials.merge", refls, expts, "anomalous=False", "truncate=True"]
@@ -59,9 +59,9 @@ def test_merge(dials_data, tmpdir):
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
     assert all(x in labels for x in mean_labels)
-    assert all(not x in labels for x in anom_labels)
+    assert all(x not in labels for x in anom_labels)
     assert all(x in labels for x in amp_labels)
-    assert all(not x in labels for x in anom_amp_labels)
+    assert all(x not in labels for x in anom_amp_labels)
 
     # now try with no truncate or anomalous
     command = ["dials.merge", refls, expts, "truncate=False", "anomalous=False"]
@@ -74,9 +74,9 @@ def test_merge(dials_data, tmpdir):
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
     assert all(x in labels for x in mean_labels)
-    assert all(not x in labels for x in anom_labels)
-    assert all(not x in labels for x in amp_labels)
-    assert all(not x in labels for x in anom_amp_labels)
+    assert all(x not in labels for x in anom_labels)
+    assert all(x not in labels for x in amp_labels)
+    assert all(x not in labels for x in anom_amp_labels)
 
 
 def test_merge_multi_wavelength(dials_data, tmpdir):

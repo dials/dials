@@ -208,8 +208,8 @@ def run(args=None):
     if not len(reflections) == 1:
         raise Sorry("Only one reflection table can be given as input.")
 
-    if (not "intensity.scale.value" in reflections[0]) and (
-        not "intensity.prf.value" in reflections[0]
+    if ("intensity.scale.value" not in reflections[0]) and (
+        "intensity.prf.value" not in reflections[0]
     ):
         raise Sorry(
             "Unable to find integrated or scaled reflections in the reflection table."
