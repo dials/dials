@@ -123,10 +123,6 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_cluster_analysis_search(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -154,10 +150,6 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
@@ -195,11 +187,6 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_single_lattice(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
-    # trypsin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
     sweep_path = os.path.join(data_dir, "experiments_P1_X6_1.json")
@@ -229,10 +216,6 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_two_lattice(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
     # synthetic trypsin multi-lattice dataset (2 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
@@ -269,11 +252,6 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
-    # synthetic trypsin multi-lattice dataset (3 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
     sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
@@ -306,10 +284,6 @@ def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, t
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
 def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
     # synthetic trypsin multi-lattice dataset (4 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
@@ -443,10 +417,6 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
 
 
 def test_index_peak_search_clean(dials_regression, tmpdir):
-    pytest.importorskip("scipy")
-    pytest.importorskip("sklearn")
-    pytest.importorskip("networkx")
-
     # test indexing from single image of i04_weak_data
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "first_image.pickle")
