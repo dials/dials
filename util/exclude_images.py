@@ -98,9 +98,9 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
             exp.identifier
         )  # list of tuples
         # use set arithmetic on image numbers to work out images to keep
-        exclude = OrderedSet(list(range(r[1][0], r[1][1] + 1)))
+        exclude = OrderedSet(range(r[1][0], r[1][1] + 1))
         current_sets = [
-            OrderedSet(list(range(current_range[i][0], current_range[i][1] + 1)))
+            OrderedSet(range(current_range[i][0], current_range[i][1] + 1))
             for i in range(0, len(current_range))
         ]
         current_images = OrderedSet()

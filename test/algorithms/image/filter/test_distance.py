@@ -35,7 +35,7 @@ def test_manhattan():
             | W.select(selection)
         )
         assert neighbours.all_eq(True)
-        indices = flex.size_t(list(range(len(D)))).select(selection)
+        indices = flex.size_t(range(len(D))).select(selection)
         for i in indices:
             D[i] = True
         data[1:-1, 1:-1] = D
@@ -83,7 +83,7 @@ def test_chebyshev():
             | SW.select(selection)
         )
         assert neighbours.all_eq(True)
-        indices = flex.size_t(list(range(len(D)))).select(selection)
+        indices = flex.size_t(range(len(D))).select(selection)
         for i in indices:
             D[i] = True
         data[1:-1, 1:-1] = D

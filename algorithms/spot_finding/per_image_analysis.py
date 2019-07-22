@@ -350,7 +350,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
         ds3_subset.append(d_star_cubed[order[i * step]])
         d_subset.append(d_spacings[order[i * step]])
 
-    x = flex.double(list(range(len(ds3_subset))))
+    x = flex.double(range(len(ds3_subset)))
 
     # (i)
     # Usually, Pm is the last point, that is, m = n. But m could be smaller than
@@ -407,7 +407,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
 
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.scatter(list(range(len(ds3_subset))), ds3_subset)
+        ax.scatter(range(len(ds3_subset)), ds3_subset)
         ax.set_ylabel("D^-3")
         xlim = pyplot.xlim()
         ylim = pyplot.ylim()
@@ -468,7 +468,7 @@ def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename
 
         fig = pyplot.figure()
         ax = fig.add_subplot(1, 1, 1)
-        ax.scatter(list(range(len(bin_counts))), bin_counts)
+        ax.scatter(range(len(bin_counts)), bin_counts)
         ax.set_ylabel("number of spots in shell")
         xlim = pyplot.xlim()
         ylim = pyplot.ylim()
@@ -755,7 +755,7 @@ def table(stats, perm=None, n_rows=None):
     if hasattr(stats, "image"):
         image = stats.image
     else:
-        image = flex.int(list(range(1, len(n_spots_total) + 1))).as_string()
+        image = flex.int(range(1, len(n_spots_total) + 1)).as_string()
     n_indexed = None
     fraction_indexed = None
     if hasattr(stats, "n_indexed"):

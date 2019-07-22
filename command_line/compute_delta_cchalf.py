@@ -338,7 +338,7 @@ class Script(object):
         from low to high based on deltacchalf values."""
         datasets = list(delta_cchalf_i.keys())
         sorted_index = sorted(
-            list(range(len(datasets))), key=lambda x: delta_cchalf_i[datasets[x]]
+            range(len(datasets)), key=lambda x: delta_cchalf_i[datasets[x]]
         )
 
         # sorted by deltacchalf from low to high

@@ -415,7 +415,7 @@ class StillsIndexer(Indexer):
             for i in range(len(self.refined_experiments)):
                 if i not in id_set:
                     del self.refined_experiments[i]
-            for old, new in zip(sorted(id_set), list(range(len(id_set)))):
+            for old, new in zip(sorted(id_set), range(len(id_set))):
                 subset = self.refined_reflections.select(
                     self.refined_reflections["id"] == old
                 )

@@ -88,7 +88,7 @@ class SpotMatcher(object):
             oxyz = observed_xyz.select(oind)
             try:
                 nn, d = self._find_nearest_neighbours_single(oxyz, pxyz)
-                indices = flex.size_t(list(range(len(pind)))).select(pind)
+                indices = flex.size_t(range(len(pind))).select(pind)
                 indices = indices.select(flex.size_t(list(nn)))
                 nn_all.extend(indices)
                 dd_all.extend(d)

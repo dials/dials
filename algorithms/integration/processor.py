@@ -728,7 +728,7 @@ class Manager(object):
         from itertools import groupby
 
         groups = groupby(
-            list(range(len(self.experiments))),
+            range(len(self.experiments)),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
         )
         self.jobs = JobList()

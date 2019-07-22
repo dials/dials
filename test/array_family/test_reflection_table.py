@@ -702,11 +702,11 @@ def test_copy():
     from dials.array_family import flex
 
     # Create a table
-    table = flex.reflection_table([("col1", flex.int(list(range(10))))])
+    table = flex.reflection_table([("col1", flex.int(range(10)))])
 
     # Make a shallow copy of the table
     shallow = copy.copy(table)
-    shallow["col2"] = flex.double(list(range(10)))
+    shallow["col2"] = flex.double(range(10))
     assert table.ncols() == 2
     assert table.is_consistent()
 
@@ -766,7 +766,7 @@ def test_extract_shoeboxes():
 
     class FakeImageSet(object):
         def __init__(self):
-            self.data = flex.int(list(range(height * width)))
+            self.data = flex.int(range(height * width))
             self.data.reshape(flex.grid(height, width))
 
         def get_array_range(self):

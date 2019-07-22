@@ -37,7 +37,7 @@ class Modeller(EmpiricalProfileModeller):
     def model(self, reflections, profiles):
         from dials.array_family import flex
 
-        indices = flex.size_t(list(range(len(self))))
+        indices = flex.size_t(range(len(self)))
         weights = flex.double([1.0] * len(self))
         for profile in profiles:
             self.add(indices, weights, profile)

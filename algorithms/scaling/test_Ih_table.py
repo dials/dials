@@ -478,7 +478,7 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
     Ih_table.set_intensities(new_I_block_1, 1)
     assert list(Ih_table.Ih_table_blocks[1].intensities) == list(new_I_block_1)
     # set scale factors
-    new_s_block_2 = flex.double(list(range(1, 6)))
+    new_s_block_2 = flex.double(range(1, 6))
     Ih_table.set_inverse_scale_factors(new_s_block_2, 2)
     assert list(Ih_table.Ih_table_blocks[2].inverse_scale_factors) == list(
         new_s_block_2
