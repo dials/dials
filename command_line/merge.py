@@ -22,7 +22,6 @@ from libtbx import phil, Auto
 help_message = """Program to merge scaled dials data."""
 
 logger = logging.getLogger("dials")
-info_handle = log.info_handle(logger)
 phil_scope = phil.parse(
     """
 assess_space_group = True
