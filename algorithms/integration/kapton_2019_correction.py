@@ -147,9 +147,9 @@ class KaptonTape_2019(object):
         # determine path length through kapton tape
         for face in self.faces:
             try:
-                px = map(
+                px = list(map(
                     int, face[0].get_ray_intersection_px(s1)
-                )  # faces are single panel anyway
+                ))  # faces are single panel anyway
                 if (
                     px[0] < 0
                     or px[1] < 0

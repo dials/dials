@@ -132,7 +132,7 @@ class MyGrid(gridlib.Grid):
         for key in table_in.keys():
             if key != "shoebox":
                 col_label = str(key)
-                col_content = map(str, table_in[key])
+                col_content = list(map(str, table_in[key]))
 
                 str_len = bigger_size(col_label, col_content)
 

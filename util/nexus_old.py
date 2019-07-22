@@ -112,13 +112,13 @@ class ReflectionListDecoder(H5PYDecoder):
         elif flex_type == flex.double:
             return flex_type(float(d) for d in list(data))
         elif flex_type == flex.vec3_double:
-            return flex_type(map(float, d) for d in list(data))
+            return flex_type(list(map(float, d)) for d in list(data))
         elif flex_type == flex.vec2_double:
-            return flex_type(map(float, d) for d in list(data))
+            return flex_type(list(map(float, d)) for d in list(data))
         elif flex_type == flex.int6:
-            return flex_type(map(int, d) for d in list(data))
+            return flex_type(list(map(int, d)) for d in list(data))
         elif flex_type == flex.miller_index:
-            return flex_type(map(int, d) for d in list(data))
+            return flex_type(list(map(int, d)) for d in list(data))
         elif flex_type == flex.bool:
             return flex_type(bool(d) for d in list(data))
         elif flex_type == flex.size_t:

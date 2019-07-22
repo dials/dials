@@ -205,10 +205,10 @@ class Extract(object):
 
     def build_crystal(self):
 
-        vecs = map(
+        vecs = list(map(
             self._build_cell_vec,
             [self._params.crystal.a, self._params.crystal.b, self._params.crystal.c],
-        )
+        ))
 
         sg = self._params.crystal.space_group_symbol
 

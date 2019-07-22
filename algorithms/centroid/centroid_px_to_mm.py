@@ -30,7 +30,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     else:
         oscillation = scan.get_oscillation(deg=False)
     scale = pixel_size + (oscillation[1],)
-    scale2 = map(mul, scale, scale)
+    scale2 = list(map(mul, scale, scale))
 
     if isinstance(position, tuple):
         # Convert Pixel coordinate into mm/rad
@@ -46,8 +46,8 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         # N.B assuming locally flat pixel to millimeter transform
         # for variance calculation.
         position_mm = xy_mm + (z_rad,)
-        variance_mm = map(mul, variance, scale2)
-        sd_error_mm = map(mul, sd_error, scale2)
+        variance_mm = list(map(mul, variance, scale2))
+        sd_error_mm = list(map(mul, sd_error, scale2))
 
     else:
         from scitbx.array_family import flex
