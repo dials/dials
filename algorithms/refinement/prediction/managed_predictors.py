@@ -128,7 +128,7 @@ class ScansExperimentsPredictor(ExperimentsPredictor):
 
     def _post_prediction(self, reflections):
 
-        if reflections.has_key("xyzobs.mm.value"):
+        if "xyzobs.mm.value" in reflections:
             reflections = self._match_full_turns(reflections)
 
         return reflections

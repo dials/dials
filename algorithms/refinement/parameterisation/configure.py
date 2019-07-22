@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
-import re
-import logging
 
-logger = logging.getLogger(__name__)
+import logging
+import re
 
 import libtbx  # for libtbx.Auto
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -63,6 +62,8 @@ format_data = {
     "constr_phil": constr_phil_str,
     "sv_phil": sv_phil_str,
 }
+
+logger = logging.getLogger(__name__)
 
 phil_str = (
     """
@@ -286,6 +287,7 @@ phil_str = (
 )
 phil_scope = parse(phil_str)
 
+
 # A helper function for parameter fixing
 def _filter_parameter_names(parameterisation):
     # scan-varying suffixes like '_sample1' should be removed from
@@ -336,9 +338,9 @@ def _centroid_analysis(options, experiments, reflection_manager):
     # for each of the residuals in x, y and phi, as long as this is not smaller
     # than either the outlier rejection block width, or 9.0 degrees.
     for i, a in enumerate(analysis):
-        intervals = [a.get("x_interval"), a.get("y_interval"), a.get("phi_interval")]
+        intervals = (a.get("x_interval"), a.get("y_interval"), a.get("phi_interval"))
         try:
-            min_interval = min(filter(None, intervals))
+            min_interval = min(_f for _f in intervals if _f is not None)
         except ValueError:
             # empty list - analysis was unable to suggest a suitable interval
             # width. Default to the safest case
