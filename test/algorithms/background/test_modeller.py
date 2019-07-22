@@ -226,8 +226,8 @@ class TestPoisson(object):
             for j in range(9):
                 pa.append(tuple(p[3 * j : 3 * (j + 1)]))
                 pv.append(tuple(v[3 * j : 3 * (j + 1)]))
-        a, b, c = list(zip(*pa))
-        va, vb, vc = list(zip(*pv))
+        a, b, c = zip(*pa)
+        va, vb, vc = zip(*pv)
 
         # Compute Z for each parameter
         za = (flex.double(a) - ma) / flex.sqrt(flex.double(va))
@@ -263,8 +263,8 @@ class TestPoisson(object):
             v = model.variances()
             pa.append(tuple(p))
             pv.append(tuple(v))
-        a, b, c, d = list(zip(*pa))
-        va, vb, vc, vd = list(zip(*pv))
+        a, b, c, d = zip(*pa)
+        va, vb, vc, vd = zip(*pv)
 
         # Compute Z for each parameter
         za = (flex.double(a) - ma) / flex.sqrt(flex.double(va))

@@ -126,18 +126,18 @@ def show_beam(detector, beam):
         # get scan-varying beam centres, ensuring all on same panel
         sv_s0 = beam.get_s0_at_scan_points()
         impacts = [beam_centre_mm(detector, s0) for s0 in sv_s0]
-        pnl, xy = list(zip(*impacts))
+        pnl, xy = zip(*impacts)
         uniq_pnls = set(pnl)
         if len(uniq_pnls) > 1 or min(uniq_pnls) < 0:
             return s
         if any([e == (None, None) for e in xy]):
             return s
         pnl = list(uniq_pnls)[0]
-        x_mm, y_mm = list(zip(*xy))
+        x_mm, y_mm = zip(*xy)
 
         # convert to pixels
         xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
-        x_px, y_px = list(zip(*xy))
+        x_px, y_px = zip(*xy)
 
         s += "Beam centre range (mm): ([%.2f,%.2f],[%.2f,%.2f])\n" % (
             min(x_mm),

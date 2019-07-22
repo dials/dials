@@ -14,8 +14,8 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 def plot_beam_centre_error(ideal_bc, obs_bc):
     import matplotlib.pyplot as plt
 
-    ideal_x, ideal_y = list(zip(*ideal_bc))
-    obs_x, obs_y = list(zip(*obs_bc))
+    ideal_x, ideal_y = zip(*ideal_bc)
+    obs_x, obs_y = zip(*obs_bc)
     del_x = [a - b for a, b in zip(obs_x, ideal_x)]
     del_y = [a - b for a, b in zip(obs_y, ideal_y)]
     scan_points = range(len(ideal_x))

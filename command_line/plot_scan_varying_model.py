@@ -120,7 +120,7 @@ class Script(object):
             scan_pts = range(crystal.num_scan_points)
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
-            a, b, c, aa, bb, cc = list(zip(*cell_params))
+            a, b, c, aa, bb, cc = zip(*cell_params)
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             vol = [e.volume() for e in cells]
             cell_dat = {
@@ -137,7 +137,7 @@ class Script(object):
                 cell_esds = [
                     crystal.get_cell_parameter_sd_at_scan_point(t) for t in scan_pts
                 ]
-                sig_a, sig_b, sig_c, sig_aa, sig_bb, sig_cc = list(zip(*cell_esds))
+                sig_a, sig_b, sig_c, sig_aa, sig_bb, sig_cc = zip(*cell_esds)
                 cell_dat["sig_a"] = sig_a
                 cell_dat["sig_b"] = sig_b
                 cell_dat["sig_c"] = sig_c
@@ -185,7 +185,7 @@ class Script(object):
                 )
                 for U in Umats
             ]
-            phi3, phi2, phi1 = list(zip(*angles))
+            phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
                 print("Crystal in Experiment {}".format(iexp))
@@ -221,7 +221,7 @@ class Script(object):
                 beam.get_s0_at_scan_point(i) for i in range(beam.num_scan_points)
             ]
             bc_scan_points = [panel.get_beam_centre_px(s0) for s0 in s0_scan_points]
-            bc_x, bc_y = list(zip(*bc_scan_points))
+            bc_x, bc_y = zip(*bc_scan_points)
             dat.append({"phi": phi, "beam_centre_x": bc_x, "beam_centre_y": bc_y})
         if dat:
             self.plot_beam_centre(dat)

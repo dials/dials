@@ -117,7 +117,7 @@ def rmerge_vs_batch(intensities, batches):
     def r_merge_per_batch(pairs):
         """Calculate R_merge for the list of (merged-I, I) pairs."""
 
-        merged_indices, unmerged_indices = list(zip(*pairs))
+        merged_indices, unmerged_indices = zip(*pairs)
 
         unmerged_Ij = intensities.data().select(flex.size_t(unmerged_indices))
         merged_Ij = merged_intensities.data().select(flex.size_t(merged_indices))

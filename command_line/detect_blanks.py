@@ -67,12 +67,12 @@ def blank_counts_analysis(reflections, scan, phi_step, fractional_loss):
 
     potential_blank_sel = fractional_counts <= fractional_loss
 
-    xmin, xmax = list(zip(
+    xmin, xmax = zip(
         *[
             (slot_info.low_cutoff, slot_info.high_cutoff)
             for slot_info in hist.slot_infos()
         ]
-    ))
+    )
 
     d = {
         "data": [
@@ -141,12 +141,12 @@ def blank_integrated_analysis(reflections, scan, phi_step, fractional_loss):
 
     potential_blank_sel = mean_i_sigi <= (fractional_loss * flex.max(mean_i_sigi))
 
-    xmin, xmax = list(zip(
+    xmin, xmax = zip(
         *[
             (slot_info.low_cutoff, slot_info.high_cutoff)
             for slot_info in hist.slot_infos()
         ]
-    ))
+    )
 
     d = {
         "data": [

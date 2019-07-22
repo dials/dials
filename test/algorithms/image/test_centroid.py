@@ -169,7 +169,7 @@ class Test_Centroid(object):
 
         # cls.gold2dubvar = matrix.col((_sr, _sc))
 
-        pixel_x, pixel_y = list(zip(*cls.points2d))
+        pixel_x, pixel_y = zip(*cls.points2d)
         xc = flex.mean_and_variance(flex.double(pixel_x), cls.pixels2d.as_1d())
         yc = flex.mean_and_variance(flex.double(pixel_y), cls.pixels2d.as_1d())
         cls.gold2dubvar = matrix.col(
@@ -226,7 +226,7 @@ class Test_Centroid(object):
 
         # cls.gold3dubvar = matrix.col((_sf, _sr, _sc))
 
-        pixel_x, pixel_y, pixel_z = list(zip(*cls.points3d))
+        pixel_x, pixel_y, pixel_z = zip(*cls.points3d)
         xc = flex.mean_and_variance(flex.double(pixel_x), cls.pixels3d.as_1d())
         yc = flex.mean_and_variance(flex.double(pixel_y), cls.pixels3d.as_1d())
         zc = flex.mean_and_variance(flex.double(pixel_z), cls.pixels3d.as_1d())

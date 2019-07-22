@@ -54,7 +54,7 @@ class RayPredictor:
         self.d_min = self.d_min - 1e-15
 
         # Get the number of frames from the max z value
-        xcal, ycal, zcal = list(zip(*self.integrate_handle.xyzcal))
+        xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
         self.scan.set_image_range(
             (
                 self.scan.get_image_range()[0],

@@ -174,9 +174,9 @@ class ScanVaryingCrystalUnitCellParameterisation(
         """calculate state and derivatives for model at image number t"""
 
         # extract values and weights at time t using the smoother
-        vals, weights, sumweights = list(zip(
+        vals, weights, sumweights = zip(
             *(self._smoother.value_weight(t, pset) for pset in self._param)
-        ))
+        )
 
         # calculate derivatives of metrical matrix parameters wrt underlying
         # scan-varying parameters
