@@ -151,7 +151,7 @@ class Script(object):
                 print("Crystal in Experiment {}".format(iexp))
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
-                line_dat = list(zip(phi, a, b, c, aa, bb, cc, vol))
+                line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
                 for line in line_dat:
                     print(msg.format(*line))
             dat.append(cell_dat)
@@ -191,7 +191,7 @@ class Script(object):
                 print("Crystal in Experiment {}".format(iexp))
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
-                line_dat = list(zip(phi, phi3, phi2, phi1))
+                line_dat = zip(phi, phi3, phi2, phi1)
                 for line in line_dat:
                     print(msg.format(*line))
             dat.append(angle_dat)

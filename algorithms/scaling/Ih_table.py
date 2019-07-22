@@ -558,10 +558,10 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         """
         assert target_Ih_table.n_work_blocks == 1
         target_asu_Ih_dict = dict(
-            list(zip(
+            zip(
                 target_Ih_table.blocked_data_list[0].asu_miller_index,
                 target_Ih_table.blocked_data_list[0].Ih_values,
-            ))
+            )
         )
         new_Ih_values = flex.double(self.size, 0.0)
         location_in_unscaled_array = 0

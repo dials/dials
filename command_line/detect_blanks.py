@@ -315,7 +315,7 @@ def run(args):
             blanks = results["data"][0]["blank"]
             pyplot.plot(xs, ys, color="blue", linestyle=linestyle)
             pyplot.plot(
-                *list(zip(*[(x, y) for x, y, blank in zip(xs, ys, blanks) if blank])),
+                *zip(*[(x, y) for x, y, blank in zip(xs, ys, blanks) if blank]),
                 color="red",
                 linestyle=linestyle
             )

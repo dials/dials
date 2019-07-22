@@ -148,7 +148,7 @@ def cross_validate(params, cross_validator):
         cross_validator.set_results_dict_configuration(keys, values)
 
         for i, v in enumerate(itertools.product(*values)):
-            e = dict(list(zip(keys, v)))
+            e = dict(zip(keys, v))
             for k, val in six.iteritems(e):
                 params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):

@@ -288,7 +288,7 @@ def test_iteration():
     assert k.count("col3") == 1
 
     # Try iterating rows
-    for row1, row2 in zip(table.rows(), list(zip(c1, c2, c3))):
+    for row1, row2 in zip(table.rows(), zip(c1, c2, c3)):
         assert row1["col1"] == row2[0]
         assert row1["col2"] == row2[1]
         assert row1["col3"] == row2[2]
