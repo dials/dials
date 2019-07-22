@@ -1,12 +1,12 @@
 from __future__ import division, print_function, absolute_import
 
+import logging
 import math
 
-from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
-from scitbx.matrix import col
 from dials.algorithms.integration.kapton_correction import get_absorption_correction
-import logging
+from dials.algorithms.shoebox import MaskCode
+from scitbx.matrix import col
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -23,8 +23,6 @@ class KaptonTape_2019(object):
         rotation_angle_deg,
         wavelength_ang=None,
     ):
-        from scitbx.matrix import col
-
         self.height_mm = h = height_mm  # plugin controlled
         self.thickness_mm = t = thickness_mm  # plugin controlled
         self.half_width_mm = w = half_width_mm  # plugin controlled
@@ -38,7 +36,7 @@ class KaptonTape_2019(object):
         G = get_absorption_correction()
         attenuation_length_mm = G(self.wavelength_ang)
         self.abs_coeff = 1 / attenuation_length_mm
-        #
+
         def create_kapton_face(ori, fast, slow, image_size, pixel_size, name):
             """ Create a face of the kapton as a dxtbx detector object """
             from dxtbx.model import Detector
@@ -143,7 +141,6 @@ class KaptonTape_2019(object):
         """ Get kapton path length traversed by an s1 vecto. If no kapton intersection or just touches the edge,
             then None is returned"""
         intersection_points = []
-        px = []
         # determine path length through kapton tape
         for face in self.faces:
             try:
@@ -159,10 +156,10 @@ class KaptonTape_2019(object):
                 intersection_points.append(
                     face[0].get_lab_coord(face[0].get_ray_intersection(s1))
                 )  # faces are single panel anyway
-            except RuntimeError as e:
+            except RuntimeError:
                 pass
 
-        if len(intersection_points) == 0:
+        if not intersection_points:
             return 0.0
         if len(intersection_points) == 1:
             logger.warning(
@@ -263,7 +260,7 @@ class KaptonTape_2019(object):
                     x_int, y_int = panel.get_lab_coord(panel.get_ray_intersection(s1))[
                         0:2
                     ]
-                except RuntimeError as e:
+                except RuntimeError:
                     pass
                 int_point = (x_int, y_int, detz)
                 # Arbitrary tolerance of couple of pixels otherwise these points were getting clustered together
@@ -375,6 +372,7 @@ class KaptonTape_2019(object):
         r0, r1, r2, r3 = pair_values[0]
         ra, rb, rc, rd = pair_values[1]
         # Get slope, intercept from 0-2 edge line and 1-3 edge line
+
         def get_line_equation(rA, rB):
             xA, yA, zA = rA
             xB, yB, zB = rB
@@ -447,9 +445,9 @@ class image_kapton_correction(object):
             sig_w = self.params.kapton_half_width_mm.sigma
             sig_a = self.params.rotation_angle_deg.sigma
             self.kapton_params_sigmas = (sig_h, sig_t, sig_w, sig_a)
-            assert not False in [
+            assert all(
                 sig >= 0 for sig in self.kapton_params_sigmas
-            ], "Kapton param sigmas must be nonnegative"
+            ), "Kapton param sigmas must be non-negative"
             self.kapton_params_maxes = [
                 [
                     self.kapton_params[i] + self.kapton_params_sigmas[j]
