@@ -218,7 +218,7 @@ class reeke_model:
         index_of_r = indices[index_of_r]
 
         # Which is the remaining column index?
-        index_of_q = [j for j in range(3) if not j in (index_of_p, index_of_r)][0]
+        index_of_q = [j for j in range(3) if j not in (index_of_p, index_of_r)][0]
 
         # permutation matrix such that h, k, l = M * (p, q, r)
         elems = [int(0)] * 9

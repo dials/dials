@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 # Tests for RestraintsParameterisation and associated classes used in refinement
 
-import math
 import os
 import random
 
@@ -55,7 +54,6 @@ def test_single_crystal_restraints_gradients():
     mybeam = models.beam
 
     # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, math.pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -196,7 +194,6 @@ def test_two_triclinic_crystals():
     mybeam = models.beam
 
     # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, math.pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()

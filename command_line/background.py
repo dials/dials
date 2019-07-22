@@ -58,9 +58,8 @@ def run(args):
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
-        self.parser.print_help()
-        print("Please pass an experiment list\n")
-        return
+        parser.print_help()
+        sys.exit("Please pass an experiment list")
 
     imagesets = experiments.imagesets()
 

@@ -15,12 +15,11 @@ import logging
 
 import libtbx.load_env
 from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListDumper
-from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSweep
 from dials.util.options import flatten_experiments

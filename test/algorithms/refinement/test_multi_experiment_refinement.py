@@ -210,7 +210,6 @@ def test(args=[]):
         space_group(space_group_symbols(1).hall()).type(),
         resolution,
     )
-    indices2 = index_generator.to_array()
 
     # Predict rays within the sweep range. Set experiment IDs
     ray_predictor = ScansRayPredictor(experiments, sweep_range)
@@ -284,14 +283,14 @@ def test(args=[]):
     refiner = RefinerFactory.from_parameters_data_experiments(
         params, obs_refs, experiments, verbosity=0
     )
-    history = refiner.run()
+    refiner.run()
 
     # scan varying
     params.refinement.parameterisation.scan_varying = True
     refiner = RefinerFactory.from_parameters_data_experiments(
         params, obs_refs, experiments, verbosity=0
     )
-    history = refiner.run()
+    refiner.run()
 
     # Ensure all models have scan-varying state set
     # (https://github.com/dials/dials/issues/798)

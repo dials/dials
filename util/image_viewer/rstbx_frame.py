@@ -148,24 +148,22 @@ class XrayFrame(wx.Frame):
 
         try:
             return file_name_or_data["TIMESTAMP"]
-        except TypeError as e:
+        except TypeError:
             pass
 
         try:
             return file_name_or_data.get_image_file()
-        except AttributeError as e:
+        except AttributeError:
             pass
 
         try:
             return os.path.abspath(file_name_or_data)
-        except TypeError as e:
+        except TypeError:
             pass
 
         try:
             return os.path.abspath(file_name_or_data.encode("ascii"))
-        except TypeError as e:
-            pass
-        except AttributeError as e:
+        except (AttributeError, TypeError):
             pass
 
         return None

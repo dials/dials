@@ -2,8 +2,8 @@
 entering the Ewald sphere is done the right way round"""
 
 from __future__ import absolute_import, division, print_function
+
 import math
-import sys
 import pytest
 
 
@@ -87,7 +87,6 @@ def test():
     )
 
     # Select those that are excited in a 30 degree sweep and get angles
-    UB = mycrystal.get_A()
     ray_predictor = ScansRayPredictor(experiments, sweep_range)
     obs_refs = ray_predictor(indices)
 
@@ -100,7 +99,6 @@ def test():
 
     print("Total number of observations made", len(obs_refs))
 
-    mypanel = mydetector[0]
     s0 = matrix.col(mybeam.get_s0())
     spindle = matrix.col(mygonio.get_rotation_axis())
 

@@ -343,7 +343,7 @@ class XrayFrame(AppFrame, XFBaseClass):
 
         try:
             title = file_name_or_data.full_path
-        except AttributeError as e:
+        except AttributeError:
             title = str(file_name_or_data)
         self.SetTitle(title)
 

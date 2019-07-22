@@ -15,7 +15,7 @@ absorption_defs = """
       .help = must be supplied as a user-defined function with a specific interface (not documented)
     algorithm = fuller_kapton kapton_2019 other
       .type = choice
-      .help = a specific absorption correction, or implementation thereof \ 
+      .help = a specific absorption correction, or implementation thereof \
               kapton_2019 is a more general implementation of fuller_kapton \
               for use on single/multi-panel detectors
     fuller_kapton {
@@ -459,9 +459,9 @@ class image_kapton_correction(object):
             sig_w = self.params.kapton_half_width_mm.sigma
             sig_a = self.params.rotation_angle_deg.sigma
             self.kapton_params_sigmas = (sig_h, sig_t, sig_w, sig_a)
-            assert not False in [
+            assert all(
                 sig >= 0 for sig in self.kapton_params_sigmas
-            ], "Kapton param sigmas must be nonnegative"
+            ), "Kapton param sigmas must be nonnegative"
             self.kapton_params_maxes = [
                 [
                     self.kapton_params[i] + self.kapton_params_sigmas[j]

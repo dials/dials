@@ -229,7 +229,6 @@ def test_stills_pred_param(tc):
             b = an_grad[name]
 
             abs_error = a - b
-            denom = a + b
 
             fns = five_number_summary(abs_error)
             print(
