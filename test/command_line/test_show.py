@@ -349,3 +349,14 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert result["exitcode"] == 1 and result["stderr"]
+
+
+def test_dials_show_on_scaled_data(dials_data):
+    """Test that dials.show works on scaled data."""
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refl = location.join("scaled_30.refl").strpath
+    expt = location.join("scaled_30.expt").strpath
+
+    result = procrunner.run(["dials.show", refl, expt])
+    assert result.returncode == 0
+    assert result.stderr == ""
