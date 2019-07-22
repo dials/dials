@@ -89,7 +89,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     assert result.misindexed_local == 0
     assert result.misindexed_global == 0
 
-    a, b, c = list(map(matrix.col, cryst_model.get_real_space_vectors()))
+    a, b, c = map(matrix.col, cryst_model.get_real_space_vectors())
     relative_error = 0.02
     a *= 1 + relative_error
     b *= 1 + relative_error

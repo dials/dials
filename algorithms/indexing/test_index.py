@@ -185,7 +185,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
             expected_hall_symbol,
         )
 
-    a, b, c = list(map(matrix.col, result.experiments[0].crystal.get_real_space_vectors()))
+    a, b, c = map(matrix.col, result.experiments[0].crystal.get_real_space_vectors())
     assert a.length() == pytest.approx(b.length())
     assert c.length() > b.length()
     assert a.angle(b, deg=True) == pytest.approx(90)

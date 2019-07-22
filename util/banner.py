@@ -14,7 +14,7 @@ def print_banner():
     d = logging.getLogger("dials")
     d.info(banner)
     logging_to_stdout = any(
-        [isinstance(h, logging.StreamHandler) for h in d.handlers]
+        map(lambda h: isinstance(h, logging.StreamHandler), d.handlers)
     )
     if not logging_to_stdout:
         print(banner)

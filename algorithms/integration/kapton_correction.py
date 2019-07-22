@@ -492,12 +492,12 @@ class image_kapton_correction(object):
                 self.detector_dist_mm,
                 self.pixel_size_mm,
                 self.wavelength_ang,
-                *list(map(float, self.panel_size_px))
+                *map(float, self.panel_size_px)
             )
             detector = self.expt.detector
             beam = self.expt.beam
             # y_max = int(detector[0].millimeter_to_pixel(detector[0].get_image_size())[1])
-            s0_fast, s0_slow = list(map(int, detector[0].get_beam_centre_px(beam.get_s0())))
+            s0_fast, s0_slow = map(int, detector[0].get_beam_centre_px(beam.get_s0()))
 
             absorption_corrections = flex.double()
             absorption_sigmas = (
