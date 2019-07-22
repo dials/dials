@@ -54,7 +54,7 @@ class SpotPredictor:
         self.d_min = self.detector[0].get_max_resolution_at_corners(self.beam.get_s0())
 
         # Get the number of frames from the max z value
-        xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
+        xcal, ycal, zcal = list(zip(*self.integrate_handle.xyzcal))
         self.scan.set_image_range(
             (
                 self.scan.get_image_range()[0],

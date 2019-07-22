@@ -62,7 +62,7 @@ def test_gaussian_smoother(plots=False):
     # Use the single value smoother multiple times...
     smooth_at = [e for e in range(1, 101)]
     data = [smoother.value_weight(e, myparam) for e in smooth_at]
-    vals, weights, sumweights = zip(*data)
+    vals, weights, sumweights = list(zip(*data))
     assert len(smooth_at) == len(vals)
 
     # ...and the multi value smoother once

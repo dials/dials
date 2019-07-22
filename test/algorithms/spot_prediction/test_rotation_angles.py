@@ -46,7 +46,7 @@ def test(dials_regression, run_in_tmpdir):
     d_min = min(d)
 
     # Get the number of frames from the max z value
-    xcal, ycal, zcal = zip(*integrate_handle.xyzcal)
+    xcal, ycal, zcal = list(zip(*integrate_handle.xyzcal))
     num_frames = int(math.ceil(max(zcal)))
     scan.set_image_range(
         (scan.get_image_range()[0], scan.get_image_range()[0] + num_frames - 1)

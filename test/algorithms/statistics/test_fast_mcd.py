@@ -214,7 +214,7 @@ def test_fast_mcd_large(dials_regression):
 
     # ignore first line, which is a header
     residuals = [[float(val) for val in e.split()] for e in residuals[1:]]
-    X_resid_mm, Y_resid_mm, Phi_resid_mm = zip(*residuals)
+    X_resid_mm, Y_resid_mm, Phi_resid_mm = list(zip(*residuals))
 
     X_resid_mm = flex.double(X_resid_mm)
     Y_resid_mm = flex.double(Y_resid_mm)

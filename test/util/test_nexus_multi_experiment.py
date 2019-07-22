@@ -159,8 +159,8 @@ def run_single(experiments1, filename):
         )
 
     # Get a list of all beam etc
-    beam1, detector1, goniometer1, scan1, crystal1 = zip(*index1)
-    beam2, detector2, goniometer2, scan2, crystal2 = zip(*index2)
+    beam1, detector1, goniometer1, scan1, crystal1 = list(zip(*index1))
+    beam2, detector2, goniometer2, scan2, crystal2 = list(zip(*index2))
 
     # If any models are shared then check they are shard in both
     num = len(beam1)

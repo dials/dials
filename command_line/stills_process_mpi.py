@@ -108,7 +108,7 @@ class Script(base_script):
                 tags.append("%s_%05d" % (basename, i))
             else:
                 tags.append(basename)
-        iterable = zip(tags, all_paths)
+        iterable = list(zip(tags, all_paths))
 
         self.subset = [
             item for i, item in enumerate(iterable) if (i + self.rank) % self.size == 0

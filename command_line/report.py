@@ -202,7 +202,7 @@ class ScanVaryingCrystalAnalyser(object):
             scan_pts = range(crystal.num_scan_points)
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
-            a, b, c, aa, bb, cc = zip(*cell_params)
+            a, b, c, aa, bb, cc = list(zip(*cell_params))
             aa = list(round(i, ndigits=6) for i in aa)
             bb = list(round(i, ndigits=6) for i in bb)
             cc = list(round(i, ndigits=6) for i in cc)
@@ -222,7 +222,7 @@ class ScanVaryingCrystalAnalyser(object):
                 print("Crystal in Experiment {}".format(iexp))
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
-                line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
+                line_dat = list(zip(phi, a, b, c, aa, bb, cc, vol))
                 for line in line_dat:
                     print(msg.format(*line))
             dat.append(cell_dat)
@@ -358,13 +358,13 @@ the refinement algorithm accounting for unmodelled features in the data.
                 )
                 for U in Umats
             ]
-            phi3, phi2, phi1 = zip(*angles)
+            phi3, phi2, phi1 = list(zip(*angles))
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
                 print("Crystal in Experiment {}".format(iexp))
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
-                line_dat = zip(phi, phi3, phi2, phi1)
+                line_dat = list(zip(phi, phi3, phi2, phi1))
                 for line in line_dat:
                     print(msg.format(*line))
             dat.append(angle_dat)

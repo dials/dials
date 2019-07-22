@@ -521,9 +521,9 @@ class AdaptLbfgs(Refinery):
             ]
 
         # reduce blockwise results
-        flist, glist, clist = zip(*task_results)
-        glist = zip(*glist)
-        clist = zip(*clist)
+        flist, glist, clist = list(zip(*task_results))
+        glist = list(zip(*glist))
+        clist = list(zip(*clist))
         f = sum(flist)
         g = [sum(g) for g in glist]
         c = [sum(c) for c in clist]

@@ -142,13 +142,13 @@ def cross_validate(params, cross_validator):
 
         # this code below should work for more than one parameter to be optimised,
         # but one cannot specify this yet from the command line
-        keys, values = zip(*options_dict.items())
+        keys, values = list(zip(*options_dict.items()))
 
         cross_validator.create_results_dict(len(values[0]))
         cross_validator.set_results_dict_configuration(keys, values)
 
         for i, v in enumerate(itertools.product(*values)):
-            e = dict(zip(keys, v))
+            e = dict(list(zip(keys, v)))
             for k, val in six.iteritems(e):
                 params = cross_validator.set_parameter(params, k, val)
             for n in range(params.cross_validation.nfolds):

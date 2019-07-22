@@ -272,7 +272,7 @@ class FastMCD(object):
         for b in blocksizes[1:]:
             starts.append(ends[-1])
             ends.append(ends[-1] + b)
-        blocks = zip(starts, ends)
+        blocks = list(zip(starts, ends))
 
         # split into groups
         groups = []

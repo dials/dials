@@ -211,7 +211,7 @@ Targeted outlier rejection requires a target Ih_table with nblocks = 1"""
         Ih_table = self._Ih_table_block
         target = self._target_Ih_table_block
         target_asu_Ih_dict = dict(
-            zip(target.asu_miller_index, zip(target.Ih_values, target.variances))
+            list(zip(target.asu_miller_index, list(zip(target.Ih_values, target.variances))))
         )
         Ih_table.Ih_table["target_Ih_value"] = flex.double(Ih_table.size, 0.0)
         Ih_table.Ih_table["target_Ih_sigmasq"] = flex.double(Ih_table.size, 0.0)

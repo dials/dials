@@ -123,7 +123,7 @@ def eval_flag_expression(expression, reflections):
 
     flags = list(flex.reflection_table.flags.names.iteritems())
     flags.sort(key=itemgetter(0))
-    flag_names, _ = zip(*flags)
+    flag_names, _ = list(zip(*flags))
 
     # define shorthand function
     def get_flag(flag):

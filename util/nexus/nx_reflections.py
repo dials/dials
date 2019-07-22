@@ -48,7 +48,7 @@ def make_vlen_uint(handle, name, data, description, units=None):
 
 def write(handle, key, data):
     if key == "miller_index":
-        col1, col2, col3 = zip(*list(data))
+        col1, col2, col3 = list(zip(*list(data)))
         col1 = flex.int(col1)
         col2 = flex.int(col2)
         col3 = flex.int(col3)

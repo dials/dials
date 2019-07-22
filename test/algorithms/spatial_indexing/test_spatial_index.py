@@ -53,7 +53,7 @@ def inside3d(rg, a):
 
 def test_vec2_double(vec2_double):
     index = make_spatial_index(vec2_double)
-    x, y = zip(*vec2_double)
+    x, y = list(zip(*vec2_double))
     x0, x1, y0, y1 = (int(min(x)), int(max(x)), int(min(y)), int(max(y)))
     for i in range(10):
         xx0 = random.randint(x0, x1)
@@ -70,7 +70,7 @@ def test_vec2_double(vec2_double):
 
 def test_vec3_double(vec3_double):
     index = make_spatial_index(vec3_double)
-    x, y, z = zip(*vec3_double)
+    x, y, z = list(zip(*vec3_double))
     x0, x1, y0, y1, z0, z1 = (
         int(min(x)),
         int(max(x)),

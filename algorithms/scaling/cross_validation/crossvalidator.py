@@ -85,7 +85,7 @@ class CrossValidator(object):
         """Add configuration information to the results dict"""
         assert len(keys) == len(values)
         for i, v in enumerate(itertools.product(*values)):
-            e = dict(zip(keys, v))
+            e = dict(list(zip(keys, v)))
             for k, val in six.iteritems(e):
                 self.results_dict[i]["configuration"].append(str(k) + "=" + str(val))
 

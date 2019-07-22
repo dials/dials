@@ -226,7 +226,7 @@ def hist(data, width=80, symbol="#", prefix=""):
     assert width > 0, "Width should be > 0"
     count = Counter(data)
     count = sorted(count.items())
-    frame, count = zip(*count)
+    frame, count = list(zip(*count))
     min_frame = min(frame)
     max_frame = max(frame)
     min_count = min(count)
