@@ -625,9 +625,8 @@ class LBFGScurvs(AdaptLbfgs):
 
         diags = 1.0 / curvs
 
-        if self._verbosity > 2:
-            msg = "  curv: " + "%.5f " * len(tuple(curvs))
-            logger.debug(msg, *curvs)
+        msg = "  curv: " + "%.5f " * len(tuple(curvs))
+        logger.debug(msg, *curvs)
 
         return self._f, self._g, diags
 

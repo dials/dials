@@ -257,13 +257,12 @@ class ConstraintManagerFactory(object):
             indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
             if len(indices) == 1:
                 continue
-            if self._verbosity > 1:
-                logger.debug(
-                    "\nThe following parameters will be constrained "
-                    "to enforce equal shifts at each step of refinement:"
-                )
-                for k in indices:
-                    logger.debug(self._all_names[k])
+            logger.debug(
+                "\nThe following parameters will be constrained "
+                "to enforce equal shifts at each step of refinement:"
+            )
+            for k in indices:
+                logger.debug(self._all_names[k])
         return EqualShiftConstraint(indices, self._all_vals)
 
     def __call__(self):
