@@ -208,9 +208,6 @@ class RefinerFactory(object):
     def _build_components(cls, params, reflections, experiments, verbosity):
         """low level build"""
 
-        if verbosity == 0:
-            logging.getLogger("dials.algorithms.refinement").setLevel(logging.WARNING)
-
         # Currently a refinement job can only have one parameterisation of the
         # prediction equation. This can either be of the XYDelPsi (stills) type, the
         # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
@@ -919,18 +916,8 @@ class Refiner(object):
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
-            truncated = False
-            max_rows = 100
-            if self._verbosity < 3 and len(rows) > max_rows:
-                rows = rows[0:max_rows]
-                truncated = True
             st = simple_table(rows, header)
             logger.info(st.format())
-            if truncated:
-                logger.info(
-                    "Table truncated to show the first %d experiments only", max_rows
-                )
-                logger.info("Re-run with verbosity >= 3 to show all experiments")
 
         return
 
@@ -1011,27 +998,26 @@ class Refiner(object):
         # Do refinement and return history #
         ####################################
 
-        if self._verbosity > 1:
-            logger.debug("\nExperimental models before refinement:")
-            for i, beam in enumerate(self._experiments.beams()):
-                logger.debug(ordinal_number(i) + " " + str(beam))
-            for i, detector in enumerate(self._experiments.detectors()):
-                logger.debug(ordinal_number(i) + " " + str(detector))
-            for i, goniometer in enumerate(self._experiments.goniometers()):
-                if goniometer is None:
-                    continue
-                logger.debug(ordinal_number(i) + " " + str(goniometer))
-            for i, scan in enumerate(self._experiments.scans()):
-                if scan is None:
-                    continue
-                logger.debug(ordinal_number(i) + " " + str(scan))
-            for i, crystal in enumerate(self._experiments.crystals()):
-                logger.debug(ordinal_number(i) + " " + str(crystal))
+        logger.debug("\nExperimental models before refinement:")
+        for i, beam in enumerate(self._experiments.beams()):
+            logger.debug(ordinal_number(i) + " " + str(beam))
+        for i, detector in enumerate(self._experiments.detectors()):
+            logger.debug(ordinal_number(i) + " " + str(detector))
+        for i, goniometer in enumerate(self._experiments.goniometers()):
+            if goniometer is None:
+                continue
+            logger.debug(ordinal_number(i) + " " + str(goniometer))
+        for i, scan in enumerate(self._experiments.scans()):
+            if scan is None:
+                continue
+            logger.debug(ordinal_number(i) + " " + str(scan))
+        for i, crystal in enumerate(self._experiments.crystals()):
+            logger.debug(ordinal_number(i) + " " + str(crystal))
 
         self._refinery.run()
 
-        # These involve calculation, so skip them when verbosity is zero
-        if self._verbosity > 0:
+        # These involve calculation, so skip them when output is quiet
+        if logger.getEffectiveLevel() < logging.ERROR:
             self.print_step_table()
             self.print_out_of_sample_rmsd_table()
             self.print_exp_rmsd_table()
@@ -1043,25 +1029,24 @@ class Refiner(object):
         # Perform post-run tasks to write the refined states back to the models
         self._update_models()
 
-        if self._verbosity > 1:
-            logger.debug("\nExperimental models after refinement:")
-            for i, beam in enumerate(self._experiments.beams()):
-                logger.debug(ordinal_number(i) + " " + str(beam))
-            for i, detector in enumerate(self._experiments.detectors()):
-                logger.debug(ordinal_number(i) + " " + str(detector))
-            for i, goniometer in enumerate(self._experiments.goniometers()):
-                if goniometer is None:
-                    continue
-                logger.debug(ordinal_number(i) + " " + str(goniometer))
-            for i, scan in enumerate(self._experiments.scans()):
-                if scan is None:
-                    continue
-                logger.debug(ordinal_number(i) + " " + str(scan))
-            for i, crystal in enumerate(self._experiments.crystals()):
-                logger.debug(ordinal_number(i) + " " + str(crystal))
+        logger.debug("\nExperimental models after refinement:")
+        for i, beam in enumerate(self._experiments.beams()):
+            logger.debug(ordinal_number(i) + " " + str(beam))
+        for i, detector in enumerate(self._experiments.detectors()):
+            logger.debug(ordinal_number(i) + " " + str(detector))
+        for i, goniometer in enumerate(self._experiments.goniometers()):
+            if goniometer is None:
+                continue
+            logger.debug(ordinal_number(i) + " " + str(goniometer))
+        for i, scan in enumerate(self._experiments.scans()):
+            if scan is None:
+                continue
+            logger.debug(ordinal_number(i) + " " + str(scan))
+        for i, crystal in enumerate(self._experiments.crystals()):
+            logger.debug(ordinal_number(i) + " " + str(crystal))
 
-            # Report on the refined parameters
-            logger.debug(str(self._param_report))
+        # Report on the refined parameters
+        logger.debug(str(self._param_report))
 
         # Return the refinement history
         return self._refinery.history

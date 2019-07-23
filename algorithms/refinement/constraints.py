@@ -170,7 +170,6 @@ class SparseConstraintManager(ConstraintManager):
         # create constrained columns
         constr_block = sparse.matrix(jacobian.n_rows, len(self._constraints))
 
-        mask = flex.bool(jacobian.n_rows, True)
         for i, (gp, c) in enumerate(zip(self._constrained_gps, constr_block.cols())):
             # this copies, so c is no longer the matrix column but a new vector
             for j in gp:
@@ -258,13 +257,12 @@ class ConstraintManagerFactory(object):
             indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
             if len(indices) == 1:
                 continue
-            if self._verbosity > 1:
-                logger.debug(
-                    "\nThe following parameters will be constrained "
-                    "to enforce equal shifts at each step of refinement:"
-                )
-                for k in indices:
-                    logger.debug(self._all_names[k])
+            logger.debug(
+                "\nThe following parameters will be constrained "
+                "to enforce equal shifts at each step of refinement:"
+            )
+            for k in indices:
+                logger.debug(self._all_names[k])
         return EqualShiftConstraint(indices, self._all_vals)
 
     def __call__(self):

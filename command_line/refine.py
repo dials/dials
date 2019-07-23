@@ -132,7 +132,6 @@ phil_overrides = libtbx.phil.parse(
     """
   refinement
   {
-    verbosity = 2
     parameterisation.scan_varying = Auto
   }
 """
