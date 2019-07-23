@@ -328,13 +328,10 @@ def test_scale_and_filter(dials_data, tmpdir):
         "stdcutoff=3.0",
         "mode=image_group",
         "max_cycles=6",
-        "plots.histogram=cc_half_histograms.png",
         "d_min=1.4",
         "group_size=5",
-        "plots.merging_stats=merging_stats.png",
         "unmerged_mtz=unmerged.mtz",
         "output.analysis_results=analysis_results.json",
-        "plots.image_ranges=reduced_image_ranges.png",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -346,9 +343,6 @@ def test_scale_and_filter(dials_data, tmpdir):
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
-    assert tmpdir.join("reduced_image_ranges.png").check()
-    assert tmpdir.join("merging_stats.png").check()
-    assert tmpdir.join("cc_half_histograms.png").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
     assert result.overall.cc_one_half > 0.96  # 17/05/19 was 0.9722
@@ -370,12 +364,9 @@ def test_scale_and_filter(dials_data, tmpdir):
         "stdcutoff=1.0",
         "mode=dataset",
         "max_cycles=2",
-        "plots.histogram=cc_half_histograms_2.png",
         "d_min=1.4",
-        "plots.merging_stats=merging_stats_2.png",
         "unmerged_mtz=unmerged.mtz",
         "output.analysis_results=analysis_results_2.json",
-        "plots.image_ranges=reduced_image_ranges_2.png",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -386,9 +377,6 @@ def test_scale_and_filter(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
-    assert tmpdir.join("merging_stats_2.png").check()
-    assert tmpdir.join("cc_half_histograms_2.png").check()
-    assert tmpdir.join("analysis_results_2.json").check()
     with open(tmpdir.join("analysis_results_2.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]

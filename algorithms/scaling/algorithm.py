@@ -39,6 +39,36 @@ def do_error_analysis(scaler, reselect=True, apply_to_reflection_table=False):
         scaler.make_ready_for_scaling()
 
 
+def scaling_cycle(scaler):
+    """Do a cycle of scaling, skipping the last full matrix and error model
+    optimisation round."""
+    scaler.perform_scaling()
+
+    if (
+        scaler.params.reflection_selection.intensity_choice == "combine"
+        or scaler.params.scaling_options.outlier_rejection
+    ):
+
+        expand_and_do_outlier_rejection(scaler)
+
+        do_intensity_combination(scaler, reselect=True)
+
+        scaler.perform_scaling()
+
+    if (
+        scaler.params.weighting.optimise_errors
+        or scaler.params.scaling_options.outlier_rejection
+    ):
+
+        expand_and_do_outlier_rejection(scaler)
+
+        do_error_analysis(scaler, reselect=True, apply_to_reflection_table=True)
+
+        scaler.perform_scaling()
+
+    return scaler
+
+
 def scaling_algorithm(scaler):
     """Main algorithm for scaling."""
     scaler.perform_scaling()

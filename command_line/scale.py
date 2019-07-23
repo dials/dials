@@ -34,19 +34,27 @@ from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
     DialsMergingStatisticsError,
 )
-from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.util.exclude_images import (
+    exclude_image_ranges_for_scaling,
+    get_valid_image_ranges,
+)
 from dials.algorithms.scaling.algorithm import (
     targeted_scaling_algorithm,
     scaling_algorithm,
+    scaling_and_filtering_part_1,
 )
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
     register_merging_stats_observers,
+    register_scale_and_filter_observers,
 )
+from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.report.analysis import make_merging_statistics_summary
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
+from dials.command_line.compute_delta_cchalf import Script as deltaccscript
+from dials.command_line.compute_delta_cchalf import phil_scope as deltacc_phil_scope
 
 help_message = """
 This program performs scaling on integrated datasets, which attempts to improve
@@ -150,6 +158,7 @@ phil_scope = phil.parse(
   include scope dials.algorithms.scaling.scaling_options.phil_scope
   include scope dials.algorithms.scaling.cross_validation.cross_validate.phil_scope
   include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
+  include scope dials.algorithms.scaling.scale_and_filter.phil_scope
   include scope dials.util.exclude_images.phil_scope
   include scope dials.util.multi_dataset_handling.phil_scope
 """,
@@ -161,11 +170,14 @@ class Script(Subject):
     """Main script to run the scaling algorithm."""
 
     def __init__(self, params, experiments, reflections):
-        super(Script, self).__init__(events=["merging_statistics", "run_script"])
+        super(Script, self).__init__(
+            events=["merging_statistics", "run_script", "run_scale_and_filter"]
+        )
         self.scaler = None
         self.scaled_miller_array = None
         self.merging_statistics_result = None
         self.anom_merging_statistics_result = None
+        self.filtering_results = None
         self.params, self.experiments, self.reflections = self.prepare_input(
             params, experiments, reflections
         )
@@ -207,6 +219,119 @@ class Script(Subject):
         # All done!
         logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
+
+    @Subject.notify_event(event="run_script")
+    def run_scaling_cycle(self):
+        """Do a round of scaling for scaling and filtering."""
+        self.scaler = scaling_and_filtering_part_1(self.scaler)
+        self.remove_unwanted_datasets()
+        self.scaled_miller_array = scaled_data_as_miller_array(
+            self.reflections, self.experiments, anomalous_flag=False
+        )
+        try:
+            self.calculate_merging_stats()
+        except DialsMergingStatisticsError as e:
+            logger.info(e)
+        logger.info("Performed cycle of scaling.")
+
+    @Subject.notify_event(event="run_scale_and_filter")
+    def run_scale_and_filter(self):
+        """Run cycles of scaling and filtering."""
+        start_time = time.time()
+        results = AnalysisResults()
+
+        for counter in range(1, self.params.filtering.deltacchalf.max_cycles + 1):
+            self.run_scaling_cycle()
+
+            if counter == 1:
+                results.initial_expids_and_image_ranges = [
+                    (exp.identifier, exp.scan.get_image_range()) if exp.scan else None
+                    for exp in self.experiments
+                ]
+
+            delta_cc_params = deltacc_phil_scope.extract()
+            delta_cc_params.mode = self.params.filtering.deltacchalf.mode
+            delta_cc_params.group_size = self.params.filtering.deltacchalf.group_size
+            delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
+            logger.info("\nPerforming a round of filtering.\n")
+
+            script = deltaccscript(delta_cc_params, self.experiments, self.reflections)
+            script.run()
+
+            valid_image_ranges = get_valid_image_ranges(self.experiments)
+            results.expids_and_image_ranges = [
+                (exp.identifier, valid_image_ranges[i]) if exp.scan else None
+                for i, exp in enumerate(self.experiments)
+            ]
+
+            self.experiments = script.experiments
+            self.params.dataset_selection.use_datasets = None
+            self.params.dataset_selection.exclude_datasets = None
+
+            results = log_cycle_results(results, self, script)
+            logger.info(
+                "Cycle %s of filtering, n_reflections removed this cycle: %s",
+                counter,
+                results.get_last_cycle_results()["n_removed"],
+            )
+
+            # Test termination conditions
+            latest_results = results.get_last_cycle_results()
+            if latest_results["n_removed"] == 0:
+                logger.info(
+                    "Finishing scaling and filtering as no data removed in this cycle."
+                )
+                self.reflections = script.reflections
+                results.finish(termination_reason="no_more_removed")
+                break
+
+            # Need to split reflections for further processing.
+            self.reflections = parse_multiple_datasets(script.reflections)
+
+            if (
+                latest_results["cumul_percent_removed"]
+                > self.params.filtering.deltacchalf.max_percent_removed
+            ):
+                logger.info(
+                    "Finishing scale and filtering as have now removed more than the limit."
+                )
+                results = self._run_final_scale_cycle(results)
+                results.finish(termination_reason="max_percent_removed")
+                break
+
+            if self.params.filtering.deltacchalf.min_completeness:
+                if (
+                    latest_results["merging_stats"]["completeness"]
+                    < self.params.filtering.deltacchalf.min_completeness
+                ):
+                    logger.info(
+                        "Finishing scaling and filtering as completeness now below cutoff."
+                    )
+                    results = self._run_final_scale_cycle(results)
+                    results.finish(termination_reason="below_completeness_limit")
+                    break
+
+            if counter == self.params.filtering.deltacchalf.max_cycles:
+                logger.info("Finishing as reached max number of cycles.")
+                results = self._run_final_scale_cycle(results)
+                results.finish(termination_reason="max_cycles")
+                break
+
+            #  If not finished then need to create new scaler to try again
+            self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+        self.filtering_results = results
+        # Print summary of results
+        logger.info(results.make_summary())
+
+        # All done!
+        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
+        logger.info("%s%s%s", "\n", "=" * 80, "\n")
+
+    def _run_final_scale_cycle(self, results):
+        self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+        self.run()
+        results.add_final_stats(self.merging_statistics_result)
+        return results
 
     @staticmethod
     def prepare_input(params, experiments, reflections):
@@ -622,7 +747,17 @@ def run_scaling(params, experiments, reflections):
             register_default_scaling_observers(script)
         else:
             register_merging_stats_observers(script)
-        script.run()
+        if params.filtering.method:
+            if script.scaler.id_ != "multi":
+                raise Sorry(
+                    """
+Scaling and filtering can only be performed in multi-dataset scaling mode
+(not single dataset or scaling against a reference)"""
+                )
+            register_scale_and_filter_observers(script)
+            script.run_scale_and_filter()
+        else:
+            script.run()
         script.export()
 
 

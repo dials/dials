@@ -10,7 +10,8 @@ from dxtbx.model import Crystal, Experiment, Scan
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.array_family import flex
 from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
-from dials.command_line.scale_and_filter import ScaleAndFilter, AnalysisResults
+from dials.command_line.scale_and_filter import ScaleAndFilter
+from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 
 
 def generate_test_reflections(n=2):
@@ -97,11 +98,11 @@ def mock_experiments(n=3):
         exp.scan.return_value = True
         exp.scan.get_image_range.return_value = (1, 10)
         explist.append(exp)
-    return exp
+    return explist
 
 
 def _mock_scaler():
-    scaler = mock.Mock()
+    scaler = mock.MagicMock()
     scaler.run.return_value = None
     return scaler
 
@@ -146,15 +147,13 @@ def test_scale_and_filter_termination(last_cycle_results, expected_termination):
     exp = mock_experiments(3)
     refl = []
     params = generated_param()
-    params.filtering.min_completeness = 95.0
+    params.filtering.deltacchalf.min_completeness = 95.0
 
     mock_res = _mock_results(last_cycle_results)
 
-    scale_and_filter = ScaleAndFilter(
-        params, params.scale, params.delta_cc_half, _scaling_script, _scaling_script
-    )
-    with mock.patch.object(
-        scale_and_filter, "log_cycle_results", return_value=mock_res
+    scale_and_filter = ScaleAndFilter(params, _scaling_script, _scaling_script)
+    with mock.patch(
+        "dials.command_line.scale_and_filter.log_cycle_results", return_value=mock_res
     ):
         results = scale_and_filter.scale_and_filter(exp, refl)
         results.finish.assert_called_with(termination_reason=expected_termination)
@@ -186,7 +185,7 @@ def test_scale_and_filter_results_logging():
     with mock.patch.object(
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
-        res = ScaleAndFilter.log_cycle_results(results, scaling_script, filter_script)
+        res = log_cycle_results(results, scaling_script, filter_script)
     # test things have been logged correctly
     cycle_results = res.get_cycle_results()
     assert len(cycle_results) == 1
@@ -202,7 +201,7 @@ def test_scale_and_filter_results_logging():
     with mock.patch.object(
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
-        res = ScaleAndFilter.log_cycle_results(res, scaling_script, filter_script)
+        res = log_cycle_results(res, scaling_script, filter_script)
     cycle_results = res.get_cycle_results()
     assert len(cycle_results) == 2
     assert cycle_results[1]["cumul_percent_removed"] == 100 * 2 * 50.0 / 1000.0
