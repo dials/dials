@@ -16,7 +16,7 @@ from dials.algorithms.merging.merge import (
     make_merged_mtz_file,
     merge_and_truncate,
 )
-from libtbx import phil, Auto
+from libtbx import phil
 
 
 help_message = """Program to merge scaled dials data."""
@@ -56,10 +56,9 @@ reporting {
 output {
     log = dials.merge.log
         .type = str
-    mtz = auto
+    mtz = merged.mtz
         .type = str
-        .help = "Filename to use, defaults to truncated.mtz or scaled_merged.mtz"
-                "depending on whether the data has been truncated."
+        .help = "Filename to use for mtz output."
 }
 include scope cctbx.french_wilson.master_phil
 """,
@@ -137,13 +136,6 @@ can be processed with dials.merge"""
 with dials.merge"""
                 % k
             )
-
-    # Decide a suitable output filename if using auto option.
-    if params.output.mtz in (None, Auto, "auto"):
-        if params.truncate:
-            params.output.mtz = "truncated.mtz"
-        else:
-            params.output.mtz = "scaled_merged.mtz"
 
     try:
         mtz_file = merge_data_to_mtz(params, experiments, reflections)

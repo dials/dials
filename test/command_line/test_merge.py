@@ -23,8 +23,8 @@ def test_merge(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""
-    assert tmpdir.join("truncated.mtz").check()
-    m = mtz.object(tmpdir.join("truncated.mtz").strpath)
+    assert tmpdir.join("merged.mtz").check()
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -38,8 +38,8 @@ def test_merge(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""
-    assert tmpdir.join("scaled_merged.mtz").check()
-    m = mtz.object(tmpdir.join("scaled_merged.mtz").strpath)
+    assert tmpdir.join("merged.mtz").check()
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -53,8 +53,8 @@ def test_merge(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""
-    assert tmpdir.join("truncated.mtz").check()
-    m = mtz.object(tmpdir.join("truncated.mtz").strpath)
+    assert tmpdir.join("merged.mtz").check()
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -68,8 +68,8 @@ def test_merge(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""
-    assert tmpdir.join("scaled_merged.mtz").check()
-    m = mtz.object(tmpdir.join("scaled_merged.mtz").strpath)
+    assert tmpdir.join("merged.mtz").check()
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -127,8 +127,8 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""
-    assert tmpdir.join("truncated.mtz").check()
-    m = mtz.object(tmpdir.join("truncated.mtz").strpath)
+    assert tmpdir.join("merged.mtz").check()
+    m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
