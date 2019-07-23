@@ -111,9 +111,10 @@ def merge_and_truncate(params, experiments, reflections):
     anom_amplitudes = None
     if params.truncate:
         if params.anomalous:
+            logger.info("\nScaling input intensities via French-Wilson Method")
             out = StringIO()
             anom_amplitudes = intensities.french_wilson(params=params, log=out)
-            logger.info(out.getvalue())
+            logger.debug(out.getvalue())
             assert anom_amplitudes.is_xray_amplitude_array()
             amplitudes = anom_amplitudes.as_non_anomalous_array()
             amplitudes = amplitudes.merge_equivalents().array()
