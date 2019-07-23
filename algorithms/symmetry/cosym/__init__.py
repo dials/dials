@@ -395,7 +395,9 @@ class CosymAnalysis(symmetry_base, Subject):
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
                             reindexing_ops[i_cluster] = (
-                                cb_op * self.cb_op_inp_min
+                                self.cb_op_inp_min.inverse()
+                                * cb_op
+                                * self.cb_op_inp_min
                             ).as_xyz()
 
         return reindexing_ops
