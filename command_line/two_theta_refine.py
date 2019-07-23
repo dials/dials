@@ -106,10 +106,6 @@ phil_scope = parse(
   refinement
     .help = "Parameters to configure the refinement"
   {
-    verbosity = 2
-      .help = "verbosity level"
-      .type = int(value_min=0)
-
     filter_integrated_centroids = True
       .type = bool
       .help = "If integrated centroids are provided, filter these so that only"
@@ -249,8 +245,6 @@ class Script(object):
             TwoThetaPredictionParameterisation,
         )
 
-        verb = params.refinement.verbosity
-
         # Only parameterise the crystal unit cell
         det_params = None
         beam_params = None
@@ -274,7 +268,7 @@ class Script(object):
         # Note: If not all reflections are used, then the filtering must be
         # communicated to generate_cif/mmcif() to be included in the CIF file!
         refman = TwoThetaReflectionManager(
-            reflections, experiments, outlier_detector=None, verbosity=verb
+            reflections, experiments, outlier_detector=None
         )
 
         # Reflection predictor
@@ -300,7 +294,6 @@ class Script(object):
             target=target,
             prediction_parameterisation=pred_param,
             log=None,
-            verbosity=verb,
             tracking=journal,
             max_iterations=20,
         )
@@ -315,7 +308,6 @@ class Script(object):
             refman=refman,
             target=target,
             refinery=refinery,
-            verbosity=verb,
         )
 
         return refiner

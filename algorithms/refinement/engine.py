@@ -171,7 +171,6 @@ class Refinery(object):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -196,7 +195,6 @@ class Refinery(object):
         # filename for an optional log file
         self._log = log
 
-        self._verbosity = verbosity
         self._target_achieved = False
         self._max_iterations = max_iterations
 
@@ -640,7 +638,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -651,7 +648,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -830,7 +826,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
         **kwds
@@ -842,7 +837,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )

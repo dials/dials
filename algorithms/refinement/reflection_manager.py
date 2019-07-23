@@ -226,7 +226,7 @@ class BlockCalculator(object):
 class ReflectionManagerFactory(object):
     @staticmethod
     def from_parameters_reflections_experiments(
-        params, reflections, experiments, do_stills=False, verbosity=0
+        params, reflections, experiments, do_stills=False
     ):
 
         """Given a set of parameters and models, build a reflection manager
@@ -300,7 +300,7 @@ class ReflectionManagerFactory(object):
             )
 
             outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
-                params, colnames, verbosity
+                params, colnames
             )
 
         # override default weighting strategy?
@@ -344,7 +344,6 @@ class ReflectionManagerFactory(object):
             trim_scan_edges=params.trim_scan_edges,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
-            verbosity=verbosity,
         )
 
 
@@ -371,14 +370,10 @@ class ReflectionManager(object):
         trim_scan_edges=0.0,
         outlier_detector=None,
         weighting_strategy_override=None,
-        verbosity=0,
     ):
 
         if len(reflections) == 0:
             raise ValueError("Empty reflections table provided to ReflectionManager")
-
-        # set verbosity
-        self._verbosity = verbosity
 
         # keep track of models
         self._experiments = experiments

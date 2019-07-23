@@ -205,7 +205,6 @@ def test1(dials_regression):
         target=target,
         prediction_parameterisation=pred_param,
         log=None,
-        verbosity=0,
         max_iterations=20,
     )
 
@@ -219,7 +218,6 @@ def test1(dials_regression):
         refman=refman,
         target=target,
         refinery=refinery,
-        verbosity=0,
     )
 
     history = refiner.run()

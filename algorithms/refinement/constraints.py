@@ -191,11 +191,10 @@ class ConstraintManagerFactory(object):
     """Build equal shift constraints as requested in params and package into
     a constraints manager to be linked to the Refinery"""
 
-    def __init__(self, refinement_phil, pred_param, sparse=False, verbosity=0):
+    def __init__(self, refinement_phil, pred_param, sparse=False):
 
         self._params = refinement_phil
         self._pred_param = pred_param
-        self._verbosity = verbosity
 
         # full parameter names and values
         self._all_names = self._pred_param.get_param_names()

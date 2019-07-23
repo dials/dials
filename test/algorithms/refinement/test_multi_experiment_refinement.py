@@ -216,7 +216,7 @@ def test(args=[]):
     ray_predictor = ScansRayPredictor(experiments, sweep_range)
     obs_refs1 = ray_predictor(indices1, experiment_id=0)
     obs_refs1["id"] = flex.int(len(obs_refs1), 0)
-    obs_refs2 = ray_predictor(indices1, experiment_id=1)
+    obs_refs2 = ray_predictor(indices2, experiment_id=1)
     obs_refs2["id"] = flex.int(len(obs_refs2), 1)
 
     # Take only those rays that intersect the detector
@@ -282,16 +282,16 @@ def test(args=[]):
     from dials.algorithms.refinement.refiner import RefinerFactory
 
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, obs_refs, experiments, verbosity=0
+        params, obs_refs, experiments
     )
-    history = refiner.run()
+    refiner.run()
 
     # scan varying
     params.refinement.parameterisation.scan_varying = True
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, obs_refs, experiments, verbosity=0
+        params, obs_refs, experiments
     )
-    history = refiner.run()
+    refiner.run()
 
     # Ensure all models have scan-varying state set
     # (https://github.com/dials/dials/issues/798)
