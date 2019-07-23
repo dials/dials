@@ -68,11 +68,6 @@ refinement
               "recommended for typical use."
   }
 
-  verbosity = 0
-    .help = "verbosity level"
-    .type = int(value_min=0)
-    .expert_level = 1
-
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
   {
@@ -185,14 +180,19 @@ class RefinerFactory(object):
         cls, params, reflections, experiments, verbosity=None
     ):
 
+        if verbosity is not None:
+            import warnings
+
+            warnings.warn(
+                "Setting verbosity for a Refiner is deprecated. See https://github.com/dials/dials/issues/860",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # TODO Checks on the input
         # E.g. does every experiment contain at least one overlapping model with at
         # least one other experiment? Are all the experiments either rotation series
         # or stills (the combination of both not yet supported)?
-
-        # if no verbosity override is given, take from the parameters
-        if verbosity is None:
-            verbosity = params.refinement.verbosity
 
         # copy the experiments
         experiments = _copy_experiments_for_refining(experiments)
@@ -200,12 +200,10 @@ class RefinerFactory(object):
         # copy and filter the reflections
         reflections = cls._filter_reflections(reflections)
 
-        return cls._build_components(
-            params, reflections, experiments, verbosity=verbosity
-        )
+        return cls._build_components(params, reflections, experiments)
 
     @classmethod
-    def _build_components(cls, params, reflections, experiments, verbosity):
+    def _build_components(cls, params, reflections, experiments):
         """low level build"""
 
         # Currently a refinement job can only have one parameterisation of the
@@ -264,11 +262,7 @@ class RefinerFactory(object):
         )
 
         refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
-            params.refinement.reflections,
-            reflections,
-            experiments,
-            do_stills,
-            verbosity,
+            params.refinement.reflections, reflections, experiments, do_stills
         )
 
         logger.debug(
@@ -336,7 +330,7 @@ class RefinerFactory(object):
         # Build a constraints manager, if requested
         from dials.algorithms.refinement.constraints import ConstraintManagerFactory
 
-        cmf = ConstraintManagerFactory(params, pred_param, verbosity)
+        cmf = ConstraintManagerFactory(params, pred_param)
         constraints_manager = cmf()
 
         # Create target function
@@ -355,9 +349,7 @@ class RefinerFactory(object):
 
         # create refinery
         logger.debug("Building refinement engine")
-        refinery = cls.config_refinery(
-            params, target, pred_param, constraints_manager, verbosity
-        )
+        refinery = cls.config_refinery(params, target, pred_param, constraints_manager)
         logger.debug("Refinement engine built")
 
         nparam = len(pred_param)
@@ -394,13 +386,7 @@ class RefinerFactory(object):
         else:
             refiner = Refiner
         return refiner(
-            experiments,
-            pred_param,
-            param_reporter,
-            refman,
-            target,
-            refinery,
-            verbosity=verbosity,
+            experiments, pred_param, param_reporter, refman, target, refinery
         )
 
     @staticmethod
@@ -537,7 +523,7 @@ class RefinerFactory(object):
         return rp
 
     @staticmethod
-    def config_refinery(params, target, pred_param, constraints_manager, verbosity):
+    def config_refinery(params, target, pred_param, constraints_manager):
         """Given a set of parameters, a target class, a prediction
         parameterisation class and a constraints_manager (which could be None),
         build a refinery
@@ -580,7 +566,6 @@ class RefinerFactory(object):
             prediction_parameterisation=pred_param,
             constraints_manager=constraints_manager,
             log=options.log,
-            verbosity=verbosity,
             tracking=options.journal,
             max_iterations=options.max_iterations,
         )
@@ -654,14 +639,7 @@ class Refiner(object):
     """
 
     def __init__(
-        self,
-        experiments,
-        pred_param,
-        param_reporter,
-        refman,
-        target,
-        refinery,
-        verbosity=0,
+        self, experiments, pred_param, param_reporter, refman, target, refinery
     ):
         """
         Mandatory arguments:
@@ -671,9 +649,6 @@ class Refiner(object):
           refman - A ReflectionManager object
           target - An object derived from the Target class
           refinery - An object derived from the Refinery class
-
-        Optional arguments:
-          verbosity - An integer verbosity level
 
         """
 
@@ -688,8 +663,6 @@ class Refiner(object):
 
         # parameter reporter
         self._param_report = param_reporter
-
-        self._verbosity = verbosity
 
         # Keep track of whether this is stills or scans type refinement
         self.experiment_type = refman.experiment_type

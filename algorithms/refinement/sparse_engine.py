@@ -38,7 +38,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -49,7 +48,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
             prediction_parameterisation,
             constraints_manager=constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -71,7 +69,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
         **kwds
@@ -83,7 +80,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
             prediction_parameterisation,
             constraints_manager=constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
