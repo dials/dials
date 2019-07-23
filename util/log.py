@@ -1,102 +1,81 @@
 from __future__ import absolute_import, division, print_function
 
-import logging
+import logging.config
+import os
+import warnings
+
+try:
+    from dlstbx.util.colorstreamhandler import ColorStreamHandler
+except ImportError:
+    ColorStreamHandler = None
 
 
-def config(verbosity=1, name="dials", info=None, debug=None):
+def config(verbosity=1, name=None, info=None, debug=None, logfile=None):
     """
     Configure the logging.
 
-    :param verbosity: Verbosity level of stdout log output.  Possible values:
-                        * 0: No log output to stdout;
-                        * 1: Info log output to stdout;
-                        * 2: Info & debug log output to stdout.
+    :param verbosity: Verbosity level of log output. Possible values:
+                        * 0: No log output to stdout, info log to logfile;
+                        * 1: Info log output to stdout/logfile;
+                        * 2: Info & debug log output to stdout/logfile.
     :type verbosity: int
-    :param name: Logger name.
-    :type name: str
-    :param info: Filename for info log output.  If False, no info log file is
-                 written.
-    :type info: str
-    :param debug: Filename for debug log output.  If False, no debug log file is
-                  written.
-    :type debug: str
+    :param logfile: Filename for log output.  If False, no log file is written.
+    :type logfile: str
     """
 
-    import logging.config
-
-    # Debug or not
-    if verbosity > 1:
-        level = "DEBUG"
-    else:
-        level = "INFO"
-
-    # Preapare a dictionary of FileHandler configuration options
-    handlers_dict = {
-        "stream": {
-            "level": level,
-            "class": "logging.StreamHandler",
-            "formatter": "standard",
-            "stream": "ext://sys.stdout",
-        }
-    }
-    # Set the handlers to use
-    if verbosity > 0:
-        handlers = ["stream"]
-    else:
-        handlers = []
     if info:
-        # Prepare a FileHandler for the info log
-        handlers_dict.update(
-            {
-                "file_info": {
-                    "level": "INFO",
-                    "class": "logging.FileHandler",
-                    "formatter": "standard",
-                    "filename": info,
-                    "mode": "w",
-                }
-            }
+        warnings.warn(
+            "info= parameter is deprecated, use logfile=",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        # Add the info log FileHandler to the list in the Logger
-        handlers.append("file_info")
     if debug:
-        # Prepare a FileHandler for the debug log
-        handlers_dict.update(
-            {
-                "file_debug": {
-                    "level": "DEBUG",
-                    "class": "logging.FileHandler",
-                    "formatter": "standard",
-                    "filename": debug,
-                    "mode": "w",
-                }
-            }
+        warnings.warn(
+            "debug= parameter is deprecated, use logfile= and verbosity=",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        # Add the debug log FileHandler to the Logger
-        handlers.append("file_debug")
+    if name:
+        warnings.warn("name= parameter is deprecated", DeprecationWarning, stacklevel=2)
 
-    # Configure the logging
-    config_dict = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "standard": {"format": "%(message)s"},
-            "extended": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
-        },
-        "handlers": handlers_dict,
-        "loggers": {name: {"handlers": handlers, "level": "DEBUG", "propagate": True}},
-    }
-    logging.config.dictConfig(config_dict)
-    logging.getLogger("dxtbx").setLevel(logging.DEBUG)
-    import dials.util.banner  # noqa: F401; lgtm; imported for side-effects
+    if os.getenv("COLOURLOG") and ColorStreamHandler:
+        console = ColorStreamHandler()
+    else:
+        console = logging.StreamHandler()
+
+    dials_logger = logging.getLogger("dials")
+
+    if verbosity > 0:
+        dials_logger.addHandler(console)
+
+    if verbosity > 1:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+
+    logfilename = logfile or info or debug
+    if logfilename:
+        fh = logging.FileHandler(filename=logfilename, mode="w")
+        fh.setLevel(loglevel)
+        dials_logger.addHandler(fh)
+
+    dials_logger.setLevel(loglevel)
+    #   logging.getLogger("dxtbx").setLevel(logging.DEBUG)
+    console.setLevel(loglevel)
+
+    print_banner(use_logging=True)
 
 
 def config_simple_stdout(name="dials"):
-    """
-    Configure the logging to just go to stdout
+    warnings.warn(
+        "config_simple_stdout is deprecated, use config",
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     """
-    import logging.config
+    Configure the logging to just go to stdout
+    """
 
     # Configure the logging
     logging.config.dictConfig(
@@ -118,7 +97,7 @@ def config_simple_stdout(name="dials"):
         }
     )
 
-    import dials.util.banner  # noqa: F401; lgtm; imported for side-effects
+    print_banner(use_logging=True)
 
 
 class CacheHandler(logging.Handler):
@@ -127,7 +106,6 @@ class CacheHandler(logging.Handler):
     def __init__(self):
         """
         Initialise the handler
-
         """
         super(CacheHandler, self).__init__()
         self._messages = []
@@ -137,7 +115,6 @@ class CacheHandler(logging.Handler):
         Emit the message to a list
 
         :param record: The log record
-
         """
         self._messages.append(record)
 
@@ -148,9 +125,7 @@ class CacheHandler(logging.Handler):
 def config_simple_cached():
     """
     Configure the logging to use a cache.
-
     """
-    import logging.config
 
     # Configure the logging
     logging.config.dictConfig(
@@ -165,3 +140,23 @@ def config_simple_cached():
             },
         }
     )
+
+
+_banner = (
+    "DIALS (2018) Acta Cryst. D74, 85-97. https://doi.org/10.1107/S2059798317017235"
+)
+_banner_printed = False
+
+
+def print_banner(force=False, use_logging=False):
+    global _banner_printed
+    if _banner_printed and not force:
+        return
+    if os.getenv("DIALS_NOBANNER"):
+        return
+    _banner_printed = True
+
+    if use_logging:
+        logging.getLogger("dials").info(_banner)
+    else:
+        print(_banner)
