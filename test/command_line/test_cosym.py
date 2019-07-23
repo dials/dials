@@ -59,6 +59,10 @@ def test_cosym_partial_dataset(dials_data, tmpdir):
     )
     assert len(experiments) == 3
 
+
+def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
+    """Test how cosym handles partial/bad datasets."""
+    mcp = dials_data("multi_crystal_proteinase_k")
     command = ["dials.cosym"]
     command.append(tmpdir.join("renamed.refl").strpath)
     command.append(mcp.join("experiments_8.json").strpath)
