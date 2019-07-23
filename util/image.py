@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 class reader:
     """A class to read the CBF files used in DIALS"""
 
-    def __init__(self):
-        pass
-
     def read_file(self, filename):
         """Read the CBF file"""
         import pycbf
@@ -59,7 +56,6 @@ class reader:
 
 if __name__ == "__main__":
     import sys
-    import numpy
 
     handle = reader()
     handle.read_file(sys.argv[1])

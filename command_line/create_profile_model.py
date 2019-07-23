@@ -53,9 +53,7 @@ class Script(object):
     def __init__(self):
         """ Initialise the script. """
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
         usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
         self.parser = OptionParser(
             usage=usage,
@@ -156,7 +154,6 @@ class Script(object):
 
     def process_reference(self, reference, params):
         """ Load the reference spots. """
-        from dials.array_family import flex
         from time import time
         from dials.util import Sorry
 
@@ -204,7 +201,6 @@ class Script(object):
             )
         logger.info(" using %d indexed reflections" % len(reference))
         logger.info(" found %d junk reflections" % len(rubbish))
-        from dials.array_family import flex
 
         if "background.mean" in reference and params.subtract_background:
             logger.info(

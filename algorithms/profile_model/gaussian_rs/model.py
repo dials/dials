@@ -476,7 +476,6 @@ class Model(ProfileModelExt):
 
         """
         from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
-        from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
         # Create the partiality calculator
         calculate = PartialityCalculator(
