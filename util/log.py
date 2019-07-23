@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging.config
 import os
+import sys
 import warnings
 
 try:
@@ -39,9 +40,9 @@ def config(verbosity=1, name=None, info=None, debug=None, logfile=None):
         warnings.warn("name= parameter is deprecated", DeprecationWarning, stacklevel=2)
 
     if os.getenv("COLOURLOG") and ColorStreamHandler:
-        console = ColorStreamHandler()
+        console = ColorStreamHandler(sys.stdout)
     else:
-        console = logging.StreamHandler()
+        console = logging.StreamHandler(sys.stdout)
 
     dials_logger = logging.getLogger("dials")
 
