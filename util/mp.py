@@ -97,7 +97,7 @@ def iterable_grouper(iterable, n):
     from itertools import izip_longest
 
     args = [iter(iterable)] * n
-    for group in izip_longest(*args):
+    for group in zip_longest(*args):
         group = tuple(item for item in group if item is not None)
         yield group
 
