@@ -1,16 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 # test that compute_delta_cchalf returns required values
-import pytest
 import mock
 from libtbx import phil
-from dials.util.options import OptionParser
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Experiment, Scan
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.array_family import flex
 from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
-from dials.command_line.scale_and_filter import ScaleAndFilter
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 
 
@@ -72,91 +70,6 @@ def generate_test_experiments(n=2):
             )
             experiments[i + 1].identifier = str(i + 1)
     return experiments
-
-
-def generated_param():
-    """Generate the default scaling parameters object."""
-    phil_scope = phil.parse(
-        """
-      include scope dials.command_line.scale_and_filter.phil_scope
-  """,
-        process_includes=True,
-    )
-
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
-    return parameters
-
-
-def mock_experiments(n=3):
-    explist = []
-    for i in range(n):
-        exp = mock.MagicMock()
-        exp.identifier = str(i)
-        exp.scan.return_value = True
-        exp.scan.get_image_range.return_value = (1, 10)
-        explist.append(exp)
-    return explist
-
-
-def _mock_scaler():
-    scaler = mock.MagicMock()
-    scaler.run.return_value = None
-    return scaler
-
-
-def _scaling_script(*args):
-    return _mock_scaler()
-
-
-def _mock_results(last_cycle_results):
-    mock_results = mock.Mock()
-    mock_results.finish = mock.MagicMock()
-    mock_results.get_last_cycle_results.return_value = last_cycle_results
-    mock_results.get_cycle_results.return_value = []
-    return mock_results
-
-
-test_input = [
-    [{"n_removed": 0}, "no_more_removed"],
-    [{"n_removed": 100, "cumul_percent_removed": 50}, "max_percent_removed"],
-    [
-        {
-            "n_removed": 10,
-            "cumul_percent_removed": 1,
-            "merging_stats": {"completeness": 90},
-        },
-        "below_completeness_limit",
-    ],
-    [
-        {
-            "n_removed": 10,
-            "cumul_percent_removed": 1,
-            "merging_stats": {"completeness": 98},
-        },
-        "max_cycles",
-    ],
-]
-
-
-@pytest.mark.parametrize("last_cycle_results, expected_termination", test_input)
-def test_scale_and_filter_termination(last_cycle_results, expected_termination):
-    """Test the termination criteria based on a mock results object."""
-    exp = mock_experiments(3)
-    refl = []
-    params = generated_param()
-    params.filtering.deltacchalf.min_completeness = 95.0
-
-    mock_res = _mock_results(last_cycle_results)
-
-    scale_and_filter = ScaleAndFilter(params, _scaling_script, _scaling_script)
-    with mock.patch(
-        "dials.command_line.scale_and_filter.log_cycle_results", return_value=mock_res
-    ):
-        results = scale_and_filter.scale_and_filter(exp, refl)
-        results.finish.assert_called_with(termination_reason=expected_termination)
 
 
 def test_scale_and_filter_results_logging():
