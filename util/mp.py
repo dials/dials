@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import future.moves.itertools as itertools
 
 def parallel_map(
     func,
@@ -91,13 +92,10 @@ class MultiNodeClusterFunction(object):
 
 def iterable_grouper(iterable, n):
     """
-    Group the iterables
-
+    Group the iterable into chunks of up to n items
     """
-    from itertools import zip_longest
-
     args = [iter(iterable)] * n
-    for group in zip_longest(*args):
+    for group in itertools.zip_longest(*args):
         group = tuple(item for item in group if item is not None)
         yield group
 
