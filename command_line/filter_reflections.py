@@ -429,11 +429,11 @@ def run():
         check_format=False,
     )
 
-    params, _ = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    log.config(verbosity=1)
+    log.config(verbosity=options.verbose)
 
     if not reflections:
         parser.print_help()

@@ -23,7 +23,7 @@ seperately.
 from libtbx.phil import parse
 
 control_phil_str = """
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 

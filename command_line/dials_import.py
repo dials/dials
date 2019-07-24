@@ -98,7 +98,7 @@ phil_scope = parse(
 
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -732,9 +732,7 @@ class Script(object):
         if __name__ == "__main__":
             from dials.util import log
 
-            log.config(
-                params.verbosity, info=params.output.log, debug=params.output.debug_log
-            )
+            log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 

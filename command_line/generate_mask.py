@@ -74,7 +74,7 @@ phil_scope = phil.parse(
 
     include scope dials.util.masking.phil_scope
 
-    verbosity = 1
+    verbosity = 0
         .type = int(value_min=0)
         .help = "The verbosity level."
     """,

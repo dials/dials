@@ -73,7 +73,7 @@ phil_scope = parse(
       .help = "The polar model background image"
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 

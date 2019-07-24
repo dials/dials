@@ -57,7 +57,7 @@ phil_scope = parse(
 
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
