@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Definitions of functions and classes for scaling and filtering algorithm."""
 from collections import OrderedDict
 from math import ceil
 from libtbx import phil
@@ -216,16 +217,14 @@ def make_scaling_filtering_plots(data):
 
 
 def make_filtering_merging_stats_plots(merging_stats):
+    """Generate plotting dicts for merging statistics."""
     n_datasets = len(merging_stats)
     colors = [
         (color_list * int(ceil(n_datasets / len(color_list))))[i]
         for i in range(n_datasets)
     ]
     colors[-1] = "k"
-    ordinal = lambda n: "%d%s" % (
-        n,
-        "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4],
-    )
+
     legends = ["initial scale"]
     if len(merging_stats) > 2:
         legends += [
@@ -233,7 +232,6 @@ def make_filtering_merging_stats_plots(merging_stats):
         ] + ["final rescale"]
     elif len(merging_stats) == 2:
         legends += ["final rescale"]
-    from dials.report.plots import ResolutionPlotterMixin
 
     d = OrderedDict()
     overall_ccs = [m["overall"]["cc_one_half"] for m in merging_stats]

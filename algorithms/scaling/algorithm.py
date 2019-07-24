@@ -66,6 +66,10 @@ def scaling_cycle(scaler):
 
         scaler.perform_scaling()
 
+    scaler.clear_Ih_table()
+    expand_and_do_outlier_rejection(scaler)
+    scaler.set_outliers()
+    scaler.clean_reflection_tables()
     return scaler
 
 

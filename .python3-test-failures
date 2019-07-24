@@ -39,7 +39,8 @@ algorithms/scaling/test_reflection_selection.py::test_reflection_selection
 algorithms/scaling/test_scale.py::test_incremental_scale_workflow
 algorithms/scaling/test_scale.py::test_multi_scale
 algorithms/scaling/test_scale.py::test_multi_scale_exclude_images
-algorithms/scaling/test_scale.py::test_scale_and_filter
+algorithms/scaling/test_scale.py::test_scale_and_filter_dataset_mode
+algorithms/scaling/test_scale.py::test_scale_and_filter_image_group_mode
 algorithms/scaling/test_scale.py::test_scale_array
 algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-absorption_term-None]
 algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-model-physical array]

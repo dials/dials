@@ -5,6 +5,7 @@ import time
 import logging
 import sys
 import gc
+import json
 import libtbx
 from libtbx import phil
 from dials.util import log, show_mail_on_error, Sorry
@@ -41,7 +42,7 @@ from dials.util.exclude_images import (
 from dials.algorithms.scaling.algorithm import (
     targeted_scaling_algorithm,
     scaling_algorithm,
-    scaling_and_filtering_part_1,
+    scaling_cycle,
 )
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
@@ -223,7 +224,7 @@ class Script(Subject):
     @Subject.notify_event(event="run_script")
     def run_scaling_cycle(self):
         """Do a round of scaling for scaling and filtering."""
-        self.scaler = scaling_and_filtering_part_1(self.scaler)
+        self.scaler = scaling_cycle(self.scaler)
         self.remove_unwanted_datasets()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
@@ -756,6 +757,8 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
                 )
             register_scale_and_filter_observers(script)
             script.run_scale_and_filter()
+            with open(params.filtering.output.scale_and_filter_results, "w") as f:
+                json.dump(script.filtering_results.to_dict(), f, indent=2)
         else:
             script.run()
         script.export()

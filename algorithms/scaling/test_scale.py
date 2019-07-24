@@ -319,19 +319,20 @@ def test_scale_physical(dials_regression, tmpdir):
     assert tmpdir.join("test_2.mtz").check()
 
 
-def test_scale_and_filter(dials_data, tmpdir):
+def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
 
     command = [
-        "dials.scale_and_filter",
+        "dials.scale",
+        "filtering.method=deltacchalf",
         "stdcutoff=3.0",
         "mode=image_group",
         "max_cycles=6",
         "d_min=1.4",
         "group_size=5",
         "unmerged_mtz=unmerged.mtz",
-        "output.analysis_results=analysis_results.json",
+        "scale_and_filter_results=analysis_results.json",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -359,14 +360,20 @@ def test_scale_and_filter(dials_data, tmpdir):
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
+
+def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
+    """Test the scale and filter command line program."""
+    location = dials_data("multi_crystal_proteinase_k")
     command = [
-        "dials.scale_and_filter",
+        "dials.scale",
+        "filtering.method=deltacchalf",
         "stdcutoff=1.0",
         "mode=dataset",
         "max_cycles=2",
         "d_min=1.4",
+        "output.reflections=filtered.refl",
+        "scale_and_filter_results=analysis_results.json",
         "unmerged_mtz=unmerged.mtz",
-        "output.analysis_results=analysis_results_2.json",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -375,9 +382,10 @@ def test_scale_and_filter(dials_data, tmpdir):
 
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("filtered.refl").check()
     assert tmpdir.join("scaled.expt").check()
-    with open(tmpdir.join("analysis_results_2.json").strpath) as f:
+    assert tmpdir.join("analysis_results.json").check()
+    with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 

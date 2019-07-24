@@ -40,11 +40,6 @@ logger = logging.getLogger("dials")
 phil_scope = libtbx.phil.parse(
     """
 include scope dials.command_line.scale.phil_scope
-output {
-    analysis_results = "analysis_results.json"
-      .type = str
-      .help = "Option to set filepath for output json of analysis results."
-}
 """,
     process_includes=True,
 )
@@ -161,26 +156,7 @@ class ScaleAndFilter(object):
                 break
 
         # Print summary of results
-        logger.info("\nSummary of data removed:")
-        for i, res in enumerate(results.get_cycle_results()):
-            logger.info("Cycle number: %s", i + 1)
-            if "image_ranges_removed" in res:
-                if res["image_ranges_removed"]:
-                    logger.info(
-                        "  Removed image ranges: \n    %s",
-                        "\n    ".join(
-                            str(t[0]) + ", dataset " + str(t[1])
-                            for t in res["image_ranges_removed"]
-                        ),
-                    )
-            else:
-                if res["removed_datasets"]:
-                    logger.info("  Removed datasets: %s", res["removed_datasets"])
-            logger.info(
-                "  cumulative %% of reflections removed: %s",
-                res["cumul_percent_removed"],
-            )
-
+        logger.info(results.make_summary())
         self.filtering_results = results
         return results
 
@@ -225,7 +201,7 @@ def run(args=None, phil=phil_scope):
     register_scale_and_filter_observers(scale_and_filter)
     analysis_results = scale_and_filter.scale_and_filter(experiments, reflections)
 
-    with open(params.output.analysis_results, "w") as f:
+    with open(params.filtering.output.scale_and_filter_results, "w") as f:
         json.dump(analysis_results.to_dict(), f, indent=2)
 
 
