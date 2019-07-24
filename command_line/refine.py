@@ -82,9 +82,6 @@ phil_scope = libtbx.phil.parse(
     log = dials.refine.log
       .type = str
 
-    debug_log = dials.refine.debug.log
-      .type = str
-
     correlation_plot
       .expert_level = 1
     {
@@ -384,7 +381,7 @@ def run(args=None, phil=working_phil):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure the logging
-    dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     # Try to load the models and data
     nexp = len(experiments)
