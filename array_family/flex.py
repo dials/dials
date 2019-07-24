@@ -16,13 +16,15 @@ import operator
 import warnings
 
 import boost.python
-from dials_array_family_flex_ext import *
+import cctbx
+import libtbx.smart_open
+import six
+import six.moves.cPickle as pickle
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
-import cctbx
 from cctbx import miller
+from dials_array_family_flex_ext import *
 from dials.util import Sorry
-import libtbx.smart_open
 from scitbx import matrix
 
 logger = logging.getLogger(__name__)
@@ -219,12 +221,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :return: The reflection table
 
         """
-        import six.moves.cPickle as pickle
-
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            result = pickle.load(infile)
+            if six.PY3:
+                result = pickle.load(infile, encoding="bytes")
+            else:
+                result = pickle.load(infile)
             assert isinstance(result, reflection_table)
             return result
 
@@ -394,8 +397,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :param filename: The output filename
 
         """
-        import six.moves.cPickle as pickle
-
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
 
