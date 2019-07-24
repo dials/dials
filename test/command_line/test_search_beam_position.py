@@ -216,7 +216,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     in detector origin.
     """
 
-    data = dials_data("l_cysteine_dials_output", min_version="1.0.5")
+    data = dials_data("l_cysteine_dials_output")
     datablock_path = data.join("datablock.json").strpath
     pickle_path = data.join("strong.pickle").strpath
 
