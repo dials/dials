@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import future.moves.itertools as itertools
+import libtbx.easy_mp
 
 def parallel_map(
     func,
@@ -21,7 +22,6 @@ def parallel_map(
 
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
-    from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
 
     if method == "drmaa":
         return drmaa_parallel_map(
@@ -34,7 +34,7 @@ def parallel_map(
         )
     else:
         qsub_command = "qsub -pe smp %d" % nslots
-        return easy_mp_parallel_map(
+        return libtbx.easy_mp.parallel_map(
             func=func,
             iterable=iterable,
             callback=callback,
@@ -77,9 +77,7 @@ class MultiNodeClusterFunction(object):
         Call the function
 
         """
-        from libtbx.easy_mp import parallel_map as easy_mp_parallel_map
-
-        return easy_mp_parallel_map(
+        return libtbx.easy_mp.parallel_map(
             func=self.func,
             iterable=iterable,
             processes=self.nproc,
@@ -229,10 +227,8 @@ def batch_parallel_map(
     A function to run jobs in batches in each process
 
     """
-    from libtbx import easy_mp
-
     # Call the batches in parallel
-    return easy_mp.parallel_map(
+    return libtbx.easy_mp.parallel_map(
         func=BatchFunc(func),
         iterable=BatchIterable(iterable, chunksize),
         processes=processes,
@@ -256,7 +252,6 @@ def batch_multi_node_parallel_map(
     A function to run jobs in batches in each process
 
     """
-    from libtbx import easy_mp
 
     # Call the batches in parallel
     return multi_node_parallel_map(
