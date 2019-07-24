@@ -112,7 +112,7 @@ def update_dials_download_links():
 
         buttons = [
             download_button(long_names.get(asset, asset), version, link)
-            for asset, (_, version, link) in assets.iteritems()
+            for asset, (_, version, link) in assets.items()
         ]
 
         release.write("".join(sorted(buttons)))

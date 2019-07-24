@@ -4,6 +4,7 @@ return the scale factors and derivatives of the scale factors w.r.t.
 the parameters
 """
 from __future__ import absolute_import, division, print_function
+
 from dials.array_family import flex
 from dials_scaling_ext import row_multiply
 from scitbx import sparse
@@ -18,7 +19,7 @@ class basis_function(object):
         block, returning each as a list of values from the components."""
         scales = []
         derivatives = []
-        for component in apm.components.itervalues():
+        for component in apm.components.values():
             sdc = component["object"].calculate_scales_and_derivatives(block_id)
             scales.append(sdc[0])
             derivatives.append(sdc[1])

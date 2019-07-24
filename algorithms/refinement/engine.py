@@ -13,6 +13,7 @@ are the current concrete implementations"""
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
 
 import libtbx
@@ -107,18 +108,14 @@ class Journal(dict):
         """Add a new column named by key"""
         self[key] = [None] * self._nrows
 
-        return
-
     def add_row(self):
         """Add an element to the end of each of the columns. Fail if any columns
         are the wrong length"""
 
-        for k in self.keys():
+        for k in self:
             assert len(self[k]) == self._nrows
             self[k].append(None)
         self._nrows += 1
-
-        return
 
     def del_last_row(self):
         """Delete the last element from the each of the columns. Fail if any columns
@@ -126,12 +123,10 @@ class Journal(dict):
 
         if self._nrows == 0:
             return None
-        for k in self.keys():
+        for k in self:
             assert len(self[k]) == self._nrows
             self[k].pop()
         self._nrows -= 1
-
-        return
 
     def set_last_cell(self, key, value):
         """Set last cell in column given by key to value. Fail if the column is the
@@ -139,8 +134,6 @@ class Journal(dict):
 
         assert len(self[key]) == self._nrows
         self[key][-1] = value
-
-        return
 
 
 class Refinery(object):
@@ -243,8 +236,6 @@ class Refinery(object):
         # do reflection prediction
         self._target.predict()
 
-        return
-
     def update_journal(self):
         """Append latest step information to the journal attributes"""
 
@@ -275,7 +266,6 @@ class Refinery(object):
             self.history.set_last_cell(
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
-        return
 
     def split_jacobian_into_blocks(self):
         """Split the Jacobian into blocks each corresponding to a separate
@@ -348,9 +338,7 @@ class Refinery(object):
         if packed_mats is None:
             return None
 
-        from copy import deepcopy
-
-        packed_mats = deepcopy(packed_mats)
+        packed_mats = copy.deepcopy(packed_mats)
 
         nparam = len(self._parameters)
 
@@ -454,7 +442,6 @@ class Refinery(object):
         """Set number of processors for multiprocessing. Override in derived classes
         if a policy dictates that this must not be user-controlled"""
         self._nproc = nproc
-        return
 
     def run(self):
         """
@@ -473,7 +460,6 @@ class DisableMPmixin(object):
     def set_nproc(self, nproc):
         if nproc != 1:
             raise NotImplementedError()
-        return
 
 
 class AdaptLbfgs(Refinery):
@@ -741,7 +727,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                 if self._constr_manager is not None:
                     j = self._constr_manager.constrain_jacobian(j)
                 self.add_equations(restraints[0], j, restraints[2])
-        return
 
     def step_forward(self):
         self.old_x = self.x.deep_copy()
@@ -795,8 +780,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         assert s2.all_ge(0.0)
         s = flex.sqrt(s2)
         self._parameters.set_param_esds(s)
-
-        return
 
     def _print_normal_matrix(self):
         """Print the full normal matrix at the current step. For debugging only"""
@@ -918,8 +901,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
         self.set_cholesky_factor()
         self.calculate_esds()
-
-        return
 
 
 class LevenbergMarquardtIterations(GaussNewtonIterations):
@@ -1062,9 +1043,6 @@ before this can be solved."""
 
         self.calculate_esds()
 
-        return
-
     def run(self):
         self._run_core()
         self.calculate_esds()
-        return

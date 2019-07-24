@@ -174,7 +174,7 @@ class AnalysisResults(object):
         ]
         results.cycle_results = [
             dictionary["cycle_results"][key]
-            for key in sorted(dictionary["cycle_results"].iterkeys())
+            for key in sorted(dictionary["cycle_results"])
         ]
         results.initial_n_reflections = dictionary["initial_n_reflections"]
         results.final_stats = dictionary["final_stats"]
@@ -519,7 +519,7 @@ def make_merging_stats_plots(
         cell_text.append(
             [
                 "%.3f" % v if k != "n_obs" else str(int(v))
-                for k, v in stats["overall"].iteritems()
+                for k, v in stats["overall"].items()
             ]
         )
     ax3.axis("off")

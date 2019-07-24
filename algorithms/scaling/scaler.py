@@ -13,16 +13,15 @@ defined for targeted scaling.
 from __future__ import absolute_import, division, print_function
 
 import abc
+import copy
 import logging
 import time
-import copy as copy
 from collections import OrderedDict
 
+import six
 from cctbx import crystal, sgtbx
-from scitbx import sparse
 from dials_scaling_ext import row_multiply
 from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
-from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from dials.algorithms.scaling.basis_functions import basis_function
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
@@ -50,7 +49,8 @@ from dials.algorithms.scaling.reflection_selection import (
     select_connected_reflections_across_datasets,
 )
 from dials.util.observer import Subject
-import six
+from libtbx.table_utils import simple_table
+from scitbx import sparse
 
 logger = logging.getLogger("dials")
 
@@ -261,9 +261,9 @@ class SingleScaler(ScalerBase):
         self._params = params
         self.active_scalers = [self]
         self._space_group = self.experiment.crystal.get_space_group()
-        n_model_params = sum([val.n_params for val in self.components.itervalues()])
+        n_model_params = sum(val.n_params for val in self.components.values())
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
-        self._initial_keys = [key for key in reflection_table.keys()]
+        self._initial_keys = list(reflection_table.keys())
         self._reflection_table = reflection_table
         self._Ih_table = None  # stores data for reflections used for minimisation
         self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
@@ -425,7 +425,7 @@ class SingleScaler(ScalerBase):
         n_start = 0
         all_scales = flex.double([])
         all_invsfvars = flex.double([])
-        n_param_tot = sum([c.n_params for c in self.components.itervalues()])
+        n_param_tot = sum(c.n_params for c in self.components.values())
         for i in range(1, n_blocks + 1):  # do calc in blocks for speed/memory
             n_end = int(i * self.n_suitable_refl / n_blocks)
             block_isel = flex.size_t(range(n_start, n_end))
@@ -434,7 +434,7 @@ class SingleScaler(ScalerBase):
             scales_list = []
             derivs_list = []
             jacobian = sparse.matrix(block_isel.size(), n_param_tot)
-            for component in self.components.itervalues():
+            for component in self.components.values():
                 component.update_reflection_data(block_selections=[block_isel])
                 comp_scales, d = component.calculate_scales_and_derivatives(block_id=0)
                 scales_list.append(comp_scales)
@@ -562,7 +562,7 @@ class SingleScaler(ScalerBase):
         """Use the data in the Ih_table to update the model data."""
         assert self.Ih_table is not None
         block_selections = self.Ih_table.get_block_selections_for_dataset(dataset=0)
-        for component in self.components.itervalues():
+        for component in self.components.values():
             component.update_reflection_data(block_selections=block_selections)
 
     def _create_Ih_table(self):
@@ -791,7 +791,7 @@ class MultiScalerBase(ScalerBase):
     def _update_model_data(self):
         for i, scaler in enumerate(self.active_scalers):
             block_selections = self.Ih_table.get_block_selections_for_dataset(i)
-            for component in scaler.components.itervalues():
+            for component in scaler.components.values():
                 component.update_reflection_data(block_selections=block_selections)
 
     def set_outliers(self):
@@ -1102,7 +1102,7 @@ class NullScaler(ScalerBase):
         self._params = params
         self._space_group = self.experiment.crystal.get_space_group()
         self._reflection_table = reflection
-        self._initial_keys = [key for key in self._reflection_table.keys()]
+        self._initial_keys = list(self._reflection_table.keys())
         self.n_suitable_refl = self._reflection_table.size()
         self._reflection_table["inverse_scale_factor"] = flex.double(
             self.n_suitable_refl, 1.0

@@ -601,7 +601,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -621,7 +621,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -716,7 +716,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -736,7 +736,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -1240,12 +1240,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
-            values = identifiers.values()
+            values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
                 index = set(self["id"])
                 for i in index:
-                    assert i in identifiers.keys(), (i, list(identifiers.keys()))
+                    assert i in identifiers, (i, list(identifiers))
         if experiments is not None:
             if len(identifiers) > 0:
                 assert len(identifiers) == len(experiments), (

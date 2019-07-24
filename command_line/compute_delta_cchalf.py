@@ -518,7 +518,7 @@ class Script(object):
     def plot_data(self):
         """Plot histogram and line plot of cc half values."""
         fig, ax = pylab.subplots()
-        ax.hist(self.delta_cchalf_i.values())
+        ax.hist(list(self.delta_cchalf_i.values()))
         ax.set_xlabel("Delta CC 1/2")
         fig.savefig("plot1.png")
 

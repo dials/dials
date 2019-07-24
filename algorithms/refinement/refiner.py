@@ -14,10 +14,10 @@
 what should usually be used to construct a Refiner."""
 
 from __future__ import absolute_import, division, print_function
+
 import copy
 import logging
-
-logger = logging.getLogger(__name__)
+import math
 
 from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
@@ -44,6 +44,8 @@ from dials.algorithms.refinement.parameterisation import (
     phil_str as parameterisation_phil_str,
 )
 from dials.algorithms.refinement.engine import refinery_phil_str
+
+logger = logging.getLogger(__name__)
 
 format_data = {
     "reflections_phil": reflections_phil_str,
@@ -94,6 +96,8 @@ refinement
     % format_data,
     process_includes=True,
 )
+
+RAD2DEG = 180 / math.pi
 
 
 def _copy_experiments_for_refining(experiments):
@@ -170,7 +174,7 @@ class RefinerFactory(object):
         # for this except that 's1' is optional in the input so would want
         # to copy that in like this if present anyway
         for k in cols:
-            if k in reflections.keys():
+            if k in reflections:
                 rt[k] = reflections[k]
 
         return rt
@@ -746,9 +750,6 @@ class Refiner(object):
         """print useful output about refinement steps in the form of a simple table"""
 
         from libtbx.table_utils import simple_table
-        from math import pi
-
-        rad2deg = 180 / pi
 
         logger.info("\nRefinement steps:")
 
@@ -760,7 +761,7 @@ class Refiner(object):
                 rmsd_multipliers.append(1.0)
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
-                rmsd_multipliers.append(rad2deg)
+                rmsd_multipliers.append(RAD2DEG)
             else:  # leave unknown units alone
                 header.append(name + "\n(" + units + ")")
 
@@ -785,9 +786,6 @@ class Refiner(object):
         """print out-of-sample RSMDs per step, if these were tracked"""
 
         from libtbx.table_utils import simple_table
-        from math import pi
-
-        rad2deg = 180 / pi
 
         # check if it makes sense to proceed
         if "out_of_sample_rmsd" not in self._refinery.history:
@@ -806,7 +804,7 @@ class Refiner(object):
                 rmsd_multipliers.append(1.0)
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
-                rmsd_multipliers.append(rad2deg)
+                rmsd_multipliers.append(RAD2DEG)
             else:  # leave unknown units alone
                 header.append(name + "\n(" + units + ")")
 
@@ -829,9 +827,6 @@ class Refiner(object):
         """print useful output about refinement steps in the form of a simple table"""
 
         from libtbx.table_utils import simple_table
-        from math import pi
-
-        rad2deg = 180 / pi
 
         logger.info("\nRMSDs by experiment:")
 
@@ -885,7 +880,7 @@ class Refiner(object):
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
                 elif units == "rad":
-                    rmsds.append(rmsd * rad2deg)
+                    rmsds.append(rmsd * RAD2DEG)
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
@@ -898,9 +893,6 @@ class Refiner(object):
         """print useful output about refinement steps in the form of a simple table"""
 
         from libtbx.table_utils import simple_table
-        from math import pi
-
-        rad2deg = 180 / pi
 
         if len(self._experiments.scans()) > 1:
             logger.warning(
@@ -955,7 +947,7 @@ class Refiner(object):
                     elif name == "RMSD_Phi" and units == "rad":
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
-                        rmsds.append(rmsd * rad2deg)
+                        rmsds.append(rmsd * RAD2DEG)
                 rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
             if len(rows) > 0:

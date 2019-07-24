@@ -45,7 +45,7 @@ def test_init():
 
     # test with invalid columns
     with pytest.raises(RuntimeError):
-        table = flex.reflection_table(
+        _ = flex.reflection_table(
             [
                 ("col1", flex.int(10)),
                 ("col2", flex.double(20)),
@@ -740,7 +740,6 @@ def test_extract_shoeboxes():
     npanels = 2
     width = 1000
     height = 1000
-    nrefl = 10000
     frame0 = 10
     frame1 = 100
     nrefl = 1000
@@ -1392,7 +1391,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     refl.centroid_px_to_mm(detector, scan=scan)
 
     for k in ("xyzobs.mm.value", "xyzobs.mm.variance"):
-        assert k in refl.keys()
+        assert k in refl
 
     assert refl["xyzobs.mm.value"][0] == pytest.approx(
         (199.43400000000003, 11.908133333333334, 1.4324789835743459)
@@ -1404,7 +1403,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
 
     for k in ("s1", "rlp"):
-        assert k in refl.keys()
+        assert k in refl
 
     assert refl["s1"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, -0.8272574664632307)

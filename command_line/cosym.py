@@ -126,7 +126,7 @@ class cosym(Subject):
 
         space_groups = {}
         reindexing_ops = {}
-        for dataset_id in self.cosym_analysis.reindexing_ops.iterkeys():
+        for dataset_id in self.cosym_analysis.reindexing_ops:
             if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
                 cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
                 reindexing_ops.setdefault(cb_op, [])
@@ -140,12 +140,12 @@ class cosym(Subject):
                 )
 
         logger.info("Space groups:")
-        for sg, datasets in space_groups.iteritems():
+        for sg, datasets in space_groups.items():
             logger.info(str(sg.info().reference_setting()))
             logger.info(datasets)
 
         logger.info("Reindexing operators:")
-        for cb_op, datasets in reindexing_ops.iteritems():
+        for cb_op, datasets in reindexing_ops.items():
             logger.info(cb_op)
             logger.info(datasets)
 
@@ -176,7 +176,7 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_ids in reindexing_ops.iteritems():
+        for cb_op, dataset_ids in reindexing_ops.items():
             cb_op = sgtbx.change_of_basis_op(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op

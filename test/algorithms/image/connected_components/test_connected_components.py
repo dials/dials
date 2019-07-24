@@ -27,7 +27,7 @@ class Test2d:
 
         self.labels = self.label_images.labels()
         self.coords = self.label_images.coords()
-        self.values = self.label_images.values()
+        self.values = list(self.label_images.values())
 
         assert len(self.labels) > 0
         assert len(self.labels) == len(self.coords)
@@ -116,7 +116,7 @@ class Test3d:
 
         self.labels = self.label_images.labels()
         self.coords = self.label_images.coords()
-        self.values = self.label_images.values()
+        self.values = list(self.label_images.values())
 
         assert len(self.labels) > 0
         assert len(self.labels) == len(self.coords)

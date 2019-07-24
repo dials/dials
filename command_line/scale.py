@@ -448,7 +448,7 @@ prepare the data in the correct space group.\n"""
         combinining datasets for output."""
         del self.scaler
         for experiment in self.experiments:
-            for component in experiment.scaling_model.components.iterkeys():
+            for component in experiment.scaling_model.components.keys():
                 experiment.scaling_model.components[component] = []
         gc.collect()
 

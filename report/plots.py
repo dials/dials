@@ -249,15 +249,15 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             "multiplicities": {
                 "data": [
                     {
-                        "x": multiplicities_acentric.keys(),
-                        "y": multiplicities_acentric.values(),
+                        "x": list(multiplicities_acentric.keys()),
+                        "y": list(multiplicities_acentric.values()),
                         "type": "bar",
                         "name": "Acentric",
                         "opacity": 0.75,
                     },
                     {
-                        "x": multiplicities_centric.keys(),
-                        "y": multiplicities_centric.values(),
+                        "x": list(multiplicities_centric.keys()),
+                        "y": list(multiplicities_centric.values()),
                         "type": "bar",
                         "name": "Centric",
                         "opacity": 0.75,
