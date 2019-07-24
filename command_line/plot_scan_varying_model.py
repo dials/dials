@@ -227,7 +227,7 @@ class Script(object):
             self.plot_beam_centre(dat)
 
     def plot_cell(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(4, 2, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])
@@ -331,7 +331,7 @@ class Script(object):
         plt.savefig(fullname)
 
     def plot_orientation(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(3, 1, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])
@@ -364,7 +364,7 @@ class Script(object):
         plt.savefig(fullname)
 
     def plot_beam_centre(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(2, 1, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])

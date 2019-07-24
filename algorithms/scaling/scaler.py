@@ -260,7 +260,6 @@ class SingleScaler(ScalerBase):
         self._experiment = experiment
         self._params = params
         self.active_scalers = [self]
-        self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
         n_model_params = sum(val.n_params for val in self.components.values())
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
@@ -473,7 +472,6 @@ class SingleScaler(ScalerBase):
                 column="inverse_scale_factor",
             )
             self.global_Ih_table.calc_Ih()
-        if self.verbosity > 1:
             logger.info(
                 "Scale factors determined during minimisation have now been\n"
                 "applied to all reflections for dataset %s.\n",
@@ -493,7 +491,7 @@ class SingleScaler(ScalerBase):
             self._reflection_table["variance"] = new_vars
         self.experiment.scaling_model.set_error_model(error_model)
 
-    def adjust_variances(self):
+    def adjust_variances(self, caller=None):
         """Apply an aimless-like error model to the variances."""
         error_model = self.experiment.scaling_model.error_model
         if error_model and self.params.weighting.output_optimised_vars:
@@ -504,7 +502,7 @@ class SingleScaler(ScalerBase):
                 self.reflection_table["variance"], self.reflection_table["intensity"]
             )
             self.reflection_table["variance"] = new_var
-            if self.verbosity > 1:
+            if caller is None:
                 msg = (
                     "The error model has been used to adjust the variances for dataset {0}. \n"
                 ).format(self.reflection_table["id"][0])
@@ -519,7 +517,7 @@ class SingleScaler(ScalerBase):
             flex.double(self.reflection_table.size(), 1.0) + fractional_error
         )
         self.reflection_table["variance"] *= variance_scaling
-        if self.verbosity > 1:
+        if caller is None:
             msg = (
                 "The variances have been adjusted to account for the uncertainty \n"
                 "in the scaling model for dataset {0}. \n"
@@ -677,7 +675,6 @@ class MultiScalerBase(ScalerBase):
         self.active_scalers = None
         self._initial_keys = self.single_scalers[0].initial_keys
         self._params = params
-        self.verbosity = params.scaling_options.verbosity
 
     def remove_datasets(self, scalers, n_list):
         """
@@ -703,7 +700,7 @@ class MultiScalerBase(ScalerBase):
 
         After the scale factors are updated, the global_Ih_table is updated also.
         """
-        if self.verbosity <= 1 and calc_cov:
+        if calc_cov:
             logger.info("Calculating error estimates of inverse scale factors. \n")
         for i, scaler in enumerate(self.active_scalers):
             scaler.expand_scales_to_all_reflections(caller=self, calc_cov=calc_cov)
@@ -716,29 +713,27 @@ class MultiScalerBase(ScalerBase):
                 column="inverse_scale_factor",
             )
         self.global_Ih_table.calc_Ih()
-        if self.verbosity <= 1:
-            logger.info(
-                "Scale factors determined during minimisation have now been\n"
-                "applied to all datasets.\n"
-            )
+        logger.info(
+            "Scale factors determined during minimisation have now been\n"
+            "applied to all datasets.\n"
+        )
 
     def adjust_variances(self):
         """Update variances of individual reflection tables."""
         for scaler in self.active_scalers:
-            scaler.adjust_variances()
-        if self.verbosity <= 1:
-            if (
-                self.single_scalers[0].experiment.scaling_model.error_model
-                and self.params.weighting.output_optimised_vars
-            ):
-                logger.info(
-                    "The error model has been used to adjust the variances for all \n"
-                    "applicable datasets. \n"
-                )
+            scaler.adjust_variances(caller=self)
+        if (
+            self.single_scalers[0].experiment.scaling_model.error_model
+            and self.params.weighting.output_optimised_vars
+        ):
             logger.info(
-                "The variances have been adjusted to account for the uncertainty \n"
-                "in the scaling model for all datasets. \n"
+                "The error model has been used to adjust the variances for all \n"
+                "applicable datasets. \n"
             )
+        logger.info(
+            "The variances have been adjusted to account for the uncertainty \n"
+            "in the scaling model for all datasets. \n"
+        )
 
     def clean_reflection_tables(self):
         """Remove unneccesary columns added to reflection tables."""
@@ -987,10 +982,6 @@ class MultiScaler(MultiScalerBase):
         self._create_Ih_table()
         # now add data to scale components from datasets
         self._update_model_data()
-        if len(self.active_scalers) > 4:
-            self.verbosity -= 1
-            for scaler in self.active_scalers:
-                scaler.verbosity -= 1
         logger.info("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n")
         log_memory_usage()
 
@@ -1109,7 +1100,6 @@ class NullScaler(ScalerBase):
         super(NullScaler, self).__init__()
         self._experiment = experiment
         self._params = params
-        self.verbosity = params.scaling_options.verbosity
         self._space_group = self.experiment.crystal.get_space_group()
         self._reflection_table = reflection
         self._initial_keys = list(self._reflection_table.keys())

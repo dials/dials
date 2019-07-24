@@ -66,7 +66,7 @@ class Script(object):
         """Execute the script."""
 
         # Parse the command line
-        self.params, options = self.parser.parse_args(show_diff_phil=True)
+        self.params, _ = self.parser.parse_args(show_diff_phil=True)
 
         if not self.params.input.experiments:
             self.parser.print_help()
@@ -82,7 +82,7 @@ class Script(object):
 
         # Set up a plot if requested
         if self.params.plot_filename:
-            fig = plt.figure()
+            plt.figure()
 
         header = [
             "Image",
@@ -196,9 +196,6 @@ def extract_experiment_data(exp, scale=1):
         UB_mats = [matrix.sqr(crystal.get_A()) for i in images]
 
     assert len(directions) == len(S_mats) == len(F_mats) == len(R_mats) == len(UB_mats)
-
-    setting_rotation = matrix.sqr(gonio.get_setting_rotation())
-    rotation_axis = matrix.col(gonio.get_rotation_axis_datum())
 
     # Construct full setting matrix for each image
     SRFUB = []

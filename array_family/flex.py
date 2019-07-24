@@ -1620,7 +1620,7 @@ class reflection_table_selector(object):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
-        mask2 = self.op(data, self.value)
+        mask2 = self.op(data, value)
         if mask1 is not None:
             mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
         else:

@@ -15,7 +15,6 @@
         "scikit_learn[alldeps]<0.21",
         "scipy",
         "tqdm==4.23.4",
-        "networkx",
         'futures;python_version<="2.7"',
     ],
 }

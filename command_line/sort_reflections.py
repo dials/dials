@@ -104,7 +104,7 @@ class Sort(object):
         if options.verbose > 0:
             print("Head of sorted list " + attr + ":")
             n = min(len(reflections), 10)
-            for i in range(10):
+            for i in range(n):
                 print(reflections[i][attr])
 
         # Save sorted reflections to file
