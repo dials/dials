@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import future.moves.itertools as itertools
 import libtbx.easy_mp
+import warnings
 
 def parallel_map(
     func,
@@ -223,6 +224,11 @@ class BatchCallback(object):
 def batch_parallel_map(
     func=None, iterable=None, processes=None, callback=None, method=None, chunksize=1
 ):
+    warnings.warn(
+        "This function is deprecated and will be removed in the future",
+        UserWarning,
+        stacklevel=2,
+    )
     """
     A function to run jobs in batches in each process
 
