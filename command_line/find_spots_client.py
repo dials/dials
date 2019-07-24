@@ -1,13 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
 from future import standard_library
+
 standard_library.install_aliases()
 import httplib
 import json
 import os
 import socket as pysocket
 import sys
-import urllib.request, urllib.error, urllib.parse
+import urllib.error
+import urllib.parse
+import urllib.request
 
 import libtbx.phil
 
@@ -154,7 +157,7 @@ def work_all(
             n_spots_no_ice.reshape(flex.grid(grid))
             print(n_spots_no_ice.size())
 
-            fig = pyplot.figure()
+            pyplot.figure()
             pyplot.pcolormesh(n_spots_no_ice.as_numpy_array(), cmap=pyplot.cm.Reds)
             pyplot.savefig("spot_count.png")
 
@@ -213,7 +216,7 @@ if __name__ == "__main__":
             args.extend([l.strip() for rr in r for l in rr.readlines()])
 
     filenames = [arg for arg in args if os.path.isfile(arg)]
-    args = [arg for arg in args if not arg in filenames]
+    args = [arg for arg in args if arg not in filenames]
 
     interp = phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
