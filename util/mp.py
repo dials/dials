@@ -94,7 +94,7 @@ def iterable_grouper(iterable, n):
     Group the iterables
 
     """
-    from itertools import izip_longest
+    from itertools import zip_longest
 
     args = [iter(iterable)] * n
     for group in zip_longest(*args):
