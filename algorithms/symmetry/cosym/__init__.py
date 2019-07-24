@@ -145,44 +145,54 @@ class CosymAnalysis(symmetry_base, Subject):
 
         self.params = params
         if self.params.space_group is not None:
-            best_subgroup = find_matching_symmetry(
-                self.intensities.unit_cell(), self.params.space_group.group()
-            )
-            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-            best_subsym = best_subgroup["best_subsym"]
-            cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-            ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-            cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-            sg_cb_op_inp_primitive = (
-                self.params.space_group.change_of_basis_op_to_primitive_setting()
-            )
-            sg_primitive = self.params.space_group.change_basis(sg_cb_op_inp_primitive)
-            sg_best = sg_primitive.change_basis(
-                (cb_op_ref_primitive * cb_op_best_ref).inverse()
-            )
-            # best_subgroup above is the bravais type, so create thin copy here with the
-            # user-input space group instead
-            self.best_subgroup = {
-                "best_subsym": best_subsym.customized_copy(space_group_info=sg_best),
-                "cb_op_inp_best": cb_op_inp_best,
-            }
-            self.input_space_group = self.params.space_group.change_basis(
-                cb_op_inp_best.inverse()
-            ).group()
-            self.intensities = (
-                self.intensities.customized_copy(
-                    space_group_info=self.input_space_group.info()
+
+            def _map_space_group_to_input_cell(intensities, space_group):
+                best_subgroup = find_matching_symmetry(
+                    intensities.unit_cell(), space_group
                 )
-                .as_reference_setting()
-                .primitive_setting()
+                cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+                best_subsym = best_subgroup["best_subsym"]
+                cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+                ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+                cb_op_ref_primitive = (
+                    ref_subsym.change_of_basis_op_to_primitive_setting()
+                )
+                sg_cb_op_inp_primitive = (
+                    space_group.info().change_of_basis_op_to_primitive_setting()
+                )
+                sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
+                sg_best = sg_primitive.change_basis(
+                    (cb_op_ref_primitive * cb_op_best_ref).inverse()
+                )
+                # best_subgroup above is the bravais type, so create thin copy here with the
+                # user-input space group instead
+                best_subgroup = {
+                    "best_subsym": best_subsym.customized_copy(
+                        space_group_info=sg_best.info()
+                    ),
+                    "cb_op_inp_best": cb_op_inp_best,
+                }
+
+                intensities = intensities.customized_copy(
+                    space_group_info=sg_best.change_basis(
+                        cb_op_inp_best.inverse()
+                    ).info()
+                )
+                return intensities, best_subgroup
+
+            self.intensities, self.best_subgroup = _map_space_group_to_input_cell(
+                self.intensities, self.params.space_group.group()
             )
             self.input_space_group = self.intensities.space_group()
+
         else:
             self.input_space_group = None
-            if self.params.lattice_group is not None:
-                self.intensities = (
-                    self.intensities.as_reference_setting().primitive_setting()
-                )
+
+        if self.params.lattice_group is not None:
+            tmp_intensities, _ = _map_space_group_to_input_cell(
+                self.intensities, self.params.lattice_group.group()
+            )
+            self.params.lattice_group = tmp_intensities.space_group_info()
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -385,7 +395,9 @@ class CosymAnalysis(symmetry_base, Subject):
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
                             reindexing_ops[i_cluster] = (
-                                cb_op * self.cb_op_inp_min
+                                self.cb_op_inp_min.inverse()
+                                * cb_op
+                                * self.cb_op_inp_min
                             ).as_xyz()
 
         return reindexing_ops

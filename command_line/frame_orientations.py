@@ -62,7 +62,7 @@ class Script(object):
         """Execute the script."""
 
         # Parse the command line
-        self.params, options = self.parser.parse_args(show_diff_phil=True)
+        self.params, _ = self.parser.parse_args(show_diff_phil=True)
 
         if not self.params.input.experiments:
             self.parser.print_help()

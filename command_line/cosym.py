@@ -214,20 +214,6 @@ class cosym(Subject):
                 refl = refl.select(~sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
-
-            if self.params.space_group is not None:
-                space_group_info = self.params.space_group.primitive_setting()
-                if not space_group_info.group().is_compatible_unit_cell(
-                    expt.crystal.get_unit_cell()
-                ):
-                    logger.info(
-                        "Skipping data set - incompatible space group and unit cell: %s, %s",
-                        space_group_info,
-                        expt.crystal.get_unit_cell(),
-                    )
-                    continue
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
             identifiers.append(expt.identifier)
 
         return select_datasets_on_ids(
@@ -242,19 +228,8 @@ class cosym(Subject):
         )
         for expt, refl in zip(experiments, reflections):
             expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
+            expt.crystal.set_space_group(sgtbx.space_group())
             refl["miller_index"] = cb_op_ref_min.apply(refl["miller_index"])
-
-            if self.params.space_group is not None:
-                expt.crystal.set_space_group(
-                    self.params.space_group.primitive_setting().group()
-                )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
-                )
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
         return experiments, reflections
 
     @Subject.notify_event("performed_unit_cell_clustering")

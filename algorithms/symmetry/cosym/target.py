@@ -117,8 +117,8 @@ class Target(object):
 
     def _generate_twin_operators(self, lattice_symmetry_max_delta=5.0):
         # see also mmtbx.scaling.twin_analyses.twin_laws
-        cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
         if self._lattice_group is None:
+            cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
             minimum_cell_symmetry = self._data.crystal_symmetry().change_basis(
                 cb_op=cb_op_to_minimum_cell
             )

@@ -660,10 +660,8 @@ class Processor(object):
             not self.params.output.composite_output
             and self.params.output.experiments_filename
         ):
-            from dxtbx.model.experiment_list import ExperimentListDumper
 
-            dump = ExperimentListDumper(experiments)
-            dump.as_json(self.params.output.experiments_filename)
+            experiments.as_json(self.params.output.experiments_filename)
 
         # Do the processing
         try:
@@ -907,10 +905,8 @@ class Processor(object):
         else:
             # Dump experiments to disk
             if self.params.output.refined_experiments_filename:
-                from dxtbx.model.experiment_list import ExperimentListDumper
 
-                dump = ExperimentListDumper(experiments)
-                dump.as_json(self.params.output.refined_experiments_filename)
+                experiments.as_json(self.params.output.refined_experiments_filename)
 
             if self.params.output.indexed_filename:
                 self.save_reflections(centroids, self.params.output.indexed_filename)
@@ -1030,10 +1026,8 @@ class Processor(object):
         else:
             # Dump experiments to disk
             if self.params.output.integrated_experiments_filename:
-                from dxtbx.model.experiment_list import ExperimentListDumper
 
-                dump = ExperimentListDumper(experiments)
-                dump.as_json(self.params.output.integrated_experiments_filename)
+                experiments.as_json(self.params.output.integrated_experiments_filename)
 
             if self.params.output.integrated_filename:
                 # Save the reflections
@@ -1272,10 +1266,10 @@ class Processor(object):
                 len(self.all_indexed_experiments) > 0
                 and self.params.output.refined_experiments_filename
             ):
-                from dxtbx.model.experiment_list import ExperimentListDumper
 
-                dump = ExperimentListDumper(self.all_indexed_experiments)
-                dump.as_json(self.params.output.refined_experiments_filename)
+                self.all_indexed_experiments.as_json(
+                    self.params.output.refined_experiments_filename
+                )
 
             if (
                 len(self.all_indexed_reflections) > 0
@@ -1289,10 +1283,10 @@ class Processor(object):
                 len(self.all_integrated_experiments) > 0
                 and self.params.output.integrated_experiments_filename
             ):
-                from dxtbx.model.experiment_list import ExperimentListDumper
 
-                dump = ExperimentListDumper(self.all_integrated_experiments)
-                dump.as_json(self.params.output.integrated_experiments_filename)
+                self.all_integrated_experiments.as_json(
+                    self.params.output.integrated_experiments_filename
+                )
 
             if (
                 len(self.all_integrated_reflections) > 0

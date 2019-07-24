@@ -261,6 +261,7 @@ class CentroidOutlier(object):
                         "{0:3.1f}% of reflections were flagged as outliers from job"
                         " {1}"
                     ).format(p100, i + 1)
+                    logger.debug(msg)
             row.extend([str(nref), str(nout), "%3.1f" % p100])
             rows.append(row)
 

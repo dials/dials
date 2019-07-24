@@ -170,7 +170,6 @@ class SparseConstraintManager(ConstraintManager):
         # create constrained columns
         constr_block = sparse.matrix(jacobian.n_rows, len(self._constraints))
 
-        mask = flex.bool(jacobian.n_rows, True)
         for i, (gp, c) in enumerate(zip(self._constrained_gps, constr_block.cols())):
             # this copies, so c is no longer the matrix column but a new vector
             for j in gp:

@@ -111,11 +111,8 @@ class multi_active_parameter_manager(object):
         self.components_list = []  # A list of the component names.
         self.apm_list = []
         self.apm_data = OrderedDict()
-        verbosity = 1
-        if len(selection_lists) > 4:
-            verbosity -= 1
         all_same_components = False
-        if all(i == selection_lists[0] for i in selection_lists):
+        if all(i == selection_lists[0] for i in selection_lists[1:]):
             logger.info(
                 "Components to be refined in this cycle for all datasets: %s",
                 "".join(str(i) + ", " for i in selection_lists[0]).rstrip(", "),
@@ -125,7 +122,7 @@ class multi_active_parameter_manager(object):
             zip(components_list, selection_lists)
         ):
             self.apm_list.append(apm_class(components, selection_list))
-            if verbosity or not all_same_components:
+            if not all_same_components:
                 logger.info(
                     "Components to be refined in this cycle for datasest %s: %s",
                     j,

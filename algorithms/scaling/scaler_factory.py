@@ -78,11 +78,9 @@ class ScalerFactory(object):
         id_vals = reflection_table.experiment_identifiers().values()
         assert experiment.identifier in id_vals, (experiment.identifier, list(id_vals))
         assert len(id_vals) == 1, list(id_vals)
-        if params.scaling_options.verbosity > 1:
-            logger.info(
-                "The experiment identifier for this dataset is %s",
-                experiment.identifier,
-            )
+        logger.info(
+            "The experiment identifier for this dataset is %s", experiment.identifier
+        )
 
 
 class SingleScalerFactory(ScalerFactory):
@@ -94,13 +92,12 @@ class SingleScalerFactory(ScalerFactory):
 
         cls.ensure_experiment_identifier(params, experiment, reflection_table)
 
-        if params.scaling_options.verbosity > 1:
-            logger.info(
-                "Preprocessing data for scaling. The id assigned to this \n"
-                "dataset is %s, and the scaling model type being applied is %s. \n",
-                reflection_table.experiment_identifiers().values()[0],
-                experiment.scaling_model.id_,
-            )
+        logger.info(
+            "Preprocessing data for scaling. The id assigned to this \n"
+            "dataset is %s, and the scaling model type being applied is %s. \n",
+            reflection_table.experiment_identifiers().values()[0],
+            experiment.scaling_model.id_,
+        )
 
         reflection_table, reasons = cls.filter_bad_reflections(reflection_table)
 
@@ -134,13 +131,13 @@ class SingleScalerFactory(ScalerFactory):
             raise BadDatasetForScalingException(
                 """Unable to use this dataset for scaling"""
             )
-        elif params.scaling_options.verbosity > 1:
+        else:
             logger.info(
-                "%s/%s reflections not suitable for scaling",
+                "%s/%s reflections not suitable for scaling\n%s",
                 n_excluded,
                 reflection_table.size(),
+                reasons,
             )
-            logger.info(reasons)
 
         if not for_multi:
             determine_reflection_selection_parameters(

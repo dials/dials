@@ -20,7 +20,6 @@ from libtbx import easy_run
 from scitbx import sparse
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentListDumper
 from dials.algorithms.refinement.constraints import EqualShiftConstraint
 from dials.algorithms.refinement.constraints import ConstraintManager
 from dials.algorithms.refinement.constraints import SparseConstraintManager
@@ -151,8 +150,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # append to the experiment list and write out
     el.append(e2)
-    dump = ExperimentListDumper(el)
-    dump.as_json("foo.expt")
+    el.as_json("foo.expt")
 
     # duplicate the reflections and increment the experiment id
     rt2 = deepcopy(rt)
