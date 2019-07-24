@@ -11,14 +11,13 @@ except ImportError:
     ColorStreamHandler = None
 
 
-def config(verbosity=1, name=None, info=None, debug=None, logfile=None):
+def config(verbosity=0, name=None, info=None, debug=None, logfile=None):
     """
     Configure the logging.
 
     :param verbosity: Verbosity level of log output. Possible values:
-                        * 0: No log output to stdout, info log to logfile;
-                        * 1: Info log output to stdout/logfile;
-                        * 2: Info & debug log output to stdout/logfile.
+                        * 0: Info log output to stdout/logfile
+                        * 1: Info & debug log output to stdout/logfile
     :type verbosity: int
     :param logfile: Filename for log output.  If False, no log file is written.
     :type logfile: str
@@ -45,11 +44,9 @@ def config(verbosity=1, name=None, info=None, debug=None, logfile=None):
         console = logging.StreamHandler(sys.stdout)
 
     dials_logger = logging.getLogger("dials")
+    dials_logger.addHandler(console)
 
-    if verbosity > 0:
-        dials_logger.addHandler(console)
-
-    if verbosity > 1:
+    if verbosity:
         loglevel = logging.DEBUG
     else:
         loglevel = logging.INFO
