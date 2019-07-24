@@ -4,6 +4,7 @@ import future.moves.itertools as itertools
 import libtbx.easy_mp
 import warnings
 
+
 def parallel_map(
     func,
     iterable,
@@ -20,7 +21,6 @@ def parallel_map(
     A wrapper function to call either drmaa or easy_mp to do a parallel map
     calculation. This function is setup so that in each case we can select
     the number of cores on a machine
-
     """
     from dials.util.cluster_map import cluster_map as drmaa_parallel_map
 
@@ -52,7 +52,6 @@ class MultiNodeClusterFunction(object):
     """
     A function called by the multi node parallel map. On each cluster node, a
     nested parallel map using the multi processing method will be used.
-
     """
 
     def __init__(
@@ -65,7 +64,6 @@ class MultiNodeClusterFunction(object):
     ):
         """
         Init the function
-
         """
         self.func = func
         self.nproc = nproc
@@ -76,7 +74,6 @@ class MultiNodeClusterFunction(object):
     def __call__(self, iterable):
         """
         Call the function
-
         """
         return libtbx.easy_mp.parallel_map(
             func=self.func,
@@ -89,36 +86,26 @@ class MultiNodeClusterFunction(object):
         )
 
 
-def iterable_grouper(iterable, n):
+def _iterable_grouper(iterable, chunk_size):
     """
-    Group the iterable into chunks of up to n items
+    Group the iterable into chunks of up to chunk_size items
     """
-    args = [iter(iterable)] * n
+    args = [iter(iterable)] * chunk_size
     for group in itertools.zip_longest(*args):
         group = tuple(item for item in group if item is not None)
         yield group
 
 
-class MultiNodeClusterCallback(object):
+def _create_iterable_wrapper(function):
     """
-    A callback function used with the multi node parallel map
-
+    Wraps a function so that it takes iterables and when called is applied to
+    each element of the iterable and returns a list of the return values.
     """
 
-    def __init__(self, callback):
-        """
-        Init the callback
+    def run_function(iterable):
+        return [function(item) for item in iterable]
 
-        """
-        self.callback = callback
-
-    def __call__(self, x):
-        """
-        Call the callback
-
-        """
-        for item in x:
-            self.callback(item)
+    return run_function
 
 
 def multi_node_parallel_map(
@@ -135,7 +122,6 @@ def multi_node_parallel_map(
     """
     A wrapper function to call a function using multiple cluster nodes and with
     multiple processors on each node
-
     """
 
     # The function to all on the cluster
@@ -148,11 +134,11 @@ def multi_node_parallel_map(
     )
 
     # Create the cluster iterable
-    cluster_iterable = iterable_grouper(iterable, nproc)
+    cluster_iterable = _iterable_grouper(iterable, nproc)
 
     # Create the cluster callback
     if callback is not None:
-        cluster_callback = MultiNodeClusterCallback(callback)
+        cluster_callback = _create_iterable_wrapper(callback)
     else:
         cluster_callback = None
 
@@ -173,54 +159,6 @@ def multi_node_parallel_map(
     return [item for rlist in result for item in rlist]
 
 
-class BatchFunc(object):
-    """
-    Process the batch iterables
-
-    """
-
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self, index):
-        result = []
-        for i in index:
-            result.append(self.func(i))
-        return result
-
-
-class BatchIterable(object):
-    """
-    Split the iterables into batches
-
-    """
-
-    def __init__(self, iterable, chunksize):
-        self.iterable = iterable
-        self.chunksize = chunksize
-
-    def __iter__(self):
-        i = 0
-        while i < len(self.iterable):
-            j = i + self.chunksize
-            yield self.iterable[i:j]
-            i = j
-
-
-class BatchCallback(object):
-    """
-    Process the batch callback
-
-    """
-
-    def __init__(self, callback):
-        self.callback = callback
-
-    def __call__(self, result):
-        for r in result:
-            self.callback(r)
-
-
 def batch_parallel_map(
     func=None, iterable=None, processes=None, callback=None, method=None, chunksize=1
 ):
@@ -231,14 +169,13 @@ def batch_parallel_map(
     )
     """
     A function to run jobs in batches in each process
-
     """
     # Call the batches in parallel
     return libtbx.easy_mp.parallel_map(
-        func=BatchFunc(func),
-        iterable=BatchIterable(iterable, chunksize),
+        func=_create_iterable_wrapper(func),
+        iterable=_iterable_grouper(iterable, chunksize),
         processes=processes,
-        callback=BatchCallback(callback),
+        callback=_create_iterable_wrapper(callback),
         method=method,
         preserve_order=True,
         preserve_exception_message=True,
@@ -256,17 +193,16 @@ def batch_multi_node_parallel_map(
 ):
     """
     A function to run jobs in batches in each process
-
     """
 
     # Call the batches in parallel
     return multi_node_parallel_map(
-        func=BatchFunc(func),
-        iterable=BatchIterable(iterable, chunksize),
+        func=_create_iterable_wrapper(func),
+        iterable=_iterable_grouper(iterable, chunksize),
         nproc=nproc,
         njobs=njobs,
         cluster_method=cluster_method,
-        callback=BatchCallback(callback),
+        callback=_create_iterable_wrapper(callback),
         preserve_order=True,
         preserve_exception_message=True,
     )
