@@ -7,25 +7,24 @@ the presence of an indexing ambiguity.
 """
 from __future__ import absolute_import, division, print_function
 
-import logging
-
 import copy
-from collections import OrderedDict
+import json
+import logging
 import math
+from collections import OrderedDict
 
-from libtbx import Auto
-from libtbx import table_utils
-from scitbx.array_family import flex
-from scitbx import matrix
-from cctbx import sgtbx
 import iotbx.phil
-
+from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
 from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+from libtbx import Auto
+from libtbx import table_utils
+from scitbx import matrix
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -557,11 +556,10 @@ class CosymAnalysis(symmetry_base, Subject):
 
         """
         d = self.as_dict()
-        import json
 
         json_str = json.dumps(d, indent=indent)
-        if filename is not None:
-            with open(filename, "wb") as f:
+        if filename:
+            with open(filename, "w") as f:
                 f.write(json_str)
         return json.dumps(d, indent=indent)
 
