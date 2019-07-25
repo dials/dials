@@ -91,9 +91,6 @@ Incremental scaling (with different options per dataset)::
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
-  debug = False
-    .type = bool
-    .help = "Output additional debugging information"
   model = physical array KB
     .type = choice
     .help = "Set scaling model to be applied to input datasets without
@@ -110,9 +107,6 @@ phil_scope = phil.parse(
     log = dials.scale.log
       .type = str
       .help = "The log filename"
-    debug.log = dials.scale.debug.log
-      .type = str
-      .help = "The debug log filename"
     experiments = "scaled.expt"
       .type = str
       .help = "Option to set filepath for output json."
@@ -454,7 +448,7 @@ prepare the data in the correct space group.\n"""
         combinining datasets for output."""
         del self.scaler
         for experiment in self.experiments:
-            for component in experiment.scaling_model.components.iterkeys():
+            for component in experiment.scaling_model.components.keys():
                 experiment.scaling_model.components[component] = []
         gc.collect()
 
@@ -645,7 +639,7 @@ def run(args=None):
         check_format=False,
         epilog=help_message,
     )
-    params, _ = parser.parse_args(args=args, show_diff_phil=False)
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     if not params.input.experiments or not params.input.reflections:
         parser.print_help()
@@ -654,7 +648,7 @@ def run(args=None):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    log.config(verbosity=1, info=params.output.log, debug=params.output.debug.log)
+    log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
 
     diff_phil = parser.diff_phil.as_str()

@@ -6,9 +6,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from scitbx.array_family import flex
+import six
 from cctbx import uctbx
-from libtbx.table_utils import simple_table
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -30,7 +29,8 @@ from dials.report.plots import (
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-import six
+from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -202,13 +202,13 @@ class ScalingModelObserver(Observer):
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
             for name, plot in six.iteritems(scaling_model_plots):
-                d.update({name + "_" + str(key): plot})
+                d[name + "_" + str(key)] = plot
         graphs = {"scaling_model": d}
         return graphs
 
     def return_model_error_summary(self):
         """Get a summary of the error distribution of the models."""
-        first_model = self.data.values()[0]
+        first_model = list(self.data.values())[0]
         component = first_model["configuration_parameters"]["corrections"][0]
         msg = ""
         if "est_standard_devs" in first_model[component]:
@@ -242,13 +242,12 @@ class ScalingModelObserver(Observer):
 
 @singleton
 class ScalingOutlierObserver(Observer):
-
     """
     Observer to record scaling outliers and make outlier plots.
     """
 
     def update(self, scaler):
-        active_scalers = getattr(scaler, "active_scalers", False)
+        active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
         for scaler in active_scalers:
@@ -273,12 +272,10 @@ class ScalingOutlierObserver(Observer):
     def make_plots(self):
         """Generate plot data of outliers on the detector and vs z."""
         d = OrderedDict()
-        for key in sorted(self.data.keys()):
+        for key in sorted(self.data):
             outlier_plots = plot_outliers(self.data[key])
-            d.update(
-                {"outlier_plot_" + str(key): outlier_plots["outlier_xy_positions"]}
-            )
-            d.update({"outlier_plot_z" + str(key): outlier_plots["outliers_vs_z"]})
+            d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
+            d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
         graphs = {"outlier_plots": d}
         return graphs
 
@@ -319,7 +316,6 @@ class ErrorModelObserver(Observer):
 
 @singleton
 class MergingStatisticsObserver(Observer):
-
     """
     Observer to record merging statistics data and make tables.
     """

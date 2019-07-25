@@ -85,7 +85,7 @@ def test_cosym(
 
     space_groups = {}
     reindexing_ops = {}
-    for dataset_id in cosym.reindexing_ops.iterkeys():
+    for dataset_id in cosym.reindexing_ops.keys():
         if 0 in cosym.reindexing_ops[dataset_id]:
             cb_op = cosym.reindexing_ops[dataset_id][0]
             reindexing_ops.setdefault(cb_op, set())

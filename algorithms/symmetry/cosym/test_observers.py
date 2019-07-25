@@ -38,7 +38,7 @@ def test_SymmetryAnalysisObserver():
     observer.update(script)
     d = observer.make_tables()
     assert "symmetry_analysis" in d
-    assert d["symmetry_analysis"].keys() == [
+    assert list(d["symmetry_analysis"].keys()) == [
         "summary_table",
         "subgroups_table",
         "sym_ops_table",

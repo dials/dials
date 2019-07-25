@@ -80,7 +80,7 @@ class active_parameter_manager(object):
         """Set var_cov matrices for each component to allow later calculation
         of errors."""
         i = 0
-        for component in self.components.itervalues():
+        for component in self.components.values():
             n = component["n_params"]
             sub = var_cov.matrix_copy_block(i, i, n, n)
             component["object"].var_cov_matrix = sub
@@ -89,7 +89,7 @@ class active_parameter_manager(object):
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of the model components."""
-        for component in self.components.itervalues():
+        for component in self.components.values():
             start_idx = component["start_idx"]
             end_idx = component["end_idx"]
             component["object"].parameter_esds = esds[start_idx:end_idx]

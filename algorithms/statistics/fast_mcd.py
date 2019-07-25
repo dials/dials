@@ -260,9 +260,7 @@ class FastMCD(object):
         blocks = zip(starts, ends)
 
         # split into groups
-        groups = []
-        for s, e in blocks:
-            groups.append([col[s:e] for col in permuted])
+        groups = [[col[start:end] for col in permuted] for start, end in blocks]
 
         return groups
 

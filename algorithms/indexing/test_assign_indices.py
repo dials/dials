@@ -208,5 +208,4 @@ def test_index_reflections(dials_regression):
         index_reflections(reflections, experiments)
     assert "miller_index" in reflections
     counts = reflections["id"].counts()
-    assert counts.values() == [1390, 114692]
-    assert counts.keys() == [-1, 0]
+    assert dict(counts) == {-1: 1390, 0: 114692}

@@ -44,8 +44,6 @@ class CentroidOutlier(object):
         # the number of rejections
         self.nreject = 0
 
-        self._verbosity = 0
-
         return
 
     def get_block_width(self, exp_id=None):
@@ -63,9 +61,6 @@ class CentroidOutlier(object):
         a single value or a list with one value per experiment. None is accepted
         to mean that the dataset will not be split into blocks."""
         self._block_width = block_width
-
-    def set_verbosity(self, verbosity):
-        self._verbosity = verbosity
 
     def _detect_outliers(self, cols):
         """Perform outlier detection using the input cols and return a flex.bool
@@ -414,7 +409,7 @@ phil_scope = parse(phil_str)
 
 class CentroidOutlierFactory(object):
     @classmethod
-    def from_parameters_and_colnames(cls, params, colnames, verbosity=0):
+    def from_parameters_and_colnames(cls, params, colnames):
 
         # id the relevant scope for the requested method
         method = params.outlier.algorithm
@@ -456,7 +451,6 @@ class CentroidOutlierFactory(object):
             block_width=params.outlier.block_width,
             **kwargs
         )
-        od.set_verbosity(verbosity)
         return od
 
 

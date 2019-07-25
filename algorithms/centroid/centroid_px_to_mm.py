@@ -1,13 +1,3 @@
-#
-# centroid_px_to_mm.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -21,8 +11,6 @@ def centroid_px_to_mm(detector, scan, position, variance, sd_error):
 
 def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     """Convenience function to calculate centroid in mm/rad from px"""
-    from operator import mul
-
     # Get the pixel to millimeter function
     pixel_size = panel.get_pixel_size()
     if scan is None:
@@ -30,7 +18,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     else:
         oscillation = scan.get_oscillation(deg=False)
     scale = pixel_size + (oscillation[1],)
-    scale2 = map(mul, scale, scale)
+    scale2 = tuple(s * s for s in scale)
 
     if isinstance(position, tuple):
         # Convert Pixel coordinate into mm/rad
@@ -46,8 +34,8 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         # N.B assuming locally flat pixel to millimeter transform
         # for variance calculation.
         position_mm = xy_mm + (z_rad,)
-        variance_mm = map(mul, variance, scale2)
-        sd_error_mm = map(mul, sd_error, scale2)
+        variance_mm = [var * s for var, s in zip(variance, scale2)]
+        sd_error_mm = [sde * s for sde, s in zip(sd_error, scale2)]
 
     else:
         from scitbx.array_family import flex

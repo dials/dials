@@ -258,7 +258,6 @@ def test():
     ######################################
 
     overrides = """minimiser.parameters.engine=GaussNewton
-  minimiser.parameters.verbosity=0
   minimiser.parameters.logfile=None"""
     refiner = setup_minimiser.Extract(
         master_phil, mytarget, pred_param, local_overrides=overrides
@@ -286,7 +285,6 @@ def test():
     ######################################################
 
     overrides = """minimiser.parameters.engine=LBFGScurvs
-  minimiser.parameters.verbosity=0
   minimiser.parameters.logfile=None"""
     refiner = setup_minimiser.Extract(
         master_phil, mytarget, pred_param, local_overrides=overrides

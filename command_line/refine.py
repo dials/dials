@@ -82,9 +82,6 @@ phil_scope = libtbx.phil.parse(
     log = dials.refine.log
       .type = str
 
-    debug_log = dials.refine.debug.log
-      .type = str
-
     correlation_plot
       .expert_level = 1
     {
@@ -132,7 +129,6 @@ phil_overrides = libtbx.phil.parse(
     """
   refinement
   {
-    verbosity = 2
     parameterisation.scan_varying = Auto
   }
 """
@@ -248,7 +244,7 @@ def run_macrocycle(params, reflections, experiments):
     # just copy over the columns of interest or columns that may have been
     # updated, leaving behind things added by e.g. scan-varying refinement
     # such as 'block', the U, B and UB matrices and gradients.
-    for key in preds.keys():
+    for key in preds:
         if key in reflections.keys() or key in [
             "s1",
             "xyzcal.mm",
@@ -385,7 +381,7 @@ def run(args=None, phil=working_phil):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure the logging
-    dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     # Try to load the models and data
     nexp = len(experiments)

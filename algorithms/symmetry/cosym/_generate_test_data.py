@@ -154,7 +154,7 @@ def generate_intensities(crystal_symmetry, anomalous_flag=False, d_min=1):
     miller_set = crystal_symmetry.miller_set(indices, anomalous_flag)
     intensities = flex.random_double(indices.size()) * 1000
     miller_array = miller.array(
-        miller_set, data=intensities, sigmas=flex.double(intensities.size(), 1)
+        miller_set, data=intensities, sigmas=flex.sqrt(intensities)
     ).set_observation_type_xray_intensity()
     return miller_array
 

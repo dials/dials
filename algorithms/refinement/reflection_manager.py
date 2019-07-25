@@ -7,8 +7,6 @@ import logging
 import math
 import random
 
-import libtbx
-from dials.array_family import flex
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -19,8 +17,12 @@ from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
+from dials.array_family import flex
+import libtbx
 from libtbx.phil import parse
+from libtbx.table_utils import simple_table
 from scitbx import matrix
+from scitbx.math import five_number_summary
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +216,7 @@ class BlockCalculator(object):
 class ReflectionManagerFactory(object):
     @staticmethod
     def from_parameters_reflections_experiments(
-        params, reflections, experiments, do_stills=False, verbosity=0
+        params, reflections, experiments, do_stills=False
     ):
 
         """Given a set of parameters and models, build a reflection manager
@@ -286,7 +288,7 @@ class ReflectionManagerFactory(object):
             )
 
             outlier_detector = CentroidOutlierFactory.from_parameters_and_colnames(
-                params, colnames, verbosity
+                params, colnames
             )
 
         # override default weighting strategy?
@@ -330,7 +332,6 @@ class ReflectionManagerFactory(object):
             trim_scan_edges=params.trim_scan_edges,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
-            verbosity=verbosity,
         )
 
 
@@ -357,14 +358,10 @@ class ReflectionManager(object):
         trim_scan_edges=0.0,
         outlier_detector=None,
         weighting_strategy_override=None,
-        verbosity=0,
     ):
 
         if len(reflections) == 0:
             raise ValueError("Empty reflections table provided to ReflectionManager")
-
-        # set verbosity
-        self._verbosity = verbosity
 
         # keep track of models
         self._experiments = experiments
@@ -462,8 +459,7 @@ class ReflectionManager(object):
         self._reflections.set_flags(mask, self._reflections.flags.used_in_refinement)
 
         # print summary before outlier rejection
-        if self._verbosity > 1:
-            self.print_stats_on_matches()
+        self.print_stats_on_matches()
 
         # reset centroid_outlier flags in both the working reflections and the
         # original indexed reflections
@@ -514,7 +510,7 @@ class ReflectionManager(object):
         logger.debug("%d reflections remain in the manager", len(self._reflections))
 
         # print summary after outlier rejection
-        if rejection_occurred and self._verbosity > 1:
+        if rejection_occurred:
             self.print_stats_on_matches()
 
         # form working and free subsets
@@ -701,14 +697,19 @@ class ReflectionManager(object):
 
         l = self.get_matches()
         nref = len(l)
+        if nref == 0:
+            logger.warning(
+                "Unable to calculate summary statistics for zero observations"
+            )
+            return
 
-        from libtbx.table_utils import simple_table
-        from scitbx.math import five_number_summary
-
-        x_resid = l["x_resid"]
-        y_resid = l["y_resid"]
-        phi_resid = l["phi_resid"]
-        w_x, w_y, w_phi = l["xyzobs.mm.weights"].parts()
+        try:
+            x_resid = l["x_resid"]
+            y_resid = l["y_resid"]
+            phi_resid = l["phi_resid"]
+            w_x, w_y, w_phi = l["xyzobs.mm.weights"].parts()
+        except RuntimeError:  # wish it were KeyError
+            return
 
         msg = (
             "\nSummary statistics for {} observations".format(nref)
@@ -716,102 +717,23 @@ class ReflectionManager(object):
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
-        try:
-            row_data = five_number_summary(x_resid)
-            rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(y_resid)
-            rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(phi_resid)
-            rows.append(
-                ["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data]
-            )
-            row_data = five_number_summary(w_x)
-            rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(w_y)
-            rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(w_phi)
-            rows.append(
-                ["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
-            )
-            st = simple_table(rows, header)
-        except IndexError:
-            # zero length reflection list
-            logger.warning(
-                "Unable to calculate summary statistics for zero observations"
-            )
-            return
+        row_data = five_number_summary(x_resid)
+        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(y_resid)
+        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(phi_resid)
+        rows.append(["Phic - Phio (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        row_data = five_number_summary(w_x)
+        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(w_y)
+        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(w_phi)
+        rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
+        st = simple_table(rows, header)
+
         logger.info(msg)
         logger.info(st.format())
         logger.info("")
-
-        # sorting is expensive and the following table is only of interest in
-        # special cases, so return now if verbosity is not high
-        if self._verbosity < 3:
-            return
-
-        if nref < 20:
-            logger.debug("Fewer than 20 reflections matched!")
-            return
-
-        sl = self._sort_obs_by_residual(l)
-        logger.debug("Reflections with the worst 20 positional residuals:")
-        header = [
-            "Miller index",
-            "x_resid",
-            "y_resid",
-            "phi_resid",
-            "pnl",
-            "x_obs",
-            "y_obs",
-            "phi_obs",
-            "x_obs\nweight",
-            "y_obs\nweight",
-            "phi_obs\nweight",
-        ]
-        rows = []
-        for i in range(20):
-            e = sl[i]
-            x_obs, y_obs, phi_obs = e["xyzobs.mm.value"]
-            rows.append(
-                [
-                    "% 3d, % 3d, % 3d" % e["miller_index"],
-                    "%5.3f" % e["x_resid"],
-                    "%5.3f" % e["y_resid"],
-                    "%6.4f" % (e["phi_resid"] * RAD2DEG),
-                    "%d" % e["panel"],
-                    "%5.3f" % x_obs,
-                    "%5.3f" % y_obs,
-                    "%6.4f" % (phi_obs * RAD2DEG),
-                    "%5.3f" % e["xyzobs.mm.weights"][0],
-                    "%5.3f" % e["xyzobs.mm.weights"][1],
-                    "%6.4f" % (e["xyzobs.mm.weights"][2] * DEG2RAD ** 2),
-                ]
-            )
-        logger.debug(simple_table(rows, header).format())
-
-        sl = self._sort_obs_by_residual(sl, angular=True)
-        logger.debug("\nReflections with the worst 20 angular residuals:")
-        rows = []
-        for i in range(20):
-            e = sl[i]
-            x_obs, y_obs, phi_obs = e["xyzobs.mm.value"]
-            rows.append(
-                [
-                    "% 3d, % 3d, % 3d" % e["miller_index"],
-                    "%5.3f" % e["x_resid"],
-                    "%5.3f" % e["y_resid"],
-                    "%6.4f" % (e["phi_resid"] * RAD2DEG),
-                    "%d" % e["panel"],
-                    "%5.3f" % x_obs,
-                    "%5.3f" % y_obs,
-                    "%6.4f" % (phi_obs * RAD2DEG),
-                    "%5.3f" % e["xyzobs.mm.weights"][0],
-                    "%5.3f" % e["xyzobs.mm.weights"][1],
-                    "%6.4f" % (e["xyzobs.mm.weights"][2] * DEG2RAD ** 2),
-                ]
-            )
-        logger.debug(simple_table(rows, header).format())
-        logger.debug("")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -868,84 +790,46 @@ class StillsReflectionManager(ReflectionManager):
 
         l = self.get_matches()
         nref = len(l)
+        if nref == 0:
+            logger.warning(
+                "Unable to calculate summary statistics for zero observations"
+            )
+            return
 
         from libtbx.table_utils import simple_table
         from scitbx.math import five_number_summary
 
-        x_resid = l["x_resid"]
-        y_resid = l["y_resid"]
-        delpsi = l["delpsical.rad"]
-        w_x, w_y, _ = l["xyzobs.mm.weights"].parts()
-        w_delpsi = l["delpsical.weights"]
+        try:
+            x_resid = l["x_resid"]
+            y_resid = l["y_resid"]
+            delpsi = l["delpsical.rad"]
+            w_x, w_y, _ = l["xyzobs.mm.weights"].parts()
+            w_delpsi = l["delpsical.weights"]
+        except RuntimeError:  # wish it were KeyError
+            return
+
+        header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+        rows = []
+        row_data = five_number_summary(x_resid)
+        rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(y_resid)
+        rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(delpsi)
+        rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
+        row_data = five_number_summary(w_x)
+        rows.append(["X weights"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(w_y)
+        rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
+        row_data = five_number_summary(w_delpsi)
+        rows.append(
+            ["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
+        )
 
         msg = (
             "\nSummary statistics for {} observations".format(nref)
             + " matched to predictions:"
         )
-        header = ["", "Min", "Q1", "Med", "Q3", "Max"]
-        rows = []
-        try:
-            row_data = five_number_summary(x_resid)
-            rows.append(["Xc - Xo (mm)"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(y_resid)
-            rows.append(["Yc - Yo (mm)"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(delpsi)
-            rows.append(["DeltaPsi (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data])
-            row_data = five_number_summary(w_x)
-            rows.append(["X weights"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(w_y)
-            rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
-            row_data = five_number_summary(w_delpsi)
-            rows.append(
-                ["DeltaPsi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
-            )
-        except IndexError:
-            # zero length reflection list
-            logger.warning(
-                "Unable to calculate summary statistics for zero observations"
-            )
-            return
         logger.info(msg)
         st = simple_table(rows, header)
         logger.info(st.format())
         logger.info("")
-
-        # sorting is expensive and the following table is only of interest in
-        # special cases, so return now if verbosity is not high
-        if self._verbosity < 3:
-            return
-
-        if nref < 20:
-            logger.debug("Fewer than 20 reflections matched!")
-            return
-
-        sl = self._sort_obs_by_residual(l)
-        logger.debug("Reflections with the worst 20 positional residuals:")
-        header = [
-            "Miller index",
-            "x_resid",
-            "y_resid",
-            "pnl",
-            "x_obs",
-            "y_obs",
-            "x_obs\nweight",
-            "y_obs\nweight",
-        ]
-        rows = []
-        for i in range(20):
-            e = sl[i]
-            x_obs, y_obs, _ = e["xyzobs.mm.value"]
-            rows.append(
-                [
-                    "% 3d, % 3d, % 3d" % e["miller_index"],
-                    "%5.3f" % e["x_resid"],
-                    "%5.3f" % e["y_resid"],
-                    "%d" % e["panel"],
-                    "%5.3f" % x_obs,
-                    "%5.3f" % y_obs,
-                    "%5.3f" % e["xyzobs.mm.weights"][0],
-                    "%5.3f" % e["xyzobs.mm.weights"][1],
-                ]
-            )
-        logger.debug(simple_table(rows, header).format())
-        logger.debug("")

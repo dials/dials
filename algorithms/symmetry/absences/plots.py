@@ -19,7 +19,7 @@ def color_axis_data(name, miller_axis_vals):
 def plot_screw_axes(screw_axes_data):
     """Generate scatter plot data for screw axes."""
     d = OrderedDict()
-    for name, data in screw_axes_data.iteritems():
+    for name, data in screw_axes_data.items():
         d.update(
             {
                 "plot_"

@@ -301,9 +301,7 @@ def test_refinement(dials_regression):
     param_reporter = ParameterReporter(det_param, beam_param, xlo_param, [xluc_param])
 
     # reflection manager
-    refman = TwoThetaReflectionManager(
-        refs, experiments, nref_per_degree=20, verbosity=2
-    )
+    refman = TwoThetaReflectionManager(refs, experiments, nref_per_degree=20)
 
     # reflection predictor
     ref_predictor = TwoThetaExperimentsPredictor(experiments)
@@ -320,7 +318,6 @@ def test_refinement(dials_regression):
         target=target,
         prediction_parameterisation=pred_param,
         log=None,
-        verbosity=0,
         max_iterations=20,
     )
 
@@ -334,7 +331,6 @@ def test_refinement(dials_regression):
         refman=refman,
         target=target,
         refinery=refinery,
-        verbosity=1,
     )
     refiner.run()
 

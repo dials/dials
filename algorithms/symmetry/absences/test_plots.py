@@ -29,6 +29,6 @@ def test_plot_screw_axes():
         "sigmas": [1.0] * 6,
     }
     plots = plot_screw_axes({"21a": data})
-    for pl in plots.itervalues():
+    for pl in plots.values():
         assert pl["data"][0]["x"]
         assert pl["data"][0]["y"]

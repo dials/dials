@@ -78,7 +78,7 @@ phil_scope = parse(
     .type = bool
     .help = "Whether or not to print a table of per-image statistics."
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 

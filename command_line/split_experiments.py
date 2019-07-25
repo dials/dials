@@ -146,7 +146,7 @@ class Script(object):
 
         if params.by_wavelength:
             if reflections:
-                if not reflections.experiment_identifiers().keys():
+                if not reflections.experiment_identifiers():
                     raise Sorry(
                         "Unable to split by wavelength as no experiment "
                         "identifiers are set in the reflection table."

@@ -63,7 +63,6 @@ class Extract(object):
                 target=self._target,
                 prediction_parameterisation=self._prediction_parameterisation,
                 log=self._params.logfile,
-                verbosity=self._params.verbosity,
             )
             return refiner
 
@@ -72,7 +71,6 @@ class Extract(object):
                 target=self._target,
                 prediction_parameterisation=self._prediction_parameterisation,
                 log=self._params.logfile,
-                verbosity=self._params.verbosity,
             )
             return refiner
 
@@ -82,6 +80,5 @@ class Extract(object):
                 target=self._target,
                 prediction_parameterisation=self._prediction_parameterisation,
                 log=self._params.logfile,
-                verbosity=self._params.verbosity,
             )
             return refiner

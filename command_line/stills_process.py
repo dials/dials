@@ -28,7 +28,7 @@ seperately.
 from libtbx.phil import parse
 
 control_phil_str = """
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -407,7 +407,7 @@ class Script(object):
                     processor.process_experiments(item[0], item[1])
                 processor.finalize()
 
-            iterable = zip(tags, split_experiments)
+            iterable = list(zip(tags, split_experiments))
 
         else:
             basenames = [
@@ -466,7 +466,7 @@ class Script(object):
                     processor.process_experiments(tag, experiments)
                 processor.finalize()
 
-            iterable = zip(tags, all_paths)
+            iterable = list(zip(tags, all_paths))
 
         # Process the data
         if params.mp.method == "mpi":

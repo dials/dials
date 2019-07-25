@@ -603,7 +603,7 @@ class SymmetryAnalysis(object):
 
     def _score_laue_groups(self):
         subgroup_scores = [
-            ScoreSubGroup(subgrp, self.sym_op_scores.values())
+            ScoreSubGroup(subgrp, list(self.sym_op_scores.values()))
             for subgrp in self.subgroups.result_groups
         ]
         total_likelihood = sum(score.likelihood for score in subgroup_scores)

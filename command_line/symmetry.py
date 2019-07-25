@@ -40,7 +40,7 @@ normalisation = kernel quasi ml_iso *ml_aniso
 lattice_group = None
   .type = space_group
 
-verbosity = 1
+verbosity = 0
   .type = int(value_min=0)
   .help = "The verbosity level"
 

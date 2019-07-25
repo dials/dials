@@ -1,16 +1,7 @@
-#!/usr/bin/env python
-#
-#  restraints_parameterisation.py
-#
-#  Copyright (C) 2015 Diamond Light Source and STFC Rutherford Appleton
-#                     Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
+
+from collections import namedtuple
+
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
 from scitbx.array_family import flex
@@ -81,8 +72,6 @@ restraints
 uc_phil_scope = parse(uc_phil_str)
 
 # Define a couple of namedtuple types we will use for convenience
-from collections import namedtuple
-
 ParamIndex = namedtuple("ParamIndex", ["parameterisation", "istart"])
 RestraintIndex = namedtuple("RestraintIndex", ["restraint", "istart"])
 
@@ -161,26 +150,7 @@ class RestraintsParameterisation(object):
         self._single_model_restraints = []
         self._group_model_restraints = []
 
-        return
-
-    # def add_restraints_to_target_detector(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_target_beam(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_target_xl_orientation(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_target_goniometer(self):
-    #
-    #  return
-
     def add_restraints_to_target_xl_unit_cell(self, experiment_id, values, sigma):
-
         # On input we will have one id value, 6 target values and 6 sigmas.
 
         # select the right parameterisation, if one exists
@@ -207,29 +177,11 @@ class RestraintsParameterisation(object):
         # also add the parameterisation to the set for uniqueness testing
         self._param_to_restraint.add(param_i.parameterisation)
 
-        return
-
-    # def add_restraints_to_group_detector(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_group_beam(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_group_xl_orientation(self):
-    #
-    #  return
-    #
-    # def add_restraints_to_group_goniometer(self):
-    #
-    #  return
-
     def add_restraints_to_group_xl_unit_cell(self, target, experiment_ids, sigma):
 
         # select the right parameterisations, if they exist
         if experiment_ids == "all":
-            param_indices = self._exp_to_xluc_param.values()
+            param_indices = list(self._exp_to_xluc_param.values())
         else:
             param_indices = []
             for exp_id in experiment_ids:
@@ -247,7 +199,7 @@ class RestraintsParameterisation(object):
                 raise DialsRefineConfigError(
                     "Parameterisation already restrained. Cannot create "
                     "additional group restraint for experiment(s) {}".format(
-                        str(param_i.parameterisation.get_experiment_ids())
+                        str(experiment_ids)
                     )
                 )
 
@@ -264,8 +216,6 @@ class RestraintsParameterisation(object):
         # add to the restraint list along with the global parameter indices
         self._group_model_restraints.append(RestraintIndex(tie, istarts))
 
-        return
-
     @property
     def num_residuals(self):
         """Get the total number of residuals across all parameterised restraints"""
@@ -274,7 +224,6 @@ class RestraintsParameterisation(object):
         return n_single + n_group
 
     def get_residuals_gradients_and_weights(self):
-
         residuals = flex.double()
         weights = flex.double()
         row_start = []

@@ -346,10 +346,10 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
             table = pickle.load(f)
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
-        test_rows = {k: millers.first_index(v) for k, v in test_indices.iteritems()}
+        test_rows = {k: millers.first_index(v) for k, v in test_indices.items()}
         test_I_sigsqI = {
             k: (table[v]["intensity.sum.value"], table[v]["intensity.sum.variance"])
-            for k, v in test_rows.iteritems()
+            for k, v in test_rows.items()
         }
         results.append(test_I_sigsqI)
     assert results[0]["zero"][0] == results[1]["zero"][0]

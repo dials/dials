@@ -69,7 +69,7 @@ def test_AnomalousPlotter():
         "anom_scatter_plot_lowres",
         "normal_distribution_plot_lowres",
     ]
-    keys = d.keys()
+    keys = list(d.keys())
     for k in expected:
         assert k in keys
         assert d[k]["data"][0]["x"]  # check some data there
@@ -204,7 +204,7 @@ def test_ResolutionPlotsAndStats(iobs):
     assert d["multiplicity_vs_resolution"]["data"][1] == {}
 
     plots = plotter.make_all_plots()
-    for plot in plots.itervalues():
+    for plot in plots.values():
         assert plot["layout"]["xaxis"]["ticktext"] == plotter.d_star_sq_ticktext
         assert plot["layout"]["xaxis"]["tickvals"] == plotter.d_star_sq_tickvals
 
