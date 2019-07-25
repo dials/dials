@@ -26,6 +26,7 @@ from dials.report.plots import (
     IntensityStatisticsPlots,
     AnomalousPlotter,
 )
+from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
@@ -72,6 +73,19 @@ def register_merging_stats_observers(script):
         observer=ScalingSummaryGenerator(),
         callback="print_scaling_summary",
     )
+
+
+def register_scale_and_filter_observers(script):
+    script.register_observer(event="run_scale_and_filter", observer=FilteringObserver())
+    script.register_observer(
+        event="run_scale_and_filter",
+        observer=ScalingHTMLGenerator(),
+        callback="make_scaling_html",
+    )
+    try:
+        script.unregister_observer(event="run_script", observer=ScalingHTMLGenerator())
+    except KeyError:
+        pass
 
 
 @singleton
@@ -155,6 +169,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
+        self.data.update(FilteringObserver().make_plots())
         filename = scaling_script.params.output.html
         logger.info("Writing html report to: %s", filename)
         loader = ChoiceLoader(
@@ -175,6 +190,7 @@ class ScalingHTMLGenerator(Observer):
             anom_plots=self.data["anom_plots"],
             batch_plots=self.data["batch_plots"],
             misc_plots=self.data["misc_plots"],
+            filter_plots=self.data["filter_plots"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -312,6 +328,32 @@ class ErrorModelObserver(Observer):
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
         return d
+
+
+@singleton
+class FilteringObserver(Observer):
+
+    """
+    Observer to record data from the scaling and filtering algorithm.
+    """
+
+    def update(self, scaling_script):
+        if scaling_script.filtering_results:
+            self.data = {
+                "merging_stats": scaling_script.filtering_results.get_merging_stats(),
+                "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
+                "cycle_results": scaling_script.filtering_results.get_cycle_results(),
+                "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
+                "mode": scaling_script.params.filtering.deltacchalf.mode,
+            }
+
+    def make_plots(self):
+        """Make plots for scale and filter."""
+        if not self.data:
+            return {"filter_plots": {}}
+        # Make merging stats plots, histograms and image ranges.
+        d = make_scaling_filtering_plots(self.data)
+        return {"filter_plots": d}
 
 
 @singleton

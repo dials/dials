@@ -43,7 +43,7 @@ class Job(object):
         os.environ["DIALS_NOBANNER"] = "1"
         result = procrunner.run(shlex.split(command))
         print("running command took {:.2f} seconds\n".format(result["runtime"]))
-        assert result["exitcode"] == 0, "Command execution failed"
+        assert not result.returncode, "Command execution failed"
         return result
 
 

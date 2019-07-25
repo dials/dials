@@ -40,7 +40,7 @@ def test_register_scaling_observers():
 
         def __init__(self):
             super(TestScript, self).__init__(
-                events=["merging_statistics", "run_script"]
+                events=["merging_statistics", "run_script", "run_filtering"]
             )
             self.scaler = Scaler()
 

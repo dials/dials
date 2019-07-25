@@ -83,7 +83,7 @@
     <div id="collapse_{{ panel_id }}" class="panel-collapse collapse">
         <div class="panel-body">
             <div class="container-fluid">
-                {% for div_id, json_data in graphs.iteritems() %}
+                {% for div_id, json_data in graphs.items() %}
                     {% if "img" in json_data %}
                         <img src="data:image/png;base64,{{ json_data['img'] }}">
                     {% elif styles != None %}

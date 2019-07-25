@@ -79,7 +79,7 @@ def test_shadow_plot(dials_regression, run_in_tmpdir):
     assert os.path.exists("shadow.json")
     with open("shadow.json", "rb") as f:
         d = json.load(f)
-        assert list(d.keys()) == ["fraction_shadowed", "scan_points"]
+        assert set(d) == {"fraction_shadowed", "scan_points"}
         assert d["fraction_shadowed"] == pytest.approx([0.06856597327776767], 2e-4)
 
     fully_buffered(

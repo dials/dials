@@ -12,7 +12,7 @@ def test_export_single_bitmap(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("image0001.png").check(file=1)
 
 
@@ -30,7 +30,7 @@ def test_export_multiple_bitmaps(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
 
     for i in range(1, 8):
         assert tmpdir.join("variance_000%i.png" % i).check(file=1)
@@ -46,7 +46,7 @@ def test_export_bitmap_with_prefix_and_no_padding(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("img_1.png").check(file=1)
 
 
@@ -60,7 +60,7 @@ def test_export_bitmap_with_prefix_and_extra_padding(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("img_00001.png").check(file=1)
 
 
@@ -73,7 +73,7 @@ def test_export_bitmap_with_specified_output_filename(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("kittens.png").check(file=1)
 
 
@@ -89,7 +89,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"]
+    assert result.returncode
 
 
 def test_export_still_image(dials_regression, tmpdir):
@@ -100,7 +100,7 @@ def test_export_still_image(dials_regression, tmpdir):
     result = procrunner.run(
         ["dials.export_bitmaps", image], working_directory=tmpdir.strpath
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
 
     assert tmpdir.join("image0001.png").check(file=1)
 
@@ -120,7 +120,7 @@ def test_export_multi_panel(dials_regression, tmpdir):
             ],
             working_directory=tmpdir.strpath,
         )
-        assert not result["exitcode"] and not result["stderr"]
+        assert not result.returncode and not result.stderr
 
         assert tmpdir.join("binning_%i_0001.png" % binning).check(file=1)
 
@@ -135,7 +135,7 @@ def test_export_restricted_multiimage(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert [f.basename for f in tmpdir.listdir("*.png")] == [
         "image0002.png"
     ], "Only one image expected"

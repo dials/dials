@@ -28,8 +28,7 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
             "history=history.pickle",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # there are plenty of things we could do with the refinement history, but
     # here just check that final RMSDs are low enough

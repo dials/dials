@@ -1,5 +1,6 @@
 """Tests for dials.report"""
 from __future__ import absolute_import, division, print_function
+
 import os
 import procrunner
 
@@ -15,8 +16,7 @@ def test_report_integrated_data(dials_regression, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("dials-report.html").check()
 
 
@@ -27,6 +27,5 @@ def test_report_scaled_data(dials_data, tmpdir):
     expt = location.join("scaled_30.expt").strpath
 
     result = procrunner.run(["dials.report", refl, expt], working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("dials-report.html").check()

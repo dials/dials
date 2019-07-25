@@ -13,8 +13,7 @@ def test_systematic_absences_script(dials_data, run_in_tmpdir):
     command.append(location.join("reflections_0.pickle").strpath)
 
     result = procrunner.run(command)
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("absences.html")
     assert os.path.exists("symmetrized.expt")
     exps = load.experiment_list("symmetrized.expt", check_format=False)
@@ -23,7 +22,6 @@ def test_systematic_absences_script(dials_data, run_in_tmpdir):
     # Now try with a d_min
     command += ["d_min=4.0"]
     result = procrunner.run(command)
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     exps = load.experiment_list("symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41"

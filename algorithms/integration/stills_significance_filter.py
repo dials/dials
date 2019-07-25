@@ -15,7 +15,9 @@ under a given I/sigI limit.  Cuts the data at that point.
 
 phil_scope = parse(
     """
-significance_filter {
+significance_filter
+  .expert_level=1
+{
   enable = False
     .type=bool
     .help=If enabled, the significance filter will, for every experiment, find \

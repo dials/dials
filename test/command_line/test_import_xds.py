@@ -17,8 +17,7 @@ def test_import_integrate_hkl(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("integrate_hkl.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -42,8 +41,7 @@ def test_import_spot_xds(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("spot_xds.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -66,8 +64,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("spot_xds.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -91,7 +88,6 @@ def test_from_xds_files(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     assert tmpdir.join("import_xds.expt").check(file=1)

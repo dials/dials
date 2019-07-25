@@ -39,8 +39,7 @@ def test(dials_regression, run_in_tmpdir):
             for n in selection
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Do refinement and load the results
 
@@ -56,8 +55,7 @@ def test(dials_regression, run_in_tmpdir):
             "close_to_spindle_cutoff=0.05",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     refined_experiments = ExperimentListFactory.from_json_file(
         "refined.expt", check_format=False
@@ -105,8 +103,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             for n in selection1
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         [
             "dials.refine",
@@ -119,8 +116,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "output.reflections=refined1.refl",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Second run
     result = procrunner.run(
@@ -139,8 +135,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             for n in selection2
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         [
             "dials.refine",
@@ -153,8 +148,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "output.reflections=refined2.refl",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Load results
     refined_experiments1 = ExperimentListFactory.from_json_file(

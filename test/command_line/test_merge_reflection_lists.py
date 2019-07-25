@@ -21,8 +21,7 @@ def test(run_in_tmpdir):
             "method=update",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     table = flex.reflection_table.from_pickle("merged.refl")
     assert len(table) == 360
@@ -35,8 +34,7 @@ def test(run_in_tmpdir):
             "method=extend",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     table = flex.reflection_table.from_pickle("merged.refl")
     assert len(table) == 720

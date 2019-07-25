@@ -331,7 +331,7 @@ def test_dials_show_image_statistics(dials_regression):
         ["dials.show", "show_image_statistics=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
     assert (
         output[-1]
@@ -348,7 +348,7 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
         ["dials.show", "show_image_statistics=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert result["exitcode"] == 1 and result["stderr"]
+    assert result.returncode == 1 and result.stderr
 
 
 def test_dials_show_on_scaled_data(dials_data):
@@ -358,5 +358,4 @@ def test_dials_show_on_scaled_data(dials_data):
     expt = location.join("scaled_30.expt").strpath
 
     result = procrunner.run(["dials.show", refl, expt])
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr

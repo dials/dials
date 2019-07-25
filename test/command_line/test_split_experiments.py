@@ -3,9 +3,9 @@ from __future__ import absolute_import, division, print_function
 """Tests for dials.split_experiments when experiment ids are set"""
 
 import procrunner
+from dials.array_family import flex
 from dxtbx.model import Beam, Experiment, ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.array_family import flex
 
 
 def generate_exp(wavelength=1):
@@ -38,8 +38,7 @@ def test_split_by_wavelength(tmpdir):
         ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
         working_directory=tmpdir,
     )
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
 
     for i, (wl, ids, intensity) in enumerate(
         zip([0.5, 1.0], ["1", "0"], [200.0, 100.0])
