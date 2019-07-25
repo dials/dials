@@ -87,6 +87,7 @@ def test_scale_and_filter_results_logging():
             "experiments_fully_removed": [],
             "n_reflections_removed": 50,
         },
+        "mean_cc_half": 80.0,
         "per_dataset_delta_cc_half_values": {
             "delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
         },
@@ -99,31 +100,31 @@ def test_scale_and_filter_results_logging():
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
         res = log_cycle_results(results, scaling_script, filter_script)
-    # test things have been logged correctly
-    cycle_results = res.get_cycle_results()
-    assert len(cycle_results) == 1
-    assert cycle_results[0]["cumul_percent_removed"] == 100 * 50.0 / 1000.0
-    assert cycle_results[0]["n_removed"] == 50
-    assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
-    assert cycle_results[0]["removed_datasets"] == []
-    assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
-    assert res.get_merging_stats()[0] == "stats_results"
-    assert res.initial_n_reflections == 1000
+        # test things have been logged correctly
+        cycle_results = res.get_cycle_results()
+        assert len(cycle_results) == 1
+        assert cycle_results[0]["cumul_percent_removed"] == 100 * 50.0 / 1000.0
+        assert cycle_results[0]["n_removed"] == 50
+        assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
+        assert cycle_results[0]["removed_datasets"] == []
+        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert res.get_merging_stats()[0] == "stats_results"
+        assert res.initial_n_reflections == 1000
 
     # add another cycle of results
     with mock.patch.object(
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
         res = log_cycle_results(res, scaling_script, filter_script)
-    cycle_results = res.get_cycle_results()
-    assert len(cycle_results) == 2
-    assert cycle_results[1]["cumul_percent_removed"] == 100 * 2 * 50.0 / 1000.0
-    assert cycle_results[1]["n_removed"] == 50
-    assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
-    assert cycle_results[1]["removed_datasets"] == []
-    assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
-    assert res.get_merging_stats()[1] == "stats_results"
-    assert res.initial_n_reflections == 1000
+        cycle_results = res.get_cycle_results()
+        assert len(cycle_results) == 2
+        assert cycle_results[1]["cumul_percent_removed"] == 100 * 2 * 50.0 / 1000.0
+        assert cycle_results[1]["n_removed"] == 50
+        assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
+        assert cycle_results[1]["removed_datasets"] == []
+        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert res.get_merging_stats()[1] == "stats_results"
+        assert res.initial_n_reflections == 1000
 
 
 def test_compute_delta_cchalf_returned_results():

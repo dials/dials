@@ -23,6 +23,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.algorithms.refinement.constraints import EqualShiftConstraint
 from dials.algorithms.refinement.constraints import ConstraintManager
 from dials.algorithms.refinement.constraints import SparseConstraintManager
+from dials.algorithms.refinement.engine import Journal
 
 
 def test_contraints_manager_simple_test():
@@ -163,15 +164,13 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
     # set up refinement, constraining the distance parameter
     cmd = (
         "dials.refine foo.expt foo.refl "
-        "history=history.pickle refinement.parameterisation.detector."
+        "history=history.json refinement.parameterisation.detector."
         "constraints.parameter=Dist scan_varying=False"
     )
     easy_run.fully_buffered(command=cmd).raise_if_errors()
-    # load refinement history
-    import six.moves.cPickle as pickle
 
-    with open("history.pickle", "rb") as f:
-        history = pickle.load(f)
+    # load refinement history
+    history = Journal.from_json_file("history.json")
     ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)
 
     # we expect 8 steps of constrained refinement

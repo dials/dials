@@ -179,6 +179,7 @@ class Script(object):
         )
 
         self.delta_cchalf_i = statistics.delta_cchalf_i()
+        self.results_summary["mean_cc_half"] = statistics._cchalf_mean
         # Print out the datasets in order of delta cc 1/2
         sorted_datasets, sorted_cc_half_values = self.sort_deltacchalf_values(
             self.delta_cchalf_i, self.results_summary
