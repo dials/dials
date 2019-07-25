@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-#
-# import_xds.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 
 from __future__ import absolute_import, division, print_function
+
+import os
+
+from dials.array_family import flex
 
 
 class SpotXDSImporter(object):
@@ -22,7 +17,6 @@ class SpotXDSImporter(object):
         """ Import the spot.xds file. """
         from iotbx.xds import spot_xds
         from dials.util.command_line import Command
-        from dials.array_family import flex
 
         # Read the SPOT.XDS file
         Command.start("Reading SPOT.XDS")
@@ -84,7 +78,6 @@ class IntegrateHKLImporter(object):
         """ Import the integrate.hkl file. """
 
         from iotbx.xds import integrate_hkl
-        from dials.array_family import flex
         from dials.util.command_line import Command
         from cctbx import sgtbx
 
@@ -172,7 +165,7 @@ class IntegrateHKLImporter(object):
         # assert that this should just be a simple integer rotation matrix
         # i.e. reassignment of a, b, c so...
 
-        return matrix.sqr(map(int, map(round, (dA.inverse() * xA).elems)))
+        return matrix.sqr([int(round(e)) for e in (dA.inverse() * xA).elems])
 
 
 class XDSFileImporter(object):
@@ -185,7 +178,6 @@ class XDSFileImporter(object):
     def __call__(self, params, options):
         from dxtbx.model.experiment_list import ExperimentListFactory
         from dxtbx.model.experiment_list import ExperimentListDumper
-        import os
 
         # Get the XDS.INP file
         xds_inp = os.path.join(self.args[0], "XDS.INP")
@@ -273,19 +265,18 @@ class XDSFileImporter(object):
     @staticmethod
     def find_best_xds_file(xds_dir):
         """ Find the best available file."""
-        from os.path import exists, join
 
         # The possible files to check
         paths = [
-            join(xds_dir, "XDS_ASCII.HKL"),
-            join(xds_dir, "INTEGRATE.HKL"),
-            join(xds_dir, "GXPARM.XDS"),
-            join(xds_dir, "XPARM.XDS"),
+            os.path.join(xds_dir, "XDS_ASCII.HKL"),
+            os.path.join(xds_dir, "INTEGRATE.HKL"),
+            os.path.join(xds_dir, "GXPARM.XDS"),
+            os.path.join(xds_dir, "XPARM.XDS"),
         ]
 
         # Return the first path that exists
         for p in paths:
-            if exists(p):
+            if os.path.exists(p):
                 return p
 
         # If no path exists, return None
@@ -346,10 +337,10 @@ class XDSFileImporter(object):
 
         # conversions to numeric
         try:
-            blocks = [map(int, block.split("...")) for block in blocks]
-            a_axis = [map(float, axis.split()) for axis in a_axis]
-            b_axis = [map(float, axis.split()) for axis in b_axis]
-            c_axis = [map(float, axis.split()) for axis in c_axis]
+            blocks = [[int(b) for b in block.split("...")] for block in blocks]
+            a_axis = [[float(a) for a in axis.split()] for axis in a_axis]
+            b_axis = [[float(b) for b in axis.split()] for axis in b_axis]
+            c_axis = [[float(c) for c in axis.split()] for axis in c_axis]
             xds_beam = [float(e) for e in xds_beam]
             xds_axis = [float(e) for e in xds_axis]
         except ValueError:
@@ -470,10 +461,9 @@ class Script(object):
         importer(params, options)
 
     def select_importer(self, args):
-        from os.path import split
         from dxtbx.model.experiment_list import ExperimentListFactory
 
-        path, filename = split(args[0])
+        path, filename = os.path.split(args[0])
         if filename == "SPOT.XDS":
             return SpotXDSImporter(args[0])
         elif filename == "INTEGRATE.HKL":
