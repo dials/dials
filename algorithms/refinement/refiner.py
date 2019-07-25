@@ -746,6 +746,11 @@ class Refiner(object):
 
         return (corrmats, labels)
 
+    @property
+    def history(self):
+        """Get the refinement engine's step history"""
+        return self._refinery.history
+
     def print_step_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
