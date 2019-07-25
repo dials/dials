@@ -12,7 +12,6 @@ from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
-from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 help_message = """
@@ -227,11 +226,9 @@ def run(args=None):
         lepage_max_delta=params.lepage_max_delta,
         nproc=params.nproc,
     )
-    s = StringIO()
     possible_bravais_settings = {solution["bravais"] for solution in Lfat}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
-    Lfat.labelit_printout(out=s)
-    logger.info(s.getvalue())
+    logger.info(Lfat.labelit_printout())
 
     prefix = params.output.prefix
     if prefix is None:
