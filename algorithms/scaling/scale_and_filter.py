@@ -56,6 +56,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     cycle_results["delta_cc_half_values"] = filter_script.results_summary[
         "per_dataset_delta_cc_half_values"
     ]["delta_cc_half_values"]
+    cycle_results["mean_cc_half"] = filter_script.results_summary["mean_cc_half"]
     removal_summary = filter_script.results_summary["dataset_removal"]
     if removal_summary["mode"] == "image_group":
         cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
@@ -445,6 +446,27 @@ def make_histogram_plots(cycle_results):
     n = len(delta_cc_half_lists)
 
     d = OrderedDict()
+    overall_mean_ccs = [res["mean_cc_half"] for res in cycle_results]
+    d.update(
+        {
+            "mean_cc_one_half_vs_cycle": {
+                "data": [
+                    {
+                        "y": overall_mean_ccs,
+                        "x": range(1, n + 1),
+                        "type": "scatter",
+                        "mode": "lines",
+                    }
+                ],
+                "layout": {
+                    "title": "Resolution-averaged CC-half (sigma-tau) vs cycle",
+                    "xaxis": {"title": "Cycle number"},
+                    "yaxis": {"title": "Resolution-averaged CC-half (sigma-tau)"},
+                },
+            }
+        }
+    )
+
     colors = [(color_list * int(ceil(n / len(color_list))))[i] for i in range(n)]
     legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
@@ -501,29 +523,28 @@ def make_histogram_plots(cycle_results):
 
 def make_reduction_plots(initial_expids_and_image_ranges, expids_and_image_ranges):
     """Make a chart showing excluded image ranges."""
-    x1 = range(len(initial_expids_and_image_ranges))
-    y1_tops = []
-    y1_bottoms = []
+    x = range(len(initial_expids_and_image_ranges))
+    initial_n_images = []
     initial_expids = []
     for expid_and_img in initial_expids_and_image_ranges:
-        y1_tops.append(expid_and_img[1][1] - expid_and_img[1][0] + 1)
-        y1_bottoms.append(expid_and_img[1][0] - 1)
+        initial_n_images.append(expid_and_img[1][1] - expid_and_img[1][0] + 1)
         initial_expids.append(expid_and_img[0])
-    x2 = []
-    y2_tops = []
-    y2_bottoms = []
+    final_n_images = [0] * len(x)
     for expid, valid in expids_and_image_ranges:
         loc = initial_expids.index(expid)
         for t in valid:
-            y2_tops.append(t[1] - t[0] + 1)
-            y2_bottoms.append(t[0] - 1)
-            x2.append(loc)
-    delta = [i - j for (i, j) in zip(y1_tops, y2_tops)]
+            final_n_images[loc] = t[1] - t[0] + 1
+    n_removed = [i - j for (i, j) in zip(initial_n_images, final_n_images)]
     d = {
         "reduction_plot": {
             "data": [
-                {"x": x2, "y": y2_tops, "type": "bar", "name": "final image ranges"},
-                {"x": x1, "y": delta, "type": "bar", "name": "removed image ranges"},
+                {
+                    "x": x,
+                    "y": final_n_images,
+                    "type": "bar",
+                    "name": "final image ranges",
+                },
+                {"x": x, "y": n_removed, "type": "bar", "name": "removed image ranges"},
             ],
             "layout": {
                 "title": "Image range plot",
