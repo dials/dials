@@ -5,6 +5,7 @@ import os
 import pytest
 
 from cctbx import uctbx
+from dxtbx.serialize import load
 from libtbx import easy_run
 
 
@@ -27,7 +28,6 @@ def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
     easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("tst_bravais_setting_%i.expt" % i)
-    from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
         "tst_bravais_setting_9.expt", check_format=False
@@ -43,14 +43,10 @@ def test_refine_bravais_settings(dials_regression, run_in_tmpdir):
     assert os.path.exists("tst_bravais_summary.json")
     with open("tst_bravais_summary.json", "rb") as fh:
         bravais_summary = json.load(fh)
-    assert list(bravais_summary.keys()) == ["1", "3", "2", "5", "4", "7", "6", "9", "8"]
-    list(bravais_summary["9"].keys()) == [
-        "bravais",
-        "max_angular_difference",
-        "unit_cell",
-        "rmsd",
-        "nspots",
-    ]
+    assert set(bravais_summary) == {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
+    assert set(bravais_summary["9"]).issuperset(
+        {"bravais", "max_angular_difference", "unit_cell", "rmsd", "nspots"}
+    )
 
     assert bravais_summary["9"]["unit_cell"] == pytest.approx(
         [57.78, 57.78, 150.0, 90.0, 90.0, 90.0], abs=1e-1
@@ -70,7 +66,6 @@ def test_refine_bravais_settings_2(dials_regression, run_in_tmpdir):
     easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("bravais_setting_%i.expt" % i)
-    from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
         "bravais_setting_9.expt", check_format=False
@@ -112,7 +107,6 @@ def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
     easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 10):
         assert os.path.exists("bravais_setting_%i.expt" % i)
-    from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
         "bravais_setting_5.expt", check_format=False
@@ -130,7 +124,7 @@ def test_refine_bravais_settings_3(dials_regression, run_in_tmpdir):
     assert os.path.exists("bravais_summary.json")
     with open("bravais_summary.json", "rb") as fh:
         bravais_summary = json.load(fh)
-    assert list(bravais_summary.keys()) == ["1", "3", "2", "5", "4", "7", "6", "9", "8"]
+    assert set(bravais_summary) == {"1", "2", "3", "4", "5", "6", "7", "8", "9"}
 
     assert bravais_summary["5"]["unit_cell"] == pytest.approx(
         [54.37, 58.29, 66.51, 90.00, 90.00, 90.00], abs=1e-1
@@ -151,7 +145,6 @@ def test_refine_bravais_settings_554(dials_regression, run_in_tmpdir):
     easy_run.fully_buffered(command=command).raise_if_errors()
     for i in range(1, 5):
         assert os.path.exists("bravais_setting_%i.expt" % i)
-    from dxtbx.serialize import load
 
     experiments_list = load.experiment_list(
         "bravais_setting_5.expt", check_format=False
