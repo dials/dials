@@ -1,8 +1,12 @@
 """Creation of 'corrgram' correlation matrix plots"""
 
 from __future__ import absolute_import, division, print_function
-import logging
+
 import json
+import math
+import os
+import logging
+
 import libtbx.phil
 
 logger = logging.getLogger(__name__)
@@ -54,8 +58,6 @@ def corrgram(corrmat, labels):
     nr = corrmat.all()[0]
     assert nr == len(labels)
 
-    from math import sqrt
-
     try:
         import matplotlib
 
@@ -71,11 +73,11 @@ def corrgram(corrmat, labels):
     ax = plt.subplot(1, 1, 1, aspect="equal")
     clrmap = cm.get_cmap("bwr")
 
-    for x in xrange(nr):
-        for y in xrange(nr):
+    for x in range(nr):
+        for y in range(nr):
             d = corrmat[x, y]
             d_abs = abs(d)
-            circ = plt.Circle((x, y), radius=0.9 * sqrt(d_abs) / 2)
+            circ = plt.Circle((x, y), radius=0.9 * math.sqrt(d_abs) / 2)
             circ.set_edgecolor("white")
             # put data into range [0,1] and invert so that 1 == blue and 0 == red
             facecolor = 1 - (0.5 * d + 0.5)
@@ -85,18 +87,18 @@ def corrgram(corrmat, labels):
     ax.set_ylim(-0.5, nr - 0.5)
 
     ax.xaxis.tick_top()
-    xtickslocs = range(len(labels))
+    xtickslocs = list(range(len(labels)))
     ax.set_xticks(xtickslocs)
     ax.set_xticklabels(labels, rotation=30, fontsize="small", ha="left")
 
     ax.invert_yaxis()
-    ytickslocs = range(len(labels))
+    ytickslocs = list(range(len(labels)))
     ax.set_yticks(ytickslocs)
     ax.set_yticklabels(labels, fontsize="small")
 
-    xtickslocs = [e + 0.5 for e in range(len(labels))]
+    xtickslocs = [e + 0.5 for e in xtickslocs]
     ax.set_xticks(xtickslocs, minor=True)
-    ytickslocs = [e + 0.5 for e in range(len(labels))]
+    ytickslocs = [e + 0.5 for e in ytickslocs]
     ax.set_yticks(ytickslocs, minor=True)
     plt.grid(color="0.8", which="minor", linestyle="-")
 
@@ -111,9 +113,7 @@ def corrgram(corrmat, labels):
 
 
 def create_correlation_plots(refiner, params):
-    from os.path import splitext
-
-    root, ext = splitext(params.correlation_plot.filename)
+    root, ext = os.path.splitext(params.correlation_plot.filename)
     if not ext:
         ext = ".pdf"
 
@@ -145,7 +145,7 @@ def create_correlation_plots(refiner, params):
                     plt.close()
                     num_plots += 1
             mat_fname = fname_base + ".json"
-            with open(mat_fname, "wb") as handle:
+            with open(mat_fname, "w") as handle:
                 for k, corrmat in corrmats.items():
                     corrmats[k] = corrmat.as_scitbx_matrix().as_list_of_lists()
                 logger.info(

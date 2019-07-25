@@ -296,7 +296,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for iparam in xrange(xlucp.num_free()):
+                    for iparam in range(xlucp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:

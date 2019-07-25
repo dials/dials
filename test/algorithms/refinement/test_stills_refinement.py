@@ -77,7 +77,7 @@ def test(args=[]):
         image_range=(1, 1),
         exposure_times=0.1,
         oscillation=(0, 1.5),
-        epochs=range(1),
+        epochs=list(range(1)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)

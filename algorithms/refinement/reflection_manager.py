@@ -1,44 +1,34 @@
-#
-#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
 from __future__ import absolute_import, division, print_function
 
 import copy
-from math import pi
-from math import ceil
 import logging
+import math
+import random
 
-import libtbx
-from scitbx import matrix
-from dials.array_family import flex
+from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
+from dials.algorithms.refinement.outlier_detection.outlier_base import (
+    phil_str as outlier_phil_str,
+)
 from dials.algorithms.refinement.refinement_helpers import (
     calculate_frame_numbers,
     set_obs_s1,
 )
-from libtbx.table_utils import simple_table
-from scitbx.math import five_number_summary
-from dials.algorithms.refinement import DialsRefineConfigError
-
+from dials.array_family import flex
+import libtbx
 from libtbx.phil import parse
-from dials.algorithms.refinement.outlier_detection.outlier_base import (
-    phil_str as outlier_phil_str,
-)
+from libtbx.table_utils import simple_table
+from scitbx import matrix
+from scitbx.math import five_number_summary
 
 logger = logging.getLogger(__name__)
 
 # constants
-RAD2DEG = 180.0 / pi
-DEG2RAD = pi / 180.0
+RAD2DEG = 180.0 / math.pi
+DEG2RAD = math.pi / 180.0
 
 # PHIL
 format_data = {"outlier_phil": outlier_phil_str}
@@ -177,7 +167,7 @@ class BlockCalculator(object):
             _width = cmp(stop, start) * width + 1e-11
             half_width = width * (0.5 - 1e-11)  # ensure round down behaviour
 
-            block_starts = [start + n * _width for n in xrange(nblocks)]
+            block_starts = [start + n * _width for n in range(nblocks)]
             block_centres = [
                 exp.scan.get_array_index_from_angle(e + half_width, deg=False)
                 for e in block_starts
@@ -241,8 +231,6 @@ class ReflectionManagerFactory(object):
         # While a random subset of reflections is used, continue to
         # set random.seed to get consistent behaviour
         if params.random_seed is not None:
-            import random
-
             random.seed(params.random_seed)
             flex.set_random_seed(params.random_seed)
             logger.debug("Random seed set to %d", params.random_seed)
@@ -633,7 +621,7 @@ class ReflectionManager(object):
                     # in a single turn and 100 reflections per degree
                     turns = width / 360.0
                     if turns > 1:
-                        approx_nref_1_turn = int(ceil(nrefs / turns))
+                        approx_nref_1_turn = int(math.ceil(nrefs / turns))
                         sample_size = int(max(approx_nref_1_turn, 100.0 * width))
                 else:
                     sample_size = int(self._nref_per_degree * width)
@@ -747,8 +735,6 @@ class ReflectionManager(object):
         logger.info(st.format())
         logger.info("")
 
-        return
-
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
         predictions"""
@@ -847,5 +833,3 @@ class StillsReflectionManager(ReflectionManager):
         st = simple_table(rows, header)
         logger.info(st.format())
         logger.info("")
-
-        return

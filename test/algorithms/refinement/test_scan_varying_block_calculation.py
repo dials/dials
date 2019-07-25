@@ -8,7 +8,7 @@ import pytest
 from math import pi
 from dials.algorithms.refinement.reflection_manager import BlockCalculator
 from dxtbx.model.experiment_list import ExperimentList, Experiment
-from dials.array_family import flex
+from scitbx.array_family import flex
 
 
 def create_experiments(image_start=1):
@@ -42,7 +42,7 @@ def create_experiments(image_start=1):
         image_range=(image_start, image_start + 720 - 1),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -74,7 +74,6 @@ def generate_reflections(experiments):
     )
     from dials.algorithms.spot_prediction import ray_intersection
     from cctbx.sgtbx import space_group, space_group_symbols
-    from scitbx.array_family import flex
 
     detector = experiments[0].detector
     crystal = experiments[0].crystal

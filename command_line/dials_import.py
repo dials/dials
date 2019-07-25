@@ -15,12 +15,11 @@ import logging
 
 import libtbx.load_env
 from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListDumper
-from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSweep
 from dials.util.options import flatten_experiments
@@ -391,7 +390,7 @@ class ManualGeometryUpdater(object):
         first, last = scan.get_image_range()
         sweep = ImageSetFactory.make_sweep(
             template=imageset.get_template(),
-            indices=range(first, last + 1),
+            indices=list(range(first, last + 1)),
             format_class=imageset.get_format_class(),
             beam=beam,
             detector=detector,

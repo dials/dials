@@ -1,17 +1,6 @@
-#!/usr/bin/env python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
-from scitbx import matrix
-from scitbx.array_family import flex
+
+from functools import reduce
 
 from dials.algorithms.refinement.parameterisation.model_parameters import (
     Parameter,
@@ -23,7 +12,8 @@ from dials.algorithms.refinement.refinement_helpers import (
     get_panel_ids_at_root,
     PanelGroupCompose,
 )
-from functools import reduce
+from scitbx import matrix
+from scitbx.array_family import flex
 
 
 class DetectorMixin(object):
@@ -359,8 +349,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
         # call compose to calculate all the derivatives
         self.compose()
 
-        return
-
     def compose(self):
 
         # extract parameters from the internal list
@@ -376,8 +364,6 @@ class DetectorParameterisationSinglePanel(ModelParameterisation, DetectorMixin):
         (self._model)[0].set_frame(
             new_state["d1"], new_state["d2"], new_state["origin"]
         )
-
-        return
 
     def get_state(self):
 
@@ -510,8 +496,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         # call compose to calculate all the derivatives
         self.compose()
 
-        return
-
     def compose(self):
 
         # extract parameters from the internal list
@@ -556,12 +540,10 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         self._multi_state_derivatives = [
             [
                 matrix.sqr(ret[j * len(self._offsets) + i])
-                for j in xrange(len(self._param))
+                for j in range(len(self._param))
             ]
-            for i in xrange(len(self._offsets))
+            for i in range(len(self._offsets))
         ]
-
-        return
 
     def get_state(self, multi_state_elt=0):
 
@@ -920,8 +902,6 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
                 / 1000.0,
             ]
 
-        return
-
 
 class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     """A parameterisation for a hierarchical Detector model with multiple panels.
@@ -959,7 +939,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
             raise
 
         # collect the panel ids for each Panel within the groups
-        panels = [p for p in detector]
+        panels = list(detector)
         self._panel_ids_by_group = [
             get_panel_ids_at_root(panels, g) for g in self._groups
         ]
@@ -1083,8 +1063,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
         # call compose to calculate all the derivatives
         self.compose()
 
-        return
-
     def get_panel_ids_by_group(self):
         """Return the panel IDs for each panel group of the detector.
 
@@ -1169,5 +1147,3 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
                 self._multi_state_derivatives[panel_id][
                     i : (i + 6)
                 ] = pgc.derivatives_for_panel(offset, dir1_new_basis, dir2_new_basis)
-
-        return

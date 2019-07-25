@@ -248,7 +248,6 @@ class PredictionParameterisation(object):
                 model.set_param_esds(tmp)
             else:
                 model.set_param_vals(tmp)
-        return
 
     def set_param_vals(self, vals):
         """Set the parameter values of the contained models to the values in
@@ -291,7 +290,6 @@ class PredictionParameterisation(object):
                 for i_state, state_cov in enumerate(state_covs):
                     model.set_state_uncertainties(state_cov, multi_state_elt=i_state)
             i += n
-        return
 
     def get_gradients(self, reflections, callback=None):
         """Calculate gradients of the prediction formula with respect to each
@@ -556,8 +554,8 @@ class PredictionParameterisation(object):
             if len(isel) == 0:
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
-                if callback is not None:
-                    for _ in xrange(p.num_free()):
+                if callback:
+                    for _ in range(p.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:
@@ -655,12 +653,7 @@ class SparseGradientVectorMixin(object):
 
         from scitbx import sparse
 
-        new_results = []
-        for i in range(n):
-            result = {}
-            for key in keys:
-                result[key] = sparse.matrix_column(m)
-            new_results.append(result)
+        new_results = [{key: sparse.matrix_column(m) for key in keys} for _ in range(n)]
         results.extend(new_results)
 
         return results
@@ -729,7 +722,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
             )
             print(matrix.col(reflections["s1"][imin]).accute_angle(vecn))
             raise e
-        return
 
     def _beam_derivatives(
         self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None

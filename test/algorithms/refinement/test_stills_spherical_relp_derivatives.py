@@ -4,8 +4,6 @@ Test derivatives typed up in dials_regression/doc/notes/prediction/stills_predic
 
 from __future__ import absolute_import, division, print_function
 
-import sys
-
 import pytest
 
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -105,7 +103,6 @@ class AnalyticalGradients(object):
         # q is the reciprocal lattice vector, in the lab frame
         h = reflections["miller_index"].as_vec3_double()
         q = UB * h
-        qlen = q.norms()
         qlen2 = q.dot(q)
 
         q_s0 = q + self.s0
@@ -154,11 +151,9 @@ class AnalyticalGradients(object):
         # q is the reciprocal lattice vector, in the lab frame
         h = reflections["miller_index"].as_vec3_double()
         q = UB * h
-        qlen = q.norms()
         qlen2 = q.dot(q)
 
         q_s0 = q + self.s0
-        s1 = reflections["s1"]
         ss = qlen2 + 2 * q.dot(self.s0) + self.s0len2
         assert (ss > 0.0).all_eq(True)
         s = flex.sqrt(ss)
@@ -201,11 +196,9 @@ class AnalyticalGradients(object):
         # q is the reciprocal lattice vector, in the lab frame
         h = reflections["miller_index"].as_vec3_double()
         q = UB * h
-        qlen = q.norms()
         qlen2 = q.dot(q)
 
         q_s0 = q + self.s0
-        s1 = reflections["s1"]
         ss = qlen2 + 2 * q.dot(self.s0) + self.s0len2
         assert (ss > 0.0).all_eq(True)
         s = flex.sqrt(ss)
@@ -266,7 +259,7 @@ def test():
         image_range=(1, 1),
         exposure_times=0.1,
         oscillation=(0, 3.0),
-        epochs=range(1),
+        epochs=list(range(1)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)
@@ -361,7 +354,6 @@ def test():
         ref_predictor.predict(reflections)
 
         x, y, _ = reflections["xyzcal.mm"].deep_copy().parts()
-        delpsi = reflections["delpsical.rad"].deep_copy()
         s1 = reflections["s1"].deep_copy()
         rev_state = s1
 
@@ -373,7 +365,6 @@ def test():
         ref_predictor.predict(reflections)
 
         x, y, _ = reflections["xyzcal.mm"].deep_copy().parts()
-        delpsi = reflections["delpsical.rad"].deep_copy()
         s1 = reflections["s1"].deep_copy()
         fwd_state = s1
 

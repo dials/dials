@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Definitions of functions and classes for scaling and filtering algorithm."""
 from __future__ import absolute_import, division, print_function
+
+import math
 from collections import OrderedDict
-from math import ceil
+
+from dials.report.plots import ResolutionPlotterMixin
 from libtbx import phil
 from scitbx.array_family import flex
-from dials.report.plots import ResolutionPlotterMixin
 
 phil_scope = phil.parse(
     """
@@ -68,7 +70,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     ]
 
     n_removed = (
-        sum([res["n_removed"] for res in results.get_cycle_results()])
+        sum(res["n_removed"] for res in results.get_cycle_results())
         + cycle_results["n_removed"]
     )
     percent_removed = n_removed / results.initial_n_reflections * 100
@@ -151,7 +153,7 @@ class AnalysisResults(object):
             "initial_n_reflections": self.initial_n_reflections,
             "initial_expids_and_image_ranges": self.initial_expids_and_image_ranges,
             "cycle_results": OrderedDict(
-                [(i + 1, val) for i, val in enumerate(self.cycle_results)]
+                (i + 1, val) for i, val in enumerate(self.cycle_results)
             ),
             "final_stats": self.final_stats,
         }
@@ -222,7 +224,7 @@ def make_filtering_merging_stats_plots(merging_stats):
     """Generate plotting dicts for merging statistics."""
     n_datasets = len(merging_stats)
     colors = [
-        (color_list * int(ceil(n_datasets / len(color_list))))[i]
+        (color_list * int(math.ceil(n_datasets / len(color_list))))[i]
         for i in range(n_datasets)
     ]
     colors[-1] = "k"
@@ -439,7 +441,7 @@ def make_filtering_merging_stats_plots(merging_stats):
 
 
 def make_histogram_plots(cycle_results):
-    """Makethe histogram plots."""
+    """Make the histogram plots."""
     delta_cc_half_lists = [res["delta_cc_half_values"] for res in cycle_results]
     if not delta_cc_half_lists:
         return {}
@@ -467,8 +469,7 @@ def make_histogram_plots(cycle_results):
             }
         }
     )
-
-    colors = [(color_list * int(ceil(n / len(color_list))))[i] for i in range(n)]
+    colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
     legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
@@ -524,7 +525,7 @@ def make_histogram_plots(cycle_results):
 
 def make_reduction_plots(initial_expids_and_image_ranges, expids_and_image_ranges):
     """Make a chart showing excluded image ranges."""
-    x = range(len(initial_expids_and_image_ranges))
+    x = list(range(len(initial_expids_and_image_ranges)))
     initial_n_images = []
     initial_expids = []
     for expid_and_img in initial_expids_and_image_ranges:

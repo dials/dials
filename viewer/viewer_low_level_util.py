@@ -147,7 +147,7 @@ class MyGrid(gridlib.Grid):
                 self.sorted_flags.append(True)
 
         self.lst_keys.append("lst pos")
-        self.data.append(range(len(table_in)))
+        self.data.append(list(range(len(table_in))))
         self.sorted_flags.append(True)
 
         self.last_col_num = len(self.lst_keys) - 1
@@ -551,11 +551,11 @@ def bigger_size(str_label, lst_col):
     lng_final = lng_label_ini
 
     if lng_lst_col < 30:
-        pos_lst = range(lng_lst_col)
+        pos_lst = list(range(lng_lst_col))
 
     else:
-        pos_lst = range(15)
-        pos_lst += range(lng_lst_col - 15, lng_lst_col)
+        pos_lst = list(range(15))
+        pos_lst += list(range(lng_lst_col - 15, lng_lst_col))
 
     lng_cel_zero = 0
     for pos in pos_lst:

@@ -867,7 +867,7 @@ class show_points_and_lines_mixin(wxGLWindow):
             gray = 0.3
             glColor3f(gray, gray, gray)
             glBegin(GL_POLYGON)
-            for i in xrange(360):
+            for i in range(360):
                 a = i * math.pi / 180
                 rs = r * math.sin(a)
                 rc = r * math.cos(a)

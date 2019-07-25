@@ -258,8 +258,6 @@ def batch_multi_node_parallel_map(
     A function to run jobs in batches in each process
 
     """
-    from libtbx import easy_mp
-
     # Call the batches in parallel
     return multi_node_parallel_map(
         func=BatchFunc(func),
@@ -278,7 +276,7 @@ if __name__ == "__main__":
     def func(x):
         return x
 
-    iterable = range(100)
+    iterable = list(range(100))
 
     multi_node_parallel_map(
         func,

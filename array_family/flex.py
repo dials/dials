@@ -346,13 +346,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         if "px" in key:
             spots = [
                 detector[table["panel"][i]].get_pixel_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
         else:
             assert "mm" in key
             spots = [
                 detector[table["panel"][i]].get_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
 
         min_f = max_f = min_s = max_s = 0

@@ -3,11 +3,10 @@ Test prediction of reflections using the scan-varying reflection
 predictor.
 """
 
-# Python and cctbx imports
 from __future__ import absolute_import, division, print_function
-import sys
-from math import pi
-from scitbx import matrix
+
+import math
+
 from scitbx.array_family import flex
 from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
@@ -53,13 +52,13 @@ def setup_models(args):
         image_range=(1, 180),
         exposure_times=0.1,
         oscillation=(0, 1.0),
-        epochs=range(180),
+        epochs=list(range(180)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)
     im_width = scan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, pi)
-    assert approx_equal(im_width, 1.0 * pi / 180.0)
+    assert sweep_range == (0.0, math.pi)
+    assert approx_equal(im_width, 1.0 * math.pi / 180.0)
 
     experiments = ExperimentList()
     experiments.append(
@@ -81,7 +80,6 @@ def ref_gen_static(experiments):
 
     beam = experiments[0].beam
     crystal = experiments[0].crystal
-    goniometer = experiments[0].goniometer
     detector = experiments[0].detector
     scan = experiments[0].scan
 
@@ -115,7 +113,6 @@ def ref_gen_varying(experiments):
 
     beam = experiments[0].beam
     crystal = experiments[0].crystal
-    goniometer = experiments[0].goniometer
     detector = experiments[0].detector
     scan = experiments[0].scan
 

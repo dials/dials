@@ -4,19 +4,19 @@ from dials.algorithms.symmetry.absences.plots import plot_screw_axes, color_axis
 
 def test_color_axis_data():
     """Test the helper function used to color the data."""
-    colors = color_axis_data("41c", range(1, 9))
+    colors = color_axis_data("41c", list(range(1, 9)))
     assert colors == [0, 0, 0, 1, 0, 0, 0, 1]
-    colors = color_axis_data("42c", range(1, 9))
+    colors = color_axis_data("42c", list(range(1, 9)))
     assert colors == [0, 1, 0, 1, 0, 1, 0, 1]
-    colors = color_axis_data("31c", range(1, 7))
+    colors = color_axis_data("31c", list(range(1, 7)))
     assert colors == [0, 0, 1, 0, 0, 1]
-    colors = color_axis_data("21c", range(1, 7))
+    colors = color_axis_data("21c", list(range(1, 7)))
     assert colors == [0, 1, 0, 1, 0, 1]
-    colors = color_axis_data("61c", range(1, 7))
+    colors = color_axis_data("61c", list(range(1, 7)))
     assert colors == [0, 0, 0, 0, 0, 1]
-    colors = color_axis_data("62c", range(1, 7))
+    colors = color_axis_data("62c", list(range(1, 7)))
     assert colors == [0, 0, 1, 0, 0, 1]
-    colors = color_axis_data("63c", range(1, 7))
+    colors = color_axis_data("63c", list(range(1, 7)))
     assert colors == [0, 1, 0, 1, 0, 1]
 
 

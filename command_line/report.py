@@ -199,7 +199,7 @@ class ScanVaryingCrystalAnalyser(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
@@ -342,7 +342,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if self._relative_to_static_orientation:
