@@ -210,6 +210,7 @@ def test(args=[]):
         space_group(space_group_symbols(1).hall()).type(),
         resolution,
     )
+    indices2 = index_generator.to_array()
 
     # Predict rays within the sweep range. Set experiment IDs
     ray_predictor = ScansRayPredictor(experiments, sweep_range)
