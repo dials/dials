@@ -217,7 +217,7 @@ class ScalingModelObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
-            for plot in scaling_model_plots.itervalues():
+            for plot in scaling_model_plots.values():
                 plot["layout"]["title"] += " (dataset %s)" % key
             for name, plot in six.iteritems(scaling_model_plots):
                 d[name + "_" + str(key)] = plot
@@ -292,7 +292,7 @@ class ScalingOutlierObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data):
             outlier_plots = plot_outliers(self.data[key])
-            for plot in outlier_plots.itervalues():
+            for plot in outlier_plots.values():
                 if plot:  # may be null if no outliers
                     plot["layout"]["title"] += " (dataset %s)" % key
             d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
