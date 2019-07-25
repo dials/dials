@@ -9,7 +9,7 @@ import os
 import procrunner
 from scitbx import matrix
 from dxtbx.model.experiment_list import ExperimentListFactory
-from six.moves import cPickle as pickle
+from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex  # noqa: F401
 import pytest
 
@@ -111,7 +111,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
-            "history=history1.pickle",
+            "history=history1.json",
             "output.experiments=refined1.expt",
             "output.reflections=refined1.refl",
         ]
@@ -143,7 +143,7 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
-            "history=history2.pickle",
+            "history=history2.json",
             "output.experiments=refined2.expt",
             "output.reflections=refined2.refl",
         ]
@@ -157,10 +157,9 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
     refined_experiments2 = ExperimentListFactory.from_json_file(
         "refined2.expt", check_format=False
     )
-    with open("history1.pickle", "rb") as f:
-        history1 = pickle.load(f)
-    with open("history2.pickle", "rb") as f:
-        history2 = pickle.load(f)
+
+    history1 = Journal.from_json_file("history1.json")
+    history2 = Journal.from_json_file("history1.json")
 
     # Compare RMSDs
     rmsd1 = history1["rmsd"]

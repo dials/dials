@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
+import json
 
 import libtbx
 from dials.algorithms.refinement import DialsRefineRuntimeError
@@ -134,6 +135,21 @@ class Journal(dict):
 
         assert len(self[key]) == self._nrows
         self[key][-1] = value
+
+    def to_json_file(self, filename):
+        d = {"attributes": self.__dict__, "data": dict(self)}
+        with open(filename, "w") as f:
+            json.dump(d, f)
+
+    @classmethod
+    def from_json_file(cls, filename):
+        with open(filename, "r") as f:
+            d = json.load(f)
+        j = cls()
+        j.update(d["data"])
+        for key in d["attributes"]:
+            setattr(j, key, d["attributes"][key])
+        return j
 
 
 class Refinery(object):

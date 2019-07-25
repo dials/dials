@@ -111,7 +111,7 @@ phil_scope = libtbx.phil.parse(
 
     history = None
       .type = str
-      .help = "The filename for output of the refinement history pickle"
+      .help = "The filename for output of the refinement history json"
       .expert_level = 1
   }
 
@@ -552,11 +552,10 @@ def run(args=None, phil=working_phil):
 
     # Save refinement history
     if params.output.history:
-        with open(params.output.history, "wb") as handle:
-            logger.info(
-                "Saving refinement step history to {}".format(params.output.history)
-            )
-            pickle.dump(history, handle)
+        logger.info(
+            "Saving refinement step history to {}".format(params.output.history)
+        )
+        history.to_json_file(params.output.history)
 
     # Log the total time taken
     logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
