@@ -226,6 +226,9 @@ class CombineWithReference(object):
         from dxtbx.model.experiment_list import BeamComparison
         from dxtbx.model.experiment_list import DetectorComparison
         from dxtbx.model.experiment_list import GoniometerComparison
+        from dxtbx.datablock import BeamDiff
+        from dxtbx.datablock import DetectorDiff
+        from dxtbx.datablock import GoniometerDiff
 
         if self.tolerance:
             compare_beam = BeamComparison(
@@ -253,6 +256,13 @@ class CombineWithReference(object):
         if self.ref_beam:
             if compare_beam:
                 if not compare_beam(self.ref_beam, experiment.beam):
+                    diff = BeamDiff(
+                        wavelength_tolerance=self.tolerance.beam.wavelength,
+                        direction_tolerance=self.tolerance.beam.direction,
+                        polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+                        polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
+                    )
+                    print("\n".join(diff(self.ref_beam, experiment.beam)))
                     raise ComparisonError("Beam")
             beam = self.ref_beam
         else:
@@ -263,6 +273,12 @@ class CombineWithReference(object):
         elif self.ref_detector and not self.average_detector:
             if compare_detector:
                 if not compare_detector(self.ref_detector, experiment.detector):
+                    diff = DetectorDiff(
+                        fast_axis_tolerance=self.tolerance.detector.fast_axis,
+                        slow_axis_tolerance=self.tolerance.detector.slow_axis,
+                        origin_tolerance=self.tolerance.detector.origin,
+                    )
+                    print("\n".join(diff(self.ref_detector, experiment.detector)))
                     raise ComparisonError("Detector")
             detector = self.ref_detector
         else:
@@ -271,6 +287,12 @@ class CombineWithReference(object):
         if self.ref_goniometer:
             if compare_goniometer:
                 if not compare_goniometer(self.ref_goniometer, experiment.goniometer):
+                    diff = GoniometerDiff(
+                        rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+                        fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+                        setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
+                    )
+                    print("\n".join(diff(self.ref_goniometer, experiment.goniometer)))
                     raise ComparisonError("Goniometer")
             goniometer = self.ref_goniometer
         else:
