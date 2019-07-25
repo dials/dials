@@ -24,8 +24,7 @@ def run_one_scaling(working_directory, argument_list):
     command = ["dials.scale"] + argument_list
     print(command)
     result = procrunner.run(command, working_directory=working_directory)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert working_directory.join("scaled.expt").check()
     assert working_directory.join("scaled.refl").check()
     assert working_directory.join("scaling.html").check()
@@ -343,8 +342,7 @@ def test_scale_and_filter(dials_data, tmpdir):
         command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
@@ -385,8 +383,7 @@ def test_scale_and_filter(dials_data, tmpdir):
         command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("merging_stats_2.png").check()
@@ -550,8 +547,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     command = ["dials.cosym", refl_2, expt_2, "scaled.refl", "scaled.expt"]
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.expt").check()
     assert tmpdir.join("symmetrized.refl").check()
 
@@ -571,8 +567,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
         "output.experiments=symmetrized.expt",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.expt").check()
     assert tmpdir.join("symmetrized.refl").check()
 
@@ -609,5 +604,4 @@ def test_scale_cross_validate(
         extra_args += ["parameter_values=%s" % parameter_values]
     command = ["dials.scale", refl, expt] + extra_args
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
