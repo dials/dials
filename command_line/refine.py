@@ -90,7 +90,7 @@ phil_scope = libtbx.phil.parse(
         .help = "The base filename for output of plots of parameter"
                 "correlations. A file extension may be added to control"
                 "the type of output file, if it is one of matplotlib's"
-                "supported types. A pickle file with the same base filename"
+                "supported types. A JSON file with the same base filename"
                 "will also be created, containing the correlation matrix and"
                 "column labels for later inspection, replotting etc."
 
@@ -355,7 +355,7 @@ def run(args=None, phil=working_phil):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
     import libtbx.load_env
-    import six.moves.cPickle as pickle
+    import json
 
     start_time = time()
 
@@ -533,14 +533,14 @@ def run(args=None, phil=working_phil):
                         plt.savefig(plot_fname)
                         plt.close()
                         num_plots += 1
-                mat_fname = fname_base + ".pickle"
+                mat_fname = fname_base + ".json"
                 with open(mat_fname, "wb") as handle:
                     for k, corrmat in corrmats.items():
-                        corrmats[k] = corrmat.as_scitbx_matrix()
+                        corrmats[k] = corrmat.as_scitbx_matrix().as_list_of_lists()
                     logger.info(
                         "Saving parameter correlation matrices to {}".format(mat_fname)
                     )
-                    pickle.dump({"corrmats": corrmats, "labels": labels}, handle)
+                    json.dump({"corrmats": corrmats, "labels": labels}, handle)
 
         if num_plots == 0:
             msg = (
