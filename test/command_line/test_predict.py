@@ -30,8 +30,7 @@ def test_static_prediction(dials_regression, run_in_tmpdir):
             ),
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with open("predicted.refl", "rb") as f:
         table = pickle.load(f)
@@ -50,8 +49,7 @@ def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
             ),
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with open("predicted.refl", "rb") as f:
         table = pickle.load(f)
@@ -71,8 +69,7 @@ def test_force_static_prediction(dials_regression, run_in_tmpdir):
             "force_static=True",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with open("predicted.refl", "rb") as f:
         table = pickle.load(f)

@@ -1,20 +1,10 @@
-#!/usr/bin/env cctbx.python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Setup experimental geometry for refinement test cases"""
 
 # Python and cctbx imports
 from __future__ import absolute_import, division, print_function
-import sys
+
 import random
+
 from scitbx import matrix
 from libtbx.phil import parse, command_line
 
@@ -25,6 +15,7 @@ from dxtbx.model import DetectorFactory
 
 # crystal model
 from dxtbx.model import Crystal
+
 
 # Local functions
 def random_vector_close_to(vector, sd=0.5):
@@ -182,7 +173,8 @@ class Extract(object):
             (0, 1.0e6),
         )
 
-    def _build_cell_vec(self, vec):
+    @staticmethod
+    def _build_cell_vec(vec):
 
         if vec.length.random:
             length = random.uniform(*vec.length.range)
@@ -205,10 +197,14 @@ class Extract(object):
 
     def build_crystal(self):
 
-        vecs = map(
-            self._build_cell_vec,
-            [self._params.crystal.a, self._params.crystal.b, self._params.crystal.c],
-        )
+        vecs = [
+            self._build_cell_vec(axis)
+            for axis in (
+                self._params.crystal.a,
+                self._params.crystal.b,
+                self._params.crystal.c,
+            )
+        ]
 
         sg = self._params.crystal.space_group_symbol
 

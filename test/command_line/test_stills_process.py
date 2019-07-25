@@ -62,7 +62,7 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     )  # index/integrate the image
 
     result = "idx-20130301060858801_integrated.refl"
-    n_refls = range(140, 152)  # large ranges to handle platform-specific differences
+    n_refls = list(range(140, 152))  # large ranges to handle platform-specific differences
     table = flex.reflection_table.from_file(result)
     assert len(table) in n_refls, len(table)
     assert "id" in table
@@ -135,7 +135,7 @@ def test_sacla_h5(dials_regression, run_in_tmpdir, use_mpi, in_memory=False):
             "idx-run266702-0-subset_00001_integrated.refl",
             "idx-run266702-0-subset_00003_integrated.refl",
         ],
-        [range(205, 225), range(565, 580), range(475, 500)],
+        [list(range(205, 225)), list(range(565, 580)), list(range(475, 500))],
     ):  # large ranges to handle platform-specific differences
         table = flex.reflection_table.from_file(result_filename)
         assert len(table) in n_refls, (result_filename, len(table))

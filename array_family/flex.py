@@ -346,13 +346,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         if "px" in key:
             spots = [
                 detector[table["panel"][i]].get_pixel_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
         else:
             assert "mm" in key
             spots = [
                 detector[table["panel"][i]].get_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
 
         min_f = max_f = min_s = max_s = 0
@@ -601,7 +601,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -621,7 +621,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -716,7 +716,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -736,7 +736,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -1240,12 +1240,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
-            values = identifiers.values()
+            values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
                 index = set(self["id"])
                 for i in index:
-                    assert i in identifiers.keys(), (i, list(identifiers.keys()))
+                    assert i in identifiers, (i, list(identifiers))
         if experiments is not None:
             if len(identifiers) > 0:
                 assert len(identifiers) == len(experiments), (
@@ -1620,7 +1620,7 @@ class reflection_table_selector(object):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
-        mask2 = self.op(data, self.value)
+        mask2 = self.op(data, value)
         if mask1 is not None:
             mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
         else:

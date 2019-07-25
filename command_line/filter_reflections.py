@@ -121,7 +121,7 @@ def eval_flag_expression(expression, reflections):
     result = []
     g = generate_tokens(StringIO(expression).readline)
 
-    flags = list(flex.reflection_table.flags.names.iteritems())
+    flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
     flag_names, _ = zip(*flags)
 
@@ -411,7 +411,7 @@ def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0
 def run():
     """Run the command line filtering script."""
 
-    flags = list(flex.reflection_table.flags.names.iteritems())
+    flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
 
     phil_scope = parse(phil_str, process_includes=True)
@@ -429,11 +429,11 @@ def run():
         check_format=False,
     )
 
-    params, _ = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    log.config(verbosity=1)
+    log.config(verbosity=options.verbose)
 
     if not reflections:
         parser.print_help()

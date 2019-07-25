@@ -16,7 +16,7 @@ def test(dials_data, tmpdir):
         + [f.strpath for f in images],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.expt").check()
     assert tmpdir.join("spotfinder.refl").check()
 
@@ -29,7 +29,7 @@ def test(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("hot_pixels.mask").check()
     assert (
         "Found 8 hot pixels" in result["stdout"]

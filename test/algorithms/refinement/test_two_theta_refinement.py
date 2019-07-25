@@ -106,7 +106,6 @@ def test_fd_derivatives():
     mybeam = models.beam
 
     # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -114,7 +113,7 @@ def test_fd_derivatives():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -239,7 +238,7 @@ def test_refinement(dials_regression):
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)
@@ -270,7 +269,6 @@ def test_refinement(dials_regression):
     )
 
     xluc_param = CrystalUnitCellParameterisation(crystal)
-    xluc_p_vals = xluc_param.get_param_vals()
     cell_params = crystal.get_unit_cell().parameters()
     cell_params = [a + b for a, b in zip(cell_params, [0.1, -0.1, 0.1, 0.1, -0.1, 0.0])]
     from cctbx.uctbx import unit_cell
@@ -303,9 +301,7 @@ def test_refinement(dials_regression):
     param_reporter = ParameterReporter(det_param, beam_param, xlo_param, [xluc_param])
 
     # reflection manager
-    refman = TwoThetaReflectionManager(
-        refs, experiments, nref_per_degree=20, verbosity=2
-    )
+    refman = TwoThetaReflectionManager(refs, experiments, nref_per_degree=20)
 
     # reflection predictor
     ref_predictor = TwoThetaExperimentsPredictor(experiments)
@@ -322,7 +318,6 @@ def test_refinement(dials_regression):
         target=target,
         prediction_parameterisation=pred_param,
         log=None,
-        verbosity=0,
         max_iterations=20,
     )
 
@@ -336,10 +331,8 @@ def test_refinement(dials_regression):
         refman=refman,
         target=target,
         refinery=refinery,
-        verbosity=1,
     )
-
-    history = refiner.run()
+    refiner.run()
 
     # compare crystal with original crystal
     refined_xl = refiner.get_experiments()[0].crystal

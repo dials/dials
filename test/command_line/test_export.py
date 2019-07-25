@@ -2,48 +2,39 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
+
 import procrunner
 import pytest
-from dxtbx.serialize.load import _decode_dict
-from dxtbx.serialize import load
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import assign_unique_identifiers
+from dxtbx.serialize.load import _decode_dict
+from dxtbx.serialize import load
 from iotbx import mtz
 
 # Tests used to check for h5py
 # May need to add this again if lack of this check causes issues.
 
 
-def test_nxs(dials_data, tmpdir):
-    # Call dials.export
+def run_export(export_format, dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.export",
-            "format=nxs",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            "format=" + export_format,
+            dials_data("centroid_test_data").join("experiments.json"),
+            dials_data("centroid_test_data").join("integrated.pickle"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.nxs").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated." + export_format).check(file=1)
+
+
+def test_nxs(dials_data, tmpdir):
+    run_export("nxs", dials_data, tmpdir)
 
 
 def test_mtz(dials_data, tmpdir):
-    # Call dials.export
-    result = procrunner.run(
-        [
-            "dials.export",
-            "format=mtz",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
-        ],
-        working_directory=tmpdir.strpath,
-    )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.mtz").check(file=1)
+    run_export("mtz", dials_data, tmpdir)
 
 
 def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
@@ -84,8 +75,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
         environment_override={"DIALS_EXPORT_DO_NOT_CHECK_FORMAT": "True"},
         working_directory=run_in_tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("unmerged.mtz")
 
     # Inspect output
@@ -111,8 +101,7 @@ def test_mmcif(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.cif").check(file=1)
 
     # TODO include similar test for exporting scaled data in mmcif format
@@ -130,8 +119,7 @@ def test_xds_ascii(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("DIALS.HKL").check(file=1)
 
     psi_values = {
@@ -166,8 +154,7 @@ def test_sadabs(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.sad").check(file=1)
 
     direction_cosines = {
@@ -199,15 +186,14 @@ def test_json(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("rlp.json").check(file=1)
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     with tmpdir.join("rlp.json").open("rb") as f:
         d = json.load(f, object_hook=_decode_dict)
-    assert d.keys() == ["imageset_id", "experiments", "rlp", "experiment_id"], d.keys()
+    assert list(d.keys()) == ["imageset_id", "experiments", "rlp", "experiment_id"]
     assert d["rlp"][:3] == [0.123454, 0.57687, 0.186465], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0
@@ -230,15 +216,14 @@ def test_json_shortened(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.json").check(file=1)
 
     with tmpdir.join("integrated.json").open("rb") as f:
         d = json.load(f)
-    assert "imageset_id" in d.keys()
-    assert "rlp" in d.keys()
-    assert "experiment_id" in d.keys()
+    assert "imageset_id" in d
+    assert "rlp" in d
+    assert "experiment_id" in d
     assert d["rlp"][:3] == [-0.5975, -0.6141, 0.4702], d["rlp"][:3]
     assert d["imageset_id"][0] == 0
     assert d["experiment_id"][0] == 0

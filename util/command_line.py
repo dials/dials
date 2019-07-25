@@ -11,6 +11,7 @@
 from __future__ import absolute_import, division, print_function
 
 import time
+import sys
 
 from dials.util import debug_console
 
@@ -27,7 +28,7 @@ def parse_range_list_string(string):
         if len(items[i]) == 1:
             items[i] = [int(items[i][0])]
         elif len(items[i]) == 2:
-            items[i] = range(int(items[i][0]), int(items[i][1]) + 1)
+            items[i] = list(range(int(items[i][0]), int(items[i][1]) + 1))
         else:
             raise SyntaxError
     items = [item for sublist in items for item in sublist]
@@ -104,7 +105,6 @@ class ProgressBar:
 
     def update(self, fpercent):
         """ Update the progress bar with a percentage. """
-        import sys
         from math import ceil
 
         # do not update if not a tty
@@ -168,8 +168,6 @@ class ProgressBar:
             string = ""
 
         """ Print the 'end of comand' string."""
-        from sys import stdout
-
         if self._estimate_time:
             # Get the time string
             time_string = "{:.2f}s".format(self._timer.get_elapsed_time())
@@ -196,12 +194,12 @@ class ProgressBar:
             string = string + "." * (dot_length)
 
         # Write the string to stdout
-        if stdout.isatty():
+        if sys.stdout.isatty():
             string = "\r" + string + "\n"
         else:
             string = string + "\n"
-        stdout.write(string)
-        stdout.flush()
+        sys.stdout.write(string)
+        sys.stdout.flush()
 
 
 class Command(object):
@@ -215,15 +213,13 @@ class Command(object):
     @classmethod
     def start(cls, string):
         """ Print the 'start command' string."""
-        from sys import stdout
-
         # from termcolor import colored
 
         # Get the command start time
         cls._start_time = time.time()
 
         # do not output if not a tty
-        if not stdout.isatty():
+        if not sys.stdout.isatty():
             return
 
         # Truncate the string to the maximum length
@@ -232,14 +228,12 @@ class Command(object):
         string = (" " * cls.indent) + string + "..."
 
         # Write the string to stdout
-        stdout.write(string)
-        stdout.flush()
+        sys.stdout.write(string)
+        sys.stdout.flush()
 
     @classmethod
     def end(cls, string):
         """ Print the 'end of command' string."""
-        from sys import stdout
-
         # from termcolor import colored
 
         # Check if we want to print the time or not
@@ -270,12 +264,12 @@ class Command(object):
             string = string + "." * (dot_length)
 
         # Write the string to stdout
-        if stdout.isatty():
+        if sys.stdout.isatty():
             string = "\r" + string + "\n"
         else:
             string = string + "\n"
-        stdout.write(string)
-        stdout.flush()
+        sys.stdout.write(string)
+        sys.stdout.flush()
 
 
 try:
@@ -285,8 +279,6 @@ except ImportError:
 
 
 def coloured(text, *args, **kwargs):
-    import sys
-
     if not sys.stdout.isatty() or termcolor is None:
         return text
     return termcolor.colored(text, *args, **kwargs)
@@ -297,8 +289,6 @@ def heading(text):
 
 
 if __name__ == "__main__":
-    import time
-
     p = ProgressBar()
 
     for j in range(100):

@@ -792,9 +792,9 @@ def find_nx_mx_entries(nx_file, entry):
     hits = []
 
     def visitor(name, obj):
-        if "NX_class" in obj.attrs.keys():
+        if "NX_class" in obj.attrs:
             if obj.attrs["NX_class"] in ["NXentry", "NXsubentry"]:
-                if "definition" in obj.keys():
+                if "definition" in obj:
                     if obj["definition"][()] == "NXmx":
                         hits.append(obj)
 

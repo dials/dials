@@ -1,8 +1,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division, print_function
 
+import json
 import sys
 
 import libtbx
@@ -44,10 +44,8 @@ output {
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
 
     usage = "dials.shadow_plot [options] models.expt"
 
@@ -140,9 +138,7 @@ def run(args):
             "scan_points": list(scan_points),
             "fraction_shadowed": list(fraction_shadowed),
         }
-        import json
-
-        with open(params.output.json, "wb") as f:
+        with open(params.output.json, "w") as f:
             json.dump(d, f)
 
     if params.output.plot is not None:

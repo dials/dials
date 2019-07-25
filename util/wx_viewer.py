@@ -3,6 +3,10 @@ from __future__ import absolute_import, division, print_function
 # This code is based on:
 #   http://lists.wxwidgets.org/archive/wxPython-users/msg11078.html
 
+import math
+import os
+import time
+
 import gltbx.util
 from gltbx.gl import *
 from gltbx.glu import *
@@ -18,9 +22,6 @@ try:
 except ImportError:
     exit()  # To pass through the "make" step (dials.geometry_viewer), for graphics-free HPC build
 import wx.glcanvas
-import math
-import time
-import os
 
 
 def animation_stepper(time_move=1.0, move_factor=1, frames_per_second=100):
@@ -63,10 +64,10 @@ class ViewerUpdateEvent(wx.PyEvent):
 
 class wxGLWindow(wx.glcanvas.GLCanvas):
     def InitGL(self):
-        raise NotImplemented
+        raise NotImplementedError()
 
     def DrawGL(self):
-        raise NotImplemented
+        raise NotImplementedError()
 
     def process_keyword_arguments(
         self,
@@ -232,7 +233,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
             if callback is None:
                 print("No action for this key stroke.")
             else:
-                if callback(key=key) == False:
+                if callback(key=key) is False:
                     print("No action for this key stroke.")
         self.autospin = False
 
@@ -687,7 +688,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         gltbx.util.handle_error()
         glClear(GL_COLOR_BUFFER_BIT)
         glClear(GL_DEPTH_BUFFER_BIT)
-        mvm = gltbx.util.get_gl_modelview_matrix()
+        _ = gltbx.util.get_gl_modelview_matrix()
         self.DrawGL()
         gltbx.util.handle_error()
         glFlush()
@@ -722,7 +723,6 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         self, file_name="wx_viewer", extensions=["png", "jpg", "tiff", "eps", "pdf"]
     ):
         import gltbx.viewer_utils
-        from dials.util import Sorry
         from libtbx.str_utils import show_string
 
         pil_image = gltbx.viewer_utils.read_pixels_to_pil_image(
@@ -807,7 +807,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         if save_pdf:
             n_written += self.save_screen_shot_via_gl2ps(file_name=gl2ps_file_name)
         if n_written == 0:
-            raise Sorry("Cannot save screen shot in any of the formats specified.")
+            raise ValueError("Cannot save screen shot in any of the formats specified.")
         return n_written
 
     def OnClose(self, event=None):
@@ -867,7 +867,7 @@ class show_points_and_lines_mixin(wxGLWindow):
             gray = 0.3
             glColor3f(gray, gray, gray)
             glBegin(GL_POLYGON)
-            for i in xrange(360):
+            for i in range(360):
                 a = i * math.pi / 180
                 rs = r * math.sin(a)
                 rc = r * math.cos(a)
@@ -1028,7 +1028,7 @@ class OpenGLSettingsToolbox(wx.MiniFrame):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def OnUpdate(self, event=None):
-        for setting_name, widget in self.widgets.iteritems():
+        for setting_name, widget in self.widgets.items():
             new_value = float(widget.GetValue()) / 100.0
             setattr(self.parent, setting_name, new_value)
         self.parent.flag_show_fog = self.fog_box.GetValue()

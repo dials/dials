@@ -7,25 +7,24 @@ the presence of an indexing ambiguity.
 """
 from __future__ import absolute_import, division, print_function
 
-import logging
-
 import copy
-from collections import OrderedDict
+import json
+import logging
 import math
+from collections import OrderedDict
 
-from libtbx import Auto
-from libtbx import table_utils
-from scitbx.array_family import flex
-from scitbx import matrix
-from cctbx import sgtbx
 import iotbx.phil
-
+from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
 from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
+from libtbx import Auto
+from libtbx import table_utils
+from scitbx import matrix
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -145,44 +144,54 @@ class CosymAnalysis(symmetry_base, Subject):
 
         self.params = params
         if self.params.space_group is not None:
-            best_subgroup = find_matching_symmetry(
-                self.intensities.unit_cell(), self.params.space_group.group()
-            )
-            cb_op_inp_best = best_subgroup["cb_op_inp_best"]
-            best_subsym = best_subgroup["best_subsym"]
-            cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
-            ref_subsym = best_subsym.change_basis(cb_op_best_ref)
-            cb_op_ref_primitive = ref_subsym.change_of_basis_op_to_primitive_setting()
-            sg_cb_op_inp_primitive = (
-                self.params.space_group.change_of_basis_op_to_primitive_setting()
-            )
-            sg_primitive = self.params.space_group.change_basis(sg_cb_op_inp_primitive)
-            sg_best = sg_primitive.change_basis(
-                (cb_op_ref_primitive * cb_op_best_ref).inverse()
-            )
-            # best_subgroup above is the bravais type, so create thin copy here with the
-            # user-input space group instead
-            self.best_subgroup = {
-                "best_subsym": best_subsym.customized_copy(space_group_info=sg_best),
-                "cb_op_inp_best": cb_op_inp_best,
-            }
-            self.input_space_group = self.params.space_group.change_basis(
-                cb_op_inp_best.inverse()
-            ).group()
-            self.intensities = (
-                self.intensities.customized_copy(
-                    space_group_info=self.input_space_group.info()
+
+            def _map_space_group_to_input_cell(intensities, space_group):
+                best_subgroup = find_matching_symmetry(
+                    intensities.unit_cell(), space_group
                 )
-                .as_reference_setting()
-                .primitive_setting()
+                cb_op_inp_best = best_subgroup["cb_op_inp_best"]
+                best_subsym = best_subgroup["best_subsym"]
+                cb_op_best_ref = best_subsym.change_of_basis_op_to_reference_setting()
+                ref_subsym = best_subsym.change_basis(cb_op_best_ref)
+                cb_op_ref_primitive = (
+                    ref_subsym.change_of_basis_op_to_primitive_setting()
+                )
+                sg_cb_op_inp_primitive = (
+                    space_group.info().change_of_basis_op_to_primitive_setting()
+                )
+                sg_primitive = space_group.change_basis(sg_cb_op_inp_primitive)
+                sg_best = sg_primitive.change_basis(
+                    (cb_op_ref_primitive * cb_op_best_ref).inverse()
+                )
+                # best_subgroup above is the bravais type, so create thin copy here with the
+                # user-input space group instead
+                best_subgroup = {
+                    "best_subsym": best_subsym.customized_copy(
+                        space_group_info=sg_best.info()
+                    ),
+                    "cb_op_inp_best": cb_op_inp_best,
+                }
+
+                intensities = intensities.customized_copy(
+                    space_group_info=sg_best.change_basis(
+                        cb_op_inp_best.inverse()
+                    ).info()
+                )
+                return intensities, best_subgroup
+
+            self.intensities, self.best_subgroup = _map_space_group_to_input_cell(
+                self.intensities, self.params.space_group.group()
             )
             self.input_space_group = self.intensities.space_group()
+
         else:
             self.input_space_group = None
-            if self.params.lattice_group is not None:
-                self.intensities = (
-                    self.intensities.as_reference_setting().primitive_setting()
-                )
+
+        if self.params.lattice_group is not None:
+            tmp_intensities, _ = _map_space_group_to_input_cell(
+                self.intensities, self.params.lattice_group.group()
+            )
+            self.params.lattice_group = tmp_intensities.space_group_info()
 
     def _intialise_target(self):
         if self.params.dimensions is Auto:
@@ -385,7 +394,9 @@ class CosymAnalysis(symmetry_base, Subject):
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
                             reindexing_ops[i_cluster] = (
-                                cb_op * self.cb_op_inp_min
+                                self.cb_op_inp_min.inverse()
+                                * cb_op
+                                * self.cb_op_inp_min
                             ).as_xyz()
 
         return reindexing_ops
@@ -545,11 +556,10 @@ class CosymAnalysis(symmetry_base, Subject):
 
         """
         d = self.as_dict()
-        import json
 
         json_str = json.dumps(d, indent=indent)
-        if filename is not None:
-            with open(filename, "wb") as f:
+        if filename:
+            with open(filename, "w") as f:
                 f.write(json_str)
         return json.dumps(d, indent=indent)
 
@@ -591,7 +601,7 @@ class SymmetryAnalysis(object):
 
     def _score_laue_groups(self):
         subgroup_scores = [
-            ScoreSubGroup(subgrp, self.sym_op_scores.values())
+            ScoreSubGroup(subgrp, list(self.sym_op_scores.values()))
             for subgrp in self.subgroups.result_groups
         ]
         total_likelihood = sum(score.likelihood for score in subgroup_scores)

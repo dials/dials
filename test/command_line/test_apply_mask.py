@@ -17,8 +17,7 @@ def test(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     from dials.array_family import flex  # noqa: F401, import dependency
     from dxtbx.model.experiment_list import ExperimentListFactory
@@ -46,8 +45,7 @@ def test_experiments(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     from dials.array_family import flex  # noqa: F401, import dependency
     from dxtbx.model.experiment_list import ExperimentListFactory

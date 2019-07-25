@@ -61,7 +61,7 @@ output {
     .type = path
 }
 
-verbosity = 1
+verbosity = 0
   .type = int(value_min=0)
   .help = "The verbosity level"
 """,
@@ -126,7 +126,7 @@ class cosym(Subject):
 
         space_groups = {}
         reindexing_ops = {}
-        for dataset_id in self.cosym_analysis.reindexing_ops.iterkeys():
+        for dataset_id in self.cosym_analysis.reindexing_ops:
             if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
                 cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
                 reindexing_ops.setdefault(cb_op, [])
@@ -140,12 +140,12 @@ class cosym(Subject):
                 )
 
         logger.info("Space groups:")
-        for sg, datasets in space_groups.iteritems():
+        for sg, datasets in space_groups.items():
             logger.info(str(sg.info().reference_setting()))
             logger.info(datasets)
 
         logger.info("Reindexing operators:")
-        for cb_op, datasets in reindexing_ops.iteritems():
+        for cb_op, datasets in reindexing_ops.items():
             logger.info(cb_op)
             logger.info(datasets)
 
@@ -176,7 +176,7 @@ class cosym(Subject):
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_ids in reindexing_ops.iteritems():
+        for cb_op, dataset_ids in reindexing_ops.items():
             cb_op = sgtbx.change_of_basis_op(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
@@ -214,20 +214,6 @@ class cosym(Subject):
                 refl = refl.select(~sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
-
-            if self.params.space_group is not None:
-                space_group_info = self.params.space_group.primitive_setting()
-                if not space_group_info.group().is_compatible_unit_cell(
-                    expt.crystal.get_unit_cell()
-                ):
-                    logger.info(
-                        "Skipping data set - incompatible space group and unit cell: %s, %s",
-                        space_group_info,
-                        expt.crystal.get_unit_cell(),
-                    )
-                    continue
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
             identifiers.append(expt.identifier)
 
         return select_datasets_on_ids(
@@ -242,19 +228,8 @@ class cosym(Subject):
         )
         for expt, refl in zip(experiments, reflections):
             expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
+            expt.crystal.set_space_group(sgtbx.space_group())
             refl["miller_index"] = cb_op_ref_min.apply(refl["miller_index"])
-
-            if self.params.space_group is not None:
-                expt.crystal.set_space_group(
-                    self.params.space_group.primitive_setting().group()
-                )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
-                )
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
         return experiments, reflections
 
     @Subject.notify_event("performed_unit_cell_clustering")

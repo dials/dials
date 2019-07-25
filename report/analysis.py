@@ -2,14 +2,15 @@
 from __future__ import absolute_import, division, print_function
 
 from cctbx import miller
-from scitbx.array_family import flex
-
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
     calculate_batch_offsets,
     get_batch_ranges,
     assign_batches_to_reflections,
 )
-from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from libtbx.str_utils import make_sub_header
+from scitbx.array_family import flex
+from six.moves import cStringIO as StringIO
 
 
 def batch_dependent_properties(batches, intensities, scales=None):
@@ -185,34 +186,25 @@ def _batch_bins_and_data(batches, values, function_to_apply):
 def make_merging_statistics_summary(dataset_statistics):
     """Format merging statistics information into an output string."""
 
-    from libtbx.str_utils import make_sub_header
-    from cStringIO import StringIO
-
-    # Here use a StringIO rather than passing log.info_handle to get
-    # around excessive padding/whitespace.
+    # Here use a StringIO to get around excessive padding/whitespace.
     # Avoid using result.show as don't want redundancies printed.
     out = StringIO()
-    output = []
 
     # First make summary
     make_sub_header("Merging statistics", out=out)
     dataset_statistics.overall.show_summary(out=out)
-    output.append(out.getvalue())
 
     # Next make statistics by resolution bin.
-    msg = "\nStatistics by resolution bin:\n"
+    msg = "\n\nStatistics by resolution bin:\n"
     msg += (
         " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
         + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
     )
     for bin_stats in dataset_statistics.bins:
         msg += bin_stats.format() + "\n"
-    msg += dataset_statistics.overall.format() + "\n"
-    output.append(msg)
+    msg += dataset_statistics.overall.format() + "\n\n"
+    out.write(msg)
 
     # Finally show estimated cutoffs
-    out = StringIO()
     dataset_statistics.show_estimated_cutoffs(out=out)
-    output.append(out.getvalue())
-
-    return "\n".join(output)
+    return out.getvalue()

@@ -6,9 +6,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from scitbx.array_family import flex
+import six
 from cctbx import uctbx
-from libtbx.table_utils import simple_table
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
@@ -27,10 +26,12 @@ from dials.report.plots import (
     IntensityStatisticsPlots,
     AnomalousPlotter,
 )
+from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-import six
+from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -72,6 +73,19 @@ def register_merging_stats_observers(script):
         observer=ScalingSummaryGenerator(),
         callback="print_scaling_summary",
     )
+
+
+def register_scale_and_filter_observers(script):
+    script.register_observer(event="run_scale_and_filter", observer=FilteringObserver())
+    script.register_observer(
+        event="run_scale_and_filter",
+        observer=ScalingHTMLGenerator(),
+        callback="make_scaling_html",
+    )
+    try:
+        script.unregister_observer(event="run_script", observer=ScalingHTMLGenerator())
+    except KeyError:
+        pass
 
 
 @singleton
@@ -155,6 +169,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
+        self.data.update(FilteringObserver().make_plots())
         filename = scaling_script.params.output.html
         logger.info("Writing html report to: %s", filename)
         loader = ChoiceLoader(
@@ -175,6 +190,7 @@ class ScalingHTMLGenerator(Observer):
             anom_plots=self.data["anom_plots"],
             batch_plots=self.data["batch_plots"],
             misc_plots=self.data["misc_plots"],
+            filter_plots=self.data["filter_plots"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -201,14 +217,16 @@ class ScalingModelObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
+            for plot in scaling_model_plots.values():
+                plot["layout"]["title"] += " (dataset %s)" % key
             for name, plot in six.iteritems(scaling_model_plots):
-                d.update({name + "_" + str(key): plot})
+                d[name + "_" + str(key)] = plot
         graphs = {"scaling_model": d}
         return graphs
 
     def return_model_error_summary(self):
         """Get a summary of the error distribution of the models."""
-        first_model = self.data.values()[0]
+        first_model = list(self.data.values())[0]
         component = first_model["configuration_parameters"]["corrections"][0]
         msg = ""
         if "est_standard_devs" in first_model[component]:
@@ -242,13 +260,12 @@ class ScalingModelObserver(Observer):
 
 @singleton
 class ScalingOutlierObserver(Observer):
-
     """
     Observer to record scaling outliers and make outlier plots.
     """
 
     def update(self, scaler):
-        active_scalers = getattr(scaler, "active_scalers", False)
+        active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
         for scaler in active_scalers:
@@ -273,12 +290,13 @@ class ScalingOutlierObserver(Observer):
     def make_plots(self):
         """Generate plot data of outliers on the detector and vs z."""
         d = OrderedDict()
-        for key in sorted(self.data.keys()):
+        for key in sorted(self.data):
             outlier_plots = plot_outliers(self.data[key])
-            d.update(
-                {"outlier_plot_" + str(key): outlier_plots["outlier_xy_positions"]}
-            )
-            d.update({"outlier_plot_z" + str(key): outlier_plots["outliers_vs_z"]})
+            for plot in outlier_plots.values():
+                if plot:  # may be null if no outliers
+                    plot["layout"]["title"] += " (dataset %s)" % key
+            d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
+            d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
         graphs = {"outlier_plots": d}
         return graphs
 
@@ -318,8 +336,33 @@ class ErrorModelObserver(Observer):
 
 
 @singleton
-class MergingStatisticsObserver(Observer):
+class FilteringObserver(Observer):
 
+    """
+    Observer to record data from the scaling and filtering algorithm.
+    """
+
+    def update(self, scaling_script):
+        if scaling_script.filtering_results:
+            self.data = {
+                "merging_stats": scaling_script.filtering_results.get_merging_stats(),
+                "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
+                "cycle_results": scaling_script.filtering_results.get_cycle_results(),
+                "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
+                "mode": scaling_script.params.filtering.deltacchalf.mode,
+            }
+
+    def make_plots(self):
+        """Make plots for scale and filter."""
+        if not self.data:
+            return {"filter_plots": {}}
+        # Make merging stats plots, histograms and image ranges.
+        d = make_scaling_filtering_plots(self.data)
+        return {"filter_plots": d}
+
+
+@singleton
+class MergingStatisticsObserver(Observer):
     """
     Observer to record merging statistics data and make tables.
     """

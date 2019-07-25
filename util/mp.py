@@ -1,8 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import warnings
+
 import future.moves.itertools as itertools
 import libtbx.easy_mp
-import warnings
 
 
 def parallel_map(
@@ -194,7 +195,6 @@ def batch_multi_node_parallel_map(
     """
     A function to run jobs in batches in each process
     """
-
     # Call the batches in parallel
     return multi_node_parallel_map(
         func=_create_iterable_wrapper(func),
@@ -209,11 +209,10 @@ def batch_multi_node_parallel_map(
 
 
 if __name__ == "__main__":
-
     def func(x):
         return x
 
-    iterable = range(100)
+    iterable = list(range(100))
 
     multi_node_parallel_map(
         func,

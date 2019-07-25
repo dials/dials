@@ -28,8 +28,7 @@ def test1(dials_regression, run_in_tmpdir):
             os.path.join(data_dir, "refine.phil"),
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # load results
     reg_exp = ExperimentListFactory.from_json_file(

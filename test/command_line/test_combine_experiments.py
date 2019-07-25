@@ -21,7 +21,7 @@ def test(dials_regression, run_in_tmpdir):
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
 
-    input_range = range(2, 49)
+    input_range = list(range(2, 49))
     for i in (8, 10, 15, 16, 34, 39, 45):
         input_range.remove(i)
 
@@ -49,8 +49,7 @@ def test(dials_regression, run_in_tmpdir):
         phil_file.writelines(input_phil)
 
     result = procrunner.run(["dials.combine_experiments", "input.phil"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # load results
     exp = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
@@ -72,8 +71,7 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         ["dials.split_experiments", "combined.expt", "combined.refl"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i, e in enumerate(exp):
         assert os.path.exists("split_%03d.expt" % i)
@@ -97,8 +95,7 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         ["dials.split_experiments", "combined.expt", "output.experiments_prefix=test"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(len(exp)):
         assert os.path.exists("test_%03d.expt" % i)
@@ -109,7 +106,7 @@ def test(dials_regression, run_in_tmpdir):
     x, y, z = panel.get_origin()
     panel.set_frame(panel.get_fast_axis(), panel.get_slow_axis(), (x, y, z + 10))
     # Set half of the experiments to the new detector
-    for i in xrange(len(exp) // 2):
+    for i in range(len(exp) // 2):
         exp[i].detector = detector
     exp.as_json("modded.expt")
 
@@ -123,8 +120,7 @@ def test(dials_regression, run_in_tmpdir):
             "by_detector=True",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(2):
         assert os.path.exists("test_by_detector_%03d.expt" % i)
@@ -146,8 +142,7 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         ["dials.split_experiments", "assigned.expt", "assigned.refl"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(len(explist)):
         assert os.path.exists("split_%03d.expt" % i)
@@ -181,8 +176,7 @@ def test(dials_regression, run_in_tmpdir):
             "by_detector=True",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Expect each datasets to have ids from 0..50 with experiment identifiers
     # all kept from before 0,2,4,6,...

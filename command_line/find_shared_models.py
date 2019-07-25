@@ -43,7 +43,7 @@ phil_scope = parse(
       .help = "The debug log filename"
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int
     .help = "The verbosity level"
 """,

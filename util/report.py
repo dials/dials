@@ -212,7 +212,7 @@ class Report(object):
         # Function to process objects
         def process(root, obj):
             if isinstance(obj, dict):
-                for key, value in obj.iteritems():
+                for key, value in obj.items():
                     root.appendChild(process(doc.createElement(key), value))
             elif isinstance(obj, list) or isinstance(obj, tuple):
                 for i, value in enumerate(obj):

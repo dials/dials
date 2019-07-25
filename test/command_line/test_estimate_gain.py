@@ -10,5 +10,5 @@ def test(dials_data, tmpdir):
         ["dials.estimate_gain", "input.experiments=" + input_filename],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert "Estimated gain: 1.0" in result["stdout"]

@@ -25,8 +25,7 @@ def test_basic(dials_regression, run_in_tmpdir):
             "sigma_m_algorithm=basic",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("models_with_profiles.expt")
 
     from dxtbx.model.experiment_list import ExperimentListFactory
@@ -59,8 +58,7 @@ def test_extended(dials_regression, run_in_tmpdir):
             ),
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("models_with_profiles.expt")
 
     from dxtbx.model.experiment_list import ExperimentListFactory

@@ -77,7 +77,7 @@ def test(args=[]):
         image_range=(1, 1),
         exposure_times=0.1,
         oscillation=(0, 1.5),
-        epochs=range(1),
+        epochs=list(range(1)),
         deg=True,
     )
     sweep_range = myscan.get_oscillation_range(deg=False)
@@ -204,7 +204,7 @@ def test(args=[]):
     params.refinement.parameterisation.beam.fix = "all"
     params.refinement.parameterisation.detector.fix = "all"
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, obs_refs_stills, stills_experiments, verbosity=0
+        params, obs_refs_stills, stills_experiments
     )
 
     # run refinement

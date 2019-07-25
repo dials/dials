@@ -93,7 +93,7 @@ class _Test(object):
             image_range=(1, 1),
             exposure_times=0.1,
             oscillation=(0, 3.0),
-            epochs=range(1),
+            epochs=list(range(1)),
             deg=True,
         )
         sweep_range = self.scan.get_oscillation_range(deg=False)
@@ -229,7 +229,6 @@ def test_stills_pred_param(tc):
             b = an_grad[name]
 
             abs_error = a - b
-            denom = a + b
 
             fns = five_number_summary(abs_error)
             print(

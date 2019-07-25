@@ -345,7 +345,7 @@ class Importer(object):
         for argument in args:
             try:
                 self.reflections.append(converter.from_string(argument))
-            except pickle_errors as e:
+            except pickle_errors:
                 self._handle_converter_error(
                     argument,
                     pickle.UnpicklingError("Appears to be an invalid pickle file"),
@@ -1049,7 +1049,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_flags ()")
         print("{")
         print(' case "$1" in')
-        for p in parameter_choice_list.keys():
+        for p in parameter_choice_list:
             print("\n  %s)" % p)
             print(
                 '   _dials_autocomplete_values="%s";;'
@@ -1075,7 +1075,7 @@ class OptionParser(OptionParserBase):
         tree = construct_completion_tree(parameter_list)
 
         def _tree_to_bash(prefix, tree):
-            for subkey in tree.keys():
+            for subkey in tree:
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
                     print("\n  %s*)" % (prefix + subkey + "."))
@@ -1134,7 +1134,7 @@ def flatten_reflections(filename_object_list):
                 new_id_ -= 1
             new_id_ = highest_new_id + 1
             if new_ids_dict:
-                for i, v in new_ids_dict.iteritems():
+                for i, v in new_ids_dict.items():
                     expt_ids_dict[i] = v
     return tables
 

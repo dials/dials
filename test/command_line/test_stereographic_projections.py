@@ -17,13 +17,13 @@ def test_stereographic_projectsion(dials_regression, run_in_tmpdir):
             "json.filename=proj.json",
         )
     )
-    result = easy_run.fully_buffered(cmd).raise_if_errors()
+    easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("projections.txt")
     assert os.path.exists("proj.png")
     assert os.path.exists("proj.json")
 
     with open("proj.json", "rb") as f:
         d = json.load(f)
-        assert d.keys() == ["data", "layout"]
-        assert d["data"][0]["name"] == "stereographic_projections"
-        assert len(d["data"][0]["x"]) == 578
+    assert set(d) == {"data", "layout"}
+    assert d["data"][0]["name"] == "stereographic_projections"
+    assert len(d["data"][0]["x"]) == 578

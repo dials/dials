@@ -5,9 +5,6 @@ import sys
 
 import procrunner
 import pytest
-from dxtbx.model.detector import DetectorFactory
-from dxtbx.model.beam import BeamFactory
-from dxtbx.model.scan import ScanFactory
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
@@ -49,7 +46,7 @@ def test_refinement_and_compare_with_known_truth(dials_regression, run_in_tmpdir
             "beam.fix=wavelength",
         ]
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[0]
     beam, detector = exp.beam, exp.detector
 

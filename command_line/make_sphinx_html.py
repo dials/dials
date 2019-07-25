@@ -112,7 +112,7 @@ def update_dials_download_links():
 
         buttons = [
             download_button(long_names.get(asset, asset), version, link)
-            for asset, (_, version, link) in assets.iteritems()
+            for asset, (_, version, link) in assets.items()
         ]
 
         release.write("".join(sorted(buttons)))
@@ -165,12 +165,12 @@ if __name__ == "__main__":
 
     if options.clean:
         result = procrunner.run(["make", "clean"], environment_override=env)
-        assert result["exitcode"] == 0, (
-            "make clean failed with exit code %d" % result["exitcode"]
+        assert not result.returncode, (
+            "make clean failed with exit code %d" % result.returncode
         )
     result = procrunner.run(["make", "html"], environment_override=env)
-    assert result["exitcode"] == 0, (
-        "make html failed with exit code %d" % result["exitcode"]
+    assert not result.returncode, (
+        "make html failed with exit code %d" % result.returncode
     )
     print("Copying HTML pages to", dest_dir)
     recursive_overwrite("build/html", dest_dir)

@@ -33,18 +33,14 @@ algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 2 2]
 algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 3 2]
 algorithms/indexing/test_non_primitive_basis.py::test_detect[R 3 2 :H]
 algorithms/indexing/test_phi_scan.py::test_run
-algorithms/scaling/cross_validation/test_crossvalidation.py::test_crossvalidator
-algorithms/scaling/test_basis_function.py::test_basis_function
 algorithms/scaling/test_observers.py::test_ScalingHTMLGenerator
-algorithms/scaling/test_observers.py::test_ScalingModelObserver
-algorithms/scaling/test_param_manager.py::test_general_apm
-algorithms/scaling/test_param_manager.py::test_multi_apm
 algorithms/scaling/test_plots.py::test_normal_probability_plot
 algorithms/scaling/test_reflection_selection.py::test_reflection_selection
 algorithms/scaling/test_scale.py::test_incremental_scale_workflow
 algorithms/scaling/test_scale.py::test_multi_scale
 algorithms/scaling/test_scale.py::test_multi_scale_exclude_images
-algorithms/scaling/test_scale.py::test_scale_and_filter
+algorithms/scaling/test_scale.py::test_scale_and_filter_dataset_mode
+algorithms/scaling/test_scale.py::test_scale_and_filter_image_group_mode
 algorithms/scaling/test_scale.py::test_scale_array
 algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-absorption_term-None]
 algorithms/scaling/test_scale.py::test_scale_cross_validate[multi-model-physical array]
@@ -52,40 +48,13 @@ algorithms/scaling/test_scale.py::test_scale_cross_validate[single-None-None]
 algorithms/scaling/test_scale.py::test_scale_optimise_errors
 algorithms/scaling/test_scale.py::test_scale_physical
 algorithms/scaling/test_scale.py::test_targeted_scaling
-algorithms/scaling/test_scaler.py::test_SingleScaler_combine_intensities
-algorithms/scaling/test_scaler.py::test_SingleScaler_expand_scales_to_all_reflections
-algorithms/scaling/test_scaler.py::test_SingleScaler_initialisation
-algorithms/scaling/test_scaler.py::test_SingleScaler_update_for_minimisation
-algorithms/scaling/test_scaler.py::test_multiscaler_initialisation
-algorithms/scaling/test_scaler.py::test_multiscaler_update_for_minimisation
-algorithms/scaling/test_scaler.py::test_targetscaler_initialisation
-algorithms/scaling/test_scaler.py::test_update_error_model
-algorithms/scaling/test_scaler_factory.py::test_MultiScalerFactory
-algorithms/scaling/test_scaler_factory.py::test_SingleScalerFactory
-algorithms/scaling/test_scaler_factory.py::test_TargetScalerFactory
-algorithms/scaling/test_scaler_factory.py::test_scaler_factory_helper_functions
-algorithms/scaling/test_scaling_library.py::test_scale_single_dataset[array]
-algorithms/scaling/test_scaling_library.py::test_scale_single_dataset[physical]
-algorithms/scaling/test_scaling_library.py::test_scale_single_dataset_no_params_supplied
-algorithms/scaling/test_scaling_restaints.py::test_MultiScalingRestraints
-algorithms/scaling/test_scaling_restaints.py::test_ScalingRestraints
-algorithms/scaling/test_scaling_restaints.py::test_unrestrained_ScalingRestraints
 algorithms/scaling/test_scaling_utilities.py::test_equality_of_two_harmonic_table_methods
-algorithms/scaling/test_target_function.py::test_target_fixedIh
-algorithms/scaling/test_target_function.py::test_target_function
-algorithms/scaling/test_target_function.py::test_target_gradient_calculation_finite_difference
-algorithms/scaling/test_target_function.py::test_target_jacobian_calculation_finite_difference
-algorithms/scaling/test_target_function.py::test_target_rmsd_calculation
-algorithms/scaling/test_targetscaler.py::test_scale_against_target
-algorithms/symmetry/absences/test_laue_group_info.py::test_score_screw_axes_equivalent_axes
-algorithms/symmetry/absences/test_plots.py::test_plot_screw_axes
-algorithms/symmetry/absences/test_screw_axes.py::test_not_screw_axes
-algorithms/symmetry/absences/test_screw_axes.py::test_screw_axes_example_data
 algorithms/symmetry/absences/test_space_group.py::test_systematic_absences_script
 algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[I23-None-dimensions2-10-False-False]
 algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[I23-None-dimensions3-10-True-False]
 algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P2-None-None-10-False-False]
 algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P3-None-None-20-False-False]
+algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P321-unit_cell5-None-5-False-False]
 algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P422-unit_cell4-None-20-True-True]
 algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[I23]
 algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P2]
@@ -95,7 +64,6 @@ algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[R3:h]
 algorithms/symmetry/cosym/test_observers.py::test_SymmetryAnalysisObserver
 algorithms/symmetry/cosym/test_plots.py::test_plot_coords
 report/test_plots.py::test_AnomalousPlotter
-report/test_plots.py::test_ResolutionPlotsAndStats
 test/algorithms/background/test_gmodel.py::test_robust
 test/algorithms/background/test_gmodel.py::test_simple
 test/algorithms/background/test_mosflm_outlier_rejector.py::test_run
@@ -183,6 +151,12 @@ test/command_line/test_cosym.py::test_cosym[None]
 test/command_line/test_cosym.py::test_cosym[P 1]
 test/command_line/test_cosym.py::test_cosym[P 4]
 test/command_line/test_cosym.py::test_cosym_partial_dataset
+test/command_line/test_cosym.py::test_cosym_partial_dataset_raises_sorry
+test/command_line/test_cosym.py::test_synthetic[I23-None-2-10-False-False]
+test/command_line/test_cosym.py::test_synthetic[P2-None-None-10-False-False]
+test/command_line/test_cosym.py::test_synthetic[P3-None-None-20-False-False]
+test/command_line/test_cosym.py::test_synthetic[P321-unit_cell4-None-5-False-False]
+test/command_line/test_cosym.py::test_synthetic[P422-unit_cell3-None-10-True-False]
 test/command_line/test_create_profile_model.py::test_basic
 test/command_line/test_create_profile_model.py::test_extended
 test/command_line/test_estimate_gain.py::test
@@ -289,7 +263,5 @@ test/util/test_masking.py::test_filter_shadowed_reflections
 test/util/test_masking.py::test_shadow_plot
 test/util/test_nexus.py::test_run
 test/util/test_nexus_multi_experiment.py::test_run
-test/util/test_observer.py::test_Subject
-test/util/test_options.py::test_flatten_experiments_updating_id_values
 util/reciprocal_lattice/test_render_3d.py::test_Render3d
 util/reciprocal_lattice/test_render_3d.py::test_Render3d_integrated

@@ -2,9 +2,11 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
-from libtbx.phil import parse
+import dials.util
 from dials.util import Sorry
+from libtbx.phil import parse
 
 help_message = """
 
@@ -220,12 +222,13 @@ class CombineWithReference(object):
         else:
             self.average_detector = False
 
-        return
-
     def __call__(self, experiment):
         from dxtbx.model.experiment_list import BeamComparison
         from dxtbx.model.experiment_list import DetectorComparison
         from dxtbx.model.experiment_list import GoniometerComparison
+        from dxtbx.datablock import BeamDiff
+        from dxtbx.datablock import DetectorDiff
+        from dxtbx.datablock import GoniometerDiff
 
         if self.tolerance:
             compare_beam = BeamComparison(
@@ -253,6 +256,13 @@ class CombineWithReference(object):
         if self.ref_beam:
             if compare_beam:
                 if not compare_beam(self.ref_beam, experiment.beam):
+                    diff = BeamDiff(
+                        wavelength_tolerance=self.tolerance.beam.wavelength,
+                        direction_tolerance=self.tolerance.beam.direction,
+                        polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
+                        polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
+                    )
+                    print("\n".join(diff(self.ref_beam, experiment.beam)))
                     raise ComparisonError("Beam")
             beam = self.ref_beam
         else:
@@ -263,6 +273,12 @@ class CombineWithReference(object):
         elif self.ref_detector and not self.average_detector:
             if compare_detector:
                 if not compare_detector(self.ref_detector, experiment.detector):
+                    diff = DetectorDiff(
+                        fast_axis_tolerance=self.tolerance.detector.fast_axis,
+                        slow_axis_tolerance=self.tolerance.detector.slow_axis,
+                        origin_tolerance=self.tolerance.detector.origin,
+                    )
+                    print("\n".join(diff(self.ref_detector, experiment.detector)))
                     raise ComparisonError("Detector")
             detector = self.ref_detector
         else:
@@ -271,6 +287,12 @@ class CombineWithReference(object):
         if self.ref_goniometer:
             if compare_goniometer:
                 if not compare_goniometer(self.ref_goniometer, experiment.goniometer):
+                    diff = GoniometerDiff(
+                        rotation_axis_tolerance=self.tolerance.goniometer.rotation_axis,
+                        fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
+                        setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
+                    )
+                    print("\n".join(diff(self.ref_goniometer, experiment.goniometer)))
                     raise ComparisonError("Goniometer")
             goniometer = self.ref_goniometer
         else:
@@ -549,10 +571,8 @@ class Script(object):
             subset_exp = ExperimentList()
             subset_refls = flex.reflection_table()
             if params.output.n_subset_method == "random":
-                import random
-
                 n_picked = 0
-                indices = range(len(experiments))
+                indices = list(range(len(experiments)))
                 while n_picked < params.output.n_subset:
                     idx = indices.pop(random.randint(0, len(indices) - 1))
                     subset_exp.append(experiments[idx])
@@ -574,7 +594,7 @@ class Script(object):
                         sel |= reflections["panel"] == p
                     refls_subset = reflections.select(sel)
                 refl_counts = flex.int()
-                for expt_id in xrange(len(experiments)):
+                for expt_id in range(len(experiments)):
                     refl_counts.append(
                         len(refls_subset.select(refls_subset["id"] == expt_id))
                     )
@@ -599,7 +619,7 @@ class Script(object):
                 sig_filter = SignificanceFilter(params.output)
                 refls_subset = sig_filter(experiments, reflections)
                 refl_counts = flex.int()
-                for expt_id in xrange(len(experiments)):
+                for expt_id in range(len(experiments)):
                     refl_counts.append(
                         len(refls_subset.select(refls_subset["id"] == expt_id))
                     )
@@ -619,7 +639,9 @@ class Script(object):
             from dxtbx.command_line.image_average import splitit
 
             for i, indices in enumerate(
-                splitit(range(len(experiments)), (len(experiments) // batch_size) + 1)
+                splitit(
+                    list(range(len(experiments))), (len(experiments) // batch_size) + 1
+                )
             ):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
@@ -636,12 +658,11 @@ class Script(object):
             experiments_l, reflections_l, exp_name, refl_name, end_count
         ):
             result = []
-            for cluster in xrange(len(experiments_l)):
+            for cluster, experiment in enumerate(experiments_l):
                 cluster_expts = ExperimentList()
                 cluster_refls = flex.reflection_table()
-                for i in xrange(len(experiments_l[cluster])):
+                for i, expts in enumerate(experiment):
                     refls = reflections_l[cluster][i]
-                    expts = experiments_l[cluster][i]
                     refls["id"] = flex.int(len(refls), i)
                     cluster_expts.append(expts)
                     cluster_refls.extend(refls)
@@ -691,13 +712,12 @@ class Script(object):
                 params.output.reflections_filename,
                 n_clusters,
             )
-            for i in xrange(len(list_of_combined)):
-                savable_tuple = list_of_combined[i]
+            for saveable_tuple in list_of_combined:
                 if params.output.max_batch_size is None:
-                    self._save_output(*savable_tuple)
+                    self._save_output(*saveable_tuple)
                 else:
                     save_in_batches(
-                        *savable_tuple, batch_size=params.output.max_batch_size
+                        *saveable_tuple, batch_size=params.output.max_batch_size
                     )
         else:
             if params.output.max_batch_size is None:
@@ -729,10 +749,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

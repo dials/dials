@@ -24,8 +24,7 @@ def run_one_scaling(working_directory, argument_list):
     command = ["dials.scale"] + argument_list
     print(command)
     result = procrunner.run(command, working_directory=working_directory)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert working_directory.join("scaled.expt").check()
     assert working_directory.join("scaled.refl").check()
     assert working_directory.join("scaling.html").check()
@@ -320,22 +319,20 @@ def test_scale_physical(dials_regression, tmpdir):
     assert tmpdir.join("test_2.mtz").check()
 
 
-def test_scale_and_filter(dials_data, tmpdir):
+def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
 
     command = [
-        "dials.scale_and_filter",
+        "dials.scale",
+        "filtering.method=deltacchalf",
         "stdcutoff=3.0",
         "mode=image_group",
         "max_cycles=6",
-        "plots.histogram=cc_half_histograms.png",
         "d_min=1.4",
         "group_size=5",
-        "plots.merging_stats=merging_stats.png",
         "unmerged_mtz=unmerged.mtz",
-        "output.analysis_results=analysis_results.json",
-        "plots.image_ranges=reduced_image_ranges.png",
+        "scale_and_filter_results=analysis_results.json",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -343,14 +340,10 @@ def test_scale_and_filter(dials_data, tmpdir):
         command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.refl").check()
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
-    assert tmpdir.join("reduced_image_ranges.png").check()
-    assert tmpdir.join("merging_stats.png").check()
-    assert tmpdir.join("cc_half_histograms.png").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
     assert result.overall.cc_one_half > 0.96  # 17/05/19 was 0.9722
@@ -367,17 +360,20 @@ def test_scale_and_filter(dials_data, tmpdir):
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
+
+def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
+    """Test the scale and filter command line program."""
+    location = dials_data("multi_crystal_proteinase_k")
     command = [
-        "dials.scale_and_filter",
+        "dials.scale",
+        "filtering.method=deltacchalf",
         "stdcutoff=1.0",
         "mode=dataset",
         "max_cycles=2",
-        "plots.histogram=cc_half_histograms_2.png",
         "d_min=1.4",
-        "plots.merging_stats=merging_stats_2.png",
+        "output.reflections=filtered.refl",
+        "scale_and_filter_results=analysis_results.json",
         "unmerged_mtz=unmerged.mtz",
-        "output.analysis_results=analysis_results_2.json",
-        "plots.image_ranges=reduced_image_ranges_2.png",
         "optimise_errors=False",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
@@ -385,14 +381,11 @@ def test_scale_and_filter(dials_data, tmpdir):
         command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
-    assert tmpdir.join("scaled.refl").check()
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("filtered.refl").check()
     assert tmpdir.join("scaled.expt").check()
-    assert tmpdir.join("merging_stats_2.png").check()
-    assert tmpdir.join("cc_half_histograms_2.png").check()
-    assert tmpdir.join("analysis_results_2.json").check()
-    with open(tmpdir.join("analysis_results_2.json").strpath) as f:
+    assert tmpdir.join("analysis_results.json").check()
+    with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
@@ -550,8 +543,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     command = ["dials.cosym", refl_2, expt_2, "scaled.refl", "scaled.expt"]
 
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.expt").check()
     assert tmpdir.join("symmetrized.refl").check()
 
@@ -571,8 +563,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
         "output.experiments=symmetrized.expt",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.expt").check()
     assert tmpdir.join("symmetrized.refl").check()
 
@@ -609,5 +600,4 @@ def test_scale_cross_validate(
         extra_args += ["parameter_values=%s" % parameter_values]
     command = ["dials.scale", refl, expt] + extra_args
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr

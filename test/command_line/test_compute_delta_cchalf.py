@@ -1,10 +1,12 @@
 """Tests for dials.compute_delta_cchalf."""
 from __future__ import absolute_import, division, print_function
+
 import copy
 import os
+
 import procrunner
-from iotbx.reflection_file_reader import any_reflection_file
 from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
+from iotbx.reflection_file_reader import any_reflection_file
 
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
@@ -23,8 +25,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
         "output.experiments=filtered.expt",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("filtered.expt").check()
     assert tmpdir.join("filtered.refl").check()
 

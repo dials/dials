@@ -249,15 +249,15 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
             "multiplicities": {
                 "data": [
                     {
-                        "x": multiplicities_acentric.keys(),
-                        "y": multiplicities_acentric.values(),
+                        "x": list(multiplicities_acentric.keys()),
+                        "y": list(multiplicities_acentric.values()),
                         "type": "bar",
                         "name": "Acentric",
                         "opacity": 0.75,
                     },
                     {
-                        "x": multiplicities_centric.keys(),
-                        "y": multiplicities_centric.values(),
+                        "x": list(multiplicities_centric.keys()),
+                        "y": list(multiplicities_centric.values()),
                         "type": "bar",
                         "name": "Centric",
                         "opacity": 0.75,
@@ -1053,7 +1053,7 @@ https://doi.org/10.1107/S0907444905036693
             a = 0.5
 
         y = flex.sorted(delta)
-        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+        x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
 
         H, xedges, yedges = np.histogram2d(
             np.array(x), y.as_numpy_array(), bins=(200, 200)

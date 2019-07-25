@@ -41,6 +41,6 @@ def test_multi_panel_parameterisations(
 
     # Construct refiner
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments, verbosity=0
+        params, reflections, experiments
     )
     assert refiner.experiment_type == "stills"

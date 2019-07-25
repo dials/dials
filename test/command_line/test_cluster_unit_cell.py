@@ -22,7 +22,7 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
         command=["dials.cluster_unit_cell", "plot.show=False"] + experiments,
         print_stdout=False,
     )
-    assert not result["exitcode"]
+    assert not result.returncode
 
     # print result
     assert os.path.exists("cluster_unit_cell.png")

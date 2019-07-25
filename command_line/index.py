@@ -87,13 +87,7 @@ output {
     .type = path
   log = dials.index.log
     .type = str
-  debug_log = dials.index.debug.log
-    .type = str
 }
-
-verbosity = 1
-  .type = int(value_min=0)
-  .help = "The verbosity level"
 
 """,
     process_includes=True,
@@ -107,7 +101,6 @@ refinement {
     reflections {
         reflections_per_degree=100
     }
-    verbosity = 1
 }
 """
     )
@@ -232,8 +225,6 @@ class Index(object):
 
 
 def run(phil=working_phil, args=None):
-    import libtbx.load_env
-
     usage = "dials.index [options] models.expt strong.refl"
 
     parser = OptionParser(
@@ -250,7 +241,7 @@ def run(phil=working_phil, args=None):
     from dials.util import log
 
     # Configure the logging
-    log.config(params.verbosity, info=params.output.log, debug=params.output.debug_log)
+    log.config(verbosity=options.verbose, logfile=params.output.log)
 
     from dials.util.version import dials_version
 

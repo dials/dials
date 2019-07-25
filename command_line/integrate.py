@@ -121,7 +121,7 @@ phil_scope = parse(
     .type = ints
     .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -142,7 +142,6 @@ class Script(object):
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # The script usage
         usage = "usage: dials.integrate [options] models.expt"

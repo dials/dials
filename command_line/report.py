@@ -199,7 +199,7 @@ class ScanVaryingCrystalAnalyser(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
@@ -342,7 +342,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if self._relative_to_static_orientation:
@@ -2087,13 +2087,13 @@ class ScalingModelAnalyser(object):
                 if model is not None:
                     if model.id_ == "physical":
                         scaling_model_plots = plot_scaling_models(model.to_dict())
-                        for name, plot in scaling_model_plots.iteritems():
+                        for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})
         return {"scaling_model": d}
 
 
 def merging_stats_results(reflections, experiments):
-    if not "inverse_scale_factor" in reflections:
+    if "inverse_scale_factor" not in reflections:
         return [], [], {}, {}
 
     reflections["intensity"] = reflections["intensity.scale.value"]
@@ -2126,7 +2126,7 @@ def merging_stats_results(reflections, experiments):
 
 
 def intensity_statistics(reflections, experiments):
-    if not "inverse_scale_factor" in reflections:
+    if "inverse_scale_factor" not in reflections:
         return {}, {}, {}
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
@@ -2446,8 +2446,6 @@ class Script(object):
         if len(params.input.reflections) != 1 and not len(params.input.experiments):
             self.parser.print_help()
             exit(0)
-
-        from dials.util.options import flatten_reflections, flatten_experiments
 
         reflections = flatten_reflections(params.input.reflections)
         experiments = flatten_experiments(params.input.experiments)

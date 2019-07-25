@@ -20,8 +20,7 @@ def test1(dials_regression, run_in_tmpdir):
             os.path.join(data_dir, "combined_reflections.pickle"),
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
@@ -67,12 +66,10 @@ def test_multi_process_refinement_gives_same_results_as_single_process_refinemen
         "output.reflections=None",
     ]
     result = procrunner.run(cmd + ["output.experiments=refined_nproc4.expt", "nproc=4"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     result = procrunner.run(cmd + ["output.experiments=refined_nproc1.expt", "nproc=1"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # load results
     nproc1 = ExperimentListFactory.from_json_file(

@@ -44,7 +44,7 @@ import libtbx.phil as phil
 from dials.util.masking import MaskGenerator
 from dials.util.options import OptionParser, flatten_experiments
 from dxtbx.format.image import ImageBool
-from dxtbx.model.experiment_list import ExperimentList, ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentList
 from scitbx.array_family import flex
 
 try:
@@ -74,7 +74,7 @@ phil_scope = phil.parse(
 
     include scope dials.util.masking.phil_scope
 
-    verbosity = 1
+    verbosity = 0
         .type = int(value_min=0)
         .help = "The verbosity level."
     """,
@@ -148,8 +148,7 @@ def generate_mask(
     if params.output.experiments:
         # Save the experiment list
         log.info("Saving experiments to %s", params.output.experiments)
-        dump = ExperimentListDumper(experiments)
-        dump.as_file(params.output.experiments)
+        experiments.as_file(params.output.experiments)
     else:
         experiments = None
 

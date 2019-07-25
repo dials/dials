@@ -9,7 +9,7 @@ have not changed format and so on.
 
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
+from dials.algorithms.refinement.engine import Journal
 import os
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
@@ -82,7 +82,7 @@ def test2(dials_regression, run_in_tmpdir):
     cmd2 = (
         "dials.refine refined.expt "
         + pickle_path
-        + " scan_varying=true output.history=history.pickle"
+        + " scan_varying=true output.history=history.json"
         " reflections_per_degree=50"
         " outlier.algorithm=null close_to_spindle_cutoff=0.05"
         " crystal.orientation.smoother.interval_width_degrees=36.0"
@@ -94,8 +94,7 @@ def test2(dials_regression, run_in_tmpdir):
     easy_run.fully_buffered(command=cmd2).raise_if_errors()
 
     # load and check results
-    with open("history.pickle", "rb") as fh:
-        history = pickle.load(fh)
+    history = Journal.from_json_file("history.json")
 
     expected_rmsds = [
         (0.088488398, 0.114583571, 0.001460382),
@@ -136,15 +135,14 @@ def test3(dials_regression, run_in_tmpdir):
         + experiments_path
         + " "
         + pickle_path
-        + " scan_varying=true max_iterations=5 output.history=history.pickle "
+        + " scan_varying=true max_iterations=5 output.history=history.json "
         "crystal.orientation.smoother.interval_width_degrees=auto "
         "crystal.unit_cell.smoother.interval_width_degrees=auto"
     )
     easy_run.fully_buffered(command=cmd1).raise_if_errors()
 
     # load and check results
-    with open("history.pickle", "rb") as fh:
-        history = pickle.load(fh)
+    history = Journal.from_json_file("history.json")
 
     expected_rmsds = [
         [0.619507829, 0.351326044, 0.006955399],

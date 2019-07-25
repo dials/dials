@@ -469,7 +469,7 @@ def export_mtz(integrated_data, experiment_list, params):
                 "\n".join(
                     "  Wavlength: %.5f, experiment numbers: %s "
                     % (k, ",".join(map(str, v)))
-                    for k, v in wavelengths.iteritems()
+                    for k, v in wavelengths.items()
                 ),
             )
     else:
@@ -534,14 +534,14 @@ def export_mtz(integrated_data, experiment_list, params):
             expids_in_table[id_]
         )  # get strid and use to find loc in list
         experiment = experiment_list[loc]
-        if len(wavelengths.keys()) > 1:
-            for i, (wl, exps) in enumerate(wavelengths.iteritems()):
+        if len(list(wavelengths.keys())) > 1:
+            for i, (wl, exps) in enumerate(wavelengths.items()):
                 if loc in exps:
                     wavelength = wl
                     dataset_id = i + 1
                     break
         else:
-            wavelength = wavelengths.keys()[0]
+            wavelength = list(wavelengths.keys())[0]
             dataset_id = 1
         reflections = integrated_data.select(integrated_data["id"] == id_)
         batch_offset = batch_offsets[loc]
@@ -590,7 +590,7 @@ def export_mtz(integrated_data, experiment_list, params):
     mtz_writer.add_crystal(
         params.mtz.crystal_name, experiment_list[0].crystal.get_unit_cell()
     )  # Note: add unit cell here as may have changed basis since creating mtz.
-    for wavelength in wavelengths.iterkeys():
+    for wavelength in wavelengths:
         mtz_writer.add_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
@@ -623,10 +623,10 @@ def match_wavelengths(experiments):
     wavelengths = OrderedDict()
     for i, x in enumerate(experiments):
         w = x.beam.get_wavelength()
-        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths.keys()]
+        matches = [isclose(w, k, rel_tol=1e-4) for k in wavelengths]
         if not any(matches):
             wavelengths[w] = [i]
         else:
-            match_w = wavelengths.keys()[matches.index(True)]
+            match_w = list(wavelengths.keys())[matches.index(True)]
             wavelengths[match_w].append(i)
     return wavelengths

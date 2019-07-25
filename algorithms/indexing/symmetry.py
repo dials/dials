@@ -4,19 +4,19 @@ import copy
 import logging
 import math
 
-from libtbx import easy_mp
+import scitbx.matrix
 from cctbx import crystal, sgtbx
-from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
 from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx.bravais_types import bravais_lattice
+from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
 from cctbx.sgtbx import lattice_symmetry
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from dials.algorithms.indexing import DialsIndexError
 from dxtbx.model import Crystal
-from rstbx.symmetry.subgroup import MetricSubgroup
+from libtbx import easy_mp
 from rstbx.dps_core.lepage import iotbx_converter
+from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
 from six.moves import StringIO
-import scitbx.matrix
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,6 @@ def dials_crystal_from_orientation(crystal_orientation, space_group):
     AA = scitbx.matrix.col((dm[0], dm[1], dm[2]))
     BB = scitbx.matrix.col((dm[3], dm[4], dm[5]))
     CC = scitbx.matrix.col((dm[6], dm[7], dm[8]))
-
-    from dxtbx.model import Crystal
 
     cryst = Crystal(
         real_space_a=AA, real_space_b=BB, real_space_c=CC, space_group=space_group
@@ -68,13 +66,8 @@ class RefinedSettingsList(list):
 
         return result
 
-    def labelit_printout(self, out=None):
+    def labelit_printout(self):
         from libtbx import table_utils
-
-        if out is None:
-            import sys
-
-            out = sys.stdout
 
         table_data = [
             [
@@ -113,11 +106,11 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        print(
-            table_utils.format(table_data, has_header=1, justify="right", delim=" "),
-            file=out,
+        output = table_utils.format(
+            table_data, has_header=1, justify="right", delim=" "
         )
-        print("* = recommended solution", file=out)
+        output = output + "\n* = recommended solution\n"
+        return output
 
 
 # Mapping of Bravais lattice type to corresponding lowest possible symmetry
@@ -155,8 +148,6 @@ def refined_settings_factory_from_refined_triclinic(
     used_reflections = copy.deepcopy(reflections)
     UC = crystal.get_unit_cell()
 
-    from rstbx.dps_core.lepage import iotbx_converter
-
     Lfat = RefinedSettingsList()
     for item in iotbx_converter(UC, lepage_max_delta):
         Lfat.append(BravaisSetting(item))
@@ -169,9 +160,6 @@ def refined_settings_factory_from_refined_triclinic(
     Nset = len(Lfat)
     for j in range(Nset):
         Lfat[j].setting_number = Nset - j
-
-    from cctbx.crystal_orientation import crystal_orientation
-    from cctbx import sgtbx
 
     for j in range(Nset):
         cb_op = Lfat[j]["cb_op_inp_best"].c().as_double_array()[0:9]
@@ -222,7 +210,9 @@ def identify_likely_solutions(all_solutions):
     for solution in all_solutions:
         solution.recommended = False
         if solution["max_angular_difference"] < 0.5:
-            if solution.min_cc < 0.5 and solution.rmsd > 1.5 * rmsd_p1:
+            if (
+                solution.min_cc is None or solution.min_cc < 0.5
+            ) and solution.rmsd > 1.5 * rmsd_p1:
                 continue
         elif solution.min_cc < 0.7 and solution.rmsd > 2.0 * rmsd_p1:
             continue
