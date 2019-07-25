@@ -37,7 +37,7 @@ def test_find_spots_server_client(dials_data, tmpdir):
 
     finally:
         result = procrunner.run(["dials.find_spots_client", "port=%i" % port, "stop"])
-        assert not result["exitcode"] and not result["stderr"]
+        assert not result.returncode and not result.stderr
         p.terminate()
 
 
@@ -83,7 +83,7 @@ def exercise_client(port, filenames):
     ]
     print(index_client_command)
     result = procrunner.run(index_client_command)
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     out = "<document>%s</document>" % result["stdout"]
 
     xmldoc = minidom.parseString(out)
@@ -107,7 +107,7 @@ def exercise_client(port, filenames):
 
     client_command = client_command + filenames[1:]
     result = procrunner.run(client_command)
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     out = "<document>%s</document>" % result["stdout"]
 
     xmldoc = minidom.parseString(out)

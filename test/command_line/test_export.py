@@ -75,8 +75,7 @@ def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
         environment_override={"DIALS_EXPORT_DO_NOT_CHECK_FORMAT": "True"},
         working_directory=run_in_tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("unmerged.mtz")
 
     # Inspect output
@@ -102,8 +101,7 @@ def test_mmcif(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.cif").check(file=1)
 
     # TODO include similar test for exporting scaled data in mmcif format
@@ -121,8 +119,7 @@ def test_xds_ascii(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("DIALS.HKL").check(file=1)
 
     psi_values = {
@@ -157,8 +154,7 @@ def test_sadabs(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.sad").check(file=1)
 
     direction_cosines = {
@@ -190,8 +186,7 @@ def test_json(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("rlp.json").check(file=1)
 
     from dxtbx.model.experiment_list import ExperimentListFactory
@@ -221,8 +216,7 @@ def test_json_shortened(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.json").check(file=1)
 
     with tmpdir.join("integrated.json").open("rb") as f:

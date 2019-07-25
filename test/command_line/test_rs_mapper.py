@@ -13,7 +13,7 @@ def test_rs_mapper(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("junk.ccp4").check()
 
     # load results

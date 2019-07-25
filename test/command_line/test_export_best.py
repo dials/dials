@@ -12,16 +12,16 @@ def test_export_best(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         ["dials.find_spots", "imported.expt"], working_directory=tmpdir.strpath
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         ["dials.index", "imported.expt", "strong.refl", "space_group=P422"],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         [
             "dials.integrate",
@@ -32,12 +32,12 @@ def test_export_best(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         ["dials.export", "integrated.expt", "integrated.refl", "format=best"],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
 
     assert tmpdir.join("best.dat").check()
     assert tmpdir.join("best.hkl").check()

@@ -24,7 +24,7 @@ def test_cosym(dials_data, tmpdir, space_group):
         command.append(mcp.join("reflections_%d.pickle" % i).strpath)
 
     result = procrunner.run(command, working_directory=tmpdir.strpath)
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
     assert tmpdir.join("symmetrized.expt").check(file=1)
     experiments = load.experiment_list(
@@ -59,7 +59,7 @@ def test_cosym_partial_dataset(dials_data, tmpdir):
     command.append(mcp.join("reflections_10.pickle").strpath)
 
     result = procrunner.run(command, working_directory=tmpdir.strpath)
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
     assert tmpdir.join("symmetrized.expt").check(file=1)
     experiments = load.experiment_list(
@@ -82,7 +82,7 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
 
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     # Sorry exceptions are only raised as text at the system level
-    assert result["stderr"][0:5] == "Sorry"
+    assert result.stderr.startswith(b"Sorry")
 
 
 @pytest.mark.parametrize(

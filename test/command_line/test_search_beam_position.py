@@ -27,7 +27,7 @@ def test_search_i04_weak_data_image_range(run_in_tmpdir, dials_regression):
 
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
     experiments = load.experiment_list(experiments_file, check_format=False)
@@ -69,7 +69,7 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
 
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
     experiments = load.experiment_list(experiments_path1, check_format=False)
@@ -103,7 +103,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     print(args)
     if os.name != "nt":
         result = procrunner.run(args)
-        assert result["stderr"] == "" and result["exitcode"] == 0
+        assert not result.returncode and not result.stderr
     else:
         # Can't run this command on Windows,
         # as it will exceed the maximum Windows command length limits.
@@ -126,14 +126,14 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     ]
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("strong.refl")
 
     # actually run the beam centre search
     args = ["dials.search_beam_position", "imported.expt", "strong.refl"]
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
     # look at the results
@@ -187,7 +187,7 @@ def test_search_single(run_in_tmpdir, dials_regression):
     args = ["dials.search_beam_position", experiments_path, pickle_path]
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
     from dxtbx.serialize import load
@@ -223,7 +223,7 @@ def test_search_small_molecule(dials_data, run_in_tmpdir):
     args = ["dials.search_beam_position", datablock_path, pickle_path]
     print(args)
     result = procrunner.run(args)
-    assert result["stderr"] == "" and result["exitcode"] == 0
+    assert not result.returncode and not result.stderr
     assert os.path.exists("optimised.expt")
 
     from dxtbx.serialize import load

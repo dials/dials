@@ -30,8 +30,7 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(
             "outlier.separate_blocks=False",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # there are plenty of things we could do with the refinement history, but
     # here just check that final RMSDs are low enough

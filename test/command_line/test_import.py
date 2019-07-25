@@ -17,8 +17,8 @@ def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir)
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 1
-    assert "ore than 1 sweep" in result["stderr"]
+    assert result.returncode == 1
+    assert b"ore than 1 sweep" in result.stderr
     assert not tmpdir.join("experiments_multiple_sweeps.expt").check()
 
 
@@ -36,8 +36,7 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
 
     from dxtbx.serialize import load
@@ -62,8 +61,7 @@ def test_with_mask(dials_data, tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_with_mask.expt").check(file=1)
 
     from dxtbx.serialize import load
@@ -120,8 +118,7 @@ def test_override_geometry(dials_data, tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("override_geometry.expt").check(file=1)
 
     from dxtbx.serialize import load
@@ -167,8 +164,7 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("mosflm_beam_centre.expt").check(file=1)
 
     from dxtbx.serialize import load
@@ -188,8 +184,7 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("mosflm_beam_centre2.expt").check(file=1)
     experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre2.expt").strpath)
     imgset = experiments[0].imageset
@@ -213,8 +208,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
             impath,
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("slow_fast_beam_centre.expt")
 
     from dxtbx.serialize import load
@@ -238,8 +232,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         ["dials.import", "output.experiments=reference.expt", impath]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("reference.expt")
 
     ref_exp = load.experiment_list("reference.expt")
@@ -262,7 +255,7 @@ def test_from_image_files(dials_data, tmpdir):
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
+    assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
 
 
@@ -279,7 +272,7 @@ def test_from_template(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
+    assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
 
 
@@ -297,5 +290,5 @@ def test_extrapolate_scan(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
+    assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)

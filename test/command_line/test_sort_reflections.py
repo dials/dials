@@ -13,8 +13,7 @@ def test_sort_intensities(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("sorted1.refl").check(file=1)
 
     from dials.array_family import flex
@@ -34,8 +33,7 @@ def test_reverse_sort_intensities(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("sorted2.refl").check(file=1)
 
     from dials.array_family import flex
@@ -53,8 +51,7 @@ def test_default_sort_on_miller_index(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("sorted3.refl").check(file=1)
 
     from dials.array_family import flex
