@@ -17,12 +17,12 @@ import copy
 import logging
 
 import libtbx
+from dials.algorithms.refinement import DialsRefineRuntimeError
 from libtbx import easy_mp
 from libtbx.phil import parse
 from scitbx import lbfgs
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
-from dials.algorithms.refinement import DialsRefineRuntimeError
 
 logger = logging.getLogger(__name__)
 
@@ -506,11 +506,9 @@ class AdaptLbfgs(Refinery):
 
         # reduce blockwise results
         flist, glist, clist = zip(*task_results)
-        glist = zip(*glist)
-        clist = zip(*clist)
         f = sum(flist)
-        g = [sum(g) for g in glist]
-        c = [sum(c) for c in clist]
+        g = [sum(g) for g in zip(*glist)]
+        c = [sum(c) for c in zip(*clist)]
 
         # restraints terms
         restraints = (
@@ -580,14 +578,11 @@ class AdaptLbfgs(Refinery):
         if self.minimizer.error:
             self.history.reason_for_termination = self.minimizer.error
 
-        return
-
 
 class SimpleLBFGS(AdaptLbfgs):
     """Refinery implementation, using cctbx LBFGS with basic settings"""
 
     def run(self):
-
         return self.run_lbfgs(curvatures=False)
 
 
@@ -595,7 +590,6 @@ class LBFGScurvs(AdaptLbfgs):
     """Refinery implementation using cctbx LBFGS with curvatures"""
 
     def run(self):
-
         return self.run_lbfgs(curvatures=True)
 
     def compute_functional_gradients_diag(self):
@@ -921,7 +915,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         """Setup initial value for mu"""
         a = self.normal_matrix_packed_u()
         self.mu = self.tau * flex.max(a.matrix_packed_u_diagonal())
-        return
 
     def add_constant_to_diagonal(self, mu):
         """Add the constant value mu to the diagonal of the normal matrix"""
