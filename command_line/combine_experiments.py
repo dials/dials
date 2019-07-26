@@ -190,11 +190,7 @@ def find_experiment_in(experiment, all_experiments):
 class ComparisonError(Exception):
     """Exception to indicate problem with tolerance comparisons"""
 
-    def __init__(self, model="unspecified"):
-        super(ComparisonError, self).__init__(
-            "Failed tolerance check on {}".format(model)
-        )
-        self.model = model
+    pass
 
 
 class CombineWithReference(object):
@@ -262,8 +258,9 @@ class CombineWithReference(object):
                         polarization_normal_tolerance=self.tolerance.beam.polarization_normal,
                         polarization_fraction_tolerance=self.tolerance.beam.polarization_fraction,
                     )
-                    print("\n".join(diff(self.ref_beam, experiment.beam)))
-                    raise ComparisonError("Beam")
+                    raise ComparisonError(
+                        "\n".join(diff(self.ref_beam, experiment.beam))
+                    )
             beam = self.ref_beam
         else:
             beam = experiment.beam
@@ -278,8 +275,9 @@ class CombineWithReference(object):
                         slow_axis_tolerance=self.tolerance.detector.slow_axis,
                         origin_tolerance=self.tolerance.detector.origin,
                     )
-                    print("\n".join(diff(self.ref_detector, experiment.detector)))
-                    raise ComparisonError("Detector")
+                    raise ComparisonError(
+                        "\n".join(diff(self.ref_detector, experiment.detector))
+                    )
             detector = self.ref_detector
         else:
             detector = experiment.detector
@@ -292,8 +290,9 @@ class CombineWithReference(object):
                         fixed_rotation_tolerance=self.tolerance.goniometer.fixed_rotation,
                         setting_rotation_tolerance=self.tolerance.goniometer.setting_rotation,
                     )
-                    print("\n".join(diff(self.ref_goniometer, experiment.goniometer)))
-                    raise ComparisonError("Goniometer")
+                    raise ComparisonError(
+                        "\n".join(diff(self.ref_goniometer, experiment.goniometer))
+                    )
             goniometer = self.ref_goniometer
         else:
             goniometer = experiment.goniometer
@@ -537,9 +536,9 @@ class Script(object):
                     # When we failed tolerance checks, give a useful error message
                     (path, index) = find_experiment_in(exp, params.input.experiments)
                     raise Sorry(
-                        "{} didn't match reference within required tolerance for experiment {} in {}\n"
-                        "       Adjust tolerances or set compare_models=False to ignore differences.".format(
-                            e.model, index, path
+                        "Model didn't match reference within required tolerance for experiment {} in {}:"
+                        "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
+                            index, path, str(e)
                         )
                     )
 
