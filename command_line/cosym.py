@@ -163,8 +163,6 @@ class cosym(Subject):
             reindexed_reflections.extend(refl)
         reindexed_reflections.reset_ids()
 
-        if self.params.output.json is not None:
-            self.cosym_analysis.as_json(filename=self.params.output.json)
         logger.info(
             "Saving reindexed experiments to %s", self.params.output.experiments
         )
@@ -348,7 +346,7 @@ def run(args):
     except ValueError as e:
         raise Sorry(e)
 
-    if params.output.html:
+    if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
     cosym_instance.export()
