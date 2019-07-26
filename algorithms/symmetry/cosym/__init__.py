@@ -631,7 +631,7 @@ class SymmetryAnalysis(object):
                     "%.2f" % score["z_cc"],
                     "%.2f" % score["cc"],
                     score["stars"],
-                    "%s" % score["operator"],
+                    str(sgtbx.rt_mx(str(score["operator"])).r().info()),
                 )
             )
         return rows
@@ -663,7 +663,7 @@ class SymmetryAnalysis(object):
                     "% .2f" % score["z_cc_for"],
                     "% .2f" % score["z_cc_against"],
                     "%.1f" % score["max_angular_difference"],
-                    "%s" % (score["cb_op"]),
+                    str(sgtbx.change_of_basis_op(str(score["cb_op"]))),
                 )
             )
         return rows

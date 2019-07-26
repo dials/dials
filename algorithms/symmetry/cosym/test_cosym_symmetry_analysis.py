@@ -140,13 +140,13 @@ Laue group confidence: 0.994"""
     }
     assert d["subgroup_scores"][0] == {
         "confidence": 0.9940687431995551,
-        "z_cc_for": " 10.00",
+        "z_cc_for": 9.999725360190128,
         "stars": "***",
         "patterson_group": "-R 3",
-        "max_angular_difference": "0.0",
+        "max_angular_difference": 0.0,
         "likelihood": 0.995493024305035,
         "cb_op": "-1/3*x+2/3*y-1/3*z,-2/3*x+1/3*y+1/3*z,1/3*x+1/3*y+1/3*z",
-        "z_cc_against": " 1.96",
+        "z_cc_against": 1.9620621986200772,
         "unit_cell": (
             98.32999999999998,
             98.32999999999998,
@@ -155,5 +155,5 @@ Laue group confidence: 0.994"""
             90.0,
             119.99999999999999,
         ),
-        "z_cc_net": " 8.04",
+        "z_cc_net": 8.037663161570052,
     }

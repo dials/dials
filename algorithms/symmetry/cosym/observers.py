@@ -117,14 +117,15 @@ class SymmetryAnalysisObserver(Observer):
 
     def make_tables(self):
         """Generate symmetry analysis tables."""
-        d = {
-            "symmetry_analysis": {
-                "sym_ops_table": SymmetryAnalysis.sym_ops_table(self.data),
-                "subgroups_table": SymmetryAnalysis.subgroups_table(self.data),
-                "summary_table": SymmetryAnalysis.summary_table(self.data),
-            }
-        }
-
+        d = {"symmetry_analysis": {}}
+        if self.data:
+            d["symmetry_analysis"].update(
+                {
+                    "sym_ops_table": SymmetryAnalysis.sym_ops_table(self.data),
+                    "subgroups_table": SymmetryAnalysis.subgroups_table(self.data),
+                    "summary_table": SymmetryAnalysis.summary_table(self.data),
+                }
+            )
         return d
 
     def get_data(self):

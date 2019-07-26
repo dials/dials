@@ -28,8 +28,22 @@ def test_SymmetryAnalysisObserver():
                     "cb_op": "x,y,z",
                     "likelihood": 0.9,
                     "confidence": 0.9,
+                    "stars": "*",
+                    "z_cc_net": 1,
+                    "z_cc_for": 2,
+                    "z_cc_against": 3,
+                    "max_angular_difference": 0.2,
                 }
-            ]
+            ],
+            "sym_op_scores": [
+                {
+                    "cc": 0.99,
+                    "operator": "x,y,z",
+                    "likelihood": 0.99,
+                    "stars": "**",
+                    "z_cc": 10,
+                }
+            ],
         }
     )
 
