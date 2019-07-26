@@ -81,6 +81,7 @@ class ScalerBase(Subject):
         self._basis_function = basis_function()
         self._final_rmsds = []
         self._removed_datasets = []
+        self.error_model = None
 
     @property
     def removed_datasets(self):
@@ -195,9 +196,7 @@ class ScalerBase(Subject):
             logger.info("\n" + "=" * 80 + "\n")
 
     @Subject.notify_event(event="performed_error_analysis")
-    def perform_error_optimisation(
-        self, update_Ih=True, apply_to_reflection_table=False
-    ):
+    def perform_error_optimisation(self, update_Ih=True):
         """Perform an optimisation of the sigma values."""
         Ih_table = self.global_Ih_table
         Ih_table.reset_error_model()
@@ -223,11 +222,7 @@ class ScalerBase(Subject):
             error_model = refinery.return_error_model()
             logger.info(error_model)
             error_model.minimisation_summary()
-            self.update_error_model(
-                error_model,
-                update_Ih=update_Ih,
-                apply_to_reflection_table=apply_to_reflection_table,
-            )
+            self.update_error_model(error_model, update_Ih=update_Ih)
         return error_model
 
     def clear_memory_from_derivs(self, block_id):
@@ -478,17 +473,11 @@ class SingleScaler(ScalerBase):
                 self.reflection_table["id"][0],
             )
 
-    def update_error_model(
-        self, error_model, update_Ih=True, apply_to_reflection_table=False
-    ):
+    def update_error_model(self, error_model, update_Ih=True):
         """Apply a correction to try to improve the error estimate."""
+        self.error_model = error_model
         if update_Ih:
             self.global_Ih_table.update_error_model(error_model)
-        if apply_to_reflection_table:
-            new_vars = error_model.update_variances(
-                self._reflection_table["variance"], self._reflection_table["intensity"]
-            )
-            self._reflection_table["variance"] = new_vars
         self.experiment.scaling_model.set_error_model(error_model)
 
     def adjust_variances(self, caller=None):
@@ -582,6 +571,18 @@ class SingleScaler(ScalerBase):
             free_set_percentage=free_set_percentage,
             free_set_offset=self.params.scaling_options.free_set_offset,
         )
+        if self.error_model:
+            variance = self.reflection_table["variance"].select(
+                self.suitable_refl_for_scaling_sel
+            )
+            intensity = self.reflection_table["intensity"].select(
+                self.suitable_refl_for_scaling_sel
+            )
+            new_vars = self.error_model.update_variances(variance, intensity)
+            print(self._Ih_table.blocked_data_list[0])
+            print(self._Ih_table.blocked_data_list[0].Ih_table.size())
+            print(set(self._Ih_table.blocked_data_list[0].Ih_table["dataset_id"]))
+            self._Ih_table.update_data_in_blocks(new_vars, 0, column="variance")
 
     def _configure_model_and_datastructures(self):
         """
@@ -772,19 +773,11 @@ class MultiScalerBase(ScalerBase):
       preserve_exception_message=True)
     scales_list, derivs_list = zip(*task_results)"""
 
-    def update_error_model(
-        self, error_model, update_Ih=True, apply_to_reflection_table=False
-    ):
+    def update_error_model(self, error_model, update_Ih=True):
         """Update the error model in Ih table."""
+        self.error_model = error_model
         if update_Ih:
             self.global_Ih_table.update_error_model(error_model)
-        if apply_to_reflection_table:
-            for scaler in self.active_scalers:
-                new_vars = error_model.update_variances(
-                    scaler.reflection_table["variance"],
-                    scaler.reflection_table["intensity"],
-                )
-                scaler.reflection_table["variance"] = new_vars
         for scaler in self.active_scalers:
             scaler.experiment.scaling_model.set_error_model(error_model)
 
@@ -837,6 +830,16 @@ class MultiScalerBase(ScalerBase):
             free_set_percentage=free_set_percentage,
             free_set_offset=self.params.scaling_options.free_set_offset,
         )
+        if self.error_model:
+            for i, scaler in enumerate(self.active_scalers):
+                variance = scaler.reflection_table["variance"].select(
+                    scaler.suitable_refl_for_scaling_sel
+                )
+                intensity = scaler.reflection_table["intensity"].select(
+                    scaler.suitable_refl_for_scaling_sel
+                )
+                new_vars = self.error_model.update_variances(variance, intensity)
+                self._Ih_table.update_data_in_blocks(new_vars, i, column="variance")
 
     def make_ready_for_scaling(self, outlier=True):
         """

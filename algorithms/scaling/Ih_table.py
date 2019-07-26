@@ -350,6 +350,16 @@ class IhTable(object):
             for sel in free_block.block_selections:
                 free_indices.extend(sel)
             self.Ih_table_blocks[j] = block.select_on_groups(~groups_for_free_set)
+            # Now need to update dataset_info dict.
+            removed_from_each_dataset = [
+                (free_block.Ih_table["dataset_id"] == i).count(True)
+                for i in range(0, block.n_datasets)
+            ]
+            n_removed = 0
+            for i in range(0, self.Ih_table_blocks[j].n_datasets):
+                self.Ih_table_blocks[j].dataset_info[i]["start_index"] -= n_removed
+                n_removed += removed_from_each_dataset[i]
+                self.Ih_table_blocks[j].dataset_info[i]["end_index"] -= n_removed
         self.blocked_selection_list = [
             block.block_selections for block in self.Ih_table_blocks
         ]
@@ -497,12 +507,14 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         newtable.block_selections = []
         offset = 0
         for i in range(newtable.n_datasets):
+            newtable.dataset_info[i] = {"start_index": offset}
             block_sel_i = self.block_selections[i]
             n_in_dataset_i = len(block_sel_i)
             newtable.block_selections.append(
                 block_sel_i.select(sel[offset : offset + n_in_dataset_i])
             )
             offset += n_in_dataset_i
+            newtable.dataset_info[i]["end_index"] = offset
         return newtable
 
     def select_on_groups(self, sel):
