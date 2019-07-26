@@ -42,7 +42,6 @@ from dials.util.exclude_images import (
 from dials.algorithms.scaling.algorithm import (
     targeted_scaling_algorithm,
     scaling_algorithm,
-    scaling_cycle,
 )
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
@@ -224,7 +223,11 @@ class Script(Subject):
     @Subject.notify_event(event="run_script")
     def run_scaling_cycle(self):
         """Do a round of scaling for scaling and filtering."""
-        self.scaler = scaling_cycle(self.scaler)
+        # Turn off the full matrix round, all else is the same.
+        initial_full_matrix = self.params.scaling_options.full_matrix
+        self.scaler.params.scaling_options.full_matrix = False
+        self.scaler = scaling_algorithm(self.scaler)
+        self.scaler.params.scaling_options.full_matrix = initial_full_matrix
         self.remove_unwanted_datasets()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False

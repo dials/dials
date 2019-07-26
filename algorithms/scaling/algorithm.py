@@ -37,42 +37,6 @@ def do_error_analysis(scaler, reselect=True):
         scaler.make_ready_for_scaling()
 
 
-def scaling_cycle(scaler):
-    """Do a cycle of scaling, skipping the last full matrix and error model
-    optimisation round."""
-    scaler.perform_scaling()
-
-    if (
-        scaler.params.reflection_selection.intensity_choice == "combine"
-        or scaler.params.scaling_options.outlier_rejection
-    ):
-
-        expand_and_do_outlier_rejection(scaler)
-
-        do_intensity_combination(scaler, reselect=True)
-
-        scaler.perform_scaling()
-
-    if (
-        scaler.params.weighting.optimise_errors
-        or scaler.params.scaling_options.outlier_rejection
-    ):
-
-        expand_and_do_outlier_rejection(scaler)
-
-        do_error_analysis(scaler, reselect=True)
-
-        scaler.perform_scaling()
-
-    scaler.clear_Ih_table()
-    expand_and_do_outlier_rejection(scaler)
-    do_error_analysis(scaler, reselect=False)
-    scaler.adjust_variances()
-    scaler.set_outliers()
-    scaler.clean_reflection_tables()
-    return scaler
-
-
 def scaling_algorithm(scaler):
     """Main algorithm for scaling."""
     scaler.perform_scaling()
