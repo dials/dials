@@ -32,6 +32,12 @@ control_phil_str = """
     .type = int(value_min=0)
     .help = "The verbosity level"
 
+  input {
+    file_list = None
+      .type = path
+      .help = Path to a list of images
+  }
+
   dispatch {
     pre_import = False
       .type = bool
@@ -290,6 +296,11 @@ class Script(object):
         params, options, all_paths = self.parser.parse_args(
             show_diff_phil=False, return_unhandled=True, quick_parse=True
         )
+
+        if not all_paths and params.input.file_list is not None:
+            all_paths.extend(
+                [path.strip() for path in open(params.input.file_list).readlines()]
+            )
 
         # Check we have some filenames
         if not all_paths:
