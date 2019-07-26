@@ -533,13 +533,7 @@ class CosymAnalysis(symmetry_base, Subject):
         }
 
         if self._symmetry_analysis is not None:
-            d["sym_op_scores"] = {
-                str(sym_op): score.as_dict()
-                for sym_op, score in self._symmetry_analysis.sym_op_scores.items()
-            }
-            d["subgroup_scores"] = [
-                score.as_dict() for score in self._symmetry_analysis.subgroup_scores
-            ]
+            d.update(self._symmetry_analysis.as_dict())
         return d
 
     def as_json(self, filename=None, indent=2):
@@ -626,22 +620,24 @@ class SymmetryAnalysis(object):
 
         self.best_solution = self.subgroup_scores[0]
 
-    def sym_ops_table(self):
+    @staticmethod
+    def sym_ops_table(d):
         header = ("likelihood", "Z-CC", "CC", "", "Operator")
         rows = [header]
-        for score in self.sym_op_scores.values():
+        for score in d["sym_op_scores"]:
             rows.append(
                 (
-                    "%.3f" % score.likelihood,
-                    "%.2f" % score.z_cc,
-                    "%.2f" % score.cc,
-                    score.stars,
-                    "%s" % score.sym_op.r().info(),
+                    "%.3f" % score["likelihood"],
+                    "%.2f" % score["z_cc"],
+                    "%.2f" % score["cc"],
+                    score["stars"],
+                    "%s" % score["operator"],
                 )
             )
         return rows
 
-    def subgroups_table(self):
+    @staticmethod
+    def subgroups_table(d):
         header = (
             "Patterson group",
             "",
@@ -653,20 +649,45 @@ class SymmetryAnalysis(object):
             "Reindex operator",
         )
         rows = [header]
-        for score in self.subgroup_scores:
+        for score in d["subgroup_scores"]:
             rows.append(
                 (
-                    "%s" % score.subgroup["best_subsym"].space_group_info(),
-                    score.stars,
-                    "%.3f" % score.likelihood,
-                    "% .2f" % score.z_cc_net,
-                    "% .2f" % score.z_cc_for,
-                    "% .2f" % score.z_cc_against,
-                    "%.1f" % score.subgroup["max_angular_difference"],
-                    "%s" % (score.subgroup["cb_op_inp_best"] * self.cb_op_inp_min),
+                    str(
+                        sgtbx.space_group(
+                            hall_symbol=str(score["patterson_group"])
+                        ).info()
+                    ),
+                    score["stars"],
+                    "%.3f" % score["likelihood"],
+                    "% .2f" % score["z_cc_net"],
+                    "% .2f" % score["z_cc_for"],
+                    "% .2f" % score["z_cc_against"],
+                    "%.1f" % score["max_angular_difference"],
+                    "%s" % (score["cb_op"]),
                 )
             )
         return rows
+
+    @staticmethod
+    def summary_table(d):
+        best_subgroup = d["subgroup_scores"][0]
+        return (
+            (
+                "Best solution",
+                str(
+                    sgtbx.space_group(
+                        hall_symbol=str(best_subgroup["patterson_group"])
+                    ).info()
+                ),
+            ),
+            (
+                "Unit cell",
+                "%.3f %.3f %.3f %.1f %.1f %.1f" % tuple(best_subgroup["unit_cell"]),
+            ),
+            ("Reindex operator", best_subgroup["cb_op"]),
+            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
+            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
+        )
 
     def __str__(self):
         """Return a string representation of the results.
@@ -677,13 +698,14 @@ class SymmetryAnalysis(object):
         """
         output = []
         output.append("Scoring individual symmetry elements")
+        d = self.as_dict()
         output.append(
-            table_utils.format(self.sym_ops_table(), has_header=True, delim="  ")
+            table_utils.format(self.sym_ops_table(d), has_header=True, delim="  ")
         )
 
         output.append("Scoring all possible sub-groups")
         output.append(
-            table_utils.format(self.subgroups_table(), has_header=True, delim="  ")
+            table_utils.format(self.subgroups_table(d), has_header=True, delim="  ")
         )
 
         output.append(
@@ -911,12 +933,10 @@ class ScoreSubGroup(object):
             "unit_cell": self.subgroup["best_subsym"].unit_cell().parameters(),
             "likelihood": self.likelihood,
             "confidence": self.confidence,
-            "z_cc_net": "% .2f" % self.z_cc_net,
-            "z_cc_for": "% .2f" % self.z_cc_for,
-            "z_cc_against": "% .2f" % self.z_cc_against,
-            # "cc_for": "% .2f" % self.cc_for.coefficient(),
-            # "cc_against": "% .2f" % self.cc_against.coefficient(),
-            "max_angular_difference": "%.1f" % self.subgroup["max_angular_difference"],
+            "z_cc_net": self.z_cc_net,
+            "z_cc_for": self.z_cc_for,
+            "z_cc_against": self.z_cc_against,
+            "max_angular_difference": self.subgroup["max_angular_difference"],
             "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
             "stars": self.stars,
         }

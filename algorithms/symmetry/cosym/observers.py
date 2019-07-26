@@ -87,26 +87,10 @@ class SymmetryAnalysisObserver(Observer):
     def update(self, cosym):
         if cosym._symmetry_analysis is None:
             return
-        self.data["sym_ops_table"] = cosym._symmetry_analysis.sym_ops_table()
-        self.data["subgroups_table"] = cosym._symmetry_analysis.subgroups_table()
         d = cosym._symmetry_analysis.as_dict()
-        from cctbx import sgtbx
-
-        best_subgroup = d["subgroup_scores"][0]
-        self.data["summary_table"] = (
-            (
-                "Best solution",
-                str(
-                    sgtbx.space_group(
-                        hall_symbol=best_subgroup["patterson_group"]
-                    ).info()
-                ),
-            ),
-            ("Unit cell", "%.3f %.3f %.3f %.1f %.1f %.1f" % best_subgroup["unit_cell"]),
-            ("Reindex operator", best_subgroup["cb_op"]),
-            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
-            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
-        )
+        self.data["sym_ops_table"] = cosym._symmetry_analysis.sym_ops_table(d)
+        self.data["subgroups_table"] = cosym._symmetry_analysis.subgroups_table(d)
+        self.data["summary_table"] = cosym._symmetry_analysis.summary_table(d)
 
     def make_tables(self):
         """Generate symmetry analysis tables."""
