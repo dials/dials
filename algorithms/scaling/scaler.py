@@ -579,9 +579,6 @@ class SingleScaler(ScalerBase):
                 self.suitable_refl_for_scaling_sel
             )
             new_vars = self.error_model.update_variances(variance, intensity)
-            print(self._Ih_table.blocked_data_list[0])
-            print(self._Ih_table.blocked_data_list[0].Ih_table.size())
-            print(set(self._Ih_table.blocked_data_list[0].Ih_table["dataset_id"]))
             self._Ih_table.update_data_in_blocks(new_vars, 0, column="variance")
 
     def _configure_model_and_datastructures(self):
