@@ -4,6 +4,7 @@ import glob
 import os
 import pytest
 
+import procrunner
 from libtbx import easy_run
 from scitbx import matrix
 from cctbx import uctbx
@@ -723,19 +724,24 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
         assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
-def test_refinement_failure_on_max_lattices_a15(dials_regression, run_in_tmpdir):
+def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     """Problem: Sometimes there is enough data to index, but not enough to
     refine. If this happens in the (N>1)th crystal of max_lattices, then
     all existing solutions are also dropped."""
     data_dir = os.path.join(dials_regression, "indexing_test_data", "lattice_failures")
 
-    cmd = [
-        "dials.index",
-        os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
-        os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
-        "max_lattices=3",
-    ]
-    easy_run.fully_buffered(command=" ".join(cmd)).raise_if_errors()
-    assert os.path.isfile("indexed.refl") and os.path.isfile("indexed.expt")
-    experiments_list = load.experiment_list("indexed.expt", check_format=False)
+    result = procrunner.run(
+        [
+            "dials.index",
+            os.path.join(data_dir, "lpe4-2-a15_strong.pickle"),
+            os.path.join(data_dir, "lpe4-2-a15_datablock.json"),
+            "max_lattices=3",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("indexed.refl").check() and tmpdir.join("indexed.expt").check()
+    experiments_list = load.experiment_list(
+        tmpdir.join("indexed.expt").strpath, check_format=False
+    )
     assert len(experiments_list) == 2
