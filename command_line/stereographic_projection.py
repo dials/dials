@@ -1,9 +1,10 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 from __future__ import absolute_import, division, print_function
 
+import json
 import math
 import os
+import sys
 
 import iotbx.phil
 from cctbx import crystal, miller
@@ -156,14 +157,11 @@ def gcd_list(l):
 
 
 def run(args):
-    import libtbx.load_env
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
 
     # The script usage
-    usage = (
-        "usage: %s [options] [param.phil] experiments.json" % libtbx.env.dispatcher_name
-    )
+    usage = "dials.stereographic_projection [options] [param.phil] experiments.json"
 
     parser = OptionParser(
         usage=usage,
@@ -181,9 +179,7 @@ def run(args):
         return
 
     if not params.hkl and params.hkl_limit is None:
-        from dials.util import Sorry
-
-        raise Sorry("Please provide hkl or hkl_limit parameters.")
+        sys.exit("Please provide hkl or hkl_limit parameters.")
 
     if params.hkl is not None and len(params.hkl):
         miller_indices = flex.miller_index(params.hkl)
@@ -225,7 +221,6 @@ def run(args):
     miller_indices = flex.miller_index(list(set(miller_indices)))
 
     ref_crystal = crystals[0]
-    A = matrix.sqr(ref_crystal.get_A())
     U = matrix.sqr(ref_crystal.get_U())
     B = matrix.sqr(ref_crystal.get_B())
     R = matrix.identity(3)
@@ -291,7 +286,7 @@ def run(args):
             projections_all.append(projections)
 
     if params.save_coordinates:
-        with open("projections.txt", "wb") as f:
+        with open("projections.txt", "w") as f:
             f.write("crystal h k l x y" + os.linesep)
             for i_cryst, projections in enumerate(projections_all):
                 for hkl, proj in zip(miller_indices, projections):
@@ -374,7 +369,7 @@ def plot_projections(
             x.extend(x_)
             y.extend(y_)
         hb = pyplot.hexbin(x, y, gridsize=gridsize, linewidths=0.2)
-        cb = pyplot.colorbar(hb)
+        pyplot.colorbar(hb)
     else:
         for i, projections in enumerate(projections_all):
             x, y = projections.parts()
@@ -475,16 +470,13 @@ def projections_as_dict(projections):
 
 def projections_as_json(projections, filename=None):
     d = projections_as_dict(projections)
-    import json
 
     json_str = json.dumps(d)
     if filename is not None:
-        with open(filename, "wb") as f:
+        with open(filename, "w") as f:
             f.write(json_str)
     return json_str
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
