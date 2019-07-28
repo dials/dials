@@ -62,7 +62,9 @@ def test_cspad_cbf_in_memory(dials_regression, run_in_tmpdir):
     )  # index/integrate the image
 
     result = "idx-20130301060858801_integrated.refl"
-    n_refls = list(range(140, 152))  # large ranges to handle platform-specific differences
+    n_refls = list(
+        range(140, 152)
+    )  # large ranges to handle platform-specific differences
     table = flex.reflection_table.from_file(result)
     assert len(table) in n_refls, len(table)
     assert "id" in table

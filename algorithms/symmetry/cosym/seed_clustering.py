@@ -251,7 +251,9 @@ class seed_clustering(object):
             labels = hierarchy.fcluster(linkage_matrix, threshold, criterion="distance")
             cluster_labels = flex.double(cluster_labels.size(), -1)
             for i in range(len(labels)):
-                cluster_labels.set_selected(cluster_labels_input == i, float(labels[i] - 1))
+                cluster_labels.set_selected(
+                    cluster_labels_input == i, float(labels[i] - 1)
+                )
 
         return cluster_labels, threshold
 
