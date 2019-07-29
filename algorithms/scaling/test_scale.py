@@ -346,8 +346,8 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
-    assert result.overall.cc_one_half > 0.96  # 17/05/19 was 0.9722
-    assert result.overall.n_obs > 51540  # 17/05/19 was 51560
+    assert result.overall.cc_one_half > 0.95  # 17/05/19 was 0.9722, 29/07/19 was 0.9557
+    assert result.overall.n_obs > 51400  # 17/05/19 was 51560, 29/07/19 was 51493
     # for this dataset, expect to have two regions excluded - last 5 images of
     # datasets _4 & _5
     with open(tmpdir.join("analysis_results.json").strpath) as f:

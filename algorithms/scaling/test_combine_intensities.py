@@ -104,6 +104,7 @@ def generate_simple_table(prf=True):
     )
     reflections.set_flags(flex.bool(25, False), reflections.flags.outlier_in_scaling)
     reflections.set_flags(flex.bool(25, True), reflections.flags.integrated)
+    reflections["lp"] = flex.double(25, 0.5)
     if prf:
         reflections["intensity.prf.value"] = flex.double(
             [
@@ -135,7 +136,7 @@ def generate_simple_table(prf=True):
             ]
         )
         reflections["intensity.prf.variance"] = flex.double(
-            [10000] * 5 + [5000] * 5 + [100] * 5 + [30] * 5 + [10] * 5
+            [1000] * 5 + [500] * 5 + [10] * 5 + [3] * 5 + [1] * 5
         )
     reflections = calculate_prescaling_correction(reflections)
     return reflections
@@ -154,17 +155,68 @@ def test_combine_intensities(test_exp_P1):
 
     combiner = SingleDatasetIntensityCombiner(scaler)
     Imid = combiner.max_key
-    intensity, _ = combiner.calculate_suitable_combined_intensities()
+    intensity, variance = combiner.calculate_suitable_combined_intensities()
 
     # Imid being 1200.0 should be best for this contrived example
     assert Imid == 1200.0
 
     # Due to nature of crossover, just require 2% tolerance for this example
     assert list(intensity[0:5]) == pytest.approx(
-        list(reflections["intensity.sum.value"][0:5]), rel=2e-2
+        list(
+            reflections["intensity.sum.value"][0:5]
+            * reflections["prescaling_correction"][0:5]
+        ),
+        rel=2e-2,
     )
     assert list(intensity[20:25]) == pytest.approx(
-        list(reflections["intensity.prf.value"][20:25]), rel=2e-2
+        list(
+            reflections["intensity.prf.value"][20:25]
+            * reflections["prescaling_correction"][20:25]
+        ),
+        rel=2e-2,
+    )
+
+    assert list(variance[0:5]) == pytest.approx(
+        list(
+            reflections["intensity.sum.variance"][0:5]
+            * reflections["prescaling_correction"][0:5] ** 2
+        ),
+        rel=2e-2,
+    )
+    assert list(variance[20:25]) == pytest.approx(
+        list(
+            reflections["intensity.prf.variance"][20:25]
+            * reflections["prescaling_correction"][20:25] ** 2
+        ),
+        rel=2e-2,
+    )
+
+    combiner.max_key = 0  # prf
+    intensity, variance = combiner.calculate_suitable_combined_intensities()
+    assert list(intensity) == pytest.approx(
+        list(reflections["intensity.prf.value"] * reflections["prescaling_correction"]),
+        rel=2e-2,
+    )
+    assert list(variance) == pytest.approx(
+        list(
+            reflections["intensity.prf.variance"]
+            * reflections["prescaling_correction"] ** 2
+        ),
+        rel=2e-2,
+    )
+
+    combiner.max_key = 1  # sum
+    intensity, variance = combiner.calculate_suitable_combined_intensities()
+    assert list(intensity) == pytest.approx(
+        list(reflections["intensity.sum.value"] * reflections["prescaling_correction"]),
+        rel=2e-2,
+    )
+    assert list(variance) == pytest.approx(
+        list(
+            reflections["intensity.sum.variance"]
+            * reflections["prescaling_correction"] ** 2
+        ),
+        rel=2e-2,
     )
 
 
