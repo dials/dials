@@ -98,7 +98,7 @@ class ScalingModelBase(object):
     @property
     def n_params(self):
         """:obj:`dict`: a dictionary of the model components."""
-        return sum(c.parameters.size() for c in self._components.values())
+        return sum(c.n_params for c in self._components.values())
 
     @abc.abstractproperty
     def consecutive_refinement_order(self):
@@ -155,6 +155,10 @@ class ScalingModelBase(object):
     def record_intensity_combination_Imid(self, Imid):
         """Record the intensity combination Imid value."""
         self._configdict["Imid"] = Imid
+
+    def fix_initial_scale(self):
+        """Apply fix to scaling model, returning 1 if applied a fix."""
+        return 0
 
     def show(self):
         """Print a representation of the scaling model."""
@@ -216,6 +220,15 @@ class PhysicalScalingModel(ScalingModelBase):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["scale", "decay"], ["absorption"]]
 
+    def fix_initial_scale(self):
+        if not any(i in self.components for i in ["scale", "decay"]):
+            return 0
+        if "scale" in self.components:
+            self.components["scale"].fix_parameter(1)
+        if "decay" in self.components:
+            self.components["decay"].fix_parameter(1)
+        return 1
+
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
         if "scale" in self.components:
@@ -228,10 +241,6 @@ class PhysicalScalingModel(ScalingModelBase):
             norm = (
                 reflection_table["xyzobs.px.value"].parts()[2]
                 * self._configdict["d_norm_fac"]
-            )
-            self.components["decay"].parameter_restraints = flex.double(
-                self.components["decay"].parameters.size(),
-                params.parameterisation.decay_restraint,
             )
             self.components["decay"].data = {"x": norm, "d": reflection_table["d"]}
         if "absorption" in self.components:
@@ -296,7 +305,7 @@ class PhysicalScalingModel(ScalingModelBase):
             n_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
                 new_osc_range, one_osc, conf["scale_rot_interval"]
             )
-            n_old_params = len(self.components["scale"].parameters)
+            n_old_params = self.components["scale"].n_params
             conf["scale_rot_interval"] = scale_rot_int
             conf["s_norm_fac"] = s_norm_fac
             offset = calculate_new_offset(
@@ -312,7 +321,7 @@ class PhysicalScalingModel(ScalingModelBase):
             n_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
                 new_osc_range, one_osc, conf["decay_rot_interval"]
             )
-            n_old_params = len(self.components["decay"].parameters)
+            n_old_params = self.components["decay"].n_params
             conf["decay_rot_interval"] = decay_rot_int
             conf["d_norm_fac"] = d_norm_fac
             offset = calculate_new_offset(
@@ -480,8 +489,7 @@ class ArrayScalingModel(ScalingModelBase):
             new_osc_range, one_osc, conf["time_rot_interval"]
         )
         n_old_time_params = int(
-            len(self.components["decay"].parameters)
-            / self.components["decay"].n_x_params
+            self.components["decay"].n_params / self.components["decay"].n_x_params
         )
         offset = calculate_new_offset(
             current_image_range[0],

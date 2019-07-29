@@ -131,11 +131,24 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
         super(SmoothScaleComponent1D, self).__init__(initial_values, parameter_esds)
         self._normalised_values = []
 
+    def fix_parameter(self, index):
+        """Set a single parameter that should not be refined."""
+        self._free_selection = flex.size_t(
+            [i for i in range(0, self._n_params) if i != index]
+        )
+        self._n_free_params = len(self._free_selection)
+        if self._parameter_restraints:
+            self._parameter_restraints = self._parameter_restraints.select(
+                self._free_selection
+            )
+
     def set_new_parameters(self, new_parameters):
         """Set new parameters of a different length i.e. after batch handling"""
         self._parameters = new_parameters
         self._parameter_esds = None
         self._n_params = len(self._parameters)
+        self._n_free_params = len(self._parameters)
+        self._free_selection = []
 
     @property
     def normalised_values(self):
@@ -194,6 +207,11 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
             value = flex.double(1, value)
         else:
             return flex.double([]), sparse.matrix(0, 0)
+        if self._free_selection:
+            new_dv_dp = sparse.matrix(dv_dp.n_rows, self._n_free_params)
+            for i, idx in enumerate(self._free_selection):
+                new_dv_dp[:, i] = dv_dp.col(idx)
+            return value, new_dv_dp
         return value, dv_dp
 
     def calculate_scales(self, block_id=0):
@@ -261,17 +279,6 @@ class SmoothBScaleComponent1D(SmoothScaleComponent1D):
         s = super(SmoothBScaleComponent1D, self).calculate_scales(block_id)
         return flex.exp(s / (2.0 * (self._d_values[block_id] ** 2)))
 
-    def calculate_restraints(self):
-        residual = self.parameter_restraints * (self._parameters * self._parameters)
-        gradient = 2.0 * self.parameter_restraints * self._parameters
-        return residual, gradient
-
-    def calculate_jacobian_restraints(self):
-        jacobian = sparse.matrix(self.n_params, self.n_params)
-        for i in range(self.n_params):
-            jacobian[i, i] = +1.0
-        return self._parameters, jacobian, self.parameter_restraints
-
 
 class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
     """Implementation of a 2D array-based smoothly varying scale factor.
@@ -307,6 +314,7 @@ class SmoothScaleComponent2D(ScaleComponentBase, SmoothMixin):
         self._parameters = new_parameters
         self._parameter_esds = None
         self._n_params = len(self._parameters)
+        self._n_free_params = len(self._parameters)
         self._n_x_params = shape[0]
         self._n_y_params = shape[1]
 
@@ -442,6 +450,7 @@ class SmoothScaleComponent3D(ScaleComponentBase, SmoothMixin):
         self._parameters = new_parameters
         self._parameter_esds = None
         self._n_params = len(self._parameters)
+        self._n_free_params = len(self._parameters)
         self._n_x_params = shape[0]
         self._n_y_params = shape[1]
         self._n_z_params = shape[2]

@@ -49,10 +49,12 @@ class ScaleComponentBase(object):
         self._parameters = initial_values
         self._parameter_esds = parameter_esds
         self._n_params = len(self._parameters)
+        self._n_free_params = len(self._parameters)
         self._var_cov = None
         self._n_refl = []  # store as a list, to allow holding of data in blocks
         self._parameter_restraints = None
         self._data = {}
+        self._free_selection = []  # a list to use to select free params if some fixed
 
     @property
     def data(self):
@@ -75,7 +77,7 @@ class ScaleComponentBase(object):
 
     @parameter_restraints.setter
     def parameter_restraints(self, restraints):
-        assert restraints.size() == self.parameters.size()
+        assert restraints.size() == self.n_free_params
         self._parameter_restraints = restraints
 
     @property
@@ -84,20 +86,36 @@ class ScaleComponentBase(object):
         return self._n_params
 
     @property
+    def n_free_params(self):
+        """Get the number of free parameters of the component (read-only)."""
+        return self._n_free_params
+
+    @property
     def parameters(self):
         """Parameters of the component."""
         return self._parameters
 
+    @property
+    def free_parameters(self):
+        """Parameters of the component."""
+        if self._free_selection:
+            return self._parameters.select(self._free_selection)
+        return self._parameters
+
+    @free_parameters.setter
+    def free_parameters(self, new_parameters):
+        assert len(new_parameters) == self._n_free_params, "%s != %s" % (
+            len(new_parameters),
+            self._n_free_params,
+        )
+        if self._free_selection:
+            self._parameters.set_selected(self._free_selection, new_parameters)
+        else:
+            self._parameters = new_parameters
+
     @parameters.setter
     def parameters(self, new_parameters):
-        assert len(new_parameters) == len(
-            self._parameters
-        ), """
-attempting to set a new set of parameters of different length than previous
-assignment: was %s, attempting %s""" % (
-            len(self._parameters),
-            len(new_parameters),
-        )
+        assert len(new_parameters) == self._n_params
         self._parameters = new_parameters
 
     @property
@@ -107,8 +125,12 @@ assignment: was %s, attempting %s""" % (
 
     @parameter_esds.setter
     def parameter_esds(self, esds):
-        assert len(esds) == len(self._parameters)
-        self._parameter_esds = esds
+        assert len(esds) == len(self.free_parameters)
+        if self._free_selection:
+            self._parameter_esds = flex.double(self.n_params, 0.0)
+            self._parameter_esds.set_selected(self._free_selection, esds)
+        else:
+            self._parameter_esds = esds
 
     def calculate_restraints(self):
         """Calculate residual and gradient restraints for the component."""
@@ -117,6 +139,10 @@ assignment: was %s, attempting %s""" % (
     def calculate_jacobian_restraints(self):
         """Calculate residual and jacobian restraints for the component."""
         return None
+
+    def fix_parameter(self, index):
+        """Fix a single parameter at a given index."""
+        pass
 
     @property
     def var_cov_matrix(self):
@@ -332,7 +358,7 @@ class SHScaleComponent(ScaleComponentBase):
         try:
             assert set(data.keys()) == {"s1_lookup", "s0_lookup"}, set(data.keys())
             self._mode = "memory"
-        except AssertionError as e:
+        except AssertionError:
             assert set(data.keys()) == {"sph_harm_table"}, set(data.keys())
             self._mode = "speed"  # Note: only speedier for small datasets
         self._data = data
@@ -345,8 +371,8 @@ class SHScaleComponent(ScaleComponentBase):
 
     def calculate_jacobian_restraints(self):
         """Calculate residual and jacobian restraints for the component."""
-        jacobian = sparse.matrix(self.n_params, self.n_params)
-        for i in range(self.n_params):
+        jacobian = sparse.matrix(self.n_free_params, self.n_free_params)
+        for i in range(self.n_free_params):
             jacobian[i, i] = 1.0
         return self._parameters, jacobian, self._parameter_restraints
 
@@ -373,8 +399,8 @@ class SHScaleComponent(ScaleComponentBase):
             raise ValueError
 
     def _update_reflection_data_memorymode(self, selection=None, block_selections=None):
-        if len(self.coefficients_list) != self.n_params:
-            self.coefficients_list = self.coefficients_list[0 : self.n_params]
+        if len(self.coefficients_list) != self.n_free_params:
+            self.coefficients_list = self.coefficients_list[0 : self.n_free_params]
             # modify only for this instance, only needs to be done once per instance.
         if selection:
             n0 = self.data["s0_lookup"].select(selection)

@@ -233,6 +233,9 @@ class ScalerBase(Subject):
         """Delete the data from the current Ih_table."""
         self._Ih_table = []
 
+    def fix_initial_scale(self):
+        pass
+
 
 class SingleScaler(ScalerBase):
     """Definition of a scaler for a single dataset."""
@@ -316,6 +319,9 @@ class SingleScaler(ScalerBase):
     def var_cov_matrix(self):
         """The variance covariance matrix for the parameters."""
         return self._var_cov
+
+    def fix_initial_scale(self):
+        self.experiment.scaling_model.fix_initial_scale()
 
     def update_var_cov(self, apm):
         """
@@ -984,6 +990,14 @@ class MultiScaler(MultiScalerBase):
         self._update_model_data()
         logger.info("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n")
         log_memory_usage()
+
+    def fix_initial_scale(self):
+        """Fix a parameter in the scale and decay components for only
+        the first phyiscal model."""
+        for scaler in self.active_scalers:
+            returncode = scaler.experiment.scaling_model.fix_initial_scale()
+            if returncode:
+                return
 
     def combine_intensities(self):
         """Combine reflection intensities, either jointly or separately."""
