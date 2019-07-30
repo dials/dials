@@ -2,7 +2,8 @@ algorithms/indexing/test_assign_indices.py::test_index_reflections
 algorithms/indexing/test_index.py::test_index_4rotation
 algorithms/indexing/test_index.py::test_index_i04_weak_data_fft1d
 algorithms/indexing/test_index.py::test_index_i04_weak_data_fft3d
-algorithms/indexing/test_index.py::test_index_imosflm_tutorial
+algorithms/indexing/test_index.py::test_index_imosflm_tutorial[False]
+algorithms/indexing/test_index.py::test_index_imosflm_tutorial[True]
 algorithms/indexing/test_index.py::test_index_insulin_force_stills[fft1d]
 algorithms/indexing/test_index.py::test_index_insulin_force_stills[fft3d]
 algorithms/indexing/test_index.py::test_index_insulin_force_stills[real_space_grid_search]
@@ -33,8 +34,6 @@ algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 2 2]
 algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 3 2]
 algorithms/indexing/test_non_primitive_basis.py::test_detect[R 3 2 :H]
 algorithms/indexing/test_phi_scan.py::test_run
-algorithms/scaling/test_observers.py::test_ScalingHTMLGenerator
-algorithms/scaling/test_plots.py::test_normal_probability_plot
 algorithms/scaling/test_reflection_selection.py::test_reflection_selection
 algorithms/scaling/test_scale.py::test_incremental_scale_workflow
 algorithms/scaling/test_scale.py::test_multi_scale
@@ -61,9 +60,6 @@ algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P2]
 algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P3]
 algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P6]
 algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[R3:h]
-algorithms/symmetry/cosym/test_observers.py::test_SymmetryAnalysisObserver
-algorithms/symmetry/cosym/test_plots.py::test_plot_coords
-report/test_plots.py::test_AnomalousPlotter
 test/algorithms/background/test_gmodel.py::test_robust
 test/algorithms/background/test_gmodel.py::test_simple
 test/algorithms/background/test_mosflm_outlier_rejector.py::test_run
@@ -83,23 +79,14 @@ test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_referen
 test/algorithms/integration/test_parallel_integrator.py::test_glm_background_calculator
 test/algorithms/integration/test_parallel_integrator.py::test_reflection_manager
 test/algorithms/integration/test_parallel_integrator.py::test_simple_background_calculator
-test/algorithms/refinement/test_angle_derivatives_wrt_vector_elts.py::test_should_succeed_in_95_percent_of_cases
 test/algorithms/refinement/test_centroid_outlier.py::test_centroid_outlier[mcd-colnames1-35]
 test/algorithms/refinement/test_centroid_outlier.py::test_centroid_outlier[mcd-colnames2-35]
 test/algorithms/refinement/test_centroid_outlier.py::test_centroid_outlier[sauter_poon-colnames3-34]
 test/algorithms/refinement/test_centroid_outlier.py::test_centroid_outlier[tukey-colnames0-34]
 test/algorithms/refinement/test_constraints.py::test_constrained_refinement
 test/algorithms/refinement/test_cspad_refinement.py::test1
-test/algorithms/refinement/test_detector_parameters.py::test
 test/algorithms/refinement/test_dials-423.py::test_run
 test/algorithms/refinement/test_multi_experiment_refinement.py::test
-test/algorithms/refinement/test_multi_panel_detector_parameterisation.py::test
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_auto_reduction_parameter_extension_modules_part1
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_auto_reduction_parameter_extension_modules_part2
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_auto_reduction_parameter_extension_modules_part3
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_check_and_fail
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_check_and_fix
-test/algorithms/refinement/test_parameter_auto_reduction.py::test_check_and_remove
 test/algorithms/refinement/test_refine_multi_stills.py::test1
 test/algorithms/refinement/test_refine_multi_stills.py::test_multi_process_refinement_gives_same_results_as_single_process_refinement
 test/algorithms/refinement/test_refine_multi_wedges.py::test
@@ -113,8 +100,6 @@ test/algorithms/refinement/test_restraints_parameterisation.py::test_10_crystals
 test/algorithms/refinement/test_restraints_parameterisation.py::test_group_restraint_with_multiple_crystals_and_a_stills_refiner
 test/algorithms/refinement/test_scan_varying_beam_refinement.py::test_refinement_and_compare_with_known_truth
 test/algorithms/refinement/test_scan_varying_block_calculation.py::test_per_width_and_per_image_are_equivalent
-test/algorithms/refinement/test_scan_varying_prediction_parameters.py::test
-test/algorithms/refinement/test_stills_refinement.py::test
 test/algorithms/refinement/test_sv_multi_panel_refinement.py::test_scan_varying_refinement_of_a_multiple_panel_detector
 test/algorithms/refinement/test_xfel_metrology.py::test_joint_refinement
 test/algorithms/spot_prediction/test_reeke.py::test_regression
@@ -124,10 +109,7 @@ test/algorithms/spot_prediction/test_scan_static_reflection_predictor.py::test_v
 test/algorithms/spot_prediction/test_scan_static_reflection_predictor.py::test_with_old_index_generator
 test/algorithms/spot_prediction/test_scan_static_reflection_predictor.py::test_with_reflection_table
 test/algorithms/spot_prediction/test_scan_varying_reflection_predictor.py::test_scan_varying_results_are_close_to_static_prediction_when_model_is_static
-test/algorithms/statistics/test_fast_mcd.py::test_fast_mcd_large
-test/algorithms/statistics/test_fast_mcd.py::test_fast_mcd_small
 test/array_family/test_reflection_table.py::test_calculate_entering_flags
-test/array_family/test_reflection_table.py::test_del_selected
 test/array_family/test_reflection_table.py::test_experiment_identifiers
 test/array_family/test_reflection_table.py::test_extract_shoeboxes
 test/array_family/test_reflection_table.py::test_map_centroids_to_reciprocal_space
@@ -186,12 +168,7 @@ test/command_line/test_find_spots_server_client.py::test_find_spots_server_clien
 test/command_line/test_generate_distortion_maps.py::test_translate
 test/command_line/test_generate_mask.py::test_generate_mask_function_with_untrusted_rectangle[Four sweeps]
 test/command_line/test_goniometer_calibration.py::test_goniometer_calibration
-test/command_line/test_import.py::test_multiple_sweep_import_fails_without_allow_parameter
-test/command_line/test_import.py::test_multiple_sweep_import_suceeds_with_allow_parameter
-test/command_line/test_import.py::test_override_geometry
-test/command_line/test_import.py::test_slow_fast_beam_centre
 test/command_line/test_import.py::test_with_mask
-test/command_line/test_import_xds.py::test_from_xds_files
 test/command_line/test_import_xds.py::test_import_integrate_hkl
 test/command_line/test_import_xds.py::test_import_spot_xds
 test/command_line/test_import_xds.py::test_import_spot_xds_with_filtering
@@ -204,7 +181,6 @@ test/command_line/test_integrate.py::test_multi_sweep
 test/command_line/test_integrate.py::test_output_rubbish
 test/command_line/test_merge_cbf.py::test_merge_cbf
 test/command_line/test_merge_reflection_lists.py::test
-test/command_line/test_plot_scan_varying_model.py::test
 test/command_line/test_predict.py::test_force_static_prediction
 test/command_line/test_predict.py::test_scan_varying_prediction
 test/command_line/test_predict.py::test_static_prediction
@@ -222,7 +198,6 @@ test/command_line/test_report.py::test_report_integrated_data
 test/command_line/test_report.py::test_report_scaled_data
 test/command_line/test_rl_png.py::test_rl_png_imported_experiments
 test/command_line/test_rl_png.py::test_rl_png_refinement_data
-test/command_line/test_rs_mapper.py::test_rs_mapper
 test/command_line/test_search_beam_position.py::test_index_after_search
 test/command_line/test_search_beam_position.py::test_search_i04_weak_data_image_range
 test/command_line/test_search_beam_position.py::test_search_multiple
@@ -249,7 +224,6 @@ test/command_line/test_spotfinder.py::test_find_spots_with_resolution_filter
 test/command_line/test_spotfinder.py::test_find_spots_with_user_defined_mask
 test/command_line/test_spotfinder.py::test_find_spots_with_user_defined_region
 test/command_line/test_spotfinder.py::test_find_spots_with_xfel_stills
-test/command_line/test_stereographic_projections.py::test_stereographic_projectsion
 test/command_line/test_stills_process.py::test_cspad_cbf_in_memory
 test/command_line/test_stills_process.py::test_sacla_h5[False]
 test/command_line/test_symmetry.py::test_symmetry
@@ -260,7 +234,6 @@ test/test_plot_reflections.py::test_run
 test/test_scan_varying_integration_bug.py::test_1
 test/util/test_ascii_art.py::test_spot_counts_per_image_plot
 test/util/test_masking.py::test_filter_shadowed_reflections
-test/util/test_masking.py::test_shadow_plot
 test/util/test_nexus.py::test_run
 test/util/test_nexus_multi_experiment.py::test_run
 util/reciprocal_lattice/test_render_3d.py::test_Render3d
