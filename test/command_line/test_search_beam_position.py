@@ -83,7 +83,7 @@ def test_search_multiple(run_in_tmpdir, dials_regression):
     assert shift.elems == pytest.approx((0.037, 0.061, 0.0), abs=1e-1)
 
 
-def test_index_after_search(dials_data, run_in_tmpdir):
+def test_index_after_search(dials_data, tmpdir):
     """Integrate the beam centre search with the rest of the toolchain
 
     Do the following:
@@ -102,7 +102,7 @@ def test_index_after_search(dials_data, run_in_tmpdir):
     args = ["dials.import", "mosflm_beam_centre=207,212"] + g
     print(args)
     if os.name != "nt":
-        result = procrunner.run(args)
+        result = procrunner.run(args, working_directory=tmpdir)
         assert not result.returncode and not result.stderr
     else:
         # Can't run this command on Windows,
@@ -111,11 +111,12 @@ def test_index_after_search(dials_data, run_in_tmpdir):
         import mock
         import sys
 
-        with mock.patch.object(sys, "argv", args):
-            import dials.command_line.dials_import
+        with tmpdir.as_cwd():
+            with mock.patch.object(sys, "argv", args):
+                import dials.command_line.dials_import
 
-            dials.command_line.dials_import.Script().run()
-    assert os.path.exists("imported.expt")
+                dials.command_line.dials_import.Script().run()
+    assert tmpdir.join("imported.expt").check()
 
     # spot-finding, just need a subset of the data
     args = [
@@ -125,23 +126,27 @@ def test_index_after_search(dials_data, run_in_tmpdir):
         "scan_range=531,540",
     ]
     print(args)
-    result = procrunner.run(args)
+    result = procrunner.run(args, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert os.path.exists("strong.refl")
+    assert tmpdir.join("strong.refl").check()
 
     # actually run the beam centre search
     args = ["dials.search_beam_position", "imported.expt", "strong.refl"]
     print(args)
-    result = procrunner.run(args)
+    result = procrunner.run(args, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
-    assert os.path.exists("optimised.expt")
+    assert tmpdir.join("optimised.expt").check()
 
     # look at the results
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("imported.expt", check_format=False)
+    experiments = load.experiment_list(
+        tmpdir.join("imported.expt").strpath, check_format=False
+    )
     original_imageset = experiments.imagesets()[0]
-    optimized_experiments = load.experiment_list("optimised.expt", check_format=False)
+    optimized_experiments = load.experiment_list(
+        tmpdir.join("optimised.expt").strpath, check_format=False
+    )
     detector_1 = original_imageset.get_detector()
     detector_2 = optimized_experiments.detectors()[0]
     shift = scitbx.matrix.col(detector_1[0].get_origin()) - scitbx.matrix.col(
@@ -151,16 +156,17 @@ def test_index_after_search(dials_data, run_in_tmpdir):
 
     # check we can actually index the resulting optimized experiments
     from cctbx import uctbx
-    from dials.algorithms.indexing.test_index import RunOneIndexing
+    from dials.algorithms.indexing.test_index import run_indexing
 
     expected_unit_cell = uctbx.unit_cell(
         (57.780, 57.800, 150.017, 89.991, 89.990, 90.007)
     )
     expected_rmsds = (0.06, 0.05, 0.001)
     expected_hall_symbol = " P 1"
-    RunOneIndexing(
-        run_in_tmpdir.join("strong.refl").strpath,
-        run_in_tmpdir.join("optimised.expt").strpath,
+    run_indexing(
+        "strong.refl",
+        "optimised.expt",
+        tmpdir,
         [],
         expected_unit_cell,
         expected_rmsds,

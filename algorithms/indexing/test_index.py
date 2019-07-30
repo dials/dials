@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import glob
 import os
 import pytest
 
 import procrunner
-from libtbx import easy_run
 from scitbx import matrix
 from cctbx import uctbx
 from dxtbx.serialize import load
@@ -28,64 +28,68 @@ def unit_cells_are_similar(
     return True
 
 
-class RunOneIndexing(object):
-    def __init__(
-        self,
-        pickle_path,
-        sweep_path,
-        extra_args,
-        expected_unit_cell,
-        expected_rmsds,
-        expected_hall_symbol,
-        n_expected_lattices=1,
-        relative_length_tolerance=0.005,
-        absolute_angle_tolerance=0.5,
-    ):
+_indexing_result = collections.namedtuple(
+    "indexing", ["indexed_reflections", "experiments", "rmsds"]
+)
 
-        args = ["dials.index", pickle_path, sweep_path] + extra_args
-        command = " ".join(args)
-        print(command)
-        easy_run.fully_buffered(command=command).raise_if_errors()
-        assert os.path.exists("indexed.expt")
-        experiments_list = load.experiment_list("indexed.expt", check_format=False)
-        assert len(experiments_list.crystals()) == n_expected_lattices, (
-            len(experiments_list.crystals()),
-            n_expected_lattices,
+
+def run_indexing(
+    reflections,
+    experiment,
+    working_directory,
+    extra_args,
+    expected_unit_cell,
+    expected_rmsds,
+    expected_hall_symbol,
+    n_expected_lattices=1,
+    relative_length_tolerance=0.005,
+    absolute_angle_tolerance=0.5,
+):
+    commands = ["dials.index"]
+    if isinstance(reflections, list):
+        commands.extend(reflections)
+    else:
+        commands.append(reflections)
+    if isinstance(experiment, list):
+        commands.extend(experiment)
+    else:
+        commands.append(experiment)
+    commands.extend(extra_args)
+
+    result = procrunner.run(commands, working_directory=working_directory)
+    assert not result.returncode and not result.stderr
+
+    out_expts = working_directory.join("indexed.expt")
+    out_refls = working_directory.join("indexed.refl")
+    assert out_expts.check()
+    assert out_refls.check()
+
+    experiments_list = load.experiment_list(out_expts.strpath, check_format=False)
+    assert len(experiments_list.crystals()) == n_expected_lattices
+    indexed_reflections = flex.reflection_table.from_file(out_refls.strpath)
+    rmsds = None
+
+    for i, experiment in enumerate(experiments_list):
+        assert unit_cells_are_similar(
+            experiment.crystal.get_unit_cell(),
+            expected_unit_cell,
+            relative_length_tolerance=relative_length_tolerance,
+            absolute_angle_tolerance=absolute_angle_tolerance,
+        ), (
+            experiment.crystal.get_unit_cell().parameters(),
+            expected_unit_cell.parameters(),
         )
-        assert os.path.exists("indexed.refl")
-
-        self.indexed_reflections = flex.reflection_table.from_file("indexed.refl")
-
-        self.experiments = experiments_list
-        for i in range(len(experiments_list)):
-            experiment = experiments_list[i]
-            assert unit_cells_are_similar(
-                experiment.crystal.get_unit_cell(),
-                expected_unit_cell,
-                relative_length_tolerance=relative_length_tolerance,
-                absolute_angle_tolerance=absolute_angle_tolerance,
-            ), (
-                experiment.crystal.get_unit_cell().parameters(),
-                expected_unit_cell.parameters(),
-            )
-            sg = experiment.crystal.get_space_group()
-            assert sg.type().hall_symbol() == expected_hall_symbol, (
-                sg.type().hall_symbol(),
-                expected_hall_symbol,
-            )
-            reflections = self.indexed_reflections.select(
-                self.indexed_reflections["id"] == i
-            )
-            mi = reflections["miller_index"]
-            assert (mi != (0, 0, 0)).count(False) == 0
-            reflections = reflections.select(mi != (0, 0, 0))
-            self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
-            for actual, expected in zip(self.rmsds, expected_rmsds):
-                assert actual <= expected, "%s %s" % (self.rmsds, expected_rmsds)
-
-    def get_rmsds_obs_pred(self, observations, experiment):
-        reflections = observations.select(
-            observations.get_flags(observations.flags.used_in_refinement)
+        sg = experiment.crystal.get_space_group()
+        assert sg.type().hall_symbol() == expected_hall_symbol, (
+            sg.type().hall_symbol(),
+            expected_hall_symbol,
+        )
+        reflections = indexed_reflections.select(indexed_reflections["id"] == i)
+        mi = reflections["miller_index"]
+        assert (mi != (0, 0, 0)).count(False) == 0
+        reflections = reflections.select(mi != (0, 0, 0))
+        reflections = reflections.select(
+            reflections.get_flags(reflections.flags.used_in_refinement)
         )
         assert len(reflections) > 0
         obs_x, obs_y, obs_z = reflections["xyzobs.mm.value"].parts()
@@ -93,7 +97,11 @@ class RunOneIndexing(object):
         rmsd_x = flex.mean(flex.pow2(obs_x - calc_x)) ** 0.5
         rmsd_y = flex.mean(flex.pow2(obs_y - calc_y)) ** 0.5
         rmsd_z = flex.mean(flex.pow2(obs_z - calc_z)) ** 0.5
-        return (rmsd_x, rmsd_y, rmsd_z)
+        rmsds = (rmsd_x, rmsd_y, rmsd_z)
+        for actual, expected in zip(rmsds, expected_rmsds):
+            assert actual <= expected, "%s %s" % (rmsds, expected_rmsds)
+
+    return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
 
 def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
@@ -111,15 +119,15 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     expected_rmsds = (0.05, 0.04, 0.0005)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
@@ -138,15 +146,15 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
     expected_rmsds = (0.05, 0.04, 0.0004)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
@@ -168,15 +176,15 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
     extra_args.append("known_symmetry.space_group=P4")
     expected_hall_symbol = " P 4"
 
-    with tmpdir.as_cwd():
-        result = RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    result = run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
     a, b, c = map(matrix.col, result.experiments[0].crystal.get_real_space_vectors())
     assert a.length() == pytest.approx(b.length())
@@ -204,15 +212,15 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
     expected_rmsds = (0.061, 0.06, 0.00042)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
@@ -237,18 +245,18 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
     n_expected_lattices = 2
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=n_expected_lattices,
-            relative_length_tolerance=0.02,
-            absolute_angle_tolerance=1,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=n_expected_lattices,
+        relative_length_tolerance=0.02,
+        absolute_angle_tolerance=1,
+    )
 
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
@@ -269,18 +277,18 @@ def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, t
     expected_hall_symbol = " P 1"
     n_expected_lattices = 3
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=n_expected_lattices,
-            relative_length_tolerance=0.01,
-            absolute_angle_tolerance=1,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=n_expected_lattices,
+        relative_length_tolerance=0.01,
+        absolute_angle_tolerance=1,
+    )
 
 
 @pytest.mark.skip(reason="cluster_analysis_search=True not implemented")
@@ -302,18 +310,18 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
     n_expected_lattices = 4
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=n_expected_lattices,
-            relative_length_tolerance=0.01,
-            absolute_angle_tolerance=1,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=n_expected_lattices,
+        relative_length_tolerance=0.01,
+        absolute_angle_tolerance=1,
+    )
 
 
 def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
@@ -337,18 +345,18 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     expected_hall_symbol = " P 2ac 2ab"
     n_expected_lattices = 1
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=n_expected_lattices,
-            relative_length_tolerance=0.02,
-            absolute_angle_tolerance=1,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=n_expected_lattices,
+        relative_length_tolerance=0.02,
+        absolute_angle_tolerance=1,
+    )
 
 
 def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
@@ -368,15 +376,15 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     expected_rmsds = (0.06, 0.05, 0.0005)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
 def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
@@ -403,18 +411,18 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     expected_hall_symbol = " P 2ac 2ab"
     n_expected_lattices = 3
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=n_expected_lattices,
-            relative_length_tolerance=0.02,
-            absolute_angle_tolerance=1,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=n_expected_lattices,
+        relative_length_tolerance=0.02,
+        absolute_angle_tolerance=1,
+    )
 
 
 def test_index_peak_search_clean(dials_regression, tmpdir):
@@ -437,18 +445,19 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
     expected_rmsds = (0.06, 0.07, 0.003)
     expected_hall_symbol = " P 4"
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
+    run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
 
 
-def test_index_imosflm_tutorial(dials_regression, tmpdir):
+@pytest.mark.parametrize("specify_unit_cell", [False, True])
+def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
     # test on spots derived from imosflm tutorial data:
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
     data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
@@ -458,76 +467,23 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir):
     unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
     hall_symbol = '-R 3 2"'
 
-    for uc, hall in ((unit_cell, hall_symbol), (None, hall_symbol)):
-        extra_args = ["bin_size_fraction=0.25"]
-        if uc is not None:
-            extra_args.append(
-                'known_symmetry.unit_cell="%s %s %s %s %s %s"' % unit_cell.parameters()
-            )
-        if hall is not None:
-            extra_args.append(
-                'known_symmetry.space_group="Hall: %s"' % hall.replace('"', '\\"')
-            )
+    extra_args = [
+        "bin_size_fraction=0.25",
+        'known_symmetry.space_group="Hall: %s"' % hall_symbol.replace('"', '\\"'),
+    ]
+    if specify_unit_cell:
+        extra_args.append(
+            'known_symmetry.unit_cell="%s %s %s %s %s %s"' % unit_cell.parameters()
+        )
 
-        expected_unit_cell = unit_cell
-        if hall is not None:
-            expected_hall_symbol = hall
-        else:
-            expected_hall_symbol = " P 1"
-        expected_rmsds = (0.08, 0.11, 0.004)
+    expected_unit_cell = unit_cell
+    expected_hall_symbol = hall_symbol
+    expected_rmsds = (0.08, 0.11, 0.004)
 
-        with tmpdir.as_cwd():
-            RunOneIndexing(
-                pickle_path,
-                sweep_path,
-                extra_args,
-                expected_unit_cell,
-                expected_rmsds,
-                expected_hall_symbol,
-            )
-
-
-@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
-def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
-    data_dir = dials_data("insulin")
-
-    args = ["dials.import", "allow_multiple_sweeps=True"]
-    for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
-        target = "image_00%i.img" % (i + 1)
-        data_dir.join(image_path).copy(run_in_tmpdir.join(target))
-        args.append(target)
-
-    command = " ".join(args)
-    # print(command)
-    easy_run.fully_buffered(command=command).raise_if_errors()
-
-    experiments_json = "imported.expt"
-
-    args = ["dials.find_spots", experiments_json]
-
-    command = " ".join(args)
-    print(command)
-    easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.refl"
-    assert os.path.exists(pickle_path)
-
-    expected_unit_cell = uctbx.unit_cell(
-        (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
-    )
-    expected_hall_symbol = " I 2 2 3"
-    expected_rmsds = (0.05, 0.06, 0.01)
-
-    extra_args = []
-    extra_args.append(
-        'known_symmetry.unit_cell="%s %s %s %s %s %s"' % expected_unit_cell.parameters()
-    )
-    extra_args.append('known_symmetry.space_group="Hall: %s"' % expected_hall_symbol)
-    extra_args.append("indexing.method=%s" % method)
-    extra_args.append("treat_single_image_as_still=False")
-
-    RunOneIndexing(
+    run_indexing(
         pickle_path,
-        experiments_json,
+        sweep_path,
+        tmpdir,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -535,26 +491,93 @@ def test_index_insulin_multi_sweep(dials_data, run_in_tmpdir, method):
     )
 
 
-@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
-def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
-    data_dir = dials_data("insulin")
+@pytest.fixture(scope="session")
+def insulin_spotfinding(dials_data, tmpdir_factory):
+    """Return experiment and reflection files for 2 images of the insulin dataset"""
 
-    args = [
+    data_dir = dials_data("insulin")
+    tmpdir = tmpdir_factory.mktemp("insulin")
+
+    command = ["dials.import", "allow_multiple_sweeps=True"]
+    for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
+        target = "image_00%i.img" % (i + 1)
+        data_dir.join(image_path).copy(tmpdir.join(target))
+        command.append(target)
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    experiment = tmpdir.join("imported.expt")
+    assert experiment.check()
+
+    command = ["dials.find_spots", experiment]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    reflections = tmpdir.join("strong.refl")
+    assert reflections.check()
+
+    return experiment, reflections
+
+
+@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
+def test_index_insulin_multi_sweep(insulin_spotfinding, tmpdir, method):
+    experiment, reflections = insulin_spotfinding
+    expected_unit_cell = uctbx.unit_cell(
+        (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
+    )
+    expected_hall_symbol = " I 2 2 3"
+    expected_rmsds = (0.05, 0.06, 0.01)
+    extra_args = [
+        'known_symmetry.unit_cell="%s %s %s %s %s %s"'
+        % expected_unit_cell.parameters(),
+        'known_symmetry.space_group="Hall: %s"' % expected_hall_symbol,
+        "indexing.method=%s" % method,
+        "treat_single_image_as_still=False",
+    ]
+    run_indexing(
+        reflections,
+        experiment,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+
+
+@pytest.fixture(scope="session")
+def insulin_spotfinding_stills(dials_data, tmpdir_factory):
+    """Return experiment and reflection files for 1 image of the insulin
+    dataset treated as still image"""
+
+    data_dir = dials_data("insulin")
+    tmpdir = tmpdir_factory.mktemp("insulin")
+
+    command = [
         "dials.import",
         "convert_sweeps_to_stills=True",
-        data_dir.join("insulin_1_001.img").strpath,
+        data_dir.join("insulin_1_001.img"),
     ]
-    command = " ".join(args)
-    # print(command)
-    easy_run.fully_buffered(command=command).raise_if_errors()
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
 
-    experiments_json = "imported.expt"
-    args = ["dials.find_spots", experiments_json]
-    command = " ".join(args)
-    easy_run.fully_buffered(command=command).raise_if_errors()
-    pickle_path = "strong.refl"
-    assert os.path.exists(pickle_path)
+    experiment = tmpdir.join("imported.expt")
+    assert experiment.check()
 
+    command = ["dials.find_spots", experiment]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    reflections = tmpdir.join("strong.refl")
+    assert reflections.check()
+
+    return experiment, reflections
+
+
+@pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
+def test_index_insulin_force_stills(insulin_spotfinding_stills, tmpdir, method):
+    experiment, reflections = insulin_spotfinding_stills
     expected_unit_cell = uctbx.unit_cell(
         (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
     )
@@ -569,9 +592,10 @@ def test_index_insulin_force_stills(dials_data, run_in_tmpdir, method):
         "indexing.method=%s" % method,
     ]
 
-    RunOneIndexing(
-        pickle_path,
-        experiments_json,
+    run_indexing(
+        reflections,
+        experiment,
+        tmpdir,
         extra_args,
         expected_unit_cell,
         expected_rmsds,
@@ -595,17 +619,17 @@ def test_multiple_experiments(dials_regression, tmpdir):
 
     extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
 
-    with tmpdir.as_cwd():
-        RunOneIndexing(
-            pickle_path,
-            experiments_json,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-            n_expected_lattices=3,
-            relative_length_tolerance=0.01,
-        )
+    run_indexing(
+        pickle_path,
+        experiments_json,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+        n_expected_lattices=3,
+        relative_length_tolerance=0.01,
+    )
 
 
 def test_index_4rotation(dials_regression, tmpdir):
@@ -622,16 +646,16 @@ def test_index_4rotation(dials_regression, tmpdir):
     expected_rmsds = (0.06, 0.08, 0.22)
     expected_hall_symbol = " R 3"
 
-    with tmpdir.as_cwd():
-        result = RunOneIndexing(
-            pickle_path,
-            sweep_path,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
-        assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
+    result = run_indexing(
+        pickle_path,
+        sweep_path,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
@@ -655,16 +679,16 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
     expected_rmsds = (0.10, 0.7, 0.5)
     expected_hall_symbol = " I 4"
 
-    with tmpdir.as_cwd():
-        result = RunOneIndexing(
-            " ".join(pickle_paths),
-            " ".join(sweep_paths),
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
-        assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
+    result = run_indexing(
+        pickle_paths,
+        sweep_paths,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
 def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
@@ -686,19 +710,19 @@ def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
     expected_rmsds = (0.32, 0.34, 0.005)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        result = RunOneIndexing(
-            " ".join(pickle_paths),
-            " ".join(sweep_paths),
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
-        assert len(result.indexed_reflections) > 12000, len(result.indexed_reflections)
-        # expect at least indexed 2000 reflections per experiment
-        for i in range(3):
-            assert (result.indexed_reflections["id"] == i).count(True) > 2000
+    result = run_indexing(
+        pickle_paths,
+        sweep_paths,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert len(result.indexed_reflections) > 12000, len(result.indexed_reflections)
+    # expect at least indexed 2000 reflections per experiment
+    for i in range(3):
+        assert (result.indexed_reflections["id"] == i).count(True) > 2000
 
 
 def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
@@ -712,16 +736,16 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     expected_rmsds = (0.06, 0.05, 0.04)
     expected_hall_symbol = " P 1"
 
-    with tmpdir.as_cwd():
-        result = RunOneIndexing(
-            pickle_path,
-            experiments,
-            extra_args,
-            expected_unit_cell,
-            expected_rmsds,
-            expected_hall_symbol,
-        )
-        assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
+    result = run_indexing(
+        pickle_path,
+        experiments,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
+    assert len(result.indexed_reflections) > 1300, len(result.indexed_reflections)
 
 
 def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
