@@ -51,14 +51,17 @@ def register_default_scaling_observers(script):
         observer=ScalingHTMLGenerator(),
         callback="make_scaling_html",
     )
-    script.scaler.register_observer(
+    register_scaler_observers(script.scaler)
+
+
+def register_scaler_observers(scaler):
+    """Register observers on the scaler."""
+    scaler.register_observer(
         event="performed_error_analysis", observer=ErrorModelObserver()
     )
 
-    script.scaler.register_observer(
-        event="performed_scaling", observer=ScalingModelObserver()
-    )
-    script.scaler.register_observer(
+    scaler.register_observer(event="performed_scaling", observer=ScalingModelObserver())
+    scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
 

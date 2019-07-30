@@ -48,6 +48,7 @@ from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
     register_merging_stats_observers,
     register_scale_and_filter_observers,
+    register_scaler_observers,
 )
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.report.analysis import make_merging_statistics_summary
@@ -323,6 +324,7 @@ class Script(Subject):
 
             #  If not finished then need to create new scaler to try again
             self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+            register_scaler_observers(self.scaler)
         self.filtering_results = results
         # Print summary of results
         logger.info(results.make_summary())
@@ -333,6 +335,7 @@ class Script(Subject):
 
     def _run_final_scale_cycle(self, results):
         self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+        register_scaler_observers(self.scaler)
         self.run()
         results.add_final_stats(self.merging_statistics_result)
         return results
