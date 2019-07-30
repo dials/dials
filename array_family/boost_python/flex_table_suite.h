@@ -438,9 +438,10 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       scitbx::boost_python::raise_index_error();
     }
     typedef typename T::iterator iterator;
-    object iteritems = boost::python::import("six").attr("iteritems")(row);
+    object items = list(row.items());
+    DIALS_ASSERT(len(items) == len(row));
     for (std::size_t i = 0; i < len(row); ++i) {
-      object item = boost::python::import("six").attr("next")(iteritems);
+      object item = items[i];
       setitem_row_visitor visitor(n, item[1]);
       iterator it = self.find(extract<std::string>(item[0]));
       DIALS_ASSERT(it != self.end());
@@ -1112,10 +1113,11 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       // Extract the columns
       dict columns = extract<dict>(state[3]);
       DIALS_ASSERT(len(columns) == ncols);
-      object iterator = boost::python::import("six").attr("iteritems")(columns);
+      object items = list(columns.items());
+      DIALS_ASSERT(len(items) == ncols);
       object self_obj(self);
       for (std::size_t i = 0; i < ncols; ++i) {
-        object item = boost::python::import("six").attr("next")(iterator);
+        object item = items[i];
         DIALS_ASSERT(len(item[1]) == nrows);
         std::string name = extract<std::string>(item[0]);
         self_obj[name] = item[1];
