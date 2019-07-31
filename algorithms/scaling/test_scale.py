@@ -356,10 +356,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[21, 25], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[21, 25], 3],
-        [[21, 25], 5],
+        [[21, 25], 3]
     ]
-    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert analysis_results["termination_reason"] == "max_percent_removed"
 
 
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
@@ -434,13 +433,11 @@ def test_multi_scale(dials_regression, tmpdir):
     # that the new behaviour is more correct and update test accordingly.
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     expected_nobs = 5460
+    assert abs(result.overall.n_obs - expected_nobs) < 30
+    assert result.overall.r_pim < 0.0221  # at 22/10/18, value was 0.22037
+    assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
     print(result.overall.r_pim)
     print(result.overall.cc_one_half)
-    assert abs(result.overall.n_obs - expected_nobs) < 30
-    assert (
-        result.overall.r_pim < 0.0235
-    )  # at 22/10/18, value was 0.22037, at 30/07/19 was 0.2291
-    assert result.overall.cc_one_half > 0.9975  # at 07/08/18, value was 0.99810
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [

@@ -41,7 +41,6 @@ def create_scaler(params, experiments, reflections):
             )
         else:  # else just make one multiscaler for all refls
             scaler = MultiScalerFactory.create(params, experiments, reflections)
-    scaler.fix_initial_scale()
     return scaler
 
 

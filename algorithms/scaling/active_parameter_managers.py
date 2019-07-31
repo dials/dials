@@ -37,11 +37,11 @@ class active_parameter_manager(object):
         for component, obj in six.iteritems(components):
             if component in selection_list:
                 assert hasattr(
-                    obj, "free_parameters"
+                    obj, "parameters"
                 ), """component object must have the
           attribute 'parameters' for access to the component parameters."""
-                self.x.extend(obj.free_parameters)
-                n_params = len(obj.free_parameters)
+                self.x.extend(obj.parameters)
+                n_params = len(obj.parameters)
                 self.components.update(
                     {
                         component: {
@@ -70,7 +70,7 @@ class active_parameter_manager(object):
         self.x = x
         for component in self.components:
             component_obj = self.components[component]["object"]
-            component_obj.free_parameters = self.select_parameters(component)
+            component_obj.parameters = self.select_parameters(component)
 
     def get_param_vals(self):
         """Get method for refinement engine access."""

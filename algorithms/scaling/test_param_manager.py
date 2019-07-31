@@ -21,7 +21,7 @@ from dials.algorithms.scaling.parameter_handler import (
 def mock_component():
     """Return a mock component of a general model."""
     component = Mock()
-    component.free_parameters = flex.double([1.0])
+    component.parameters = flex.double([1.0])
     component.n_params = 1
     component.var_cov_matrix = sparse.matrix(1, 1)
     component.parameter_esds = None
@@ -81,8 +81,8 @@ def test_general_apm():
     apm.set_param_vals(flex.double([2.0, 1.5]))
     assert apm.get_param_vals() == flex.double([2.0, 1.5])
     # Test params were updated in components
-    assert list(components["scale"].free_parameters) == [2.0]
-    assert list(components["decay"].free_parameters) == [1.5]
+    assert list(components["scale"].parameters) == [2.0]
+    assert list(components["decay"].parameters) == [1.5]
     # Test selection of parameters
     decay_params = apm.select_parameters("decay")
     assert len(decay_params) == 1
