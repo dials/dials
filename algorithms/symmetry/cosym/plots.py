@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 from scitbx.array_family import flex
 
 
-def plot_coords(coords, labels=None):
+def plot_coords(coords, labels=None, key="cosym_coordinates"):
 
     coord_x = coords[:, 0:1].as_1d()
     coord_y = coords[:, 1:2].as_1d()
@@ -15,7 +15,7 @@ def plot_coords(coords, labels=None):
 
     unique_labels = set(labels)
     unique_labels = sorted(unique_labels)
-    n_clusters = len(unique_labels) - (1 if -1 in unique_labels else 0)
+    n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
 
     # XXX should avoid relying on matplotlib here to determine colours
     from matplotlib import pyplot as plt
@@ -43,7 +43,7 @@ def plot_coords(coords, labels=None):
             }
         )
     d = {
-        "coordinates": {
+        key: {
             "data": data,
             "layout": {
                 "title": "Cosym coordinates",
@@ -56,7 +56,7 @@ def plot_coords(coords, labels=None):
     return d
 
 
-def plot_rij_histogram(rij_matrix):
+def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
     """Plot a histogram of the rij values.
 
   Args:
@@ -74,7 +74,7 @@ def plot_rij_histogram(rij_matrix):
     )
 
     d = {
-        "rij_histogram": {
+        key: {
             "data": [
                 {
                     "x": list(hist.slot_centers()),
