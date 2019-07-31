@@ -286,7 +286,11 @@ class Script(Subject):
                 logger.info(
                     "Finishing scaling and filtering as no data removed in this cycle."
                 )
-                self.reflections = script.reflections
+                if self.params.scaling_options.full_matrix:
+                    self.reflections = parse_multiple_datasets(script.reflections)
+                    results = self._run_final_scale_cycle(results)
+                else:
+                    self.reflections = script.reflections
                 results.finish(termination_reason="no_more_removed")
                 break
 
@@ -323,7 +327,7 @@ class Script(Subject):
                 break
 
             #  If not finished then need to create new scaler to try again
-            self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+            self._create_model_and_scaler()
             register_scaler_observers(self.scaler)
         self.filtering_results = results
         # Print summary of results
@@ -334,7 +338,7 @@ class Script(Subject):
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def _run_final_scale_cycle(self, results):
-        self.scaler = create_scaler(self.params, self.experiments, self.reflections)
+        self._create_model_and_scaler()
         register_scaler_observers(self.scaler)
         self.run()
         results.add_final_stats(self.merging_statistics_result)
