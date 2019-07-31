@@ -21,4 +21,4 @@ def test_plot_rij_histogram():
     rij_matrix = flex.random_double(16)
     d = plots.plot_rij_histogram(rij_matrix)
     assert "cosym_rij_histogram" in d
-    sum(d["cosym_rij_histogram"]["data"][0]["y"]) == 16
+    assert sum(d["cosym_rij_histogram"]["data"][0]["y"]) == 16
