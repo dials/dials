@@ -207,7 +207,11 @@ def plot_uc_vs_detector_distance(
     steps_per_mm = 20
     Amin = math.floor(mmm.min * steps_per_mm) / steps_per_mm
     Amax = math.floor(mmm.max * steps_per_mm) / steps_per_mm
-    n_slots = int((Amax - Amin) * steps_per_mm)
+    n_slots = max(1, int((Amax - Amin) * steps_per_mm))
+    if Amin == Amax:
+        eps = 0.05
+        Amin -= eps
+        Amax += eps
     hist = flex.histogram(panel_distances[0], Amin, Amax, n_slots=n_slots)
     ax4.bar(
         hist.slot_centers(),
