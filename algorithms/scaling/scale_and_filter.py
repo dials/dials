@@ -12,7 +12,7 @@ from scitbx.array_family import flex
 phil_scope = phil.parse(
     """
 filtering {
-    method = deltacchalf
+    method = None deltacchalf
         .type = choice
         .help = "Choice of whether to do any filtering cycles, default None."
     deltacchalf {
