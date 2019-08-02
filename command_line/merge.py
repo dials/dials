@@ -36,6 +36,16 @@ truncate = True
 d_min = None
     .type = float
     .help = "Resolution limit to apply to the data."
+combine_partials = True
+    .type = bool
+    .help = "Combine partials that have the same partial id into one
+        reflection, with an updated partiality given by the sum of the
+        individual partialities."
+partiality_threshold=0.99
+    .type = float
+    .help = "All reflections with partiality values above the partiality
+        threshold will be retained. This is done after any combination of
+        partials if applicable."
 n_residues = 200
     .type = int
     .help = "Number of residues to use in Wilson scaling"
@@ -44,6 +54,9 @@ merging {
         .type = bool
     n_bins = 20
         .type = int(value_min=5)
+    anomalous = False
+        .type = bool
+        .help = "Option to control whether reported merging stats are anomalous."
 }
 reporting {
     wilson_stats = True

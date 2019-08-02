@@ -72,7 +72,11 @@ def merge_and_truncate(params, experiments, reflections):
     logger.info("\nMerging scaled reflection data\n")
     # first filter bad reflections using dials.util.filter methods
     reflections = filter_reflection_table(
-        reflections[0], intensity_choice=["scale"], d_min=params.d_min
+        reflections[0],
+        intensity_choice=["scale"],
+        d_min=params.d_min,
+        combine_partials=params.combine_partials,
+        partiality_threshold=params.partiality_threshold,
     )
     # ^ scale factor has been applied, so now set to 1.0 - okay as not
     # going to output scale factor in merged mtz.
@@ -110,16 +114,19 @@ def merge_and_truncate(params, experiments, reflections):
     amplitudes = None
     anom_amplitudes = None
     if params.truncate:
+        logger.info("\nScaling input intensities via French-Wilson Method")
+        out = StringIO()
         if params.anomalous:
-            logger.info("\nScaling input intensities via French-Wilson Method")
-            out = StringIO()
             anom_amplitudes = intensities.french_wilson(params=params, log=out)
-            logger.debug(out.getvalue())
+            n_removed = intensities.size() - anom_amplitudes.size()
             assert anom_amplitudes.is_xray_amplitude_array()
             amplitudes = anom_amplitudes.as_non_anomalous_array()
             amplitudes = amplitudes.merge_equivalents().array()
         else:
-            amplitudes = intensities.french_wilson(params=params)
+            amplitudes = intensities.french_wilson(params=params, log=out)
+            n_removed = intensities.size() - amplitudes.size()
+        logger.info("Total number of rejected intensities %s", n_removed)
+        logger.debug(out.getvalue())
 
     if params.reporting.wilson_stats:
         if not intensities.space_group().is_centric():
@@ -139,7 +146,7 @@ def merge_and_truncate(params, experiments, reflections):
         stats, anom_stats = merging_stats_from_scaled_array(
             scaled_array, params.merging.n_bins, params.merging.use_internal_variance
         )
-        if params.anomalous:
+        if params.merging.anomalous:
             logger.info(make_merging_statistics_summary(anom_stats))
         else:
             logger.info(make_merging_statistics_summary(stats))
