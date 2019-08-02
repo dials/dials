@@ -451,16 +451,24 @@ class PredictionParameterisation(object):
 
     # The other model derivatives are different for scans and stills. Empty
     # implementations are declared here
-    def _beam_derivatives():
+    def _beam_derivatives(
+        self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
+    ):
         pass
 
-    def _xl_orientation_derivatives():
+    def _xl_orientation_derivatives(
+        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
+    ):
         pass
 
-    def _xl_unit_cell_derivatives():
+    def _xl_unit_cell_derivatives(
+        self, isel, parameterisation=None, dB_dxluc_p=None, reflections=None
+    ):
         pass
 
-    def _goniometer_derivatives():
+    def _goniometer_derivatives(
+        self, isel, parameterisation=None, dS_dgon_p=None, reflections=None
+    ):
         pass
 
     def _grads_detector_loop(self, reflections, results, callback=None):
