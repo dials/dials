@@ -779,12 +779,10 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
         actuality, all crystal models should be assigned mosaicity. This test only compares whether or not all crystal models
         have been assigned a MosaicSauter2014 model.  """
 
-    import libtbx
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dxtbx.model.experiment_list import Experiment, ExperimentList
     from dials.array_family import flex
     from dxtbx.model import Crystal
-    from scitbx.matrix import col
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
     from dials.command_line.stills_process import (
         phil_scope as stills_process_phil_scope,
