@@ -771,10 +771,6 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     assert len(experiments_list) == 2
 
 
-@pytest.mark.xfail(
-    raises=AssertionError,
-    reason="stills_indexer refine function only considers first crystal for mosaicity",
-)
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
     """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of 
         dxtbx crystal models (that are not MosaicSauter2014 models). The conversion to MosaicSauter2014 is made 
@@ -783,29 +779,27 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
         actuality, all crystal models should be assigned mosaicity. This test only compares whether or not all crystal models
         have been assigned a MosaicSauter2014 model.  """
 
-    import libtbx
     from dxtbx.model.experiment_list import ExperimentListFactory
     from dxtbx.model.experiment_list import Experiment, ExperimentList
     from dials.array_family import flex
     from dxtbx.model import Crystal
-    from scitbx.matrix import col
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
     from dials.command_line.stills_process import (
         phil_scope as stills_process_phil_scope,
     )
     import dxtbx_model_ext  # needed for comparison of types
 
-    xfel_regression = libtbx.env.find_in_repositories(
-        relative_path="xfel_regression", test=os.path.isdir
-    )
-    if not xfel_regression:
-        pytest.skip("test requires xfel_regression")
-
     experiment_data = os.path.join(
-        xfel_regression, "cspad_cbf_metrology", "input_combined_experiments_300.json"
+        dials_regression,
+        "refinement_test_data",
+        "cspad_refinement",
+        "cspad_refined_experiments_step6_level2_300.json",
     )
     reflection_data = os.path.join(
-        xfel_regression, "cspad_cbf_metrology", "input_combined_reflections_300.pickle"
+        dials_regression,
+        "refinement_test_data",
+        "cspad_refinement",
+        "cspad_reflections_step7_300.pickle",
     )
 
     refl = flex.reflection_table.from_file(reflection_data)
@@ -814,13 +808,9 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     ]
     reflist = refl.select(refl["id"] < 2)  # Only use the first 2 for convenience
     # Construct crystal models that don't have mosaicity. These A,B,C values are the same
-    # as read in from the xfel_regression folder
+    # as read in from the dials_regression folder
     # Crystal-0
-    sg = "P6122"
-    c = col((-6.273802315592485, 130.0982158871206, -5.79093135302508))
-    b = col((12.889379382910931, -3.488465493571038, -92.33550227410447))
-    a = col((73.48274403946694, 6.087949131831335, 57.16094537694445))
-    cs0 = Crystal(a, b, c, sg)
+    cs0 = Crystal(explist[0].crystal)
     exp0 = Experiment(
         imageset=explist[0].imageset,
         beam=explist[0].beam,
@@ -831,10 +821,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     )
 
     # Crystal-1
-    a1 = col((-9.848734136977392, -91.47863873838793, 15.37304224517648))
-    b1 = col((-61.88040624461757, 60.16978337475523, 35.38476831968059))
-    c1 = col((-72.13672676543942, -10.447921098609202, -108.38564134527415))
-    cs1 = Crystal(a1, b1, c1, sg)
+    cs1 = Crystal(explist[1].crystal)
     exp1 = Experiment(
         imageset=explist[1].imageset,
         beam=explist[1].beam,
@@ -850,5 +837,10 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     SI = StillsIndexer(reflist, unrefined_explist, params=params)
     refined_explist, new_reflist = SI.refine(unrefined_explist, reflist)
     # Now check whether the models have mosaicity after stills_indexer refinement
-    for crys in refined_explist.crystals():
+    # Also check that mosaicity values are within expected limits
+    for ii, crys in enumerate(refined_explist.crystals()):
         assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)
+        if ii == 0:
+            crys.get_domain_size_ang() == pytest.approx(2242.0, rel=0.1)
+        if ii == 1:
+            crys.get_domain_size_ang() == pytest.approx(2689.0, rel=0.1)
