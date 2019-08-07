@@ -179,7 +179,7 @@ class Script(object):
                         "Saving reflections with wavelength %s to %s"
                         % (wl, reflections_filename)
                     )
-                    refls.as_pickle(reflections_filename)
+                    refls.as_file(reflections_filename)
 
         elif params.by_detector:
             assert (
