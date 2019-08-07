@@ -181,7 +181,7 @@ This model component can only hold a single parameter."""
     @ScaleComponentBase.data.setter
     def data(self, data):
         """Set the data dict in the parent class."""
-        assert set(data.keys()) == set(["id"]), set(data.keys())
+        assert set(data.keys()) == {"id"}, set(data.keys())
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -243,7 +243,7 @@ class SingleBScaleFactor(ScaleComponentBase):
     @ScaleComponentBase.data.setter
     def data(self, data):
         """Set the data dict in the parent class."""
-        assert set(data.keys()) == set(["id", "d"]), set(data.keys())
+        assert set(data.keys()) == {"id", "d"}, set(data.keys())
         self._data = data
 
     def update_reflection_data(self, selection=None, block_selections=None):
@@ -330,10 +330,10 @@ class SHScaleComponent(ScaleComponentBase):
     def data(self, data):
         """Set the data dict in the parent class."""
         try:
-            assert set(data.keys()) == set(["s1_lookup", "s0_lookup"]), set(data.keys())
+            assert set(data.keys()) == {"s1_lookup", "s0_lookup"}, set(data.keys())
             self._mode = "memory"
         except AssertionError as e:
-            assert set(data.keys()) == set(["sph_harm_table"]), set(data.keys())
+            assert set(data.keys()) == {"sph_harm_table"}, set(data.keys())
             self._mode = "speed"  # Note: only speedier for small datasets
         self._data = data
 

@@ -26,7 +26,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
-their contents (:ref:`datablock.json <datablock-json>`) is written.
+their contents (:ref:`datablock.expt <datablock-json>`) is written.
 
 ::
 
@@ -65,7 +65,7 @@ far too many spots being extracted (for example). It is always worth
 inspecting the images with :doc:`dials.image_viewer<../programs/dials_image_viewer>`,
 especially if you are having issues with spot finding::
 
-  dials.image_viewer datablock.json
+  dials.image_viewer datablock.expt
 
 Viewing the various images from 'image' to 'threshold' gives an idea of how
 the various parameters affect the spot finding algorithm. The final image,
@@ -74,7 +74,7 @@ peaks at real diffraction spot positions will give the best chance of success.
 
 Having found strong spots it is worth checking the image viewer again::
 
-  dials.image_viewer datablock.json strong.pickle
+  dials.image_viewer datablock.expt strong.refl
 
 The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is not as
 fast as viewers such as ADXV, however it does integrate well with DIALS data
@@ -103,7 +103,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions::
 
-  dials.reciprocal_lattice_viewer datablock.json strong.pickle
+  dials.reciprocal_lattice_viewer datablock.expt strong.refl
 
 .. image:: /figures/reciprocal_lattice_strong.png
 
@@ -175,7 +175,7 @@ More about this is discussed below in :ref:`sec-refinement`.
 
 After indexing it can be useful to inspect the reciprocal lattice again::
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+  dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
 Now indexed/unindexed spots are differentiated by colour, and it is possible
 to see which spots were marked by :doc:`dials.refine <../programs/dials_refine>`
@@ -205,9 +205,9 @@ symmetry operators.
 .. literalinclude:: logs/dials.refine_bravais_settings.log
 
 In this example we would continue processing (i.e. proceed to the refinement
-step, perhaps) with :samp:`bravais_setting_9.json`. Sometimes (that is, when
+step, perhaps) with :samp:`bravais_setting_9.expt`. Sometimes (that is, when
 the change of basis operator is not equal to :samp:`a,b,c`) it is
-necessary to reindex the :ref:`indexed.pickle <reflection_pickle>` file output
+necessary to reindex the :ref:`indexed.refl <reflection_pickle>` file output
 by :doc:`dials.index<../programs/dials_index>`.
 In this case as the change of basis operator to the chosen setting
 is the identity operator (:samp:`a,b,c`) this step is not needed. We run it
@@ -215,8 +215,8 @@ anyway to demonstrate its use.
 
 .. literalinclude:: logs/dials.reindex.cmd
 
-This outputs the file :file:`reindexed_reflections.pickle` which should be
-used as input to downstream programs in place of :file:`indexed.pickle`.
+This outputs the file :file:`reindexed.refl` which should be
+used as input to downstream programs in place of :file:`indexed.refl`.
 
 .. _sec-refinement:
 
@@ -293,19 +293,19 @@ number of processors used to speed the job up.
     .. literalinclude:: logs/dials.integrate.log
 
 Checking the log output, we see that after loading in the reference
-reflections from :file:`refined.pickle`, new predictions are made up to the
+reflections from :file:`refined.refl`, new predictions are made up to the
 highest resolution at the corner of the detector. This is fine, but if we
 wanted to we could have adjusted the resolution limits using parameters
 :samp:`prediction.d_min` and :samp:`prediction.d_max`. The predictions are
 made using the scan-varying crystal model recorded in
-:file:`refined_experiments.json`. This ensures that prediction is made using
+:file:`refined.expt`. This ensures that prediction is made using
 the smoothly varying lattice and orientation that we determined in the
 refinement step. As this scan-varying model was determined in advance of
 integration, each of the integration jobs is independent and we can take
 advantage of true parallelism during processing.
 
 The profile model is calculated from the reflections in
-:file:`refined.pickle`. First reflections with a too small 'zeta'
+:file:`refined.refl`. First reflections with a too small 'zeta'
 factor are filtered out. This essentially removes reflections that are too
 close to the spindle axis. In general these reflections require significant
 Lorentz corrections and as a result have less trustworthy intensities anyway.

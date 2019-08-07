@@ -530,7 +530,7 @@ class ProfileModelReport2(Report):
 
         """
         # Initialise the report class
-        super(ProfileModelReport, self).__init__()
+        super(ProfileModelReport2, self).__init__()
 
         # Create the table
         table = Table()

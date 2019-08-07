@@ -32,7 +32,7 @@ help_message = """
 phil_scope = parse(
     """
 
-  output = merged.pickle
+  output = merged.refl
     .type = str
     .help = "The output file"
 

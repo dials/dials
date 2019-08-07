@@ -9,17 +9,16 @@ def test_sort_intensities(dials_data, tmpdir):
             "dev.dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
             "key=intensity.sum.value",
-            "output=sorted1.pickle",
+            "output=sorted1.refl",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("sorted1.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("sorted1.refl").check(file=1)
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_file(tmpdir.join("sorted1.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted1.refl").strpath)
     assert_sorted(data["intensity.sum.value"])
 
 
@@ -28,19 +27,18 @@ def test_reverse_sort_intensities(dials_data, tmpdir):
         [
             "dev.dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
-            "output=sorted2.pickle",
+            "output=sorted2.refl",
             "key=intensity.sum.value",
             "reverse=True",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("sorted2.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("sorted2.refl").check(file=1)
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_file(tmpdir.join("sorted2.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted2.refl").strpath)
     assert_sorted(data["intensity.sum.value"], reverse=True)
 
 
@@ -49,17 +47,16 @@ def test_default_sort_on_miller_index(dials_data, tmpdir):
         [
             "dev.dials.sort_reflections",
             dials_data("centroid_test_data").join("integrated.pickle").strpath,
-            "output=sorted3.pickle",
+            "output=sorted3.refl",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("sorted3.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("sorted3.refl").check(file=1)
 
     from dials.array_family import flex
 
-    data = flex.reflection_table.from_file(tmpdir.join("sorted3.pickle").strpath)
+    data = flex.reflection_table.from_file(tmpdir.join("sorted3.refl").strpath)
     mi1 = data["miller_index"]
     orig = flex.reflection_table.from_file(
         dials_data("centroid_test_data").join("integrated.pickle").strpath

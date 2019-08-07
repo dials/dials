@@ -12,6 +12,7 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import dials.algorithms.rs_mapper as recviewer
+import dials.util
 from cctbx import sgtbx, uctbx
 from iotbx import ccp4_map, phil
 from scitbx.array_family import flex
@@ -27,11 +28,9 @@ Examples::
 
   dials.rs_mapper image_00*.cbf
 
-  dials.rs_mapper experiments.json
+  dials.rs_mapper imported.expt
 
 """
-
-from libtbx.phil import parse
 
 phil_scope = phil.parse(
     """
@@ -63,14 +62,12 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # The script usage
         usage = (
-            "usage: %s map_file=output.ccp4 [max_resolution=6] [grid_size=192] "
+            "usage: dials.rs_mapper map_file=output.ccp4 [max_resolution=6] [grid_size=192] "
             "[reverse_phi=False] [param.phil] "
-            "{image1.file [image2.file ...]} | experiments.json"
-            % libtbx.env.dispatcher_name
+            "{image1.file [image2.file ...]} | imported.expt"
         )
 
         # Initialise the base class
@@ -142,10 +139,8 @@ class Script(object):
         s1 = panel.get_lab_coord(xy * pixel_size[0])  # FIXME: assumed square pixel
         s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
         S = s1 - s0
-        npoints = self.grid.all()[0]
 
-        for i in xrange(len(imageset)):
-            step = 2 * rec_range / npoints
+        for i in range(len(imageset)):
             axis = imageset.get_goniometer().get_rotation_axis()
             osc_range = imageset.get_scan(i).get_oscillation_range()
             print("Oscillation range: %.1f - %.1f" % (osc_range[0], osc_range[1]))
@@ -164,10 +159,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

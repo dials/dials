@@ -9,7 +9,7 @@ import os
 import procrunner
 from scitbx import matrix
 from dxtbx.model.experiment_list import ExperimentListFactory
-from six.moves import cPickle as pickle
+from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex  # noqa: F401
 import pytest
 
@@ -31,16 +31,15 @@ def test(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
+            "experiments={}/data/sweep_%03d/experiments.json".format(data_dir) % n
             for n in selection
         ]
         + [
-            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
+            "reflections={}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
             for n in selection
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Do refinement and load the results
 
@@ -49,18 +48,17 @@ def test(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=null",
             "close_to_spindle_cutoff=0.05",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     refined_experiments = ExperimentListFactory.from_json_file(
-        "refined_experiments.json", check_format=False
+        "refined.expt", check_format=False
     )
 
     # Check results are as expected
@@ -105,22 +103,20 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             for n in selection1
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
-            "history=history1.pickle",
-            "output.experiments=refined_experiments1.json",
-            "output.reflections=refined1.pickle",
+            "history=history1.json",
+            "output.experiments=refined1.expt",
+            "output.reflections=refined1.refl",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Second run
     result = procrunner.run(
@@ -139,34 +135,31 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             for n in selection2
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     result = procrunner.run(
         [
             "dials.refine",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
+            "combined.expt",
+            "combined.refl",
             "scan_varying=false",
             "outlier.algorithm=tukey",
-            "history=history2.pickle",
-            "output.experiments=refined_experiments2.json",
-            "output.reflections=refined2.pickle",
+            "history=history2.json",
+            "output.experiments=refined2.expt",
+            "output.reflections=refined2.refl",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Load results
     refined_experiments1 = ExperimentListFactory.from_json_file(
-        "refined_experiments1.json", check_format=False
+        "refined1.expt", check_format=False
     )
     refined_experiments2 = ExperimentListFactory.from_json_file(
-        "refined_experiments2.json", check_format=False
+        "refined2.expt", check_format=False
     )
-    with open("history1.pickle", "rb") as f:
-        history1 = pickle.load(f)
-    with open("history2.pickle", "rb") as f:
-        history2 = pickle.load(f)
+
+    history1 = Journal.from_json_file("history1.json")
+    history2 = Journal.from_json_file("history1.json")
 
     # Compare RMSDs
     rmsd1 = history1["rmsd"]

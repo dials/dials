@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
-import re
-import logging
 
-logger = logging.getLogger(__name__)
+import logging
+import re
 
 import libtbx  # for libtbx.Auto
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -64,6 +63,8 @@ format_data = {
     "sv_phil": sv_phil_str,
 }
 
+logger = logging.getLogger(__name__)
+
 phil_str = (
     """
     auto_reduction
@@ -110,7 +111,7 @@ phil_str = (
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"
               "interval width. This can then be analysed with"
-              "dev.dials.plot_centroid_analysis"
+              "dev.dials.plot_centroid_analysis (requires dials_scratch repository)."
       .type = bool
       .expert_level = 2
 
@@ -286,6 +287,7 @@ phil_str = (
 )
 phil_scope = parse(phil_str)
 
+
 # A helper function for parameter fixing
 def _filter_parameter_names(parameterisation):
     # scan-varying suffixes like '_sample1' should be removed from
@@ -336,9 +338,9 @@ def _centroid_analysis(options, experiments, reflection_manager):
     # for each of the residuals in x, y and phi, as long as this is not smaller
     # than either the outlier rejection block width, or 9.0 degrees.
     for i, a in enumerate(analysis):
-        intervals = [a.get("x_interval"), a.get("y_interval"), a.get("phi_interval")]
+        intervals = (a.get("x_interval"), a.get("y_interval"), a.get("phi_interval"))
         try:
-            min_interval = min(filter(None, intervals))
+            min_interval = min(_f for _f in intervals if _f is not None)
         except ValueError:
             # empty list - analysis was unable to suggest a suitable interval
             # width. Default to the safest case
@@ -425,7 +427,7 @@ def _parameterise_beams(options, experiments, analysis):
             beam_param = BeamParameterisation(beam, goniometer, experiment_ids=exp_ids)
 
         # Set the model identifier to name the parameterisation
-        beam_param.model_identifier = "Beam{0}".format(ibeam + 1)
+        beam_param.model_identifier = "Beam{}".format(ibeam + 1)
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -507,7 +509,7 @@ def _parameterise_crystals(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        xl_ori_param.model_identifier = "Crystal{0}".format(icrystal + 1)
+        xl_ori_param.model_identifier = "Crystal{}".format(icrystal + 1)
 
         # unit cell parameterisation
         if sv_xl_uc:
@@ -528,7 +530,7 @@ def _parameterise_crystals(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        xl_uc_param.model_identifier = "Crystal{0}".format(icrystal + 1)
+        xl_uc_param.model_identifier = "Crystal{}".format(icrystal + 1)
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -666,7 +668,7 @@ def _parameterise_detectors(options, experiments, analysis):
                     )
 
         # Set the model identifier to name the parameterisation
-        det_param.model_identifier = "Detector{0}".format(idetector + 1)
+        det_param.model_identifier = "Detector{}".format(idetector + 1)
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case
@@ -736,7 +738,7 @@ def _parameterise_goniometers(options, experiments, analysis):
             )
 
         # Set the model identifier to name the parameterisation
-        gon_param.model_identifier = "Goniometer{0}".format(igoniometer + 1)
+        gon_param.model_identifier = "Goniometer{}".format(igoniometer + 1)
 
         # get number of fixable units, either parameters or parameter sets in
         # the scan-varying case

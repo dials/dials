@@ -10,8 +10,8 @@ def test_dials_show(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -78,8 +78,8 @@ def test_dials_show_i04_weak_data(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -129,14 +129,11 @@ Goniometer:
 def test_dials_show_centroid_test_data(dials_data):
     result = procrunner.run(
         ["dials.show"]
-        + [
-            f.strpath
-            for f in dials_data("centroid_test_data").listdir("centroid_*.cbf")
-        ],
+        + list(dials_data("centroid_test_data").listdir("centroid_*.cbf")),
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -192,8 +189,8 @@ def test_dials_show_multi_panel_i23(dials_regression):
     result = procrunner.run(
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
 
     assert (
         "\n".join(output[4:25])
@@ -273,14 +270,12 @@ Goniometer:
 def test_dials_show_reflection_table(dials_data):
     """Test the output of dials.show on a reflection_table pickle file"""
     result = procrunner.run(
-        [
-            "dials.show",
-            dials_data("centroid_test_data").join("integrated.pickle").strpath,
-        ],
+        ["dials.show", dials_data("centroid_test_data").join("integrated.pickle")],
         environment_override={"DIALS_NOBANNER": "1"},
     )
-    assert not result["exitcode"] and not result["stderr"]
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert not result.returncode and not result.stderr
+    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+
     assert output[4] == "Reflection list contains 2269 reflections"
     headers = ["Column", "min", "max", "mean"]
     for header in headers:
@@ -325,3 +320,42 @@ def test_dials_show_reflection_table(dials_data):
     ]
     for (name, out) in zip(row_names, output[8:-1]):
         assert name in out
+
+
+def test_dials_show_image_statistics(dials_regression):
+    # Run on one multi-panel image
+    path = os.path.join(
+        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
+    )
+    result = procrunner.run(
+        ["dials.show", "show_image_statistics=true", path],
+        environment_override={"DIALS_NOBANNER": "1"},
+    )
+    assert not result.returncode and not result.stderr
+    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    assert (
+        output[-1]
+        == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
+    )
+
+
+def test_dials_show_image_statistics_with_no_image_data(dials_regression):
+    # Example where image data doesn't exist
+    path = os.path.join(
+        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
+    )
+    result = procrunner.run(
+        ["dials.show", "show_image_statistics=true", path],
+        environment_override={"DIALS_NOBANNER": "1"},
+    )
+    assert result.returncode == 1 and result.stderr
+
+
+def test_dials_show_on_scaled_data(dials_data):
+    """Test that dials.show works on scaled data."""
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refl = location.join("scaled_30.refl").strpath
+    expt = location.join("scaled_30.expt").strpath
+
+    result = procrunner.run(["dials.show", refl, expt])
+    assert not result.returncode and not result.stderr

@@ -20,13 +20,13 @@ simple shapes or by setting different resolution ranges.
 
 Examples::
 
-  dials.generate_mask experiments.json border=5
+  dials.generate_mask models.expt border=5
 
-  dials.generate_mask experiments.json \\
+  dials.generate_mask models.expt \\
     untrusted.rectangle=50,100,50,100 \\
     untrusted.circle=200,200,100
 
-  dials.generate_mask experiments.json resolution.d_max=2.00
+  dials.generate_mask models.expt resolution.d_max=2.00
 
 """
 
@@ -40,12 +40,11 @@ import six.moves.cPickle as pickle
 
 import dials.util
 import dials.util.log
-import libtbx.load_env
 import libtbx.phil as phil
 from dials.util.masking import MaskGenerator
 from dials.util.options import OptionParser, flatten_experiments
 from dxtbx.format.image import ImageBool
-from dxtbx.model.experiment_list import ExperimentList, ExperimentListDumper
+from dxtbx.model.experiment_list import ExperimentList
 from scitbx.array_family import flex
 
 try:
@@ -60,7 +59,7 @@ log = logging.getLogger("dials.generate_mask")
 phil_scope = phil.parse(
     """
     output {
-        mask = mask.pickle
+        mask = pixels.mask
             .type = path
             .help = "Name of output mask file."
         experiments = None
@@ -75,7 +74,7 @@ phil_scope = phil.parse(
 
     include scope dials.util.masking.phil_scope
 
-    verbosity = 1
+    verbosity = 0
         .type = int(value_min=0)
         .help = "The verbosity level."
     """,
@@ -149,8 +148,7 @@ def generate_mask(
     if params.output.experiments:
         # Save the experiment list
         log.info("Saving experiments to %s", params.output.experiments)
-        dump = ExperimentListDumper(experiments)
-        dump.as_file(params.output.experiments)
+        experiments.as_file(params.output.experiments)
     else:
         experiments = None
 
@@ -170,7 +168,7 @@ def run(phil=phil_scope, args=None):
         args: Arguments to parse. If None, :data:`sys.argv[1:]` will be used.
     """
     # Create the parser
-    usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
+    usage = "usage: dials.generate_mask [options] models.expt"
     parser = OptionParser(usage=usage, phil=phil, epilog=__doc__, read_experiments=True)
 
     # Parse the command line arguments

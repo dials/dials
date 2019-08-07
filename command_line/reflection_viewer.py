@@ -22,7 +22,7 @@ This program does not perform any calculation ... just visualizations
 
 Example for invoking from CLI:
 
-dials.reflection_viewer My_Reflections.pickle
+dials.reflection_viewer observations.refl
 
 """
 
@@ -36,7 +36,7 @@ class Script(object):
         import libtbx.load_env
 
         # The script usage
-        usage = "usage: %s [options] experiment.json" % libtbx.env.dispatcher_name
+        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
 
         # Create the parser
         self.parser = OptionParser(

@@ -2,18 +2,17 @@
 Tests for scaling utilities module.
 """
 from __future__ import absolute_import, division, print_function
+
 from math import sqrt, pi
-import pytest
+import os
+
 import numpy as np
-from mock import Mock
+import pytest
 from dxtbx.model import Experiment, Crystal
-from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import (
     calc_crystal_frame_vectors,
     calc_theta_phi,
-    create_sph_harm_table,
-    sph_harm_table,
     align_rotation_axis_along_z,
     set_wilson_outliers,
     quasi_normalisation,
@@ -26,6 +25,8 @@ from dials_scaling_ext import (
     create_sph_harm_table,
     calc_lookup_index,
 )
+from libtbx.test_utils import approx_equal
+from mock import Mock
 
 
 @pytest.fixture(scope="module")
@@ -207,7 +208,6 @@ def test_create_sph_harm_table(test_reflection_table, mock_exp):
     """Simple test for the spherical harmonic table, constructing the table step
     by step, and verifying the values of a few easy-to-calculate entries.
     This also acts as a test for the calc_theta_phi function as well."""
-    from scitbx import sparse  # Needed to be able to assign to sph_h_t
 
     rt, exp = test_reflection_table, mock_exp
     reflection_table = calc_crystal_frame_vectors(rt, exp)
@@ -280,10 +280,8 @@ criterion: test reason, reflections: 100
 
 
 def test_calculate_harmonic_tables_from_selections():
-
     selection = flex.size_t([1, 0, 2, 3, 1])
     coefficients = [flex.double([10, 11, 12, 13]), flex.double([20, 21, 22, 23])]
-    from scitbx.sparse import matrix  # need to assign a sparse matrix
 
     arrays, mat = calculate_harmonic_tables_from_selections(
         selection, selection, coefficients
@@ -310,7 +308,6 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     from dxtbx.serialize import load
     from dials.util.options import OptionParser
     from libtbx import phil
-    import os
     from dials.algorithms.scaling.scaling_library import create_scaling_model
 
     data_dir = os.path.join(dials_regression, "xia2-28")

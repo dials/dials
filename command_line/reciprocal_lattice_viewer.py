@@ -20,17 +20,15 @@ Visualise the strong spots from spotfinding in reciprocal space.
 
 Examples::
 
-  dials.reciprocal_lattice_viewer experiments.json strong.pickle
+  dials.reciprocal_lattice_viewer imported.expt strong.refl
 
-  dials.reciprocal_lattice_viewer experiments.json indexed.pickle
+  dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
 """
 
 
 def run(args):
-    usage = "%s [options] experiments.json reflections.pickle" % (
-        libtbx.env.dispatcher_name
-    )
+    usage = "%s [options] models.expt observations.refl" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

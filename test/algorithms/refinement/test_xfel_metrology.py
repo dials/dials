@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
+from dials.algorithms.refinement.engine import Journal
 import os
 
 import procrunner
@@ -25,22 +25,20 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
             os.path.join(data_dir, "benchmark_level2d.json"),
             os.path.join(data_dir, "benchmark_level2d.pickle"),
             os.path.join(data_dir, "refine.phil"),
-            "history=history.pickle",
+            "history=history.json",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # there are plenty of things we could do with the refinement history, but
     # here just check that final RMSDs are low enough
-    with open("history.pickle", "rb") as f:
-        history = pickle.load(f)
+    history = Journal.from_json_file("history.json")
     final_rmsd = history["rmsd"][-1]
     assert final_rmsd[0] < 0.0354
     assert final_rmsd[1] < 0.0406
     assert final_rmsd[2] < 0.0018
 
     # also check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_file("refined.pickle")
+    rt = flex.reflection_table.from_file("refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]

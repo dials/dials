@@ -58,7 +58,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,
@@ -83,7 +83,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -103,7 +103,6 @@ def plot_uc_histograms(
     from matplotlib import pyplot as plt
 
     plt.style.use("ggplot")
-    uc_labels = ["a", "b", "c"]
     f, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 8))
     a, b, c = uc_params[:3]
 
@@ -159,12 +158,12 @@ def plot_uc_histograms(
         )
         ax[0][i].set_xlim(ax[1][i].get_xlim())
 
-    ax[0][0].set_ylabel("b ($\AA$)")
-    ax[0][1].set_ylabel("c ($\AA$)")
-    ax[0][2].set_ylabel("a ($\AA$)")
-    ax[1][0].set_xlabel("a ($\AA$)")
-    ax[1][1].set_xlabel("b ($\AA$)")
-    ax[1][2].set_xlabel("c ($\AA$)")
+    ax[0][0].set_ylabel(r"b ($\AA$)")
+    ax[0][1].set_ylabel(r"c ($\AA$)")
+    ax[0][2].set_ylabel(r"a ($\AA$)")
+    ax[1][0].set_xlabel(r"a ($\AA$)")
+    ax[1][1].set_xlabel(r"b ($\AA$)")
+    ax[1][2].set_xlabel(r"c ($\AA$)")
 
     f.savefig(plot_name)
     plt.tight_layout()
@@ -181,7 +180,6 @@ def plot_uc_vs_detector_distance(
     from matplotlib import pyplot as plt
 
     plt.style.use("ggplot")
-    uc_labels = ["a", "b", "c"]
     f = plt.figure(figsize=(12, 8))
     ax1 = plt.subplot2grid((2, 3), (0, 0))
     ax2 = plt.subplot2grid((2, 3), (0, 1), sharey=ax1)
@@ -223,9 +221,9 @@ def plot_uc_vs_detector_distance(
     )
 
     ax1.set_ylabel("Detector distance (mm)")
-    ax1.set_xlabel("a ($\AA$)")
-    ax2.set_xlabel("b ($\AA$)")
-    ax3.set_xlabel("c ($\AA$)")
+    ax1.set_xlabel(r"a ($\AA$)")
+    ax2.set_xlabel(r"b ($\AA$)")
+    ax3.set_xlabel(r"c ($\AA$)")
     ax4.set_xlabel("Detector distance (mm)")
 
     f.savefig(filename)
@@ -240,7 +238,7 @@ def plot_number_of_crystals(experiments):
         image_to_expts.setdefault(img, [])
         image_to_expts[img].append(expt)
 
-    n_crystals_per_image = flex.int(len(expts) for expts in image_to_expts.itervalues())
+    n_crystals_per_image = flex.int(len(expts) for expts in image_to_expts.values())
     nmax = flex.max(n_crystals_per_image)
     hist = flex.histogram(n_crystals_per_image.as_double(), 0, nmax, n_slots=nmax)
     # hist.show()

@@ -1,21 +1,14 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
-from math import floor
+
+import math
+from collections import namedtuple
+
 from scitbx import matrix
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     XYPhiPredictionParameterisation,
     SparseGradientVectorMixin,
 )
-from collections import namedtuple
 
 
 class StateDerivativeCache(object):
@@ -91,7 +84,6 @@ class StateDerivativeCache(object):
 
         for p in self._cache:
             self._cache[p] = [[] for i in range(p.num_free())]
-        return
 
     def append(self, parameterisation, iparam, derivative, iselection):
         """For a particular parameterisation and parameter number of the free
@@ -101,7 +93,6 @@ class StateDerivativeCache(object):
         l1 = self._cache[parameterisation]
         l2 = l1[iparam]
         l2.append(self._Pair(derivative, iselection))
-        return
 
     @property
     def nref(self):
@@ -290,8 +281,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         self._derivative_cache.clear()
         self._derivative_cache.nref = nref
 
-        return
-
     def compose(self, reflections, skip_derivatives=False):
         """Compose scan-varying crystal parameterisations at the specified image
         number, for the specified experiment, for each image. Put the varying
@@ -318,7 +307,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
             self._current_frame = {}
 
             # get state and derivatives for each block
-            for block in xrange(flex.min(blocks), flex.max(blocks) + 1):
+            for block in range(flex.min(blocks), flex.max(blocks) + 1):
 
                 # determine the subset of reflections this affects
                 subsel = isel.select(blocks == block)
@@ -335,7 +324,7 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                 assert frames.all_eq(
                     frames[0]
                 ), "Failing: a block contains reflections that shouldn't be there"
-                frame = int(floor(frames[0]))
+                frame = int(math.floor(frames[0]))
 
                 # model states at current frame
                 U = self._get_state_from_parameterisation(xl_op, frame)
@@ -446,8 +435,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
 
         # set the UB matrices for prediction
         reflections["ub_matrix"] = reflections["u_matrix"] * reflections["b_matrix"]
-
-        return
 
     # called by refiner.run for setting the crystal scan points
     def get_varying_UB(self, obs_image_numbers, experiment_id):
@@ -684,8 +671,6 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
                 xl_ucp.set_state_uncertainties(b_cov_list)
             except AttributeError:
                 pass
-
-        return
 
 
 class ScanVaryingPredictionParameterisationSparse(

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+EXPECTED_CACHE_REVISION=20190705-python3
+
+if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then
+  echo -e "\e[31;1mCron job build detected. Invalidating cache.\e[0m"
+  rm -f $HOME/build_dials/.cache_valid
+  rm -f $HOME/build_dials/.build_complete
+fi
+
+if [ -f $HOME/build_dials/.cache_valid ] && [ "$EXPECTED_CACHE_REVISION" == "$(cat $HOME/build_dials/.cache_valid)" ]; then
+  echo -e "\e[1mCache probably valid\e[0m"
+else
+  echo -e "\e[31;1mThis is not the cache you are looking for: Starting from scratch\e[0m"
+  cd $HOME
+  wget https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64-conda3.tar.gz -O - | tar xz
+  cd dials-installer-dev
+  ./install --nopycompile --verbose --prefix=..
+  cd ..
+
+  # Destroy existing cache
+  rm -rf build_dials
+
+  # Fix up build path
+  mv dials-dev* build_dials
+  sed -i -e 's/dials-dev[0-9]\+/build_dials/g' $HOME/build_dials/build/setpaths.sh
+
+  # Define this as a valid base install
+  echo $EXPECTED_CACHE_REVISION>$HOME/build_dials/.cache_valid
+fi

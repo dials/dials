@@ -3,23 +3,23 @@ from __future__ import absolute_import, division, print_function
 import os
 import pytest
 from cctbx import uctbx
-from dials.algorithms.indexing.test_index import RunOneIndexing
+from dials.algorithms.indexing.test_index import run_indexing
 
 
-def test_run(dials_regression, run_in_tmpdir):
+def test_run(dials_regression, tmpdir):
     expected_unit_cell = uctbx.unit_cell(
         (11.624, 13.550, 30.103, 89.964, 93.721, 90.132)
     )
     expected_rmsds = (0.039, 0.035, 0.002)
 
     experiments_old = os.path.join(
-        dials_regression, "indexing_test_data/phi_scan/datablock_old.json"
+        dials_regression, "indexing_test_data", "phi_scan", "datablock_old.json"
     )
     experiments_new = os.path.join(
-        dials_regression, "indexing_test_data/phi_scan/datablock.json"
+        dials_regression, "indexing_test_data", "phi_scan", "datablock.json"
     )
     strong_pickle = os.path.join(
-        dials_regression, "indexing_test_data/phi_scan/strong.pickle"
+        dials_regression, "indexing_test_data", "phi_scan", "strong.pickle"
     )
 
     from dxtbx.serialize import load
@@ -73,18 +73,20 @@ def test_run(dials_regression, run_in_tmpdir):
         (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
     )
 
-    result_old = RunOneIndexing(
-        pickle_path=strong_pickle,
-        sweep_path=experiments_old,
+    result_old = run_indexing(
+        strong_pickle,
+        experiments_old,
+        tmpdir,
         extra_args=[],
         expected_unit_cell=expected_unit_cell,
         expected_rmsds=expected_rmsds,
         expected_hall_symbol=" P 1",
     )
 
-    result_new = RunOneIndexing(
-        pickle_path=strong_pickle,
-        sweep_path=experiments_new,
+    result_new = run_indexing(
+        strong_pickle,
+        experiments_new,
+        tmpdir,
         extra_args=[],
         expected_unit_cell=expected_unit_cell,
         expected_rmsds=expected_rmsds,

@@ -8,7 +8,7 @@ Compute resolution-wise distribution of spots
 
 Examples::
 
-  dials.spot_resolution_shells experiments.json strong.pickle
+  dials.spot_resolution_shells models.expt strong.refl
 
 """
 
@@ -25,7 +25,6 @@ def settings():
 
 
 def spot_resolution_shells(imagesets, reflections, params):
-    goniometer = imagesets[0].get_goniometer()
     from dials.array_family import flex
 
     mapped_reflections = flex.reflection_table()
@@ -53,16 +52,11 @@ def spot_resolution_shells(imagesets, reflections, params):
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
-    import libtbx.load_env
 
-    usage = "%s [options] experiments.json reflections.pickle" % (
-        libtbx.env.dispatcher_name
-    )
+    usage = "dials.spot_resolution_shells [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,

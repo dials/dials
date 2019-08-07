@@ -3,8 +3,10 @@ Observers for the cosym procedure.
 """
 from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
+import json
 from dials.util.observer import Observer, singleton
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
+from dials.algorithms.symmetry.cosym import SymmetryAnalysis
 from dials.algorithms.clustering.observers import UnitCellAnalysisObserver
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
@@ -21,6 +23,9 @@ def register_default_cosym_observers(script):
     script.register_observer(
         event="run_cosym", observer=CosymHTMLGenerator(), callback="make_html"
     )
+    script.register_observer(
+        event="run_cosym", observer=CosymJSONGenerator(), callback="make_json"
+    )
 
 
 @singleton
@@ -32,10 +37,12 @@ class CosymHTMLGenerator(Observer):
 
     def make_html(self, cosym_script):
         """Collect data from the individual observers and write the html."""
+        filename = cosym_script.params.output.html
+        if not filename:
+            return
         self.data.update(CosymClusterAnalysisObserver().make_plots())
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().make_tables())
-        filename = cosym_script.params.output.html
         print("Writing html report to: %s" % filename)
         loader = ChoiceLoader(
             [
@@ -53,6 +60,26 @@ class CosymHTMLGenerator(Observer):
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
+
+
+@singleton
+class CosymJSONGenerator(Observer):
+
+    """
+    Observer to make a html report
+    """
+
+    def make_json(self, cosym_script):
+        """Collect data from the individual observers and write the html."""
+        filename = cosym_script.params.output.json
+        if not filename:
+            return
+        self.data.update(CosymClusterAnalysisObserver().make_plots())
+        self.data.update(UnitCellAnalysisObserver().make_plots())
+        self.data.update(SymmetryAnalysisObserver().get_data())
+        print("Writing json to: %s" % filename)
+        with open(filename, "wb") as f:
+            json.dump(self.data, f)
 
 
 @singleton
@@ -85,31 +112,21 @@ class SymmetryAnalysisObserver(Observer):
     """
 
     def update(self, cosym):
-        if cosym._symmetry_analysis is None:
-            return
-        self.data["sym_ops_table"] = cosym._symmetry_analysis.sym_ops_table()
-        self.data["subgroups_table"] = cosym._symmetry_analysis.subgroups_table()
-        d = cosym._symmetry_analysis.as_dict()
-        from cctbx import sgtbx
-
-        best_subgroup = d["subgroup_scores"][0]
-        self.data["summary_table"] = (
-            (
-                "Best solution",
-                str(
-                    sgtbx.space_group(
-                        hall_symbol=best_subgroup["patterson_group"]
-                    ).info()
-                ),
-            ),
-            ("Unit cell", "%.3f %.3f %.3f %.1f %.1f %.1f" % best_subgroup["unit_cell"]),
-            ("Reindex operator", best_subgroup["cb_op"]),
-            ("Laue group probability", "%.3f" % best_subgroup["likelihood"]),
-            ("Laue group confidence", "%.3f" % best_subgroup["confidence"]),
-        )
+        if cosym._symmetry_analysis is not None:
+            self.data.update(cosym._symmetry_analysis.as_dict())
 
     def make_tables(self):
         """Generate symmetry analysis tables."""
-        d = {"symmetry_analysis": self.data}
-
+        d = {"symmetry_analysis": {}}
+        if self.data:
+            d["symmetry_analysis"].update(
+                {
+                    "sym_ops_table": SymmetryAnalysis.sym_ops_table(self.data),
+                    "subgroups_table": SymmetryAnalysis.subgroups_table(self.data),
+                    "summary_table": SymmetryAnalysis.summary_table(self.data),
+                }
+            )
         return d
+
+    def get_data(self):
+        return self.data

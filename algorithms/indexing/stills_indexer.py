@@ -435,7 +435,7 @@ class StillsIndexer(Indexer):
         logger.info("Final refined crystal models:")
         for i, crystal_model in enumerate(self.refined_experiments.crystals()):
             n_indexed = 0
-            for i_expt in experiments.where(crystal=crystal_model):
+            for _ in experiments.where(crystal=crystal_model):
                 n_indexed += (self.reflections["id"] == i).count(True)
             logger.info("model %i (%i reflections):" % (i + 1, n_indexed))
             logger.info(crystal_model)

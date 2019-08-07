@@ -33,29 +33,29 @@ dials.import ${data_directory}/2/ag/trp_ag_*.cbf
 # find spots on the images - this will take a while! also accept small spots
 # in this case as the data are good
 
-dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
+dials.find_spots min_spot_size=3 datablock.expt nproc=$nproc
 
 # index these found spots, searching for multiple lattices
 
-dials.index datablock.json strong.pickle \
+dials.index datablock.expt strong.refl \
   max_lattices=2
 
 # refine each indexing solution (separately) in all Bravais settings consistent
 # with the indexed unit cell. In this example we would continue processing
-# using the bravais_setting_5.json, i.e. solution number 5
+# using the bravais_setting_5.expt, i.e. solution number 5
 
-dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=0
+dials.refine_bravais_settings indexed.expt indexed.refl crystal_id=0
 
-dials.refine_bravais_settings experiments.json indexed.pickle crystal_id=1
+dials.refine_bravais_settings indexed.expt indexed.refl crystal_id=1
 
 # now re-run the indexing, this time imposing the lattice constraints for the
 # chosen Bravais setting, in this case number 5, i.e. oP, or point group P222
 
-dials.index datablock.json strong.pickle \
+dials.index datablock.expt strong.refl \
   max_lattices=2 \
   space_group=P222
 
-dials.refine experiments.json indexed.pickle \
+dials.refine indexed.expt indexed.refl \
   scan_varying=True \
   outlier.algorithm=tukey
 
@@ -65,22 +65,22 @@ dials.refine experiments.json indexed.pickle \
 # profile parameters...
 
 dials.integrate outlier.algorithm=null profile.fitting=True \
-  input.experiments=refined_experiments.json \
-  input.reflections=indexed.pickle \
+  input.experiments=refined.expt \
+  input.reflections=indexed.refl \
   nproc=$nproc
 
 # currently dials.export only supports one experiment at a time
-# therefore split the refined_experiments.json and integrated.pickle into
+# therefore split the refined.expt and integrated.refl into
 # separate files
 
-dials.split_experiments refined_experiments.json integrated.pickle \
-  experiments_prefix=refined_experiments reflections_prefix=integrated
+dials.split_experiments refined.expt integrated.refl \
+  experiments_prefix=refined reflections_prefix=integrated
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated_0.pickle refined_experiments_0.json mtz.hklout=integrated_0.mtz
-dials.export integrated_1.pickle refined_experiments_1.json mtz.hklout=integrated_1.mtz
+dials.export integrated_0.refl refined_0.expt mtz.hklout=integrated_0.mtz
+dials.export integrated_1.refl refined_1.expt mtz.hklout=integrated_1.mtz
 
 rebatch hklin integrated_0.mtz hklout rebatch_0.mtz > rebatch_0.log << EOF
 batch add 0

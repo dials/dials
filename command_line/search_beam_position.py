@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 import cmath
 import copy
@@ -39,7 +38,7 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 
 Examples::
 
-  dials.search_beam_position experiments.json strong.pickle
+  dials.search_beam_position imported.expt strong.refl
 
 """
 
@@ -78,7 +77,7 @@ seed = 42
   .type = int(value_min=0)
 
 output {
-  experiments = optimized_experiments.json
+  experiments = optimised.expt
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
@@ -136,8 +135,8 @@ class better_experimental_model_discovery(object):
             grid = max(1, int(scope / plot_px_sz))
             widegrid = 2 * grid + 1
             scores = flex.double()
-            for y in xrange(-grid, grid + 1):
-                for x in xrange(-grid, grid + 1):
+            for y in range(-grid, grid + 1):
+                for x in range(-grid, grid + 1):
                     new_origin_offset = (
                         x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                     )
@@ -155,7 +154,7 @@ class better_experimental_model_discovery(object):
             def igrid(x):
                 return x - (widegrid // 2)
 
-            idxs = [igrid(i) * plot_px_sz for i in xrange(widegrid)]
+            idxs = [igrid(i) * plot_px_sz for i in range(widegrid)]
 
             # if there are several similarly high scores, then choose the closest
             # one to the current beam centre
@@ -219,8 +218,8 @@ class better_experimental_model_discovery(object):
             plot_px_sz = self.imagesets[0].get_detector()[0].get_pixel_size()[0]
             grid = max(1, int(scope / plot_px_sz))
             scores = flex.double()
-            for y in xrange(-grid, grid + 1):
-                for x in xrange(-grid, grid + 1):
+            for y in range(-grid, grid + 1):
+                for x in range(-grid, grid + 1):
                     new_origin_offset = (
                         x * plot_px_sz * beamr1 + y * plot_px_sz * beamr2
                     )
@@ -242,14 +241,14 @@ class better_experimental_model_discovery(object):
                 def igrid(x):
                     return x - (widegrid // 2)
 
-                idxs = [igrid(i) * plot_px_sz for i in xrange(widegrid)]
+                idxs = [igrid(i) * plot_px_sz for i in range(widegrid)]
 
                 from matplotlib import pyplot as plt
 
                 plt.figure()
                 CS = plt.contour(
-                    [igrid(i) * plot_px_sz for i in xrange(widegrid)],
-                    [igrid(i) * plot_px_sz for i in xrange(widegrid)],
+                    [igrid(i) * plot_px_sz for i in range(widegrid)],
+                    [igrid(i) * plot_px_sz for i in range(widegrid)],
                     excursi.as_numpy_array(),
                 )
                 plt.clabel(CS, inline=1, fontsize=10, fmt="%6.3f")
@@ -309,7 +308,7 @@ class better_experimental_model_discovery(object):
 
         nh = min(solutions.size(), 20)  # extended API
         sum_score = 0.0
-        for t in xrange(nh):
+        for t in range(nh):
             # if t!=unique:continue
             dfft = Directional_FFT(
                 angle=Direction(solutions[t]),
@@ -517,7 +516,7 @@ def discover_better_experimental_model(
 
 
 def run(args):
-    usage = "dials.search_beam_position [options] experiments.json strong.pickle"
+    usage = "dials.search_beam_position [options] imported.expt strong.refl"
 
     parser = OptionParser(
         usage=usage,

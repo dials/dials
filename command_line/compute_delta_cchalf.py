@@ -57,11 +57,11 @@ phil_scope = parse(
 
   output {
 
-    experiments = "filtered_experiments.json"
+    experiments = "filtered.expt"
       .type = str
       .help = "The filtered experiments file"
 
-    reflections = "filtered_reflections.pickle"
+    reflections = "filtered.refl"
       .type = str
       .help = "The filtered reflections file"
 
@@ -179,6 +179,7 @@ class Script(object):
         )
 
         self.delta_cchalf_i = statistics.delta_cchalf_i()
+        self.results_summary["mean_cc_half"] = statistics._cchalf_mean
         # Print out the datasets in order of delta cc 1/2
         sorted_datasets, sorted_cc_half_values = self.sort_deltacchalf_values(
             self.delta_cchalf_i, self.results_summary
@@ -518,7 +519,7 @@ class Script(object):
     def plot_data(self):
         """Plot histogram and line plot of cc half values."""
         fig, ax = pylab.subplots()
-        ax.hist(self.delta_cchalf_i.values())
+        ax.hist(list(self.delta_cchalf_i.values()))
         ax.set_xlabel("Delta CC 1/2")
         fig.savefig("plot1.png")
 
@@ -538,7 +539,7 @@ def run(args=None, phil=phil_scope):
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    usage = "dials.compute_delta_cchalf [options] scaled_experiments.json scaled.pickle"
+    usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
     parser = OptionParser(
         usage=usage,

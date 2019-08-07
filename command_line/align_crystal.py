@@ -27,11 +27,11 @@ principle goniometer axis.
 
 Examples::
 
-  dials.align_crystal experiments.json
+  dials.align_crystal models.expt
 
-  dials.align_crystal experiments.json vector=0,0,1 vector=0,1,0
+  dials.align_crystal models.expt vector=0,0,1 vector=0,1,0
 
-  dials.align_crystal experiments.json frame=direct
+  dials.align_crystal models.expt frame=direct
 
 """
 
@@ -220,8 +220,8 @@ class align_crystal(object):
         self.all_solutions = results
 
         self.unique_solutions = collections.OrderedDict()
-        for (v1, v2), result in results.iteritems():
-            for solutions in result.itervalues():
+        for (v1, v2), result in results.items():
+            for solutions in result.values():
                 for solution in solutions:
                     k = tuple(round(a, 3) for a in solution[1:])
                     self.unique_solutions.setdefault(k, OrderedSet())
@@ -249,7 +249,7 @@ class align_crystal(object):
                 names[1]: angles[0],
                 names[0]: angles[1],
             }
-            for angles, solns in self.unique_solutions.iteritems()
+            for angles, solns in self.unique_solutions.items()
         ]
         d = {"solutions": solutions, "goniometer": self.experiment.goniometer.to_dict()}
         import json
@@ -347,7 +347,7 @@ class align_crystal(object):
         space_group = self.experiment.crystal.get_space_group()
         reciprocal = self.frame == "reciprocal"
         rows = []
-        for angles, vector_pairs in self.unique_solutions.iteritems():
+        for angles, vector_pairs in self.unique_solutions.items():
             v1, v2 = list(vector_pairs)[0]
             rows.append(
                 (
@@ -369,7 +369,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,

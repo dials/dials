@@ -324,7 +324,6 @@ def test_SingleScaler_initialisation():
     assert list(decay.d_values[0]) == list(d_suitable.select(block_selection))
 
     # test set outliers
-    refl = scaler.reflection_table
     assert list(r.get_flags(r.flags.outlier_in_scaling)) == [False] * 8
     scaler.set_outliers()
     assert list(r.get_flags(r.flags.outlier_in_scaling)) == outlier_list + [False]
@@ -607,10 +606,10 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     scaler = SingleScaler(p, exp[0], r)
     block = scaler.global_Ih_table.blocked_data_list[0]
     original_vars = block.variances
-    # test update error model - should update weights in global Ih and vars in refl table
+    # test update error model - should update weights in global Ih
     # as will be setting different things in Ih_table and reflection table, split
     # up the test to use two different error models.
-    scaler.update_error_model(mock_errormodel, apply_to_reflection_table=True)
+    scaler.update_error_model(mock_errormodel)
     assert list(block.variances) == list(original_vars)
     newvars = flex.double(range(1, 8))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
@@ -620,13 +619,12 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     # now test for updating of reflection table
     # do again with second errormodel
     scaler.global_Ih_table.reset_error_model()
-    scaler.update_error_model(mock_errormodel2, apply_to_reflection_table=True)
+    scaler.update_error_model(mock_errormodel2)
     assert list(block.variances) == list(original_vars)
     newvars = flex.double(range(1, 9))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
     # [2, 3, 4, 5, 6, 7, 8] < set these in ^ these positions (taking into account
     # the one non-suitable refl at index 5)
-    assert list(scaler.reflection_table["variance"]) == list(newvars)
     assert list(block.weights) == list(1.0 / newvars)[:-1]
     assert scaler.experiment.scaling_model.error_model is mock_errormodel2
 
@@ -700,9 +698,9 @@ def test_sf_variance_calculation():
     assert approx_equal(
         list(variances),
         [
-            b / (4.0 * (d1 ** 4.0)) + c / ((d1 ** 2.0)) + a,
-            b / (4.0 * (d2 ** 4.0)) + c / ((d2 ** 2.0)) + a,
-            b / (4.0 * (d3 ** 4.0)) + c / ((d3 ** 2.0)) + a,
+            b / (4.0 * (d1 ** 4.0)) + c / (d1 ** 2.0) + a,
+            b / (4.0 * (d2 ** 4.0)) + c / (d2 ** 2.0) + a,
+            b / (4.0 * (d3 ** 4.0)) + c / (d3 ** 2.0) + a,
         ],
     )
 

@@ -27,9 +27,9 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, run_in_
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
     # load results
     sliced_exp = ExperimentListFactory.from_json_file(
-        "experiments_1_20.json", check_format=False
+        "experiments_1_20.expt", check_format=False
     )[0]
-    with open("indexed_strong_1_20.pickle", "rb") as f:
+    with open("indexed_strong_1_20.refl", "rb") as f:
         sliced_refs = pickle.load(f)
 
     # simple test of results
@@ -50,11 +50,11 @@ def test_slice_sweep_with_first_images_missing(dials_regression, run_in_tmpdir):
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
     # second slice
-    cmd = "dials.slice_sweep experiments_5_20.json image_range=10,20"
+    cmd = "dials.slice_sweep experiments_5_20.expt image_range=10,20"
     result = easy_run.fully_buffered(command=cmd).raise_if_errors()
 
     sliced_exp = ExperimentListFactory.from_json_file(
-        "experiments_5_20_10_20.json", check_format=False
+        "experiments_5_20_10_20.expt", check_format=False
     )[0]
     assert sliced_exp.scan.get_image_range() == (10, 20)
     assert sliced_exp.scan.get_array_range() == (9, 20)

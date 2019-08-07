@@ -345,7 +345,7 @@ class Importer(object):
         for argument in args:
             try:
                 self.reflections.append(converter.from_string(argument))
-            except pickle_errors as e:
+            except pickle_errors:
                 self._handle_converter_error(
                     argument,
                     pickle.UnpicklingError("Appears to be an invalid pickle file"),
@@ -838,10 +838,16 @@ class OptionParser(OptionParserBase):
             quick_parse=quick_parse,
         )
 
+        # If there is a phil verbosity setting then add both together
+        # and share the value between them
+        if options.verbose and hasattr(params, "verbosity"):
+            params.verbosity += options.verbose
+            options.verbose = params.verbosity
+
         # Print the diff phil
         if show_diff_phil:
             diff_phil_str = self.diff_phil.as_str()
-            if diff_phil_str is not "":
+            if diff_phil_str != "":
                 print("The following parameters have been modified:\n")
                 print(diff_phil_str)
 
@@ -910,7 +916,7 @@ class OptionParser(OptionParserBase):
                     )
 
             # Otherwise (or if asked for verbosity), list the validation errors
-            if valid and (not non_valid or verbosity):
+            if valid and (not non_valid or verbosity > 1):
                 msg.append(
                     "  {} did not appear to conform to any{} expected format:".format(
                         arg, " other" if non_valid else ""
@@ -1043,7 +1049,7 @@ class OptionParser(OptionParserBase):
         print("function _dials_autocomplete_flags ()")
         print("{")
         print(' case "$1" in')
-        for p in parameter_choice_list.keys():
+        for p in parameter_choice_list:
             print("\n  %s)" % p)
             print(
                 '   _dials_autocomplete_values="%s";;'
@@ -1069,7 +1075,7 @@ class OptionParser(OptionParserBase):
         tree = construct_completion_tree(parameter_list)
 
         def _tree_to_bash(prefix, tree):
-            for subkey in tree.keys():
+            for subkey in tree:
                 if subkey != "":
                     _tree_to_bash(prefix + subkey + ".", tree[subkey])
                     print("\n  %s*)" % (prefix + subkey + "."))
@@ -1087,9 +1093,9 @@ class OptionParser(OptionParserBase):
         print(' case "$1" in')
         _tree_to_bash("", tree)
 
-        toplevelset = tree[""] | set(
-            [p + "=" for p, exp in parameter_expansion_list.items() if exp is not None]
-        )
+        toplevelset = tree[""] | {
+            p + "=" for p, exp in parameter_expansion_list.items() if exp is not None
+        }
 
         print("\n  *)")
         print('    _dials_autocomplete_values="%s";;' % " ".join(sorted(toplevelset)))
@@ -1112,7 +1118,7 @@ def flatten_reflections(filename_object_list):
     if len(tables) > 1:
         new_id_ = 0
         for table in tables:
-            table_id_values = sorted(list(set(table["id"]).difference(set([-1]))))
+            table_id_values = sorted(list(set(table["id"]).difference({-1})))
             highest_new_id = new_id_ + len(table_id_values) - 1
             expt_ids_dict = table.experiment_identifiers()
             new_ids_dict = {}
@@ -1128,7 +1134,7 @@ def flatten_reflections(filename_object_list):
                 new_id_ -= 1
             new_id_ = highest_new_id + 1
             if new_ids_dict:
-                for i, v in new_ids_dict.iteritems():
+                for i, v in new_ids_dict.items():
                     expt_ids_dict[i] = v
     return tables
 

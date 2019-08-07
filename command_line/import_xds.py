@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-#
-# import_xds.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 
 from __future__ import absolute_import, division, print_function
+
+import os
+
+from dials.array_family import flex
 
 
 class SpotXDSImporter(object):
@@ -22,7 +17,6 @@ class SpotXDSImporter(object):
         """ Import the spot.xds file. """
         from iotbx.xds import spot_xds
         from dials.util.command_line import Command
-        from dials.array_family import flex
 
         # Read the SPOT.XDS file
         Command.start("Reading SPOT.XDS")
@@ -34,7 +28,7 @@ class SpotXDSImporter(object):
             miller_index = handle.miller_index
         except AttributeError:
             miller_index = None
-        Command.end("Read {0} spots from SPOT.XDS file.".format(len(centroid)))
+        Command.end("Read {} spots from SPOT.XDS file.".format(len(centroid)))
 
         # Create the reflection list
         Command.start("Creating reflection list")
@@ -67,7 +61,7 @@ class SpotXDSImporter(object):
 
         # Output the table to pickle file
         if params.output.filename is None:
-            params.output.filename = "spot_xds.pickle"
+            params.output.filename = "spot_xds.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
         table.as_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
@@ -84,7 +78,6 @@ class IntegrateHKLImporter(object):
         """ Import the integrate.hkl file. """
 
         from iotbx.xds import integrate_hkl
-        from dials.array_family import flex
         from dials.util.command_line import Command
         from cctbx import sgtbx
 
@@ -139,11 +132,11 @@ class IntegrateHKLImporter(object):
         table["intensity.prf.variance"] = (sigma * peak / rlp) ** 2
         table["lp"] = 1.0 / rlp
         table["d"] = flex.double(uc.d(h) for h in hkl)
-        Command.end("Created table with {0} reflections".format(len(table)))
+        Command.end("Created table with {} reflections".format(len(table)))
 
         # Output the table to pickle file
         if params.output.filename is None:
-            params.output.filename = "integrate_hkl.pickle"
+            params.output.filename = "integrate_hkl.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
         table.as_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
@@ -172,7 +165,7 @@ class IntegrateHKLImporter(object):
         # assert that this should just be a simple integer rotation matrix
         # i.e. reassignment of a, b, c so...
 
-        return matrix.sqr(map(int, map(round, (dA.inverse() * xA).elems)))
+        return matrix.sqr([int(round(e)) for e in (dA.inverse() * xA).elems])
 
 
 class XDSFileImporter(object):
@@ -185,7 +178,6 @@ class XDSFileImporter(object):
     def __call__(self, params, options):
         from dxtbx.model.experiment_list import ExperimentListFactory
         from dxtbx.model.experiment_list import ExperimentListDumper
-        import os
 
         # Get the XDS.INP file
         xds_inp = os.path.join(self.args[0], "XDS.INP")
@@ -257,7 +249,7 @@ class XDSFileImporter(object):
 
         # Write the experiment list to a JSON or pickle file
         if params.output.filename is None:
-            params.output.filename = "experiments.json"
+            params.output.filename = "xds_models.expt"
         print("-" * 80)
         print("Writing experiments to %s" % params.output.filename)
         dump = ExperimentListDumper(experiments)
@@ -273,19 +265,18 @@ class XDSFileImporter(object):
     @staticmethod
     def find_best_xds_file(xds_dir):
         """ Find the best available file."""
-        from os.path import exists, join
 
         # The possible files to check
         paths = [
-            join(xds_dir, "XDS_ASCII.HKL"),
-            join(xds_dir, "INTEGRATE.HKL"),
-            join(xds_dir, "GXPARM.XDS"),
-            join(xds_dir, "XPARM.XDS"),
+            os.path.join(xds_dir, "XDS_ASCII.HKL"),
+            os.path.join(xds_dir, "INTEGRATE.HKL"),
+            os.path.join(xds_dir, "GXPARM.XDS"),
+            os.path.join(xds_dir, "XPARM.XDS"),
         ]
 
         # Return the first path that exists
         for p in paths:
-            if exists(p):
+            if os.path.exists(p):
                 return p
 
         # If no path exists, return None
@@ -346,10 +337,10 @@ class XDSFileImporter(object):
 
         # conversions to numeric
         try:
-            blocks = [map(int, block.split("...")) for block in blocks]
-            a_axis = [map(float, axis.split()) for axis in a_axis]
-            b_axis = [map(float, axis.split()) for axis in b_axis]
-            c_axis = [map(float, axis.split()) for axis in c_axis]
+            blocks = [[int(b) for b in block.split("...")] for block in blocks]
+            a_axis = [[float(a) for a in axis.split()] for axis in a_axis]
+            b_axis = [[float(b) for b in axis.split()] for axis in b_axis]
+            c_axis = [[float(c) for c in axis.split()] for axis in c_axis]
             xds_beam = [float(e) for e in xds_beam]
             xds_axis = [float(e) for e in xds_axis]
         except ValueError:
@@ -391,8 +382,6 @@ class XDSFileImporter(object):
 
         # set the scan-varying crystal
         experiment.crystal.set_A_at_scan_points(A_list)
-
-        return
 
 
 class Script(object):
@@ -472,11 +461,9 @@ class Script(object):
         importer(params, options)
 
     def select_importer(self, args):
-        from os.path import split
         from dxtbx.model.experiment_list import ExperimentListFactory
-        import libtbx.load_env
 
-        path, filename = split(args[0])
+        path, filename = os.path.split(args[0])
         if filename == "SPOT.XDS":
             return SpotXDSImporter(args[0])
         elif filename == "INTEGRATE.HKL":

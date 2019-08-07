@@ -557,7 +557,6 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
     ):
@@ -571,7 +570,6 @@ class ScalingGaussNewtonIterations(ScalingLstbxBuildUpMixin, GaussNewtonIteratio
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -590,7 +588,6 @@ class ScalingLevenbergMarquardtIterations(
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
     ):
@@ -606,7 +603,6 @@ class ScalingLevenbergMarquardtIterations(
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )

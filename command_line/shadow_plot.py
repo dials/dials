@@ -1,8 +1,8 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division, print_function
 
+import json
 import sys
 
 import libtbx
@@ -15,9 +15,9 @@ Generate a 1d or 2d goniometer detector shadow plot for a given experiment list.
 
 Examples::
 
-  dials.shadow_plot experiments.json
+  dials.shadow_plot models.expt
 
-  dials.shadow_plot experiments.json mode=2d
+  dials.shadow_plot models.expt mode=2d
 
 """
 
@@ -44,12 +44,10 @@ output {
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "dials.shadow_plot [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -140,9 +138,7 @@ def run(args):
             "scan_points": list(scan_points),
             "fraction_shadowed": list(fraction_shadowed),
         }
-        import json
-
-        with open(params.output.json, "wb") as f:
+        with open(params.output.json, "w") as f:
             json.dump(d, f)
 
     if params.output.plot is not None:

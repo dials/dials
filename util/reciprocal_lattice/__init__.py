@@ -275,7 +275,7 @@ class Render3d(object):
             try:
                 p = detector[panel_id]
             except RuntimeError:
-                raise Sorry("Detector does not have panel index {0}".format(panel_id))
+                raise Sorry("Detector does not have panel index {}".format(panel_id))
 
             beam_f, beam_s = p.millimeter_to_pixel((beam_f, beam_s))
             beam.set_unit_s0(p.get_pixel_lab_coord((beam_f, beam_s)))

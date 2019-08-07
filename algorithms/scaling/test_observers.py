@@ -2,10 +2,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import mock
 from cctbx import miller
-from collections import OrderedDict
+from dxtbx.model import Experiment, Crystal
 from dials.array_family import flex
 from dials.algorithms.scaling.model.model import KBScalingModel
-from dxtbx.model import Experiment, Crystal
 from dials.util.observer import Subject
 from dials.algorithms.scaling.observers import (
     register_default_scaling_observers,
@@ -40,7 +39,7 @@ def test_register_scaling_observers():
 
         def __init__(self):
             super(TestScript, self).__init__(
-                events=["merging_statistics", "run_script"]
+                events=["merging_statistics", "run_script", "run_filtering"]
             )
             self.scaler = Scaler()
 
@@ -104,7 +103,7 @@ def test_ScalingModelObserver():
     assert msg != ""
 
     mock_func = mock.Mock()
-    mock_func.return_value = {"plot": {}}
+    mock_func.return_value = {"plot": {"layout": {"title": ""}}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.plot_scaling_models", new=mock_func
@@ -128,7 +127,7 @@ def test_ScalingModelObserver():
     assert observer.data["1"] == KB_dict
 
     mock_func = mock.Mock()
-    mock_func.return_value = {"plot": {}}
+    mock_func.return_value = {"plot": {"layout": {"title": ""}}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.plot_scaling_models", new=mock_func
@@ -136,7 +135,7 @@ def test_ScalingModelObserver():
         r = observer.make_plots()
         assert mock_func.call_count == 2
         assert mock_func.call_args_list == [mock.call(KB_dict), mock.call(KB_dict)]
-        assert r == {"scaling_model": {"plot_0": {}, "plot_1": {}}}
+        assert all(i in r["scaling_model"] for i in ["plot_0", "plot_1"])
 
 
 def test_ScalingOutlierObserver():
@@ -174,17 +173,18 @@ def test_ScalingOutlierObserver():
     }
 
     mock_func = mock.Mock()
-    mock_func.return_value = {"outlier_xy_positions": {}, "outliers_vs_z": {}}
+    mock_func.return_value = {
+        "outlier_xy_positions": {"layout": {"title": ""}},
+        "outliers_vs_z": {"layout": {"title": ""}},
+    }
 
     with mock.patch("dials.algorithms.scaling.observers.plot_outliers", new=mock_func):
         r = observer.make_plots()
         assert mock_func.call_count == 1
         assert mock_func.call_args_list == [mock.call(observer.data["0"])]
-        assert r == {
-            "outlier_plots": OrderedDict(
-                [("outlier_plot_0", {}), ("outlier_plot_z0", {})]
-            )
-        }
+        assert all(
+            i in r["outlier_plots"] for i in ["outlier_plot_0", "outlier_plot_z0"]
+        )
 
 
 def test_ErrorModelObserver():

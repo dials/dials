@@ -13,11 +13,11 @@ between given miller indices for the respective orientation matrices.
 
 Examples::
 
-  dials.compare_orientation_matrices experiments.json
+  dials.compare_orientation_matrices models.expt
 
-  dials.compare_orientation_matrices experiments_1.json experiments_2.json
+  dials.compare_orientation_matrices models_1.expt models_2.expt
 
-  dials.compare_orientation_matrices experiments_1.json experiments_2.json hkl=1,0,0
+  dials.compare_orientation_matrices models_1.expt models_2.expt hkl=1,0,0
 
 """
 
@@ -40,7 +40,7 @@ def run(args):
     from dials.util.options import flatten_experiments
     import libtbx.load_env
 
-    usage = "%s [options] experiments.json" % libtbx.env.dispatcher_name
+    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
 
     parser = OptionParser(
         usage=usage,

@@ -1,23 +1,23 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
+import json
 import logging
 import os
 
-logger = logging.getLogger("dials.command_line.refine_bravais_settings")
-from six.moves import cStringIO as StringIO
-from dials.util import Sorry
 import iotbx.phil
-
-# from dials.util.command_line import Importer
+import libtbx
+from dials.array_family import flex
+from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
-from dials.array_family import flex
 
+logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 help_message = """
 
-This program takes as input the output of dials.index, i.e. experiments.json
-and indexed.pickle files. Full refinement of the crystal and experimental
+This program takes as input the output of dials.index, i.e. indexed.expt
+and indexed.refl files. Full refinement of the crystal and experimental
 geometry parameters will be performed (by default) in all Bravais settings
 that are consistent with the input primitive unit cell. A table is printed
 containing various information for each potential Bravais setting, including
@@ -27,19 +27,19 @@ predicted spot centroids, the refined unit cell parameters in each Bravais
 setting, and the change of basis operator to transform from the triclinic cell
 to each Bravais setting.
 
-The program also generates a .json file for each Bravais setting, e.g.
-bravais_setting_1.json, which is equivalent to the input experiments.json, but
+The program also generates a .expt file for each Bravais setting, e.g.
+bravais_setting_1.expt, which is equivalent to the input indexed.expt, but
 with the crystal model refined in the chosen Bravais setting. These
-bravais_setting_*.json files are suitable as input to dials.refine or
-dials.integrate, although the indexed.pickle file will need to be re-indexed
+bravais_setting_*.expt files are suitable as input to dials.refine or
+dials.integrate, although the indexed.refl file will need to be re-indexed
 using dials.reindex if the change of basis operator (cb_op) for the chosen
 Bravais setting is not the identity operator (a,b,c).
 
 Examples::
 
-  dials.refine_bravais_settings experiments.json indexed.pickle
+  dials.refine_bravais_settings indexed.expt indexed.refl
 
-  dials.refine_bravais_settings experiments.json indexed.pickle nproc=4
+  dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 
 """
 
@@ -47,8 +47,6 @@ phil_scope = iotbx.phil.parse(
     """
 lepage_max_delta = 5
   .type = float
-verbosity = 0
-  .type = int(value_min=0)
 nproc = Auto
   .type = int(value_min=1)
 crystal_id = None
@@ -66,8 +64,6 @@ output {
   directory = "."
     .type = path
   log = dials.refine_bravais_settings.log
-    .type = path
-  debug_log = dials.refine_bravais_settings.debug.log
     .type = path
   prefix = None
     .type = str
@@ -95,7 +91,6 @@ refinement {
 def bravais_lattice_to_space_groups(chiral_only=True):
     from cctbx import sgtbx
     from cctbx.sgtbx import bravais_types
-    import collections
 
     bravais_lattice_to_sg = collections.OrderedDict()
     for sgn in range(230):
@@ -110,7 +105,7 @@ def bravais_lattice_to_space_groups(chiral_only=True):
 def bravais_lattice_to_space_group_table(bravais_settings=None, chiral_only=True):
     bravais_lattice_to_sg = bravais_lattice_to_space_groups(chiral_only=chiral_only)
     logger.info("Chiral space groups corresponding to each Bravais lattice:")
-    for bravais_lattice, space_groups in bravais_lattice_to_sg.iteritems():
+    for bravais_lattice, space_groups in bravais_lattice_to_sg.items():
         if bravais_settings is not None and bravais_lattice not in bravais_settings:
             continue
         logger.info(
@@ -133,9 +128,8 @@ def short_space_group_name(space_group):
 
 def run(args=None):
     from dials.util import log
-    import libtbx.load_env
 
-    usage = "%s experiments.json indexed.pickle [options]" % libtbx.env.dispatcher_name
+    usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
         usage=usage,
@@ -149,7 +143,7 @@ def run(args=None):
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(verbosity=options.verbose, logfile=params.output.log)
 
     from dials.util.version import dials_version
 
@@ -157,7 +151,7 @@ def run(args=None):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -231,28 +225,24 @@ def run(args=None):
         reflections,
         lepage_max_delta=params.lepage_max_delta,
         nproc=params.nproc,
-        refiner_verbosity=params.verbosity,
     )
-    s = StringIO()
-    possible_bravais_settings = set(solution["bravais"] for solution in Lfat)
+    possible_bravais_settings = {solution["bravais"] for solution in Lfat}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
-    Lfat.labelit_printout(out=s)
-    logger.info(s.getvalue())
-    import json
+    logger.info(Lfat.labelit_printout())
 
     prefix = params.output.prefix
     if prefix is None:
         prefix = ""
     summary_file = "%sbravais_summary.json" % prefix
     logger.info("Saving summary as %s" % summary_file)
-    with open(os.path.join(params.output.directory, summary_file), "wb") as fh:
+    with open(os.path.join(params.output.directory, summary_file), "w") as fh:
         json.dump(Lfat.as_dict(), fh)
     from dxtbx.serialize import dump
 
     for subgroup in Lfat:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
-        bs_json = "%sbravais_setting_%i.json" % (prefix, soln)
+        bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s" % (soln, bs_json))
         dump.experiment_list(expts, os.path.join(params.output.directory, bs_json))
 

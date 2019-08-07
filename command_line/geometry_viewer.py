@@ -110,9 +110,9 @@ class render_3d(object):
                 p.set_frame(p.get_fast_axis(), p.get_slow_axis(), new_origin.elems)
 
         gonio_masker = (
-            self.imageset.masker()
-            .format_class(self.imageset.paths()[0], **self.imageset.data().get_params())
-            .get_goniometer_shadow_masker(goniometer=gonio)
+            self.imageset.get_format_class()
+            .get_instance(self.imageset.paths()[0], **self.imageset.data().get_params())
+            .get_masker(goniometer=gonio)
         )
         if gonio_masker is None:
             return
@@ -122,7 +122,7 @@ class render_3d(object):
         )
         points.insert(0, (0, 0, 0))
 
-        line_i_seqs = flex.vec2_double(((0, i) for i in range(1, points.size())))
+        line_i_seqs = flex.vec2_double((0, i) for i in range(1, points.size()))
         line_i_seqs += (self.viewer.points.size(), self.viewer.points.size())
         for i_seqs in line_i_seqs:
             self.viewer.line_i_seqs.append([int(i_seq) for i_seq in i_seqs])
@@ -578,10 +578,9 @@ def run(args):
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
     import os
 
-    usage = "%s [options] experiments.json" % (libtbx.env.dispatcher_name)
+    usage = "dials.geometry_viewer [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

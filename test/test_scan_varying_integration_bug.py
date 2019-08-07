@@ -1,33 +1,39 @@
 from __future__ import absolute_import, division, print_function
 
-from libtbx import easy_run
+import procrunner
 from libtbx.test_utils import approx_equal
 from cctbx import uctbx
 
 
-def test_1(dials_data, run_in_tmpdir):
+def test_1(dials_data, tmpdir):
     g = [f.strpath for f in dials_data("x4wide").listdir(sort=True)]
     assert len(g) == 90
 
     commands = [
-        "dials.import %s" % " ".join(g),
-        "dials.slice_sweep imported_experiments.json image_range=80,90",
-        "dials.find_spots imported_experiments_80_90.json",
-        "dials.index imported_experiments_80_90.json strong.pickle space_group=P41212",
-        "dials.refine indexed_experiments.json indexed.pickle scan_varying=True",
-        "dials.integrate refined_experiments.json indexed.pickle",
-        "dials.export refined_experiments.json integrated.pickle partiality_threshold=0.99",
+        ["dials.import"] + g,
+        ["dials.slice_sweep", "imported.expt", "image_range=80,90"],
+        ["dials.find_spots", "imported_80_90.expt"],
+        ["dials.index", "imported_80_90.expt", "strong.refl", "space_group=P41212"],
+        ["dials.refine", "indexed.expt", "indexed.refl", "scan_varying=True"],
+        ["dials.integrate", "refined.expt", "indexed.refl"],
+        [
+            "dials.export",
+            "refined.expt",
+            "integrated.refl",
+            "partiality_threshold=0.99",
+        ],
     ]
 
     for cmd in commands:
         # print cmd
-        result = easy_run.fully_buffered(cmd).raise_if_errors()
+        result = procrunner.run(cmd, working_directory=tmpdir)
+        assert not result.returncode and not result.stderr
 
-    integrated_mtz = "integrated.mtz"
-    assert run_in_tmpdir.join(integrated_mtz).check(file=1)
+    integrated_mtz = tmpdir.join("integrated.mtz")
+    assert integrated_mtz.check(file=1)
     from iotbx.reflection_file_reader import any_reflection_file
 
-    reader = any_reflection_file(integrated_mtz)
+    reader = any_reflection_file(integrated_mtz.strpath)
     mtz_object = reader.file_content()
     assert mtz_object.column_labels()[:14] == [
         "H",

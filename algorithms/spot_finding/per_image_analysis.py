@@ -1,15 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-
 import math
+import sys
 
 from cctbx import sgtbx, uctbx
+from dials.algorithms.integration import filtering
+from dials.array_family import flex
 from libtbx import group_args, table_utils
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
-
-from dials.algorithms.integration import filtering
-from dials.array_family import flex
 
 
 class slot(object):
@@ -364,8 +363,6 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     p_m = flex.max_index(slopes[skip_first:]) + 1 + skip_first
 
     # (ii)
-
-    from scitbx import matrix
 
     x1 = matrix.col((0, ds3_subset[0]))
     x2 = matrix.col((p_m, ds3_subset[p_m]))
@@ -781,7 +778,7 @@ def table(stats, perm=None, n_rows=None):
     if fraction_indexed is not None:
         rows[0].append("fraction_indexed")
     if perm is None:
-        perm = range(len(n_spots_total))
+        perm = list(range(len(n_spots_total)))
     if n_rows is not None:
         n_rows = min(n_rows, len(perm))
         perm = perm[:n_rows]
@@ -821,8 +818,6 @@ def table(stats, perm=None, n_rows=None):
 
 def print_table(stats, perm=None, n_rows=None, out=None):
     if out is None:
-        import sys
-
         out = sys.stdout
 
     rows = table(stats, perm=perm, n_rows=n_rows)
@@ -879,7 +874,7 @@ def plot_stats(stats, filename="per_image_analysis.png"):
     ax1.set_ylim(bottom=-0.2)
     ax1.legend(bbox_to_anchor=(1.05, 0.5), loc="center left", borderaxespad=0.0)
 
-    sel = (estimated_d_min < 50.0) & (n_spots_total > 20) & (estimated_d_min > 0)  # XXX
+    sel = (estimated_d_min < 50.0) & (n_spots_total > 20) & (estimated_d_min > 0)
     ax2.scatter(
         list(i_image.select(sel)),
         list(estimated_d_min.select(sel)),

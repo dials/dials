@@ -30,12 +30,12 @@ are removed.
 
 Examples::
 
-  dials.slice_sweep experiments.json reflections.pickle "image_range=1 20"
+  dials.slice_sweep models.expt observations.refl "image_range=1 20"
 
-  dials.slice_sweep experiments.json "image_range=1 20"
+  dials.slice_sweep models.expt "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
-  dials.slice_sweep experiments.json reflections.pickle \
+  dials.slice_sweep models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 
 """
@@ -112,12 +112,10 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "usage: dials.slice_sweep [options] [param.phil] "
+            "models.expt observations.refl"
         )
 
         # Create the parser
@@ -133,11 +131,7 @@ class Script(object):
     def run(self):
         """Execute the script."""
 
-        from dials.util.options import (
-            flatten_reflections,
-            flatten_experiments,
-            flatten_experiments,
-        )
+        from dials.util.options import flatten_reflections, flatten_experiments
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -222,13 +216,11 @@ class Script(object):
                 if not bname:
                     bname = "experiments"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.json".format(*params.image_range[0])
+                    ext = "_{0}_{1}.expt".format(*params.image_range[0])
                 else:
-                    ext = "_sliced.json"
+                    ext = "_sliced.expt"
                 output_experiments_filename = bname + ext
-            print(
-                "Saving sliced experiments to {0}".format(output_experiments_filename)
-            )
+            print("Saving sliced experiments to {}".format(output_experiments_filename))
 
             from dxtbx.model.experiment_list import ExperimentListDumper
 
@@ -245,9 +237,9 @@ class Script(object):
                 if not bname:
                     bname = "reflections"
                 if len(params.image_range) == 1 and params.image_range[0] is not None:
-                    ext = "_{0}_{1}.pickle".format(*params.image_range[0])
+                    ext = "_{0}_{1}.refl".format(*params.image_range[0])
                 else:
-                    ext = "_sliced.pickle"
+                    ext = "_sliced.refl"
                 output_reflections_filename = bname + ext
 
             print(

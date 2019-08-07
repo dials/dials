@@ -204,7 +204,7 @@ from dials.test.algorithms.spot_prediction.test_scan_static_reflection_predictor
 
 
 def test_scan_varying_results_are_close_to_static_prediction_when_model_is_static(
-    static_test
+    static_test  # noqa: F811, not a redefinition
 ):
     """Test that various modes of scan-varying prediction produce results
     close to static prediction when the supplied models are indeed static"""

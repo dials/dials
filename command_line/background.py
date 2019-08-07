@@ -1,15 +1,17 @@
 # LIBTBX_SET_DISPATCHER_NAME dials.background
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division, print_function
 
+import math
+import sys
+
 import iotbx.phil
-from scitbx.array_family import flex
-from dials.util import Sorry
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dials.util import Sorry
 from dxtbx.model.experiment_list import ExperimentList, Experiment
+from scitbx.array_family import flex
 
 help_message = """
 
@@ -38,18 +40,14 @@ masking {
 
 
 def main():
-    import sys
-
     run(sys.argv[1:])
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
 
-    usage = "%s [options] image_*.cbf" % (libtbx.env.dispatcher_name)
+    usage = "dials.background [options] image_*.cbf"
 
     parser = OptionParser(
         usage=usage, phil=phil_scope, read_experiments=True, epilog=help_message
@@ -60,9 +58,8 @@ def run(args):
     # Ensure we have either a data block or an experiment list
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
-        self.parser.print_help()
-        print("Please pass an experiment list\n")
-        return
+        parser.print_help()
+        sys.exit("Please pass an experiment list")
 
     imagesets = experiments.imagesets()
 
@@ -108,10 +105,9 @@ def run(args):
             ds2 = 1 / flex.pow2(d)
             ax.plot(ds2, I)
         xticks = ax.get_xticks()
-        from math import sqrt
 
         x_tick_labs = [
-            "" if e <= 0.0 else "{:.2f}".format(sqrt(1.0 / e)) for e in xticks
+            "" if e <= 0.0 else "{:.2f}".format(math.sqrt(1.0 / e)) for e in xticks
         ]
         ax.set_xticklabels(x_tick_labs)
 
@@ -122,7 +118,6 @@ def background(imageset, indx, n_bins, mask_params=None):
     from dials.array_family import flex
     from libtbx.phil import parse
     from scitbx import matrix
-    import math
 
     if mask_params is None:
         # Default mask params for trusted range

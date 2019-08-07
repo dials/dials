@@ -18,30 +18,30 @@ Refinement *without* ``scan_varying=true`` will work fine, but following that, s
 
 The issue here is that scan-varying refinement requires that each crystal being refined is associated with a single scan. In our case, we have a single crystal model from indexing, but this is associated with multiple scans. To proceed, we can split the experiment list into individual files. This breaks the sharing of models between experiments by making copies of each model for each file::
 
-  dials.split_experiments indexed.pickle experiments.json
+  dials.split_experiments indexed.refl indexed.expt
 
 From this point, we could process each block as per the usual tutorial instructions (ideally in separate directories). However, this will refine the beam and the detector, which *should* be shared, separately for each process. A better way to proceed would be to recombine the experiments as follows::
 
-  dials.combine_experiments experiments_*.json reflections_*.pickle \
+  dials.combine_experiments experiments_*.expt reflections_*.refl \
     reference_from_experiment.goniometer=0 \
     reference_from_experiment.detector=0 \
     reference_from_experiment.beam=0
 
-The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to take the goniometer, detector and beam models only from the first experiment (although any would have done as these are merely copies of each other). The resulting ``combined_experiments.json`` file has a separate (but identical) crystal model for each scan, alongside shared goniometer, detector and beam models. Scan-varying refinement and integration can now proceed as usual::
+The ``reference_from_experiment`` options tells ``dials.combine_experiments`` to take the goniometer, detector and beam models only from the first experiment (although any would have done as these are merely copies of each other). The resulting ``combined.expt`` file has a separate (but identical) crystal model for each scan, alongside shared goniometer, detector and beam models. Scan-varying refinement and integration can now proceed as usual::
 
-  dials.refine combined_experiments.json combined_reflections.pickle scan_varying=true
-  dials.integrate refined_experiments.json refined.pickle nproc=4
+  dials.refine combined.expt combined.refl scan_varying=true
+  dials.integrate refined.expt refined.refl nproc=4
 
 Export
 ======
 
 Currently, ``dials.export`` will not allow MTZ export of the multiple-experiment integration, but we can rely on ``dials.split_experiments`` again::
 
-  dials.split_experiments integrated_experiments.json integrated.pickle
+  dials.split_experiments integrated.expt integrated.refl
   i=0
-  for e in $(ls experiments_*.json)
+  for e in $(ls experiments_*.expt)
   do
-    r=reflections_$i.pickle
+    r=reflections_$i.refl
     echo "dials.export $e $r mtz.hklout=integrated_$i.mtz"
     ((i++))
   done

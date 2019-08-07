@@ -92,7 +92,7 @@ class Test:
         # least shows that beam changes across one image that are much larger than
         # we'd expect in normal processing do not hugely alter the generated list
         # of HKLs.
-        min_set_len = min((len(e) for e in hkl_sets))
+        min_set_len = min(len(e) for e in hkl_sets)
         common = set.intersection(*hkl_sets)
         # print "{0:.3f}% common".format(len(common) / min_set_len)
         assert len(common) >= 0.98 * min_set_len

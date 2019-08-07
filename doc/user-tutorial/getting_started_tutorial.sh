@@ -35,32 +35,32 @@ dials.import ${data_directory}/th_8_2_0*.cbf
 # run dials.parameters - this shows you the entire parameter set which is
 # available for DIALS)
 
-dials.find_spots min_spot_size=3 datablock.json nproc=$nproc
+dials.find_spots min_spot_size=3 datablock.expt nproc=$nproc
 
 # index these found spots - in this case the crystal is thaumatin which is known
 # to be tetragonal, so impose appropriate lattice constraints in the indexing
 # and refinement. can also specify unit cell here and also apply different
 # indexing algorithms
 
-dials.index strong.pickle datablock.json
+dials.index strong.refl datablock.expt
 
 # Refining: If you do want to use a time varying model,
 # you will need to rerun the refinement with this new model as
 
-dials.refine experiments.json indexed.pickle scan_varying=true
+dials.refine indexed.expt indexed.refl scan_varying=true
 
 # Integration:
 # Next step reads the indexed reflections to determine strong reflections for profile
-# fitting and integrates the data in refined_experiments.json, using the default
+# fitting and integrates the data in refined.expt, using the default
 # background determination with no outlier rejection and XDS-style 3D profile
 # fitting. These commands are most likely to change and can be viewed by running
 
-dials.integrate outlier.algorithm=null refined_experiments.json indexed.pickle
+dials.integrate outlier.algorithm=null refined.expt indexed.refl
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
 
-dials.export integrated.pickle refined_experiments.json mtz.hklout=integrated.mtz
+dials.export integrated.refl integrated.expt mtz.hklout=integrated.mtz
 
 # and as if to make a point, here is all we need to do is to sort the data with
 # pointless and then scale the data (ignoring anomalous differences) to 1.3A,

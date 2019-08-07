@@ -22,9 +22,9 @@ This program attempts to find sets of images with shared models
 
 Examples::
 
-  dials.find_shared_models experiments.json
+  dials.find_shared_models models.expt
 
-  dials.find_shared_models experiments1.json experiments2.json
+  dials.find_shared_models experiments1.expt experiments2.expt
 
 """
 
@@ -43,7 +43,7 @@ phil_scope = parse(
       .help = "The debug log filename"
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int
     .help = "The verbosity level"
 """,
@@ -62,7 +62,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json " % libtbx.env.dispatcher_name
+            "models.expt " % libtbx.env.dispatcher_name
         )
 
         # Initialise the base class
@@ -76,7 +76,6 @@ class Script(object):
         from dxtbx.imageset import ImageSweep
         from time import time
         from dials.util import log
-        from dials.util import Sorry
         import datetime
 
         start_time = time()
@@ -95,7 +94,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 

@@ -10,10 +10,8 @@ import procrunner
 
 import pytest
 
-from dials.util import Sorry
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.serialize import dump
-
+from dials.util import Sorry
 from dials.array_family import flex
 import dials.command_line.combine_experiments as combine_experiments
 
@@ -23,7 +21,7 @@ def test(dials_regression, run_in_tmpdir):
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
 
-    input_range = range(2, 49)
+    input_range = list(range(2, 49))
     for i in (8, 10, 15, 16, 34, 39, 45):
         input_range.remove(i)
 
@@ -51,14 +49,11 @@ def test(dials_regression, run_in_tmpdir):
         phil_file.writelines(input_phil)
 
     result = procrunner.run(["dials.combine_experiments", "input.phil"])
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # load results
-    exp = ExperimentListFactory.from_json_file(
-        "combined_experiments.json", check_format=False
-    )
-    ref = flex.reflection_table.from_file("combined_reflections.pickle")
+    exp = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
+    ref = flex.reflection_table.from_file("combined.refl")
 
     # test the experiments
     assert len(exp) == 103
@@ -74,23 +69,18 @@ def test(dials_regression, run_in_tmpdir):
     assert len(ref) == 11689
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "combined_experiments.json",
-            "combined_reflections.pickle",
-        ]
+        ["dials.split_experiments", "combined.expt", "combined.refl"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i, e in enumerate(exp):
-        assert os.path.exists("experiments_%03d.json" % i)
-        assert os.path.exists("reflections_%03d.pickle" % i)
+        assert os.path.exists("split_%03d.expt" % i)
+        assert os.path.exists("split_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.json" % i, check_format=False
+            "split_%03d.expt" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_file("reflections_%03d.pickle" % i)
+        ref_single = flex.reflection_table.from_file("split_%03d.refl" % i)
 
         assert len(exp_single) == 1
         assert exp_single[0].crystal == e.crystal
@@ -103,17 +93,12 @@ def test(dials_regression, run_in_tmpdir):
         assert ref_single["id"].all_eq(0)
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "combined_experiments.json",
-            "output.experiments_prefix=test",
-        ]
+        ["dials.split_experiments", "combined.expt", "output.experiments_prefix=test"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(len(exp)):
-        assert os.path.exists("test_%03d.json" % i)
+        assert os.path.exists("test_%03d.expt" % i)
 
     # Modify a copy of the detector
     detector = copy.deepcopy(exp.detectors()[0])
@@ -121,60 +106,52 @@ def test(dials_regression, run_in_tmpdir):
     x, y, z = panel.get_origin()
     panel.set_frame(panel.get_fast_axis(), panel.get_slow_axis(), (x, y, z + 10))
     # Set half of the experiments to the new detector
-    for i in xrange(len(exp) // 2):
+    for i in range(len(exp) // 2):
         exp[i].detector = detector
-    dump.experiment_list(exp, "modded_experiments.json")
+    exp.as_json("modded.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.json",
-            "combined_reflections.pickle",
+            "modded.expt",
+            "combined.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(2):
-        assert os.path.exists("test_by_detector_%03d.json" % i)
-        assert os.path.exists("test_by_detector_%03d.pickle" % i)
-    assert not os.path.exists("test_by_detector_%03d.json" % 2)
-    assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
+        assert os.path.exists("test_by_detector_%03d.expt" % i)
+        assert os.path.exists("test_by_detector_%03d.refl" % i)
+    assert not os.path.exists("test_by_detector_%03d.expt" % 2)
+    assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
     # Now do test when input has identifiers set
-    reflections = flex.reflection_table().from_file("combined_reflections.pickle")
-    explist = ExperimentListFactory.from_json_file(
-        "combined_experiments.json", check_format=False
-    )
+    reflections = flex.reflection_table().from_file("combined.refl")
+    explist = ExperimentListFactory.from_json_file("combined.expt", check_format=False)
     # set string identifiers as nonconsecutive 0,2,4,6....
     for i, exp in enumerate(explist):
         assert i in reflections["id"]
         reflections.experiment_identifiers()[i] = str(i * 2)
         exp.identifier = str(i * 2)
-    reflections.as_file("assigned_reflections.pickle")
-    dump.experiment_list(explist, "assigned_experiments.json")
+    reflections.as_file("assigned.refl")
+    explist.as_json("assigned.expt")
 
     result = procrunner.run(
-        [
-            "dials.split_experiments",
-            "assigned_experiments.json",
-            "assigned_reflections.pickle",
-        ]
+        ["dials.split_experiments", "assigned.expt", "assigned.refl"]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     for i in range(len(explist)):
-        assert os.path.exists("experiments_%03d.json" % i)
-        assert os.path.exists("reflections_%03d.pickle" % i)
+        assert os.path.exists("split_%03d.expt" % i)
+        assert os.path.exists("split_%03d.refl" % i)
 
         exp_single = ExperimentListFactory.from_json_file(
-            "experiments_%03d.json" % i, check_format=False
+            "split_%03d.expt" % i, check_format=False
         )
-        ref_single = flex.reflection_table.from_file("reflections_%03d.pickle" % i)
+        ref_single = flex.reflection_table.from_file("split_%03d.refl" % i)
 
         assert len(exp_single) == 1
         # resets all ids to 0, but keeps mapping to unique identifier.
@@ -184,43 +161,40 @@ def test(dials_regression, run_in_tmpdir):
         assert ref_single.experiment_identifiers()[0] == str(i * 2)
 
     # update modded experiments to have same identifiers as assigned_experiments
-    moddedlist = ExperimentListFactory.from_json_file(
-        "modded_experiments.json", check_format=False
-    )
+    moddedlist = ExperimentListFactory.from_json_file("modded.expt", check_format=False)
     for i, exp in enumerate(moddedlist):
         exp.identifier = str(i * 2)
-    dump.experiment_list(moddedlist, "modded_experiments.json")
+    moddedlist.as_json("modded.expt")
 
     result = procrunner.run(
         [
             "dials.split_experiments",
-            "modded_experiments.json",
-            "assigned_reflections.pickle",
+            "modded.expt",
+            "assigned.refl",
             "output.experiments_prefix=test_by_detector",
             "output.reflections_prefix=test_by_detector",
             "by_detector=True",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # Expect each datasets to have ids from 0..50 with experiment identifiers
     # all kept from before 0,2,4,6,...
     current_exp_id = 0
     for i in range(2):
-        assert os.path.exists("test_by_detector_%03d.json" % i)
-        assert os.path.exists("test_by_detector_%03d.pickle" % i)
+        assert os.path.exists("test_by_detector_%03d.expt" % i)
+        assert os.path.exists("test_by_detector_%03d.refl" % i)
         explist = ExperimentListFactory.from_json_file(
-            "test_by_detector_%03d.json" % i, check_format=False
+            "test_by_detector_%03d.expt" % i, check_format=False
         )
-        refl = flex.reflection_table.from_file("test_by_detector_%03d.pickle" % i)
+        refl = flex.reflection_table.from_file("test_by_detector_%03d.refl" % i)
 
         for k in range(len(explist)):
             assert refl.experiment_identifiers()[k] == str(current_exp_id)
             current_exp_id += 2
 
-    assert not os.path.exists("test_by_detector_%03d.json" % 2)
-    assert not os.path.exists("test_by_detector_%03d.pickle" % 2)
+    assert not os.path.exists("test_by_detector_%03d.expt" % 2)
+    assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
 
 def test_failed_tolerance_error(dials_regression, monkeypatch):

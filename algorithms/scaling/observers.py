@@ -6,16 +6,18 @@ from __future__ import absolute_import, division, print_function
 import logging
 from collections import OrderedDict
 
-from scitbx.array_family import flex
+import six
 from cctbx import uctbx
-from libtbx.table_utils import simple_table
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
     plot_scaling_models,
     plot_outliers,
     normal_probability_plot,
 )
-from dials.report.analysis import reflection_tables_to_batch_dependent_properties
+from dials.report.analysis import (
+    reflection_tables_to_batch_dependent_properties,
+    make_merging_statistics_summary,
+)
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
@@ -24,10 +26,12 @@ from dials.report.plots import (
     IntensityStatisticsPlots,
     AnomalousPlotter,
 )
+from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plots
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-import six
+from libtbx.table_utils import simple_table
+from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -47,14 +51,17 @@ def register_default_scaling_observers(script):
         observer=ScalingHTMLGenerator(),
         callback="make_scaling_html",
     )
-    script.scaler.register_observer(
+    register_scaler_observers(script.scaler)
+
+
+def register_scaler_observers(scaler):
+    """Register observers on the scaler."""
+    scaler.register_observer(
         event="performed_error_analysis", observer=ErrorModelObserver()
     )
 
-    script.scaler.register_observer(
-        event="performed_scaling", observer=ScalingModelObserver()
-    )
-    script.scaler.register_observer(
+    scaler.register_observer(event="performed_scaling", observer=ScalingModelObserver())
+    scaler.register_observer(
         event="performed_outlier_rejection", observer=ScalingOutlierObserver()
     )
 
@@ -69,6 +76,19 @@ def register_merging_stats_observers(script):
         observer=ScalingSummaryGenerator(),
         callback="print_scaling_summary",
     )
+
+
+def register_scale_and_filter_observers(script):
+    script.register_observer(event="run_scale_and_filter", observer=FilteringObserver())
+    script.register_observer(
+        event="run_scale_and_filter",
+        observer=ScalingHTMLGenerator(),
+        callback="make_scaling_html",
+    )
+    try:
+        script.unregister_observer(event="run_script", observer=ScalingHTMLGenerator())
+    except KeyError:
+        pass
 
 
 @singleton
@@ -131,10 +151,7 @@ were considered for use when refining the scaling model.
         )
         if MergingStatisticsObserver().data:
             logger.info(
-                "\n\t----------Overall merging statistics (non-anomalous)----------\t\n"
-            )
-            logger.info(
-                MergingStatisticsObserver().make_statistics_summary(
+                make_merging_statistics_summary(
                     MergingStatisticsObserver().data["statistics"]
                 )
             )
@@ -155,6 +172,7 @@ class ScalingHTMLGenerator(Observer):
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
+        self.data.update(FilteringObserver().make_plots())
         filename = scaling_script.params.output.html
         logger.info("Writing html report to: %s", filename)
         loader = ChoiceLoader(
@@ -175,6 +193,7 @@ class ScalingHTMLGenerator(Observer):
             anom_plots=self.data["anom_plots"],
             batch_plots=self.data["batch_plots"],
             misc_plots=self.data["misc_plots"],
+            filter_plots=self.data["filter_plots"],
         )
         with open(filename, "wb") as f:
             f.write(html.encode("ascii", "xmlcharrefreplace"))
@@ -201,14 +220,16 @@ class ScalingModelObserver(Observer):
         d = OrderedDict()
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
+            for plot in scaling_model_plots.values():
+                plot["layout"]["title"] += " (dataset %s)" % key
             for name, plot in six.iteritems(scaling_model_plots):
-                d.update({name + "_" + str(key): plot})
+                d[name + "_" + str(key)] = plot
         graphs = {"scaling_model": d}
         return graphs
 
     def return_model_error_summary(self):
         """Get a summary of the error distribution of the models."""
-        first_model = self.data.values()[0]
+        first_model = list(self.data.values())[0]
         component = first_model["configuration_parameters"]["corrections"][0]
         msg = ""
         if "est_standard_devs" in first_model[component]:
@@ -242,13 +263,12 @@ class ScalingModelObserver(Observer):
 
 @singleton
 class ScalingOutlierObserver(Observer):
-
     """
     Observer to record scaling outliers and make outlier plots.
     """
 
     def update(self, scaler):
-        active_scalers = getattr(scaler, "active_scalers", False)
+        active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
         for scaler in active_scalers:
@@ -273,12 +293,13 @@ class ScalingOutlierObserver(Observer):
     def make_plots(self):
         """Generate plot data of outliers on the detector and vs z."""
         d = OrderedDict()
-        for key in sorted(self.data.keys()):
+        for key in sorted(self.data):
             outlier_plots = plot_outliers(self.data[key])
-            d.update(
-                {"outlier_plot_" + str(key): outlier_plots["outlier_xy_positions"]}
-            )
-            d.update({"outlier_plot_z" + str(key): outlier_plots["outliers_vs_z"]})
+            for plot in outlier_plots.values():
+                if plot:  # may be null if no outliers
+                    plot["layout"]["title"] += " (dataset %s)" % key
+            d["outlier_plot_" + str(key)] = outlier_plots["outlier_xy_positions"]
+            d["outlier_plot_z" + str(key)] = outlier_plots["outliers_vs_z"]
         graphs = {"outlier_plots": d}
         return graphs
 
@@ -318,8 +339,33 @@ class ErrorModelObserver(Observer):
 
 
 @singleton
-class MergingStatisticsObserver(Observer):
+class FilteringObserver(Observer):
 
+    """
+    Observer to record data from the scaling and filtering algorithm.
+    """
+
+    def update(self, scaling_script):
+        if scaling_script.filtering_results:
+            self.data = {
+                "merging_stats": scaling_script.filtering_results.get_merging_stats(),
+                "initial_expids_and_image_ranges": scaling_script.filtering_results.initial_expids_and_image_ranges,
+                "cycle_results": scaling_script.filtering_results.get_cycle_results(),
+                "expids_and_image_ranges": scaling_script.filtering_results.expids_and_image_ranges,
+                "mode": scaling_script.params.filtering.deltacchalf.mode,
+            }
+
+    def make_plots(self):
+        """Make plots for scale and filter."""
+        if not self.data:
+            return {"filter_plots": {}}
+        # Make merging stats plots, histograms and image ranges.
+        d = make_scaling_filtering_plots(self.data)
+        return {"filter_plots": d}
+
+
+@singleton
+class MergingStatisticsObserver(Observer):
     """
     Observer to record merging statistics data and make tables.
     """
@@ -395,77 +441,3 @@ class MergingStatisticsObserver(Observer):
             anom_plotter = AnomalousPlotter(intensities_anom, strong_cutoff=d_min)
             d["anom_plots"].update(anom_plotter.make_plots())
         return d
-
-    @staticmethod
-    def make_statistics_summary(result):
-        """Format merging statistics information into an output string."""
-        overall = result.overall
-        # First make overall summary
-        msg = (
-            "Resolution: {0:.2f} - {1:.2f} {sep}Observations: {2:d} {sep}"
-            "Unique reflections: {3:d} {sep}Redundancy: {4:.1f} {sep}"
-            "Completeness: {5:.2f}% {sep}Mean intensity: {6:.1f} {sep}"
-            "Mean I/sigma(I): {7:.1f}"
-        ).format(
-            overall.d_max,
-            overall.d_min,
-            overall.n_obs,
-            overall.n_uniq,
-            overall.mean_redundancy,
-            overall.completeness * 100,
-            overall.i_mean,
-            overall.i_over_sigma_mean,
-            sep="\n",
-        )
-        if overall.n_neg_sigmas > 0:
-            msg += "SigI < 0 (rejected): {0} observations\n".format(
-                overall.n_neg_sigmas
-            )
-        if overall.n_rejected_before_merge > 0:
-            msg += "I < -3*SigI (rejected): {0} observations\n".format(
-                overall.n_rejected_before_merge
-            )
-        if overall.n_rejected_after_merge > 0:
-            msg += "I < -3*SigI (rejected): {0} reflections\n".format(
-                overall.n_rejected_after_merge
-            )
-        msg += "{sep}R-merge: {0:5.3f}{sep}R-meas:  {1:5.3f}{sep}R-pim:   {2:5.3f}{sep}".format(
-            overall.r_merge, overall.r_meas, overall.r_pim, sep="\n"
-        )
-
-        # Next make statistics by resolution bin
-        msg += "\nStatistics by resolution bin:\n"
-        msg += (
-            " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
-            + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
-        )
-        for bin_stats in result.bins:
-            msg += bin_stats.format() + "\n"
-        msg += result.overall.format() + "\n"
-
-        # Now show estimated cutoffs, based on iotbx code
-        def format_d_min(value):
-            """Format result values"""
-            if value is None:
-                return "(use all data)"
-            return "%7.3f" % value
-
-        msg += "\nResolution cutoff estimates:"
-        msg += """
-resolution of all data          : {0:7.3f}
-based on CC(1/2) >= 0.33        : {1}
-based on mean(I/sigma) >= 2.0   : {2}
-based on R-merge < 0.5          : {3}
-based on R-meas < 0.5           : {4}
-based on completeness >= 90%    : {5}
-based on completeness >= 50%    : {6}\n""".format(
-            result.overall.d_min,
-            format_d_min(result.estimate_d_min(min_cc_one_half=0.33)),
-            format_d_min(result.estimate_d_min(min_i_over_sigma=2.0)),
-            format_d_min(result.estimate_d_min(max_r_merge=0.5)),
-            format_d_min(result.estimate_d_min(max_r_meas=0.5)),
-            format_d_min(result.estimate_d_min(min_completeness=0.9)),
-            format_d_min(result.estimate_d_min(min_completeness=0.5)),
-        )
-        msg += "NOTE: we recommend using all data out to the CC(1/2) limit for refinement\n"
-        return msg

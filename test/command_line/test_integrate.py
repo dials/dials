@@ -22,10 +22,9 @@ def test2(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
+    with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
@@ -36,7 +35,7 @@ def test2(dials_data, tmpdir):
 
     originaltable = table
 
-    tmpdir.join("integrated.pickle").remove()
+    tmpdir.join("integrated.refl").remove()
 
     for i in range(1, 10):
         source = dials_data("centroid_test_data").join("centroid_000%d.cbf" % i)
@@ -51,24 +50,23 @@ def test2(dials_data, tmpdir):
     j["scan"][0]["image_range"] = [11, 19]
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
-    with tmpdir.join("experiments.json").open("w") as fh:
+    with tmpdir.join("models.expt").open("w") as fh:
         json.dump(j, fh)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "experiments.json",
+            "models.expt",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
+    with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
@@ -108,10 +106,9 @@ def test_integration_with_sampling(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
+    with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
     assert len(table) == 1000
 
@@ -128,10 +125,9 @@ def test_integration_with_sample_size(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
+    with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
     assert len(table) == 500
 
@@ -155,11 +151,10 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
             "prediction.padding=0",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("integrated.pickle")
+    assert not result.returncode and not result.stderr
+    assert os.path.exists("integrated.refl")
 
-    with open("integrated.pickle", "rb") as fh:
+    with open("integrated.refl", "rb") as fh:
         table = pickle.load(fh)
     assert len(table) == 4020
 
@@ -202,11 +197,10 @@ def test_multi_lattice(dials_regression, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.pickle").check()
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated.refl").check()
 
-    table = flex.reflection_table.from_file(tmpdir.join("integrated.pickle"))
+    table = flex.reflection_table.from_file(tmpdir.join("integrated.refl"))
     assert len(table) == 5605
 
     # Check output contains from two lattices
@@ -229,27 +223,25 @@ def test_output_rubbish(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("indexed_experiments.json").check(file=1)
-    assert tmpdir.join("indexed.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("indexed.expt").check(file=1)
+    assert tmpdir.join("indexed.refl").check(file=1)
 
     # Call dials.integrate
     result = procrunner.run(
         [
             "dials.integrate",
-            "indexed_experiments.json",
-            "indexed.pickle",
+            "indexed.expt",
+            "indexed.refl",
             "profile.fitting=False",
             "prediction.padding=0",
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("integrated.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated.refl").check(file=1)
 
-    with tmpdir.join("integrated.pickle").open("rb") as fh:
+    with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
 
     assert table.get_flags(table.flags.bad_reference) > 0
@@ -285,8 +277,8 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     templ_phil = """
       output {
-        experiments = 'idx-20161021225550223_integrated_experiments_%s.json'
-        reflections = 'idx-20161021225550223_integrated_%s.pickle'
+        experiments = 'idx-20161021225550223_integrated_experiments_%s.expt'
+        reflections = 'idx-20161021225550223_integrated_%s.refl'
       }
       integration {
         lookup.mask = '%s'
@@ -336,20 +328,19 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = procrunner.run(["dials.integrate", pickle_name, json_name, phil])
-        assert result["exitcode"] == 0
-        assert result["stderr"] == ""
+        assert not result.returncode and not result.stderr
 
     results = []
     for mode in "kapton", "nokapton":
-        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.pickle" % mode)
+        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.refl" % mode)
         with open(result, "rb") as f:
             table = pickle.load(f)
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
-        test_rows = {k: millers.first_index(v) for k, v in test_indices.iteritems()}
+        test_rows = {k: millers.first_index(v) for k, v in test_indices.items()}
         test_I_sigsqI = {
             k: (table[v]["intensity.sum.value"], table[v]["intensity.sum.variance"])
-            for k, v in test_rows.iteritems()
+            for k, v in test_rows.items()
         }
         results.append(test_I_sigsqI)
     assert results[0]["zero"][0] == results[1]["zero"][0]

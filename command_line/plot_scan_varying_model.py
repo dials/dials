@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-from math import floor, ceil
 import matplotlib
 
 matplotlib.use("Agg")
@@ -13,7 +12,7 @@ from dials.algorithms.refinement.rotation_decomposition import (
 )
 from dials.command_line.analyse_output import ensure_directory
 
-from dials.util import Sorry
+import dials.util
 from libtbx.phil import parse
 
 phil_scope = parse(
@@ -57,11 +56,11 @@ phil_scope = parse(
 help_message = """
 
 Generate plots of scan-varying models, including crystal orientation, unit cell
-and beam centre, from the input refined_experiments.json
+and beam centre, from the input refined.expt
 
 Examples::
 
-  dials.plot_scan_varying_model refined_experiments.json
+  dials.plot_scan_varying_model refined.expt
 
 """
 
@@ -72,9 +71,8 @@ class Script(object):
     def __init__(self):
         """Setup the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        usage = "usage: %s [options] experiments.json" % libtbx.env.dispatcher_name
+        usage = "usage: dials.plot_scan_varying_model [options] refined.expt"
         self.parser = OptionParser(
             usage=usage,
             phil=phil_scope,
@@ -91,7 +89,7 @@ class Script(object):
         params, options = self.parser.parse_args()
         if len(params.input.experiments) == 0:
             self.parser.print_help()
-            raise Sorry("No experiments found in the input")
+            raise dials.util.Sorry("No experiments found in the input")
         experiments = flatten_experiments(params.input.experiments)
 
         # Determine output path
@@ -118,7 +116,7 @@ class Script(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             cells = [crystal.get_unit_cell_at_scan_point(t) for t in scan_pts]
             cell_params = [e.parameters() for e in cells]
             a, b, c, aa, bb, cc = zip(*cell_params)
@@ -149,7 +147,7 @@ class Script(object):
                 pass
 
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Phi\ta\tb\tc\talpha\tbeta\tgamma\tVolume")
                 msg = "{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}"
                 line_dat = zip(phi, a, b, c, aa, bb, cc, vol)
@@ -170,7 +168,7 @@ class Script(object):
                 print("Ignoring scan-static crystal")
                 continue
 
-            scan_pts = range(crystal.num_scan_points)
+            scan_pts = list(range(crystal.num_scan_points))
             phi = [scan.get_angle_from_array_index(t) for t in scan_pts]
             Umats = [matrix.sqr(crystal.get_U_at_scan_point(t)) for t in scan_pts]
             if params.orientation_decomposition.relative_to_static_orientation:
@@ -189,7 +187,7 @@ class Script(object):
             phi3, phi2, phi1 = zip(*angles)
             angle_dat = {"phi": phi, "phi3": phi3, "phi2": phi2, "phi1": phi1}
             if self._debug:
-                print("Crystal in Experiment {0}".format(iexp))
+                print("Crystal in Experiment {}".format(iexp))
                 print("Image\tphi3\tphi2\tphi1")
                 msg = "{0}\t{1}\t{2}\t{3}"
                 line_dat = zip(phi, phi3, phi2, phi1)
@@ -228,7 +226,7 @@ class Script(object):
             self.plot_beam_centre(dat)
 
     def plot_cell(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(4, 2, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])
@@ -328,11 +326,11 @@ class Script(object):
 
         basename = os.path.join(self._directory, "unit_cell")
         fullname = basename + self._format
-        print("Saving unit cell plot to {0}".format(fullname))
+        print("Saving unit cell plot to {}".format(fullname))
         plt.savefig(fullname)
 
     def plot_orientation(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(3, 1, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])
@@ -361,11 +359,11 @@ class Script(object):
 
         basename = os.path.join(self._directory, "orientation")
         fullname = basename + self._format
-        print("Saving orientation plot to {0}".format(fullname))
+        print("Saving orientation plot to {}".format(fullname))
         plt.savefig(fullname)
 
     def plot_beam_centre(self, dat):
-        fig = plt.figure(figsize=(13, 10))
+        plt.figure(figsize=(13, 10))
         gs = gridspec.GridSpec(2, 1, wspace=0.4, hspace=0.6)
 
         ax = plt.subplot(gs[0, 0])
@@ -394,15 +392,11 @@ class Script(object):
 
         basename = os.path.join(self._directory, "beam_centre")
         fullname = basename + self._format
-        print("Saving beam centre plot to {0}".format(fullname))
+        print("Saving beam centre plot to {}".format(fullname))
         plt.savefig(fullname)
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

@@ -5,7 +5,7 @@ import procrunner
 
 def test_spots_xds(tmpdir):
     xds_input = "SPOT.XDS"
-    output_pickle = "spot.pickle"
+    output_pickle = "spot.refl"
 
     tmpdir.join(xds_input).write(
         """\
@@ -32,8 +32,7 @@ def test_spots_xds(tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join(output_pickle).check(file=1)
 
     from dials.array_family import flex
@@ -48,8 +47,7 @@ def test_spots_xds(tmpdir):
     result = procrunner.run(
         ["dials.export", "format=xds", output_pickle], working_directory=tmpdir.strpath
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
 
     txt = tmpdir.join("xds", "SPOT.XDS").read()
@@ -75,21 +73,19 @@ def test_export_xds(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("strong.pickle").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check(file=1)
 
     result = procrunner.run(
         [
             "dials.export",
             "format=xds",
             dials_data("centroid_test_data").join("experiments.json").strpath,
-            "strong.pickle",
+            "strong.refl",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("xds", "XDS.INP").check(file=1)
     assert tmpdir.join("xds", "XPARM.XDS").check(file=1)
     assert tmpdir.join("xds", "SPOT.XDS").check(file=1)
@@ -106,7 +102,6 @@ def test_export_xds(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("xds", "XDS.INP").check(file=1)
     assert tmpdir.join("xds", "XPARM.XDS").check(file=1)

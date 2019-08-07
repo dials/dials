@@ -20,13 +20,13 @@ logger = logging.getLogger("dials.command_line.create_profile_model")
 help_message = """
 
 This program computes the profile model from the input reflections. It then
-saves a modified experiments.json file with the additional profile model
+saves a modified models.expt file with the additional profile model
 information. Usually this is performed during integration; however, on some
 occasions it may be desirable to compute the profile model independently.
 
 Examples::
 
-  dials.create_profile_model experiments.json reflections.pickle
+  dials.create_profile_model models.expt observations.refl
 
 """
 
@@ -36,7 +36,7 @@ phil_scope = parse(
     .type = bool
     .help = "Subtract background from pixel data before computing profile"
     .expert_level = 2
-  output = experiments_with_profile_model.json
+  output = models_with_profiles.expt
     .type = str
     .help = "The filename for the experiments"
 
@@ -53,13 +53,8 @@ class Script(object):
     def __init__(self):
         """ Initialise the script. """
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
-        usage = (
-            "usage: %s [options] experiments.json spots.pickle"
-            % libtbx.env.dispatcher_name
-        )
+        usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
         self.parser = OptionParser(
             usage=usage,
             epilog=help_message,
@@ -159,7 +154,6 @@ class Script(object):
 
     def process_reference(self, reference, params):
         """ Load the reference spots. """
-        from dials.array_family import flex
         from time import time
         from dials.util import Sorry
 
@@ -207,7 +201,6 @@ class Script(object):
             )
         logger.info(" using %d indexed reflections" % len(reference))
         logger.info(" found %d junk reflections" % len(rubbish))
-        from dials.array_family import flex
 
         if "background.mean" in reference and params.subtract_background:
             logger.info(

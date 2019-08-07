@@ -1,22 +1,16 @@
 """Target function for cosym analysis."""
 from __future__ import absolute_import, division, print_function
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 import copy
+import logging
 import math
-
-from dials.util import log
-
-debug_handle = log.debug_handle(logger)
-info_handle = log.info_handle(logger)
 
 from cctbx.array_family import flex
 from cctbx import sgtbx
 from cctbx import miller
 import cctbx.sgtbx.cosets
+
+logger = logging.getLogger(__name__)
 
 
 class Target(object):
@@ -37,7 +31,7 @@ class Target(object):
         dimensions=None,
         nproc=1,
     ):
-        """"Intialise a Target object.
+        r""""Intialise a Target object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -84,16 +78,14 @@ class Target(object):
         # construct a lookup for the separate lattices
         last_id = -1
         self._lattices = flex.int()
-        for n in xrange(len(self._lattice_ids)):
-            if self._lattice_ids[n] != last_id:
-                last_id = self._lattice_ids[n]
+        for n, lid in enumerate(self._lattice_ids):
+            if lid != last_id:
+                last_id = lid
                 self._lattices.append(n)
 
-        self._sym_ops = set(["x,y,z"])
+        self._sym_ops = {"x,y,z"}
         self._lattice_group = lattice_group
-        self._sym_ops.update(
-            set([op.as_xyz() for op in self._generate_twin_operators()])
-        )
+        self._sym_ops.update({op.as_xyz() for op in self._generate_twin_operators()})
         if dimensions is None:
             dimensions = max(2, len(self._sym_ops))
         self.set_dimensions(dimensions)
@@ -125,8 +117,8 @@ class Target(object):
 
     def _generate_twin_operators(self, lattice_symmetry_max_delta=5.0):
         # see also mmtbx.scaling.twin_analyses.twin_laws
-        cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
         if self._lattice_group is None:
+            cb_op_to_minimum_cell = self._data.change_of_basis_op_to_minimum_cell()
             minimum_cell_symmetry = self._data.crystal_symmetry().change_basis(
                 cb_op=cb_op_to_minimum_cell
             )

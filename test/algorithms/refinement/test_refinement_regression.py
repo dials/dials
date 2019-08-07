@@ -125,7 +125,7 @@ def test():
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
 
@@ -258,7 +258,6 @@ def test():
     ######################################
 
     overrides = """minimiser.parameters.engine=GaussNewton
-  minimiser.parameters.verbosity=0
   minimiser.parameters.logfile=None"""
     refiner = setup_minimiser.Extract(
         master_phil, mytarget, pred_param, local_overrides=overrides
@@ -286,7 +285,6 @@ def test():
     ######################################################
 
     overrides = """minimiser.parameters.engine=LBFGScurvs
-  minimiser.parameters.verbosity=0
   minimiser.parameters.logfile=None"""
     refiner = setup_minimiser.Extract(
         master_phil, mytarget, pred_param, local_overrides=overrides

@@ -343,7 +343,7 @@ class symmetry_base(object):
                         "Resolution estimate from CC1/2 > %.2f: %.2f"
                         % (min_cc_half, d_min_cc_half)
                     )
-            valid_d_mins = list(set([d_min_cc_half, d_min_isigi]).difference(set([0])))
+            valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
             if valid_d_mins:
                 d_min = min(valid_d_mins)
                 logger.info("High resolution limit set to: %.2f" % d_min)

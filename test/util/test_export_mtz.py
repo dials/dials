@@ -6,13 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 
-import dials.util.export_mtz as export_mtz
 from dials.util.batch_handling import calculate_batch_offsets
-
-try:
-    from mock import Mock
-except ImportError:
-    from unittest.mock import Mock
 
 
 def in_ranges(value, ranges):
@@ -79,7 +73,6 @@ class TestBatchRangeCalculations(object):
             [x > 0 for x in self._run_ranges_to_set([(0, 0)])]
         ), "Should be no zeroth/negative batch"
 
-        input_data = [self.MockExperiment(x) for x in [(1, 1), (1, 1)]]
         assert not set(self._run_ranges([(1, 1), (1, 1)])) == {
             (1, 1)
         }, "Overlapping simple ranges"
@@ -111,6 +104,6 @@ class TestBatchRangeCalculations(object):
         exp1 = TestBatchRangeCalculations.MockExperiment((1, 1), scan=False)
         exp2 = TestBatchRangeCalculations.MockExperiment((1, 1), scan=False)
         offsets = calculate_batch_offsets([exp1, exp2])
-        all([float(x).is_integer() for x in offsets])
+        assert all(float(x).is_integer() for x in offsets)
         assert all(isinstance(x, int) for x in offsets)
-        assert all([x > 0 for x in offsets])
+        assert all(x > 0 for x in offsets)

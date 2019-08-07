@@ -9,28 +9,28 @@ def test(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.find_spots",
-            "output.experiments=experiments.json",
-            "output.reflections=spotfinder.pickle",
+            "output.experiments=spotfinder.expt",
+            "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
         ]
         + [f.strpath for f in images],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("experiments.json").check()
-    assert tmpdir.join("spotfinder.pickle").check()
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.expt").check()
+    assert tmpdir.join("spotfinder.refl").check()
 
     result = procrunner.run(
         [
             "dials.find_hot_pixels",
-            "input.experiments=experiments.json",
-            "input.reflections=spotfinder.pickle",
-            "output.mask=hot_mask.pickle",
+            "input.experiments=spotfinder.expt",
+            "input.reflections=spotfinder.refl",
+            "output.mask=hot_pixels.mask",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
-    assert tmpdir.join("hot_mask.pickle").check()
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("hot_pixels.mask").check()
     assert (
         "Found 8 hot pixels" in result["stdout"]
         or "Found 9 hot pixels" in result["stdout"]

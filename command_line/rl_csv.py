@@ -2,13 +2,8 @@
 from __future__ import absolute_import, division, print_function
 
 import iotbx.phil
-from scitbx.array_family import flex
-from scitbx import matrix
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments, flatten_reflections
-from dials.algorithms.indexing.indexer import filter_reflections_by_scan_range
-
-import libtbx.load_env
 
 phil_scope = iotbx.phil.parse(
     """
@@ -30,13 +25,7 @@ master_params = phil_scope.fetch().extract()
 
 
 def run(args):
-    import libtbx.load_env
-    from dials.util import log
-
-    usage = (
-        "%s [options] experiments.json strong.pickle output.csv=rl.csv"
-        % libtbx.env.dispatcher_name
-    )
+    usage = "dev.dials.csv [options] imported.expt strong.refl output.csv=rl.csv"
 
     parser = OptionParser(
         usage=usage,

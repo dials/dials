@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
-import six.moves.cPickle as pickle
 import logging
 import math
 from time import time
@@ -23,6 +22,7 @@ from dials.util import log
 from dials.util.version import dials_version
 from libtbx.utils import format_float_with_standard_uncertainty
 from dials.util import Sorry
+from dials.algorithms.refinement.corrgram import create_correlation_plots
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
 
@@ -34,9 +34,9 @@ estimated standard deviation.
 
 Examples::
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle
+  dials.two_theta_refine integrated.expt integrated.refl
 
-  dials.two_theta_refine integrated_experiments.json integrated.pickle \
+  dials.two_theta_refine integrated.expt integrated.refl \
     correlation_plot.filename=corrplot.png cif=refined_cell.cif
 """
 
@@ -47,7 +47,7 @@ phil_scope = parse(
     """
 
   output {
-    experiments = refined_cell.json
+    experiments = refined_cell.expt
       .type = str
       .help = "The filename for experimental models including refined cells"
 
@@ -71,33 +71,7 @@ phil_scope = parse(
       .type = str
       .help = "Write output to SHELX / XPREP .p4p file"
 
-    # FIXME include this directly from the original rather than copy here
-    correlation_plot
-      .expert_level = 1
-    {
-      filename = None
-        .type = str
-        .help = "The base filename for output of plots of parameter"
-                "correlations. A file extension may be added to control"
-                "the type of output file, if it is one of matplotlib's"
-                "supported types. A pickle file with the same base filename"
-                "will also be created, containing the correlation matrix and"
-                "column labels for later inspection, replotting etc."
-
-      col_select = None
-        .type = strings
-        .help = "Specific columns to include in the plots of parameter"
-                "correlations, either specifed by parameter name or 0-based"
-                "column index. Defaults to all columns."
-                "This option is useful when there is a large number of"
-                "parameters"
-
-      steps = None
-        .type = ints(value_min=0)
-        .help = "Steps for which to make correlation plots. By default only"
-                "the final step is plotted. Uses zero-based numbering, so"
-                "the first step is numbered 0."
-    }
+    include scope dials.algorithms.refinement.corrgram.phil_scope
   }
 
   #FIXME expose _some_ of the Refiner options?
@@ -106,10 +80,6 @@ phil_scope = parse(
   refinement
     .help = "Parameters to configure the refinement"
   {
-    verbosity = 2
-      .help = "verbosity level"
-      .type = int(value_min=0)
-
     filter_integrated_centroids = True
       .type = bool
       .help = "If integrated centroids are provided, filter these so that only"
@@ -144,7 +114,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "experiments.json reflections.pickle" % libtbx.env.dispatcher_name
+            "models.expt observations.refl" % libtbx.env.dispatcher_name
         )
 
         # Create the parser
@@ -249,8 +219,6 @@ class Script(object):
             TwoThetaPredictionParameterisation,
         )
 
-        verb = params.refinement.verbosity
-
         # Only parameterise the crystal unit cell
         det_params = None
         beam_params = None
@@ -274,7 +242,7 @@ class Script(object):
         # Note: If not all reflections are used, then the filtering must be
         # communicated to generate_cif/mmcif() to be included in the CIF file!
         refman = TwoThetaReflectionManager(
-            reflections, experiments, outlier_detector=None, verbosity=verb
+            reflections, experiments, outlier_detector=None
         )
 
         # Reflection predictor
@@ -300,7 +268,6 @@ class Script(object):
             target=target,
             prediction_parameterisation=pred_param,
             log=None,
-            verbosity=verb,
             tracking=journal,
             max_iterations=20,
         )
@@ -315,7 +282,6 @@ class Script(object):
             refman=refman,
             target=target,
             refinery=refinery,
-            verbosity=verb,
         )
 
         return refiner
@@ -531,7 +497,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -556,10 +522,8 @@ class Script(object):
         if nexp == 1:
             logger.info("Performing refinement of a single Experiment...")
         else:
-            logger.info("Performing refinement of {0} Experiments...".format(nexp))
-
-        # Refine and get the refinement history
-        history = refiner.run()
+            logger.info("Performing refinement of {} Experiments...".format(nexp))
+        refiner.run()
 
         # get the refined experiments
         experiments = refiner.get_experiments()
@@ -575,70 +539,16 @@ class Script(object):
         # Save the refined experiments to file
         output_experiments_filename = params.output.experiments
         logger.info(
-            "Saving refined experiments to {0}".format(output_experiments_filename)
+            "Saving refined experiments to {}".format(output_experiments_filename)
         )
         from dxtbx.model.experiment_list import ExperimentListDumper
 
         dump = ExperimentListDumper(experiments)
         dump.as_json(output_experiments_filename)
 
-        # Correlation plot
+        # Create correlation plots
         if params.output.correlation_plot.filename is not None:
-            from os.path import splitext
-
-            root, ext = splitext(params.output.correlation_plot.filename)
-            if not ext:
-                ext = ".pdf"
-
-            steps = params.output.correlation_plot.steps
-            if steps is None:
-                steps = [history.get_nrows() - 1]
-
-            # extract individual column names or indices
-            col_select = params.output.correlation_plot.col_select
-
-            num_plots = 0
-            for step in steps:
-                fname_base = root
-                if len(steps) > 1:
-                    fname_base += "_step%02d" % step
-
-                corrmats, labels = refiner.get_parameter_correlation_matrix(
-                    step, col_select
-                )
-                if [corrmats, labels].count(None) == 0:
-                    from dials.algorithms.refinement.refinement_helpers import corrgram
-
-                    for resid_name, corrmat in corrmats.items():
-                        plot_fname = fname_base + ext
-                        plt = corrgram(corrmat, labels)
-                        if plt is not None:
-                            logger.info(
-                                "Saving parameter correlation plot to {}".format(
-                                    plot_fname
-                                )
-                            )
-                            plt.savefig(plot_fname)
-                            plt.close()
-                            num_plots += 1
-                    mat_fname = fname_base + ".pickle"
-                    with open(mat_fname, "wb") as handle:
-                        for k, corrmat in corrmats.items():
-                            corrmats[k] = corrmat.as_scitbx_matrix()
-                        logger.info(
-                            "Saving parameter correlation matrices to {0}".format(
-                                mat_fname
-                            )
-                        )
-                        pickle.dump({"corrmats": corrmats, "labels": labels}, handle)
-
-            if num_plots == 0:
-                msg = (
-                    "Sorry, no parameter correlation plots were produced. Please set "
-                    "track_parameter_correlation=True to ensure correlations are "
-                    "tracked, and make sure correlation_plot.col_select is valid."
-                )
-                logger.info(msg)
+            create_correlation_plots(refiner, params.output)
 
         if params.output.cif is not None:
             self.generate_cif(crystals[0], refiner, file=params.output.cif)
@@ -650,7 +560,7 @@ class Script(object):
             self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
 
         # Log the total time taken
-        logger.info("\nTotal time taken: {0:.2f}s".format(time() - start_time))
+        logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

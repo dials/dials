@@ -30,11 +30,11 @@ libffi_source_version = "3.2.1"
 openssl_API_version = "(1, 0, 2, 19, 15)"  # import ssl; print(ssl._OPENSSL_API_VERSION)
 openssl_source_size = 5349149
 openssl_source_version = "1.0.2s"
-python_source_size = 22973527
-python_source_version = "3.7.3"
-sqlite_source_size = 2810415
-sqlite_source_version = 3280000
-sqlite_version = "3.28.0"
+python_source_size = 23017663
+python_source_version = "3.7.4"
+sqlite_source_size = 2833613
+sqlite_source_version = 3290000
+sqlite_version = "3.29.0"
 
 environment_override = {
     "LD_LIBRARY_PATH": "",
@@ -187,7 +187,7 @@ def precommitbx_template(python):
             "  echo No pre-commit configuration. Skipping pre-commit checks.",
             "  exit 0",
             "fi",
-            'if grep -q "language_version.\+libtbx.python" .pre-commit-config.yaml; then',
+            r'if grep -q "language_version.\+libtbx.python" .pre-commit-config.yaml; then',
             "  echo Repository contains legacy pre-commit configuration. Skipping pre-commit checks.",
             "  exit 0",
             "fi",
@@ -340,7 +340,7 @@ def download_libffi():
     archive = precommit_home / "libffi-{}.tar.gz".format(libffi_source_version)
     if archive.check() and archive.size() == libffi_source_size:
         return archive
-    url = "ftp://sourceware.org/pub/libffi/libffi-{0}.tar.gz".format(
+    url = "ftp://sourceware.org/pub/libffi/libffi-{}.tar.gz".format(
         libffi_source_version
     )
     download("Downloading libffi", url, libffi_source_size, archive, step="libffi")
@@ -382,6 +382,17 @@ def install_libffi():
             stop_on_error="Error installing libffi",
             working_directory=sourcedir,
         )
+    # Selectively copy output files to locations where Python setup can pick them up
+    ffi_include = (
+        precommit_home / "lib" / "libffi-{}".format(libffi_source_version) / "include"
+    )
+    if ffi_include.check():
+        for f in ffi_include.listdir():
+            f.copy(precommit_home / "include")
+    ffi_lib = precommit_home.join("lib64")
+    if ffi_lib.check():
+        for f in precommit_home.join("lib64").listdir():
+            f.copy(precommit_home / "lib")
     markerfile.ensure()
 
 
@@ -411,7 +422,7 @@ def install_sqlite():
             callback_stdout=bar.increment,
             stop_on_error="Error unpacking SQLite sources",
         )
-    with Progress("Configuring SQLite", 114, step="SQLite") as bar:
+    with Progress("Configuring SQLite", 116, step="SQLite") as bar:
         clean_run(
             [sourcedir.join("configure"), "--prefix=%s" % precommit_home],
             callback_stdout=bar.increment,
@@ -449,7 +460,7 @@ def download_python():
 def unpack_python():
     targz = download_python()
     ProgressOverall.done_step("Python")
-    with Progress("Unpacking Python", 4174, step="Python") as bar:
+    with Progress("Unpacking Python", 4183, step="Python") as bar:
         clean_run(
             ["tar", "xvfz", targz],
             working_directory=precommit_home,
@@ -491,7 +502,7 @@ def install_python(check_only=False):
         "CPPFLAGS": "-I" + precommit_home.join("include").strpath,
     }
 
-    with Progress("Configuring Python", 717, step="Python") as bar:
+    with Progress("Configuring Python", 716, step="Python") as bar:
         clean_run(
             [
                 sourcedir.join("configure"),
@@ -507,7 +518,7 @@ def install_python(check_only=False):
         parallel = str(multiprocessing.cpu_count())
     except NotImplementedError:
         parallel = "2"
-    with Progress("Building Python", 459, step="Python") as bar:
+    with Progress("Building Python", 461, step="Python") as bar:
         clean_run(
             ["make", "-j", parallel],
             callback_stdout=bar.increment,
@@ -544,7 +555,12 @@ def install_python(check_only=False):
     )
     if result.stdout.strip() != sqlite_version:
         sys.exit("Python has not picked up correct SQLite headers")
-    with Progress("Installing Python", 7767, step="Python") as bar:
+    result = clean_run(
+        [compiled_python, "-c", "import ctypes"],
+        working_directory=sourcedir,
+        stop_on_error="Python is missing FFI support",
+    )
+    with Progress("Installing Python", 7770, step="Python") as bar:
         clean_run(
             ["make", "install"],
             working_directory=sourcedir,
@@ -612,7 +628,6 @@ def main():
     else:
         py_ver = RED + "not installed" + NC
         changes_required = True
-    print("Precommit Python:", py_ver)
     if python:
         pc_ver = precommit_version(python)
         if pc_ver != precommitbx_version and fix_things:
@@ -626,11 +641,22 @@ def main():
         else:
             pc_ver = RED + "not installed" + NC
             changes_required = True
+        print("Precommit Python:", py_ver)
         print("Precommitbx:", pc_ver)
 
     print()
     print("Repositories:")
     repositories = list_all_repository_candidates()
+    if "install" in sys.argv:
+        paths = sys.argv[1:]
+        paths.remove("install")
+        for path in paths:
+            path = py.path.local(".").join(path, abs=1)
+            if path.basename in repositories:
+                base = path.strpath
+            else:
+                base = path.basename
+            repositories[base] = path
     for module in sorted(repositories):
         if not repositories[module].join(".pre-commit-config.yaml").check():
             print(repo_prefix.format(module), repo_no_precommit)

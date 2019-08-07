@@ -1,13 +1,40 @@
+"""Tests for dials.compute_delta_cchalf."""
 from __future__ import absolute_import, division, print_function
-from iotbx.reflection_file_reader import any_reflection_file
-from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
-from os.path import join
+
 import copy
+import os
+
+import procrunner
+from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
+from iotbx.reflection_file_reader import any_reflection_file
+
+
+def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
+    """Test dials.compute_delta_cchalf on scaled data."""
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refls = location.join("scaled_20_25.refl").strpath
+    expts = location.join("scaled_20_25.expt").strpath
+
+    # set cutoff to 0.0 to force one to be 'rejected'
+    command = [
+        "dials.compute_delta_cchalf",
+        refls,
+        expts,
+        "stdcutoff=0.0",
+        "output.reflections=filtered.refl",
+        "output.experiments=filtered.expt",
+    ]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("filtered.expt").check()
+    assert tmpdir.join("filtered.refl").check()
 
 
 def test_compute_delta_cchalf(dials_regression):
-
-    filename = join(dials_regression, "delta_cchalf_test_data", "test.XDS_ASCII.mtz")
+    """Test compute delta cchalf on an integrated mtz."""
+    filename = os.path.join(
+        dials_regression, "delta_cchalf_test_data", "test.XDS_ASCII.mtz"
+    )
 
     # Read the mtz file
     reader = any_reflection_file(filename)
@@ -41,7 +68,7 @@ def test_compute_delta_cchalf(dials_regression):
     min_batch = min(batch)
     dataset = batch - min_batch
     num_datasets = max(dataset) + 1
-    unit_cell_list = [unit_cell for i in range(num_datasets)]
+    unit_cell_list = [unit_cell for _ in range(num_datasets)]
     identifiers = list(set(dataset))
     # Add in dummy images for now
     images = copy.deepcopy(batch)

@@ -20,17 +20,17 @@ reflections are then saved to file.
 
 Examples::
 
-  dials.predict experiments.json
+  dials.predict models.expt
 
-  dials.predict experiments.json force_static=True
+  dials.predict models.expt force_static=True
 
-  dials.predict experiments.json d_min=2.0
+  dials.predict models.expt d_min=2.0
 
 """
 
 phil_scope = parse(
     """
-  output = predicted.pickle
+  output = predicted.refl
     .type = str
     .help = "The filename for the predicted reflections"
 
@@ -68,7 +68,7 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "{sweep.json | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "{sweep.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
         )
 
         # Create the parser

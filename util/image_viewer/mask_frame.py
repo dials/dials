@@ -732,7 +732,7 @@ class MaskSettingsPanel(wx.Panel):
                 self.DrawCircle(xc, yc, xedge, yedge)
                 try:
                     self.AddUntrustedCircle(xc, yc, xedge, yedge)
-                except Exception(e):
+                except Exception as e:
                     print(e)
                 finally:
                     self._pyslip.DeleteLayer(self._mode_circle_layer)

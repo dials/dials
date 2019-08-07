@@ -13,13 +13,13 @@ def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir)
 
     # run without allowing multiple sweeps
     result = procrunner.run(
-        ["dials.import", "output.experiments=experiments_multiple_sweeps.json"]
+        ["dials.import", "output.experiments=experiments_multiple_sweeps.expt"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 1
-    assert "ore than 1 sweep" in result["stderr"]
-    assert not tmpdir.join("experiments_multiple_sweeps.json").check()
+    assert result.returncode == 1
+    assert b"ore than 1 sweep" in result.stderr
+    assert not tmpdir.join("experiments_multiple_sweeps.expt").check()
 
 
 def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
@@ -30,20 +30,19 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.import",
-            "output.experiments=experiments_multiple_sweeps.json",
+            "output.experiments=experiments_multiple_sweeps.expt",
             "allow_multiple_sweeps=True",
         ]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("experiments_multiple_sweeps.json").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
 
     from dxtbx.serialize import load
 
     experiments = load.experiment_list(
-        tmpdir.join("experiments_multiple_sweeps.json").strpath
+        tmpdir.join("experiments_multiple_sweeps.expt").strpath
     )
     assert len(experiments) == 2
 
@@ -57,19 +56,18 @@ def test_with_mask(dials_data, tmpdir):
         [
             "dials.import",
             "mask=" + mask_filename.strpath,
-            "output.experiments=experiments_with_mask.json",
+            "output.experiments=experiments_with_mask.expt",
         ]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("experiments_with_mask.json").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("experiments_with_mask.expt").check(file=1)
 
     from dxtbx.serialize import load
 
     experiments = load.experiment_list(
-        tmpdir.join("experiments_with_mask.json").strpath
+        tmpdir.join("experiments_with_mask.expt").strpath
     )
     assert (
         experiments[0].imageset.external_lookup.mask.filename == mask_filename.strpath
@@ -116,17 +114,16 @@ def test_override_geometry(dials_data, tmpdir):
     )
 
     result = procrunner.run(
-        ["dials.import", "geometry.phil", "output.experiments=override_geometry.json"]
+        ["dials.import", "geometry.phil", "output.experiments=override_geometry.expt"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("override_geometry.json").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("override_geometry.expt").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list(tmpdir.join("override_geometry.json").strpath)
+    experiments = load.experiment_list(tmpdir.join("override_geometry.expt").strpath)
     imgset = experiments[0].imageset
 
     beam = imgset.get_beam()
@@ -162,36 +159,34 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
         [
             "dials.import",
             "mosflm_beam_centre=100,200",
-            "output.experiments=mosflm_beam_centre.json",
+            "output.experiments=mosflm_beam_centre.expt",
         ]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("mosflm_beam_centre.json").check(file=1)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("mosflm_beam_centre.expt").check(file=1)
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.json").strpath)
+    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt").strpath)
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
-    # provide an alternative experiments.json to get geometry from
+    # provide an alternative models.expt to get geometry from
     result = procrunner.run(
         [
             "dials.import",
-            "reference_geometry=mosflm_beam_centre.json",
-            "output.experiments=mosflm_beam_centre2.json",
+            "reference_geometry=mosflm_beam_centre.expt",
+            "output.experiments=mosflm_beam_centre2.expt",
         ]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert tmpdir.join("mosflm_beam_centre2.json").check(file=1)
-    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre2.json").strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("mosflm_beam_centre2.expt").check(file=1)
+    experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre2.expt").strpath)
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
@@ -209,17 +204,16 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
         [
             "dials.import",
             "slow_fast_beam_centre=134,42,18",
-            "output.experiments=slow_fast_beam_centre.json",
+            "output.experiments=slow_fast_beam_centre.expt",
             impath,
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("slow_fast_beam_centre.json")
+    assert not result.returncode and not result.stderr
+    assert os.path.exists("slow_fast_beam_centre.expt")
 
     from dxtbx.serialize import load
 
-    experiments = load.experiment_list("slow_fast_beam_centre.json")
+    experiments = load.experiment_list("slow_fast_beam_centre.expt")
     imgset = experiments[0].imageset
     # beam centre on 18th panel
     s0 = imgset.get_beam().get_s0()
@@ -236,13 +230,12 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
         offsets.append(intra_pnl.length())
 
     result = procrunner.run(
-        ["dials.import", "output.experiments=reference.json", impath]
+        ["dials.import", "output.experiments=reference.expt", impath]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
-    assert os.path.exists("reference.json")
+    assert not result.returncode and not result.stderr
+    assert os.path.exists("reference.expt")
 
-    ref_exp = load.experiment_list("reference.json")
+    ref_exp = load.experiment_list("reference.expt")
     ref_imset = ref_exp[0].imageset
     o = matrix.col(ref_imset.get_detector()[0].get_origin())
     ref_offsets = []
@@ -258,12 +251,12 @@ def test_from_image_files(dials_data, tmpdir):
 
     # Import from the image files
     result = procrunner.run(
-        ["dials.import", "output.experiments=import_experiments.json"]
+        ["dials.import", "output.experiments=imported.expt"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert tmpdir.join("import_experiments.json").check(file=1)
+    assert not result.returncode
+    assert tmpdir.join("imported.expt").check(file=1)
 
 
 def test_from_template(dials_data, tmpdir):
@@ -275,12 +268,12 @@ def test_from_template(dials_data, tmpdir):
         [
             "dials.import",
             "template=" + template.strpath,
-            "output.experiments=import_experiments.json",
+            "output.experiments=imported.expt",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert tmpdir.join("import_experiments.json").check(file=1)
+    assert not result.returncode
+    assert tmpdir.join("imported.expt").check(file=1)
 
 
 def test_extrapolate_scan(dials_data, tmpdir):
@@ -291,11 +284,11 @@ def test_extrapolate_scan(dials_data, tmpdir):
         [
             "dials.import",
             image.strpath,
-            "output.experiments=import_extrapolate.json",
+            "output.experiments=import_extrapolate.expt",
             "geometry.scan.image_range=1,900",
             "geometry.scan.extrapolate_scan=True",
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert tmpdir.join("import_extrapolate.json").check(file=1)
+    assert not result.returncode
+    assert tmpdir.join("import_extrapolate.expt").check(file=1)

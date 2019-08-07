@@ -170,7 +170,6 @@ class SparseConstraintManager(ConstraintManager):
         # create constrained columns
         constr_block = sparse.matrix(jacobian.n_rows, len(self._constraints))
 
-        mask = flex.bool(jacobian.n_rows, True)
         for i, (gp, c) in enumerate(zip(self._constrained_gps, constr_block.cols())):
             # this copies, so c is no longer the matrix column but a new vector
             for j in gp:
@@ -192,11 +191,10 @@ class ConstraintManagerFactory(object):
     """Build equal shift constraints as requested in params and package into
     a constraints manager to be linked to the Refinery"""
 
-    def __init__(self, refinement_phil, pred_param, sparse=False, verbosity=0):
+    def __init__(self, refinement_phil, pred_param, sparse=False):
 
         self._params = refinement_phil
         self._pred_param = pred_param
-        self._verbosity = verbosity
 
         # full parameter names and values
         self._all_names = self._pred_param.get_param_names()
@@ -229,7 +227,7 @@ class ConstraintManagerFactory(object):
                     )
             for j in p.get_experiment_ids():
                 if j in constraint_scope.id:
-                    prefixes.append(model_type + "{0}".format(j + 1))
+                    prefixes.append(model_type + "{}".format(j + 1))
                     break
 
         # ignore model name prefixes
@@ -251,20 +249,19 @@ class ConstraintManagerFactory(object):
             patt2 = re.compile(
                 "^("
                 + "|".join(prefixes)
-                + "){1}(?![0-9])(\w*"
+                + r"){1}(?![0-9])(\w*"
                 + pname
-                + ")(_sample{0})?$".format(i)
+                + ")(_sample{})?$".format(i)
             )
             indices = [j for j, s in enumerate(self._all_names) if patt2.match(s)]
             if len(indices) == 1:
                 continue
-            if self._verbosity > 1:
-                logger.debug(
-                    "\nThe following parameters will be constrained "
-                    "to enforce equal shifts at each step of refinement:"
-                )
-                for k in indices:
-                    logger.debug(self._all_names[k])
+            logger.debug(
+                "\nThe following parameters will be constrained "
+                "to enforce equal shifts at each step of refinement:"
+            )
+            for k in indices:
+                logger.debug(self._all_names[k])
         return EqualShiftConstraint(indices, self._all_vals)
 
     def __call__(self):

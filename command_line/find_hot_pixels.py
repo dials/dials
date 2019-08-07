@@ -14,7 +14,7 @@ output {
     .type = path
 }
 
-verbosity = 1
+verbosity = 0
   .type = int(value_min=0)
   .help = "The verbosity level"
 """,
@@ -37,18 +37,17 @@ help_message = """
   with True pixels being OK and False pixels being "hot" pixels.
 
   Examples::
-    dials.find_hot_pixels experiments.json strong.pickle
+    dials.find_hot_pixels models.expt strong.refl
 
 """
 
 
 def run(args):
-    import libtbx.load_env
     from dials.util import Sorry
     from dials.util import log
     import six.moves.cPickle as pickle
 
-    usage = "%s [options] experiments.json strong.pickle" % libtbx.env.dispatcher_name
+    usage = "dials.find_hot_pixels [options] models.expt strong.refl"
 
     # Create the option parser
     parser = OptionParser(
@@ -72,7 +71,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 

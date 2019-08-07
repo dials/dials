@@ -1,5 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import itertools
+import math
+import random
+
 from libtbx.phil import parse
 
 master_phil = parse(
@@ -137,10 +141,6 @@ def random_background_plane(sbox, a, b, c, d):
 
 def simple_gaussian_spots(params):
     from dials.array_family import flex
-    from dials.algorithms import shoebox
-    import random
-    import math
-
     from scitbx import matrix
 
     r = params.rotation
@@ -208,7 +208,6 @@ def simple_gaussian_spots(params):
             for j in range(len(mask)):
                 mask[j] = mask_none
         elif params.pixel_mask == "static":
-            import itertools
             from scitbx.array_family import flex
 
             x0 = params.spot_offset.x + params.shoebox_size.x / 2
@@ -356,7 +355,6 @@ def background_inclined(rlist):
 
     background = InclinedSubtractor()
     background(None, rlist)
-    return
 
 
 def integrate_3d_summation(rlist):
@@ -364,7 +362,6 @@ def integrate_3d_summation(rlist):
 
     integration = IntegrationAlgorithm()
     integration(rlist)
-    return
 
 
 def main(params):
@@ -388,7 +385,6 @@ def main(params):
     # gave an apparently duff answer i.e. outside of 3 sigma from correct value
 
     from dials.array_family import flex
-    import math
 
     overestimates = []
     underestimates = []

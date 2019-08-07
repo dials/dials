@@ -50,6 +50,6 @@ def test_UnitCellAnalysisObserver():
     # test the observer
     observer = observers.UnitCellAnalysisObserver()
     observer.update(script)
-    assert observer.data.keys() == ["experiments", "dendrogram"]
+    assert set(observer.data) == {"experiments", "dendrogram"}
     d = observer.make_plots()
     assert "unit_cell_graphs" in d

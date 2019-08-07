@@ -124,15 +124,14 @@ class MyGrid(gridlib.Grid):
         super(MyGrid, self).__init__(parent_frame)
 
     def ini_n_intro(self, table_in):
-
         self.lst_keys = []
         self.data = []
         self.sorted_flags = []
 
-        for key in table_in.keys():
+        for key in table_in:
             if key != "shoebox":
                 col_label = str(key)
-                col_content = map(str, table_in[key])
+                col_content = list(map(str, table_in[key]))
 
                 str_len = bigger_size(col_label, col_content)
 
@@ -148,7 +147,7 @@ class MyGrid(gridlib.Grid):
                 self.sorted_flags.append(True)
 
         self.lst_keys.append("lst pos")
-        self.data.append(range(len(table_in)))
+        self.data.append(list(range(len(table_in))))
         self.sorted_flags.append(True)
 
         self.last_col_num = len(self.lst_keys) - 1
@@ -163,12 +162,6 @@ class MyGrid(gridlib.Grid):
         self.Bind(gridlib.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
 
     def OnLabelLeftClick(self, evt):
-
-        iming_for_debugging = """
-    import time
-    time1 = time.time()
-    #"""
-
         if evt.GetCol() == -1:
             self.repaint_img(evt.GetRow())
         else:
@@ -176,14 +169,7 @@ class MyGrid(gridlib.Grid):
 
         evt.Skip()
 
-        timing_for_debugging = """
-    time2 = time.time()
-    timedif = time2 - time1
-    print "timedif =", timedif
-    #"""
-
     def set_my_table(self, col_to_sort):
-
         self.sorted_flags[col_to_sort] = not self.sorted_flags[col_to_sort]
 
         try:
@@ -247,7 +233,6 @@ class flex_arr_img_panel(wx.Panel):
         self.local_bbox = (0, 0, 2, 2, 4, 4)
 
     def ini_n_intro(self, data_in_one, data_in_two=None):
-
         self.scale = 1.0
 
         if isinstance(data_in_one, flex.reflection_table):
@@ -269,7 +254,6 @@ class flex_arr_img_panel(wx.Panel):
         self.Show(True)
 
     def assign_row_pos(self):
-
         try:
             self.first_lst_in, self.segn_lst_in = (
                 self.table[self.row_pos]["shoebox"].data,
@@ -282,7 +266,6 @@ class flex_arr_img_panel(wx.Panel):
             self.first_lst_in, self.segn_lst_in = None, None
 
     def _mi_list_of_wxbitmaps(self, re_scaling=False):
-
         if not re_scaling:
             if self.show_mask:
                 self.lst_bmp_obj = wxbitmap_convert(self.first_lst_in, self.segn_lst_in)
@@ -378,29 +361,15 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.Bind(wx.EVT_IDLE, self.OnIdle)
         self.scroll_rot = 0
 
-        not_working = """
-
-    for child in self.GetChildren():
-      child.Bind(wx.EVT_MOUSE, self.OnLeftButDown)
-
-    for lst_1d in self.lst_2d_bmp:
-      for i_bmp in lst_1d:
-        print "i_bmp =", i_bmp
-        #i_bmp.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButDown)
-    """
-
     def OnLeftButDown(self, event):
-        # print "OnLeftButDown(self)"
         self.Bdwn = True
         self.old_Mouse_Pos_x, self.old_Mouse_Pos_y = event.GetPosition()
 
     def OnLeftButUp(self, event):
         self.Bdwn = False
-        Mouse_Pos_x, Mouse_Pos_y = event.GetPosition()
-        # print "Mouse_Pos_x, Mouse_Pos_y =", Mouse_Pos_x, Mouse_Pos_y
+        _ = event.GetPosition()
 
     def set_scroll_content(self):
-
         self.img_lst_v_sizer.Clear(True)
 
         for lst_1d in self.lst_2d_bmp:
@@ -445,10 +414,8 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
     def OnMouseMotion(self, event):
 
         self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
-        # print "OnMouseMotion(self, event)"
 
     def OnMouseWheel(self, event):
-
         # Getting amount of scroll steps to do
         sn_mov = math.copysign(1, float(event.GetWheelRotation()))
         self.scroll_rot += sn_mov
@@ -458,13 +425,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
         self.Mouse_Pos_x, self.Mouse_Pos_y = event.GetPosition()
 
         View_start_x, View_start_y = self.GetViewStart()
-
-        No_longer_needed = """
-    x_scroll_increment, y_scroll_increment = self.GetScrollPixelsPerUnit()
-    print "x_scroll_increment, y_scroll_increment", x_scroll_increment, y_scroll_increment
-    View_start_x = View_start_x * x_scroll_increment
-    View_start_y = View_start_y * y_scroll_increment
-    """
 
         self.x_uni = float(View_start_x + self.Mouse_Pos_x) / float(v_size_x)
         self.y_uni = float(View_start_y + self.Mouse_Pos_y) / float(v_size_y)
@@ -485,12 +445,6 @@ class multi_img_scrollable(scroll_pan.ScrolledPanel):
             new_scroll_pos_x = float(self.x_uni * v_size_x - self.Mouse_Pos_x)
             new_scroll_pos_y = float(self.y_uni * v_size_y - self.Mouse_Pos_y)
 
-            No_longer_needed = """
-      x_scroll_increment, y_scroll_increment = self.GetScrollPixelsPerUnit()
-      print "x_scroll_increment, y_scroll_increment", x_scroll_increment, y_scroll_increment
-      new_scroll_pos_x = new_scroll_pos_x  / x_scroll_increment + 0.5
-      new_scroll_pos_y = new_scroll_pos_y  / y_scroll_increment + 0.5
-      """
             self.Scroll(new_scroll_pos_x, new_scroll_pos_y)
 
         else:
@@ -514,7 +468,7 @@ class buttons_panel(wx.Panel):
         self.my_sizer = wx.BoxSizer(wx.VERTICAL)
         self.my_sizer.Add(Show_Its_CheckBox, proportion=0, flag=wx.ALIGN_TOP, border=5)
 
-        if self.parent_panel.segn_lst_in != None:
+        if self.parent_panel.segn_lst_in is not None:
             Show_Msk_CheckBox = wx.CheckBox(self, -1, "Show Mask")
             Show_Msk_CheckBox.SetValue(True)
             Show_Msk_CheckBox.Bind(wx.EVT_CHECKBOX, self.OnMskCheckbox)
@@ -585,7 +539,6 @@ class buttons_panel(wx.Panel):
             self.parent_panel.to_hide_nums()
 
     def OnMskCheckbox(self, event):
-
         if event.IsChecked():
             self.parent_panel.to_show_mask()
         else:
@@ -598,11 +551,11 @@ def bigger_size(str_label, lst_col):
     lng_final = lng_label_ini
 
     if lng_lst_col < 30:
-        pos_lst = range(lng_lst_col)
+        pos_lst = list(range(lng_lst_col))
 
     else:
-        pos_lst = range(15)
-        pos_lst += range(lng_lst_col - 15, lng_lst_col)
+        pos_lst = list(range(15))
+        pos_lst += list(range(lng_lst_col - 15, lng_lst_col))
 
     lng_cel_zero = 0
     for pos in pos_lst:
