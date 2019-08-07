@@ -245,7 +245,7 @@ class Script(object):
             print(
                 "Saving sliced reflections to {0}".format(output_reflections_filename)
             )
-            sliced_reflections.as_pickle(output_reflections_filename)
+            sliced_reflections.as_file(output_reflections_filename)
 
         return
 

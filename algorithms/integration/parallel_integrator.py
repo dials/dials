@@ -502,9 +502,9 @@ class IntegrationJob(object):
                 output = output.split_by_experiment_id()
                 for table in output:
                     i = table["id"][0]
-                    table.as_pickle("shoeboxes_%d_%d.refl" % (self.index, i))
+                    table.as_file("shoeboxes_%d_%d.refl" % (self.index, i))
             else:
-                output.as_pickle("shoeboxes_%d.refl" % self.index)
+                output.as_file("shoeboxes_%d.refl" % self.index)
 
         # Delete the shoeboxes
         if debug.separate_files or not debug.output:
@@ -995,9 +995,9 @@ class ReferenceCalculatorJob(object):
                 output = output.split_by_experiment_id()
                 for table in output:
                     i = table["id"][0]
-                    table.as_pickle("shoeboxes_%d_%d.refl" % (self.index, i))
+                    table.as_file("shoeboxes_%d_%d.refl" % (self.index, i))
             else:
-                output.as_pickle("shoeboxes_%d.refl" % self.index)
+                output.as_file("shoeboxes_%d.refl" % self.index)
 
         # Delete the shoeboxes
         if debug.separate_files or not debug.output:
@@ -1071,7 +1071,6 @@ class ReferenceCalculatorManager(object):
         """
         frames = self.manager.job(index)
         experiments = self.experiments
-        reference = self.reference
         reflections = self.manager.split(index)
         if len(reflections) == 0:
             logger.warning("*** WARNING: no reflections in job %d ***", index)

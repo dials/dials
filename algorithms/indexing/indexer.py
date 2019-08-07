@@ -948,6 +948,33 @@ class Indexer(object):
                 xs.sites_mod_short()
                 f.write(xs.as_pdb_file())
 
+    def debug_write_ccp4_map(self, map_data, file_name):
+        from iotbx import ccp4_map
+
+        gridding_first = (0, 0, 0)
+        gridding_last = map_data.all()
+        labels = ["cctbx.miller.fft_map"]
+        ccp4_map.write_ccp4_map(
+            file_name=file_name,
+            unit_cell=self.fft_cell,
+            space_group=sgtbx.space_group("P1"),
+            gridding_first=gridding_first,
+            gridding_last=gridding_last,
+            map_data=map_data,
+            labels=flex.std_string(labels),
+        )
+
+    def export_as_json(
+        self, experiments, file_name="indexed_experiments.json", compact=False
+    ):
+        from dxtbx.serialize import dump
+
+        assert experiments.is_consistent()
+        dump.experiment_list(experiments, file_name)
+
+    def export_reflections(self, reflections, file_name="reflections.pickle"):
+        reflections.as_file(file_name)
+
     def find_lattices(self):
         raise NotImplementedError()
 

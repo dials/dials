@@ -41,6 +41,6 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(
     assert final_rmsd[2] < 0.0002
 
     # also check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_pickle("refined.refl")
+    rt = flex.reflection_table.from_file("refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]

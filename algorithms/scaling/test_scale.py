@@ -29,7 +29,7 @@ def run_one_scaling(working_directory, argument_list):
     assert working_directory.join("scaled.refl").check()
     assert working_directory.join("scaling.html").check()
 
-    table = flex.reflection_table.from_pickle(
+    table = flex.reflection_table.from_file(
         working_directory.join("scaled.refl").strpath
     )
 

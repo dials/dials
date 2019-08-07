@@ -508,7 +508,7 @@ class Script(object):
                 len(self.reflections[0]),
                 self.params.output.reflections,
             )
-            self.reflections[0].as_pickle(self.params.output.reflections)
+            self.reflections[0].as_file(self.params.output.reflections)
             from dxtbx.model.experiment_list import ExperimentListDumper
 
             logger.info("Saving the experiments to %s", self.params.output.experiments)

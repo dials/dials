@@ -173,7 +173,7 @@ class Script(object):
 
         # Save the reflections to file
         logger.info("\n" + "-" * 80)
-        reflections.as_pickle(params.output.reflections)
+        reflections.as_file(params.output.reflections)
         logger.info(
             "Saved {} reflections to {}".format(
                 len(reflections), params.output.reflections

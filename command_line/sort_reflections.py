@@ -110,7 +110,7 @@ class Sort(object):
         # Save sorted reflections to file
         if params.output:
             print("Saving reflections to {}".format(params.output))
-            reflections.as_pickle(params.output)
+            reflections.as_file(params.output)
 
 
 if __name__ == "__main__":

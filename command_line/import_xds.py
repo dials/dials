@@ -63,7 +63,7 @@ class SpotXDSImporter(object):
         if params.output.filename is None:
             params.output.filename = "spot_xds.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
-        table.as_pickle(params.output.filename)
+        table.as_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
 
 
@@ -138,7 +138,7 @@ class IntegrateHKLImporter(object):
         if params.output.filename is None:
             params.output.filename = "integrate_hkl.refl"
         Command.start("Saving reflection table to %s" % params.output.filename)
-        table.as_pickle(params.output.filename)
+        table.as_file(params.output.filename)
         Command.end("Saved reflection table to %s" % params.output.filename)
 
     def derive_reindex_matrix(self, handle):

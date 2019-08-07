@@ -49,9 +49,9 @@ def test_cosym_partial_dataset(dials_data, tmpdir):
         command.append(mcp.join("experiments_%d.json" % i).strpath)
         command.append(mcp.join("reflections_%d.pickle" % i).strpath)
     # Make one dataset that will be removed in prefiltering
-    r = flex.reflection_table.from_pickle(mcp.join("reflections_8.pickle").strpath)
+    r = flex.reflection_table.from_file(mcp.join("reflections_8.pickle").strpath)
     r["partiality"] = flex.double(r.size(), 0.1)
-    r.as_pickle(tmpdir.join("renamed.refl").strpath)
+    r.as_file(tmpdir.join("renamed.refl").strpath)
     command.append(tmpdir.join("renamed.refl").strpath)
     command.append(mcp.join("experiments_8.json").strpath)
     # Add another good dataset at the end of the input list
@@ -74,9 +74,9 @@ def test_cosym_partial_dataset_raises_sorry(dials_data, tmpdir):
     command = ["dials.cosym"]
     command.append(tmpdir.join("renamed.refl").strpath)
     command.append(mcp.join("experiments_8.json").strpath)
-    r2 = flex.reflection_table.from_pickle(mcp.join("reflections_10.pickle").strpath)
+    r2 = flex.reflection_table.from_file(mcp.join("reflections_10.pickle").strpath)
     r2["partiality"] = flex.double(r2.size(), 0.1)
-    r2.as_pickle(tmpdir.join("renamed2.refl").strpath)
+    r2.as_file(tmpdir.join("renamed2.refl").strpath)
     command.append(tmpdir.join("renamed2.refl").strpath)
     command.append(mcp.join("experiments_10.json").strpath)
 

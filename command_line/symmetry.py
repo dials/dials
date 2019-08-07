@@ -148,7 +148,7 @@ input data and filtering settings e.g partiality_threshold"""
             "Saving %s reindexed reflections to %s"
             % (len(reindexed_reflections), self._params.output.reflections)
         )
-        reindexed_reflections.as_pickle(self._params.output.reflections)
+        reindexed_reflections.as_file(self._params.output.reflections)
 
 
 help_message = """

@@ -1047,12 +1047,14 @@ def test_to_from_msgpack(tmpdir):
         for k in range(1):
             for j in range(3):
                 for i in range(4):
-                    shoebox.data[k, j, i] = i + j + k
+                    shoebox.data[k, j, i] = i + j + k + 0.1
                     shoebox.mask[k, j, i] = i % 2
-                    shoebox.background[k, j, i] = i * j
+                    shoebox.background[k, j, i] = i * j + 0.2
         return shoebox
 
     def compare(a, b):
+        assert a.is_consistent()
+        assert b.is_consistent()
         assert a.panel == b.panel
         assert a.bbox == b.bbox
         for aa, bb in zip(a.data, b.data):
@@ -1334,7 +1336,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     pickle_path = os.path.join(data_dir, "full.pickle")
     sweep_path = os.path.join(data_dir, "datablock_orig.json")
 
-    refl = flex.reflection_table.from_pickle(pickle_path)
+    refl = flex.reflection_table.from_file(pickle_path)
     datablock = load.datablock(sweep_path, check_format=False)[0]
     imageset = datablock.extract_imagesets()[0]
     detector = imageset.get_detector()

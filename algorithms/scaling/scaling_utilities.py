@@ -99,7 +99,7 @@ def save_reflections(reflection_table, filename):
         except KeyError:
             pass
     logger.info("Saving the scaled reflections to %s", filename)
-    reflection_table.as_pickle(filename)
+    reflection_table.as_file(filename)
     logger.info("Time taken: %g", (time() - st))
 
 

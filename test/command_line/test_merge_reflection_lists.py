@@ -10,8 +10,8 @@ def test(run_in_tmpdir):
     table["hkl"] = flex.miller_index(360)
     table["id"] = flex.int(360)
     table["intensity.sum.value"] = flex.double(360)
-    table.as_pickle("temp1.refl")
-    table.as_pickle("temp2.refl")
+    table.as_file("temp1.refl")
+    table.as_file("temp2.refl")
 
     result = procrunner.run(
         [
@@ -23,7 +23,7 @@ def test(run_in_tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_pickle("merged.refl")
+    table = flex.reflection_table.from_file("merged.refl")
     assert len(table) == 360
 
     result = procrunner.run(
@@ -36,5 +36,5 @@ def test(run_in_tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    table = flex.reflection_table.from_pickle("merged.refl")
+    table = flex.reflection_table.from_file("merged.refl")
     assert len(table) == 720

@@ -344,7 +344,7 @@ def run_filtering(params, experiments, reflections):
                 len(reflections), params.output.reflections
             )
         )
-        reflections.as_pickle(params.output.reflections)
+        reflections.as_file(params.output.reflections)
 
     return
 

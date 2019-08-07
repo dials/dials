@@ -182,7 +182,7 @@ experiments file must also be specified with the option: reference= """
         if len(experiments) != 1 or len(reflections) != 1:
             raise Sorry("Only one dataset can be reindexed to a reference at a time")
 
-        reference_reflections = flex.reflection_table().from_pickle(
+        reference_reflections = flex.reflection_table().from_file(
             params.reference.reflections
         )
 

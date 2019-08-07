@@ -130,7 +130,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # load the experiments and spots
     el = ExperimentListFactory.from_json_file(experiments_path, check_format=False)
-    rt = flex.reflection_table.from_pickle(pickle_path)
+    rt = flex.reflection_table.from_file(pickle_path)
 
     # adjust the detector distance by -0.5 mm
     detector = el[0].detector
@@ -159,7 +159,7 @@ def test_constrained_refinement(dials_regression, run_in_tmpdir):
 
     # concatenate reflections and write out
     rt.extend(rt2)
-    rt.as_pickle("foo.refl")
+    rt.as_file("foo.refl")
 
     # set up refinement, constraining the distance parameter
     cmd = (

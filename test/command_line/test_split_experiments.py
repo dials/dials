@@ -32,7 +32,7 @@ def test_split_by_wavelength(tmpdir):
     reflections.experiment_identifiers()[1] = "1"
 
     experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    reflections.as_pickle(tmpdir.join("tmp.refl").strpath)
+    reflections.as_file(tmpdir.join("tmp.refl").strpath)
 
     result = procrunner.run(
         ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
@@ -48,7 +48,7 @@ def test_split_by_wavelength(tmpdir):
         exp_single = ExperimentListFactory.from_json_file(
             tmpdir.join("split_%d.expt" % i).strpath, check_format=False
         )
-        ref_single = flex.reflection_table.from_pickle(
+        ref_single = flex.reflection_table.from_file(
             tmpdir.join("split_%d.refl" % i).strpath
         )
         assert exp_single[0].beam.get_wavelength() == wl
@@ -73,7 +73,7 @@ def test_split_by_wavelength(tmpdir):
     del reflections.experiment_identifiers()[0]
     del reflections.experiment_identifiers()[1]
     experiments.as_json(tmpdir.join("tmp.expt").strpath)
-    reflections.as_pickle(tmpdir.join("tmp.refl").strpath)
+    reflections.as_file(tmpdir.join("tmp.refl").strpath)
     result = procrunner.run(
         ["dials.split_experiments", "tmp.expt", "tmp.refl", "by_wavelength=True"],
         working_directory=tmpdir,

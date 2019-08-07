@@ -326,7 +326,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     lmax = 2
     params.parameterisation.lmax = lmax
 
-    reflection_table = flex.reflection_table.from_pickle(pickle_path)
+    reflection_table = flex.reflection_table.from_file(pickle_path)
     experiments = load.experiment_list(sweep_path, check_format=False)
     experiments = create_scaling_model(params, experiments, [reflection_table])
 
