@@ -11,7 +11,7 @@ def test(ExperimentListFactory, dials_data):
     path = dials_data("centroid_test_data")
     experiments_path = path.join("experiments.json").strpath
     reflections_path1 = path.join("integrated.pickle").strpath
-    reflections_path2 = path.join("integrated.mpack").strpath
+    reflections_path2 = path.join("integrated.refl").strpath
 
     phil_scope = dials.util.phil.parse(
         """
