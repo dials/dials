@@ -275,7 +275,7 @@ class Importer(object):
         :param compare_goniometer:
         :param scan_tolerance:
         :param format_kwargs:
-        :param load_models: whether to load all models for expLists
+        :param load_models: Whether to load all models for ExperimentLists
         :param propagate_geom: for stills, whether to propagate the initial images geometry to all experiments
           (mainly used for imageviewer)
         :return: Unhandled arguments
