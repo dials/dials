@@ -549,7 +549,7 @@ class PhilCommandParser(object):
         try:
             load_models = params.load_models
         except AttributeError:
-            load_models = True  # NOTE: this is defaulted in Importer as True already
+            load_models = True
 
         # Try to import everything
         importer = Importer(
