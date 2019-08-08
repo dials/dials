@@ -303,7 +303,7 @@ class Importer(object):
             compare_goniometer=compare_goniometer,
             scan_tolerance=scan_tolerance,
             format_kwargs=format_kwargs,
-            load_models=load_models,  # default is True in from_filenames
+            load_models=load_models,
         )
         if len(experiments) > 0:
             filename = "<image files>"
