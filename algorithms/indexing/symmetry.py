@@ -11,6 +11,7 @@ from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx import lattice_symmetry
 from dials.algorithms.indexing import DialsIndexError
+from dials.util.log import LoggingContext
 from dxtbx.model import Crystal
 from rstbx.symmetry.subgroup import MetricSubgroup
 from rstbx.dps_core.lepage import iotbx_converter
@@ -255,7 +256,7 @@ def refine_subgroup(args):
     subgroup.min_cc = None
     subgroup.correlation_coefficients = []
     subgroup.cc_nrefs = []
-    with log.LoggingContext(logging.getLogger(), logging.ERROR):
+    with LoggingContext(logging.getLogger(), level=logging.ERROR):
         try:
             iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
             params.refinement.reflections.outlier.tukey.iqr_multiplier = (
