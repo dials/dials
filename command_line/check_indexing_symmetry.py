@@ -11,6 +11,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import math
 import logging
 import sys
 
@@ -123,12 +124,16 @@ def standard_error_of_pearson_cc(corr_coeffs, n):
 
     numerator = 1 - flex.pow2(corr_coeffs)
     denominator = n - 2
-    if min(denominator) < 1:
-        raise ValueError("Too few reflections to calculate a standard error")
-    return numerator / denominator.as_double()
+    sel = denominator < 1
+    denominator.set_selected(sel, 1)
+    vals = numerator / denominator.as_double()
+    vals.set_selected(sel, float("NaN"))
+    return vals
 
 
 def format_cc_with_standard_error(cc, se, decimal_places=3):
+    if math.isnan(se):
+        return "?"
     minimum = pow(0.1, decimal_places)
     if se >= minimum:
         cc_str = format_float_with_standard_uncertainty(cc, se, minimum=1.0e-3)
