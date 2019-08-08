@@ -276,8 +276,6 @@ class Importer(object):
         :param scan_tolerance:
         :param format_kwargs:
         :param load_models: Whether to load all models for ExperimentLists
-        :param propagate_geom: for stills, whether to propagate the initial images geometry to all experiments
-          (mainly used for imageviewer)
         :return: Unhandled arguments
         """
         from dxtbx.model.experiment_list import ExperimentListFactory
