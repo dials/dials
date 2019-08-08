@@ -41,6 +41,10 @@ unit_cell_clustering {
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
+min_reflections = 10
+  .type = int(value_min=1)
+  .help = "The minimum number of reflections per experiment."
+
 seed = 230
   .type = int(value_min=0)
 
@@ -78,9 +82,13 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
+        self._experiments, self._reflections = self._filter_min_reflections(
+            experiments, reflections
+        )
+
         # map experiments and reflections to primitive setting
         self._experiments, self._reflections = self._map_to_primitive(
-            experiments, reflections
+            self._experiments, self._reflections
         )
 
         if len(self._experiments) > 1:
@@ -213,6 +221,17 @@ class cosym(Subject):
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
             identifiers.append(expt.identifier)
+
+        return select_datasets_on_ids(
+            experiments, reflections, use_datasets=identifiers
+        )
+
+    def _filter_min_reflections(self, experiments, reflections):
+        identifiers = []
+
+        for expt, refl in zip(experiments, reflections):
+            if len(refl) >= self.params.min_reflections:
+                identifiers.append(expt.identifier)
 
         return select_datasets_on_ids(
             experiments, reflections, use_datasets=identifiers
