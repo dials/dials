@@ -208,7 +208,7 @@ class Importer(object):
         :param read_experiments_from_images: Try to read the experiments from images
         :param check_format: Check the format when reading images
         :param verbose: True/False print out some stuff
-        :param load_models: whether to load models from every experiment
+        :param load_models: Whether to load all models for ExperimentLists
         """
 
         # Initialise output
