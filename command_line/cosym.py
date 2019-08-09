@@ -9,7 +9,6 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 import iotbx.phil
 from cctbx import sgtbx
-from dxtbx.serialize import dump
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -174,7 +173,7 @@ class cosym(Subject):
         logger.info(
             "Saving reindexed experiments to %s", self.params.output.experiments
         )
-        dump.experiment_list(self._experiments, self.params.output.experiments)
+        self._experiments.as_file(self.params.output.experiments)
         logger.info(
             "Saving reindexed reflections to %s", self.params.output.reflections
         )
