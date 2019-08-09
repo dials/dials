@@ -119,7 +119,7 @@ message that the code in question is special and care should be taken.
 - Try not to do `from <module> import *` imports - it makes it hard to trace
   where definitions are coming from, and turns off many useful diagnostics in
   static analysis tools. Exceptions are allowed for modules that purely import
-  from an extension to wrap the interface, if it would be excessively verbose.
+  from an extension to wrap the interface, if it would be excessively verbose otherwise.
 - Make pull requests a clean representation of the implementation of a feature
   — meandering commit history is okay for WIP branches if it's supposed to be
   squashed down to one commit eventually, but development dead-ends and back
