@@ -19,6 +19,8 @@ class DispersionExtendedSpotFinderThresholdExt(object):
 
     name = "dispersion_extended"
 
+    default = True
+
     @classmethod
     def phil(cls):
         return None
