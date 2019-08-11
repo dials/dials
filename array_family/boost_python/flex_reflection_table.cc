@@ -845,10 +845,9 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Override default reference func to avoid copying
    */
-  bool reflection_table_reference_func(
-      msgpack::type::object_type type, 
-      std::size_t length, 
-      void* user_data) {
+  bool reflection_table_reference_func(msgpack::type::object_type type,
+                                       std::size_t length,
+                                       void *user_data) {
     return true;
   }
 
