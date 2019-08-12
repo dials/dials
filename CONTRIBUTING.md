@@ -70,7 +70,7 @@ message that the code in question is special and care should be taken.
   setting the name to None). Matplotlib is an exception to this guideline -
   because its startup logic defines the backend it uses, this can be imported
   inline. There are also a few exceptions to help avoid circular imports that
-  are hard to remove. Further, unique imports are encouraged within code branches
+  are hard to remove. Further, unique imports are allowed within code branches
   or within optional functions/classes that are not always used when the file is
   imported.  This reduces the runtime import load for functionality that isn't
   universally used.
