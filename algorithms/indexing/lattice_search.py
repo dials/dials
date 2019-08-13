@@ -113,62 +113,15 @@ basis_vector_search_phil_scope.adopt_scope(
 )
 
 
-class BasisVectorSearch(indexer.Indexer):
-    def __init__(self, reflections, experiments, params=None):
-        super(BasisVectorSearch, self).__init__(reflections, experiments, params)
-
-        strategy_class = None
-        for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.basis_vector_search_strategy"
-        ):
-            if entry_point.name == params.indexing.method:
-                strategy_class = entry_point.load()
-                break
-        if not strategy_class:
-            raise RuntimeError(
-                "Unknown basis vector search strategy: %s" % params.indexing.method
-            )
-
-        target_unit_cell = None
-        if (
-            self._symmetry_handler.target_symmetry_primitive is not None
-            and self._symmetry_handler.target_symmetry_primitive.unit_cell() is not None
-        ):
-            target_unit_cell = (
-                self._symmetry_handler.target_symmetry_primitive.unit_cell()
-            )
-        self._basis_vector_search_strategy = strategy_class(
-            max_cell=self.params.max_cell,
-            min_cell=self.params.min_cell,
-            target_unit_cell=target_unit_cell,
-            params=getattr(self.params, entry_point.name),
-        )
-
-    def find_candidate_basis_vectors(self):
-        self.d_min = self.params.refinement_protocol.d_min_start
-        sel = self.reflections["id"] == -1
-        if self.d_min is not None:
-            sel &= 1 / self.reflections["rlp"].norms() > self.d_min
-        reflections = self.reflections.select(sel)
-        self.candidate_basis_vectors, used_in_indexing = self._basis_vector_search_strategy.find_basis_vectors(
-            reflections["rlp"]
-        )
-        self._used_in_indexing = sel.iselection().select(used_in_indexing)
-        if self.d_min is None:
-            self.d_min = flex.min(
-                1 / self.reflections["rlp"].select(self._used_in_indexing).norms()
-            )
-
-        self.debug_show_candidate_basis_vectors()
-        return self.candidate_basis_vectors
+class LatticeSearch(indexer.Indexer):
+    def find_candidate_crystal_models(self):
+        # A choice between various strategies for constructing crystal models
+        # directly can be made here
+        raise NotImplementedError()
 
     def find_lattices(self):
-        self.find_candidate_basis_vectors()
-        if self.params.optimise_initial_basis_vectors:
-            self.optimise_basis_vectors()
-        self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-            self.candidate_basis_vectors
-        )
+        self.candidate_crystal_models = self.find_candidate_crystal_models()
+
         crystal_model, n_indexed = self.choose_best_orientation_matrix(
             self.candidate_crystal_models
         )
@@ -190,36 +143,6 @@ class BasisVectorSearch(indexer.Indexer):
                     )
                 )
         return experiments
-
-    def find_candidate_orientation_matrices(self, candidate_basis_vectors):
-
-        candidate_crystal_models = combinations.candidate_orientation_matrices(
-            candidate_basis_vectors,
-            max_combinations=self.params.basis_vector_combinations.max_combinations,
-        )
-        if self._symmetry_handler.target_symmetry_reference_setting is not None:
-            target_symmetry = self._symmetry_handler.target_symmetry_reference_setting
-        elif self._symmetry_handler.target_symmetry_primitive is not None:
-            target_symmetry = self._symmetry_handler.target_symmetry_primitive
-        else:
-            target_symmetry = None
-        if target_symmetry is not None:
-            candidate_crystal_models = combinations.filter_known_symmetry(
-                candidate_crystal_models,
-                target_symmetry,
-                relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance,
-                max_delta=self.params.known_symmetry.max_delta,
-            )
-
-        if self.refined_experiments is not None and len(self.refined_experiments) > 0:
-            candidate_crystal_models = combinations.filter_similar_orientations(
-                candidate_crystal_models,
-                self.refined_experiments.crystals(),
-                minimum_angular_separation=self.params.multiple_lattice_search.minimum_angular_separation,
-            )
-
-        return candidate_crystal_models
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
 
@@ -355,6 +278,95 @@ class BasisVectorSearch(indexer.Indexer):
             return best_model.crystal, best_model.n_indexed
         else:
             return None, None
+
+
+class BasisVectorSearch(LatticeSearch):
+    def __init__(self, reflections, experiments, params=None):
+        super(BasisVectorSearch, self).__init__(reflections, experiments, params)
+
+        strategy_class = None
+        for entry_point in pkg_resources.iter_entry_points(
+            "dials.index.basis_vector_search_strategy"
+        ):
+            if entry_point.name == params.indexing.method:
+                strategy_class = entry_point.load()
+                break
+        if not strategy_class:
+            raise RuntimeError(
+                "Unknown basis vector search strategy: %s" % params.indexing.method
+            )
+
+        target_unit_cell = None
+        if (
+            self._symmetry_handler.target_symmetry_primitive is not None
+            and self._symmetry_handler.target_symmetry_primitive.unit_cell() is not None
+        ):
+            target_unit_cell = (
+                self._symmetry_handler.target_symmetry_primitive.unit_cell()
+            )
+        self._basis_vector_search_strategy = strategy_class(
+            max_cell=self.params.max_cell,
+            min_cell=self.params.min_cell,
+            target_unit_cell=target_unit_cell,
+            params=getattr(self.params, entry_point.name),
+        )
+
+    def find_candidate_basis_vectors(self):
+        self.d_min = self.params.refinement_protocol.d_min_start
+        sel = self.reflections["id"] == -1
+        if self.d_min is not None:
+            sel &= 1 / self.reflections["rlp"].norms() > self.d_min
+        reflections = self.reflections.select(sel)
+        self.candidate_basis_vectors, used_in_indexing = self._basis_vector_search_strategy.find_basis_vectors(
+            reflections["rlp"]
+        )
+        self._used_in_indexing = sel.iselection().select(used_in_indexing)
+        if self.d_min is None:
+            self.d_min = flex.min(
+                1 / self.reflections["rlp"].select(self._used_in_indexing).norms()
+            )
+
+        self.debug_show_candidate_basis_vectors()
+        return self.candidate_basis_vectors
+
+    def find_candidate_crystal_models(self):
+        self.find_candidate_basis_vectors()
+        if self.params.optimise_initial_basis_vectors:
+            self.optimise_basis_vectors()
+        candidate_crystal_models = self.find_candidate_orientation_matrices(
+            self.candidate_basis_vectors
+        )
+        return candidate_crystal_models
+
+    def find_candidate_orientation_matrices(self, candidate_basis_vectors):
+
+        candidate_crystal_models = combinations.candidate_orientation_matrices(
+            candidate_basis_vectors,
+            max_combinations=self.params.basis_vector_combinations.max_combinations,
+        )
+        if self._symmetry_handler.target_symmetry_reference_setting is not None:
+            target_symmetry = self._symmetry_handler.target_symmetry_reference_setting
+        elif self._symmetry_handler.target_symmetry_primitive is not None:
+            target_symmetry = self._symmetry_handler.target_symmetry_primitive
+        else:
+            target_symmetry = None
+        if target_symmetry is not None:
+            candidate_crystal_models = combinations.filter_known_symmetry(
+                candidate_crystal_models,
+                target_symmetry,
+                relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+                absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance,
+                max_delta=self.params.known_symmetry.max_delta,
+            )
+
+        if self.refined_experiments is not None and len(self.refined_experiments) > 0:
+            candidate_crystal_models = combinations.filter_similar_orientations(
+                candidate_crystal_models,
+                self.refined_experiments.crystals(),
+                minimum_angular_separation=self.params.multiple_lattice_search.minimum_angular_separation,
+            )
+
+        return candidate_crystal_models
 
     def optimise_basis_vectors(self):
 
