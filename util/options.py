@@ -188,6 +188,7 @@ class Importer(object):
         compare_goniometer=None,
         scan_tolerance=None,
         format_kwargs=None,
+        load_models=True,
     ):
         """
         Parse the arguments. Populates its instance attributes in an intelligent way
@@ -207,7 +208,7 @@ class Importer(object):
         :param read_experiments_from_images: Try to read the experiments from images
         :param check_format: Check the format when reading images
         :param verbose: True/False print out some stuff
-
+        :param load_models: Whether to load all models for ExperimentLists
         """
 
         # Initialise output
@@ -227,6 +228,7 @@ class Importer(object):
                 compare_goniometer,
                 scan_tolerance,
                 format_kwargs,
+                load_models,
             )
 
         # Second try to read experiment files
@@ -261,14 +263,20 @@ class Importer(object):
         compare_goniometer,
         scan_tolerance,
         format_kwargs,
+        load_models=True,
     ):
         """
         Try to import images.
 
         :param args: The input arguments
         :param verbose: Print verbose output
+        :param compare_beam:
+        :param compare_detector:
+        :param compare_goniometer:
+        :param scan_tolerance:
+        :param format_kwargs:
+        :param load_models: Whether to load all models for ExperimentLists
         :return: Unhandled arguments
-
         """
         from dxtbx.model.experiment_list import ExperimentListFactory
         from dials.util.phil import FilenameDataWrapper, ExperimentListConverters
@@ -293,6 +301,7 @@ class Importer(object):
             compare_goniometer=compare_goniometer,
             scan_tolerance=scan_tolerance,
             format_kwargs=format_kwargs,
+            load_models=load_models,
         )
         if len(experiments) > 0:
             filename = "<image files>"
@@ -535,6 +544,11 @@ class PhilCommandParser(object):
             scan_tolerance = None
             format_kwargs = None
 
+        try:
+            load_models = params.load_models
+        except AttributeError:
+            load_models = True
+
         # Try to import everything
         importer = Importer(
             unhandled,
@@ -548,6 +562,7 @@ class PhilCommandParser(object):
             compare_goniometer=compare_goniometer,
             scan_tolerance=scan_tolerance,
             format_kwargs=format_kwargs,
+            load_models=load_models,
         )
 
         # Grab a copy of the errors that occured in case the caller wants them
