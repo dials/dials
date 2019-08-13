@@ -36,6 +36,17 @@ control_phil_str = """
     file_list = None
       .type = path
       .help = Path to a list of images
+    image_tag = None
+      .type = str
+      .multiple = True
+      .help = Only process images with these tag(s). For single-image files (like CBFs or SMVs), the image \
+              tag for each file is the file name. For multi-image files like HDF5, the image tag is        \
+              filename_imagenumber (including leading zeros). Use show_image_tags=True to see the list     \
+              of image tags that will be used for a dataset.
+    show_image_tags = False
+      .type = bool
+      .help = Show the set of image tags that would be used during processing. To process subsets of image \
+              files, use these tags with the image_tag parameter.
   }
 
   dispatch {
@@ -377,11 +388,19 @@ class Script(object):
                 basenames.append(os.path.splitext(os.path.basename(paths[0]))[0])
                 split_experiments.append(experiments[i : i + 1])
             tags = []
+            split_experiments2 = []
             for i, basename in zip(indices, basenames):
                 if basenames.count(basename) > 1:
-                    tags.append("%s_%05d" % (basename, i))
+                    tag = "%s_%05d" % (basename, i)
                 else:
-                    tags.append(basename)
+                    tag = basename
+                if (
+                    not self.params.input.image_tag
+                    or tag in self.params.input.image_tag
+                ):
+                    tags.append(tag)
+                    split_experiments2.append(split_experiments[i])
+            split_experiments = split_experiments2
 
             # Wrapper function
             def do_work(i, item_list):
@@ -426,11 +445,19 @@ class Script(object):
                 for filename in all_paths
             ]
             tags = []
+            all_paths2 = []
             for i, basename in enumerate(basenames):
                 if basenames.count(basename) > 1:
-                    tags.append("%s_%05d" % (basename, i))
+                    tag = "%s_%05d" % (basename, i)
                 else:
-                    tags.append(basename)
+                    tag = basename
+                if (
+                    not self.params.input.image_tag
+                    or tag in self.params.input.image_tag
+                ):
+                    tags.append(tag)
+                    all_paths2.append(all_paths[i])
+            all_paths = all_paths2
 
             # Wrapper function
             def do_work(i, item_list):
@@ -478,6 +505,12 @@ class Script(object):
                 processor.finalize()
 
             iterable = list(zip(tags, all_paths))
+
+        if params.input.show_image_tags:
+            print("Showing image tags for this dataset and exiting")
+            for tag, item in iterable:
+                print(tag)
+            return
 
         # Process the data
         if params.mp.method == "mpi":
