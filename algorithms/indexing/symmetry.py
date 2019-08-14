@@ -11,6 +11,7 @@ from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
 from cctbx.sgtbx import lattice_symmetry
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from dials.algorithms.indexing import DialsIndexError
+from dials.util.log import LoggingContext
 from dxtbx.model import Crystal
 from libtbx import easy_mp
 from rstbx.dps_core.lepage import iotbx_converter
@@ -245,74 +246,72 @@ def refine_subgroup(args):
     subgroup.min_cc = None
     subgroup.correlation_coefficients = []
     subgroup.cc_nrefs = []
-    try:
-        logger = logging.getLogger()
-        level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-        iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
-        params.refinement.reflections.outlier.tukey.iqr_multiplier = 2 * iqr_multiplier
-        refinery, refined, outliers = refine(
-            params, used_reflections, experiments, verbosity=refiner_verbosity
-        )
-        params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
-        refinery, refined, outliers = refine(
-            params,
-            used_reflections,
-            refinery.get_experiments(),
-            verbosity=refiner_verbosity,
-        )
-    except RuntimeError as e:
-        if (
-            str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0."
-            or str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."
-        ):
-            subgroup.refined_experiments = None
-            subgroup.rmsd = None
-            subgroup.Nmatches = None
+    with LoggingContext(logging.getLogger(), level=logging.ERROR):
+        try:
+            iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
+            params.refinement.reflections.outlier.tukey.iqr_multiplier = (
+                2 * iqr_multiplier
+            )
+            refinery, refined, outliers = refine(
+                params, used_reflections, experiments, verbosity=refiner_verbosity
+            )
+            params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
+            refinery, refined, outliers = refine(
+                params,
+                used_reflections,
+                refinery.get_experiments(),
+                verbosity=refiner_verbosity,
+            )
+        except RuntimeError as e:
+            if (
+                str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0."
+                or str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."
+            ):
+                subgroup.refined_experiments = None
+                subgroup.rmsd = None
+                subgroup.Nmatches = None
+            else:
+                raise
         else:
-            raise
-    else:
-        dall = refinery.rmsds()
-        dx = dall[0]
-        dy = dall[1]
-        subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
-        subgroup.Nmatches = len(refinery.get_matches())
-        subgroup.refined_experiments = refinery.get_experiments()
-        assert len(subgroup.refined_experiments.crystals()) == 1
-        subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
-        cs = crystal.symmetry(
-            unit_cell=subgroup.refined_crystal.get_unit_cell(),
-            space_group=subgroup.refined_crystal.get_space_group(),
-        )
-        if "intensity.sum.value" in used_reflections:
-            # remove refl with -ve variance
-            sel = used_reflections["intensity.sum.variance"] > 0
-            good_reflections = used_reflections.select(sel)
-            from cctbx import miller
+            dall = refinery.rmsds()
+            dx = dall[0]
+            dy = dall[1]
+            subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
+            subgroup.Nmatches = len(refinery.get_matches())
+            subgroup.refined_experiments = refinery.get_experiments()
+            assert len(subgroup.refined_experiments.crystals()) == 1
+            subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
+            cs = crystal.symmetry(
+                unit_cell=subgroup.refined_crystal.get_unit_cell(),
+                space_group=subgroup.refined_crystal.get_space_group(),
+            )
+            if "intensity.sum.value" in used_reflections:
+                # remove refl with -ve variance
+                sel = used_reflections["intensity.sum.variance"] > 0
+                good_reflections = used_reflections.select(sel)
+                from cctbx import miller
 
-            ms = miller.set(cs, good_reflections["miller_index"])
-            ms = ms.array(
-                good_reflections["intensity.sum.value"]
-                / flex.sqrt(good_reflections["intensity.sum.variance"])
-            )
-            if params.normalise:
-                if params.normalise_bins:
-                    ms = normalise_intensities(ms, n_bins=params.normalise_bins)
-                else:
-                    ms = normalise_intensities(ms)
-            if params.cc_n_bins is not None:
-                ms.setup_binner(n_bins=params.cc_n_bins)
-            ccs, nrefs = get_symop_correlation_coefficients(
-                ms, use_binning=(params.cc_n_bins is not None)
-            )
-            subgroup.correlation_coefficients = ccs
-            subgroup.cc_nrefs = nrefs
-            ccs = ccs.select(nrefs > 10)
-            if len(ccs) > 1:
-                subgroup.max_cc = flex.max(ccs[1:])
-                subgroup.min_cc = flex.min(ccs[1:])
-    finally:
-        logger.setLevel(level)
+                ms = miller.set(cs, good_reflections["miller_index"])
+                ms = ms.array(
+                    good_reflections["intensity.sum.value"]
+                    / flex.sqrt(good_reflections["intensity.sum.variance"])
+                )
+                if params.normalise:
+                    if params.normalise_bins:
+                        ms = normalise_intensities(ms, n_bins=params.normalise_bins)
+                    else:
+                        ms = normalise_intensities(ms)
+                if params.cc_n_bins is not None:
+                    ms.setup_binner(n_bins=params.cc_n_bins)
+                ccs, nrefs = get_symop_correlation_coefficients(
+                    ms, use_binning=(params.cc_n_bins is not None)
+                )
+                subgroup.correlation_coefficients = ccs
+                subgroup.cc_nrefs = nrefs
+                ccs = ccs.select(nrefs > 10)
+                if len(ccs) > 1:
+                    subgroup.max_cc = flex.max(ccs[1:])
+                    subgroup.min_cc = flex.min(ccs[1:])
     return subgroup
 
 
