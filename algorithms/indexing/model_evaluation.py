@@ -331,9 +331,7 @@ class ModelEvaluation(Strategy):
             )
 
     def evaluate(self, experiments, reflections):
-        with LoggingContext(
-            logging.getLogger("dials.algorithms.refinement"), level=logging.ERROR
-        ):
+        with LoggingContext("dials.algorithms.refinement", level=logging.ERROR):
             indexed_reflections = reflections.select(reflections["id"] > -1)
             try:
                 refiner = RefinerFactory.from_parameters_data_experiments(

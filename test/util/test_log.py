@@ -25,3 +25,12 @@ def test_LoggingContext():
     # check logging levels are as they were before
     assert idx_logger.getEffectiveLevel() == logging.DEBUG
     assert dials_logger.getEffectiveLevel() == logging.DEBUG
+
+    # now check we can pass logger as a string
+    with LoggingContext("dials.algorithms.indexing", logging.WARNING):
+        assert idx_logger.getEffectiveLevel() == logging.WARNING
+        assert dials_logger.getEffectiveLevel() == logging.DEBUG
+
+    # check logging levels are as they were before
+    assert idx_logger.getEffectiveLevel() == logging.DEBUG
+    assert dials_logger.getEffectiveLevel() == logging.DEBUG
