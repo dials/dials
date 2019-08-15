@@ -8,6 +8,7 @@ import logging
 from libtbx.phil import parse
 
 from dials.array_family import flex
+from dials.util import show_mail_on_error
 
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
@@ -264,10 +265,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

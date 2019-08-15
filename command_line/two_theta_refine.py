@@ -20,7 +20,7 @@ from time import time
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 from dials.util.filter_reflections import filter_reflection_table
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -574,10 +574,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

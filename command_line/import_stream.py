@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from libtbx.phil import parse
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import ExperimentListDumper
 from dxtbx.model.experiment_list import ExperimentListFactory
 
@@ -193,10 +193,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

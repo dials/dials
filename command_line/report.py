@@ -37,6 +37,7 @@ from dials.report.plots import (
     i_over_sig_i_vs_batch_plot,
     i_over_sig_i_vs_i_plot,
 )
+from dials.util import show_mail_on_error
 from dials.util.command_line import Command
 from dials.util.batch_handling import batch_manager
 
@@ -2465,10 +2466,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 from six.moves import cPickle as pickle
 
+from dials.util import show_mail_on_error
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
 
@@ -71,7 +72,6 @@ class Script(object):
     def run(self):
         """ Run the script. """
         from dials.util.options import flatten_experiments
-        from dxtbx.model.experiment_list import ExperimentListDumper
         from dials.util import Sorry
 
         # Parse the command line arguments
@@ -111,10 +111,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

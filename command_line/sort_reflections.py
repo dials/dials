@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 import libtbx.load_env
 from dials.array_family import flex
+from dials.util import show_mail_on_error
 
 help_message = (
     """
@@ -114,10 +115,6 @@ class Sort(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Sort()
         script.run()
-    except Exception as e:
-        halraiser(e)
