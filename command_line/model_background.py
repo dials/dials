@@ -137,7 +137,7 @@ class ImageGenerator(object):
         for i in range(len(self.model)):
             min_image = self.model[i].min_image
             vmax = sorted(list(min_image))[int(0.99 * len(min_image))]
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(
                 min_image.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
             )
@@ -159,7 +159,7 @@ class ImageGenerator(object):
         for i in range(len(self.model)):
             max_image = self.model[i].max_image
             vmax = sorted(list(max_image))[int(0.99 * len(max_image))]
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(
                 max_image.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
             )
@@ -181,7 +181,7 @@ class ImageGenerator(object):
         for i in range(len(self.model)):
             mean = self.model[i].mean
             vmax = sorted(list(mean))[int(0.99 * len(mean))]
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(mean.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax)
             ax1 = pylab.gca()
             ax1.get_xaxis().set_visible(False)
@@ -203,7 +203,7 @@ class ImageGenerator(object):
         for i in range(len(self.model)):
             variance = self.model[i].variance
             vmax = sorted(list(variance))[int(0.99 * len(variance))]
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(
                 variance.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
             )
@@ -226,7 +226,7 @@ class ImageGenerator(object):
 
         for i in range(len(self.model)):
             dispersion = self.model[i].dispersion
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(
                 dispersion.as_numpy_array(), interpolation="none", vmin=0, vmax=2
             )
@@ -249,7 +249,7 @@ class ImageGenerator(object):
 
         for i in range(len(self.model)):
             mask = self.model[i].mask
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(mask.as_numpy_array(), interpolation="none")
             ax1 = pylab.gca()
             ax1.get_xaxis().set_visible(False)
@@ -269,7 +269,7 @@ class ImageGenerator(object):
         for i in range(len(self.model)):
             model = self.model[i].model
             vmax = sorted(list(model))[int(0.99 * len(model))]
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(
                 model.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
             )
@@ -292,7 +292,7 @@ class ImageGenerator(object):
 
         for i in range(len(self.model)):
             polar_model = self.model[i].polar_model
-            figure = pylab.figure(figsize=(6, 4))
+            pylab.figure(figsize=(6, 4))
             pylab.imshow(polar_model.as_numpy_array(), interpolation="none")
             ax1 = pylab.gca()
             ax1.get_xaxis().set_visible(False)

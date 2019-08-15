@@ -54,7 +54,7 @@ class Script(object):
         )
 
     def run(self):
-        from dials.array_family import flex  # import dependency
+        from dials.array_family import flex  # noqa F401 import dependency
         from scitbx import matrix
         from dials.util.options import flatten_experiments
         from dials.util.options import flatten_reflections
@@ -95,14 +95,14 @@ class Script(object):
 
         # now perform some calculations - the only things different from one
         # experiment to the next will be crystal models
-        crystals = [experiment.crystal for experiment in experiments]
+        crystals = [experiment.crystal for experiment in experiments]  # noqa F841
         detector = experiments[0].detector
         beam = experiments[0].beam
         imageset = experiments[0].imageset
 
         # derived quantities
-        wavelength = beam.get_wavelength()
-        s0 = matrix.col(beam.get_s0())
+        wavelength = beam.get_wavelength()  # noqa F841
+        s0 = matrix.col(beam.get_s0())  # noqa F841
 
         # in here do some jiggery-pokery to cope with this being interpreted as
         # a rotation image in here i.e. if scan is not None; derive goniometer
@@ -118,9 +118,11 @@ class Script(object):
             axis = matrix.col(goniometer.get_rotation_axis_datum())
             F = matrix.sqr(goniometer.get_fixed_rotation())
             S = matrix.sqr(goniometer.get_setting_rotation())
-            R = S * axis.axis_and_angle_as_r3_rotation_matrix(angle, deg=True) * F
+            R = (
+                S * axis.axis_and_angle_as_r3_rotation_matrix(angle, deg=True) * F
+            )  # noqa F841
         else:
-            R = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+            R = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))  # noqa F841
 
         assert len(detector) == 1
 

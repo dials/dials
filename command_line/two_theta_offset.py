@@ -42,7 +42,6 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        from libtbx.phil import parse
         import libtbx.load_env
 
         # The script usage
