@@ -493,7 +493,7 @@ class RealSpaceGridSearch(Strategy):
 
     phil_scope = phil.parse(real_space_grid_search_phil_str)
 
-    def __init__(self, max_cell, target_unit_cell, params=None, *args, **kwargs):
+    def __init__(self, max_cell, target_unit_cell, params=None, n_unique_vec=30, *args, **kwargs):
         """Construct a real_space_grid_search object.
 
         Args:
@@ -507,6 +507,13 @@ class RealSpaceGridSearch(Strategy):
             max_cell, params=params, *args, **kwargs
         )
         self._target_unit_cell = target_unit_cell
+        cell_dimensions = self._target_unit_cell.parameters()[:3]
+        self.unique_cell_dimensions = set(cell_dimensions)
+        self.n_unique_vec = n_unique_vec
+
+    def _compute_functional(self, vector):
+        two_pi_S_dot_v = 2 * math.pi * self._rec_latt_vec.dot(vector)
+        return flex.sum(flex.cos(two_pi_S_dot_v))
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
@@ -520,44 +527,60 @@ class RealSpaceGridSearch(Strategy):
             flex,
         )  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
 
-        used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
+        self._rec_latt_vec = reciprocal_lattice_vectors
+        self.used_in_indexing = flex.bool(self._rec_latt_vec.size(), True)
 
-        logger.info("Indexing from %i reflections" % used_in_indexing.count(True))
+        logger.info("Indexing from %i reflections" % self.used_in_indexing.count(True))
 
-        def compute_functional(vector):
-            two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_vectors.dot(vector)
-            return flex.sum(flex.cos(two_pi_S_dot_v))
+        self._directions_on_hemisphere()
+        self._evaluate_functional_at_vectors()
+        self._order_vecs_by_func_evals()
+        self._find_unique_vectors()
+        self._debug_reports()
+        return self._unique_vectors, self.used_in_indexing
 
+    def _directions_on_hemisphere(self):
+        """
+        This should define unit vectors along a hemisphere
+        in some gridded fashion. Sets the self._directions attribute
+        """
         from rstbx.dps_core import SimpleSamplerTool
 
         SST = SimpleSamplerTool(self._params.characteristic_grid)
         SST.construct_hemisphere_grid(SST.incr)
-        cell_dimensions = self._target_unit_cell.parameters()[:3]
-        unique_cell_dimensions = set(cell_dimensions)
         logger.info(
             "Number of search vectors: %i"
-            % (len(SST.angles) * len(unique_cell_dimensions))
+            % (len(SST.angles) * len(self.unique_cell_dimensions))
         )
-        vectors = flex.vec3_double()
-        function_values = flex.double()
-        for i, direction in enumerate(SST.angles):
-            for l in unique_cell_dimensions:
-                v = matrix.col(direction.dvec) * l
-                f = compute_functional(v.elems)
-                vectors.append(v.elems)
-                function_values.append(f)
+        self._directions = [ang.dvec for ang in SST.angles]
 
-        perm = flex.sort_permutation(function_values, reverse=True)
-        vectors = vectors.select(perm)
-        function_values = function_values.select(perm)
+    def _evaluate_functional_at_vectors(self):
+        """evaluate the functional from Gildea 2014 at each direction
+        scaled by the unit cell lengths"""
+        self._vectors = flex.vec3_double()
+        self._function_values = flex.double()
+        for i, direction in enumerate(self._directions):
+            for l in self.unique_cell_dimensions:
+                v = matrix.col(direction) * l
+                f = self._compute_functional(v.elems)
+                self._vectors.append(v.elems)
+                self._function_values.append(f)
 
-        unique_vectors = []
+    def _order_vecs_by_func_evals(self):
+        """sorts the vectors by functional evaluations"""
+        perm = flex.sort_permutation(self._function_values, reverse=True)
+        self._vectors = self._vectors.select(perm)
+        self._function_values = self._function_values.select(perm)
+
+    def _find_unique_vectors(self):
+        """choose the top basis vector candidates"""
+        self._unique_vectors = []
         i = 0
-        while len(unique_vectors) < 30:
-            v = matrix.col(vectors[i])
+        while len(self._unique_vectors) < self.n_unique_vec:
+            v = matrix.col(self._vectors[i])
             is_unique = True
             if i > 0:
-                for v_u in unique_vectors:
+                for v_u in self._unique_vectors:
                     if v.length() < v_u.length():
                         if _is_approximate_integer_multiple(v, v_u):
                             is_unique = False
@@ -566,25 +589,27 @@ class RealSpaceGridSearch(Strategy):
                         is_unique = False
                         break
             if is_unique:
-                unique_vectors.append(v)
+                self._unique_vectors.append(v)
             i += 1
 
-        for i in range(30):
-            v = matrix.col(vectors[i])
+    def _debug_reports(self):
+        """debug logging"""
+
+        for i in range(self.n_unique_vec):
+            v = matrix.col(self._vectors[i])
             logger.debug(
-                "%s %s %s" % (str(v.elems), str(v.length()), str(function_values[i]))
+                "%s %s %s" % (str(v.elems), str(v.length()), str(self._function_values[i]))
             )
 
-        logger.info("Number of unique vectors: %i" % len(unique_vectors))
+        logger.info("Number of unique vectors: %i" % len(self._unique_vectors))
 
-        for i in range(len(unique_vectors)):
+        for i in range(len(self._unique_vectors)):
             logger.debug(
                 "%s %s %s"
                 % (
-                    str(compute_functional(unique_vectors[i].elems)),
-                    str(unique_vectors[i].length()),
-                    str(unique_vectors[i].elems),
+                    str(self._compute_functional(self._unique_vectors[i].elems)),
+                    str(self._unique_vectors[i].length()),
+                    str(self._unique_vectors[i].elems),
                 )
             )
 
-        return unique_vectors, used_in_indexing
