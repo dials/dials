@@ -169,12 +169,13 @@ indexing {
     .type = bool
     .expert_level = 1
   refinement_protocol {
-    mode = *refine_shells repredict_only
+    mode = *refine_shells repredict_only None
       .type = choice
       .expert_level = 1
       .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
+              "None: turns off all forms of refinement (currently only applies to stills_indexer)"
     n_macro_cycles = 5
       .type = int(value_min=1)
       .help = "Maximum number of macro cycles of refinement, reindexing all"
