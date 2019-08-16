@@ -20,9 +20,9 @@ from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
 from dxtbx.model import Crystal
-from dxtbx.serialize import dump
 
 # from dials.util.command_line import Importer
+from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
@@ -286,9 +286,8 @@ experiments file must also be specified with the option: reference= """
 
             # index the reflection list using the input experiments list
             refl_copy["id"] = flex.int(len(refl_copy), -1)
-            from dials.algorithms.indexing import index_reflections
-
-            index_reflections(refl_copy, experiments, tolerance=0.2)
+            index = AssignIndicesGlobal(tolerance=0.2)
+            index(refl_copy, experiments)
             hkl_expt = refl_copy["miller_index"]
             hkl_input = reflections[0]["miller_index"]
 
@@ -324,7 +323,7 @@ experiments file must also be specified with the option: reference= """
             print()
 
         print("Saving reindexed experimental models to %s" % params.output.experiments)
-        dump.experiment_list(experiments, params.output.experiments)
+        experiments.as_file(params.output.experiments)
 
     if len(reflections):
         assert len(reflections) == 1

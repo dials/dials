@@ -549,10 +549,7 @@ class Script(object):
         logger.info(
             "Saving refined experiments to {}".format(output_experiments_filename)
         )
-        from dxtbx.model.experiment_list import ExperimentListDumper
-
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(output_experiments_filename)
+        experiments.as_file(output_experiments_filename)
 
         # Create correlation plots
         if params.output.correlation_plot.filename is not None:

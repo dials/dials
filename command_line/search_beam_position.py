@@ -21,7 +21,6 @@ from rstbx.indexing_api import dps_extended
 from rstbx.indexing_api.lattice import DPS_primitive_lattice
 from rstbx.dps_core import Direction, Directional_FFT
 
-from dxtbx.serialize import dump
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import log
 from dials.util import Sorry
@@ -586,7 +585,7 @@ def run(args):
         logger.info("")
 
     logger.info("Saving optimized experiments to %s" % params.output.experiments)
-    dump.experiment_list(experiments, params.output.experiments)
+    experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":

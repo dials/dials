@@ -53,11 +53,9 @@ def run(args):
         imageset.set_goniometer(imageset_new.get_goniometer())
         imageset.set_scan(imageset_new.get_scan())
 
-    from dxtbx.serialize import dump
-
     if len(experiments):
         print("Saving modified experiments to %s" % params.output.experiments)
-        dump.experiment_list(experiments, params.output.experiments)
+        experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":

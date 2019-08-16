@@ -738,11 +738,9 @@ class Script(object):
 
     def _save_output(self, experiments, reflections, exp_name, refl_name):
         # save output
-        from dxtbx.model.experiment_list import ExperimentListDumper
 
         print("Saving combined experiments to {}".format(exp_name))
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(exp_name)
+        experiments.as_file(exp_name)
         print("Saving combined reflections to {}".format(refl_name))
         reflections.as_file(refl_name)
 

@@ -222,10 +222,7 @@ class Script(object):
                 output_experiments_filename = bname + ext
             print("Saving sliced experiments to {}".format(output_experiments_filename))
 
-            from dxtbx.model.experiment_list import ExperimentListDumper
-
-            dump = ExperimentListDumper(sliced_experiments)
-            dump.as_json(output_experiments_filename)
+            sliced_experiments.as_file(output_experiments_filename)
 
         # Save sliced reflections
         if slice_refs:

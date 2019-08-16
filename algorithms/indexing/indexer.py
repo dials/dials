@@ -982,10 +982,8 @@ class Indexer(object):
     def export_as_json(
         self, experiments, file_name="indexed_experiments.json", compact=False
     ):
-        from dxtbx.serialize import dump
-
         assert experiments.is_consistent()
-        dump.experiment_list(experiments, file_name)
+        experiments.as_file(file_name)
 
     def export_reflections(self, reflections, file_name="reflections.pickle"):
         reflections.as_file(file_name)

@@ -6,7 +6,6 @@ import copy
 import logging
 
 import iotbx.phil
-from dxtbx.serialize import dump
 from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing import DialsIndexError
@@ -217,7 +216,7 @@ class Index(object):
         logger.info("Saving refined experiments to %s" % filename)
 
         assert experiments.is_consistent()
-        dump.experiment_list(experiments, filename)
+        experiments.as_file(filename)
 
     def export_reflections(self, filename):
         logger.info("Saving refined reflections to %s" % filename)

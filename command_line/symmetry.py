@@ -111,7 +111,6 @@ input data and filtering settings e.g partiality_threshold"""
         self._export_experiments_reflections(experiments, reflections, result)
 
     def _export_experiments_reflections(self, experiments, reflections, result):
-        from dxtbx.serialize import dump
         from rstbx.symmetry.constraints import parameter_reduction
 
         reindexed_experiments = copy.deepcopy(experiments)
@@ -143,7 +142,7 @@ input data and filtering settings e.g partiality_threshold"""
         logger.info(
             "Saving reindexed experiments to %s" % self._params.output.experiments
         )
-        dump.experiment_list(reindexed_experiments, self._params.output.experiments)
+        reindexed_experiments.as_file(self._params.output.experiments)
         logger.info(
             "Saving %s reindexed reflections to %s"
             % (len(reindexed_reflections), self._params.output.reflections)

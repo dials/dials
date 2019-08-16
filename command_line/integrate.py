@@ -526,13 +526,10 @@ class Script(object):
     def save_experiments(self, experiments, filename):
         """ Save the profile model parameters. """
         from time import time
-        from dxtbx.model.experiment_list import ExperimentListDumper
 
         st = time()
         logger.info("Saving the experiments to %s" % filename)
-        dump = ExperimentListDumper(experiments)
-        with open(filename, "w") as outfile:
-            outfile.write(dump.as_json())
+        experiments.as_file(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def sample_predictions(self, experiments, predicted, params):

@@ -442,10 +442,7 @@ def run(args=None, phil=working_phil):
     # Save the refined experiments to file
     output_experiments_filename = params.output.experiments
     logger.info("Saving refined experiments to {}".format(output_experiments_filename))
-    from dxtbx.model.experiment_list import ExperimentListDumper
-
-    dump = ExperimentListDumper(experiments)
-    dump.as_json(output_experiments_filename)
+    experiments.as_file(output_experiments_filename)
 
     # Save reflections with updated predictions if requested (allow to switch
     # this off if it is a time-consuming step)

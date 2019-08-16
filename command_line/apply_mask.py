@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# aaply_mask.py
+#  apply_mask.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -106,8 +106,7 @@ class Script(object):
 
         # Dump the experiments
         print("Writing experiments to %s" % params.output.experiments)
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(filename=params.output.experiments)
+        experiments.as_file(filename=params.output.experiments)
 
 
 if __name__ == "__main__":

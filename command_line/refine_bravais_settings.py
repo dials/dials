@@ -237,14 +237,13 @@ def run(args=None):
     logger.info("Saving summary as %s" % summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
         json.dump(Lfat.as_dict(), fh)
-    from dxtbx.serialize import dump
 
     for subgroup in Lfat:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s" % (soln, bs_json))
-        dump.experiment_list(expts, os.path.join(params.output.directory, bs_json))
+        expts.as_file(os.path.join(params.output.directory, bs_json))
 
 
 if __name__ == "__main__":

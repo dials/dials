@@ -116,7 +116,6 @@ class Script(object):
 
     def run(self, args=None):
         """Execute the script."""
-        from dxtbx.model.experiment_list import ExperimentListDumper
         from dials.array_family import flex
         from dials.util.options import flatten_experiments
         from time import time
@@ -185,8 +184,7 @@ class Script(object):
         # Save the experiments
         if params.output.experiments:
             logger.info("Saving experiments to {}".format(params.output.experiments))
-            dump = ExperimentListDumper(experiments)
-            dump.as_file(params.output.experiments)
+            experiments.as_file(params.output.experiments)
 
         # Print some per image statistics
         if params.per_image_statistics:

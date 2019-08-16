@@ -17,7 +17,6 @@ import libtbx.load_env
 from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import Experiment
 from dxtbx.model.experiment_list import ExperimentList
-from dxtbx.model.experiment_list import ExperimentListDumper
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
@@ -839,8 +838,9 @@ class Script(object):
         if params.output.experiments:
             logger.info("-" * 80)
             logger.info("Writing experiments to %s" % params.output.experiments)
-            dump = ExperimentListDumper(experiments)
-            dump.as_file(params.output.experiments, compact=params.output.compact)
+            experiments.as_file(
+                params.output.experiments, compact=params.output.compact
+            )
 
     def assert_single_sweep(self, experiments, params):
         """

@@ -509,12 +509,9 @@ class Script(object):
                 self.params.output.reflections,
             )
             self.reflections[0].as_file(self.params.output.reflections)
-            from dxtbx.model.experiment_list import ExperimentListDumper
 
             logger.info("Saving the experiments to %s", self.params.output.experiments)
-            dump = ExperimentListDumper(self.experiments)
-            with open(self.params.output.experiments, "w") as outfile:
-                outfile.write(dump.as_json())
+            self.experiments.as_file(self.params.output.experiments)
 
     def plot_data(self):
         """Plot histogram and line plot of cc half values."""

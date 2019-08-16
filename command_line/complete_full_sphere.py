@@ -257,10 +257,8 @@ class Script(object):
         return obs, shadowed
 
     def write_expt(self, experiments, filename):
-        from dxtbx.model.experiment_list import ExperimentListDumper
 
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(filename)
+        experiments.as_file(filename)
         return
 
 

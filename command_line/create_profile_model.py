@@ -71,7 +71,6 @@ class Script(object):
         from dials.util.command_line import Command
         from dials.array_family import flex
         from dials.util.options import flatten_reflections, flatten_experiments
-        from dxtbx.model.experiment_list import ExperimentListDumper
         from dials.util import Sorry
         from dials.util import log
 
@@ -148,9 +147,7 @@ class Script(object):
 
         # Write the parameters
         Command.start("Writing experiments to %s" % params.output)
-        dump = ExperimentListDumper(experiments)
-        with open(params.output, "w") as outfile:
-            outfile.write(dump.as_json())
+        experiments.as_file(params.output)
         Command.end("Wrote experiments to %s" % params.output)
 
     def process_reference(self, reference, params):
