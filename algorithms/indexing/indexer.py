@@ -449,6 +449,16 @@ class Indexer(object):
 
                 idxr = BasisVectorSearch(reflections, experiments, params=params)
 
+            if params.indexing.method in ("low_res_spot_match",):
+                if use_stills_indexer:
+                    from dials.algorithms.indexing.stills_indexer import (
+                        StillsIndexerLatticeSearch as LatticeSearch,
+                    )
+                else:
+                    from dials.algorithms.indexing.lattice_search import LatticeSearch
+
+                idxr = LatticeSearch(reflections, experiments, params=params)
+
         return idxr
 
     def _setup_symmetry(self):

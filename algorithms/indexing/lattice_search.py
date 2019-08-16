@@ -129,6 +129,7 @@ class LatticeSearch(indexer.Indexer):
         if strategy_class is not None:
             self._lattice_search_strategy = strategy_class(
                 target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
+                max_lattices=self.params.basis_vector_combinations.max_refine,
                 params=getattr(self.params, entry_point.name),
             )
         else:
@@ -136,11 +137,12 @@ class LatticeSearch(indexer.Indexer):
 
     def find_candidate_crystal_models(self):
 
-        self.candidate_crystal_models = []
-        if self._basis_vector_search_strategy:
-            self.candidate_crystal_models = self._basis_vector_search_strategy.find_crystal_models(
-                self.reflections
+        candidate_crystal_models = []
+        if self._lattice_search_strategy:
+            candidate_crystal_models = self._lattice_search_strategy.find_crystal_models(
+                self.reflections, self.experiments
             )
+        return candidate_crystal_models
 
     def find_lattices(self):
         self.candidate_crystal_models = self.find_candidate_crystal_models()
