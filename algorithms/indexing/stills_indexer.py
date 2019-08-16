@@ -358,6 +358,9 @@ class StillsIndexer(Indexer):
                 )
                 ref_predictor(refined_reflections)
 
+            elif self.params.refinement_protocol.mode is None:
+                refined_experiments, refined_reflections = experiments, reflections_for_refinement
+
             else:
                 try:
                     refined_experiments, refined_reflections = self.refine(
