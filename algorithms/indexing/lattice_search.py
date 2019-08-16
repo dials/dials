@@ -116,10 +116,31 @@ basis_vector_search_phil_scope.adopt_scope(
 
 
 class LatticeSearch(indexer.Indexer):
+    def __init__(self, reflections, experiments, params=None):
+        super(LatticeSearch, self).__init__(reflections, experiments, params)
+
+        strategy_class = None
+        for entry_point in pkg_resources.iter_entry_points(
+            "dials.index.lattice_search_strategy"
+        ):
+            if entry_point.name == params.indexing.method:
+                strategy_class = entry_point.load()
+
+        if strategy_class is not None:
+            self._lattice_search_strategy = strategy_class(
+                target_symmetry_primitive=self._symmetry_handler.target_symmetry_primitive,
+                params=getattr(self.params, entry_point.name),
+            )
+        else:
+            self._lattice_search_strategy = None
+
     def find_candidate_crystal_models(self):
-        # A choice between various strategies for constructing crystal models
-        # directly can be made here
-        raise NotImplementedError()
+
+        self.candidate_crystal_models = []
+        if self._basis_vector_search_strategy:
+            self.candidate_crystal_models = self._basis_vector_search_strategy.find_crystal_models(
+                self.reflections
+            )
 
     def find_lattices(self):
         self.candidate_crystal_models = self.find_candidate_crystal_models()
