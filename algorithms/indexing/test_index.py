@@ -776,10 +776,10 @@ def test_refinement_failure_on_max_lattices_a15(dials_regression, tmpdir):
     reason="stills_indexer refine function only considers first crystal for mosaicity",
 )
 def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmpdir):
-    """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of 
-        dxtbx crystal models (that are not MosaicSauter2014 models). The conversion to MosaicSauter2014 is made 
+    """ Problem: In stills_indexer, before calling the refine function, the experiment list contains a list of
+        dxtbx crystal models (that are not MosaicSauter2014 models). The conversion to MosaicSauter2014 is made
         during the refine step when functions from nave_parameters is called. If the experiment list contains
-        more than 1 experiment, for eg. multiple lattices, only the first crystal gets assigned mosaicity. In 
+        more than 1 experiment, for eg. multiple lattices, only the first crystal gets assigned mosaicity. In
         actuality, all crystal models should be assigned mosaicity. This test only compares whether or not all crystal models
         have been assigned a MosaicSauter2014 model.  """
 
@@ -852,3 +852,47 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     # Now check whether the models have mosaicity after stills_indexer refinement
     for crys in refined_explist.crystals():
         assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)
+
+
+def test_index_ED_still_low_res_spot_match(dials_data, tmpdir):
+
+    data_dir = dials_data("smv_image_examples")
+    # test indexing from a single simulated lysozyme ED still
+
+    image_path = os.path.join(str(data_dir), "noiseimage_001.img")
+
+    command = ["dials.import", image_path]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    experiment = tmpdir.join("imported.expt")
+    assert experiment.check()
+
+    command = ["dials.find_spots", experiment]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    reflections = tmpdir.join("strong.refl")
+
+    extra_args = [
+        "indexing.method=low_res_spot_match",
+        "known_symmetry.space_group=P43212",
+        "known_symmetry.unit_cell=78.84,78.84,38.29,90,90,90",
+        "stills.indexer=sweeps",
+        "n_macro_cycles=2",
+        "detector.fix_list=Dist",
+    ]
+
+    expected_unit_cell = uctbx.unit_cell((78.84, 78.84, 38.29, 90, 90, 90))
+    expected_rmsds = (0.007, 0.006, 0.000)
+    expected_hall_symbol = " P 4nw 2abw"
+
+    run_indexing(
+        reflections,
+        experiment,
+        tmpdir,
+        extra_args,
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
