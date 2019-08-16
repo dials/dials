@@ -45,6 +45,10 @@ known_entry_points = {
         "description": "Basis vector search strategies",
         "required": ["fft1d", "fft3d", "real_space_grid_search"],
     },
+    "dials.index.lattice_search_strategy": {
+        "description": "Lattice search strategies",
+        "required": ["low_res_spot_match"],
+    },
 }
 
 if __name__ == "__main__":

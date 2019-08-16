@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
+import itertools
 import logging
 import math
 
@@ -86,8 +87,9 @@ basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
 import pkg_resources
 
 methods = []
-for entry_point in pkg_resources.iter_entry_points(
-    "dials.index.basis_vector_search_strategy"
+for entry_point in itertools.chain(
+    pkg_resources.iter_entry_points("dials.index.basis_vector_search_strategy"),
+    pkg_resources.iter_entry_points("dials.index.lattice_search_strategy"),
 ):
     scope = (
         """\
