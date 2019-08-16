@@ -854,7 +854,8 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
         assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)
 
 
-def test_index_ED_still_low_res_spot_match(dials_data, tmpdir):
+@pytest.mark.parametrize("indexer_type,fix_cell", (("sweeps", False), ("stills", True)))
+def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix_cell):
 
     data_dir = dials_data("smv_image_examples")
     # test indexing from a single simulated lysozyme ED still
@@ -882,6 +883,8 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir):
         "n_macro_cycles=2",
         "detector.fix_list=Dist",
     ]
+    if fix_cell:
+        extra_args += ["crystal.fix=cell"]
 
     expected_unit_cell = uctbx.unit_cell((78.84, 78.84, 38.29, 90, 90, 90))
     expected_rmsds = (0.007, 0.006, 0.000)
