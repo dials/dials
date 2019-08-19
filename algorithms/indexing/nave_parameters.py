@@ -41,14 +41,12 @@ class NaveParameters(object):
             excursion_rad = RR["delpsical.rad"].select(RR["id"] == iid)
             delta_psi_deg = excursion_rad * 180.0 / math.pi
             logger.info("")
-            logger.info(flex.max(delta_psi_deg), flex.min(delta_psi_deg))
+            logger.info("%s %s", flex.max(delta_psi_deg), flex.min(delta_psi_deg))
             mean_excursion = flex.mean(delta_psi_deg)
             logger.info(
-                "The mean excursion is %7.3f degrees, r.m.s.d %7.3f"
-                % (
-                    mean_excursion,
-                    math.sqrt(flex.mean(RR["delpsical2"].select(RR["id"] == iid))),
-                )
+                "The mean excursion is %7.3f degrees, r.m.s.d %7.3f",
+                mean_excursion,
+                math.sqrt(flex.mean(RR["delpsical2"].select(RR["id"] == iid))),
             )
 
             crystal = MosaicCrystalSauter2014(self.experiments[iid].crystal)
