@@ -81,22 +81,19 @@ include scope cctbx.french_wilson.master_phil
 
 def merge_data_to_mtz(params, experiments, reflections):
     """Merge data (at each wavelength) and write to an mtz file object."""
-    if len(experiments) > 1:
-        wavelengths = match_wavelengths(experiments)
-        if len(wavelengths.keys()) > 1:
-            logger.info(
-                "Multiple wavelengths found: \n%s",
-                "\n".join(
-                    "  Wavlength: %.5f, experiment numbers: %s "
-                    % (k, ",".join(map(str, v)))
-                    for k, v in wavelengths.iteritems()
-                ),
-            )
-            return make_MAD_merged_mtz_file(
-                params, experiments, reflections, wavelengths
-            )
+    wavelengths = match_wavelengths(experiments)
+    if len(wavelengths.keys()) > 1:
+        logger.info(
+            "Multiple wavelengths found: \n%s",
+            "\n".join(
+                "  Wavlength: %.5f, experiment numbers: %s "
+                % (k, ",".join(map(str, v)))
+                for k, v in wavelengths.iteritems()
+            ),
+        )
+        return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
     merged_data = merge_and_truncate(params, experiments, reflections)
-    return make_merged_mtz_file(*merged_data)
+    return make_merged_mtz_file(*((wavelengths.keys()[0],) + merged_data))
 
 
 def run(args=None):

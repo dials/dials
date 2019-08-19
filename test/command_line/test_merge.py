@@ -1,4 +1,5 @@
 """Tests for dials.merge command line program."""
+import pytest
 import procrunner
 from iotbx import mtz
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -25,6 +26,8 @@ def test_merge(dials_data, tmpdir):
     assert result.stderr == ""
     assert tmpdir.join("merged.mtz").check()
     m = mtz.object(tmpdir.join("merged.mtz").strpath)
+
+    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
     labels = []
     for ma in m.as_miller_arrays(merge_equivalents=False):
         labels.extend(ma.info().labels)
@@ -136,6 +139,10 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert all(x in labels for x in anom_labels)
     assert all(x in labels for x in amp_labels)
     assert all(x in labels for x in anom_amp_labels)
+
+    # 5 miller arrays for each dataset
+    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.5)
+    assert m.as_miller_arrays()[5].info().wavelength == pytest.approx(0.6889)
 
 
 def test_merge_bad_input(dials_data, tmpdir):

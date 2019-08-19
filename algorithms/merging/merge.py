@@ -48,6 +48,7 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
 
 
 def make_merged_mtz_file(
+    wavelength,
     merged_array,
     merged_anomalous_array=None,
     amplitudes=None,
@@ -60,7 +61,11 @@ def make_merged_mtz_file(
     mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
     mtz_writer.add_crystal(crystal_name="DIALS")
     mtz_writer.add_dataset(
-        merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
+        merged_array,
+        merged_anomalous_array,
+        amplitudes,
+        anomalous_amplitudes,
+        wavelength,
     )
 
     return mtz_writer.mtz_file
