@@ -1165,7 +1165,7 @@ class SpotFrame(XrayFrame):
                     if len(all_pix_data) > 0:
                         self.dials_spotfinder_layers.append(
                             self.pyslip.AddPointLayer(
-                                all_pix_data[all_pix_data.keys()[0]],
+                                all_pix_data[list(all_pix_data.keys())[0]],
                                 color="green",
                                 name="<all_pix_layer>",
                                 radius=2,

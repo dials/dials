@@ -79,7 +79,7 @@ class Sort(object):
 
     def run(self):
         """Execute the script."""
-        from dials.array_family import flex  # import dependency
+        from dials.array_family import flex  # noqa: F401, import dependency
         from dials.util.options import flatten_reflections
         from dials.util import Sorry
 
@@ -104,15 +104,13 @@ class Sort(object):
         if options.verbose > 0:
             print("Head of sorted list " + attr + ":")
             n = min(len(reflections), 10)
-            for i in range(10):
+            for i in range(n):
                 print(reflections[i][attr])
 
         # Save sorted reflections to file
         if params.output:
-            print("Saving reflections to {0}".format(params.output))
-            reflections.as_pickle(params.output)
-
-        return
+            print("Saving reflections to {}".format(params.output))
+            reflections.as_file(params.output)
 
 
 if __name__ == "__main__":

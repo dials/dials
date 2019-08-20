@@ -2,14 +2,15 @@
 from __future__ import absolute_import, division, print_function
 
 from cctbx import miller
-from scitbx.array_family import flex
-
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
 from dials.util.batch_handling import (
     calculate_batch_offsets,
     get_batch_ranges,
     assign_batches_to_reflections,
 )
-from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from libtbx.str_utils import make_sub_header
+from scitbx.array_family import flex
+from six.moves import cStringIO as StringIO
 
 
 def batch_dependent_properties(batches, intensities, scales=None):
@@ -61,7 +62,7 @@ def combined_table_to_batch_dependent_properties(
 ):
     """Extract batch dependent properties from a combined reflection table."""
     tables = []
-    for id_ in set(combined_table["id"]).difference(set([-1])):
+    for id_ in set(combined_table["id"]).difference({-1}):
         tables.append(combined_table.select(combined_table["id"] == id_))
 
     return reflection_tables_to_batch_dependent_properties(
@@ -180,3 +181,30 @@ def _batch_bins_and_data(batches, values, function_to_apply):
             if i_ref < n_ref:
                 current_batch = batches[i_batch_start]
     return batch_bins, data
+
+
+def make_merging_statistics_summary(dataset_statistics):
+    """Format merging statistics information into an output string."""
+
+    # Here use a StringIO to get around excessive padding/whitespace.
+    # Avoid using result.show as don't want redundancies printed.
+    out = StringIO()
+
+    # First make summary
+    make_sub_header("Merging statistics", out=out)
+    dataset_statistics.overall.show_summary(out=out)
+
+    # Next make statistics by resolution bin.
+    msg = "\n\nStatistics by resolution bin:\n"
+    msg += (
+        " d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>"
+        + "    r_mrg   r_meas    r_pim   cc1/2   cc_ano\n"
+    )
+    for bin_stats in dataset_statistics.bins:
+        msg += bin_stats.format() + "\n"
+    msg += dataset_statistics.overall.format() + "\n\n"
+    out.write(msg)
+
+    # Finally show estimated cutoffs
+    dataset_statistics.show_estimated_cutoffs(out=out)
+    return out.getvalue()

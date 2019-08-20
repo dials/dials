@@ -843,14 +843,25 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Override default reference func to avoid copying
+   */
+  bool reflection_table_reference_func(msgpack::type::object_type type,
+                                       std::size_t length,
+                                       void *user_data) {
+    return true;
+  }
+
+  /**
    * Unpack the reflection table from msgpack format
    * @param the msgpack string
    * @returns The reflection table
    */
-  reflection_table reflection_table_from_msgpack(std::string packed) {
+  reflection_table reflection_table_from_msgpack(boost::python::object packed) {
+    const char *data = PyBytes_AsString(packed.ptr());
+    std::size_t size = PyBytes_Size(packed.ptr());
     msgpack::unpacked result;
     std::size_t off = 0;
-    msgpack::unpack(result, packed.data(), packed.size(), off);
+    msgpack::unpack(result, data, size, off, reflection_table_reference_func);
     reflection_table r = result.get().as<reflection_table>();
     return r;
   }
@@ -909,10 +920,11 @@ namespace dials { namespace af { namespace boost_python {
       // Extract the columns
       dict columns = extract<dict>(state[3]);
       DIALS_ASSERT(len(columns) == ncols);
-      object iterator = columns.iteritems();
+      object items = list(columns.items());
       object self_obj(self);
+      DIALS_ASSERT(len(items) == ncols);
       for (std::size_t i = 0; i < ncols; ++i) {
-        object item = iterator.attr("next")();
+        object item = items[i];
         DIALS_ASSERT(len(item[1]) == nrows);
         std::string name = extract<std::string>(item[0]);
         self_obj[name] = item[1];
@@ -926,9 +938,10 @@ namespace dials { namespace af { namespace boost_python {
 
       // Extract the identifiers
       dict identifiers = extract<dict>(state[1]);
-      object identifier_iterator = identifiers.iteritems();
+      object identifier_items = list(identifiers.items());
+      DIALS_ASSERT(len(identifier_items) == len(identifiers));
       for (std::size_t i = 0; i < len(identifiers); ++i) {
-        object item = identifier_iterator.attr("next")();
+        object item = identifier_items[i];
         std::size_t index = extract<std::size_t>(item[0]);
         std::string ident = extract<std::string>(item[1]);
         (*self.experiment_identifiers())[index] = ident;
@@ -942,10 +955,11 @@ namespace dials { namespace af { namespace boost_python {
       // Extract the columns
       dict columns = extract<dict>(state[4]);
       DIALS_ASSERT(len(columns) == ncols);
-      object iterator = columns.iteritems();
+      object items = list(columns.items());
       object self_obj(self);
+      DIALS_ASSERT(len(items) == ncols);
       for (std::size_t i = 0; i < ncols; ++i) {
-        object item = iterator.attr("next")();
+        object item = items[i];
         DIALS_ASSERT(len(item[1]) == nrows);
         std::string name = extract<std::string>(item[0]);
         self_obj[name] = item[1];

@@ -4,16 +4,17 @@ Tests for dials.util.multi_dataset_handling functions
 from __future__ import absolute_import, division, print_function
 
 import pytest
-from dxtbx.model import Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_ids,
 )
+from dxtbx.model import Experiment, ExperimentList
 
 
-def empty_explist_3():
+@pytest.fixture
+def experiments():
     """Make a list of three empty experiments"""
     experiments = ExperimentList()
     experiments.append(Experiment())
@@ -22,7 +23,16 @@ def empty_explist_3():
     return experiments
 
 
-def reflection_list_3():
+@pytest.fixture
+def experiments_024(experiments):
+    experiments[0].identifier = "0"
+    experiments[1].identifier = "2"
+    experiments[2].identifier = "4"
+    return experiments
+
+
+@pytest.fixture
+def reflections():
     """Make a list of three reflection tables"""
     rt1 = flex.reflection_table()
     rt1["id"] = flex.int([0, 0, 0])
@@ -34,170 +44,163 @@ def reflection_list_3():
     return reflections
 
 
-def multi_table_3():
-    r = flex.reflection_table()
-    r["id"] = flex.int([0, 1, 4])
-    return [r]
-
-
-def test_select_datasets_on_ids():
-    """Test the select_datasets_on_ids function."""
-    experiments = empty_explist_3()
-    reflections = reflection_list_3()
+@pytest.fixture
+def reflections_024(reflections):
     reflections[0].experiment_identifiers()[0] = "0"
-    experiments[0].identifier = "0"
     reflections[1].experiment_identifiers()[1] = "2"
-    experiments[1].identifier = "2"
     reflections[2].experiment_identifiers()[4] = "4"
-    experiments[2].identifier = "4"
+    return reflections
+
+
+def test_select_specific_datasets_using_id(experiments_024, reflections_024):
     use_datasets = ["0", "2"]
     experiments, refl = select_datasets_on_ids(
-        experiments, reflections, use_datasets=use_datasets
+        experiments_024, reflections_024, use_datasets=use_datasets
     )
     assert len(experiments) == 2
     assert len(refl) == 2
     assert list(experiments.identifiers()) == ["0", "2"]
 
-    experiments = empty_explist_3()
-    experiments[0].identifier = "0"
-    experiments[1].identifier = "2"
-    experiments[2].identifier = "4"
-    exclude_datasets = ["0"]
+
+def test_exclude_specific_datasets_using_id(experiments_024, reflections_024):
     experiments, refl = select_datasets_on_ids(
-        experiments, reflections, exclude_datasets=exclude_datasets
+        experiments_024, reflections_024, exclude_datasets=["0"]
     )
     assert len(refl) == 2
     assert list(experiments.identifiers()) == ["2", "4"]
     assert len(experiments) == 2
 
+
+def test_raise_exception_when_selecting_and_excluding_datasets_at_same_time(
+    experiments_024, reflections_024
+):
     with pytest.raises(ValueError):
-        exclude_datasets = ["0"]
-        use_datasets = ["2", "4"]
         experiments, refl = select_datasets_on_ids(
-            experiments,
-            reflections,
-            use_datasets=use_datasets,
-            exclude_datasets=exclude_datasets,
+            experiments_024,
+            reflections_024,
+            use_datasets=["2", "4"],
+            exclude_datasets=["0"],
         )
 
+
+def test_raise_exception_when_excluding_non_existing_dataset(
+    experiments_024, reflections_024
+):
     with pytest.raises(ValueError):
-        exclude_datasets = ["1"]
         experiments, refl = select_datasets_on_ids(
-            experiments, reflections, exclude_datasets=exclude_datasets
+            experiments_024, reflections_024, exclude_datasets=["1"]
         )
 
-    # test for return if no identifiers specified
-    exp, refl = select_datasets_on_ids(experiments, reflections)
-    assert exp is experiments
-    assert refl is reflections
 
-    # test for ValueError raise if not all identifiers set
-    experiments = empty_explist_3()
+def test_selecting_everything_is_identity_function(experiments_024, reflections_024):
+    exp, refl = select_datasets_on_ids(experiments_024, reflections_024)
+    assert exp is experiments_024
+    assert refl is reflections_024
+
+
+def test_raise_exception_when_not_all_identifiers_set(experiments, reflections_024):
     experiments[0].identifier = "0"
     experiments[1].identifier = "2"
     with pytest.raises(ValueError):
-        exp, refl = select_datasets_on_ids(experiments, reflections, use_datasets=["2"])
-    # test for ValueError raise if bad input
-    experiments[2].identifier = "4"
-    with pytest.raises(ValueError):
-        exp, refl = select_datasets_on_ids(experiments, reflections, use_datasets=["3"])
+        exp, refl = select_datasets_on_ids(
+            experiments, reflections_024, use_datasets=["2"]
+        )
 
-    # test correct handling with multi-dataset table
+
+def test_raise_exception_when_selecting_non_existing_dataset(
+    experiments_024, reflections_024
+):
+    with pytest.raises(ValueError):
+        exp, refl = select_datasets_on_ids(
+            experiments_024, reflections_024, use_datasets=["3"]
+        )
+
+
+def test_correct_handling_with_multi_dataset_table(experiments_024):
     reflections = flex.reflection_table()
     reflections["id"] = flex.int([0, 1, 2])
     reflections.experiment_identifiers()[0] = "0"
     reflections.experiment_identifiers()[1] = "2"
     reflections.experiment_identifiers()[2] = "4"
     exp, refl = select_datasets_on_ids(
-        experiments, [reflections], exclude_datasets=["2"]
+        experiments_024, [reflections], exclude_datasets=["2"]
     )
     assert list(refl[0].experiment_identifiers().values()) == ["0", "4"]
     assert list(refl[0]["id"]) == [0, 2]
 
 
-def test_assign_unique_identifiers():
-    """Test the assignment of unique identifiers"""
-    # Test case where none are set but refl table ids are - use refl ids
-    experiments = empty_explist_3()
-    reflections = reflection_list_3()
+def test_assignment_of_unique_identifiers_when_refl_table_ids_are_present(
+    experiments, reflections
+):
     assert list(experiments.identifiers()) == ["", "", ""]
     exp, rts = assign_unique_identifiers(experiments, reflections)
     expected_identifiers = ["0", "1", "2"]
     expected_ids = [0, 1, 2]
     # Check that identifiers are set in experiments and reflection table.
-    assert (list(exp.identifiers())) == expected_identifiers
+    assert list(exp.identifiers()) == expected_identifiers
     for i, refl in enumerate(rts):
         assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-        assert list(set(refl["id"])) == [i]
+        assert set(refl["id"]) == {i}
         assert i == expected_ids[i]
 
-    # Test case where none are set but refl table ids have duplicates
-    experiments = empty_explist_3()
-    reflections = reflection_list_3()
+
+def test_assign_identifiers_where_none_are_set_but_refl_table_ids_have_duplicates(
+    experiments, reflections
+):
     reflections[2]["id"] = flex.int([0, 0])
     exp, rts = assign_unique_identifiers(experiments, reflections)
     expected_identifiers = ["0", "1", "2"]
     # Check that identifiers are set in experiments and reflection table.
-    assert (list(exp.identifiers())) == expected_identifiers
+    assert list(exp.identifiers()) == expected_identifiers
     expected_ids = [0, 1, 2]
     for i, refl in enumerate(rts):
         assert refl.experiment_identifiers()[i] == expected_identifiers[i]
-        assert list(set(refl["id"])) == [i]
+        assert set(refl["id"]) == {i}
         assert i == expected_ids[i]
 
-    # Test case where identifiers are already set.
-    experiments = empty_explist_3()
-    experiments[0].identifier = "0"
-    experiments[1].identifier = "4"
-    experiments[2].identifier = "2"
-    reflections = reflection_list_3()
+
+def test_raise_exception_when_existing_identifiers_are_inconsistent(
+    experiments_024, reflections
+):
     reflections[1].experiment_identifiers()[0] = "5"
     # should raise an assertion error for inconsistent identifiers
     with pytest.raises(ValueError):
-        exp, rts = assign_unique_identifiers(experiments, reflections)
+        exp, rts = assign_unique_identifiers(experiments_024, reflections)
 
-    # test cases where all set, whether reflection table is split or not
-    experiments = empty_explist_3()
-    experiments[0].identifier = "0"
-    experiments[1].identifier = "4"
-    experiments[2].identifier = "2"
-    reflections = reflection_list_3()
-    reflections[0].experiment_identifiers()[0] = "0"
-    reflections[1].experiment_identifiers()[1] = "4"
-    reflections[2].experiment_identifiers()[4] = "2"
 
-    experiments_multi = empty_explist_3()
-    reflections_multi = multi_table_3()
-    experiments_multi[0].identifier = "0"
-    experiments_multi[1].identifier = "4"
-    experiments_multi[2].identifier = "2"
-    reflections_multi[0].experiment_identifiers()[0] = "0"
-    reflections_multi[0].experiment_identifiers()[1] = "4"
-    reflections_multi[0].experiment_identifiers()[4] = "2"
+def test_cases_where_all_set_whether_reflection_table_is_split_or_not(
+    experiments_024, reflections_024
+):
     # should pass experiments back if identifiers all already set
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-    expected_identifiers = ["0", "4", "2"]
+    exp, rts = assign_unique_identifiers(experiments_024, reflections_024)
+    expected_identifiers = ["0", "2", "4"]
     # Check that identifiers are set in experiments and reflection table.
-    assert exp is experiments
+    assert exp is experiments_024
     assert list(exp.identifiers()) == expected_identifiers
     expected_ids = [0, 1, 4]
     for i, refl in enumerate(rts):
         id_ = refl["id"][0]
         assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-        assert list(set(refl["id"])) == [id_]
+        assert set(refl["id"]) == {id_}
         assert id_ == expected_ids[i]
 
-    # Test for correct ValueError raise if unqeual experiments and reflections
+
+def test_raise_exception_if_unequal_experiments_and_reflections(experiments_024):
+    reflections_multi = [flex.reflection_table()]
+    reflections_multi[0]["id"] = flex.int([0, 1, 4])
+    reflections_multi[0].experiment_identifiers()[0] = "0"
+    reflections_multi[0].experiment_identifiers()[1] = "2"
+    reflections_multi[0].experiment_identifiers()[4] = "4"
     del reflections_multi[0].experiment_identifiers()[4]
     del reflections_multi[0]["id"][2]
     with pytest.raises(ValueError):
-        exp, rts = assign_unique_identifiers(experiments_multi, reflections_multi)
+        exp, rts = assign_unique_identifiers(experiments_024, reflections_multi)
 
+
+def test_assigned_identifiers_are_kept_when_assigning_rest(experiments, reflections):
     # Now test that if some are set, these are maintained and unique ids are
     # set for the rest
-    experiments = empty_explist_3()
     experiments[0].identifier = "1"
-    reflections = reflection_list_3()
     reflections[0].experiment_identifiers()[0] = "1"
     exp, rts = assign_unique_identifiers(experiments, reflections)
     expected_identifiers = ["1", "0", "2"]
@@ -206,12 +209,11 @@ def test_assign_unique_identifiers():
     for i, refl in enumerate(rts):
         id_ = refl["id"][0]
         assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-        assert list(set(refl["id"])) == [id_]
+        assert set(refl["id"]) == {id_}
         assert id_ == expected_ids[i]
 
-    # Test the case where identifiers are specified
-    experiments = empty_explist_3()
-    reflections = reflection_list_3()
+
+def test_assigning_specified_identifiers(experiments, reflections):
     reflections[0].experiment_identifiers()[0] = "5"
     reflections[1].experiment_identifiers()[1] = "6"
     reflections[1].experiment_identifiers()[4] = "7"

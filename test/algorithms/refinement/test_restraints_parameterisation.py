@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 # Tests for RestraintsParameterisation and associated classes used in refinement
 
-import math
 import os
 import random
 
@@ -55,7 +54,6 @@ def test_single_crystal_restraints_gradients():
     mybeam = models.beam
 
     # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, math.pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -63,7 +61,7 @@ def test_single_crystal_restraints_gradients():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -196,7 +194,6 @@ def test_two_triclinic_crystals():
     mybeam = models.beam
 
     # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, math.pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -204,7 +201,7 @@ def test_two_triclinic_crystals():
         image_range=(1, 720),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(720),
+        epochs=list(range(720)),
         deg=True,
     )
 
@@ -348,7 +345,7 @@ def test_10_crystals_with_stills_parameterisation(dials_regression):
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False
     )
-    reflections = flex.reflection_table.from_pickle(pickle_path)
+    reflections = flex.reflection_table.from_file(pickle_path)
 
     refiner = RefinerFactory.from_parameters_data_experiments(
         working_params, reflections, experiments
@@ -442,7 +439,7 @@ def test_group_restraint_with_multiple_crystals_and_a_stills_refiner(dials_regre
     experiments = ExperimentListFactory.from_json_file(
         experiments_path, check_format=False
     )
-    reflections = flex.reflection_table.from_pickle(pickle_path)
+    reflections = flex.reflection_table.from_file(pickle_path)
 
     refiner = RefinerFactory.from_parameters_data_experiments(
         working_params, reflections, experiments

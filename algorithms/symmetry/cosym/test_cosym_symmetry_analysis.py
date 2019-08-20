@@ -132,28 +132,30 @@ Laue group confidence: 0.994"""
 
     d = analysis.as_dict()
     assert d["sym_op_scores"][0] == {
-        "cc": 0.19620531091685714,
+        "cc": pytest.approx(0.19620531091685714),
         "operator": "-x,-z,-y",
         "likelihood": pytest.approx(0.08665625555575088),
         "stars": "",
-        "z_cc": 1.9620531091685713,
+        "z_cc": pytest.approx(1.9620531091685713),
     }
     assert d["subgroup_scores"][0] == {
-        "confidence": 0.9940687431995551,
-        "z_cc_for": " 10.00",
+        "confidence": pytest.approx(0.9940687431995551),
+        "z_cc_for": pytest.approx(9.999725360190128),
         "stars": "***",
         "patterson_group": "-R 3",
-        "max_angular_difference": "0.0",
-        "likelihood": 0.995493024305035,
+        "max_angular_difference": 0.0,
+        "likelihood": pytest.approx(0.995493024305035),
         "cb_op": "-1/3*x+2/3*y-1/3*z,-2/3*x+1/3*y+1/3*z,1/3*x+1/3*y+1/3*z",
-        "z_cc_against": " 1.96",
-        "unit_cell": (
-            98.32999999999998,
-            98.32999999999998,
-            135.99,
-            90.0,
-            90.0,
-            119.99999999999999,
+        "z_cc_against": pytest.approx(1.9620621986200772),
+        "unit_cell": pytest.approx(
+            (
+                98.32999999999998,
+                98.32999999999998,
+                135.99,
+                90.0,
+                90.0,
+                119.99999999999999,
+            )
         ),
-        "z_cc_net": " 8.04",
+        "z_cc_net": pytest.approx(8.037663161570052),
     }

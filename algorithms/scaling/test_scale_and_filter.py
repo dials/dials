@@ -1,16 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 # test that compute_delta_cchalf returns required values
-import pytest
 import mock
 from libtbx import phil
-from dials.util.options import OptionParser
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Experiment, Scan
+from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.array_family import flex
 from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
-from dials.command_line.scale_and_filter import ScaleAndFilter, AnalysisResults
+from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 
 
 def generate_test_reflections(n=2):
@@ -73,93 +72,6 @@ def generate_test_experiments(n=2):
     return experiments
 
 
-def generated_param():
-    """Generate the default scaling parameters object."""
-    phil_scope = phil.parse(
-        """
-      include scope dials.command_line.scale_and_filter.phil_scope
-  """,
-        process_includes=True,
-    )
-
-    optionparser = OptionParser(phil=phil_scope, check_format=False)
-    parameters, _ = optionparser.parse_args(
-        args=[], quick_parse=True, show_diff_phil=False
-    )
-    return parameters
-
-
-def mock_experiments(n=3):
-    explist = []
-    for i in range(n):
-        exp = mock.MagicMock()
-        exp.identifier = str(i)
-        exp.scan.return_value = True
-        exp.scan.get_image_range.return_value = (1, 10)
-        explist.append(exp)
-    return exp
-
-
-def _mock_scaler():
-    scaler = mock.Mock()
-    scaler.run.return_value = None
-    return scaler
-
-
-def _scaling_script(*args):
-    return _mock_scaler()
-
-
-def _mock_results(last_cycle_results):
-    mock_results = mock.Mock()
-    mock_results.finish = mock.MagicMock()
-    mock_results.get_last_cycle_results.return_value = last_cycle_results
-    mock_results.get_cycle_results.return_value = []
-    return mock_results
-
-
-test_input = [
-    [{"n_removed": 0}, "no_more_removed"],
-    [{"n_removed": 100, "cumul_percent_removed": 50}, "max_percent_removed"],
-    [
-        {
-            "n_removed": 10,
-            "cumul_percent_removed": 1,
-            "merging_stats": {"completeness": 90},
-        },
-        "below_completeness_limit",
-    ],
-    [
-        {
-            "n_removed": 10,
-            "cumul_percent_removed": 1,
-            "merging_stats": {"completeness": 98},
-        },
-        "max_cycles",
-    ],
-]
-
-
-@pytest.mark.parametrize("last_cycle_results, expected_termination", test_input)
-def test_scale_and_filter_termination(last_cycle_results, expected_termination):
-    """Test the termination criteria based on a mock results object."""
-    exp = mock_experiments(3)
-    refl = []
-    params = generated_param()
-    params.filtering.min_completeness = 95.0
-
-    mock_res = _mock_results(last_cycle_results)
-
-    scale_and_filter = ScaleAndFilter(
-        params, params.scale, params.delta_cc_half, _scaling_script, _scaling_script
-    )
-    with mock.patch.object(
-        scale_and_filter, "log_cycle_results", return_value=mock_res
-    ):
-        results = scale_and_filter.scale_and_filter(exp, refl)
-        results.finish.assert_called_with(termination_reason=expected_termination)
-
-
 def test_scale_and_filter_results_logging():
     """Test ScaleAndFilter.log_cycle_results method."""
     results = AnalysisResults()
@@ -175,6 +87,7 @@ def test_scale_and_filter_results_logging():
             "experiments_fully_removed": [],
             "n_reflections_removed": 50,
         },
+        "mean_cc_half": 80.0,
         "per_dataset_delta_cc_half_values": {
             "delta_cc_half_values": [-0.1, 0.1, -0.2, 0.2]
         },
@@ -186,32 +99,32 @@ def test_scale_and_filter_results_logging():
     with mock.patch.object(
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
-        res = ScaleAndFilter.log_cycle_results(results, scaling_script, filter_script)
-    # test things have been logged correctly
-    cycle_results = res.get_cycle_results()
-    assert len(cycle_results) == 1
-    assert cycle_results[0]["cumul_percent_removed"] == 100 * 50.0 / 1000.0
-    assert cycle_results[0]["n_removed"] == 50
-    assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
-    assert cycle_results[0]["removed_datasets"] == []
-    assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
-    assert res.get_merging_stats()[0] == "stats_results"
-    assert res.initial_n_reflections == 1000
+        res = log_cycle_results(results, scaling_script, filter_script)
+        # test things have been logged correctly
+        cycle_results = res.get_cycle_results()
+        assert len(cycle_results) == 1
+        assert cycle_results[0]["cumul_percent_removed"] == 100 * 50.0 / 1000.0
+        assert cycle_results[0]["n_removed"] == 50
+        assert cycle_results[0]["image_ranges_removed"] == [[(6, 10), 0]]
+        assert cycle_results[0]["removed_datasets"] == []
+        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert res.get_merging_stats()[0] == "stats_results"
+        assert res.initial_n_reflections == 1000
 
     # add another cycle of results
     with mock.patch.object(
         results, "_parse_merging_stats", side_effect=_parse_side_effect
     ):
-        res = ScaleAndFilter.log_cycle_results(res, scaling_script, filter_script)
-    cycle_results = res.get_cycle_results()
-    assert len(cycle_results) == 2
-    assert cycle_results[1]["cumul_percent_removed"] == 100 * 2 * 50.0 / 1000.0
-    assert cycle_results[1]["n_removed"] == 50
-    assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
-    assert cycle_results[1]["removed_datasets"] == []
-    assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
-    assert res.get_merging_stats()[1] == "stats_results"
-    assert res.initial_n_reflections == 1000
+        res = log_cycle_results(res, scaling_script, filter_script)
+        cycle_results = res.get_cycle_results()
+        assert len(cycle_results) == 2
+        assert cycle_results[1]["cumul_percent_removed"] == 100 * 2 * 50.0 / 1000.0
+        assert cycle_results[1]["n_removed"] == 50
+        assert cycle_results[1]["image_ranges_removed"] == [[(6, 10), 0]]
+        assert cycle_results[1]["removed_datasets"] == []
+        assert cycle_results[0]["delta_cc_half_values"] == [-0.1, 0.1, -0.2, 0.2]
+        assert res.get_merging_stats()[1] == "stats_results"
+        assert res.initial_n_reflections == 1000
 
 
 def test_compute_delta_cchalf_returned_results():

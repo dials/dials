@@ -9,16 +9,17 @@ have not changed format and so on.
 
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import os
-from libtbx import easy_run
-from libtbx.test_utils import approx_equal
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.array_family import flex
+
+import procrunner
 import pytest
+from dials.algorithms.refinement.engine import Journal
+from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx.test_utils import approx_equal
 
 
-def test1(dials_regression, run_in_tmpdir):
+def test1(dials_regression, tmpdir):
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -29,21 +30,23 @@ def test1(dials_regression, run_in_tmpdir):
 
     # set some old defaults
     cmd = (
-        "dials.refine close_to_spindle_cutoff=0.05 reflections_per_degree=100 "
-        + "outlier.separate_blocks=False scan_varying=False "
-        + experiments_path
-        + " "
-        + pickle_path
+        "dials.refine",
+        "close_to_spindle_cutoff=0.05",
+        "reflections_per_degree=100",
+        "outlier.separate_blocks=False",
+        "scan_varying=False",
+        experiments_path,
+        pickle_path,
     )
-
-    easy_run.fully_buffered(command=cmd).raise_if_errors()
+    result = procrunner.run(cmd, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
     # load results
     reg_exp = ExperimentListFactory.from_json_file(
         os.path.join(data_dir, "regression_experiments.json"), check_format=False
     )[0]
-    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[
-        0
-    ]
+    ref_exp = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )[0]
 
     # test refined models against expected
     assert reg_exp.crystal == ref_exp.crystal
@@ -57,7 +60,7 @@ def test1(dials_regression, run_in_tmpdir):
     assert ref_exp.crystal.get_cell_volume_sd() == pytest.approx(23.8063382, abs=1e-6)
 
 
-def test2(dials_regression, run_in_tmpdir):
+def test2(dials_regression, tmpdir):
     """Run scan-varying refinement, comparing RMSD table with expected values.
     This test automates what was manually done periodically and recorded in
     dials_regression/refinement_test_data/centroid/README.txt"""
@@ -71,31 +74,39 @@ def test2(dials_regression, run_in_tmpdir):
         assert os.path.exists(pth)
 
     # scan-static refinement first to get refined.expt as start point
-    cmd1 = (
-        "dials.refine "
-        + experiments_path
-        + " "
-        + pickle_path
-        + " scan_varying=False reflections_per_degree=50 "
-        " outlier.algorithm=null close_to_spindle_cutoff=0.05"
+    result = procrunner.run(
+        (
+            "dials.refine",
+            experiments_path,
+            pickle_path,
+            "scan_varying=False",
+            "reflections_per_degree=50",
+            "outlier.algorithm=null",
+            "close_to_spindle_cutoff=0.05",
+        ),
+        working_directory=tmpdir,
     )
-    cmd2 = (
-        "dials.refine refined.expt "
-        + pickle_path
-        + " scan_varying=true output.history=history.pickle"
-        " reflections_per_degree=50"
-        " outlier.algorithm=null close_to_spindle_cutoff=0.05"
-        " crystal.orientation.smoother.interval_width_degrees=36.0"
-        " crystal.unit_cell.smoother.interval_width_degrees=36.0"
-        " set_scan_varying_errors=True"
+    assert not result.returncode and not result.stderr
+    result = procrunner.run(
+        (
+            "dials.refine",
+            "refined.expt",
+            pickle_path,
+            "scan_varying=true",
+            "output.history=history.json",
+            "reflections_per_degree=50",
+            "outlier.algorithm=null",
+            "close_to_spindle_cutoff=0.05",
+            "crystal.orientation.smoother.interval_width_degrees=36.0",
+            "crystal.unit_cell.smoother.interval_width_degrees=36.0",
+            "set_scan_varying_errors=True",
+        ),
+        working_directory=tmpdir,
     )
-
-    easy_run.fully_buffered(command=cmd1).raise_if_errors()
-    easy_run.fully_buffered(command=cmd2).raise_if_errors()
+    assert not result.returncode and not result.stderr
 
     # load and check results
-    with open("history.pickle", "rb") as fh:
-        history = pickle.load(fh)
+    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
 
     expected_rmsds = [
         (0.088488398, 0.114583571, 0.001460382),
@@ -114,12 +125,12 @@ def test2(dials_regression, run_in_tmpdir):
     assert approx_equal(history["rmsd"], expected_rmsds)
 
     # check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_pickle("refined.refl")
+    rt = flex.reflection_table.from_file(tmpdir.join("refined.refl").strpath)
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
 
 
-def test3(dials_regression, run_in_tmpdir):
+def test3(dials_regression, tmpdir):
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
@@ -131,20 +142,23 @@ def test3(dials_regression, run_in_tmpdir):
     for pth in (experiments_path, pickle_path):
         assert os.path.exists(pth)
 
-    cmd1 = (
-        "dials.refine "
-        + experiments_path
-        + " "
-        + pickle_path
-        + " scan_varying=true max_iterations=5 output.history=history.pickle "
-        "crystal.orientation.smoother.interval_width_degrees=auto "
-        "crystal.unit_cell.smoother.interval_width_degrees=auto"
+    result = procrunner.run(
+        (
+            "dials.refine",
+            experiments_path,
+            pickle_path,
+            "scan_varying=true",
+            "max_iterations=5",
+            "output.history=history.json",
+            "crystal.orientation.smoother.interval_width_degrees=auto",
+            "crystal.unit_cell.smoother.interval_width_degrees=auto",
+        ),
+        working_directory=tmpdir,
     )
-    easy_run.fully_buffered(command=cmd1).raise_if_errors()
+    assert not result.returncode and not result.stderr
 
     # load and check results
-    with open("history.pickle", "rb") as fh:
-        history = pickle.load(fh)
+    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
 
     expected_rmsds = [
         [0.619507829, 0.351326044, 0.006955399],
@@ -157,9 +171,9 @@ def test3(dials_regression, run_in_tmpdir):
     assert approx_equal(history["rmsd"], expected_rmsds)
 
     # check the refined unit cell
-    ref_exp = ExperimentListFactory.from_json_file("refined.expt", check_format=False)[
-        0
-    ]
+    ref_exp = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )[0]
     unit_cell = ref_exp.crystal.get_unit_cell().parameters()
     assert unit_cell == pytest.approx(
         [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000], abs=1e-3

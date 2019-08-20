@@ -32,7 +32,6 @@ from libtbx.table_utils import simple_table
 help_message = """Program to assess space group symmetry (for MX datasets)."""
 
 logger = logging.getLogger("dials.space_group")
-info_handle = log.info_handle(logger)
 phil_scope = phil.parse(
     """
     significance_level = *0.95 0.975 0.99

@@ -64,5 +64,5 @@ class Subject(object):
         del self.get_observers(event)[observer]
 
     def notify(self, event):
-        for callback in self.get_observers(event).itervalues():
+        for callback in self.get_observers(event).values():
             callback(self)

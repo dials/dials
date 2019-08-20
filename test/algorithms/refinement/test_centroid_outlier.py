@@ -24,7 +24,7 @@ def test_centroid_outlier(dials_regression, method, colnames, expected_nout):
     data_dir = os.path.join(
         dials_regression, "refinement_test_data", "centroid_outlier"
     )
-    residuals = flex.reflection_table.from_pickle(
+    residuals = flex.reflection_table.from_file(
         os.path.join(data_dir, "residuals.refl")
     )
     params = phil_scope.extract()

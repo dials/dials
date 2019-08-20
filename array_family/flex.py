@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
+import os
 import builtins
 import collections
 import logging
@@ -16,13 +17,15 @@ import operator
 import warnings
 
 import boost.python
-from dials_array_family_flex_ext import *
+import cctbx
+import libtbx.smart_open
+import six
+import six.moves.cPickle as pickle
 from cctbx.array_family.flex import *
 from cctbx.array_family import flex
-import cctbx
 from cctbx import miller
+from dials_array_family_flex_ext import *
 from dials.util import Sorry
-import libtbx.smart_open
 from scitbx import matrix
 
 logger = logging.getLogger(__name__)
@@ -219,12 +222,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :return: The reflection table
 
         """
-        import six.moves.cPickle as pickle
-
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            result = pickle.load(infile)
+            if six.PY3:
+                result = pickle.load(infile, encoding="bytes")
+            else:
+                result = pickle.load(infile)
             assert isinstance(result, reflection_table)
             return result
 
@@ -273,6 +277,16 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         self = handle.get_reflections()
         handle.close()
         return self
+
+    def as_file(self, filename):
+        """
+        Write the reflection table to file in either msgpack or pickle format
+
+        """
+        if os.getenv("DIALS_USE_MESSAGEPACK"):
+            self.as_msgpack_file(filename)
+        else:
+            self.as_pickle(filename)
 
     @staticmethod
     def from_file(filename):
@@ -346,13 +360,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         if "px" in key:
             spots = [
                 detector[table["panel"][i]].get_pixel_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
         else:
             assert "mm" in key
             spots = [
                 detector[table["panel"][i]].get_lab_coord(spots[i][0:2])
-                for i in xrange(len(spots))
+                for i in range(len(spots))
             ]
 
         min_f = max_f = min_s = max_s = 0
@@ -394,8 +408,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :param filename: The output filename
 
         """
-        import six.moves.cPickle as pickle
-
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
 
@@ -601,7 +613,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -621,7 +633,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -716,7 +728,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         # Create the list of matches
         match1 = []
         match2 = []
-        for item, value in lookup.iteritems():
+        for item, value in lookup.items():
             if len(value.b) == 0:
                 continue
             elif len(value.a) == 1 and len(value.b) == 1:
@@ -736,7 +748,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                         matched[j] = (i, d)
                     elif d < matched[j][1]:
                         matched[j] = (i, d)
-                for key1, value1 in matched.iteritems():
+                for key1, value1 in matched.items():
                     match1.append(value1[0])
                     match2.append(key1)
 
@@ -1097,7 +1109,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         detectors = [expr.detector for expr in experiments]
         checker = OverloadChecker()
         for detector in detectors:
-            checker.add(flex.double((p.get_trusted_range()[1] for p in detector)))
+            checker.add(flex.double(p.get_trusted_range()[1] for p in detector))
         result = checker(self["id"], self["shoebox"])
         self.set_flags(result, self.flags.overloaded)
         return result
@@ -1240,12 +1252,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
-            values = identifiers.values()
+            values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
                 index = set(self["id"])
                 for i in index:
-                    assert i in identifiers.keys(), (i, list(identifiers.keys()))
+                    assert i in identifiers, (i, list(identifiers))
         if experiments is not None:
             if len(identifiers) > 0:
                 assert len(identifiers) == len(experiments), (
@@ -1361,7 +1373,7 @@ Found %s"""
         data in the table. Primarily to call as saving data to give a
         consistent table and map.
         """
-        dataset_ids_in_table = set(self["id"]).difference(set([-1]))
+        dataset_ids_in_table = set(self["id"]).difference({-1})
         dataset_ids_in_map = set(self.experiment_identifiers().keys())
         ids_to_remove = dataset_ids_in_map.difference(dataset_ids_in_table)
         for i in ids_to_remove:
@@ -1620,7 +1632,7 @@ class reflection_table_selector(object):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
-        mask2 = self.op(data, self.value)
+        mask2 = self.op(data, value)
         if mask1 is not None:
             mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
         else:

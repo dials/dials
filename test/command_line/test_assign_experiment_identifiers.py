@@ -36,7 +36,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
 
     run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
 
-    r = flex.reflection_table.from_pickle("assigned.refl")
+    r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "1"]
@@ -48,7 +48,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
     sweep_path_list = ["assigned.expt"]
     run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
 
-    r = flex.reflection_table.from_pickle("assigned.refl")
+    r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "1"]
@@ -68,7 +68,7 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
         pickle_path_list, sweep_path_list, extra_args=["identifiers=0 5 10 15"]
     )
 
-    r = flex.reflection_table.from_pickle("assigned.refl")
+    r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
     assert list(r.experiment_identifiers().values()) == ["0", "5", "10", "15"]

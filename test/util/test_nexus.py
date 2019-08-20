@@ -15,7 +15,7 @@ def test_run(dials_regression, run_in_tmpdir):
     )
 
     # Read the reflections
-    reflections1 = flex.reflection_table.from_pickle(join(path, "integrated.pickle"))
+    reflections1 = flex.reflection_table.from_file(join(path, "integrated.pickle"))
 
     # Delete some columns for the test
     del reflections1["s1"]

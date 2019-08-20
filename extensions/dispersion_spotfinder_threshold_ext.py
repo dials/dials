@@ -10,8 +10,6 @@ class DispersionSpotFinderThresholdExt(object):
 
     name = "dispersion"
 
-    default = True
-
     @classmethod
     def phil(cls):
         from libtbx.phil import parse

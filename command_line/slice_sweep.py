@@ -112,12 +112,10 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "models.expt observations.refl" % libtbx.env.dispatcher_name
+            "usage: dials.slice_sweep [options] [param.phil] "
+            "models.expt observations.refl"
         )
 
         # Create the parser
@@ -133,11 +131,7 @@ class Script(object):
     def run(self):
         """Execute the script."""
 
-        from dials.util.options import (
-            flatten_reflections,
-            flatten_experiments,
-            flatten_experiments,
-        )
+        from dials.util.options import flatten_reflections, flatten_experiments
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -226,9 +220,7 @@ class Script(object):
                 else:
                     ext = "_sliced.expt"
                 output_experiments_filename = bname + ext
-            print(
-                "Saving sliced experiments to {0}".format(output_experiments_filename)
-            )
+            print("Saving sliced experiments to {}".format(output_experiments_filename))
 
             from dxtbx.model.experiment_list import ExperimentListDumper
 
@@ -253,7 +245,7 @@ class Script(object):
             print(
                 "Saving sliced reflections to {0}".format(output_reflections_filename)
             )
-            sliced_reflections.as_pickle(output_reflections_filename)
+            sliced_reflections.as_file(output_reflections_filename)
 
         return
 

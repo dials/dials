@@ -88,7 +88,7 @@ class IntegratorStills(object):
 
             bboxes = flex.int6()
             for i, ref in enumerate(predicted):
-                nn_pred = [matcheddata[A.nn[i * 10 + j]] for j in xrange(10)]
+                nn_pred = [matcheddata[A.nn[i * 10 + j]] for j in range(10)]
                 nn_ref = [
                     reference[reference["miller_index"].first_index(r["miller_index"])]
                     for r in nn_pred
@@ -96,7 +96,6 @@ class IntegratorStills(object):
 
                 max_x = max([r["bbox"][1] - r["bbox"][0] for r in nn_ref])
                 max_y = max([r["bbox"][3] - r["bbox"][2] for r in nn_ref])
-                max_z = max([r["bbox"][5] - r["bbox"][4] for r in nn_ref])
 
                 panel = exlist[ref["id"]].detector[ref["panel"]]
                 imgsize_x, imgsize_y = panel.get_image_size()
@@ -173,7 +172,6 @@ class IntegratorStills(object):
         """ Predict all the reflections. """
         from dials.array_family import flex
 
-        n_sigma = params.integration.shoebox.n_sigma
         result = flex.reflection_table()
         for i, experiment in enumerate(experiments):
             predicted = flex.reflection_table.from_predictions(experiment)

@@ -48,7 +48,7 @@ def parse_multiple_datasets(reflections):
     single_reflection_tables = []
     dataset_id_list = []
     for refl_table in reflections:
-        dataset_ids = set(refl_table["id"]).difference(set([-1]))
+        dataset_ids = set(refl_table["id"]).difference({-1})
         dataset_id_list.extend(list(dataset_ids))
         if len(dataset_ids) > 1:
             logger.info(
@@ -161,8 +161,8 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
                 refl.experiment_identifiers()[i] = strid
                 unique_id += 1
             else:
-                k = refl.experiment_identifiers().keys()[0]
-                expid = refl.experiment_identifiers().values()[0]
+                k = list(refl.experiment_identifiers().keys())[0]
+                expid = list(refl.experiment_identifiers().values())[0]
                 del refl.experiment_identifiers()[k]
                 refl.experiment_identifiers()[i] = expid
             refl["id"] = flex.int(refl.size(), i)

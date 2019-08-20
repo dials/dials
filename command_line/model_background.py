@@ -73,7 +73,7 @@ phil_scope = parse(
       .help = "The polar model background image"
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -348,7 +348,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -359,7 +359,7 @@ class Script(object):
             return
 
         # Only handle a single imageset at once
-        imagesets = set(expr.imageset for expr in experiments)
+        imagesets = {expr.imageset for expr in experiments}
         if len(imagesets) != 1:
             raise Sorry("Can only process a single imageset at a time")
 

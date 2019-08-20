@@ -4,24 +4,22 @@ import copy
 import logging
 import math
 
-from libtbx import easy_mp
-from cctbx import crystal, sgtbx
-from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
-from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx.bravais_types import bravais_lattice
-from cctbx.sgtbx import lattice_symmetry
-from rstbx.symmetry.subgroup import MetricSubgroup
-from rstbx.dps_core.lepage import iotbx_converter
-from scitbx.array_family import flex
 import scitbx.matrix
-
-from dxtbx.model import Crystal
-
-from dials.util import log
+from cctbx import crystal, sgtbx
+from cctbx.crystal_orientation import crystal_orientation
+from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
+from cctbx.sgtbx import lattice_symmetry
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from dials.algorithms.indexing import DialsIndexError
+from dials.util.log import LoggingContext
+from dxtbx.model import Crystal
+from libtbx import easy_mp
+from rstbx.dps_core.lepage import iotbx_converter
+from rstbx.symmetry.subgroup import MetricSubgroup
+from scitbx.array_family import flex
+from six.moves import StringIO
 
 logger = logging.getLogger(__name__)
-debug_handle = log.debug_handle(logger)
 
 
 def dials_crystal_from_orientation(crystal_orientation, space_group):
@@ -29,8 +27,6 @@ def dials_crystal_from_orientation(crystal_orientation, space_group):
     AA = scitbx.matrix.col((dm[0], dm[1], dm[2]))
     BB = scitbx.matrix.col((dm[3], dm[4], dm[5]))
     CC = scitbx.matrix.col((dm[6], dm[7], dm[8]))
-
-    from dxtbx.model import Crystal
 
     cryst = Crystal(
         real_space_a=AA, real_space_b=BB, real_space_c=CC, space_group=space_group
@@ -71,13 +67,8 @@ class RefinedSettingsList(list):
 
         return result
 
-    def labelit_printout(self, out=None):
+    def labelit_printout(self):
         from libtbx import table_utils
-
-        if out is None:
-            import sys
-
-            out = sys.stdout
 
         table_data = [
             [
@@ -116,11 +107,11 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        print(
-            table_utils.format(table_data, has_header=1, justify="right", delim=" "),
-            file=out,
+        output = table_utils.format(
+            table_data, has_header=1, justify="right", delim=" "
         )
-        print("* = recommended solution", file=out)
+        output = output + "\n* = recommended solution\n"
+        return output
 
 
 # Mapping of Bravais lattice type to corresponding lowest possible symmetry
@@ -158,8 +149,6 @@ def refined_settings_factory_from_refined_triclinic(
     used_reflections = copy.deepcopy(reflections)
     UC = crystal.get_unit_cell()
 
-    from rstbx.dps_core.lepage import iotbx_converter
-
     Lfat = RefinedSettingsList()
     for item in iotbx_converter(UC, lepage_max_delta):
         Lfat.append(BravaisSetting(item))
@@ -172,9 +161,6 @@ def refined_settings_factory_from_refined_triclinic(
     Nset = len(Lfat)
     for j in range(Nset):
         Lfat[j].setting_number = Nset - j
-
-    from cctbx.crystal_orientation import crystal_orientation
-    from cctbx import sgtbx
 
     for j in range(Nset):
         cb_op = Lfat[j]["cb_op_inp_best"].c().as_double_array()[0:9]
@@ -225,7 +211,9 @@ def identify_likely_solutions(all_solutions):
     for solution in all_solutions:
         solution.recommended = False
         if solution["max_angular_difference"] < 0.5:
-            if solution.min_cc < 0.5 and solution.rmsd > 1.5 * rmsd_p1:
+            if (
+                solution.min_cc is None or solution.min_cc < 0.5
+            ) and solution.rmsd > 1.5 * rmsd_p1:
                 continue
         elif solution.min_cc < 0.7 and solution.rmsd > 2.0 * rmsd_p1:
             continue
@@ -258,78 +246,75 @@ def refine_subgroup(args):
     subgroup.min_cc = None
     subgroup.correlation_coefficients = []
     subgroup.cc_nrefs = []
-    try:
-        logger = logging.getLogger()
-        level = logger.getEffectiveLevel()
-        logger.setLevel(logging.ERROR)
-        outlier_algorithm = params.refinement.reflections.outlier.algorithm
-        params.refinement.reflections.outlier.algorithm = "null"
-        sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
-        refinery, refined, outliers = refine(
-            params,
-            used_reflections.select(sel),
-            experiments,
-            verbosity=refiner_verbosity,
-        )
-        params.refinement.reflections.outlier.algorithm = outlier_algorithm
-        refinery, refined, outliers = refine(
-            params,
-            used_reflections,
-            refinery.get_experiments(),
-            verbosity=refiner_verbosity,
-        )
-    except RuntimeError as e:
-        if (
-            str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0."
-            or str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."
-        ):
-            subgroup.refined_experiments = None
-            subgroup.rmsd = None
-            subgroup.Nmatches = None
-        else:
-            raise
-    else:
-        dall = refinery.rmsds()
-        dx = dall[0]
-        dy = dall[1]
-        subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
-        subgroup.Nmatches = len(refinery.get_matches())
-        subgroup.refined_experiments = refinery.get_experiments()
-        assert len(subgroup.refined_experiments.crystals()) == 1
-        subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
-        cs = crystal.symmetry(
-            unit_cell=subgroup.refined_crystal.get_unit_cell(),
-            space_group=subgroup.refined_crystal.get_space_group(),
-        )
-        if "intensity.sum.value" in used_reflections:
-            # remove refl with -ve variance
-            sel = used_reflections["intensity.sum.variance"] > 0
-            good_reflections = used_reflections.select(sel)
-            from cctbx import miller
 
-            ms = miller.set(cs, good_reflections["miller_index"])
-            ms = ms.array(
-                good_reflections["intensity.sum.value"]
-                / flex.sqrt(good_reflections["intensity.sum.variance"])
+    with LoggingContext(logging.getLogger(), level=logging.ERROR):
+        try:
+            outlier_algorithm = params.refinement.reflections.outlier.algorithm
+            params.refinement.reflections.outlier.algorithm = "null"
+            sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
+            refinery, refined, outliers = refine(
+                params,
+                used_reflections.select(sel),
+                experiments,
+                verbosity=refiner_verbosity,
             )
-            if params.normalise:
-                if params.normalise_bins:
-                    ms = normalise_intensities(ms, n_bins=params.normalise_bins)
-                else:
-                    ms = normalise_intensities(ms)
-            if params.cc_n_bins is not None:
-                ms.setup_binner(n_bins=params.cc_n_bins)
-            ccs, nrefs = get_symop_correlation_coefficients(
-                ms, use_binning=(params.cc_n_bins is not None)
+            params.refinement.reflections.outlier.algorithm = outlier_algorithm              
+            refinery, refined, outliers = refine(
+                params,
+                used_reflections,
+                refinery.get_experiments(),
+                verbosity=refiner_verbosity,
             )
-            subgroup.correlation_coefficients = ccs
-            subgroup.cc_nrefs = nrefs
-            ccs = ccs.select(nrefs > 10)
-            if len(ccs) > 1:
-                subgroup.max_cc = flex.max(ccs[1:])
-                subgroup.min_cc = flex.min(ccs[1:])
-    finally:
-        logger.setLevel(level)
+        except RuntimeError as e:
+            if (
+                str(e) == "scitbx Error: g0 - astry*astry -astrz*astrz <= 0."
+                or str(e) == "scitbx Error: g1-bstrz*bstrz <= 0."
+            ):
+                subgroup.refined_experiments = None
+                subgroup.rmsd = None
+                subgroup.Nmatches = None
+            else:
+                raise
+        else:
+            dall = refinery.rmsds()
+            dx = dall[0]
+            dy = dall[1]
+            subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
+            subgroup.Nmatches = len(refinery.get_matches())
+            subgroup.refined_experiments = refinery.get_experiments()
+            assert len(subgroup.refined_experiments.crystals()) == 1
+            subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
+            cs = crystal.symmetry(
+                unit_cell=subgroup.refined_crystal.get_unit_cell(),
+                space_group=subgroup.refined_crystal.get_space_group(),
+            )
+            if "intensity.sum.value" in used_reflections:
+                # remove refl with -ve variance
+                sel = used_reflections["intensity.sum.variance"] > 0
+                good_reflections = used_reflections.select(sel)
+                from cctbx import miller
+
+                ms = miller.set(cs, good_reflections["miller_index"])
+                ms = ms.array(
+                    good_reflections["intensity.sum.value"]
+                    / flex.sqrt(good_reflections["intensity.sum.variance"])
+                )
+                if params.normalise:
+                    if params.normalise_bins:
+                        ms = normalise_intensities(ms, n_bins=params.normalise_bins)
+                    else:
+                        ms = normalise_intensities(ms)
+                if params.cc_n_bins is not None:
+                    ms.setup_binner(n_bins=params.cc_n_bins)
+                ccs, nrefs = get_symop_correlation_coefficients(
+                    ms, use_binning=(params.cc_n_bins is not None)
+                )
+                subgroup.correlation_coefficients = ccs
+                subgroup.cc_nrefs = nrefs
+                ccs = ccs.select(nrefs > 10)
+                if len(ccs) > 1:
+                    subgroup.max_cc = flex.max(ccs[1:])
+                    subgroup.min_cc = flex.min(ccs[1:])
     return subgroup
 
 
@@ -501,11 +486,17 @@ class SymmetryHandler(object):
             )
 
             if self.target_symmetry_reference_setting is not None:
-                logger.debug("Target symmetry (reference setting):")
+                debug_handle = StringIO()
                 self.target_symmetry_reference_setting.show_summary(f=debug_handle)
+                logger.debug(
+                    "Target symmetry (reference setting):\n" + debug_handle.getvalue()
+                )
             if self.target_symmetry_primitive is not None:
-                logger.debug("Target symmetry (primitive cell):")
+                debug_handle = StringIO()
                 self.target_symmetry_primitive.show_summary(f=debug_handle)
+                logger.debug(
+                    "Target symmetry (primitive cell):\n" + debug_handle.getvalue()
+                )
             logger.debug(
                 "cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive)
             )

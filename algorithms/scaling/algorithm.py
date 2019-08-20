@@ -25,16 +25,14 @@ def do_intensity_combination(scaler, reselect=True):
         scaler.make_ready_for_scaling()
 
 
-def do_error_analysis(scaler, reselect=True, apply_to_reflection_table=False):
+def do_error_analysis(scaler, reselect=True):
     """
     Do error model analysis.
 
     Optionally reselect reflections to prepare for another minimisation round.
     """
     if scaler.params.weighting.optimise_errors:
-        _ = scaler.perform_error_optimisation(
-            apply_to_reflection_table=apply_to_reflection_table
-        )
+        _ = scaler.perform_error_optimisation()
     if reselect:
         scaler.make_ready_for_scaling()
 
@@ -80,7 +78,7 @@ def scaling_algorithm(scaler):
 
     scaler.clear_Ih_table()
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
-    do_error_analysis(scaler, reselect=False, apply_to_reflection_table=True)
+    do_error_analysis(scaler, reselect=False)
 
     scaler.adjust_variances()
     scaler.set_outliers()

@@ -19,13 +19,10 @@ output {
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
 
-    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
+    usage = "dials.modify_geometry [options] models.expt"
 
     parser = OptionParser(
         usage=usage,

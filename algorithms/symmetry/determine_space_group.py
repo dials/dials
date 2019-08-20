@@ -777,7 +777,7 @@ class CorrelationCoefficientAccumulator(object):
         return self._n
 
     def numerator(self):
-        """"Calculate the numerator of the correlation coefficient formula.
+        r""""Calculate the numerator of the correlation coefficient formula.
 
         .. math:: n \sum{x y} - \sum{x} \sum{y}
 
@@ -788,7 +788,7 @@ class CorrelationCoefficientAccumulator(object):
         return self._n * self._sum_xy - self._sum_x * self._sum_y
 
     def denominator(self):
-        """"Calculate the denominator of the correlation coefficient formula.
+        r""""Calculate the denominator of the correlation coefficient formula.
 
         .. math:: \sqrt{n \sum{x^2} - \sum{x}^2} \sqrt{n \sum{y^2} - \sum{y}^2}
 

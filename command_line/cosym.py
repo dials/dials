@@ -9,7 +9,6 @@ logger = logging.getLogger("dials.command_line.cosym")
 
 import iotbx.phil
 from cctbx import sgtbx
-from dxtbx.serialize import dump
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -41,6 +40,10 @@ unit_cell_clustering {
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
+min_reflections = 10
+  .type = int(value_min=1)
+  .help = "The minimum number of reflections per experiment."
+
 seed = 230
   .type = int(value_min=0)
 
@@ -61,7 +64,7 @@ output {
     .type = path
 }
 
-verbosity = 1
+verbosity = 0
   .type = int(value_min=0)
   .help = "The verbosity level"
 """,
@@ -78,9 +81,13 @@ class cosym(Subject):
             params = phil_scope.extract()
         self.params = params
 
+        self._experiments, self._reflections = self._filter_min_reflections(
+            experiments, reflections
+        )
+
         # map experiments and reflections to primitive setting
         self._experiments, self._reflections = self._map_to_primitive(
-            experiments, reflections
+            self._experiments, self._reflections
         )
 
         if len(self._experiments) > 1:
@@ -126,7 +133,7 @@ class cosym(Subject):
 
         space_groups = {}
         reindexing_ops = {}
-        for dataset_id in self.cosym_analysis.reindexing_ops.iterkeys():
+        for dataset_id in self.cosym_analysis.reindexing_ops:
             if 0 in self.cosym_analysis.reindexing_ops[dataset_id]:
                 cb_op = self.cosym_analysis.reindexing_ops[dataset_id][0]
                 reindexing_ops.setdefault(cb_op, [])
@@ -140,12 +147,12 @@ class cosym(Subject):
                 )
 
         logger.info("Space groups:")
-        for sg, datasets in space_groups.iteritems():
+        for sg, datasets in space_groups.items():
             logger.info(str(sg.info().reference_setting()))
             logger.info(datasets)
 
         logger.info("Reindexing operators:")
-        for cb_op, datasets in reindexing_ops.iteritems():
+        for cb_op, datasets in reindexing_ops.items():
             logger.info(cb_op)
             logger.info(datasets)
 
@@ -163,20 +170,18 @@ class cosym(Subject):
             reindexed_reflections.extend(refl)
         reindexed_reflections.reset_ids()
 
-        if self.params.output.json is not None:
-            self.cosym_analysis.as_json(filename=self.params.output.json)
         logger.info(
             "Saving reindexed experiments to %s", self.params.output.experiments
         )
-        dump.experiment_list(self._experiments, self.params.output.experiments)
+        self._experiments.as_file(self.params.output.experiments)
         logger.info(
             "Saving reindexed reflections to %s", self.params.output.reflections
         )
-        reindexed_reflections.as_pickle(self.params.output.reflections)
+        reindexed_reflections.as_file(self.params.output.reflections)
 
     def _apply_reindexing_operators(self, reindexing_ops, subgroup=None):
         """Apply the reindexing operators to the reflections and experiments."""
-        for cb_op, dataset_ids in reindexing_ops.iteritems():
+        for cb_op, dataset_ids in reindexing_ops.items():
             cb_op = sgtbx.change_of_basis_op(cb_op)
             if subgroup is not None:
                 cb_op = subgroup["cb_op_inp_best"] * cb_op
@@ -214,21 +219,18 @@ class cosym(Subject):
                 refl = refl.select(~sel)
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
-
-            if self.params.space_group is not None:
-                space_group_info = self.params.space_group.primitive_setting()
-                if not space_group_info.group().is_compatible_unit_cell(
-                    expt.crystal.get_unit_cell()
-                ):
-                    logger.info(
-                        "Skipping data set - incompatible space group and unit cell: %s, %s",
-                        space_group_info,
-                        expt.crystal.get_unit_cell(),
-                    )
-                    continue
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
             identifiers.append(expt.identifier)
+
+        return select_datasets_on_ids(
+            experiments, reflections, use_datasets=identifiers
+        )
+
+    def _filter_min_reflections(self, experiments, reflections):
+        identifiers = []
+
+        for expt, refl in zip(experiments, reflections):
+            if len(refl) >= self.params.min_reflections:
+                identifiers.append(expt.identifier)
 
         return select_datasets_on_ids(
             experiments, reflections, use_datasets=identifiers
@@ -242,19 +244,8 @@ class cosym(Subject):
         )
         for expt, refl in zip(experiments, reflections):
             expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
+            expt.crystal.set_space_group(sgtbx.space_group())
             refl["miller_index"] = cb_op_ref_min.apply(refl["miller_index"])
-
-            if self.params.space_group is not None:
-                expt.crystal.set_space_group(
-                    self.params.space_group.primitive_setting().group()
-                )
-                expt.crystal.set_unit_cell(
-                    expt.crystal.get_space_group().average_unit_cell(
-                        expt.crystal.get_unit_cell()
-                    )
-                )
-            else:
-                expt.crystal.set_space_group(sgtbx.space_group())
         return experiments, reflections
 
     @Subject.notify_event("performed_unit_cell_clustering")
@@ -342,7 +333,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
@@ -373,7 +364,7 @@ def run(args):
     except ValueError as e:
         raise Sorry(e)
 
-    if params.output.html:
+    if params.output.html or params.output.json:
         register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
     cosym_instance.export()

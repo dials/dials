@@ -1,20 +1,10 @@
-#!/usr/bin/env python
-#
-#  fast_mcd.py
-#
-#  Copyright (C) 2015 Diamond Light Source and STFC Rutherford Appleton
-#                     Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
-from math import floor
-from scitbx.array_family import flex
+
+import math
+
 from dials_refinement_helpers_ext import maha_dist_sq as maha_dist_sq_cpp
 from dials_refinement_helpers_ext import mcd_consistency
+from scitbx.array_family import flex
 
 
 def sample_covariance(a, b):
@@ -66,7 +56,6 @@ def mcd_finite_sample(p, n, alpha):
     based on 'rawcorfactor' in fastmcd.m from Continuous Sound and Vibration
     Analysis by Edward Zechmann"""
 
-    from math import log, exp
     from scitbx.lstbx import normal_eqns
 
     if p > 2:
@@ -80,20 +69,20 @@ def mcd_finite_sample(p, n, alpha):
         ]
 
         y_500 = [
-            log(-coeffqpkwad500[0][0] / p ** coeffqpkwad500[0][1]),
-            log(-coeffqpkwad500[1][0] / p ** coeffqpkwad500[1][1]),
+            math.log(-coeffqpkwad500[0][0] / p ** coeffqpkwad500[0][1]),
+            math.log(-coeffqpkwad500[1][0] / p ** coeffqpkwad500[1][1]),
         ]
         y_875 = [
-            log(-coeffqpkwad875[0][0] / p ** coeffqpkwad875[0][1]),
-            log(-coeffqpkwad875[1][0] / p ** coeffqpkwad875[1][1]),
+            math.log(-coeffqpkwad875[0][0] / p ** coeffqpkwad875[0][1]),
+            math.log(-coeffqpkwad875[1][0] / p ** coeffqpkwad875[1][1]),
         ]
         A_500 = [
-            [1, -log(coeffqpkwad500[0][2] * p ** 2)],
-            [1, -log(coeffqpkwad500[1][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad500[0][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad500[1][2] * p ** 2)],
         ]
         A_875 = [
-            [1, -log(coeffqpkwad875[0][2] * p ** 2)],
-            [1, -log(coeffqpkwad875[1][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad875[0][2] * p ** 2)],
+            [1, -math.log(coeffqpkwad875[1][2] * p ** 2)],
         ]
 
         # solve the set of equations labelled _500
@@ -118,16 +107,16 @@ def mcd_finite_sample(p, n, alpha):
         eqs.solve()
         coeffic_875 = eqs.solution()
 
-        fp_500_n = 1 - exp(coeffic_500[0]) / n ** coeffic_500[1]
-        fp_875_n = 1 - exp(coeffic_875[0]) / n ** coeffic_875[1]
+        fp_500_n = 1 - math.exp(coeffic_500[0]) / n ** coeffic_500[1]
+        fp_875_n = 1 - math.exp(coeffic_875[0]) / n ** coeffic_875[1]
 
     elif p == 2:
-        fp_500_n = 1 - exp(0.673292623522027) / n ** 0.691365864961895
-        fp_875_n = 1 - exp(0.446537815635445) / n ** 1.06690782995919
+        fp_500_n = 1 - math.exp(0.673292623522027) / n ** 0.691365864961895
+        fp_875_n = 1 - math.exp(0.446537815635445) / n ** 1.06690782995919
 
     elif p == 1:
-        fp_500_n = 1 - exp(0.262024211897096) / n ** 0.604756680630497
-        fp_875_n = 1 - exp(-0.351584646688712) / n ** 1.01646567502486
+        fp_500_n = 1 - math.exp(0.262024211897096) / n ** 0.604756680630497
+        fp_875_n = 1 - math.exp(-0.351584646688712) / n ** 1.01646567502486
 
     if alpha <= 0.875:
         fp_alpha_n = fp_500_n + (fp_875_n - fp_500_n) / 0.375 * (alpha - 0.5)
@@ -176,7 +165,7 @@ class FastMCD(object):
         # default initial subset size
         self._alpha = alpha
         n2 = (self._n + self._p + 1) // 2
-        self._h = int(floor(2 * n2 - self._n + 2 * (self._n - n2) * alpha))
+        self._h = int(math.floor(2 * n2 - self._n + 2 * (self._n - n2) * alpha))
         # In the original FAST-MCD, if h == n it reports a single
         # location and scatter estimate for the whole dataset and stops. Currently
         # limit this implementation to h < n
@@ -202,8 +191,6 @@ class FastMCD(object):
 
         self.run()
 
-        return
-
     def run(self):
         """Run the Fast MCD calculation"""
 
@@ -215,8 +202,6 @@ class FastMCD(object):
         # algorithm for a larger number of observations
         else:
             self._T_raw, self._S_raw = self.large_dataset_estimate()
-
-        return
 
     def get_raw_T_and_S(self):
         """Get the raw MCD location (T) and covariance matrix (S) estimates"""
@@ -275,9 +260,7 @@ class FastMCD(object):
         blocks = zip(starts, ends)
 
         # split into groups
-        groups = []
-        for s, e in blocks:
-            groups.append([col[s:e] for col in permuted])
+        groups = [[col[start:end] for col in permuted] for start, end in blocks]
 
         return groups
 
@@ -315,7 +298,7 @@ class FastMCD(object):
         whole dataset"""
 
         trials = []
-        for i in xrange(self._n_trials):
+        for i in range(self._n_trials):
 
             H1 = self.form_initial_subset(h=self._h, data=self._data)
             T1, S1 = self.means_and_covariance(H1)
@@ -323,7 +306,7 @@ class FastMCD(object):
 
             # perform concentration steps
             detScurr, Tcurr, Scurr = detS1, T1, S1
-            for j in xrange(self._k1):  # take maximum of k1 steps
+            for j in range(self._k1):  # take maximum of k1 steps
 
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
@@ -340,9 +323,9 @@ class FastMCD(object):
         # choose 10 trials with the lowest detS3
         trials.sort(key=lambda x: x[0])
         best_trials = []
-        for i in xrange(10):
+        for i in range(10):
             detCurr, Tcurr, Scurr = trials[i]
-            for j in xrange(self._k3):  # take maximum of k3 steps
+            for j in range(self._k3):  # take maximum of k3 steps
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()
@@ -382,7 +365,7 @@ class FastMCD(object):
 
             h_sub = int(len(group[0]) * h_frac)
             gp_trials = []
-            for i in xrange(n_trials):
+            for i in range(n_trials):
 
                 H1 = self.form_initial_subset(h=h_sub, data=group)
                 T1, S1 = self.means_and_covariance(H1)
@@ -390,7 +373,7 @@ class FastMCD(object):
 
                 # perform concentration steps
                 detScurr, Tcurr, Scurr = detS1, T1, S1
-                for j in xrange(self._k1):  # take k1 steps
+                for j in range(self._k1):  # take k1 steps
 
                     Hnew = self.concentration_step(h_sub, group, Tcurr, Scurr)
                     Tnew, Snew = self.means_and_covariance(Hnew)
@@ -415,7 +398,7 @@ class FastMCD(object):
         for trial in trials:
 
             detScurr, Tcurr, Scurr = trial
-            for j in xrange(self._k2):  # take k2 steps
+            for j in range(self._k2):  # take k2 steps
 
                 Hnew = self.concentration_step(h_mrgd, sampled, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
@@ -456,9 +439,9 @@ class FastMCD(object):
         n_reps = 1 if self._n > 5000 else 10
 
         best_trials = []
-        for i in xrange(n_reps):
+        for i in range(n_reps):
             detCurr, Tcurr, Scurr = mrgd_trials[i]
-            for j in xrange(k4):  # take maximum of k4 steps
+            for j in range(k4):  # take maximum of k4 steps
                 Hnew = self.concentration_step(self._h, self._data, Tcurr, Scurr)
                 Tnew, Snew = self.means_and_covariance(Hnew)
                 detNew = Snew.matrix_determinant_via_lu()

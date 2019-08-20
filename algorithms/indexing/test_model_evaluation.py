@@ -201,7 +201,7 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     pickle_path = os.path.join(data_dir, "full.pickle")
     sweep_path = os.path.join(data_dir, "experiments_import.json")
 
-    input_reflections = flex.reflection_table.from_pickle(pickle_path)
+    input_reflections = flex.reflection_table.from_file(pickle_path)
     input_experiments = load.experiment_list(sweep_path, check_format=False)
 
     input_reflections = input_reflections.select(

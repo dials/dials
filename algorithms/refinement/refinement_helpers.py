@@ -1,25 +1,18 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Auxiliary functions for the refinement package"""
 
 from __future__ import absolute_import, division, print_function
-from math import sin, cos
-from scitbx import matrix
-from scitbx.array_family import flex  # import dependency
+
+import logging
+import math
+import random
+
+import scitbx.matrix
 from dials_refinement_helpers_ext import dR_from_axis_and_angle as dR_cpp
 from dials_refinement_helpers_ext import CrystalOrientationCompose as xloc_cpp
 from dials_refinement_helpers_ext import PanelGroupCompose as pgc_cpp
-import logging
+from scitbx.array_family import flex
 
 logger = logging.getLogger(__name__)
-import random
 
 
 def ordinal_number(array_index=None, cardinal_number=None):
@@ -45,19 +38,19 @@ class PanelGroupCompose(pgc_cpp):
     return scitbx matrix values."""
 
     def d1(self):
-        return matrix.col(super(PanelGroupCompose, self).d1())
+        return scitbx.matrix.col(super(PanelGroupCompose, self).d1())
 
     def d2(self):
-        return matrix.col(super(PanelGroupCompose, self).d2())
+        return scitbx.matrix.col(super(PanelGroupCompose, self).d2())
 
     def origin(self):
-        return matrix.col(super(PanelGroupCompose, self).origin())
+        return scitbx.matrix.col(super(PanelGroupCompose, self).origin())
 
     def derivatives_for_panel(self, offset, dir1_new_basis, dir2_new_basis):
         d = super(PanelGroupCompose, self).derivatives_for_panel(
             offset, dir1_new_basis, dir2_new_basis
         )
-        return [matrix.sqr(e) for e in d]
+        return [scitbx.matrix.sqr(e) for e in d]
 
 
 class CrystalOrientationCompose(xloc_cpp):
@@ -65,21 +58,21 @@ class CrystalOrientationCompose(xloc_cpp):
     return matrix.sqr values."""
 
     def U(self):
-        return matrix.sqr(super(CrystalOrientationCompose, self).U())
+        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).U())
 
     def dU_dphi1(self):
-        return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi1())
+        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi1())
 
     def dU_dphi2(self):
-        return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi2())
+        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi2())
 
     def dU_dphi3(self):
-        return matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi3())
+        return scitbx.matrix.sqr(super(CrystalOrientationCompose, self).dU_dphi3())
 
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
     """Wrapper for C++ version of dR_from_axis_and_angle returning a matrix.sqr"""
-    return matrix.sqr(dR_cpp(axis, angle, deg))
+    return scitbx.matrix.sqr(dR_cpp(axis, angle, deg))
 
 
 def dR_from_axis_and_angle_py(axis, angle, deg=False):
@@ -103,11 +96,11 @@ def dR_from_axis_and_angle_py(axis, angle, deg=False):
 
     assert axis.n in ((3, 1), (1, 3))
     if deg:
-        angle *= pi / 180
+        angle *= math.pi / 180
     axis = -1.0 * axis.normalize()
-    ca, sa = cos(angle), sin(angle)
+    ca, sa = math.cos(angle), math.sin(angle)
 
-    return matrix.sqr(
+    return scitbx.matrix.sqr(
         (
             sa * axis[0] * axis[0] - sa,
             sa * axis[0] * axis[1] + ca * axis[2],
@@ -127,7 +120,6 @@ def skew_symm(v):
     set Lx, Ly, Lz. Equation (2) from Gallego & Yezzi paper.
 
     NB a C++ version exists in gallego_yezzi.h."""
-    import scitbx.matrix
 
     L1 = scitbx.matrix.sqr((0, 0, 0, 0, 0, -1, 0, 1, 0))
     L2 = scitbx.matrix.sqr((0, 0, 1, 0, 0, 0, -1, 0, 0))
@@ -146,8 +138,6 @@ def dRq_de(theta, e, q):
 
     NB a C++ version exists in gallego_yezzi.h."""
 
-    from scitbx import matrix
-
     # ensure e is unit vector
     e = e.normalize()
 
@@ -161,7 +151,7 @@ def dRq_de(theta, e, q):
     vx = skew_symm(v)
     vvt = v * v.transpose()
     Rt = R.transpose()
-    I3 = matrix.identity(3)
+    I3 = scitbx.matrix.identity(3)
 
     return (-1.0 / theta) * R * qx * (vvt + (Rt - I3) * vx)
 
@@ -243,76 +233,6 @@ def get_panel_ids_at_root(panel_list, group):
         return [panel_list.index(group)]
 
 
-def corrgram(corrmat, labels):
-    """Create a correlation matrix plot or 'corrgram' for the provided
-    correlation matrix and row/column labels. Inspired by R's corrplot and
-    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
-
-    try:  # is corrmat a scitbx matrix?
-        corrmat = corrmat.as_flex_double_matrix()
-    except AttributeError:  # assume it is already a flex double matrix
-        pass
-    assert corrmat.is_square_matrix()
-
-    nr = corrmat.all()[0]
-    assert nr == len(labels)
-
-    from math import pi, sqrt
-
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg", warn=False)
-        import matplotlib.pyplot as plt
-        import matplotlib.cm as cm
-    except ImportError as e:
-        msg = "matplotlib modules not available " + str(e)
-        logger.info(msg)
-        return None
-
-    plt.figure(1)
-    ax = plt.subplot(1, 1, 1, aspect="equal")
-    clrmap = cm.get_cmap("bwr")
-
-    for x in xrange(nr):
-        for y in xrange(nr):
-            d = corrmat[x, y]
-            d_abs = abs(d)
-            circ = plt.Circle((x, y), radius=0.9 * sqrt(d_abs) / 2)
-            circ.set_edgecolor("white")
-            # put data into range [0,1] and invert so that 1 == blue and 0 == red
-            facecolor = 1 - (0.5 * d + 0.5)
-            circ.set_facecolor(clrmap(facecolor))
-            ax.add_artist(circ)
-    ax.set_xlim(-0.5, nr - 0.5)
-    ax.set_ylim(-0.5, nr - 0.5)
-
-    ax.xaxis.tick_top()
-    xtickslocs = range(len(labels))
-    ax.set_xticks(xtickslocs)
-    ax.set_xticklabels(labels, rotation=30, fontsize="small", ha="left")
-
-    ax.invert_yaxis()
-    ytickslocs = range(len(labels))
-    ax.set_yticks(ytickslocs)
-    ax.set_yticklabels(labels, fontsize="small")
-
-    xtickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_xticks(xtickslocs, minor=True)
-    ytickslocs = [e + 0.5 for e in range(len(labels))]
-    ax.set_yticks(ytickslocs, minor=True)
-    plt.grid(color="0.8", which="minor", linestyle="-")
-
-    # suppress major tick marks
-    ax.tick_params(which="major", width=0)
-
-    # need this otherwise text gets clipped
-    plt.tight_layout()
-
-    # FIXME should this also have a colorbar as legend?
-    return plt
-
-
 def string_sel(l, full_names, prefix=""):
     """Provide flexible matching between a list of input strings, l,
     consisting either of indices or partial names, and a list of full names,
@@ -329,8 +249,8 @@ def string_sel(l, full_names, prefix=""):
 
     # expand elements of the list that are comma separated strings and remove
     # braces/brackets
-    l = [s.strip("(){}[]") for e in l for s in str(e).split(",")]
-    l = [e for e in l if e is not ""]
+    l = (s.strip("(){}[]") for e in l for s in str(e).split(","))
+    l = (e for e in l if e != "")
     for e in l:
         try:
             i = int(e)

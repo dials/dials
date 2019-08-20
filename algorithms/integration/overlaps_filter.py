@@ -49,8 +49,8 @@ class OverlapsFilter(object):
         self.masks["simple_mask"] = flex.size_t(self.array_size)
         for obs in self.refl:
             shoebox = obs["shoebox"]
-            fast_coords = xrange(shoebox.xsize())
-            slow_coords = xrange(shoebox.ysize())
+            fast_coords = range(shoebox.xsize())
+            slow_coords = range(shoebox.ysize())
             for f, s in zip(fast_coords, slow_coords):
                 f_abs = f + shoebox.bbox[0]  # relative to detector
                 s_abs = s + shoebox.bbox[2]  # relative to detector
@@ -62,12 +62,12 @@ class OverlapsFilter(object):
                     continue
 
     def create_referenced_mask(self, test_code, mask_name):
-        self.masks[mask_name] = [flex.size_t() for _ in xrange(self.array_size)]
-        for idx in xrange(len(self.refl)):
+        self.masks[mask_name] = [flex.size_t() for _ in range(self.array_size)]
+        for idx in range(len(self.refl)):
             obs = self.refl[idx]
             shoebox = obs["shoebox"]
-            fast_coords = xrange(shoebox.xsize())
-            slow_coords = xrange(shoebox.ysize())
+            fast_coords = range(shoebox.xsize())
+            slow_coords = range(shoebox.ysize())
             for f, s in zip(fast_coords, slow_coords):
                 f_abs = f + shoebox.bbox[0]  # relative to detector
                 s_abs = s + shoebox.bbox[2]  # relative to detector
@@ -88,11 +88,11 @@ class OverlapsFilter(object):
         this filter.
         """
         keep_refl_bool = flex.bool(len(self.refl), True)
-        for idx in xrange(len(self.refl)):
+        for idx in range(len(self.refl)):
             obs = self.refl[idx]
             shoebox = obs["shoebox"]
-            fast_coords = xrange(shoebox.xsize())
-            slow_coords = xrange(shoebox.ysize())
+            fast_coords = range(shoebox.xsize())
+            slow_coords = range(shoebox.ysize())
             for f, s in zip(fast_coords, slow_coords):
                 f_abs = f + shoebox.bbox[0]  # relative to detector
                 s_abs = s + shoebox.bbox[2]  # relative to detector

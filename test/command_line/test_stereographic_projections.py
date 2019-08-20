@@ -2,12 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
-from libtbx import easy_run
+
+import procrunner
 
 
-def test_stereographic_projectsion(dials_regression, run_in_tmpdir):
+def test_stereographic_projection(dials_regression, tmpdir):
     path = os.path.join(dials_regression, "experiment_test_data")
-    cmd = " ".join(
+    result = procrunner.run(
         (
             "dials.stereographic_projection",
             "%s/experiment_1.json" % path,
@@ -15,15 +16,16 @@ def test_stereographic_projectsion(dials_regression, run_in_tmpdir):
             "plot.show=False",
             "plot.filename=proj.png",
             "json.filename=proj.json",
-        )
+        ),
+        working_directory=tmpdir,
     )
-    result = easy_run.fully_buffered(cmd).raise_if_errors()
-    assert os.path.exists("projections.txt")
-    assert os.path.exists("proj.png")
-    assert os.path.exists("proj.json")
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("projections.txt").check()
+    assert tmpdir.join("proj.png").check()
+    assert tmpdir.join("proj.json").check()
 
-    with open("proj.json", "rb") as f:
+    with tmpdir.join("proj.json").open("rb") as f:
         d = json.load(f)
-        assert d.keys() == ["data", "layout"]
-        assert d["data"][0]["name"] == "stereographic_projections"
-        assert len(d["data"][0]["x"]) == 578
+    assert set(d) == {"data", "layout"}
+    assert d["data"][0]["name"] == "stereographic_projections"
+    assert len(d["data"][0]["x"]) == 578

@@ -30,7 +30,7 @@ def test_multi_panel_parameterisations(
     exp_file = os.path.join(data_dir, "cspad_refined_experiments_step6_level2_300.json")
     ref_file = os.path.join(data_dir, "cspad_reflections_step7_300.pickle")
 
-    reflections = flex.reflection_table.from_pickle(ref_file)
+    reflections = flex.reflection_table.from_file(ref_file)
     experiments = ExperimentListFactory.from_json_file(exp_file, check_format=False)
 
     # Set refinement parameters
@@ -41,6 +41,6 @@ def test_multi_panel_parameterisations(
 
     # Construct refiner
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments, verbosity=0
+        params, reflections, experiments
     )
     assert refiner.experiment_type == "stills"

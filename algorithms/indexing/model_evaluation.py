@@ -13,6 +13,9 @@ from dxtbx.model import Crystal
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
+from dials.algorithms.refinement import RefinerFactory
+from dials.util.log import LoggingContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -328,32 +331,25 @@ class ModelEvaluation(Strategy):
             )
 
     def evaluate(self, experiments, reflections):
-
-        from dials.algorithms.refinement import RefinerFactory
-
-        indexed_reflections = reflections.select(reflections["id"] > -1)
-        reflogger = logging.getLogger("dials.algorithms.refinement")
-        level = reflogger.getEffectiveLevel()
-        reflogger.setLevel(logging.ERROR)
-        try:
-            refiner = RefinerFactory.from_parameters_data_experiments(
-                self._params, indexed_reflections, experiments
-            )
-            refiner.run()
-        except (RuntimeError, ValueError):
-            return
-        else:
-            rmsds = refiner.rmsds()
-            xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
-            model_likelihood = 1.0 - xy_rmsds
-            result = Result(
-                model_likelihood=model_likelihood,
-                crystal=experiments.crystals()[0],
-                rmsds=rmsds,
-                n_indexed=len(indexed_reflections),
-                fraction_indexed=float(len(indexed_reflections)) / len(reflections),
-                hkl_offset=(0, 0, 0),
-            )
-            return result
-        finally:
-            reflogger.setLevel(level)
+        with LoggingContext("dials.algorithms.refinement", level=logging.ERROR):
+            indexed_reflections = reflections.select(reflections["id"] > -1)
+            try:
+                refiner = RefinerFactory.from_parameters_data_experiments(
+                    self._params, indexed_reflections, experiments
+                )
+                refiner.run()
+            except (RuntimeError, ValueError):
+                return
+            else:
+                rmsds = refiner.rmsds()
+                xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
+                model_likelihood = 1.0 - xy_rmsds
+                result = Result(
+                    model_likelihood=model_likelihood,
+                    crystal=experiments.crystals()[0],
+                    rmsds=rmsds,
+                    n_indexed=len(indexed_reflections),
+                    fraction_indexed=float(len(indexed_reflections)) / len(reflections),
+                    hkl_offset=(0, 0, 0),
+                )
+                return result

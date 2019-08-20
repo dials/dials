@@ -13,15 +13,17 @@ are the current concrete implementations"""
 
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
+import json
 
 import libtbx
+from dials.algorithms.refinement import DialsRefineRuntimeError
 from libtbx import easy_mp
 from libtbx.phil import parse
 from scitbx import lbfgs
 from scitbx.array_family import flex
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
-from dials.algorithms.refinement import DialsRefineRuntimeError
 
 logger = logging.getLogger(__name__)
 
@@ -107,18 +109,14 @@ class Journal(dict):
         """Add a new column named by key"""
         self[key] = [None] * self._nrows
 
-        return
-
     def add_row(self):
         """Add an element to the end of each of the columns. Fail if any columns
         are the wrong length"""
 
-        for k in self.keys():
+        for k in self:
             assert len(self[k]) == self._nrows
             self[k].append(None)
         self._nrows += 1
-
-        return
 
     def del_last_row(self):
         """Delete the last element from the each of the columns. Fail if any columns
@@ -126,12 +124,10 @@ class Journal(dict):
 
         if self._nrows == 0:
             return None
-        for k in self.keys():
+        for k in self:
             assert len(self[k]) == self._nrows
             self[k].pop()
         self._nrows -= 1
-
-        return
 
     def set_last_cell(self, key, value):
         """Set last cell in column given by key to value. Fail if the column is the
@@ -140,7 +136,20 @@ class Journal(dict):
         assert len(self[key]) == self._nrows
         self[key][-1] = value
 
-        return
+    def to_json_file(self, filename):
+        d = {"attributes": self.__dict__, "data": dict(self)}
+        with open(filename, "w") as f:
+            json.dump(d, f)
+
+    @classmethod
+    def from_json_file(cls, filename):
+        with open(filename, "r") as f:
+            d = json.load(f)
+        j = cls()
+        j.update(d["data"])
+        for key in d["attributes"]:
+            setattr(j, key, d["attributes"][key])
+        return j
 
 
 class Refinery(object):
@@ -171,7 +180,6 @@ class Refinery(object):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -196,7 +204,6 @@ class Refinery(object):
         # filename for an optional log file
         self._log = log
 
-        self._verbosity = verbosity
         self._target_achieved = False
         self._max_iterations = max_iterations
 
@@ -245,8 +252,6 @@ class Refinery(object):
         # do reflection prediction
         self._target.predict()
 
-        return
-
     def update_journal(self):
         """Append latest step information to the journal attributes"""
 
@@ -277,7 +282,6 @@ class Refinery(object):
             self.history.set_last_cell(
                 "out_of_sample_rmsd", self._target.rmsds_for_reflection_table(preds)
             )
-        return
 
     def split_jacobian_into_blocks(self):
         """Split the Jacobian into blocks each corresponding to a separate
@@ -350,9 +354,7 @@ class Refinery(object):
         if packed_mats is None:
             return None
 
-        from copy import deepcopy
-
-        packed_mats = deepcopy(packed_mats)
+        packed_mats = copy.deepcopy(packed_mats)
 
         nparam = len(self._parameters)
 
@@ -456,7 +458,6 @@ class Refinery(object):
         """Set number of processors for multiprocessing. Override in derived classes
         if a policy dictates that this must not be user-controlled"""
         self._nproc = nproc
-        return
 
     def run(self):
         """
@@ -475,7 +476,6 @@ class DisableMPmixin(object):
     def set_nproc(self, nproc):
         if nproc != 1:
             raise NotImplementedError()
-        return
 
 
 class AdaptLbfgs(Refinery):
@@ -522,11 +522,9 @@ class AdaptLbfgs(Refinery):
 
         # reduce blockwise results
         flist, glist, clist = zip(*task_results)
-        glist = zip(*glist)
-        clist = zip(*clist)
         f = sum(flist)
-        g = [sum(g) for g in glist]
-        c = [sum(c) for c in clist]
+        g = [sum(g) for g in zip(*glist)]
+        c = [sum(c) for c in zip(*clist)]
 
         # restraints terms
         restraints = (
@@ -596,14 +594,11 @@ class AdaptLbfgs(Refinery):
         if self.minimizer.error:
             self.history.reason_for_termination = self.minimizer.error
 
-        return
-
 
 class SimpleLBFGS(AdaptLbfgs):
     """Refinery implementation, using cctbx LBFGS with basic settings"""
 
     def run(self):
-
         return self.run_lbfgs(curvatures=False)
 
 
@@ -611,7 +606,6 @@ class LBFGScurvs(AdaptLbfgs):
     """Refinery implementation using cctbx LBFGS with curvatures"""
 
     def run(self):
-
         return self.run_lbfgs(curvatures=True)
 
     def compute_functional_gradients_diag(self):
@@ -625,9 +619,8 @@ class LBFGScurvs(AdaptLbfgs):
 
         diags = 1.0 / curvs
 
-        if self._verbosity > 2:
-            msg = "  curv: " + "%.5f " * len(tuple(curvs))
-            logger.debug(msg, *curvs)
+        msg = "  curv: " + "%.5f " * len(tuple(curvs))
+        logger.debug(msg, *curvs)
 
         return self._f, self._g, diags
 
@@ -641,7 +634,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -652,7 +644,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -746,7 +737,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
                 if self._constr_manager is not None:
                     j = self._constr_manager.constrain_jacobian(j)
                 self.add_equations(restraints[0], j, restraints[2])
-        return
 
     def step_forward(self):
         self.old_x = self.x.deep_copy()
@@ -801,8 +791,6 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
         s = flex.sqrt(s2)
         self._parameters.set_param_esds(s)
 
-        return
-
     def _print_normal_matrix(self):
         """Print the full normal matrix at the current step. For debugging only"""
         logger.debug("The normal matrix for the current step is:")
@@ -831,7 +819,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
         **kwds
@@ -843,7 +830,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             prediction_parameterisation,
             constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -926,8 +912,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         self.set_cholesky_factor()
         self.calculate_esds()
 
-        return
-
 
 class LevenbergMarquardtIterations(GaussNewtonIterations):
     """Refinery implementation, employing lstbx Levenberg Marquadt
@@ -947,7 +931,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         """Setup initial value for mu"""
         a = self.normal_matrix_packed_u()
         self.mu = self.tau * flex.max(a.matrix_packed_u_diagonal())
-        return
 
     def add_constant_to_diagonal(self, mu):
         """Add the constant value mu to the diagonal of the normal matrix"""
@@ -1069,9 +1052,6 @@ before this can be solved."""
 
         self.calculate_esds()
 
-        return
-
     def run(self):
         self._run_core()
         self.calculate_esds()
-        return

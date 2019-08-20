@@ -15,7 +15,7 @@ absorption_defs = """
       .help = must be supplied as a user-defined function with a specific interface (not documented)
     algorithm = fuller_kapton kapton_2019 other
       .type = choice
-      .help = a specific absorption correction, or implementation thereof \ 
+      .help = a specific absorption correction, or implementation thereof \
               kapton_2019 is a more general implementation of fuller_kapton \
               for use on single/multi-panel detectors
     fuller_kapton {
@@ -459,28 +459,28 @@ class image_kapton_correction(object):
             sig_w = self.params.kapton_half_width_mm.sigma
             sig_a = self.params.rotation_angle_deg.sigma
             self.kapton_params_sigmas = (sig_h, sig_t, sig_w, sig_a)
-            assert not False in [
+            assert all(
                 sig >= 0 for sig in self.kapton_params_sigmas
-            ], "Kapton param sigmas must be nonnegative"
+            ), "Kapton param sigmas must be nonnegative"
             self.kapton_params_maxes = [
                 [
                     self.kapton_params[i] + self.kapton_params_sigmas[j]
                     if j == i
                     else self.kapton_params[i]
-                    for i in xrange(4)
+                    for i in range(4)
                 ]
-                for j in xrange(4)
+                for j in range(4)
             ]
             self.kapton_params_mins = [
                 [
                     max(self.kapton_params[i] - self.kapton_params_sigmas[j], 0.001)
                     if j == i
                     else self.kapton_params[i]
-                    for i in xrange(3)
+                    for i in range(3)
                 ]
                 + [a]
-                for j in xrange(3)
-            ] + [[self.kapton_params[i] for i in xrange(3)] + [a - sig_a]]
+                for j in range(3)
+            ] + [[self.kapton_params[i] for i in range(3)] + [a - sig_a]]
 
     def __call__(self, plot=False):
         def correction_and_within_spot_sigma(params_version, variance_within_spot=True):
@@ -506,7 +506,7 @@ class image_kapton_correction(object):
 
             if variance_within_spot:
                 mask_code = MaskCode.Foreground | MaskCode.Valid
-                for iref in xrange(len(self.reflections_sele)):
+                for iref in range(len(self.reflections_sele)):
                     kapton_correction_vector = flex.double()
                     # foreground: integration mask
                     shoebox = self.reflections_sele[iref]["shoebox"]

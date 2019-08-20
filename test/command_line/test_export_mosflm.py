@@ -17,7 +17,7 @@ def test_export_mosflm(dials_regression, tmpdir):
     tmpdir.chdir()
 
     result = procrunner.run(["dials.export", "format=mosflm", "experiments.json"])
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
 
     assert os.path.exists("mosflm/index.mat")
     with open("mosflm/index.mat", "rb") as f:

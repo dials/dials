@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import os
 import procrunner
+from dials.algorithms.refinement.engine import Journal
 
 
 def test_scan_varying_refinement_of_a_multiple_panel_detector(
@@ -26,23 +26,21 @@ def test_scan_varying_refinement_of_a_multiple_panel_detector(
                 "indexed.pickle",
             ),
             "scan_varying=true",
-            "history=history.pickle",
+            "history=history.json",
             "outlier.separate_blocks=False",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     # there are plenty of things we could do with the refinement history, but
     # here just check that final RMSDs are low enough
-    with open("history.pickle", "rb") as f:
-        history = pickle.load(f)
+    history = Journal.from_json_file("history.json")
     final_rmsd = history["rmsd"][-1]
     assert final_rmsd[0] < 0.05
     assert final_rmsd[1] < 0.04
     assert final_rmsd[2] < 0.0002
 
     # also check that the used_in_refinement flag got set correctly
-    rt = flex.reflection_table.from_pickle("refined.refl")
+    rt = flex.reflection_table.from_file("refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]

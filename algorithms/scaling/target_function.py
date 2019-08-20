@@ -57,11 +57,11 @@ class ScalingTarget(object):
                 R.extend(restraints[0])
             else:
                 self.param_restraints = False
-        self._rmsds = [(flex.sum((R)) / n) ** 0.5]
+        self._rmsds = [(flex.sum(R) / n) ** 0.5]
         if Ih_table.free_Ih_table:
-            self._rmsds.append((flex.sum((unrestr_R)) / n) ** 0.5)
+            self._rmsds.append((flex.sum(unrestr_R) / n) ** 0.5)
             Rmsdfree = (self.calculate_residuals(free_block) ** 2) * free_block.weights
-            self._rmsds.append((flex.sum((Rmsdfree)) / free_block.size) ** 0.5)
+            self._rmsds.append((flex.sum(Rmsdfree) / free_block.size) ** 0.5)
         return self._rmsds
 
     @staticmethod
@@ -108,10 +108,8 @@ class ScalingTarget(object):
         gsq = Ih_table.inverse_scale_factors ** 2 * Ih_table.weights
         sumgsq = gsq * Ih_table.h_index_matrix
         dIh = (
-            (
-                Ih_table.intensities
-                - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
-            )
+            Ih_table.intensities
+            - (Ih_table.Ih_values * 2.0 * Ih_table.inverse_scale_factors)
         ) * Ih_table.weights
         jacobian = calc_jacobian(
             Ih_table.derivatives.transpose(),

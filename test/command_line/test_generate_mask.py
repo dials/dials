@@ -28,7 +28,7 @@ def test_generate_mask(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels.mask").check()
 
 
@@ -43,7 +43,7 @@ def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels2.mask").check()
     assert tmpdir.join("masked.expt").check()
 
@@ -62,7 +62,7 @@ def test_generate_mask_with_untrusted_circle(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels3.mask").check()
 
 
@@ -76,7 +76,7 @@ def test_generate_mask_with_resolution_range(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels4.mask").check()
 
 
@@ -91,7 +91,7 @@ def test_generate_mask_with_d_min_d_max(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels5.mask").check()
 
 
@@ -105,7 +105,7 @@ def test_generate_mask_with_ice_rings(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels6.mask").check()
 
 
@@ -121,7 +121,7 @@ def test_generate_mask_with_untrusted_polygon_and_pixels(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels3.mask").check()
     with tmpdir.join("pixels3.mask").open("rb") as fh:
         mask = pickle.load(fh)

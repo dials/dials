@@ -176,7 +176,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     };
 
     /**
-     * Pack a const_ref<Shoebox<>> into a msgpack array.
+     * Pack a shared<Shoebox<>> into a msgpack array.
      *
      * Shoebox arrays are treated differently because they are themselves
      * structs with multiple items.
@@ -189,11 +189,59 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         const scitbx::af::const_ref<dials::af::Shoebox<T> >& v) const {
         typedef typename scitbx::af::const_ref<dials::af::Shoebox<T> >::const_iterator
           iterator;
-        o.pack_array(v.size());
+        std::stringstream buffer;
         for (iterator it = v.begin(); it != v.end(); ++it) {
-          o.pack(*it);
+          // Write the panel
+          write(buffer, (uint32_t)it->panel);
+
+          // Check the bounding box makes sense
+          DIALS_ASSERT(it->bbox[1] >= it->bbox[0]);
+          DIALS_ASSERT(it->bbox[3] >= it->bbox[2]);
+          DIALS_ASSERT(it->bbox[5] >= it->bbox[4]);
+
+          // Write the bounding box
+          write(buffer, (int32_t)it->bbox[0]);
+          write(buffer, (int32_t)it->bbox[1]);
+          write(buffer, (int32_t)it->bbox[2]);
+          write(buffer, (int32_t)it->bbox[3]);
+          write(buffer, (int32_t)it->bbox[4]);
+          write(buffer, (int32_t)it->bbox[5]);
+
+          // Serialise data
+          if (it->data.size() > 0) {
+            DIALS_ASSERT(it->is_consistent());
+
+            // Write 1 to indicate data is present
+            write(buffer, (uint8_t)1);
+
+            // Write data array
+            buffer.write((const char*)&it->data[0],
+                         it->data.size() * element_size_helper<T>::size());
+
+            // Write mask array
+            buffer.write((const char*)&it->mask[0],
+                         it->mask.size() * element_size_helper<int>::size());
+
+            // Write background array
+            buffer.write((const char*)&it->background[0],
+                         it->background.size() * element_size_helper<T>::size());
+
+          } else {
+            // Write zero to indicate data is not present
+            write(buffer, (uint8_t)0);
+          }
         }
+
+        // Serialise the string to msgpack binary
+        std::string buffer_string = buffer.str();
+        o.pack_bin(buffer_string.size());
+        o.pack_bin_body(buffer_string.c_str(), buffer_string.size());
         return o;
+      }
+
+      template <typename Stream, typename ValueType>
+      void write(Stream& buffer, const ValueType& x) const {
+        buffer.write((const char*)&x, sizeof(ValueType));
       }
     };
 
@@ -205,6 +253,8 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
       template <typename Stream>
       msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o,
                                           const scitbx::af::shared<T>& v) const {
+        o.pack_array(2);
+        o.pack(v.size());
         o.pack(v.const_ref());
         return o;
       }
@@ -254,25 +304,6 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         for (std::size_t i = 0; i < N; ++i) {
           o.pack(v[i]);
         }
-        return o;
-      }
-    };
-
-    /**
-     * Pack a Shoebox<> structure into an array like:
-     * [ panel, bbox, data, mask, background ]
-     */
-    template <typename T>
-    struct pack<dials::af::Shoebox<T> > {
-      template <typename Stream>
-      msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o,
-                                          const dials::af::Shoebox<T>& v) const {
-        o.pack_array(5);
-        o.pack(v.panel);
-        o.pack(v.bbox);
-        o.pack(v.data);
-        o.pack(v.mask);
-        o.pack(v.background);
         return o;
       }
     };
@@ -366,7 +397,7 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Ensure the type is an array
         if (o.type != msgpack::type::BIN) {
-          throw DIALS_ERROR("msgpack type is not BIN");
+          throw DIALS_ERROR("scitbx::af::ref: msgpack type is not BIN");
         }
 
         // Compute the element and binary sizes
@@ -376,48 +407,15 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the sizes are consistent
         if (num_elements * element_size != binary_size) {
-          throw DIALS_ERROR("msgpack bin data does not have correct size");
+          throw DIALS_ERROR(
+            "scitbx::af::ref: msgpack bin data does not have correct size");
         }
 
         // Ensure it is of the correct size
         if (num_elements != v.size()) {
-          throw DIALS_ERROR("msgpack bin data does not have correct size");
+          throw DIALS_ERROR(
+            "scitbx::af::ref: msgpack bin data does not have correct size");
         }
-
-        // Copy the binary data
-        const T* first = reinterpret_cast<const T*>(o.via.bin.ptr);
-        const T* last = first + num_elements;
-        std::copy(first, last, v.begin());
-        return o;
-      }
-    };
-
-    /**
-     * Convert a msgpack array into a variable size scitbx::af::shared
-     */
-    template <typename T>
-    struct convert<scitbx::af::shared<T> > {
-      msgpack::object const& operator()(msgpack::object const& o,
-                                        scitbx::af::shared<T>& v) const {
-        typedef typename scitbx::af::shared<T>::iterator iterator;
-
-        // Ensure the type is an array
-        if (o.type != msgpack::type::BIN) {
-          throw DIALS_ERROR("msgpack type is not BIN");
-        }
-
-        // Compute the element and binary sizes
-        std::size_t element_size = element_size_helper<T>::size();
-        std::size_t binary_size = o.via.bin.size;
-        std::size_t num_elements = binary_size / element_size;
-
-        // Check the sizes are consistent
-        if (num_elements * element_size != binary_size) {
-          throw DIALS_ERROR("msgpack bin data does not have correct size");
-        }
-
-        // Resize the array
-        v.resize(num_elements);
 
         // Copy the binary data
         const T* first = reinterpret_cast<const T*>(o.via.bin.ptr);
@@ -434,29 +432,113 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
      * structs with multiple items.
      */
     template <typename T>
-    struct convert<scitbx::af::shared<dials::af::Shoebox<T> > > {
+    struct convert<scitbx::af::ref<dials::af::Shoebox<T> > > {
       msgpack::object const& operator()(
         msgpack::object const& o,
-        scitbx::af::shared<dials::af::Shoebox<T> >& v) const {
-        typedef typename scitbx::af::shared<dials::af::Shoebox<T> >::iterator iterator;
+        scitbx::af::ref<dials::af::Shoebox<T> >& v) const {
+        typedef typename scitbx::af::ref<dials::af::Shoebox<T> >::iterator iterator;
 
         // Ensure the type is an array
-        if (o.type != msgpack::type::ARRAY) {
-          throw msgpack::type_error();
+        if (o.type != msgpack::type::BIN) {
+          throw DIALS_ERROR("scitbx::af::ref<Shoebox>: msgpack type is not BIN");
         }
 
-        // Ensure it is of the correct size
-        v.resize(o.via.array.size);
+        // Get the data and size
+        std::size_t binary_size = o.via.bin.size;
+        const char* binary_data = reinterpret_cast<const char*>(o.via.bin.ptr);
+        std::stringstream buffer(std::string(binary_data, binary_size));
 
-        // Convert the values in the array
-        if (o.via.array.size > 0) {
-          msgpack::object* first = o.via.array.ptr;
-          msgpack::object* last = first + o.via.array.size;
-          iterator out = v.begin();
-          for (msgpack::object* it = first; it != last; ++it) {
-            it->convert(*out++);
+        // Stream into shoeboxes
+        for (iterator it = v.begin(); it != v.end(); ++it) {
+          // Read the panel
+          it->panel = read<uint32_t>(buffer);
+
+          // Read the bounding box
+          it->bbox[0] = read<uint32_t>(buffer);
+          it->bbox[1] = read<uint32_t>(buffer);
+          it->bbox[2] = read<uint32_t>(buffer);
+          it->bbox[3] = read<uint32_t>(buffer);
+          it->bbox[4] = read<uint32_t>(buffer);
+          it->bbox[5] = read<uint32_t>(buffer);
+
+          // Check that the bounding box makes sense
+          DIALS_ASSERT(it->bbox[1] >= it->bbox[0]);
+          DIALS_ASSERT(it->bbox[3] >= it->bbox[2]);
+          DIALS_ASSERT(it->bbox[5] >= it->bbox[4]);
+
+          // If the data present
+          bool read_data = read<uint8_t>(buffer);
+          if (read_data) {
+            // Create the accessor
+            scitbx::af::c_grid<3> accessor(it->bbox[5] - it->bbox[4],
+                                           it->bbox[3] - it->bbox[2],
+                                           it->bbox[1] - it->bbox[0]);
+
+            // Allocate the array
+            it->data = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);
+
+            // Copy to the buffer
+            buffer.read((char*)&it->data[0],
+                        it->data.size() * element_size_helper<T>::size());
+
+            // Allocate the array
+            it->mask = scitbx::af::versa<int, scitbx::af::c_grid<3> >(accessor);
+
+            // Copy to the buffer
+            buffer.read((char*)&it->mask[0],
+                        it->mask.size() * element_size_helper<int>::size());
+
+            // Allocate the array
+            it->background = scitbx::af::versa<T, scitbx::af::c_grid<3> >(accessor);
+
+            // Copy to the buffer
+            buffer.read((char*)&it->background[0],
+                        it->background.size() * element_size_helper<T>::size());
+
+            // Check to ensure consistency
+            DIALS_ASSERT(it->is_consistent());
           }
         }
+
+        return o;
+      }
+
+      template <typename ValueType, typename Stream>
+      ValueType read(Stream& buffer) const {
+        ValueType x;
+        buffer.read((char*)&x, sizeof(ValueType));
+        return x;
+      }
+    };
+
+    /**
+     * Convert a msgpack array into a variable size scitbx::af::shared
+     */
+    template <typename T>
+    struct convert<scitbx::af::shared<T> > {
+      msgpack::object const& operator()(msgpack::object const& o,
+                                        scitbx::af::shared<T>& v) const {
+        // Ensure type is an array
+        if (o.type != msgpack::type::ARRAY) {
+          throw DIALS_ERROR("scitbx::af::shared: msgpack type is not an array");
+        }
+
+        // Ensure that we have an accessor and data element
+        if (o.via.array.size != 2) {
+          throw DIALS_ERROR(
+            "scitbx::af::shared: msgpack array does not have correct dimensions");
+        }
+
+        // Read the accessor element
+        std::size_t size = 0;
+        o.via.array.ptr[0].convert(size);
+
+        // Resize the versa
+        v = scitbx::af::shared<T>(size);
+
+        // Read the data
+        scitbx::af::ref<T> data_ref = v.ref();
+        o.via.array.ptr[1].convert(data_ref);
         return o;
       }
     };
@@ -470,12 +552,13 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
                                         scitbx::af::versa<T, Accessor>& v) const {
         // Ensure type is an array
         if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
+          throw DIALS_ERROR("scitbx::af::versa: msgpack type is not an array");
         }
 
         // Ensure that we have an accessor and data element
         if (o.via.array.size != 2) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
+          throw DIALS_ERROR(
+            "scitbx::af::versa: msgpack array does not have correct dimensions");
         }
 
         // Read the accessor element
@@ -501,12 +584,13 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
                                         scitbx::af::c_grid<N>& v) const {
         // Ensure type is an array
         if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
+          throw DIALS_ERROR("scitbx::af::c_grid: msgpack type is not an array");
         }
 
         // Ensure that we have an accessor and data element
         if (o.via.array.size != N) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
+          throw DIALS_ERROR(
+            "scitbx::af::c_grid: msgpack array does not have correct dimensions");
         }
 
         // Convert the elements
@@ -527,12 +611,13 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
                                         scitbx::af::tiny<T, N>& v) const {
         // Ensure type is an array
         if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
+          throw DIALS_ERROR("scitbx::af::tiny: msgpack type is not an array");
         }
 
         // Ensure that we have an accessor and data element
         if (o.via.array.size != N) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
+          throw DIALS_ERROR(
+            "scitbx::af::tiny: msgpack array does not have correct dimensions");
         }
 
         // Convert the elements
@@ -540,35 +625,6 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           o.via.array.ptr[i].convert(v[i]);
         }
 
-        return o;
-      }
-    };
-
-    /**
-     * Convert a msgpack array to a Shoebox structure.
-     * The msgpack array will have a structure like:
-     * [ panel, bbox, data, mask, background ]
-     */
-    template <typename T>
-    struct convert<dials::af::Shoebox<T> > {
-      msgpack::object const& operator()(msgpack::object const& o,
-                                        dials::af::Shoebox<>& v) const {
-        // Check the type is an array
-        if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
-        }
-
-        // Check the size is 5
-        if (o.via.array.size != 5) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
-        }
-
-        // Read the shoebox structure.
-        o.via.array.ptr[0].convert(v.panel);
-        o.via.array.ptr[1].convert(v.bbox);
-        o.via.array.ptr[2].convert(v.data);
-        o.via.array.ptr[3].convert(v.mask);
-        o.via.array.ptr[4].convert(v.background);
         return o;
       }
     };
@@ -584,12 +640,15 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         dials::af::reflection_table::mapped_type& v) const {
         // Check the type is an array
         if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table::mapped_type: msgpack type is not an array");
         }
 
         // Check there are 2 elements
         if (o.via.array.size != 2) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table::mapped_type: msgpack array does not have "
+            "correct dimensions");
         }
 
         // Read the type name from the first element
@@ -620,7 +679,8 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         } else if (name == "Shoebox<>") {
           v = extract<dials::af::Shoebox<> >(o.via.array.ptr[1]);
         } else {
-          throw DIALS_ERROR("Unexpected column type");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table::mapped_type: unexpected column type");
         }
         return o;
       }
@@ -658,26 +718,32 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the type is an array
         if (o.type != msgpack::type::ARRAY) {
-          throw DIALS_ERROR("msgpack type is not an array");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table: msgpack type is not an array");
         }
 
         // Check there are 4 elements
         if (o.via.array.size != 3) {
-          throw DIALS_ERROR("msgpack array does not have correct dimensions");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table: msgpack array does not have correct "
+            "dimensions");
         }
 
         // Check the file type
         std::string filetype;
         o.via.array.ptr[0].convert(filetype);
         if (filetype != "dials::af::reflection_table") {
-          throw DIALS_ERROR("Expected dials::af::reflection_table, got something else");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table: expected dials::af::reflection_table, got "
+            "something else");
         }
 
         // Check the version
         std::size_t version;
         o.via.array.ptr[1].convert(version);
         if (version != 1) {
-          throw DIALS_ERROR("Expected version 1, got something else");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table: expected version 1, got something else");
         }
 
         // Get the header object
@@ -685,7 +751,8 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the type is an array
         if (header_object->type != msgpack::type::MAP) {
-          throw DIALS_ERROR("msgpack type is not an map");
+          throw DIALS_ERROR(
+            "dials::af::reflection_table: header msgpack type is not an map");
         }
 
         // Set the the column map object to NULL
@@ -721,14 +788,15 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
             map_object = &it->val;
 
           } else {
-            throw DIALS_ERROR("unknown key in reflection file");
+            throw DIALS_ERROR(
+              "dials::af::reflection_table: unknown key in reflection file");
           }
         }
 
         // Check the identifiers
         if (identifier_object != NULL) {
           if (identifier_object->type != msgpack::type::MAP) {
-            throw DIALS_ERROR("Identifier data not found");
+            throw DIALS_ERROR("dials::af::reflection_table: identifier data not found");
           }
 
           // Read the identifiers from the map
@@ -747,12 +815,12 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 
         // Check the number of rows has been found
         if (!found_nrows) {
-          throw DIALS_ERROR("Number of rows not found");
+          throw DIALS_ERROR("dials::af::reflection_table: number of rows not found");
         }
 
         // Check the table data
         if (map_object == NULL || map_object->type != msgpack::type::MAP) {
-          throw DIALS_ERROR("Table data not found");
+          throw DIALS_ERROR("dials::af::reflection_table: table data not found");
         }
 
         // Read the columns from the map

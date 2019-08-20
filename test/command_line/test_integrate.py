@@ -22,8 +22,7 @@ def test2(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -65,8 +64,7 @@ def test2(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -108,8 +106,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -128,8 +125,7 @@ def test_integration_with_sample_size(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
 
     with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
@@ -155,8 +151,7 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
             "prediction.padding=0",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert os.path.exists("integrated.refl")
 
     with open("integrated.refl", "rb") as fh:
@@ -202,8 +197,7 @@ def test_multi_lattice(dials_regression, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check()
 
     table = flex.reflection_table.from_file(tmpdir.join("integrated.refl"))
@@ -229,8 +223,7 @@ def test_output_rubbish(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("indexed.expt").check(file=1)
     assert tmpdir.join("indexed.refl").check(file=1)
 
@@ -245,8 +238,7 @@ def test_output_rubbish(dials_data, tmpdir):
         ],
         working_directory=tmpdir,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check(file=1)
 
     with tmpdir.join("integrated.refl").open("rb") as fh:
@@ -336,8 +328,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     # Call dials.integrate with and without kapton correction
     for phil in "integrate_without_kapton.phil", "integrate_with_kapton.phil":
         result = procrunner.run(["dials.integrate", pickle_name, json_name, phil])
-        assert result["exitcode"] == 0
-        assert result["stderr"] == ""
+        assert not result.returncode and not result.stderr
 
     results = []
     for mode in "kapton", "nokapton":
@@ -346,10 +337,10 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
             table = pickle.load(f)
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
-        test_rows = {k: millers.first_index(v) for k, v in test_indices.iteritems()}
+        test_rows = {k: millers.first_index(v) for k, v in test_indices.items()}
         test_I_sigsqI = {
             k: (table[v]["intensity.sum.value"], table[v]["intensity.sum.variance"])
-            for k, v in test_rows.iteritems()
+            for k, v in test_rows.items()
         }
         results.append(test_I_sigsqI)
     assert results[0]["zero"][0] == results[1]["zero"][0]

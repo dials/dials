@@ -2,9 +2,13 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import iotbx.phil
 import numpy
 from libtbx import table_utils
+from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx.math import five_number_summary
+from dials.util import Sorry
 
 help_message = """
 
@@ -38,6 +42,9 @@ show_flags = False
 show_identifiers = False
   .type = bool
   .help = "Show experiment identifiers map if set"
+show_image_statistics = False
+  .type = bool
+  .help = "Show statistics on the distribution of values in each image"
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
@@ -123,7 +130,7 @@ def show_beam(detector, beam):
         uniq_pnls = set(pnl)
         if len(uniq_pnls) > 1 or min(uniq_pnls) < 0:
             return s
-        if any([e == (None, None) for e in xy]):
+        if any(e == (None, None) for e in xy):
             return s
         pnl = list(uniq_pnls)[0]
         x_mm, y_mm = zip(*xy)
@@ -169,7 +176,6 @@ def run(args):
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
-    import libtbx.load_env
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
@@ -196,7 +202,13 @@ def run(args):
             sys.exit("Error: experiment has no detector")
         if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
-        print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
+        print(
+            show_experiments(
+                experiments,
+                show_scan_varying=params.show_scan_varying,
+                show_image_statistics=params.show_image_statistics,
+            )
+        )
 
     if len(reflections):
         print(
@@ -213,13 +225,13 @@ def run(args):
         )
 
 
-def show_experiments(experiments, show_scan_varying=False):
+def show_experiments(experiments, show_scan_varying=False, show_image_statistics=False):
 
     text = []
 
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
-        if expt.identifier is not "":
+        if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
         text.append(str(expt.detector))
         text.append(
@@ -262,6 +274,27 @@ def show_experiments(experiments, show_scan_varying=False):
             text.append(str(expt.profile))
         if expt.scaling_model is not None:
             text.append(str(expt.scaling_model))
+
+        if expt.imageset is not None and show_image_statistics:
+            # XXX This is gross, gross gross!
+            # check_format=False, so we can't get the image data from the imageset
+            for i in range(len(expt.imageset)):
+                filename = expt.imageset.get_path(i)
+                el = ExperimentListFactory.from_filenames((filename,))
+                if len(el) == 0:
+                    raise Sorry("Cannot find image {0}".format(filename))
+                pnl_data = el.imagesets()[0].get_raw_data(0)
+                if not isinstance(pnl_data, tuple):
+                    pnl_data = (pnl_data,)
+                flat_data = pnl_data[0].as_1d()
+                for p in pnl_data[1:]:
+                    flat_data.extend(p.as_1d())
+                fns = five_number_summary(flat_data)
+                text.append(
+                    "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
+                        os.path.basename(filename), *fns
+                    )
+                )
     return "\n".join(text)
 
 
@@ -398,7 +431,7 @@ def show_reflections(
 
         rows = [["Column", "min", "max", "mean"]]
         for k, col in rlist.cols():
-            if k in formats and not "%" in formats.get(k, "%s"):
+            if k in formats and "%" not in formats.get(k, "%s"):
                 # Allow blanking out of entries that wouldn't make sense
                 rows.append(
                     [
@@ -469,7 +502,7 @@ def show_reflections(
             text.append(_create_flag_count_table(rlist))
 
         if show_identifiers:
-            if rlist.experiment_identifiers().keys():
+            if rlist.experiment_identifiers():
                 text.append(
                     """Experiment identifiers id-map values:\n%s"""
                     % (

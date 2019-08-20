@@ -24,4 +24,4 @@ def test_cpp_program(executable):
     print(full_path)
 
     result = procrunner.run([full_path])
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr

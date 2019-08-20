@@ -52,7 +52,7 @@ class show_3d(object):
     from dials.viewer.slice_viewer import show_3d
 
 
-    table = flex.reflection_table.from_pickle("PATH/TO/MY/PICKLE/FILE")
+    table = flex.reflection_table.from_file("PATH/TO/MY/PICKLE/FILE")
 
     from dials.viewer.slice_viewer import show_3d
 
@@ -97,8 +97,9 @@ class show_3d_wx_app(wx.App):
         self.ImgFrame.Show()
 
 
-class show_reflections(show_3d):
+class show_reflections(object):
     def __init__(self, table, two_windows=False):
+
         # two_windows = True
         print("two_windows =", two_windows)
 

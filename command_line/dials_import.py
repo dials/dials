@@ -15,12 +15,11 @@ import logging
 
 import libtbx.load_env
 from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListDumper
-from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSweep
 from dials.util.options import flatten_experiments
@@ -98,7 +97,7 @@ phil_scope = parse(
 
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -391,7 +390,7 @@ class ManualGeometryUpdater(object):
         first, last = scan.get_image_range()
         sweep = ImageSetFactory.make_sweep(
             template=imageset.get_template(),
-            indices=range(first, last + 1),
+            indices=list(range(first, last + 1)),
             format_class=imageset.get_format_class(),
             beam=beam,
             detector=detector,
@@ -732,9 +731,7 @@ class Script(object):
         if __name__ == "__main__":
             from dials.util import log
 
-            log.config(
-                params.verbosity, info=params.output.log, debug=params.output.debug_log
-            )
+            log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 
@@ -790,7 +787,7 @@ class Script(object):
             else:
                 num_stills += 1
             num_images += len(e.imageset)
-        format_list = set(str(e.imageset.get_format_class()) for e in experiments)
+        format_list = {str(e.imageset.get_format_class()) for e in experiments}
 
         # Print out some bulk info
         logger.info("-" * 80)

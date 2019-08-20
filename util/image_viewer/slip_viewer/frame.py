@@ -343,7 +343,7 @@ class XrayFrame(AppFrame, XFBaseClass):
 
         try:
             title = file_name_or_data.full_path
-        except AttributeError as e:
+        except AttributeError:
             title = str(file_name_or_data)
         self.SetTitle(title)
 
@@ -774,7 +774,7 @@ class XrayFrame(AppFrame, XFBaseClass):
                     x2 + self.pyslip.tile_size_x - 1
                 ) / self.pyslip.tile_size_x
                 stop_x_tile = int(stop_x_tile)
-                col_list = range(start_x_tile, stop_x_tile)
+                col_list = list(range(start_x_tile, stop_x_tile))
                 x_pix = start_x_tile * self.pyslip.tile_size_y - x_offset
 
                 y_offset = y1
@@ -783,7 +783,7 @@ class XrayFrame(AppFrame, XFBaseClass):
                     y2 + self.pyslip.tile_size_y - 1
                 ) / self.pyslip.tile_size_y
                 stop_y_tile = int(stop_y_tile)
-                row_list = range(start_y_tile, stop_y_tile)
+                row_list = list(range(start_y_tile, stop_y_tile))
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
                 bitmap = wx.EmptyBitmap(x2 - x1, y2 - y1)

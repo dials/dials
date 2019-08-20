@@ -68,7 +68,7 @@ def nag():
     import dials.precommitbx.installer
 
     def fprint(text=""):
-        print("= {0:<56s} =".format(text))
+        print("= {:<56s} =".format(text))
 
     print(dials.precommitbx.installer.YELLOW + "=" * 60)
     fprint()
@@ -84,3 +84,16 @@ def nag():
 
     # import time
     # time.sleep(0.3)
+
+
+def not_configured(module_list):
+    """Are no modules in module_list configured"""
+    import libtbx.load_env
+
+    for module_name in module_list:
+        try:
+            _ = libtbx.env.dist_path(module_name)
+            return False
+        except KeyError:
+            pass
+    return True

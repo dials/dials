@@ -340,6 +340,10 @@ class MeanUnitCellTie(object):
 
         return
 
+    @staticmethod
+    def average_fn(vals):
+        return flex.mean(vals)
+
     def residuals(self):
         """Calculate and return the residuals"""
 
@@ -347,12 +351,12 @@ class MeanUnitCellTie(object):
             xlucp.get_model().get_unit_cell().parameters() for xlucp in self._xlucp
         ]
         a, b, c, aa, bb, cc = [flex.double(e) for e in zip(*cells)]
-        resid_a = a - flex.mean(a) if self._sel[0] else None
-        resid_b = b - flex.mean(b) if self._sel[1] else None
-        resid_c = c - flex.mean(c) if self._sel[2] else None
-        resid_aa = aa - flex.mean(aa) if self._sel[3] else None
-        resid_bb = bb - flex.mean(bb) if self._sel[4] else None
-        resid_cc = cc - flex.mean(cc) if self._sel[5] else None
+        resid_a = a - self.average_fn(a) if self._sel[0] else None
+        resid_b = b - self.average_fn(b) if self._sel[1] else None
+        resid_c = c - self.average_fn(c) if self._sel[2] else None
+        resid_aa = aa - self.average_fn(aa) if self._sel[3] else None
+        resid_bb = bb - self.average_fn(bb) if self._sel[4] else None
+        resid_cc = cc - self.average_fn(cc) if self._sel[5] else None
 
         # collect the residuals for restrained parameters only
         resid = [
@@ -440,33 +444,9 @@ class LowMemoryMeanUnitCellTie(MeanUnitCellTie):
 
 
 class MedianUnitCellTie(MeanUnitCellTie):
-    def residuals(self):
-        """Calculate and return the residuals"""
-
-        cells = [
-            xlucp.get_model().get_unit_cell().parameters() for xlucp in self._xlucp
-        ]
-        a, b, c, aa, bb, cc = [flex.double(e) for e in zip(*cells)]
-        resid_a = a - flex.median(a) if self._sel[0] else None
-        resid_b = b - flex.median(b) if self._sel[1] else None
-        resid_c = c - flex.median(c) if self._sel[2] else None
-        resid_aa = aa - flex.median(aa) if self._sel[3] else None
-        resid_bb = bb - flex.median(bb) if self._sel[4] else None
-        resid_cc = cc - flex.median(cc) if self._sel[5] else None
-
-        # collect the residuals for restrained parameters only
-        resid = [
-            e
-            for e in [resid_a, resid_b, resid_c, resid_aa, resid_bb, resid_cc]
-            if e is not None
-        ]
-
-        # stack the columns
-        R = resid[0]
-        for r in resid[1:]:
-            R.extend(r)
-
-        return R
+    @staticmethod
+    def average_fn(vals):
+        return flex.median(vals)
 
     def _construct_grad_block(self, param_grads, i):
         """helper function to construct a block of gradients. The length of

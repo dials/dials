@@ -144,7 +144,7 @@ class Script(object):
         Command.start(
             "Saving {0} reflections to {1}".format(len(predicted_all), params.output)
         )
-        predicted_all.as_pickle(params.output)
+        predicted_all.as_file(params.output)
         Command.end(
             "Saved {0} reflections to {1}".format(len(predicted_all), params.output)
         )

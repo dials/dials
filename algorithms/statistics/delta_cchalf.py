@@ -271,7 +271,7 @@ class PerImageCChalfStatistics(object):
 
         # Compute the Overall Sum(X) and Sum(X^2) for each unique reflection
         reflection_sums = defaultdict(ReflectionSum)
-        for h in index_lookup.keys():
+        for h in index_lookup:
             I = [intensity[i] for i in index_lookup[h]]
             n = len(I)
             sum_x = sum(I)
@@ -281,7 +281,7 @@ class PerImageCChalfStatistics(object):
         # Compute some numbers
         self._num_datasets = len(set(dataset))
         self._num_reflections = len(miller_index)
-        self._num_unique = len(reflection_sums.keys())
+        self._num_unique = len(reflection_sums)
 
         logger.info("")
         logger.info("# Datasets: %s" % self._num_datasets)
@@ -335,7 +335,7 @@ class PerImageCChalfStatistics(object):
         """
         # Compute Mean and variance of reflection intensities
         bin_data = [BinData() for _ in range(binner.nbins())]
-        for h in reflection_sums.keys():
+        for h in reflection_sums:
             sum_x = reflection_sums[h].sum_x
             sum_x2 = reflection_sums[h].sum_x2
             n = reflection_sums[h].n
@@ -369,7 +369,7 @@ class PerImageCChalfStatistics(object):
 
         # Compute CC1/2 minus each dataset
         cchalf_i = {}
-        for dataset in dataset_lookup.keys():
+        for dataset in dataset_lookup:
 
             # Find all observations from this dataset and create a lookup based on
             # miller index
@@ -380,7 +380,7 @@ class PerImageCChalfStatistics(object):
             # Loop through all the reflections and remove the contribution of
             # reflections from the current dataset
             dataset_reflection_sums = defaultdict(ReflectionSum)
-            for h in reflection_sums.keys():
+            for h in reflection_sums:
                 sum_x = reflection_sums[h].sum_x
                 sum_x2 = reflection_sums[h].sum_x2
                 n = reflection_sums[h].n

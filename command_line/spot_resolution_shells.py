@@ -25,7 +25,6 @@ def settings():
 
 
 def spot_resolution_shells(imagesets, reflections, params):
-    goniometer = imagesets[0].get_goniometer()
     from dials.array_family import flex
 
     mapped_reflections = flex.reflection_table()
@@ -53,12 +52,9 @@ def spot_resolution_shells(imagesets, reflections, params):
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
-    import libtbx.load_env
 
     usage = "dials.spot_resolution_shells [options] models.expt observations.refl"
 

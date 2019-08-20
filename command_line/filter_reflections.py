@@ -21,7 +21,6 @@ from cctbx import uctbx
 
 
 logger = logging.getLogger("dials")
-info_handle = log.info_handle(logger)
 
 help_message = """
 
@@ -122,7 +121,7 @@ def eval_flag_expression(expression, reflections):
     result = []
     g = generate_tokens(StringIO(expression).readline)
 
-    flags = list(flex.reflection_table.flags.names.iteritems())
+    flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
     flag_names, _ = zip(*flags)
 
@@ -134,23 +133,23 @@ def eval_flag_expression(expression, reflections):
 
         # Extract next token, catching unmatched brackets
         try:
-            toknum, tokval, _, _, _ = g.next()
+            toknum, tokval, _, _, _ = next(g)
         except TokenError:
-            raise Sorry("errors found in {0}".format(expression))
+            raise Sorry("errors found in {}".format(expression))
         except StopIteration:
             break
 
         # Catch unwanted token types
         if toknum not in [token.OP, token.NAME, token.ENDMARKER]:
-            raise Sorry("invalid tokens found in {0}".format(expression))
+            raise Sorry("invalid tokens found in {}".format(expression))
 
         # Catch unwanted operators
         if toknum is token.OP and tokval not in "()|&~":
-            raise Sorry("unrecognised operators found in {0}".format(expression))
+            raise Sorry("unrecognised operators found in {}".format(expression))
 
         # Catch unrecognised flag names
         if toknum is token.NAME and tokval not in flag_names:
-            raise Sorry("unrecognised flag name: {0}".format(tokval))
+            raise Sorry("unrecognised flag name: {}".format(tokval))
 
         # Replace names with valid lookups in the reflection table
         if toknum is token.NAME:
@@ -208,7 +207,7 @@ def run_filtering(params, experiments, reflections):
                 sel = reflections["id"] >= 0
                 if sel.count(False) > 0:
                     print(
-                        "Removing {0} reflections with negative experiment id".format(
+                        "Removing {} reflections with negative experiment id".format(
                             sel.count(False)
                         )
                     )
@@ -228,14 +227,14 @@ def run_filtering(params, experiments, reflections):
         if "partiality" not in reflections:
             raise Sorry("Reflection table has no partiality information")
 
-    print("{0} reflections loaded".format(len(reflections)))
+    print("{} reflections loaded".format(len(reflections)))
 
     # Filter by logical expression using flags
     if params.flag_expression is not None:
         inc = eval_flag_expression(params.flag_expression, reflections)
         reflections = reflections.select(inc)
 
-    print("Selected {0} reflections by flags".format(len(reflections)))
+    print("Selected {} reflections by flags".format(len(reflections)))
 
     # Filter based on experiment ID
     if params.id:
@@ -345,7 +344,7 @@ def run_filtering(params, experiments, reflections):
                 len(reflections), params.output.reflections
             )
         )
-        reflections.as_pickle(params.output.reflections)
+        reflections.as_file(params.output.reflections)
 
     return
 
@@ -412,7 +411,7 @@ def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0
 def run():
     """Run the command line filtering script."""
 
-    flags = list(flex.reflection_table.flags.names.iteritems())
+    flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
 
     phil_scope = parse(phil_str, process_includes=True)
@@ -430,11 +429,11 @@ def run():
         check_format=False,
     )
 
-    params, _ = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(show_diff_phil=True)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    log.config(verbosity=1)
+    log.config(verbosity=options.verbose)
 
     if not reflections:
         parser.print_help()

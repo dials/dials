@@ -1,7 +1,58 @@
 from __future__ import absolute_import, division, print_function
 
-from cctbx import sgtbx
-from scitbx.array_family import flex
+from cctbx import crystal, sgtbx
+from cctbx.sgtbx.subgroups import subgroups
+import scitbx.matrix
+import scitbx.random
+
+from dxtbx.model import Crystal, Experiment, ExperimentList
+from dials.array_family import flex
+
+
+def generate_experiments_reflections(
+    space_group,
+    lattice_group=None,
+    unit_cell=None,
+    unit_cell_volume=1000,
+    seed=0,
+    d_min=1,
+    sigma=0.1,
+    sample_size=100,
+    map_to_p1=False,
+    twin_fractions=None,
+):
+    datasets, reindexing_ops = generate_test_data(
+        space_group,
+        lattice_group=lattice_group,
+        unit_cell=unit_cell,
+        unit_cell_volume=unit_cell_volume,
+        seed=seed,
+        d_min=d_min,
+        sigma=sigma,
+        sample_size=sample_size,
+        map_to_p1=map_to_p1,
+        twin_fractions=twin_fractions,
+    )
+
+    expts = ExperimentList()
+    refl_tables = []
+
+    for dataset in datasets:
+        B = scitbx.matrix.sqr(
+            dataset.unit_cell().fractionalization_matrix()
+        ).transpose()
+        expts.append(
+            Experiment(
+                crystal=Crystal(B, space_group=dataset.space_group(), reciprocal=True)
+            )
+        )
+        refl = flex.reflection_table()
+        refl["miller_index"] = dataset.indices()
+        refl["intensity.sum.value"] = dataset.data()
+        refl["intensity.sum.variance"] = flex.pow2(dataset.sigmas())
+        refl.set_flags(flex.bool(len(refl), True), refl.flags.integrated_sum)
+        refl_tables.append(refl)
+    return expts, refl_tables, reindexing_ops
 
 
 def generate_test_data(
@@ -18,7 +69,6 @@ def generate_test_data(
 ):
 
     import random
-    import scitbx.random
 
     if seed is not None:
         flex.set_random_seed(seed)
@@ -29,12 +79,8 @@ def generate_test_data(
     sgi = space_group.info()
 
     if unit_cell is not None:
-        from cctbx import crystal
-
         cs = crystal.symmetry(unit_cell=unit_cell, space_group_info=sgi)
     elif lattice_group is not None:
-        from cctbx.sgtbx.subgroups import subgroups
-
         subgrps = subgroups(lattice_group).groups_parent_setting()
         assert space_group in subgrps
         cs = lattice_group.any_compatible_crystal_symmetry(
@@ -62,8 +108,8 @@ def generate_test_data(
             data=(1.0 - twin_fraction) * intensities.data()
             + twin_fraction * intensities_twin.data(),
             sigmas=flex.sqrt(
-                flex.pow2(((1.0 - twin_fraction) * intensities.sigmas()))
-                + flex.pow2((twin_fraction * intensities_twin.sigmas()))
+                flex.pow2((1.0 - twin_fraction) * intensities.sigmas())
+                + flex.pow2(twin_fraction * intensities_twin.sigmas())
             ),
         )
         intensities = twinned_miller
@@ -106,9 +152,9 @@ def generate_intensities(crystal_symmetry, anomalous_flag=False, d_min=1):
         d_min,
     ).to_array()
     miller_set = crystal_symmetry.miller_set(indices, anomalous_flag)
-    intensities = flex.random_double(indices.size())
+    intensities = flex.random_double(indices.size()) * 1000
     miller_array = miller.array(
-        miller_set, data=intensities, sigmas=flex.double(intensities.size(), 1)
+        miller_set, data=intensities, sigmas=flex.sqrt(intensities)
     ).set_observation_type_xray_intensity()
     return miller_array
 

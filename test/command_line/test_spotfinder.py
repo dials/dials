@@ -22,8 +22,7 @@ def test_find_spots_from_images(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
@@ -53,8 +52,7 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
@@ -78,8 +76,7 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
     assert tmpdir.join("hot_mask_0.pickle").check(file=1)
 
@@ -110,8 +107,7 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
     assert tmpdir.join("my_hot_mask_0.pickle").check(file=1)
 
@@ -140,8 +136,7 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
@@ -165,8 +160,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
@@ -199,8 +193,7 @@ def test_find_spots_with_user_defined_region(dials_data, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
@@ -227,8 +220,7 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:

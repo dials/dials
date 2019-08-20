@@ -40,7 +40,7 @@ normalisation = kernel quasi ml_iso *ml_aniso
 lattice_group = None
   .type = space_group
 
-verbosity = 1
+verbosity = 0
   .type = int(value_min=0)
   .help = "The verbosity level"
 
@@ -148,7 +148,7 @@ input data and filtering settings e.g partiality_threshold"""
             "Saving %s reindexed reflections to %s"
             % (len(reindexed_reflections), self._params.output.reflections)
         )
-        reindexed_reflections.as_pickle(self._params.output.reflections)
+        reindexed_reflections.as_file(self._params.output.reflections)
 
 
 help_message = """
@@ -193,7 +193,7 @@ def run(args):
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
-    if diff_phil is not "":
+    if diff_phil != "":
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 

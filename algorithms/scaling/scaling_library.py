@@ -22,7 +22,10 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
+from dials.algorithms.scaling.scaling_utilities import (
+    calculate_prescaling_correction,
+    DialsMergingStatisticsError,
+)
 from dials.util.multi_dataset_handling import get_next_unique_id
 
 logger = logging.getLogger("dials")
@@ -283,32 +286,6 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
     return Ih_table
 
 
-def calculate_merging_statistics(reflection_table, experiments, use_internal_variance):
-    """Calculate merging statistics for scaled datasets. Datasets are selected
-    from the reflection table based on their id, and a list of dataset statistics
-    objects and dataset ids are returned."""
-    results = []
-    ids = []
-    dataset_ids = list(set(reflection_table["id"]))
-    if len(dataset_ids) == 1:
-        results.append(
-            calculate_single_merging_stats(
-                reflection_table, experiments[0], use_internal_variance
-            )
-        )
-        ids.append(dataset_ids[0])
-    else:
-        for dataset_id in dataset_ids:
-            refls = reflection_table.select(reflection_table["id"] == dataset_id)
-            results.append(
-                calculate_single_merging_stats(
-                    refls, experiments[0], use_internal_variance
-                )
-            )
-            ids.append(dataset_id)
-    return results, ids
-
-
 def scaled_data_as_miller_array(
     reflection_table_list, experiments, best_unit_cell=None, anomalous_flag=False
 ):
@@ -386,40 +363,45 @@ def determine_best_unit_cell(experiments):
     return best_unit_cell
 
 
-def calculate_single_merging_stats(
-    reflection_table, experiment, use_internal_variance, n_bins=20, anomalous=False
+def merging_stats_from_scaled_array(
+    scaled_miller_array, n_bins=20, use_internal_variance=False
 ):
-    """Calculate the merging stats for a single dataset."""
-    bad_refl_sel = reflection_table.get_flags(
-        reflection_table.flags.bad_for_scaling, all=False
-    )
-    r_t = reflection_table.select(~bad_refl_sel)
-    miller_set = miller.set(
-        crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
-        indices=r_t["miller_index"],
-        anomalous_flag=False,
-    )
-    i_obs = miller.array(
-        miller_set, data=r_t["intensity"] / r_t["inverse_scale_factor"]
-    )
-    i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas((r_t["variance"] ** 0.5) / r_t["inverse_scale_factor"])
-    i_obs.set_info(miller.array_info(source="DIALS", source_type="reflection_tables"))
-    if anomalous:
-        intensities_anom = i_obs.as_anomalous_array()
-        i_obs = intensities_anom.map_to_asu().customized_copy(
-            info=intensities_anom.info()
+    """Calculate the normal and anomalous merging statistics."""
+
+    if scaled_miller_array.is_unique_set_under_symmetry():
+        raise DialsMergingStatisticsError(
+            "Dataset contains no equivalent reflections, merging statistics cannot be calculated."
         )
-    result = iotbx.merging_statistics.dataset_statistics(
-        i_obs=i_obs,
-        n_bins=n_bins,
-        anomalous=anomalous,
-        sigma_filtering=None,
-        use_internal_variance=use_internal_variance,
-        eliminate_sys_absent=False,
-        cc_one_half_significance_level=0.01,
-    )
-    return result
+    try:
+        result = iotbx.merging_statistics.dataset_statistics(
+            i_obs=scaled_miller_array,
+            n_bins=n_bins,
+            anomalous=False,
+            sigma_filtering=None,
+            eliminate_sys_absent=False,
+            use_internal_variance=use_internal_variance,
+            cc_one_half_significance_level=0.01,
+        )
+
+        intensities_anom = scaled_miller_array.as_anomalous_array()
+        intensities_anom = intensities_anom.map_to_asu().customized_copy(
+            info=scaled_miller_array.info()
+        )
+        anom_result = iotbx.merging_statistics.dataset_statistics(
+            i_obs=intensities_anom,
+            n_bins=n_bins,
+            anomalous=True,
+            sigma_filtering=None,
+            cc_one_half_significance_level=0.01,
+            eliminate_sys_absent=False,
+            use_internal_variance=use_internal_variance,
+        )
+    except RuntimeError:
+        raise DialsMergingStatisticsError(
+            "Failure during merging statistics calculation"
+        )
+    else:
+        return result, anom_result
 
 
 def intensity_array_from_cif_file(cif_file):

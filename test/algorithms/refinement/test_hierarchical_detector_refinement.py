@@ -96,7 +96,7 @@ def test1(dials_regression):
         image_range=(1, 1800),
         exposure_times=0.1,
         oscillation=(0, 0.1),
-        epochs=range(1800),
+        epochs=list(range(1800)),
         deg=True,
     )
     sweep_range = scan.get_oscillation_range(deg=False)
@@ -205,7 +205,6 @@ def test1(dials_regression):
         target=target,
         prediction_parameterisation=pred_param,
         log=None,
-        verbosity=0,
         max_iterations=20,
     )
 
@@ -219,7 +218,6 @@ def test1(dials_regression):
         refman=refman,
         target=target,
         refinery=refinery,
-        verbosity=0,
     )
 
     history = refiner.run()

@@ -42,7 +42,7 @@ def test_simple(dials_data, model, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert reflns_simple.check()
 
     result = procrunner.run(
@@ -57,7 +57,7 @@ def test_simple(dials_data, model, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert reflns_g_simple.check()
 
     from dials.array_family import flex
@@ -101,7 +101,7 @@ def test_robust(dials_data, model, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert reflns_robust.check()
 
     result = procrunner.run(
@@ -116,7 +116,7 @@ def test_robust(dials_data, model, tmpdir):
         ],
         working_directory=tmpdir.strpath,
     )
-    assert not result["exitcode"] and not result["stderr"]
+    assert not result.returncode and not result.stderr
     assert reflns_g_robust.check()
 
     from dials.array_family import flex

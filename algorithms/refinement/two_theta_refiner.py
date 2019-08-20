@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 from dials.array_family import flex
 from scitbx import matrix
 from math import sqrt, pi
-
+from libtbx.table_utils import simple_table
+from scitbx.math import five_number_summary
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictor,
@@ -83,36 +84,30 @@ class TwoThetaReflectionManager(ReflectionManager):
 
         l = self.get_matches()
         nref = len(l)
-
-        from libtbx.table_utils import simple_table
-        from scitbx.math import five_number_summary
+        if nref == 0:
+            logger.warning(
+                "Unable to calculate summary statistics for zero observations"
+            )
+            return
 
         twotheta_resid = l["2theta_resid"]
         w_2theta = l["2theta.weights"]
 
         msg = (
-            "\nSummary statistics for {0} observations".format(nref)
+            "\nSummary statistics for {} observations".format(nref)
             + " matched to predictions:"
         )
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]
         rows = []
-        try:
-            row_data = five_number_summary(twotheta_resid)
-            rows.append(
-                ["2theta_c - 2theta_o (deg)"]
-                + ["%.4g" % (e * RAD2DEG) for e in row_data]
-            )
-            row_data = five_number_summary(w_2theta)
-            rows.append(
-                ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
-            )
-            st = simple_table(rows, header)
-        except IndexError:
-            # zero length reflection list
-            logger.warning(
-                "Unable to calculate summary statistics for zero observations"
-            )
-            return
+        row_data = five_number_summary(twotheta_resid)
+        rows.append(
+            ["2theta_c - 2theta_o (deg)"] + ["%.4g" % (e * RAD2DEG) for e in row_data]
+        )
+        row_data = five_number_summary(w_2theta)
+        rows.append(
+            ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
+        )
+        st = simple_table(rows, header)
         logger.info(msg)
         logger.info(st.format())
         logger.info("")
@@ -301,7 +296,7 @@ class TwoThetaPredictionParameterisation(PredictionParameterisation):
                 # if no reflections are in this experiment, skip calculation of
                 # gradients, but must still process null gradients by a callback
                 if callback is not None:
-                    for iparam in xrange(xlucp.num_free()):
+                    for iparam in range(xlucp.num_free()):
                         results[self._iparam] = callback(results[self._iparam])
                         self._iparam += 1
                 else:

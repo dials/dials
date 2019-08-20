@@ -17,8 +17,8 @@ from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
     create_datastructures_for_structural_model,
     create_Ih_table,
-    calculate_merging_statistics,
-    calculate_single_merging_stats,
+    # calculate_merging_statistics,
+    # calculate_single_merging_stats,
     choose_scaling_intensities,
     create_auto_scaling_model,
 )
@@ -253,64 +253,9 @@ def return_len_refl_side_effect(*args):
     return args[0].size()
 
 
-def test_calculate_merging_statistics():
-    """Test the calculate_merging_statistics function, which splits a reflection
-    table based on id and runs iotbx.merging stats on each reflection, returning
-    a list of results and ids."""
-    reflection_table = flex.reflection_table()
-    reflection_table["id"] = flex.int([0, 0, 1, 1, 1, 2])
-    experiments = [0, 0, 0]
-    # Patch the actual call, point to side effect that returns the size of the
-    # table. Then check that the result is the list of return values from the
-    # patch and the dataset ids.
-    with patch(
-        "dials.algorithms.scaling.scaling_library.calculate_single_merging_stats",
-        side_effect=return_len_refl_side_effect,
-    ) as merging_patch:
-        res = calculate_merging_statistics(reflection_table, experiments, True)
-        assert res[0] == [2, 3, 1]
-        assert res[1] == [0, 1, 2]
-        assert merging_patch.call_count == 3
-
-    # repeat with only one dataset.
-    reflection_table = flex.reflection_table()
-    reflection_table["id"] = flex.int([0, 0])
-    experiments = [0]
-    with patch(
-        "dials.algorithms.scaling.scaling_library.calculate_single_merging_stats",
-        side_effect=return_len_refl_side_effect,
-    ) as merging_patch:
-        res = calculate_merging_statistics(reflection_table, experiments, True)
-        assert res[0] == [2]
-        assert res[1] == [0]
-        assert merging_patch.call_count == 1
-
-
 def return_data_side_effect(*args, **kwargs):
     """Side effect to return data from a miller array."""
     return kwargs["i_obs"].data()
-
-
-def test_calculate_single_merging_stats(test_experiments):
-    reflection_table = flex.reflection_table()
-    reflection_table["intensity"] = flex.double([10.0, 5.0, 10.0, 5.0])
-    reflection_table["variance"] = flex.double([1.0, 1.0, 1.0, 1.0])
-    reflection_table["inverse_scale_factor"] = flex.double([2.0, 1.0, 2.0, 1.0])
-    reflection_table["miller_index"] = flex.miller_index(
-        [(1, 0, 0), (1, 0, 0), (2, 0, 0), (2, 0, 0)]
-    )
-    reflection_table.set_flags(
-        flex.bool([True, False, False, False]), reflection_table.flags.bad_for_scaling
-    )
-    with patch(
-        "iotbx.merging_statistics.dataset_statistics",
-        side_effect=return_data_side_effect,
-    ):
-        res = calculate_single_merging_stats(
-            reflection_table, test_experiments[0], True
-        )
-        # check bad was filtered and inv scales applied
-        assert list(res) == [5.0, 5.0, 5.0]
 
 
 def test_create_Ih_table(test_experiments, test_reflections):

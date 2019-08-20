@@ -27,7 +27,7 @@ def test_run(dials_regression):
 
     print(shoebox_filename)
     # Read the data
-    rtable = flex.reflection_table.from_pickle(reflection_filename)
+    rtable = flex.reflection_table.from_file(reflection_filename)
     with open(shoebox_filename, "rb") as fh:
         shoeboxes, masks = pickle.load(fh)
     assert len(rtable) == len(shoeboxes)

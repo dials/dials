@@ -43,7 +43,7 @@ phil_scope = parse(
       .help = "The debug log filename"
   }
 
-  verbosity = 1
+  verbosity = 0
     .type = int
     .help = "The verbosity level"
 """,
@@ -76,7 +76,6 @@ class Script(object):
         from dxtbx.imageset import ImageSweep
         from time import time
         from dials.util import log
-        from dials.util import Sorry
         import datetime
 
         start_time = time()
@@ -95,7 +94,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 

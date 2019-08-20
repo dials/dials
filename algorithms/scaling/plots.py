@@ -32,7 +32,7 @@ def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
         np.linspace(
             valid_osc[0],
             valid_osc[1],
-            int(((valid_osc[1] - valid_osc[0]) / 0.1)) + 1,
+            int((valid_osc[1] - valid_osc[0]) / 0.1) + 1,
             endpoint=True,
         )
     )  # Make a grid of
@@ -389,7 +389,7 @@ def normal_probability_plot(data):
         a = 0.5
 
     y = flex.sorted(flex.double(data["delta_hl"]))
-    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in xrange(n)]
+    x = [norm.quantile((i + 1 - a) / (n + 1 - (2 * a))) for i in range(n)]
 
     H, xedges, yedges = np.histogram2d(np.array(x), y.as_numpy_array(), bins=(200, 200))
     nonzeros = np.nonzero(H)

@@ -44,8 +44,6 @@ class CentroidOutlier(object):
         # the number of rejections
         self.nreject = 0
 
-        self._verbosity = 0
-
         return
 
     def get_block_width(self, exp_id=None):
@@ -64,9 +62,6 @@ class CentroidOutlier(object):
         to mean that the dataset will not be split into blocks."""
         self._block_width = block_width
 
-    def set_verbosity(self, verbosity):
-        self._verbosity = verbosity
-
     def _detect_outliers(self, cols):
         """Perform outlier detection using the input cols and return a flex.bool
         indicating which rows in the cols are considered outlying. cols should be
@@ -80,7 +75,7 @@ class CentroidOutlier(object):
         Return True if any outliers were detected, otherwise False"""
 
         logger.info(
-            "Detecting centroid outliers using the {0} algorithm".format(
+            "Detecting centroid outliers using the {} algorithm".format(
                 type(self).__name__
             )
         )
@@ -97,7 +92,7 @@ class CentroidOutlier(object):
         jobs = []
         if self._separate_experiments:
             # split the data set by experiment id
-            for iexp in xrange(nexp):
+            for iexp in range(nexp):
                 sel = all_data["id"] == iexp
                 job = {
                     "id": iexp,
@@ -123,7 +118,7 @@ class CentroidOutlier(object):
                 data = job["data"]
                 iexp = job["id"]
                 indices = job["indices"]
-                for ipanel in xrange(flex.max(data["panel"]) + 1):
+                for ipanel in range(flex.max(data["panel"]) + 1):
                     sel = data["panel"] == ipanel
                     job = {
                         "id": iexp,
@@ -161,7 +156,7 @@ class CentroidOutlier(object):
                 nblocks = max(1, nblocks)
                 real_width = phi_range / nblocks
                 block_end = 0.0
-                for iblock in xrange(nblocks - 1):  # all except the last block
+                for iblock in range(nblocks - 1):  # all except the last block
                     block_start = iblock * real_width
                     block_end = (iblock + 1) * real_width
                     sel = (phi >= (phi_low + block_start)) & (
@@ -261,14 +256,13 @@ class CentroidOutlier(object):
                         "{0:3.1f}% of reflections were flagged as outliers from job"
                         " {1}"
                     ).format(p100, i + 1)
+                    logger.debug(msg)
             row.extend([str(nref), str(nout), "%3.1f" % p100])
             rows.append(row)
 
         if self.nreject == 0:
             return False
-        logger.info(
-            "{0} reflections have been flagged as outliers".format(self.nreject)
-        )
+        logger.info("{} reflections have been flagged as outliers".format(self.nreject))
         logger.debug("Outlier rejections per job:")
         st = simple_table(rows, header)
         logger.debug(st.format())
@@ -415,7 +409,7 @@ phil_scope = parse(phil_str)
 
 class CentroidOutlierFactory(object):
     @classmethod
-    def from_parameters_and_colnames(cls, params, colnames, verbosity=0):
+    def from_parameters_and_colnames(cls, params, colnames):
 
         # id the relevant scope for the requested method
         method = params.outlier.algorithm
@@ -443,9 +437,9 @@ class CentroidOutlierFactory(object):
             raise RuntimeError("outlier.algorithm not recognised")
 
         # construct kwargs from the algo_params scope
-        kwargs = dict(
-            (k, v) for k, v in algo_params.__dict__.items() if not k.startswith("_")
-        )
+        kwargs = {
+            k: v for k, v in algo_params.__dict__.items() if not k.startswith("_")
+        }
 
         if not params.outlier.separate_blocks:
             params.outlier.block_width = None
@@ -457,7 +451,6 @@ class CentroidOutlierFactory(object):
             block_width=params.outlier.block_width,
             **kwargs
         )
-        od.set_verbosity(verbosity)
         return od
 
 

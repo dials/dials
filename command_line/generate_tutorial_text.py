@@ -42,8 +42,8 @@ class Job(object):
         """Runs a command, prints running info and results the result, if success"""
         os.environ["DIALS_NOBANNER"] = "1"
         result = procrunner.run(shlex.split(command))
-        print("running command took {0:.2f} seconds\n".format(result["runtime"]))
-        assert result["exitcode"] == 0, "Command execution failed"
+        print("running command took {:.2f} seconds\n".format(result["runtime"]))
+        assert not result.returncode, "Command execution failed"
         return result
 
 
@@ -86,7 +86,7 @@ class Processing_Tutorial(object):
             df = dials_data.download.DataFetcher()
             dataset = df("thaumatin_i04").join("th_8_2_0*cbf").strpath
 
-            self.cmd = "dials.import {0}".format(dataset)
+            self.cmd = "dials.import {}".format(dataset)
 
     class dials_find_spots(Job):
         cmd = "dials.find_spots imported.expt nproc=4"
@@ -169,7 +169,7 @@ def generate_processing_detail_text_thaumatin():
         job_writer("dials.report.cmd", "dials-report.html", report_html_job)
         job_writer("dials.export.cmd", "dials.export.log", export_job)
 
-        print("Updated result files written to {0}".format(result_dir))
+        print("Updated result files written to {}".format(result_dir))
 
     finally:
         os.chdir(cwd)
@@ -265,7 +265,7 @@ def generate_processing_detail_text_betalactamase():
         # Report step is special; we want the dials-report.html file instead
         shutil.copy("dials-report.html", OUTPUT_DIR)
 
-        print("Updated result files written to {0}".format(OUTPUT_DIR))
+        print("Updated result files written to {}".format(OUTPUT_DIR))
 
     finally:
         # Remove our intermediatary files

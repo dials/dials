@@ -23,5 +23,4 @@ def test(dials_regression, run_in_tmpdir):
             "symop_threshold=0.6",
         ]
     )
-    assert result["exitcode"] == 0
-    assert result["stderr"] == ""
+    assert not result.returncode and not result.stderr

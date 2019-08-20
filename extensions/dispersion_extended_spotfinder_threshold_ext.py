@@ -3,6 +3,12 @@ from __future__ import print_function
 
 import logging
 
+import libtbx
+from scitbx.array_family import flex
+from scitbx import matrix
+from dials.algorithms.spot_finding.threshold import DispersionExtendedThresholdStrategy
+
+
 logger = logging.getLogger(
     "dials.extensions.dispersion_extended_spotfinder_threshold_ext"
 )
@@ -13,12 +19,11 @@ class DispersionExtendedSpotFinderThresholdExt(object):
 
     name = "dispersion_extended"
 
+    default = True
+
     @classmethod
     def phil(cls):
-        from libtbx.phil import parse
-
-        phil = parse("")
-        return phil
+        return None
 
     def __init__(self, params):
         """
@@ -39,8 +44,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
 
         """
 
-        import libtbx
-
         params = self.params
         if params.spotfinder.threshold.dispersion.global_threshold is libtbx.Auto:
             params.spotfinder.threshold.dispersion.global_threshold = int(
@@ -50,10 +53,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
                 "Setting global_threshold: %i"
                 % (params.spotfinder.threshold.dispersion.global_threshold)
             )
-
-        from dials.algorithms.spot_finding.threshold import (
-            DispersionExtendedThresholdStrategy,
-        )
 
         self._algorithm = DispersionExtendedThresholdStrategy(
             kernel_size=params.spotfinder.threshold.dispersion.kernel_size,
@@ -69,10 +68,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
 
 
 def estimate_global_threshold(image, mask=None, plot=False):
-
-    from scitbx.array_family import flex
-    from scitbx import matrix
-
     n_above_threshold = flex.size_t()
     threshold = flex.double()
     for i in range(1, 20):

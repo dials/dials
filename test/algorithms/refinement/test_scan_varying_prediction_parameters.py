@@ -56,7 +56,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
 
         # Make a scan of 1-20 * 0.5 deg images
         sf = ScanFactory()
-        self.scan = sf.make_scan((1, 20), 0.5, (0, 0.5), range(20))
+        self.scan = sf.make_scan((1, 20), 0.5, (0, 0.5), list(range(20)))
 
         # Generate an ExperimentList
         self.experiments = ExperimentList()
@@ -211,7 +211,7 @@ def test(cmdline_overrides=[]):
             for (a, b) in zip(phi_grads, an_grads[i]["dphi_dp"]):
                 assert a == pytest.approx(b, abs=1e-5)
         except AssertionError:
-            print("Failure for {0}".format(p_names[i]))
+            print("Failure for {}".format(p_names[i]))
             raise
 
     # return to the initial state

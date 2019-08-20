@@ -2,6 +2,12 @@
 
 [flake8]
 # Black disagrees with flake8 on a few points. Ignore those.
+
 ignore = E203, E266, E501, W503
+# E203 whitespace before ':'
+# E266 too many leading '#' for block comment
+# E501 line too long
+# W503 line break before binary operator
+
 max-line-length = 88
 

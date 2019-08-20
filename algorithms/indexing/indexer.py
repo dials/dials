@@ -12,27 +12,24 @@
 
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
+import math
 
-import libtbx
 import iotbx.phil
-from dxtbx.model import ExperimentList
-
+import libtbx
 from dials.array_family import flex
 from dials.algorithms.indexing import assign_indices
+from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.compare_orientation_matrices import (
     difference_rotation_matrix_axis_angle,
 )
 from dials.algorithms.indexing.symmetry import SymmetryHandler
-from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.max_cell import find_max_cell
-from dials.util import log
-from dials.util import Sorry
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
+from dials.util import Sorry
+from dxtbx.model import ExperimentList
 
 logger = logging.getLogger(__name__)
-debug_handle = log.debug_handle(logger)
 
 
 max_cell_phil_str = """\
@@ -172,12 +169,13 @@ indexing {
     .type = bool
     .expert_level = 1
   refinement_protocol {
-    mode = *refine_shells repredict_only
+    mode = *refine_shells repredict_only None
       .type = choice
       .expert_level = 1
       .help = "refine_shells: refine in increasing resolution cutoffs after indexing."
               "repredict_only: do not refine after indexing, just update spot"
               "predictions."
+              "None: turns off all forms of refinement (currently only applies to stills_indexer)"
     n_macro_cycles = 5
       .type = int(value_min=1)
       .help = "Maximum number of macro cycles of refinement, reindexing all"
@@ -950,6 +948,33 @@ class Indexer(object):
                     xs.add_scatterer(xray.scatterer("C", site=site))
                 xs.sites_mod_short()
                 f.write(xs.as_pdb_file())
+
+    def debug_write_ccp4_map(self, map_data, file_name):
+        from iotbx import ccp4_map
+
+        gridding_first = (0, 0, 0)
+        gridding_last = map_data.all()
+        labels = ["cctbx.miller.fft_map"]
+        ccp4_map.write_ccp4_map(
+            file_name=file_name,
+            unit_cell=self.fft_cell,
+            space_group=sgtbx.space_group("P1"),
+            gridding_first=gridding_first,
+            gridding_last=gridding_last,
+            map_data=map_data,
+            labels=flex.std_string(labels),
+        )
+
+    def export_as_json(
+        self, experiments, file_name="indexed_experiments.json", compact=False
+    ):
+        from dxtbx.serialize import dump
+
+        assert experiments.is_consistent()
+        dump.experiment_list(experiments, file_name)
+
+    def export_reflections(self, reflections, file_name="reflections.pickle"):
+        reflections.as_file(file_name)
 
     def find_lattices(self):
         raise NotImplementedError()

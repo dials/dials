@@ -13,8 +13,6 @@ cache:
   timeout: 1000
 
 jobs:
-  allow_failures:
-    - python: 3.6
   include:
     - stage: build
       install:
@@ -77,6 +75,7 @@ jobs:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
          - pytest -ra -n 2 --runslow
+         - .travis/check-working-directory-is-clean
 
     - name: "Build - Python 3.6"
          # Same as above really, but on Python 3 this time
@@ -128,6 +127,7 @@ jobs:
          # Finally. Do what we are here for. Run tests. Yay.
          - cd $HOME/build_dials/modules/dials
          - pytest -ra -n 2 --runslow --disable-warnings
+         - .travis/check-working-directory-is-clean
 
     - name: "Flake8 - Python 2.7"
       addons: false

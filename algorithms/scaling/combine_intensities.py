@@ -193,7 +193,7 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
         inv_p = inv_p.select(suitable)
     if max_key == 0:
         intensity = Ipr * suitable_conv
-        variance = Vpr * suitable_conv
+        variance = Vpr * suitable_conv * suitable_conv
     elif max_key == 1:
         if "partiality" in reflections:
             intensity = Isum * suitable_conv * inv_p

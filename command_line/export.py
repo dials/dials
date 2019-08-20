@@ -15,6 +15,7 @@ import logging
 import sys
 
 from libtbx.phil import parse
+from libtbx import Auto
 
 logger = logging.getLogger("dials.command_line.export")
 
@@ -86,10 +87,12 @@ phil_scope = parse(
     .type = choice
     .help = "The output file format"
 
-  intensity = *profile *sum scale
+  intensity = *auto profile sum scale
     .type = choice(multi=True)
     .help = "Choice of which intensities to export. Allowed combinations:
-            scale, profile, sum, profile+sum, sum+profile+scale."
+            scale, profile, sum, profile+sum, sum+profile+scale. Auto will
+            default to scale or profile+sum depending on if the data are scaled."
+
 
   debug = False
     .type = bool
@@ -129,9 +132,10 @@ phil_scope = parse(
       .type = float
       .help = "Filter out reflections with d-spacing below d_min"
 
-    hklout = integrated.mtz
+    hklout = auto
       .type = path
-      .help = "The output MTZ file"
+      .help = "The output MTZ filename, defaults to integrated.mtz or scaled_unmerged.mtz"
+              "depending on if the input data are scaled."
 
     crystal_name = XTAL
       .type = str
@@ -170,9 +174,10 @@ phil_scope = parse(
 
   mmcif {
 
-    hklout = integrated.cif
+    hklout = auto
       .type = path
-      .help = "The output CIF file"
+      .help = "The output CIF file, defaults to integrated.cif or scaled_unmerged.cif
+        depending on if the data are scaled."
 
   }
 
@@ -730,6 +735,19 @@ if __name__ == "__main__":
     # Get the experiments and reflections
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
+    # do auto intepreting of intensity choice:
+    # note that this may still fail certain checks further down the processing,
+    # but these are the defaults to try
+    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
+        if ("intensity.scale.value" in reflections[0]) and (
+            "intensity.scale.variance" in reflections[0]
+        ):
+            params.intensity = ["scale"]
+            logger.info("Data appears to be scaled, setting intensity = scale")
+        else:
+            params.intensity = ["profile", "sum"]
+            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
 
     # Choose the exporter
     if params.format == "mtz":

@@ -331,7 +331,7 @@ class PixelListToShoeboxes(object):
                 spotsizes.extend(creator.spot_size())
                 hp.extend(creator.hot_pixels())
         logger.info("")
-        logger.info("Extracted {0} spots".format(len(shoeboxes)))
+        logger.info("Extracted {} spots".format(len(shoeboxes)))
 
         # Get the unallocated spots and print some info
         selection = shoeboxes.is_allocated()
@@ -369,11 +369,11 @@ class ShoeboxesToReflectionTable(object):
 
         # Calculate the spot centroids
         centroid = shoeboxes.centroid_valid()
-        logger.info("Calculated {0} spot centroids".format(len(shoeboxes)))
+        logger.info("Calculated {} spot centroids".format(len(shoeboxes)))
 
         # Calculate the spot intensities
         intensity = shoeboxes.summed_intensity()
-        logger.info("Calculated {0} spot intensities".format(len(shoeboxes)))
+        logger.info("Calculated {} spot intensities".format(len(shoeboxes)))
 
         # Create the observations
         observed = flex.observation(shoeboxes.panels(), centroid, intensity)

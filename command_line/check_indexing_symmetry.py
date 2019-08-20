@@ -11,6 +11,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import math
 import logging
 import sys
 
@@ -28,6 +29,7 @@ from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 from dials.util import log
 from dials.util.version import dials_version
+from libtbx.utils import format_float_with_standard_uncertainty
 
 logger = logging.getLogger("dials.command_line.check_indexing_symmetry")
 
@@ -59,7 +61,8 @@ d_max = 0
   .help = "Low resolution limit to use for analysis"
 symop_threshold = 0
   .type = float
-  .help = "Threshold above which we consider a symmetry operator true."
+  .help = "Threshold above which we consider a symmetry operator true"
+          "at approximately 95% confidence."
 grid = 0
   .type = int
   .help = "Search scope for testing misindexing on h, k, l."
@@ -102,6 +105,41 @@ def dump_text(filename, set0, set1):
         for _0, _1 in zip(i0, i1):
             assert _0[0] == _1[0]
             fout.write("%f %f\n" % (_0[1], _1[1]))
+
+
+def standard_error_of_pearson_cc(corr_coeffs, n):
+    """Calculate the standard error of Pearson's correlation coefficient.
+
+    This uses the formula SE = sqrt((1 - r^2) / (n - 2)), which is correct
+    only if the data from which the CCs were calculated are normally
+    distributed.
+
+    Args:
+        corr_coeffs: a flex.double array of correlation coefficient values
+        n: a flex.int array of sample sizes used to calculate corr_coeffs
+
+    Returns:
+        flex.double: the standard error for values in corr_coeffs
+    """
+
+    numerator = 1 - flex.pow2(corr_coeffs)
+    denominator = n - 2
+    sel = denominator < 1
+    denominator.set_selected(sel, 1)
+    vals = numerator / denominator.as_double()
+    vals.set_selected(sel, float("NaN"))
+    return vals
+
+
+def format_cc_with_standard_error(cc, se, decimal_places=3):
+    if math.isnan(se):
+        return "?"
+    minimum = pow(0.1, decimal_places)
+    if se >= minimum:
+        cc_str = format_float_with_standard_uncertainty(cc, se, minimum=1.0e-3)
+    else:
+        cc_str = "{val:0.{dp}f}".format(val=cc, dp=decimal_places)
+    return cc_str
 
 
 def get_symop_correlation_coefficients(miller_array, use_binning=False):
@@ -179,14 +217,16 @@ def test_crystal_pointgroup_symmetry(reflections, experiment, params):
     true_symops = []
 
     ccs, n_refs = get_symop_correlation_coefficients(ms)
+    ses = standard_error_of_pearson_cc(ccs, n_refs)
 
-    for smx, cc, n_ref in zip(space_group.smx(), ccs, n_refs):
+    for smx, cc, n_ref, se in zip(space_group.smx(), ccs, n_refs, ses):
         accept = ""
         if params.symop_threshold:
-            if cc > params.symop_threshold:
+            if (cc - 2.0 * se) > params.symop_threshold:
                 true_symops.append(smx)
                 accept = "***"
-        logger.info("%20s %6d %.3f %s" % (smx, n_ref, cc, accept))
+        cc_str = format_cc_with_standard_error(cc, se)
+        logger.info("%20s %6d %s %s" % (smx, n_ref, cc_str, accept))
 
     if params.symop_threshold:
         sg = sgtbx_space_group()
@@ -255,7 +295,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
     else:
         reference = None
 
-    offsets, ccs, nref = get_indexing_offset_correlation_coefficients(
+    offsets, ccs, n_refs = get_indexing_offset_correlation_coefficients(
         reflections,
         experiment.crystal,
         grid=params.grid,
@@ -268,9 +308,12 @@ def test_P1_crystal_indexing(reflections, experiment, params):
         reference=reference,
     )
 
-    for (h, k, l), cc, n in zip(offsets, ccs, nref):
+    ses = standard_error_of_pearson_cc(ccs, n_refs)
+
+    for (h, k, l), cc, n, se in zip(offsets, ccs, n_refs, ses):
         if cc > params.symop_threshold or (h == k == l == 0):
-            logger.info("%2d %2d %2d %6d %.3f" % (h, k, l, n, cc))
+            cc_str = format_cc_with_standard_error(cc, se)
+            logger.info("%2d %2d %2d %6d %s" % (h, k, l, n, cc_str))
 
     logger.info("")
 

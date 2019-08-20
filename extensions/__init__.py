@@ -70,8 +70,10 @@ class _Extension(object):
                     ext_phil_scope = ext_master_scope.get_without_substitution(ext.name)
                     assert len(ext_phil_scope) == 1
                     ext_phil_scope = ext_phil_scope[0]
-                    ext_phil_scope.adopt_scope(ext.phil())
-                    main_scope.adopt_scope(ext_master_scope)
+                    ext_phil = ext.phil()
+                    if ext_phil is not None:
+                        ext_phil_scope.adopt_scope(ext.phil())
+                        main_scope.adopt_scope(ext_master_scope)
         return master_scope
 
 

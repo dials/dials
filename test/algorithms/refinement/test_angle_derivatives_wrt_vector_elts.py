@@ -2,11 +2,12 @@
 between two vectors with respect to each element of the vectors"""
 
 from __future__ import absolute_import, division, print_function
-from scitbx import matrix
-from random import uniform
-import math
-from libtbx.test_utils import approx_equal
 
+import math
+import random
+
+from libtbx.test_utils import approx_equal
+from scitbx import matrix
 from scitbx.math import angle_derivative_wrt_vectors
 
 
@@ -73,19 +74,18 @@ class FDAngleDerivativeWrtVectorElts(object):
 
 def _test():
     # Two random vectors
-    vec_a = matrix.col((uniform(-20, 20), uniform(-20, 20), uniform(-20, 20)))
-    vec_b = matrix.col((uniform(-20, 20), uniform(-20, 20), uniform(-20, 20)))
+    vec_a = matrix.col(
+        (random.uniform(-20, 20), random.uniform(-20, 20), random.uniform(-20, 20))
+    )
+    vec_b = matrix.col(
+        (random.uniform(-20, 20), random.uniform(-20, 20), random.uniform(-20, 20))
+    )
 
     # The test may fail if the angle between the vectors is small or close to pi
     # (see gradient of acos(x) for x close to 1 or -1) but we are not interested
     # in such cases anyway. Skip test if the acute angle is less than 1 degree
     if vec_a.accute_angle(vec_b, deg=True) < 1:
         return False
-
-    a = vec_a.length()
-    b = vec_b.length()
-    a_dot_b = vec_a.dot(vec_b)
-    gamma = math.acos(a_dot_b / (a * b))
 
     # Analytical
     def dangle(u, v):
@@ -109,6 +109,6 @@ def _test():
 
 def test_should_succeed_in_95_percent_of_cases():
     ntests = 1000
-    results = [_test() for i in xrange(ntests)]
+    results = [_test() for i in range(ntests)]
     nsuccess = results.count(True)
     assert nsuccess > 0.95 * ntests

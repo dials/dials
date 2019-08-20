@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
-import mock
 
-from scitbx.array_family import flex
+import mock
 from dials.algorithms.symmetry.cosym import observers
+from scitbx.array_family import flex
 
 
 def test_SymmetryAnalysisObserver():
@@ -28,8 +28,22 @@ def test_SymmetryAnalysisObserver():
                     "cb_op": "x,y,z",
                     "likelihood": 0.9,
                     "confidence": 0.9,
+                    "stars": "*",
+                    "z_cc_net": 1,
+                    "z_cc_for": 2,
+                    "z_cc_against": 3,
+                    "max_angular_difference": 0.2,
                 }
-            ]
+            ],
+            "sym_op_scores": [
+                {
+                    "cc": 0.99,
+                    "operator": "x,y,z",
+                    "likelihood": 0.99,
+                    "stars": "**",
+                    "z_cc": 10,
+                }
+            ],
         }
     )
 
@@ -38,11 +52,11 @@ def test_SymmetryAnalysisObserver():
     observer.update(script)
     d = observer.make_tables()
     assert "symmetry_analysis" in d
-    assert d["symmetry_analysis"].keys() == [
+    assert set(d["symmetry_analysis"]) == {
         "summary_table",
         "subgroups_table",
         "sym_ops_table",
-    ]
+    }
 
 
 def test_CosymClusterAnalysisObserver():

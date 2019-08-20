@@ -15,7 +15,9 @@ under a given I/sigI limit.  Cuts the data at that point.
 
 phil_scope = parse(
     """
-significance_filter {
+significance_filter
+  .expert_level=1
+{
   enable = False
     .type=bool
     .help=If enabled, the significance filter will, for every experiment, find \
@@ -56,7 +58,7 @@ class SignificanceFilter(object):
             "",
         ]
 
-        for exp_id in xrange(len(experiments)):
+        for exp_id in range(len(experiments)):
             print("*" * 80)
             print("Significance filtering experiment", exp_id)
             table_data = []
@@ -146,16 +148,16 @@ class SignificanceFilter(object):
                     )
                 )
 
-                table_row.append("%.1f" % (avg_i))
-                table_row.append("%.1f" % (avg_i_sigi))
+                table_row.append("%.2f" % (avg_i))
+                table_row.append("%.2f" % (avg_i_sigi))
                 table_row.append("%3d" % n_bright)
-                table_row.append("%.1f" % (rmsd_obs))
+                table_row.append("%.2f" % (rmsd_obs))
                 table_data.append(table_row)
 
             # Throw out bins that go back above the cutoff after the first non-passing bin is found
             acceptable_resolution_bins = [
                 acceptable_resolution_bins[i]
-                for i in xrange(len(acceptable_resolution_bins))
+                for i in range(len(acceptable_resolution_bins))
                 if False not in acceptable_resolution_bins[: i + 1]
             ]
 

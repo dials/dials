@@ -38,7 +38,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=None,
     ):
@@ -49,7 +48,6 @@ class AdaptLstbxSparse(DisableMPmixin, AdaptLstbxBase, non_linear_ls_eigen_wrapp
             prediction_parameterisation,
             constraints_manager=constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -71,7 +69,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
         prediction_parameterisation,
         constraints_manager=None,
         log=None,
-        verbosity=0,
         tracking=None,
         max_iterations=20,
         **kwds
@@ -83,7 +80,6 @@ class GaussNewtonIterations(AdaptLstbxSparse, GaussNewtonIterationsBase):
             prediction_parameterisation,
             constraints_manager=constraints_manager,
             log=log,
-            verbosity=verbosity,
             tracking=tracking,
             max_iterations=max_iterations,
         )
@@ -121,16 +117,11 @@ class SparseLevenbergMarquardtIterations(
     def report_progress(self, objective):
         """Override for the Eigen wrapper to provide live feedback of progress
         of the refinement"""
-        if self._verbosity > 2:
-            logger.info(
-                "Iteration: %5d Objective: %18.4f Mu: %12.7f"
-                % (self.n_iterations, objective, self.mu)
-            )
-        else:
-            logger.debug(
-                "Iteration: %5d Objective: %18.4f Mu: %12.7f"
-                % (self.n_iterations, objective, self.mu)
-            )
+
+        logger.debug(
+            "Iteration: %5d Objective: %18.4f Mu: %12.7f"
+            % (self.n_iterations, objective, self.mu)
+        )
 
     def run(self):
         self._run_core()
@@ -140,6 +131,5 @@ class SparseLevenbergMarquardtIterations(
         # no attempt here to calculate esd's based on the variance covariance
         # matrix.
 
-        if self._verbosity > 0:
-            logger.info(self.get_eigen_summary())
+        logger.info(self.get_eigen_summary())
         return

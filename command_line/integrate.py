@@ -121,7 +121,7 @@ phil_scope = parse(
     .type = ints
     .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
 
-  verbosity = 1
+  verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
 
@@ -142,7 +142,6 @@ class Script(object):
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # The script usage
         usage = "usage: dials.integrate [options] models.expt"
@@ -200,7 +199,7 @@ class Script(object):
 
         # Log the diff phil
         diff_phil = self.parser.diff_phil.as_str()
-        if diff_phil is not "":
+        if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
 
@@ -521,7 +520,7 @@ class Script(object):
 
         st = time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
-        reflections.as_pickle(filename)
+        reflections.as_file(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def save_experiments(self, experiments, filename):
