@@ -246,16 +246,31 @@ def refine_subgroup(args):
     subgroup.min_cc = None
     subgroup.correlation_coefficients = []
     subgroup.cc_nrefs = []
+
     with LoggingContext(logging.getLogger(), level=logging.ERROR):
         try:
-            iqr_multiplier = params.refinement.reflections.outlier.tukey.iqr_multiplier
-            params.refinement.reflections.outlier.tukey.iqr_multiplier = (
-                2 * iqr_multiplier
-            )
+            outlier_algorithm = params.refinement.reflections.outlier.algorithm
+            sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
+            if sel.all_eq(False):
+                # Soft outlier rejection if no used_in_refinement flag is set
+                params.refinement.reflections.outlier.algorithm = "tukey"
+                iqr_multiplier = (
+                    params.refinement.reflections.outlier.tukey.iqr_multiplier
+                )
+                params.refinement.reflections.outlier.tukey.iqr_multiplier = (
+                    2 * iqr_multiplier
+                )
+                sel = ~sel
+            else:
+                # Remove reflections not previously used in refinement
+                params.refinement.reflections.outlier.algorithm = "null"
             refinery, refined, outliers = refine(
-                params, used_reflections, experiments, verbosity=refiner_verbosity
+                params,
+                used_reflections.select(sel),
+                experiments,
+                verbosity=refiner_verbosity,
             )
-            params.refinement.reflections.outlier.tukey.iqr_multiplier = iqr_multiplier
+            params.refinement.reflections.outlier.algorithm = outlier_algorithm
             refinery, refined, outliers = refine(
                 params,
                 used_reflections,
