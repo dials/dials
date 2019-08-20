@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+import pkg_resources
 
 import iotbx.phil
 import libtbx
@@ -437,18 +438,38 @@ class Indexer(object):
                     experiment.scan = None
                     experiment.goniometer = None
 
-            if params.indexing.method in ("fft1d", "fft3d", "real_space_grid_search"):
-                if use_stills_indexer:
-                    # do something
-                    from dials.algorithms.indexing.stills_indexer import (
-                        StillsIndexerBasisVectorSearch as BasisVectorSearch,
-                    )
-                else:
-                    from dials.algorithms.indexing.lattice_search import (
-                        BasisVectorSearch,
-                    )
+            IndexerType = None
+            for entry_point in pkg_resources.iter_entry_points(
+                "dials.index.basis_vector_search_strategy"
+            ):
+                if params.indexing.method == entry_point.name:
+                    if use_stills_indexer:
+                        # do something
+                        from dials.algorithms.indexing.stills_indexer import (
+                            StillsIndexerBasisVectorSearch as IndexerType,
+                        )
+                    else:
+                        from dials.algorithms.indexing.lattice_search import (
+                            BasisVectorSearch as IndexerType,
+                        )
 
-                idxr = BasisVectorSearch(reflections, experiments, params=params)
+            if IndexerType is None:
+                for entry_point in pkg_resources.iter_entry_points(
+                    "dials.index.lattice_search_strategy"
+                ):
+                    if params.indexing.method == entry_point.name:
+                        if use_stills_indexer:
+                            from dials.algorithms.indexing.stills_indexer import (
+                                StillsIndexerLatticeSearch as IndexerType,
+                            )
+                        else:
+                            from dials.algorithms.indexing.lattice_search import (
+                                LatticeSearch as IndexerType,
+                            )
+
+            assert IndexerType is not None
+
+            idxr = IndexerType(reflections, experiments, params=params)
 
         return idxr
 

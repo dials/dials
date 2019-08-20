@@ -18,6 +18,9 @@ libtbx.pkg_utils.define_entry_points(
             "fft3d = dials.algorithms.indexing.basis_vector_search.strategies:FFT3D",
             "real_space_grid_search = dials.algorithms.indexing.basis_vector_search.strategies:RealSpaceGridSearch",
         ],
+        "dials.index.lattice_search_strategy": [
+            "low_res_spot_match = dials.algorithms.indexing.lattice_search_strategies:LowResSpotMatch"
+        ],
     }
 )
 

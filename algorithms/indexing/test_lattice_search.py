@@ -67,9 +67,10 @@ def test_BasisVectorSearch_i04_weak_data(
         ("fft3d", "P422", (57.8, 57.8, 150.0, 90, 90, 90)),
         ("fft1d", "P422", (57.8, 57.8, 150.0, 90, 90, 90)),
         ("real_space_grid_search", "P422", (57.8, 57.8, 150.0, 90, 90, 90)),
+        ("low_res_spot_match", "P422", (57.8, 57.8, 150.0, 90, 90, 90)),
     ),
 )
-def test_stills_indexer_BasisVectorSearch_i04_weak_data(
+def test_stills_indexer_methods_i04_weak_data(
     i04_weak_data, indexing_method, space_group, unit_cell
 ):
     reflections = slice_reflections(i04_weak_data["reflections"], [(1, 2)])
@@ -89,9 +90,14 @@ def test_stills_indexer_BasisVectorSearch_i04_weak_data(
         params.indexing.known_symmetry.unit_cell = uctbx.unit_cell(unit_cell)
     if space_group is not None:
         params.indexing.known_symmetry.space_group = sgtbx.space_group_info(space_group)
-    idxr = stills_indexer.StillsIndexerBasisVectorSearch(
-        reflections, experiments, params
-    )
+    try:
+        idxr = stills_indexer.StillsIndexerBasisVectorSearch(
+            reflections, experiments, params
+        )
+    except RuntimeError:
+        idxr = stills_indexer.StillsIndexerLatticeSearch(
+            reflections, experiments, params
+        )
     idxr.index()
 
     indexed_experiments = idxr.refined_experiments
