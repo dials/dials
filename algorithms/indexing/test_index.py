@@ -857,10 +857,9 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
 @pytest.mark.parametrize("indexer_type,fix_cell", (("sweeps", False), ("stills", True)))
 def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix_cell):
 
-    data_dir = dials_data("smv_image_examples")
     # test indexing from a single simulated lysozyme ED still
 
-    image_path = os.path.join(str(data_dir), "noiseimage_001.img")
+    image_path = dials_data("smv_image_examples").join("noiseimage_001.img").strpath
 
     command = ["dials.import", image_path]
     result = procrunner.run(command, working_directory=tmpdir)
