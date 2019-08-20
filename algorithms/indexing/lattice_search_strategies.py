@@ -264,7 +264,7 @@ class LowResSpotMatch(Strategy):
         return self.candidate_crystal_models
 
     def _calc_candidate_hkls(self):
-        # 1 ASU
+        # First a list of indices that fill 1 ASU
         hkl_list = cctbx.miller.build_set(
             self._target_symmetry_primitive,
             anomalous_flag=False,
@@ -276,7 +276,7 @@ class LowResSpotMatch(Strategy):
         rt["rlp_datum"] = self.Bmat.elems * rt["miller_index"].as_vec3_double()
         self.candidate_hkls = rt
 
-        # P1 indices with separate Friedel pairs
+        # Now P1 indices with separate Friedel pairs
         hkl_list = cctbx.miller.build_set(
             self._target_symmetry_primitive,
             anomalous_flag=True,
@@ -392,7 +392,7 @@ class LowResSpotMatch(Strategy):
         # reflection's canonical d*
 
         # First the 'seeds' (in 1 ASU)
-        result = []
+        self.seeds = []
         for i, spot in enumerate(self.spots):
             sel = (self.candidate_hkls["d_star"] <= spot["d_star_outer"]) & (
                 self.candidate_hkls["d_star"] >= spot["d_star_inner"]
@@ -400,7 +400,7 @@ class LowResSpotMatch(Strategy):
             cands = self.candidate_hkls.select(sel)
             for c in cands:
                 r_dst = abs(c["d_star"] - spot["d_star"])
-                result.append(
+                self.seeds.append(
                     {
                         "spot_id": i,
                         "miller_index": c["miller_index"],
@@ -410,11 +410,10 @@ class LowResSpotMatch(Strategy):
                     }
                 )
 
-        result.sort(key=operator.itemgetter("residual_d_star"))
-        self.seeds = result
+        self.seeds.sort(key=operator.itemgetter("residual_d_star"))
 
         # Now the 'stems' to use in second search level, using all indices in P 1
-        result = []
+        self.stems = []
         for i, spot in enumerate(self.spots):
             sel = (self.candidate_hkls_p1["d_star"] <= spot["d_star_outer"]) & (
                 self.candidate_hkls_p1["d_star"] >= spot["d_star_inner"]
@@ -422,7 +421,7 @@ class LowResSpotMatch(Strategy):
             cands = self.candidate_hkls_p1.select(sel)
             for c in cands:
                 r_dst = abs(c["d_star"] - spot["d_star"])
-                result.append(
+                self.stems.append(
                     {
                         "spot_id": i,
                         "miller_index": c["miller_index"],
@@ -432,8 +431,7 @@ class LowResSpotMatch(Strategy):
                     }
                 )
 
-        result.sort(key=operator.itemgetter("residual_d_star"))
-        self.stems = result
+        self.stems.sort(key=operator.itemgetter("residual_d_star"))
         return
 
     def _pairs_with_seed(self, seed):
@@ -558,9 +556,8 @@ class LowResSpotMatch(Strategy):
     def _fit_U_from_superposed_points(reference, other):
 
         # Add the origin to both sets of points
-        origin = flex.vec3_double(1)
-        reference.extend(origin)
-        other.extend(origin)
+        reference.append((0, 0, 0))
+        other.append((0, 0, 0))
 
         # Find U matrix that takes ideal relps to the reference
         fit = superpose.least_squares_fit(reference, other)
@@ -599,8 +596,7 @@ class LowResSpotMatch(Strategy):
             UB = U * self.Bmat
 
         # Calculate RMSD of the fit
-        other_rotated = U.elems * other
-        rms = reference.rms_difference(other_rotated)
+        rms = reference.rms_difference(U.elems * other)
 
         # Construct a crystal model
         xl = Crystal(A=UB, space_group_symbol="P1")
