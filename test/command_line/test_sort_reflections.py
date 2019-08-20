@@ -65,6 +65,21 @@ def test_default_sort_on_miller_index(dials_data, tmpdir):
     assert mi1.all_eq(mi2)
 
 
+def test_default_sort_on_miller_index_verbose(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dev.dials.sort_reflections",
+            dials_data("centroid_test_data").join("integrated.pickle").strpath,
+            "output=sorted4.refl",
+            "-v",
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("sorted4.refl").check(file=1)
+    assert "Head of sorted list miller_index:" in result.stdout
+
+
 def assert_sorted(data, reverse=False):
     assert len(data) > 0
     elem = data[0]

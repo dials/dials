@@ -448,9 +448,9 @@ class Script(object):
         logger.info("Processing reference reflections")
         logger.info(" read %d strong spots" % len(reference))
         mask = reference.get_flags(reference.flags.indexed)
-        rubbish = reference.select(mask == False)
+        rubbish = reference.select(~mask)
         if mask.count(False) > 0:
-            reference.del_selected(mask == False)
+            reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections" % mask.count(False))
         if len(reference) == 0:
             raise Sorry(

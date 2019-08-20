@@ -42,28 +42,28 @@ class Sort(object):
         phil_scope = parse(
             """
 
-      key = 'miller_index'
-        .type = str
-        .help = "The chosen sort key. This should be a column of "
-                "the reflection table."
+            key = 'miller_index'
+                .type = str
+                .help = "The chosen sort key. This should be a column of "
+                        "the reflection table."
 
-      reverse = False
-        .type = bool
-        .help = "Reverse the sort direction"
+            reverse = False
+                .type = bool
+                .help = "Reverse the sort direction"
 
-      output = sorted.refl
-        .type = str
-        .help = "The output reflection filename"
+            output = sorted.refl
+                .type = str
+                .help = "The output reflection filename"
 
-    """
+            """
         )
 
         # The script usage
         usage = (
             """
-      usage: %s [options] observations.refl
+            usage: %s [options] observations.refl
 
-    """
+            """
             % libtbx.env.dispatcher_name
         )
 
@@ -103,10 +103,10 @@ class Sort(object):
         reflections = reflections.select(perm)
 
         if options.verbose > 0:
-            print("Head of sorted list " + attr + ":")
+            print("Head of sorted list " + params.key + ":")
             n = min(len(reflections), 10)
             for i in range(n):
-                print(reflections[i][attr])
+                print(reflections[i][params.key])
 
         # Save sorted reflections to file
         if params.output:

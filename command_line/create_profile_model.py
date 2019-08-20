@@ -87,7 +87,7 @@ class Script(object):
             raise Sorry("exactly 1 reflection table must be specified")
         if len(experiments) == 0:
             raise Sorry("no experiments were specified")
-        if (not "background.mean" in reflections[0]) and params.subtract_background:
+        if ("background.mean" not in reflections[0]) and params.subtract_background:
             raise Sorry("for subtract_background need background.mean in reflections")
 
         reflections, _ = self.process_reference(reflections[0], params)
@@ -163,9 +163,9 @@ class Script(object):
         logger.info("Processing reference reflections")
         logger.info(" read %d strong spots" % len(reference))
         mask = reference.get_flags(reference.flags.indexed)
-        rubbish = reference.select(mask == False)
+        rubbish = reference.select(~mask)
         if mask.count(False) > 0:
-            reference.del_selected(mask == False)
+            reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections" % mask.count(False))
         if len(reference) == 0:
             raise Sorry(
