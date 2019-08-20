@@ -7,7 +7,7 @@ import abc
 import logging
 
 import copy
-from math import pi, sqrt
+import math
 import cctbx.miller
 from dials.array_family import flex
 import operator
@@ -16,7 +16,7 @@ from scitbx.math import superpose, least_squares_plane
 from dxtbx.model import Crystal
 from libtbx import phil
 
-TWO_PI = 2.0 * pi
+TWO_PI = 2.0 * math.pi
 FIVE_DEG = TWO_PI * 5.0 / 360.0
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ candidate_spots
     n_spots = 10
     .type = int
 
-    dstar_tolerance = 4.0
+    d_star_tolerance = 4.0
     .help = "Number of sigmas from the centroid position for which to"
             "calculate d* bands"
     .type = float
@@ -272,7 +272,7 @@ class LowResSpotMatch(Strategy):
         )
         rt = flex.reflection_table()
         rt["miller_index"] = hkl_list.indices()
-        rt["dstar"] = 1.0 / hkl_list.d_spacings().data()
+        rt["d_star"] = 1.0 / hkl_list.d_spacings().data()
         rt["rlp_datum"] = self.Bmat.elems * rt["miller_index"].as_vec3_double()
         self.candidate_hkls = rt
 
@@ -285,7 +285,7 @@ class LowResSpotMatch(Strategy):
         hkl_list_p1 = hkl_list.expand_to_p1()
         rt = flex.reflection_table()
         rt["miller_index"] = hkl_list_p1.indices()
-        rt["dstar"] = 1.0 / hkl_list_p1.d_spacings().data()
+        rt["d_star"] = 1.0 / hkl_list_p1.d_spacings().data()
         rt["rlp_datum"] = self.Bmat.elems * rt["miller_index"].as_vec3_double()
         self.candidate_hkls_p1 = rt
         return
@@ -295,19 +295,19 @@ class LowResSpotMatch(Strategy):
     indices. Each observation will record its d* value as well as
     tolerated d* bands and a 'clock angle'"""
 
-        spot_dstar = reflections["rlp"].norms()
+        spot_d_star = reflections["rlp"].norms()
         if self._params.candidate_spots.limit_resolution_by == "n_spots":
             n_spots = self._params.candidate_spots.n_spots
             n_spots = min(n_spots, len(reflections) - 1)
-            dstar_max = flex.sorted(spot_dstar)[n_spots - 1]
-            self._params.candidate_spots.d_min = 1.0 / dstar_max
+            d_star_max = flex.sorted(spot_d_star)[n_spots - 1]
+            self._params.candidate_spots.d_min = 1.0 / d_star_max
 
         # First select low resolution spots only
-        spot_dstar = reflections["rlp"].norms()
-        dstar_max = 1.0 / self._params.candidate_spots.d_min
-        sel = spot_dstar <= dstar_max
+        spot_d_star = reflections["rlp"].norms()
+        d_star_max = 1.0 / self._params.candidate_spots.d_min
+        sel = spot_d_star <= d_star_max
         self.spots = reflections.select(sel)
-        self.spots["dstar"] = spot_dstar.select(sel)
+        self.spots["d_star"] = spot_d_star.select(sel)
 
         # XXX In what circumstance might there be more than one experiment?
         detector = experiments.detectors()[0]
@@ -370,7 +370,7 @@ class LowResSpotMatch(Strategy):
         sig_r = flex.sqrt(var_r)
 
         # Pixel coordinates at limits of the band
-        tol = self._params.candidate_spots.dstar_tolerance
+        tol = self._params.candidate_spots.d_star_tolerance
         outer_spot_lab = spot_lab + panel_dirs * (tol * sig_r)
         inner_spot_lab = spot_lab - panel_dirs * (tol * sig_r)
 
@@ -378,10 +378,10 @@ class LowResSpotMatch(Strategy):
         inv_lambda = 1.0 / beam.get_wavelength()
         s1_outer = outer_spot_lab.each_normalize() * inv_lambda
         s1_inner = inner_spot_lab.each_normalize() * inv_lambda
-        self.spots["dstar_outer"] = (s1_outer - beam.get_s0()).norms()
-        self.spots["dstar_inner"] = (s1_inner - beam.get_s0()).norms()
-        self.spots["dstar_band2"] = flex.pow2(
-            self.spots["dstar_outer"] - self.spots["dstar_inner"]
+        self.spots["d_star_outer"] = (s1_outer - beam.get_s0()).norms()
+        self.spots["d_star_inner"] = (s1_inner - beam.get_s0()).norms()
+        self.spots["d_star_band2"] = flex.pow2(
+            self.spots["d_star_outer"] - self.spots["d_star_inner"]
         )
 
         return
@@ -394,45 +394,45 @@ class LowResSpotMatch(Strategy):
         # First the 'seeds' (in 1 ASU)
         result = []
         for i, spot in enumerate(self.spots):
-            sel = (self.candidate_hkls["dstar"] <= spot["dstar_outer"]) & (
-                self.candidate_hkls["dstar"] >= spot["dstar_inner"]
+            sel = (self.candidate_hkls["d_star"] <= spot["d_star_outer"]) & (
+                self.candidate_hkls["d_star"] >= spot["d_star_inner"]
             )
             cands = self.candidate_hkls.select(sel)
             for c in cands:
-                r_dst = abs(c["dstar"] - spot["dstar"])
+                r_dst = abs(c["d_star"] - spot["d_star"])
                 result.append(
                     {
                         "spot_id": i,
                         "miller_index": c["miller_index"],
                         "rlp_datum": matrix.col(c["rlp_datum"]),
-                        "residual_dstar": r_dst,
+                        "residual_d_star": r_dst,
                         "clock_angle": spot["clock_angle"],
                     }
                 )
 
-        result.sort(key=operator.itemgetter("residual_dstar"))
+        result.sort(key=operator.itemgetter("residual_d_star"))
         self.seeds = result
 
         # Now the 'stems' to use in second search level, using all indices in P 1
         result = []
         for i, spot in enumerate(self.spots):
-            sel = (self.candidate_hkls_p1["dstar"] <= spot["dstar_outer"]) & (
-                self.candidate_hkls_p1["dstar"] >= spot["dstar_inner"]
+            sel = (self.candidate_hkls_p1["d_star"] <= spot["d_star_outer"]) & (
+                self.candidate_hkls_p1["d_star"] >= spot["d_star_inner"]
             )
             cands = self.candidate_hkls_p1.select(sel)
             for c in cands:
-                r_dst = abs(c["dstar"] - spot["dstar"])
+                r_dst = abs(c["d_star"] - spot["d_star"])
                 result.append(
                     {
                         "spot_id": i,
                         "miller_index": c["miller_index"],
                         "rlp_datum": matrix.col(c["rlp_datum"]),
-                        "residual_dstar": r_dst,
+                        "residual_d_star": r_dst,
                         "clock_angle": spot["clock_angle"],
                     }
                 )
 
-        result.sort(key=operator.itemgetter("residual_dstar"))
+        result.sort(key=operator.itemgetter("residual_d_star"))
         self.stems = result
         return
 
@@ -449,7 +449,7 @@ class LowResSpotMatch(Strategy):
             # Skip spots at a very similar clock angle, which probably belong to the
             # same line of indices from the origin
             angle_diff = cand["clock_angle"] - seed["clock_angle"]
-            angle_diff = abs(((angle_diff + pi) % TWO_PI) - pi)
+            angle_diff = abs(((angle_diff + math.pi) % TWO_PI) - math.pi)
             if angle_diff < FIVE_DEG:
                 continue
 
@@ -470,9 +470,9 @@ class LowResSpotMatch(Strategy):
 
             # If the distance difference is larger than the sum in quadrature of the
             # tolerated d* bands then reject the candidate
-            sq_band1 = self.spots[seed["spot_id"]]["dstar_band2"]
-            sq_band2 = self.spots[cand["spot_id"]]["dstar_band2"]
-            if r_dist > sqrt(sq_band1 + sq_band2):
+            sq_band1 = self.spots[seed["spot_id"]]["d_star_band2"]
+            sq_band2 = self.spots[cand["spot_id"]]["d_star_band2"]
+            if r_dist > math.sqrt(sq_band1 + sq_band2):
                 continue
 
             # Store the seed-stem match as a 2-node graph
@@ -518,11 +518,11 @@ class LowResSpotMatch(Strategy):
 
             # If any of the distance differences is larger than the sum in quadrature
             # of the tolerated d* bands then reject the candidate
-            sq_candidate_band = self.spots[cand["spot_id"]]["dstar_band2"]
+            sq_candidate_band = self.spots[cand["spot_id"]]["d_star_band2"]
             bad_candidate = False
             for r_dist, spot_id in zip(residual_dist, existing_ids):
-                sq_relp_band = self.spots[spot_id]["dstar_band2"]
-                if r_dist > sqrt(sq_relp_band + sq_candidate_band):
+                sq_relp_band = self.spots[spot_id]["d_star_band2"]
+                if r_dist > math.sqrt(sq_relp_band + sq_candidate_band):
                     bad_candidate = True
                     break
             if bad_candidate:
