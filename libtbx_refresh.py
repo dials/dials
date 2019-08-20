@@ -32,7 +32,8 @@ try:
 except Exception:
     pass
 
-dials.precommitbx.nagger.nag()
+if dials.precommitbx.nagger.not_configured(["phenix_regression"]):
+    dials.precommitbx.nagger.nag()
 
 
 def _install_dials_autocompletion():
