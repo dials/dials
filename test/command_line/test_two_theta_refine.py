@@ -38,8 +38,7 @@ def test(dials_regression, tmpdir):
 
     # work in a temporary directory
     result = procrunner.run(cmd, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("refined_cell.expt").check()
     ref_exp = ExperimentListFactory.from_json_file(
         tmpdir.join("refined_cell.expt").strpath, check_format=False
@@ -73,8 +72,7 @@ def test_two_theta_refine_scaled_data(dials_data, tmpdir):
         "output.experiments=refined_cell.expt",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("refined_cell.expt").check()
 
     ref_exp = ExperimentListFactory.from_json_file(
