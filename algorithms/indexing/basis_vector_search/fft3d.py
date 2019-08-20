@@ -16,6 +16,7 @@ from dials.algorithms import indexing
 import dials_algorithms_indexing_ext
 
 from . import strategies
+from . import is_approximate_integer_multiple
 
 
 logger = logging.getLogger(__name__)
@@ -228,9 +229,9 @@ class FFT3D(strategies.Strategy):
             v = vectors[p]
             is_unique = True
             for i, v_u in enumerate(unique_vectors):
-                if (
-                    unique_volumes[i] > volumes[p]
-                ) and strategies._is_approximate_integer_multiple(v_u, v):
+                if (unique_volumes[i] > volumes[p]) and is_approximate_integer_multiple(
+                    v_u, v
+                ):
                     logger.debug(
                         "rejecting %s: integer multiple of %s"
                         % (v.length(), v_u.length())

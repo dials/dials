@@ -7,6 +7,7 @@ from libtbx import phil
 from scitbx import matrix
 
 from . import strategies
+from . import find_unique_vectors
 
 
 logger = logging.getLogger(__name__)
@@ -87,23 +88,7 @@ class RealSpaceGridSearch(strategies.Strategy):
         vectors = vectors.select(perm)
         function_values = function_values.select(perm)
 
-        unique_vectors = []
-        i = 0
-        while len(unique_vectors) < self._params.max_vectors:
-            v = matrix.col(vectors[i])
-            is_unique = True
-            if i > 0:
-                for v_u in unique_vectors:
-                    if v.length() < v_u.length():
-                        if strategies._is_approximate_integer_multiple(v, v_u):
-                            is_unique = False
-                            break
-                    elif strategies._is_approximate_integer_multiple(v_u, v):
-                        is_unique = False
-                        break
-            if is_unique:
-                unique_vectors.append(v)
-            i += 1
+        unique_vectors = find_unique_vectors(vectors, self._params.max_vectors)
 
         for i in range(self._params.max_vectors):
             v = matrix.col(vectors[i])
