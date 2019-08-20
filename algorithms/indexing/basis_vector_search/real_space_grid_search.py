@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 real_space_grid_search_phil_str = """\
 characteristic_grid = 0.02
     .type = float(value_min=0)
+max_vectors = 30
+    .help = "The maximum number of unique vectors to find in the grid search."
+    .type = int(value_min=3)
 """
 
 
@@ -35,8 +38,6 @@ class RealSpaceGridSearch(strategies.Strategy):
             max_cell (float): An estimate of the maximum cell dimension of the primitive
                 cell.
             target_unit_cell (cctbx.uctbx.unit_cell): The target unit cell.
-            characteristic_grid (float): Sampling frequency in radians.
-
         """
         super(RealSpaceGridSearch, self).__init__(
             max_cell, params=params, *args, **kwargs
@@ -88,7 +89,7 @@ class RealSpaceGridSearch(strategies.Strategy):
 
         unique_vectors = []
         i = 0
-        while len(unique_vectors) < 30:
+        while len(unique_vectors) < self._params.max_vectors:
             v = matrix.col(vectors[i])
             is_unique = True
             if i > 0:
@@ -104,7 +105,7 @@ class RealSpaceGridSearch(strategies.Strategy):
                 unique_vectors.append(v)
             i += 1
 
-        for i in range(30):
+        for i in range(self._params.max_vectors):
             v = matrix.col(vectors[i])
             logger.debug(
                 "%s %s %s" % (str(v.elems), str(v.length()), str(function_values[i]))
