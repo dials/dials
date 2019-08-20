@@ -250,15 +250,27 @@ def refine_subgroup(args):
     with LoggingContext(logging.getLogger(), level=logging.ERROR):
         try:
             outlier_algorithm = params.refinement.reflections.outlier.algorithm
-            params.refinement.reflections.outlier.algorithm = "null"
             sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
+            if sel.all_eq(False):
+                # Soft outlier rejection if no used_in_refinement flag is set
+                params.refinement.reflections.outlier.algorithm = "tukey"
+                iqr_multiplier = (
+                    params.refinement.reflections.outlier.tukey.iqr_multiplier
+                )
+                params.refinement.reflections.outlier.tukey.iqr_multiplier = (
+                    2 * iqr_multiplier
+                )
+                sel = ~sel
+            else:
+                # Remove reflections not previously used in refinement
+                params.refinement.reflections.outlier.algorithm = "null"
             refinery, refined, outliers = refine(
                 params,
                 used_reflections.select(sel),
                 experiments,
                 verbosity=refiner_verbosity,
             )
-            params.refinement.reflections.outlier.algorithm = outlier_algorithm              
+            params.refinement.reflections.outlier.algorithm = outlier_algorithm
             refinery, refined, outliers = refine(
                 params,
                 used_reflections,
