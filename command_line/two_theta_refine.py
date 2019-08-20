@@ -20,9 +20,12 @@ from time import time
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from libtbx.utils import format_float_with_standard_uncertainty
 from dials.util import Sorry
+from dials.util.filter_reflections import filter_reflection_table
 from dials.algorithms.refinement.corrgram import create_correlation_plots
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from libtbx.utils import format_float_with_standard_uncertainty
+from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
 
@@ -41,7 +44,6 @@ Examples::
 """
 
 # The phil scope
-from libtbx.phil import parse
 
 phil_scope = parse(
     """
@@ -149,8 +151,6 @@ class Script(object):
     def combine_crystals(experiments):
         """Replace all crystals in the experiments list with the first crystal"""
 
-        from dxtbx.model.experiment_list import Experiment, ExperimentList
-
         new_experiments = ExperimentList()
         ref_crystal = experiments[0].crystal
         for exp in experiments:
@@ -224,7 +224,7 @@ class Script(object):
         beam_params = None
         xlo_params = None
         xluc_params = []
-        for icrystal, crystal in enumerate(experiments.crystals()):
+        for crystal in experiments.crystals():
             exp_ids = experiments.indices(crystal)
             xluc_params.append(
                 CrystalUnitCellParameterisation(crystal, experiment_ids=exp_ids)
@@ -306,14 +306,14 @@ class Script(object):
         return st.format()
 
     @staticmethod
-    def generate_p4p(crystal, beam, file):
-        logger.info("Saving P4P info to %s" % file)
+    def generate_p4p(crystal, beam, filename):
+        logger.info("Saving P4P info to %s", filename)
         cell = crystal.get_unit_cell().parameters()
         esd = crystal.get_cell_parameter_sd()
         vol = crystal.get_unit_cell().volume()
         vol_esd = crystal.get_cell_volume_sd()
 
-        open(file, "w").write(
+        open(filename, "w").write(
             "\n".join(
                 [
                     "TITLE    Auto-generated .p4p file from dials.two_theta_refine",
@@ -329,8 +329,8 @@ class Script(object):
         return
 
     @staticmethod
-    def generate_cif(crystal, refiner, file):
-        logger.info("Saving CIF information to %s" % file)
+    def generate_cif(crystal, refiner, filename):
+        logger.info("Saving CIF information to %s", filename)
         from cctbx import miller
         import iotbx.cif.model
 
@@ -385,12 +385,12 @@ class Script(object):
 
         cif = iotbx.cif.model.cif()
         cif["two_theta_refine"] = block
-        with open(file, "w") as fh:
+        with open(filename, "w") as fh:
             cif.show(out=fh)
 
     @staticmethod
-    def generate_mmcif(crystal, refiner, file):
-        logger.info("Saving mmCIF information to %s" % file)
+    def generate_mmcif(crystal, refiner, filename):
+        logger.info("Saving mmCIF information to %s", filename)
         from cctbx import miller
         import iotbx.cif.model
 
@@ -443,7 +443,7 @@ class Script(object):
 
         cif = iotbx.cif.model.cif()
         cif["two_theta_refine"] = block
-        with open(file, "w") as fh:
+        with open(filename, "w") as fh:
             cif.show(out=fh)
 
     def run(self):
@@ -451,14 +451,12 @@ class Script(object):
         start_time = time()
 
         # Parse the command line
-        params, options = self.parser.parse_args(show_diff_phil=False)
+        params, _ = self.parser.parse_args(show_diff_phil=False)
 
         # set up global experiments and reflections lists
-        from dials.array_family import flex
 
         reflections = flex.reflection_table()
         global_id = 0
-        from dxtbx.model.experiment_list import ExperimentList
 
         experiments = ExperimentList()
 
@@ -484,7 +482,7 @@ class Script(object):
             print("No Experiments found in the input")
             self.parser.print_help()
             return
-        if len(reflections) == 0:
+        if not reflections:
             print("No reflection data found in the input")
             self.parser.print_help()
             return
@@ -513,6 +511,16 @@ class Script(object):
         # Filter integrated centroids?
         if params.refinement.filter_integrated_centroids:
             reflections = self.filter_integrated_centroids(reflections)
+
+        # Filter data if scaled to remove outliers
+        if "inverse_scale_factor" in reflections:
+            try:
+                reflections = filter_reflection_table(reflections, ["scale"])
+            except ValueError as e:
+                logger.warn(e)
+                logger.info(
+                    "Filtering on scaled data failed, proceeding with integrated data."
+                )
 
         # Get the refiner
         logger.info("Configuring refiner")
@@ -551,13 +559,15 @@ class Script(object):
             create_correlation_plots(refiner, params.output)
 
         if params.output.cif is not None:
-            self.generate_cif(crystals[0], refiner, file=params.output.cif)
+            self.generate_cif(crystals[0], refiner, filename=params.output.cif)
 
         if params.output.p4p is not None:
-            self.generate_p4p(crystals[0], experiments[0].beam, file=params.output.p4p)
+            self.generate_p4p(
+                crystals[0], experiments[0].beam, filename=params.output.p4p
+            )
 
         if params.output.mmcif is not None:
-            self.generate_mmcif(crystals[0], refiner, file=params.output.mmcif)
+            self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
 
         # Log the total time taken
         logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
