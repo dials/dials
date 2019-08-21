@@ -769,8 +769,8 @@ class SpotFinder(object):
             logger.info("")
             table, hot_mask = self._find_spots_in_imageset(imageset)
             table["id"] = flex.int(table.nrows(), i)
+            table.experiment_identifiers()[i] = experiment.identifier
             reflections.extend(table)
-
             # Write a hot pixel mask
             if self.write_hot_mask:
                 if not imageset.external_lookup.mask.data.empty():
