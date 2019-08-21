@@ -10,6 +10,7 @@ from libtbx.phil import parse
 from dials.array_family import flex
 from dials.algorithms.shoebox import MaskCode
 from dials.algorithms.spot_finding import per_image_analysis
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.util import log
 from dials.util import show_mail_on_error
 from dials.util.ascii_art import spot_counts_per_image_plot
@@ -118,6 +119,15 @@ class Script(object):
 
         # Ensure we have a data block
         experiments = flatten_experiments(params.input.experiments)
+        # did input have identifier?
+        had_identifiers = False
+        if all(i != "" for i in experiments.identifiers()):
+            had_identifiers = True
+        else:
+            generate_experiment_identifiers(
+                experiments
+            )  # add identifier e.g. if coming straight from images
+        print(experiments.identifiers())
         if len(experiments) == 0:
             self.parser.print_help()
             return
@@ -153,6 +163,13 @@ class Script(object):
 
         # Save the reflections to file
         logger.info("\n" + "-" * 80)
+        # If started with images and not saving experiments, then remove id mapping
+        # as the experiment linked to will no longer exists after exit.
+        if not had_identifiers:
+            if not params.output.experiments:
+                for k in reflections.experiment_identifiers().keys():
+                    del reflections.experiment_identifiers()[k]
+
         reflections.as_file(params.output.reflections)
         logger.info(
             "Saved {} reflections to {}".format(

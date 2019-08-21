@@ -9,6 +9,18 @@ import pytest
 from dials.array_family import flex
 
 
+def _check_expected_results(reflections):
+    """Check expected results for standard processing."""
+    assert len(reflections) in range(653, 655)
+    refl = reflections[0]
+    assert refl["intensity.sum.value"] == pytest.approx(42)
+    assert refl["bbox"] == pytest.approx((1398, 1400, 513, 515, 0, 1))
+    assert refl["xyzobs.px.value"] == pytest.approx(
+        (1399.1190476190477, 514.2142857142857, 0.5)
+    )
+    assert "shoebox" in reflections
+
+
 def test_find_spots_from_images(dials_data, tmpdir):
     result = procrunner.run(
         [
@@ -26,14 +38,67 @@ def test_find_spots_from_images(dials_data, tmpdir):
     assert tmpdir.join("spotfinder.refl").check(file=1)
 
     reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
-    assert len(reflections) in range(653, 655)
-    refl = reflections[0]
-    assert refl["intensity.sum.value"] == pytest.approx(42)
-    assert refl["bbox"] == pytest.approx((1398, 1400, 513, 515, 0, 1))
-    assert refl["xyzobs.px.value"] == pytest.approx(
-        (1399.1190476190477, 514.2142857142857, 0.5)
+    _check_expected_results(reflections)
+    # No identifiers set if just running on images and not outputting experiments
+    assert not reflections.experiment_identifiers().values(), list(
+        reflections.experiment_identifiers().values()
     )
-    assert "shoebox" in reflections
+
+
+def test_find_spots_from_images_output_experiments(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+            "output.experiments=spotfinder.expt",
+        ]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+    _check_expected_results(reflections)
+    # Identifiers set if experiments are output
+    assert reflections.experiment_identifiers().values(), list(
+        reflections.experiment_identifiers().values()
+    )
+
+
+def test_find_spots_from_imported_experiments(dials_data, tmpdir):
+    """First run import to generate an imported.expt and use this."""
+    _ = procrunner.run(
+        ["dials.import"]
+        + [
+            f.strpath for f in dials_data("centroid_test_data").listdir("centroid*.cbf")
+        ],
+        working_directory=tmpdir.strpath,
+    )
+
+    result = procrunner.run(
+        [
+            "dials.find_spots",
+            tmpdir.join("imported.expt").strpath,
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=True",
+            "algorithm=dispersion",
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spotfinder.refl").check(file=1)
+
+    reflections = flex.reflection_table.from_file(tmpdir / "spotfinder.refl")
+    _check_expected_results(reflections)
+    # Identifiers set if just running on images
+    assert len(reflections.experiment_identifiers().values()) == 1, list(
+        reflections.experiment_identifiers().values()
+    )
 
 
 def test_find_spots_with_resolution_filter(dials_data, tmpdir):
