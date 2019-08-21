@@ -72,6 +72,12 @@ output {
     mtz = merged.mtz
         .type = str
         .help = "Filename to use for mtz output."
+    crystal_names = XTAL
+        .type = strings
+    project_name = AUTOMATIC
+        .type = str
+    dataset_names = NATIVE
+        .type = strings
 }
 include scope cctbx.french_wilson.master_phil
 """,
@@ -93,7 +99,7 @@ def merge_data_to_mtz(params, experiments, reflections):
         )
         return make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths)
     merged_data = merge_and_truncate(params, experiments, reflections)
-    return make_merged_mtz_file(*((wavelengths.keys()[0],) + merged_data))
+    return make_merged_mtz_file(*((params, wavelengths.keys()[0]) + merged_data))
 
 
 def run(args=None):

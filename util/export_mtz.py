@@ -54,7 +54,7 @@ class MTZWriter(object):
         self.n_datasets = 0
         self._suffix = ""
 
-    def add_crystal(self, crystal_name=None, unit_cell=None):
+    def add_crystal(self, crystal_name=None, project_name=None, unit_cell=None):
         """Add a crystal to the mtz file object."""
         if not unit_cell:
             if not self.unit_cell:
@@ -63,13 +63,17 @@ class MTZWriter(object):
                 unit_cell = self.unit_cell
         if not crystal_name:
             crystal_name = "crystal_%s" % str(self.n_crystals + 1)
+        if not project_name:
+            project_name = "DIALS"
         self.current_crystal = self.mtz_file.add_crystal(
-            crystal_name, "DIALS", unit_cell.parameters()
+            crystal_name, project_name, unit_cell.parameters()
         )
         self.n_crystals += 1
 
-    def add_dataset(self, wavelength):
-        self.current_dataset = self.current_crystal.add_dataset("FROMDIALS", wavelength)
+    def add_dataset(self, wavelength, name=None):
+        if not name:
+            name = "FROMDIALS"
+        self.current_dataset = self.current_crystal.add_dataset(name, wavelength)
         self.n_datasets += 1
 
 
@@ -78,10 +82,12 @@ class MergedMTZWriter(MTZWriter):
     """Mtz writer for merged data."""
 
     def add_dataset(
-        self, merged, anom=None, amplitudes=None, anom_amp=None, wavelength=1
+        self, merged, anom=None, amplitudes=None, anom_amp=None, wavelength=1, name=None
     ):
         """Add a merged dataset to the most recent crystal."""
-        self.current_dataset = self.current_crystal.add_dataset("FROMDIALS", wavelength)
+        if not name:
+            name = "FROMDIALS"
+        self.current_dataset = self.current_crystal.add_dataset(name, wavelength)
         self.current_dataset.add_miller_array(merged, "IMEAN" + self._suffix)
         if anom:
             self.current_dataset.add_miller_array(anom, "I" + self._suffix)
@@ -102,7 +108,14 @@ class MADMergedMTZWriter(MergedMTZWriter):
     """Mtz writer for multi-wavelength merged data."""
 
     def add_dataset(
-        self, wavelength, merged, anom=None, amplitudes=None, anom_amp=None, suffix=None
+        self,
+        wavelength,
+        merged,
+        anom=None,
+        amplitudes=None,
+        anom_amp=None,
+        suffix=None,
+        name=None,
     ):
         """Add a merged dataset to the most recent crystal.
 
@@ -111,7 +124,7 @@ class MADMergedMTZWriter(MergedMTZWriter):
         if not suffix:
             self._suffix = "_WAVE%s" % str(self.n_datasets + 1)
         super(MADMergedMTZWriter, self).add_dataset(
-            merged, anom, amplitudes, anom_amp, wavelength
+            merged, anom, amplitudes, anom_amp, wavelength, name=name
         )
 
 
@@ -569,7 +582,7 @@ def export_mtz(integrated_data, experiment_list, params):
             experiment.data["ROT"] = z
 
     mtz_writer.add_crystal(
-        params.mtz.crystal_name, experiment_list[0].crystal.get_unit_cell()
+        params.mtz.crystal_name, unit_cell=experiment_list[0].crystal.get_unit_cell()
     )  # Note: add unit cell here as may have changed basis since creating mtz.
     for wavelength in wavelengths:
         mtz_writer.add_dataset(wavelength)

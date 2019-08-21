@@ -27,9 +27,25 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
     )
 
     # now add each wavelength.
-    for wavelength, exp_nos in wavelengths.iteritems():
-        expids = []
+    if len(params.output.dataset_names) != len(wavelengths.keys()):
+        logger.info(
+            "Unequal number of dataset names and wavelengths, using default naming."
+        )
+        dnames = [None] * len(wavelengths.keys())
+    else:
+        dnames = params.output.dataset_names
+    if len(params.output.crystal_names) != len(wavelengths.keys()):
+        logger.info(
+            "Unequal number of crystal names and wavelengths, using default naming."
+        )
+        cnames = [None] * len(wavelengths.keys())
+    else:
+        cnames = params.output.crystal_names
 
+    for dname, cname, (wavelength, exp_nos) in zip(
+        dnames, cnames, wavelengths.iteritems()
+    ):
+        expids = []
         new_exps = ExperimentList()
         for i in exp_nos:
             expids.append(experiments[i].identifier)  # string
@@ -41,13 +57,18 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
             params, new_exps, [refls]
         )
         #### Add each wavelength as a new crystal.
-        mtz_writer.add_crystal()
-        mtz_writer.add_dataset(wavelength, merged, anom, amplitudes, anom_amp)
+        mtz_writer.add_crystal(
+            crystal_name=cname, project_name=params.output.project_name
+        )
+        mtz_writer.add_dataset(
+            wavelength, merged, anom, amplitudes, anom_amp, name=dname
+        )
 
     return mtz_writer.mtz_file
 
 
 def make_merged_mtz_file(
+    params,
     wavelength,
     merged_array,
     merged_anomalous_array=None,
@@ -59,13 +80,17 @@ def make_merged_mtz_file(
     assert merged_array.is_xray_intensity_array()
 
     mtz_writer = MergedMTZWriter(merged_array.space_group(), merged_array.unit_cell())
-    mtz_writer.add_crystal(crystal_name="DIALS")
+    mtz_writer.add_crystal(
+        crystal_name=params.output.crystal_names[0],
+        project_name=params.output.project_name,
+    )
     mtz_writer.add_dataset(
         merged_array,
         merged_anomalous_array,
         amplitudes,
         anomalous_amplitudes,
         wavelength,
+        params.output.dataset_names[0],
     )
 
     return mtz_writer.mtz_file
