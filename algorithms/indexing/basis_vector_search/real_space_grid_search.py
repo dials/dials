@@ -12,7 +12,7 @@ from rstbx.dps_core import SimpleSamplerTool
 
 
 from . import strategies
-from . import find_unique_vectors
+from . import group_vectors
 
 
 logger = logging.getLogger(__name__)
@@ -88,28 +88,19 @@ class RealSpaceGridSearch(strategies.Strategy):
         vectors = vectors.select(perm)
         function_values = function_values.select(perm)
 
-        unique_vectors = find_unique_vectors(vectors, self._params.max_vectors)
-
-        for i in range(self._params.max_vectors):
-            v = matrix.col(vectors[i])
-            logger.debug(
-                "%s %s %s" % (str(v.elems), str(v.length()), str(function_values[i]))
-            )
+        groups = group_vectors(
+            vectors, function_values, max_groups=self._params.max_vectors
+        )
+        unique_vectors = []
+        unique_weights = []
+        for g in groups:
+            idx = flex.max_index(flex.double(g.weights))
+            unique_vectors.append(g.vectors[idx])
+            unique_weights.append(g.weights[idx])
 
         logger.info("Number of unique vectors: %i" % len(unique_vectors))
 
-        for i in range(len(unique_vectors)):
-            logger.debug(
-                "%s %s %s"
-                % (
-                    str(
-                        self.compute_functional(
-                            unique_vectors[i].elems, reciprocal_lattice_vectors
-                        )
-                    ),
-                    str(unique_vectors[i].length()),
-                    str(unique_vectors[i].elems),
-                )
-            )
+        for v, w in zip(unique_vectors, unique_weights):
+            logger.debug("%s %s %s" % (w, v.length(), str(v.elems)))
 
         return unique_vectors, used_in_indexing

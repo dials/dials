@@ -84,6 +84,8 @@ def group_vectors(
     for v, weight in zip(vectors, weights):
         if max_groups is not None and len(vector_groups) == max_groups:
             break
+        if not isinstance(v, matrix.col):
+            v = matrix.col(v)
         length = v.length()
         matched_group = False
         for group in vector_groups:
