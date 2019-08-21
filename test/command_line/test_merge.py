@@ -20,7 +20,16 @@ def test_merge(dials_data, tmpdir):
     expts = location.join("scaled_20_25.expt").strpath
 
     # First try with defaults (truncate on, anomalous on)
-    command = ["dials.merge", refls, expts, "truncate=True", "anomalous=True"]
+    command = [
+        "dials.merge",
+        refls,
+        expts,
+        "truncate=True",
+        "anomalous=True",
+        "project_name=ham",
+        "crystal_name=jam",
+        "dataset_name=spam",
+    ]
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode == 0
     assert result.stderr == ""

@@ -74,10 +74,15 @@ output {
         .help = "Filename to use for mtz output."
     crystal_names = XTAL
         .type = strings
+        .help = "Crystal name to be used in MTZ file output (multiple names
+            allowed for MAD datasets)"
     project_name = AUTOMATIC
         .type = str
+        .help = "Project name to be used in MTZ file output"
     dataset_names = NATIVE
         .type = strings
+        .help = "Dataset name to be used in MTZ file output (multiple names
+            allowed for MAD datasets)"
 }
 include scope cctbx.french_wilson.master_phil
 """,

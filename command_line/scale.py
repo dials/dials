@@ -617,6 +617,7 @@ def _export_merged_mtz(params, experiments, joint_table):
     merge_params.reporting.wilson_stats = False
     merge_params.reporting.merging_stats = False
     merge_params.assess_space_group = False
+    merge_params.partiality_threshold = params.cut_data.partiality_cutoff
     mtz_file = merge_data_to_mtz(merge_params, experiments, [joint_table])
     logger.info("\nWriting reflections to %s", (params.output.merged_mtz))
     out = StringIO()
