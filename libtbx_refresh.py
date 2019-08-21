@@ -14,9 +14,9 @@ libtbx.pkg_utils.define_entry_points(
             "array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt",
         ],
         "dials.index.basis_vector_search_strategy": [
-            "fft1d = dials.algorithms.indexing.basis_vector_search.strategies:FFT1D",
-            "fft3d = dials.algorithms.indexing.basis_vector_search.strategies:FFT3D",
-            "real_space_grid_search = dials.algorithms.indexing.basis_vector_search.strategies:RealSpaceGridSearch",
+            "fft1d = dials.algorithms.indexing.basis_vector_search.fft1d:FFT1D",
+            "fft3d = dials.algorithms.indexing.basis_vector_search.fft3d:FFT3D",
+            "real_space_grid_search = dials.algorithms.indexing.basis_vector_search.real_space_grid_search:RealSpaceGridSearch",
         ],
         "dials.index.lattice_search_strategy": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search_strategies:LowResSpotMatch"
