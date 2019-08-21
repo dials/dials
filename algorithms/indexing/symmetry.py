@@ -134,13 +134,7 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 
 
 def refined_settings_factory_from_refined_triclinic(
-    params,
-    experiments,
-    reflections,
-    i_setting=None,
-    lepage_max_delta=5.0,
-    nproc=1,
-    refiner_verbosity=0,
+    params, experiments, reflections, i_setting=None, lepage_max_delta=5.0, nproc=1
 ):
 
     assert len(experiments.crystals()) == 1
@@ -183,9 +177,7 @@ def refined_settings_factory_from_refined_triclinic(
 
     args = []
     for subgroup in Lfat:
-        args.append(
-            (params, subgroup, used_reflections, experiments, refiner_verbosity)
-        )
+        args.append((params, subgroup, used_reflections, experiments))
 
     results = easy_mp.parallel_map(
         func=refine_subgroup,
@@ -229,7 +221,7 @@ def refine_subgroup(args):
         normalise_intensities,
     )
 
-    params, subgroup, used_reflections, experiments, refiner_verbosity = args
+    params, subgroup, used_reflections, experiments = args
 
     used_reflections = copy.deepcopy(used_reflections)
     triclinic_miller = used_reflections["miller_index"]
@@ -265,17 +257,11 @@ def refine_subgroup(args):
                 # Remove reflections not previously used in refinement
                 params.refinement.reflections.outlier.algorithm = "null"
             refinery, refined, outliers = refine(
-                params,
-                used_reflections.select(sel),
-                experiments,
-                verbosity=refiner_verbosity,
+                params, used_reflections.select(sel), experiments
             )
             params.refinement.reflections.outlier.algorithm = outlier_algorithm
             refinery, refined, outliers = refine(
-                params,
-                used_reflections,
-                refinery.get_experiments(),
-                verbosity=refiner_verbosity,
+                params, used_reflections, refinery.get_experiments()
             )
         except RuntimeError as e:
             if (

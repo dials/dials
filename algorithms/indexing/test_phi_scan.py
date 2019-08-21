@@ -135,10 +135,10 @@ def test_run(dials_regression, tmpdir):
     from dials.algorithms.refinement.refiner import RefinerFactory
 
     refiner_old = RefinerFactory.from_parameters_data_experiments(
-        params, result_old.indexed_reflections, old_exps, verbosity=0
+        params, result_old.indexed_reflections, old_exps
     )
     refiner_new = RefinerFactory.from_parameters_data_experiments(
-        params, result_new.indexed_reflections, new_exps, verbosity=0
+        params, result_new.indexed_reflections, new_exps
     )
 
     # Analytical gradients should be approximately the same in either case

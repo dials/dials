@@ -78,7 +78,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     from dials.algorithms.refinement.refiner import RefinerFactory
 
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments, verbosity=1
+        params, reflections, experiments
     )
 
     refiner.run()

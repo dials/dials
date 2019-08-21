@@ -190,8 +190,6 @@ indexing {
     d_min_final = None
       .type = float(value_min=0.0)
       .help = "Do not ever include reflections below this value in refinement."
-    verbosity = 1
-      .type = int(value_min=0)
     disable_unit_cell_volume_sanity_check = False
       .type = bool
       .help = "Disable sanity check on unrealistic increases in unit cell volume"
@@ -922,12 +920,7 @@ class Indexer(object):
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
-        refiner, refined, outliers = refine(
-            self.all_params,
-            reflections,
-            experiments,
-            verbosity=self.params.refinement_protocol.verbosity,
-        )
+        refiner, refined, outliers = refine(self.all_params, reflections, experiments)
         if outliers is not None:
             reflections["id"].set_selected(outliers, -1)
         predicted = refiner.predict_for_indexed()

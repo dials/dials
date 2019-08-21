@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def refine(params, reflections, experiments, verbosity=0):
+def refine(params, reflections, experiments):
     if params.refinement.parameterisation.scan_varying:
         logger.warning(
             "scan_varying=True not supported in indexing: setting scan_varying=False"
@@ -27,7 +27,7 @@ def refine(params, reflections, experiments, verbosity=0):
     from dials.algorithms.refinement import RefinerFactory
 
     refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments, verbosity=verbosity
+        params, reflections, experiments
     )
 
     outliers = None
