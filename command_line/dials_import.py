@@ -12,7 +12,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-
+import uuid
 import libtbx.load_env
 from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import Experiment
@@ -99,6 +99,10 @@ phil_scope = parse(
   verbosity = 0
     .type = int(value_min=0)
     .help = "The verbosity level"
+
+  identifier_type = *uuid timestamp None
+    .type = choice
+    .help = "Type of unique identifier to generate."
 
   input {
 
@@ -230,13 +234,25 @@ class ImageSetImporter(object):
                         % self.params.input.directory
                     )
             else:
-                raise Sorry("No experimetns found")
+                raise Sorry("No experiments found")
+
+        if self.params.identifier_type:
+            assign_unique_identifiers(experiments, self.params.identifier_type)
 
         # Get a list of all imagesets
         imageset_list = experiments.imagesets()
 
         # Return the experiments
         return imageset_list
+
+
+def assign_unique_identifiers(experiments, identifier_type):
+    """Assign unique identifiers to each experiment."""
+    if identifier_type == "uuid":
+        for expt in experiments:
+            expt.identifier = str(uuid.uuid4())
+    elif identifier_type == "timestamp":
+        pass
 
 
 class ReferenceGeometryUpdater(object):
@@ -571,7 +587,8 @@ class MetaDataUpdater(object):
                             crystal=None,
                         )
                     )
-
+        if self.params.identifier_type:
+            assign_unique_identifiers(experiments, self.params.identifier_type)
         # Return the experiments
         return experiments
 
