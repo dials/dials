@@ -5,6 +5,11 @@ import math
 
 from libtbx import phil
 from scitbx import matrix
+from rstbx.array_family import (
+    flex,  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
+)
+from rstbx.dps_core import SimpleSamplerTool
+
 
 from . import strategies
 from . import find_unique_vectors
@@ -45,6 +50,18 @@ class RealSpaceGridSearch(strategies.Strategy):
         )
         self._target_unit_cell = target_unit_cell
 
+    @property
+    def search_directions(self):
+        SST = SimpleSamplerTool(self._params.characteristic_grid)
+        SST.construct_hemisphere_grid(SST.incr)
+        for direction in SST.angles:
+            yield direction.dvec
+
+    @staticmethod
+    def compute_functional(vector, reciprocal_lattice_vectors):
+        two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_vectors.dot(vector)
+        return flex.sum(flex.cos(two_pi_S_dot_v))
+
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
 
@@ -53,34 +70,17 @@ class RealSpaceGridSearch(strategies.Strategy):
                 The list of reciprocal lattice vectors to search for periodicity.
 
         """
-        from rstbx.array_family import (
-            flex,
-        )  # required to load scitbx::af::shared<rstbx::Direction> to_python converter
-
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
-
         logger.info("Indexing from %i reflections" % used_in_indexing.count(True))
 
-        def compute_functional(vector):
-            two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_vectors.dot(vector)
-            return flex.sum(flex.cos(two_pi_S_dot_v))
-
-        from rstbx.dps_core import SimpleSamplerTool
-
-        SST = SimpleSamplerTool(self._params.characteristic_grid)
-        SST.construct_hemisphere_grid(SST.incr)
         cell_dimensions = self._target_unit_cell.parameters()[:3]
         unique_cell_dimensions = set(cell_dimensions)
-        logger.info(
-            "Number of search vectors: %i"
-            % (len(SST.angles) * len(unique_cell_dimensions))
-        )
         vectors = flex.vec3_double()
         function_values = flex.double()
-        for i, direction in enumerate(SST.angles):
+        for i, direction in enumerate(self.search_directions):
             for l in unique_cell_dimensions:
-                v = matrix.col(direction.dvec) * l
-                f = compute_functional(v.elems)
+                v = matrix.col(direction) * l
+                f = self.compute_functional(v.elems, reciprocal_lattice_vectors)
                 vectors.append(v.elems)
                 function_values.append(f)
 
@@ -102,7 +102,11 @@ class RealSpaceGridSearch(strategies.Strategy):
             logger.debug(
                 "%s %s %s"
                 % (
-                    str(compute_functional(unique_vectors[i].elems)),
+                    str(
+                        self.compute_functional(
+                            unique_vectors[i].elems, reciprocal_lattice_vectors
+                        )
+                    ),
                     str(unique_vectors[i].length()),
                     str(unique_vectors[i].elems),
                 )
