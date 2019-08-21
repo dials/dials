@@ -179,6 +179,9 @@ test/command_line/test_integrate.py::test_integration_with_sampling
 test/command_line/test_integrate.py::test_multi_lattice
 test/command_line/test_integrate.py::test_multi_sweep
 test/command_line/test_integrate.py::test_output_rubbish
+test/command_line/test_merge.py::test_merge_multi_wavelength
+test/command_line/test_merge.py::test_merge_bad_input
+test/command_line/test_merge.py::test_merge
 test/command_line/test_merge_cbf.py::test_merge_cbf
 test/command_line/test_merge_reflection_lists.py::test
 test/command_line/test_predict.py::test_force_static_prediction
