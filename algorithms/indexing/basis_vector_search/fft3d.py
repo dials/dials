@@ -16,39 +16,10 @@ from dials.algorithms import indexing
 import dials_algorithms_indexing_ext
 
 from . import strategies
-from . import is_approximate_integer_multiple
+from . import is_approximate_integer_multiple, group_vectors
 
 
 logger = logging.getLogger(__name__)
-
-
-class _vector_group(object):
-    def __init__(self):
-        self.vectors = []
-        self.lengths = []
-        self.volumes = []
-        self._mean = None
-
-    def append(self, vector, length, volume):
-        self.vectors.append(vector)
-        self.lengths.append(length)
-        self.volumes.append(volume)
-        self._mean = self.compute_mean()
-
-    def mean(self):
-        if self._mean is None:
-            self._mean = self.compute_mean()
-        return self._mean
-
-    def compute_mean(self):
-        sum_x = 0
-        sum_y = 0
-        sum_z = 0
-        for v in self.vectors:
-            sum_x += v.elems[0]
-            sum_y += v.elems[1]
-            sum_z += v.elems[2]
-        return matrix.col((sum_x, sum_y, sum_z)) / len(self.vectors)
 
 
 fft3d_phil_str = """\
@@ -173,41 +144,9 @@ class FFT3D(strategies.Strategy):
         vectors = [matrix.col(v) for v in vectors]
         volumes = volumes.select(sel)
 
-        # XXX loop over these vectors and sort into groups similar to further down
-        # group similar angle and lengths, also catch integer multiples of vectors
-
-        vector_groups = []
-        relative_length_tolerance = 0.1
-        angle_tolerance = 5  # degrees
-
-        for v, volume in zip(vectors, volumes):
-            length = v.length()
-            if length < self._min_cell or length > (2 * self._max_cell):
-                continue
-            matched_group = False
-            for group in vector_groups:
-                mean_v = group.mean()
-                mean_v_length = mean_v.length()
-                if (
-                    abs(mean_v_length - length) / max(mean_v_length, length)
-                    < relative_length_tolerance
-                ):
-                    angle = mean_v.angle(v, deg=True)
-                    if angle < angle_tolerance:
-                        group.append(v, length, volume)
-                        matched_group = True
-                        break
-                    elif abs(180 - angle) < angle_tolerance:
-                        group.append(-v, length, volume)
-                        matched_group = True
-                        break
-            if not matched_group:
-                group = _vector_group()
-                group.append(v, length, volume)
-                vector_groups.append(group)
-
-        vectors = [g.mean() for g in vector_groups]
-        volumes = flex.double(max(g.volumes) for g in vector_groups)
+        vector_groups = group_vectors(vectors, volumes)
+        vectors = [g.mean for g in vector_groups]
+        volumes = flex.double(max(g.weights) for g in vector_groups)
 
         # sort by peak size
         perm = flex.sort_permutation(volumes, reverse=True)
