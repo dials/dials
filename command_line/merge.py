@@ -119,7 +119,7 @@ def run(args=None):
         check_format=False,
         epilog=help_message,
     )
-    params, _ = parser.parse_args(args=args, show_diff_phil=False)
+    params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     if not params.input.experiments or not params.input.reflections:
         parser.print_help()
@@ -128,7 +128,7 @@ def run(args=None):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    log.config(verbosity=1, info=params.output.log)
+    log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
 
     diff_phil = parser.diff_phil.as_str()
