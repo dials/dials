@@ -275,8 +275,8 @@ def test_scale_physical(dials_regression, tmpdir):
     run_one_scaling(tmpdir, [refl_1, expt_1] + extra_args)
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
     assert (
-        result.overall.r_pim < 0.0255
-    )  # at 14/08/18, value was 0.023, at 07/02/19 was 0.0243
+        result.overall.r_pim < 0.026
+    )  # at 17/07/19 was 0.256 after updates to merged mtz export
     assert (
         result.overall.cc_one_half > 0.9955
     )  # at 14/08/18, value was 0.999, at 07/02/19 was 0.9961
