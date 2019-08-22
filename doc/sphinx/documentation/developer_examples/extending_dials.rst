@@ -146,26 +146,26 @@ an implementation of the ``find_basis_vectors`` method.
       .type = float
   """
 
+  phil_scope = phil.parse(mystrategy_phil_str)
+
   class MyStrategy(Strategy):
       """Basis vector search using my magic algorithm."""
 
-  phil_scope = phil.parse(mystrategy_phil_str)
+      def find_basis_vectors(self, reciprocal_lattice_vectors):
+          """Find a list of likely basis vectors.
 
-  def find_basis_vectors(self, reciprocal_lattice_vectors):
-      """Find a list of likely basis vectors.
+          Args:
+              reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
+                  The list of reciprocal lattice vectors to search for periodicity.
 
-      Args:
-          reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
-              The list of reciprocal lattice vectors to search for periodicity.
+          Returns:
+              A tuple containing the list of basis vectors and a flex.bool array
+              identifying which reflections were used in indexing.
 
-      Returns:
-          A tuple containing the list of basis vectors and a flex.bool array
-          identifying which reflections were used in indexing.
-
-      """
-      used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
-      # determine the list of candidate_basis_vectors
-      ...
+          """
+          used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
+          # determine the list of candidate_basis_vectors
+          ...
       return candidate_basis_vectors, used_in_indexing
 
 
