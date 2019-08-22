@@ -52,10 +52,23 @@ class RealSpaceGridSearch(strategies.Strategy):
 
     @property
     def search_directions(self):
+        """Generator of the search directions (i.e. vectors with length 1)."""
         SST = SimpleSamplerTool(self._params.characteristic_grid)
         SST.construct_hemisphere_grid(SST.incr)
         for direction in SST.angles:
             yield matrix.col(direction.dvec)
+
+    @property
+    def search_vectors(self):
+        """Generator of the search vectors.
+
+        The lengths of the vectors correspond to the target unit cell dimensions.
+
+        """
+        unique_cell_dimensions = set(self._target_unit_cell.parameters()[:3])
+        for i, direction in enumerate(self.search_directions):
+            for l in unique_cell_dimensions:
+                yield direction * l
 
     @staticmethod
     def compute_functional(vector, reciprocal_lattice_vectors):
@@ -72,7 +85,7 @@ class RealSpaceGridSearch(strategies.Strategy):
         two_pi_S_dot_v = 2 * math.pi * reciprocal_lattice_vectors.dot(vector)
         return flex.sum(flex.cos(two_pi_S_dot_v))
 
-    def score_vectors(self, directions, reciprocal_lattice_vectors):
+    def score_vectors(self, reciprocal_lattice_vectors):
         """Compute the functional for the given directions.
 
         Args:
@@ -82,15 +95,12 @@ class RealSpaceGridSearch(strategies.Strategy):
         Returns:
             A tuple containing the list of search vectors and their scores.
         """
-        unique_cell_dimensions = set(self._target_unit_cell.parameters()[:3])
         vectors = flex.vec3_double()
         scores = flex.double()
-        for i, direction in enumerate(directions):
-            for l in unique_cell_dimensions:
-                v = direction * l
-                f = self.compute_functional(v.elems, reciprocal_lattice_vectors)
-                vectors.append(v.elems)
-                scores.append(f)
+        for i, v in enumerate(self.search_vectors):
+            f = self.compute_functional(v.elems, reciprocal_lattice_vectors)
+            vectors.append(v.elems)
+            scores.append(f)
         return vectors, scores
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
@@ -104,9 +114,7 @@ class RealSpaceGridSearch(strategies.Strategy):
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         logger.info("Indexing from %i reflections" % used_in_indexing.count(True))
 
-        vectors, weights = self.score_vectors(
-            self.search_directions, reciprocal_lattice_vectors
-        )
+        vectors, weights = self.score_vectors(reciprocal_lattice_vectors)
 
         perm = flex.sort_permutation(weights, reverse=True)
         vectors = vectors.select(perm)
