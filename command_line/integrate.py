@@ -405,7 +405,12 @@ class Script(object):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
                 if len(refls) > 0:
                     accepted_expts.append(expt)
-                    refls["id"] = flex.int(len(refls), len(accepted_expts) - 1)
+                    current_id = expt_id
+                    new_id = len(accepted_expts) - 1
+                    refls["id"] = flex.int(len(refls), new_id)
+                    if expt.identifier:
+                        del refls.experiment_identifiers()[current_id]
+                        refls.experiment_identifiers()[new_id] = expt.identifier
                     accepted_refls.extend(refls)
                 else:
                     logger.info(
@@ -417,6 +422,7 @@ class Script(object):
                 raise Sorry("No reflections left after applying significance filter")
             experiments = accepted_expts
             reflections = accepted_refls
+            reflections.assert_experiment_identifiers_are_consistent(experiments)
 
         # Delete the shoeboxes used for intermediate calculations, if requested
         if params.integration.debug.delete_shoeboxes and "shoebox" in reflections:

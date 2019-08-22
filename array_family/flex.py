@@ -170,6 +170,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 padding=padding,
             )
             rlist["id"] = flex.int(len(rlist), i)
+            if e.identifier:
+                rlist.experiment_identifiers()[i] = e.identifier
             result.extend(rlist)
         return result
 
