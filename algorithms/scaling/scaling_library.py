@@ -11,6 +11,7 @@ ExperimentLists.
 from __future__ import absolute_import, division, print_function
 
 import logging
+import uuid
 import pkg_resources
 from copy import deepcopy
 
@@ -26,7 +27,6 @@ from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
     DialsMergingStatisticsError,
 )
-from dials.util.multi_dataset_handling import get_next_unique_id
 from iotbx import cif, mtz
 from libtbx import phil
 from mock import Mock
@@ -506,11 +506,9 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
-    used_ids = experiments.identifiers()
-    unique_id = get_next_unique_id(len(used_ids), used_ids)
-    exp.identifier = str(unique_id)
-    r_t.experiment_identifiers()[unique_id] = str(unique_id)
-    r_t["id"] = flex.int(r_t.size(), unique_id)
+    exp.identifier = str(uuid.uuid4())
+    r_t.experiment_identifiers()[len(experiments)] = exp.identifier
+    r_t["id"] = flex.int(r_t.size(), len(experiments))
 
     # create a new KB scaling model for the target and set as scaled to fix scale
     # for targeted scaling.
@@ -569,10 +567,8 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     rt["intensity"] = icalc
     rt["miller_index"] = miller_idx
 
-    used_ids = experiments.identifiers()
-    unique_id = get_next_unique_id(len(used_ids), used_ids)
-    exp.identifier = str(unique_id)
-    rt.experiment_identifiers()[unique_id] = str(unique_id)
-    rt["id"] = flex.int(rt.size(), unique_id)
+    exp.identifier = str(uuid.uuid4())
+    rt.experiment_identifiers()[len(experiments)] = exp.identifier
+    rt["id"] = flex.int(rt.size(), len(experiments))
 
     return exp, rt
