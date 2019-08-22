@@ -102,7 +102,12 @@ We can then register this format class in the ``libtbx_refresh.py`` file of our 
 
 More generally, the format of an entry point for dxtbx.format is::
 
-    "FormatMyClass:FormatBaseClass1,FormatBaseClass2 = myproject.my_format_module:my"
+    "FormatMyClass:FormatBaseClass1,FormatBaseClass2 = myproject.myformat:FormatMyClass"
+
+Format classes must be named 'Format*', and must inherit either from
+other format classes or from the top-level format class, 'Format'.
+Base classes must be given as their original name and must therefore not
+contain '.'s.
 
 To view the full hierarchy of registered format classes, run the command
 ``dxtbx.show_registry``::
