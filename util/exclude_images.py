@@ -82,7 +82,7 @@ def _parse_exclude_images_commands(commands):
         vals = com[0].split(":")
         if len(vals) != 3:
             raise ValueError("Exclude images must be input in the form exp:start:stop ")
-        ranges_to_remove.append((vals[0], (int(vals[1]), int(vals[2]))))
+        ranges_to_remove.append((int(vals[0]), (int(vals[1]), int(vals[2]))))
     return ranges_to_remove
 
 
@@ -91,7 +91,7 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
     arithmetic to determine image ranges to keep and sets a new list of ranges in
     the scan.valid_image_ranges dict."""
     for r in ranges_to_remove:
-        exp = experiments[experiments.find(r[0])]
+        exp = experiments[r[0]]
         if not exp.scan:
             raise ValueError("Trying to exclude a scanless experiment")
         current_range = exp.scan.get_valid_image_ranges(
