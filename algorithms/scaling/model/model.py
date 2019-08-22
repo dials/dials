@@ -118,7 +118,6 @@ class ScalingModelBase(object):
 
         """
         dictionary = OrderedDict({"__id__": self.id_})
-        dictionary["is_scaled"] = self._is_scaled
         for key in self.components:
             dictionary[key] = OrderedDict(
                 [
@@ -360,7 +359,6 @@ class PhysicalScalingModel(ScalingModelBase):
         (s_params, d_params, abs_params) = (None, None, None)
         (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
             s_params = flex.double(obj["scale"]["parameters"])
             if "est_standard_devs" in obj["scale"]:
@@ -380,7 +378,7 @@ class PhysicalScalingModel(ScalingModelBase):
             "absorption": {"parameters": abs_params, "parameter_esds": a_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict)
 
 
 class ArrayScalingModel(ScalingModelBase):
@@ -532,7 +530,6 @@ class ArrayScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (dec_params, abs_params, mod_params) = (None, None, None)
         (d_params_sds, a_params_sds, m_params_sds) = (None, None, None)
         if "decay" in configdict["corrections"]:
@@ -554,7 +551,7 @@ class ArrayScalingModel(ScalingModelBase):
             "modulation": {"parameters": mod_params, "parameter_esds": m_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict)
 
 
 class KBScalingModel(ScalingModelBase):
@@ -597,7 +594,6 @@ class KBScalingModel(ScalingModelBase):
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
         configdict = obj["configuration_parameters"]
-        is_scaled = obj["is_scaled"]
         (s_params, d_params) = (None, None)
         (s_params_sds, d_params_sds) = (None, None)
         if "scale" in configdict["corrections"]:
@@ -614,7 +610,7 @@ class KBScalingModel(ScalingModelBase):
             "decay": {"parameters": d_params, "parameter_esds": d_params_sds},
         }
 
-        return cls(parameters_dict, configdict, is_scaled)
+        return cls(parameters_dict, configdict)
 
 
 def calculate_new_offset(
