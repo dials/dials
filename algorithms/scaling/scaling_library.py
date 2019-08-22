@@ -448,34 +448,38 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     cols = m.columns()
     col_dict = {c.label(): c for c in cols}
     r_t = flex.reflection_table()
+    is_unique_under_symmetry = len(ind) == len(set(ind))
+
+    def _add_data_to_rt(table, col_symbol):
+        table["miller_index"] = ind
+        table["intensity"] = col_dict[col_symbol].extract_values().as_double()
+        sigma_name = "SIG" + col_symbol
+        if sigma_name in col_dict:
+            table["variance"] = col_dict[sigma_name].extract_values().as_double() ** 2
+        else:
+            if is_unique_under_symmetry:
+                table["variance"] = flex.double(r_t["intensity"].size(), 1.0)
+            else:
+                raise ValueError(
+                    "No %s column found, required for unmerged mtz data." % sigma_name
+                )
+
     if "I" in col_dict:  # nice and simple
-        r_t["miller_index"] = ind
-        r_t["intensity"] = col_dict["I"].extract_values().as_double()
-        if "SIGI" in col_dict:
-            r_t["variance"] = col_dict["SIGI"].extract_values().as_double() ** 2
-        else:
-            # variance only used for filtering below anyways so...
-            r_t["variance"] = flex.double(r_t["intensity"].size(), 1.0)
+        _add_data_to_rt(r_t, "I")
     elif "IMEAN" in col_dict:  # nice and simple
-        r_t["miller_index"] = ind
-        r_t["intensity"] = col_dict["IMEAN"].extract_values().as_double()
-        if "SIGIMEAN" in col_dict:
-            r_t["variance"] = col_dict["SIGIMEAN"].extract_values().as_double() ** 2
-        else:
-            # variance only used for filtering below anyways so...
-            r_t["variance"] = flex.double(r_t["intensity"].size(), 1.0)
+        _add_data_to_rt(r_t, "IMEAN")
     elif "I(+)" in col_dict:  # need to combine I+ and I- together into target Ih
         if col_dict["I(+)"].n_valid_values() == 0:  # use I(-)
-            r_t["miller_index"] = ind
-            r_t["intensity"] = col_dict["I(-)"].extract_values().as_double()
-            r_t["variance"] = col_dict["SIGI(-)"].extract_values().as_double() ** 2
+            _add_data_to_rt(r_t, "I(-)")
         elif col_dict["I(-)"].n_valid_values() == 0:  # use I(+)
-            r_t["miller_index"] = ind
-            r_t["intensity"] = col_dict["I(+)"].extract_values().as_double()
-            r_t["variance"] = col_dict["SIGI(+)"].extract_values().as_double() ** 2
+            _add_data_to_rt(r_t, "I(+)")
         else:  # Combine both - add together then use Ih table to calculate I and sigma
             r_tplus = flex.reflection_table()
             r_tminus = flex.reflection_table()
+            if not all(i in col_dict for i in ["I(+)", "SIGI(+)", "I(-)", "SIGI(-)"]):
+                raise ValueError(
+                    "Mtz doesn't contain all of: I(+), SIGI(+), I(-), SIGI(-)"
+                )
             r_tplus["miller_index"] = ind
             r_tplus["intensity"] = col_dict["I(+)"].extract_values().as_double()
             r_tplus["variance"] = col_dict["SIGI(+)"].extract_values().as_double() ** 2
