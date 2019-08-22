@@ -60,6 +60,10 @@ class AssignIndicesGlobal(AssignIndicesStrategy):
                 sel_cryst = crystal_ids == i_cryst
                 for i_expt in experiments.where(crystal=cryst, imageset=imgset):
                     expt_ids.set_selected(sel_cryst, i_expt)
+                    if experiments[i_expt].identifier:
+                        reflections.experiment_identifiers()[i_expt] = experiments[
+                            i_expt
+                        ].identifier
 
             reflections["miller_index"].set_selected(
                 isel.select(sel_imgset), miller_indices
@@ -147,6 +151,9 @@ class AssignIndicesLocal(AssignIndicesStrategy):
                 cryst_sel, flex.miller_index(list(h.iround()))
             )
             refs["id"].set_selected(cryst_sel, i_cryst)
+            identifier = experiments[i_cryst].identifier
+            if identifier:
+                reflections.experiment_identifiers()[i_cryst] = identifier
 
         crystal_ids.set_selected(crystal_ids < 0, -1)
         refs["id"] = crystal_ids

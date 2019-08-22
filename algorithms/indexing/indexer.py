@@ -562,11 +562,22 @@ class Indexer(object):
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
 
+            def assign_unique_identifiers(experiments):
+                """Assign unique identifiers to each experiment."""
+                import uuid
+
+                for expt in experiments:
+                    expt.identifier = str(uuid.uuid4())
+                    print("assigned %s" % expt.identifier)
+
             if len(experiments) == 0:
-                experiments.extend(self.find_lattices())
+                new_exp = self.find_lattices()
+                assign_unique_identifiers(new_exp)
+                experiments.extend(new_exp)
             else:
                 try:
                     new = self.find_lattices()
+                    assign_unique_identifiers(new)
                     experiments.extend(new)
                 except Sorry:
                     logger.info("Indexing remaining reflections failed")
