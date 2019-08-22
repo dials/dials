@@ -39,9 +39,9 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
     r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
-    assert list(r.experiment_identifiers().values()) == ["0", "1"]
+    assert list(r.experiment_identifiers().values()) != ["", ""]
     assert list(r.experiment_identifiers().keys()) == [0, 1]
-    assert list(e.identifiers()) == ["0", "1"]
+    assert list(e.identifiers()) == list(r.experiment_identifiers().values())
 
     # now run again, with already assigned data
     pickle_path_list = ["assigned.refl"]
@@ -51,9 +51,9 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
     r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
     r.assert_experiment_identifiers_are_consistent(e)
-    assert list(r.experiment_identifiers().values()) == ["0", "1"]
+    assert list(r.experiment_identifiers().values()) != ["", ""]
     assert list(r.experiment_identifiers().keys()) == [0, 1]
-    assert list(e.identifiers()) == ["0", "1"]
+    assert list(e.identifiers()) == list(r.experiment_identifiers().values())
 
     # now run again, with adding more data
     pickle_path_list = ["assigned.refl"]

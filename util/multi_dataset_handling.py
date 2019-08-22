@@ -6,6 +6,7 @@ and experiment lists.
 from __future__ import absolute_import, division, print_function
 
 import logging
+import uuid
 from dials.array_family import flex
 
 logger = logging.getLogger("dials")
@@ -81,23 +82,6 @@ def parse_multiple_datasets(reflections):
     return single_reflection_tables
 
 
-def get_next_unique_id(unique_id, used_ids):
-    """
-    Test a list of used id strings to see if it contains str(unique_id)
-
-    Args:
-        unique_id (int): Integer value to be converted to str
-        used_ids (list): A list of strings
-
-    Returns:
-        (int): The lowest int >= unique_id for which str(int) is not in used_ids
-
-    """
-    while str(unique_id) in used_ids:
-        unique_id += 1
-    return unique_id
-
-
 def assign_unique_identifiers(experiments, reflections, identifiers=None):
     """
     Assign unique experiment identifiers to experiments and reflections lists.
@@ -152,14 +136,11 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
     if len(set(used_str_ids)) != len(reflections):
         # if not all set, then need to fill in the rest. Keep the identifier if
         # it is already set, and reset table id column from 0..n-1
-        unique_id = 0
         for i, (exp, refl) in enumerate(zip(experiments, reflections)):
             if exp.identifier == "":
-                unique_id = get_next_unique_id(unique_id, used_str_ids)
-                strid = "%i" % unique_id
+                strid = str(uuid.uuid4())
                 exp.identifier = strid
                 refl.experiment_identifiers()[i] = strid
-                unique_id += 1
             else:
                 k = list(refl.experiment_identifiers().keys())[0]
                 expid = list(refl.experiment_identifiers().values())[0]
