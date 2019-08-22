@@ -459,7 +459,11 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     elif "IMEAN" in col_dict:  # nice and simple
         r_t["miller_index"] = ind
         r_t["intensity"] = col_dict["IMEAN"].extract_values().as_double()
-        r_t["variance"] = col_dict["SIGIMEAN"].extract_values().as_double() ** 2
+        if "SIGIMEAN" in col_dict:
+            r_t["variance"] = col_dict["SIGIMEAN"].extract_values().as_double() ** 2
+        else:
+            # variance only used for filtering below anyways so...
+            r_t["variance"] = flex.double(r_t["intensity"].size(), 1.0)
     elif "I(+)" in col_dict:  # need to combine I+ and I- together into target Ih
         if col_dict["I(+)"].n_valid_values() == 0:  # use I(-)
             r_t["miller_index"] = ind
