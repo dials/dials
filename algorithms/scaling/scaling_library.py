@@ -426,29 +426,29 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     if "I" in col_dict:  # nice and simple
         r_t["miller_index"] = ind
         r_t["intensity"] = col_dict["I"].extract_values().as_double()
-        r_t["variance"] = col_dict["SIGI"].extract_values().as_double()
+        r_t["variance"] = col_dict["SIGI"].extract_values().as_double() ** 2
     elif "IMEAN" in col_dict:  # nice and simple
         r_t["miller_index"] = ind
         r_t["intensity"] = col_dict["IMEAN"].extract_values().as_double()
-        r_t["variance"] = col_dict["SIGIMEAN"].extract_values().as_double()
+        r_t["variance"] = col_dict["SIGIMEAN"].extract_values().as_double() ** 2
     elif "I(+)" in col_dict:  # need to combine I+ and I- together into target Ih
         if col_dict["I(+)"].n_valid_values() == 0:  # use I(-)
             r_t["miller_index"] = ind
             r_t["intensity"] = col_dict["I(-)"].extract_values().as_double()
-            r_t["variance"] = col_dict["SIGI(-)"].extract_values().as_double()
+            r_t["variance"] = col_dict["SIGI(-)"].extract_values().as_double() ** 2
         elif col_dict["I(-)"].n_valid_values() == 0:  # use I(+)
             r_t["miller_index"] = ind
             r_t["intensity"] = col_dict["I(+)"].extract_values().as_double()
-            r_t["variance"] = col_dict["SIGI(+)"].extract_values().as_double()
+            r_t["variance"] = col_dict["SIGI(+)"].extract_values().as_double() ** 2
         else:  # Combine both - add together then use Ih table to calculate I and sigma
             r_tplus = flex.reflection_table()
             r_tminus = flex.reflection_table()
             r_tplus["miller_index"] = ind
             r_tplus["intensity"] = col_dict["I(+)"].extract_values().as_double()
-            r_tplus["variance"] = col_dict["SIGI(+)"].extract_values().as_double()
+            r_tplus["variance"] = col_dict["SIGI(+)"].extract_values().as_double() ** 2
             r_tminus["miller_index"] = ind
             r_tminus["intensity"] = col_dict["I(-)"].extract_values().as_double()
-            r_tminus["variance"] = col_dict["SIGI(-)"].extract_values().as_double()
+            r_tminus["variance"] = col_dict["SIGI(-)"].extract_values().as_double() ** 2
             r_tplus.extend(r_tminus)
             r_tplus.set_flags(
                 flex.bool(r_tplus.size(), False), r_tplus.flags.bad_for_scaling
