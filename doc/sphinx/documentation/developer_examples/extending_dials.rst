@@ -137,7 +137,8 @@ Extending dials.index
 Basis vector search strategies
 ------------------------------
 The ``dials.index.basis_vector_search_strategy`` entry point can be used to extend the
-list of possible basis vector search strategies available in DIALS. DIALS currently
+list of possible basis vector search strategies available in DIALS, by delegating the
+search for a list of possible real space basis vectors to a strategy. DIALS currently
 includes the `fft1d`, `fft3d` and `real_space_grid_search` strategies. A basis vector
 search strategy should inherit from the class
 :class:`dials.algorithms.indexing.basis_vector_search.strategies.Strategy` and provide
@@ -187,6 +188,61 @@ file of our local ``myproject`` package:
       {
           "dials.index.basis_vector_search_strategy": [
               "mystrategy = myproject.mystrategy:MyStrategy",
+          ],
+      }
+  )
+
+Lattice search strategies
+-------------------------
+
+An alternative entry point into dials.index is
+``dials.index.lattice_search_strategy``, where the entire crystal model search is
+delegated to the strategy.
+
+.. code-block:: python
+
+  from libtbx import phil
+  from dials.algorithms.indexing.lattice_search_strategies import Strategy
+
+  mystrategy_phil_str = """\
+  magic_parameter = 42
+      .help = "This is a magic parameter."
+      .type = float
+  """
+
+  class MyLatticeSearch(Strategy):
+      """My magic lattice search strategy."""
+
+      phil_scope = phil.parse(mystrategy_phil_str)
+
+      def find_crystal_models(self, reflections, experiments):
+          """Find a list of candidate crystal models.
+
+          Args:
+              reflections (dials.array_family.flex.reflection_table):
+                  The found spots centroids and associated data
+
+              experiments (dxtbx.model.experiment_list.ExperimentList):
+                  The experimental geometry models
+
+          Returns:
+              A list of candidate crystal models.
+
+          """
+          # determine the list of candidate_crystal_models
+          return candidate_crystal_models
+
+
+As above, register this new lattice search strategy in the ``libtbx_refresh.py``
+file of our local ``myproject`` package:
+
+.. code-block:: python
+
+  import libtbx.pkg_utils
+  libtbx.pkg_utils.define_entry_points(
+      {
+          "dials.index.lattice_search_strategy": [
+              "mylatticesearch = myproject.mylatticesearch:MyLatticeSearch",
           ],
       }
   )
