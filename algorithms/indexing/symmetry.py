@@ -215,7 +215,7 @@ def identify_likely_solutions(all_solutions):
 
 
 def refine_subgroup(args):
-    assert len(args) == 5
+    assert len(args) == 4
     from dials.command_line.check_indexing_symmetry import (
         get_symop_correlation_coefficients,
         normalise_intensities,
