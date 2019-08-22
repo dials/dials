@@ -2,6 +2,9 @@
 Extending DIALS
 +++++++++++++++
 
+.. contents::
+   :depth: 2
+
 Entry points
 ============
 
