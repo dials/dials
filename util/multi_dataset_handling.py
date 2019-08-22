@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Module of functions for handling operations on lists of reflection tables
 and experiment lists.
@@ -7,7 +8,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import uuid
-from dials.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -31,55 +31,125 @@ phil_scope = iotbx.phil.parse(
 )
 
 
-def parse_multiple_datasets(reflections):
-    """
-    Split a list of multi-dataset reflection tables, selecting on id
+def split_reflection_tables_on_ids(reflection_tables):
+    """"Split a list of multi-dataset reflection tables, selecting on id.
 
-    If duplicate id values are found, the id columns are renumbered from 0..n-1,
-    taking care of experiment identifiers if these are set.
+    Note that reflection table entries with -1 are removed, as they are not
+    assigned to any experiment.
 
     Args:
-        reflections (list): a list of reflection tables, each of which may contain
-            multiple datasets
+        reflection_tables (list): A list of reflection tables (each of which may include
+            multiple datasets).
 
     Returns:
-        (list): a list of reflection tables corresponding to single datasets
-
+        (list): A list of single-dataset reflection tables.
     """
     single_reflection_tables = []
-    dataset_id_list = []
-    for refl_table in reflections:
-        dataset_ids = set(refl_table["id"]).difference({-1})
-        dataset_id_list.extend(list(dataset_ids))
-        if len(dataset_ids) > 1:
-            logger.info(
-                "Detected existence of a multi-dataset reflection table \n"
-                "containing %s datasets. \n",
-                len(dataset_ids),
-            )
+    for table in reflection_tables:
+        if len(set(table["id"]).difference({-1})) > 1:
             ##FIXME fix split_by_experiment_id so that don't need to filter
-            # unindxeded reflections here to get rid of id = -1
-            if -1 in refl_table["id"]:
-                refl_table = refl_table.select(refl_table["id"] != -1)
-            result = refl_table.split_by_experiment_id()
-            single_reflection_tables.extend(result)
+            # unindexed reflections here to get rid of id = -1
+            if -1 in table["id"]:
+                table = table.select(table["id"] != -1)
+            #  split on id and preserve experiment_identifiers mapping
+            single_reflection_tables.extend(table.split_by_experiment_id())
         else:
-            single_reflection_tables.append(refl_table)
-    if len(dataset_id_list) != len(set(dataset_id_list)):  # need to reset some ids
-        logger.warning(
-            "Duplicate dataset ids found in different reflection tables. \n"
-            "These will be treated as coming from separate datasets, and \n"
-            "new dataset ids will be assigned for the whole dataset. \n"
-        )
-        for new_id, (r, old_id) in enumerate(
-            zip(single_reflection_tables, dataset_id_list)
-        ):
-            r["id"] = flex.int(r.size(), new_id)
-            if list(r.experiment_identifiers()):  # if identifiers, need to update
-                expid = r.experiment_identifiers()[old_id]
-                del r.experiment_identifiers()[old_id]
-                r.experiment_identifiers()[new_id] = expid
+            single_reflection_tables.append(table)
     return single_reflection_tables
+
+
+def renumber_table_id_columns(reflection_tables):
+    """Renumber the id columns in the tables from 0..n-1
+
+    If set, the experiment identifiers mapping is updated.
+
+    Args:
+        reflection_tables (list): A list of reflection tables
+
+    Returns:
+        (list): A list of reflection tables.
+    """
+    new_id_ = 0
+    for table in reflection_tables:
+        table_id_values = sorted(list(set(table["id"]).difference({-1})))
+        highest_new_id = new_id_ + len(table_id_values) - 1
+        expt_ids_dict = table.experiment_identifiers()
+        new_ids_dict = {}
+        new_id_ = highest_new_id
+        while table_id_values:
+            val = table_id_values.pop()
+            sel = table["id"] == val
+            if val in expt_ids_dict:
+                # only delete here, add new at end to avoid clashes of new/old ids
+                new_ids_dict[new_id_] = expt_ids_dict[val]
+                del expt_ids_dict[val]
+            table["id"].set_selected(sel.iselection(), new_id_)
+            new_id_ -= 1
+        new_id_ = highest_new_id + 1
+        if new_ids_dict:
+            for i, v in new_ids_dict.items():
+                expt_ids_dict[i] = v
+    return reflection_tables
+
+
+def parse_multiple_datasets(reflection_tables):
+    single_reflection_tables = split_reflection_tables_on_ids(reflection_tables)
+    return renumber_table_id_columns(single_reflection_tables)
+
+
+def sort_tables_to_experiments_order(reflection_tables, experiments):
+    """If experiment identifiers are set, sort the order of reflection tables
+    to match the order of the experiments.
+
+    example for several single datasets in order
+    input [r1("0"), r2("1")], [exp("0"), exp("1")]
+    returns [r1("0"), r2("1")]
+
+    example for several single datasets out of order
+    input [r1("1"), r2("0")], [exp("0"), exp("1")]
+    returns [r2("0"), r1("1")]
+
+    example including a multi-dataset reflection table
+    (e.g. datasets from command line: d1&2.refl d0.refl d0.expt d1&2.expt)
+    input [r1("1", "2"), r2("0")], [exp("0"), exp("1"), exp("2")]
+    returns [r2("0"), r1("1", "2")]
+
+    Args:
+        reflection_tables (list): A list of reflection tables (may contain multiple
+            datasets per table)
+        experiments: An ExperimentList
+
+    Returns:
+        (list): A list of sorted reflection tables to match the experiments order.
+    """
+    identifiers_list = []
+    identifiers_by_table_idx = {}
+    exp_id_to_table_idx = {}
+    for i, table in enumerate(reflection_tables):
+        id_values = table.experiment_identifiers().values()
+        if id_values:
+            identifiers_list.extend(id_values)
+            identifiers_by_table_idx[i] = id_values
+            for id_ in id_values:
+                exp_id_to_table_idx[id_] = i
+
+    expt_identiers = list(experiments.identifiers())
+    if len(identifiers_list) == len(experiments) and set(identifiers_list) == set(
+        expt_identiers
+    ):  # all set so can now do the rearrangement
+        sorted_tables = []
+        for id_ in expt_identiers:
+            # check if still need to add a table for this id
+            if id_ in exp_id_to_table_idx:
+                table_idx = exp_id_to_table_idx[id_]  # find table index
+                sorted_tables.append(reflection_tables[table_idx])
+                # now delete remaining ids from id>table map so that don't add twice
+                for exp_id in identifiers_by_table_idx[table_idx]:
+                    del exp_id_to_table_idx[exp_id]
+        assert len(sorted_tables) == len(reflection_tables)
+        return sorted_tables
+    # else, identifiers not fully set, just return the tables.
+    return reflection_tables
 
 
 def assign_unique_identifiers(experiments, reflections, identifiers=None):
@@ -87,8 +157,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
     Assign unique experiment identifiers to experiments and reflections lists.
 
     If experiment identifiers are not set for some datasets, then new unique
-    identifiers are given to those, and the 'id' column for all reflection tables
-    are set sequentially from 0..n-1.
+    identifiers are given to those. The id column values are preserved.
 
     Args:
         experiments: An ExperimentList
@@ -109,6 +178,13 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
             "The experiments and reflections lists are unequal in length: %s & %s"
             % (len(experiments), len(reflections))
         )
+    for i, table in enumerate(reflections):
+        n_datasets = len(set(table["id"]).difference({-1}))
+        if n_datasets > 1:
+            raise ValueError(
+                "Reflection table %s contains %s datasets (must contain a single dataset)"
+                % (i, n_datasest)
+            )
     # if identifiers given, use these to set the identifiers
     if identifiers:
         if len(identifiers) != len(reflections):
@@ -116,12 +192,13 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
                 "The identifiers and reflections lists are unequal in length: %s & %s"
                 % (len(identifiers), len(reflections))
             )
-        for i, (exp, refl) in enumerate(zip(experiments, reflections)):
-            exp.identifier = identifiers[i]
-            for k in refl.experiment_identifiers().keys():
-                del refl.experiment_identifiers()[k]
-            refl.experiment_identifiers()[i] = identifiers[i]
-            refl["id"] = flex.int(refl.size(), i)
+        for exp, refl, identifier in zip(experiments, reflections, identifiers):
+            exp.identifier = identifier
+            id_ = list(set(refl["id"]).difference({-1}))[
+                0
+            ]  # earlier check ensures only one
+            refl.experiment_identifiers()[id_] = identifier
+            refl.clean_experiment_identifiers_map()
     # Validate the existing identifiers, or the ones just set
     used_str_ids = []
     for exp, refl in zip(experiments, reflections):
@@ -134,19 +211,14 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
             used_str_ids.append(exp.identifier)
 
     if len(set(used_str_ids)) != len(reflections):
-        # if not all set, then need to fill in the rest. Keep the identifier if
-        # it is already set, and reset table id column from 0..n-1
-        for i, (exp, refl) in enumerate(zip(experiments, reflections)):
+        # Generate a uuid for any identifiers not set.
+        for exp, refl in zip(experiments, reflections):
             if exp.identifier == "":
                 strid = str(uuid.uuid4())
                 exp.identifier = strid
-                refl.experiment_identifiers()[i] = strid
-            else:
-                k = list(refl.experiment_identifiers().keys())[0]
-                expid = list(refl.experiment_identifiers().values())[0]
-                del refl.experiment_identifiers()[k]
-                refl.experiment_identifiers()[i] = expid
-            refl["id"] = flex.int(refl.size(), i)
+                id_ = list(set(refl["id"]).difference({-1}))[0]
+                refl.experiment_identifiers()[id_] = strid
+                refl.clean_experiment_identifiers_map()
     return experiments, reflections
 
 

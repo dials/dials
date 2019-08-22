@@ -9,7 +9,9 @@ from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
     select_datasets_on_ids,
+    sort_tables_to_experiments_order,
 )
+from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
 from dxtbx.model import Experiment, ExperimentList
 
 
@@ -134,10 +136,11 @@ def test_assignment_of_unique_identifiers_when_refl_table_ids_are_present(
 ):
     assert list(experiments.identifiers()) == ["", "", ""]
     expts, rts = assign_unique_identifiers(experiments, reflections)
-    for i, (expt, refl) in enumerate(zip(expts, rts)):
-        assert set(refl["id"]) == {i}
+    expected_ids = [0, 1, 4]
+    for expt, refl, expected in zip(expts, rts, expected_ids):
+        assert set(refl["id"]) == {expected}
         assert expt.identifier != ""
-        assert refl.experiment_identifiers()[i] == expt.identifier
+        assert refl.experiment_identifiers()[expected] == expt.identifier
 
 
 def test_assign_identifiers_where_none_are_set_but_refl_table_ids_have_duplicates(
@@ -145,10 +148,11 @@ def test_assign_identifiers_where_none_are_set_but_refl_table_ids_have_duplicate
 ):
     reflections[2]["id"] = flex.int([0, 0])
     expts, rts = assign_unique_identifiers(experiments, reflections)
-    for i, (expt, refl) in enumerate(zip(expts, rts)):
-        assert set(refl["id"]) == {i}
+    expected_ids = [0, 1, 0]
+    for expt, refl, expected in zip(expts, rts, expected_ids):
+        assert set(refl["id"]) == {expected}
         assert expt.identifier != ""
-        assert refl.experiment_identifiers()[i] == expt.identifier
+        assert refl.experiment_identifiers()[expected] == expt.identifier
 
 
 def test_raise_exception_when_existing_identifiers_are_inconsistent(
@@ -196,10 +200,11 @@ def test_assigned_identifiers_are_kept_when_assigning_rest(experiments, reflecti
     reflections[0].experiment_identifiers()[0] = "1"
     expts, rts = assign_unique_identifiers(experiments, reflections)
     assert expts.identifiers()[0] == "1"
-    for i, (expt, refl) in enumerate(zip(expts, rts)):
-        assert set(refl["id"]) == {i}
+    expected_ids = [0, 1, 4]
+    for expt, refl, expected in zip(expts, rts, expected_ids):
+        assert set(refl["id"]) == {expected}
         assert expt.identifier != ""
-        assert refl.experiment_identifiers()[i] == expt.identifier
+        assert refl.experiment_identifiers()[expected] == expt.identifier
 
 
 def test_assigning_specified_identifiers(experiments, reflections):
@@ -213,8 +218,8 @@ def test_assigning_specified_identifiers(experiments, reflections):
     assert rts[0]["id"][0] == 0
     assert rts[1].experiment_identifiers()[1] == "1"
     assert rts[1]["id"][0] == 1
-    assert rts[2].experiment_identifiers()[2] == "10"
-    assert rts[2]["id"][0] == 2
+    assert rts[2].experiment_identifiers()[4] == "10"
+    assert rts[2]["id"][0] == 4
 
     # Test raises ValueError when wrong number of identifiers given
     with pytest.raises(ValueError):
@@ -233,12 +238,12 @@ def test_parse_multiple_datasets():
     rt2.experiment_identifiers()[4] = "4"
     single_tables = parse_multiple_datasets([rt2])
     assert len(single_tables) == 2
-    assert list(set(single_tables[0]["id"])) == [2]
-    assert list(set(single_tables[1]["id"])) == [4]
+    assert list(set(single_tables[0]["id"])) == [0]
+    assert list(set(single_tables[1]["id"])) == [1]
     single_tables = parse_multiple_datasets([rt1, rt2])
     assert list(set(single_tables[0]["id"])) == [0]
-    assert list(set(single_tables[1]["id"])) == [2]
-    assert list(set(single_tables[2]["id"])) == [4]
+    assert list(set(single_tables[1]["id"])) == [1]
+    assert list(set(single_tables[2]["id"])) == [2]
     assert len(single_tables) == 3
     single_tables = parse_multiple_datasets([rt1])
     assert len(single_tables) == 1
@@ -259,3 +264,59 @@ def test_parse_multiple_datasets():
     assert single_tables[2].experiment_identifiers()[2] == "4"
     assert list(set(single_tables[3]["id"])) == [3]
     assert single_tables[3].experiment_identifiers()[3] == "5"
+
+
+def test_sort_tables_to_experiments_order_multi_dataset_files():
+    """Test reflection table sorting when a table contains multiple datasets."""
+    # Reflection tables in the wrong order
+    reflection_tables = [
+        mock_two_reflection_file_object(ids=[1, 2]).data,
+        mock_reflection_file_object(id_=0).data,
+    ]
+    experiments = ExperimentList()
+    experiments.append(Experiment(identifier=str(0)))
+    experiments.append(Experiment(identifier=str(1)))
+    experiments.append(Experiment(identifier=str(2)))
+
+    refls = sort_tables_to_experiments_order(reflection_tables, experiments)
+
+    # Check that reflection tables are rearranged
+    assert refls[0] is reflection_tables[1]
+    assert refls[1] is reflection_tables[0]
+    assert list(refls[0].experiment_identifiers().values()) == ["0"]
+    assert list(refls[1].experiment_identifiers().values()) == ["1", "2"]
+
+
+def test_sort_tables_to_experiments_order_single_dataset_files():
+    """Test reflection table sorting when tables contain a single dataset."""
+    # Reflection tables in the wrong order
+    reflection_tables = [
+        mock_reflection_file_object(id_=1).data,
+        mock_reflection_file_object(id_=0).data,
+    ]
+    experiments = ExperimentList()
+    experiments.append(Experiment(identifier=str(0)))
+    experiments.append(Experiment(identifier=str(1)))
+    refls = sort_tables_to_experiments_order(reflection_tables, experiments)
+
+    # Check that reflection tables are rearranged
+    assert refls[0] is reflection_tables[1]
+    assert refls[1] is reflection_tables[0]
+    assert list(refls[0].experiment_identifiers().values()) == ["0"]
+    assert list(refls[1].experiment_identifiers().values()) == ["1"]
+
+    # Reflection tables in correct order
+    reflection_tables = [
+        mock_reflection_file_object(id_=0).data,
+        mock_reflection_file_object(id_=1).data,
+    ]
+    experiments = ExperimentList()
+    experiments.append(Experiment(identifier=str(0)))
+    experiments.append(Experiment(identifier=str(1)))
+    refls = sort_tables_to_experiments_order(reflection_tables, experiments)
+
+    # Check that nothing has been changed
+    assert refls[0] is reflection_tables[0]
+    assert refls[1] is reflection_tables[1]
+    assert list(refls[0].experiment_identifiers().values()) == ["0"]
+    assert list(refls[1].experiment_identifiers().values()) == ["1"]

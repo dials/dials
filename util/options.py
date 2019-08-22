@@ -19,6 +19,8 @@ except ImportError:
 
 import libtbx.phil
 from dials.util import Sorry
+from dials.util.multi_dataset_handling import sort_tables_to_experiments_order
+from dxtbx.model.experiment_list import ExperimentList
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -1129,29 +1131,7 @@ def flatten_reflections(filename_object_list):
     :param filename_object_list: The parameter item
     :return: The flattened reflection table
     """
-    tables = [o.data for o in filename_object_list]
-    if len(tables) > 1:
-        new_id_ = 0
-        for table in tables:
-            table_id_values = sorted(list(set(table["id"]).difference({-1})))
-            highest_new_id = new_id_ + len(table_id_values) - 1
-            expt_ids_dict = table.experiment_identifiers()
-            new_ids_dict = {}
-            new_id_ = highest_new_id
-            while table_id_values:
-                val = table_id_values.pop()
-                sel = table["id"] == val
-                if val in expt_ids_dict:
-                    # only delete here, add new at end to avoid clashes of new/old ids
-                    new_ids_dict[new_id_] = expt_ids_dict[val]
-                    del expt_ids_dict[val]
-                table["id"].set_selected(sel.iselection(), new_id_)
-                new_id_ -= 1
-            new_id_ = highest_new_id + 1
-            if new_ids_dict:
-                for i, v in new_ids_dict.items():
-                    expt_ids_dict[i] = v
-    return tables
+    return [o.data for o in filename_object_list]
 
 
 def flatten_experiments(filename_object_list):
@@ -1161,9 +1141,28 @@ def flatten_experiments(filename_object_list):
     :param filename_object_list: The parameter item
     :return: The flattened experiment lists
     """
-    from dxtbx.model.experiment_list import ExperimentList
 
     result = ExperimentList()
     for o in filename_object_list:
         result.extend(o.data)
     return result
+
+
+def reflections_and_experiments_from_files(
+    reflection_file_object_list, experiment_file_object_list
+):
+    """Extract reflection tables and an experiment list from the files.
+
+    If experiment identifiers are set, the order of the reflection tables is
+    changed to match the order of experiments.
+    """
+    tables = [o.data for o in reflection_file_object_list]
+
+    experiments = ExperimentList()
+    for o in experiment_file_object_list:
+        experiments.extend(o.data)
+
+    if tables and experiments:
+        tables = sort_tables_to_experiments_order(tables, experiments)
+
+    return tables, experiments
