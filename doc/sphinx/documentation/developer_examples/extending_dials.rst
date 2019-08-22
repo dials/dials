@@ -147,7 +147,7 @@ an implementation of the ``find_basis_vectors`` method.
 .. code-block:: python
 
   from libtbx import phil
-  from dials.algorithms.indexing.basis_vector_search_strategy.strategies import Strategy
+  from dials.algorithms.indexing.basis_vector_search.strategies import Strategy
 
   mystrategy_phil_str = """\
   magic_parameter = 42
