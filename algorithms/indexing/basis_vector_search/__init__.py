@@ -20,27 +20,6 @@ def is_approximate_integer_multiple(
     return False
 
 
-def find_unique_vectors(vectors, max_vectors):
-    unique_vectors = []
-    i = 0
-    while i < len(vectors) and len(unique_vectors) < max_vectors:
-        v = matrix.col(vectors[i])
-        is_unique = True
-        if i > 0:
-            for v_u in unique_vectors:
-                if v.length() < v_u.length():
-                    if is_approximate_integer_multiple(v, v_u):
-                        is_unique = False
-                        break
-                elif is_approximate_integer_multiple(v_u, v):
-                    is_unique = False
-                    break
-        if is_unique:
-            unique_vectors.append(v)
-        i += 1
-    return unique_vectors
-
-
 class vector_group(object):
     def __init__(self):
         self.vectors = []
