@@ -1,10 +1,8 @@
 from __future__ import division, absolute_import, print_function
 
-import logging
-
-logger = logging.getLogger("dials.command_line.symmetry")
-
 import copy
+import logging
+import random
 
 from cctbx import sgtbx
 import iotbx.phil
@@ -19,6 +17,7 @@ from dials.util.multi_dataset_handling import (
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry.determine_space_group import determine_space_group
 
+logger = logging.getLogger("dials.command_line.symmetry")
 
 phil_scope = iotbx.phil.parse(
     """\
@@ -140,12 +139,13 @@ input data and filtering settings e.g partiality_threshold"""
             )
             reindexed_reflections.extend(reindexed_refl)
         logger.info(
-            "Saving reindexed experiments to %s" % self._params.output.experiments
+            "Saving reindexed experiments to %s", self._params.output.experiments
         )
         reindexed_experiments.as_file(self._params.output.experiments)
         logger.info(
-            "Saving %s reindexed reflections to %s"
-            % (len(reindexed_reflections), self._params.output.reflections)
+            "Saving %s reindexed reflections to %s",
+            len(reindexed_reflections),
+            self._params.output.reflections,
         )
         reindexed_reflections.as_file(self._params.output.reflections)
 
@@ -197,8 +197,6 @@ def run(args):
         logger.info(diff_phil)
 
     if params.seed is not None:
-        import random
-
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
 

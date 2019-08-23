@@ -257,9 +257,7 @@ class Script(object):
         return obs, shadowed
 
     def write_expt(self, experiments, filename):
-
         experiments.as_file(filename)
-        return
 
 
 if __name__ == "__main__":

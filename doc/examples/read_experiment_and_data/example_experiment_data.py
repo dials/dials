@@ -1,13 +1,4 @@
-#!/usr/bin/env dials.python
-#
 # example_experiment_data.py
-#
-#  Copyright (C) 2017 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 #
 # Example code for how to load experiments and reflections in the DIALS
 # framework
@@ -38,11 +29,8 @@ class Script(object):
 
     def __init__(self):
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        usage = (
-            "usage: %s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
-        )
+        usage = "dials.example_experiment_data [options] indexed.expt indexed.refl"
 
         self.parser = OptionParser(
             usage=usage,
