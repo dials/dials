@@ -413,7 +413,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
-    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
+    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [4]
 
 
 def test_scale_optimise_errors(dials_regression, tmpdir):

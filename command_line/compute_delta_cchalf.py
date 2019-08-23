@@ -402,9 +402,10 @@ class Script(object):
                         image_range,
                         identifier,
                     )
+                    index = list(experiments.identifiers()).index(identifier)
                     exclude_images.append(
                         [
-                            identifier
+                            str(index)
                             + ":"
                             + str(image_range[0])
                             + ":"
@@ -493,7 +494,7 @@ class Script(object):
         ).count(False)
         results_summary["dataset_removal"].update(
             {
-                "experiments_fully_removed": datasets_to_remove,
+                "experiments_fully_removed": list(ids_to_remove),
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }

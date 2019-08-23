@@ -11,7 +11,7 @@ from libtbx import phil
 from six.moves import cStringIO as StringIO
 from dials.util import log, show_mail_on_error, Sorry
 from dials.array_family import flex
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.algorithms.scaling.scaling_library import (
     create_scaling_model,
@@ -722,8 +722,9 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     log.config(verbosity=options.verbose, logfile=params.output.log)
     logger.info(dials_version())
