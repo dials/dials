@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# example_experiment_data.py
+# experiment_data.py
 #
 # Example code for how to load experiments and reflections in the DIALS
 # framework
