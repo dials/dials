@@ -2345,7 +2345,7 @@ class Analyser(object):
                         "Image range:",
                         "%i, %i" % expt.scan.get_image_range(),
                         "Oscillation:",
-                        "%i, %i" % expt.scan.get_oscillation(),
+                        "%.2f&deg;, %+.2f&deg;/frame" % expt.scan.get_oscillation(),
                     )
                 )
 
