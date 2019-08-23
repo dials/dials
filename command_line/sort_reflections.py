@@ -1,33 +1,19 @@
-#!/usr/bin/env python
-#
-# dials.sort_reflections.py
-#
-#  Copyright (C) 2013 STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.sort_reflections
 
 from __future__ import absolute_import, division, print_function
 
-import libtbx.load_env
+import dials.util
 from dials.array_family import flex
 
-help_message = (
-    """
+help_message = """
 
 Utility script to sort reflection tables by the values in a column.
 
 Example::
 
-  %s key=miller_index output=sorted.refl
+  dev.dials.sort_reflections key=miller_index output=sorted.refl
 
 """
-    % libtbx.env.dispatcher_name
-)
 
 
 class Sort(object):
@@ -41,30 +27,23 @@ class Sort(object):
         phil_scope = parse(
             """
 
-      key = 'miller_index'
-        .type = str
-        .help = "The chosen sort key. This should be a column of "
-                "the reflection table."
+            key = 'miller_index'
+                .type = str
+                .help = "The chosen sort key. This should be a column of "
+                        "the reflection table."
 
-      reverse = False
-        .type = bool
-        .help = "Reverse the sort direction"
+            reverse = False
+                .type = bool
+                .help = "Reverse the sort direction"
 
-      output = sorted.refl
-        .type = str
-        .help = "The output reflection filename"
+            output = sorted.refl
+                .type = str
+                .help = "The output reflection filename"
 
-    """
-        )
-
-        # The script usage
-        usage = (
             """
-      usage: %s [options] observations.refl
-
-    """
-            % libtbx.env.dispatcher_name
         )
+
+        usage = "dev.dials.sort_reflections [options] observations.refl"
 
         # Initialise the base class
         self.parser = OptionParser(
@@ -79,9 +58,7 @@ class Sort(object):
 
     def run(self):
         """Execute the script."""
-        from dials.array_family import flex  # noqa: F401, import dependency
         from dials.util.options import flatten_reflections
-        from dials.util import Sorry
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -90,7 +67,7 @@ class Sort(object):
             self.parser.print_help()
             return
         if len(reflections) != 1:
-            raise Sorry("exactly 1 reflection table must be specified")
+            raise dials.util.Sorry("exactly 1 reflection table must be specified")
         reflections = reflections[0]
 
         # Check the key is valid
@@ -102,10 +79,10 @@ class Sort(object):
         reflections = reflections.select(perm)
 
         if options.verbose > 0:
-            print("Head of sorted list " + attr + ":")
+            print("Head of sorted list " + params.key + ":")
             n = min(len(reflections), 10)
             for i in range(n):
-                print(reflections[i][attr])
+                print(reflections[i][params.key])
 
         # Save sorted reflections to file
         if params.output:
@@ -114,10 +91,6 @@ class Sort(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with dials.util.show_mail_on_error():
         script = Sort()
         script.run()
-    except Exception as e:
-        halraiser(e)

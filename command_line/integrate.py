@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dials.array_family import flex
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 
 logger = logging.getLogger("dials.command_line.integrate")
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -448,9 +448,9 @@ class Script(object):
         logger.info("Processing reference reflections")
         logger.info(" read %d strong spots" % len(reference))
         mask = reference.get_flags(reference.flags.indexed)
-        rubbish = reference.select(mask == False)
+        rubbish = reference.select(~mask)
         if mask.count(False) > 0:
-            reference.del_selected(mask == False)
+            reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections" % mask.count(False))
         if len(reference) == 0:
             raise Sorry(
@@ -526,13 +526,10 @@ class Script(object):
     def save_experiments(self, experiments, filename):
         """ Save the profile model parameters. """
         from time import time
-        from dxtbx.model.experiment_list import ExperimentListDumper
 
         st = time()
         logger.info("Saving the experiments to %s" % filename)
-        dump = ExperimentListDumper(experiments)
-        with open(filename, "w") as outfile:
-            outfile.write(dump.as_json())
+        experiments.as_file(filename)
         logger.info(" time taken: %g" % (time() - st))
 
     def sample_predictions(self, experiments, predicted, params):
@@ -686,10 +683,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

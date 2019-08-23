@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from dials.array_family import flex
+from dials.util import show_mail_on_error
 
 
 class SpotXDSImporter(object):
@@ -177,7 +178,6 @@ class XDSFileImporter(object):
 
     def __call__(self, params, options):
         from dxtbx.model.experiment_list import ExperimentListFactory
-        from dxtbx.model.experiment_list import ExperimentListDumper
 
         # Get the XDS.INP file
         xds_inp = os.path.join(self.args[0], "XDS.INP")
@@ -252,15 +252,13 @@ class XDSFileImporter(object):
             params.output.filename = "xds_models.expt"
         print("-" * 80)
         print("Writing experiments to %s" % params.output.filename)
-        dump = ExperimentListDumper(experiments)
-        dump.as_file(params.output.filename)
+        experiments.as_file(params.output.filename)
 
         # Optionally save as a data block
         if params.output.xds_experiments:
             print("-" * 80)
             print("Writing data block to %s" % params.output.xds_experiments)
-            dump = ExperimentListDumper(experiments)
-            dump.as_file(params.output.xds_experiments)
+            experiments.as_file(params.output.xds_experiments)
 
     @staticmethod
     def find_best_xds_file(xds_dir):
@@ -476,10 +474,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

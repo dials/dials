@@ -1,18 +1,8 @@
-#!/usr/bin/env python
-#
-# aaply_mask.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 from six.moves import cPickle as pickle
 
+from dials.util import show_mail_on_error
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
 
@@ -58,12 +48,9 @@ class Script(object):
     def __init__(self):
         """ Initialise the script. """
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
         # Create the parser
-        usage = (
-            "usage: %s models.expt input.mask=pixels.mask" % libtbx.env.dispatcher_name
-        )
+        usage = "dials.apply_mask models.expt input.mask=pixels.mask"
         self.parser = OptionParser(
             usage=usage, epilog=help_message, phil=phil_scope, read_experiments=True
         )
@@ -71,7 +58,6 @@ class Script(object):
     def run(self):
         """ Run the script. """
         from dials.util.options import flatten_experiments
-        from dxtbx.model.experiment_list import ExperimentListDumper
         from dials.util import Sorry
 
         # Parse the command line arguments
@@ -106,15 +92,10 @@ class Script(object):
 
         # Dump the experiments
         print("Writing experiments to %s" % params.output.experiments)
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(filename=params.output.experiments)
+        experiments.as_file(filename=params.output.experiments)
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

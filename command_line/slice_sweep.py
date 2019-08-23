@@ -16,7 +16,7 @@ from os.path import basename, splitext
 
 from dials.algorithms.refinement.refinement_helpers import calculate_frame_numbers
 from dxtbx.model.experiment_list import ExperimentList
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
@@ -222,10 +222,7 @@ class Script(object):
                 output_experiments_filename = bname + ext
             print("Saving sliced experiments to {}".format(output_experiments_filename))
 
-            from dxtbx.model.experiment_list import ExperimentListDumper
-
-            dump = ExperimentListDumper(sliced_experiments)
-            dump.as_json(output_experiments_filename)
+            sliced_experiments.as_file(output_experiments_filename)
 
         # Save sliced reflections
         if slice_refs:
@@ -251,10 +248,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

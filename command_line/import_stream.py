@@ -13,8 +13,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from libtbx.phil import parse
-from dials.util import Sorry
-from dxtbx.model.experiment_list import ExperimentListDumper
+from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 logger = logging.getLogger("dials.command_line.import_stream")
@@ -188,15 +187,12 @@ class Script(object):
         if params.output.experiments:
             logger.info("-" * 80)
             logger.info("Writing experiments to %s" % params.output.experiments)
-            dump = ExperimentListDumper(experiments)
-            dump.as_file(params.output.experiments, compact=params.output.compact)
+            experiments.as_file(
+                params.output.experiments, compact=params.output.compact
+            )
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

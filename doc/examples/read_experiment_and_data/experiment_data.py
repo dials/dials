@@ -1,18 +1,12 @@
-#!/usr/bin/env dials.python
-#
-# example_experiment_data.py
-#
-#  Copyright (C) 2017 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
+# -*- coding: utf-8 -*-
+# experiment_data.py
 #
 # Example code for how to load experiments and reflections in the DIALS
 # framework
 
 from __future__ import absolute_import, division, print_function
+
+from dials.util import show_mail_on_error
 from libtbx.phil import parse
 
 help_message = """
@@ -23,10 +17,10 @@ pass experiment.expt indexed.refl
 
 phil_scope = parse(
     """
-png = 'example.png'
-  .type = str
-  .help = 'Output name for .png'
-""",
+    png = 'example.png'
+      .type = str
+      .help = 'Output name for .png'
+    """,
     process_includes=True,
 )
 
@@ -36,11 +30,8 @@ class Script(object):
 
     def __init__(self):
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        usage = (
-            "usage: %s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
-        )
+        usage = "dials.example_experiment_data [options] indexed.expt indexed.refl"
 
         self.parser = OptionParser(
             usage=usage,
@@ -52,7 +43,6 @@ class Script(object):
         )
 
     def run(self):
-        from dials.array_family import flex  # import dependency
         from scitbx import matrix
         from dials.util.options import flatten_experiments
         from dials.util.options import flatten_reflections
@@ -93,7 +83,9 @@ class Script(object):
 
         # now perform some calculations - the only things different from one
         # experiment to the next will be crystal models
-        crystals = [experiment.crystal for experiment in experiments]
+        print("Crystals:")
+        for experiment in experiments:
+            print(experiment.crystal)
         detector = experiments[0].detector
         beam = experiments[0].beam
         imageset = experiments[0].imageset
@@ -101,6 +93,9 @@ class Script(object):
         # derived quantities
         wavelength = beam.get_wavelength()
         s0 = matrix.col(beam.get_s0())
+
+        print(u"Wavelength: {:g}Å".format(wavelength))
+        print("Beam vector s0:\n{}".format(s0))
 
         # in here do some jiggery-pokery to cope with this being interpreted as
         # a rotation image in here i.e. if scan is not None; derive goniometer
@@ -120,14 +115,12 @@ class Script(object):
         else:
             R = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
+        print("Rotation matrix:\n{}".format(R))
+
         assert len(detector) == 1
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

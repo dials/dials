@@ -1,16 +1,8 @@
-#!/usr/bin/env python
-#
-# show_extensions.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
+# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_extensions
+
 from __future__ import absolute_import, division, print_function
 
-# LIBTBX_SET_DISPATCHER_NAME dev.dials.show_extensions
+from dials.util import show_mail_on_error
 
 
 class Script(object):
@@ -20,7 +12,6 @@ class Script(object):
         """ Initialise the script. """
         from dials.util.options import OptionParser
         from libtbx.phil import parse
-        import libtbx.load_env
 
         # Create the phil parameters
         phil_scope = parse(
@@ -32,7 +23,7 @@ class Script(object):
         )
 
         # Create the option parser
-        usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name
+        usage = "dev.dials.show_extensions [options] /path/to/image/files"
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
     def run(self):
@@ -89,10 +80,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

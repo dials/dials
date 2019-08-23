@@ -13,6 +13,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
+from dials.util import show_mail_on_error
 from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.create_profile_model")
@@ -70,7 +71,6 @@ class Script(object):
         from dials.util.command_line import Command
         from dials.array_family import flex
         from dials.util.options import flatten_reflections, flatten_experiments
-        from dxtbx.model.experiment_list import ExperimentListDumper
         from dials.util import Sorry
         from dials.util import log
 
@@ -87,7 +87,7 @@ class Script(object):
             raise Sorry("exactly 1 reflection table must be specified")
         if len(experiments) == 0:
             raise Sorry("no experiments were specified")
-        if (not "background.mean" in reflections[0]) and params.subtract_background:
+        if ("background.mean" not in reflections[0]) and params.subtract_background:
             raise Sorry("for subtract_background need background.mean in reflections")
 
         reflections, _ = self.process_reference(reflections[0], params)
@@ -147,9 +147,7 @@ class Script(object):
 
         # Write the parameters
         Command.start("Writing experiments to %s" % params.output)
-        dump = ExperimentListDumper(experiments)
-        with open(params.output, "w") as outfile:
-            outfile.write(dump.as_json())
+        experiments.as_file(params.output)
         Command.end("Wrote experiments to %s" % params.output)
 
     def process_reference(self, reference, params):
@@ -165,9 +163,9 @@ class Script(object):
         logger.info("Processing reference reflections")
         logger.info(" read %d strong spots" % len(reference))
         mask = reference.get_flags(reference.flags.indexed)
-        rubbish = reference.select(mask == False)
+        rubbish = reference.select(~mask)
         if mask.count(False) > 0:
-            reference.del_selected(mask == False)
+            reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections" % mask.count(False))
         if len(reference) == 0:
             raise Sorry(
@@ -236,10 +234,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

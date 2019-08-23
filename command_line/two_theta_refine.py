@@ -20,7 +20,7 @@ from time import time
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from dials.util import Sorry
+from dials.util import show_mail_on_error, Sorry
 from dials.util.filter_reflections import filter_reflection_table
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -549,10 +549,7 @@ class Script(object):
         logger.info(
             "Saving refined experiments to {}".format(output_experiments_filename)
         )
-        from dxtbx.model.experiment_list import ExperimentListDumper
-
-        dump = ExperimentListDumper(experiments)
-        dump.as_json(output_experiments_filename)
+        experiments.as_file(output_experiments_filename)
 
         # Create correlation plots
         if params.output.correlation_plot.filename is not None:
@@ -574,10 +571,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)

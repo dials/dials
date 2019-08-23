@@ -12,7 +12,6 @@ from time import time
 from dials.array_family import flex
 from cctbx import miller
 from cctbx import uctbx
-from dxtbx.model.experiment_list import ExperimentListDumper
 from dials_scaling_ext import (
     create_sph_harm_table,
     calc_theta_phi,
@@ -75,9 +74,7 @@ def save_experiments(experiments, filename):
     """Save the experiments json."""
     st = time()
     logger.info("Saving the experiments to %s", filename)
-    dump = ExperimentListDumper(experiments)
-    with open(filename, "w") as outfile:
-        outfile.write(dump.as_json(split=True))
+    experiments.as_file(filename, split=True)
     logger.info("Time taken: %g", (time() - st))
 
 
