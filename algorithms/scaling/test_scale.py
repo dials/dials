@@ -242,6 +242,30 @@ def test_scale_script_prepare_input():
     ]
 
 
+def test_targeted_scaling_against_mtz(dials_data, tmpdir):
+    """Test targeted scaling against an mtz generated with dials.scale."""
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refl = location.join("scaled_35.refl").strpath
+    expt = location.join("scaled_35.expt").strpath
+    command = ["dials.scale", refl, expt, "unmerged_mtz=unmerged.mtz"]
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("unmerged.mtz").check()
+
+    refl = location.join("scaled_30.refl").strpath
+    expt = location.join("scaled_30.expt").strpath
+    target_mtz = tmpdir.join("unmerged.mtz").strpath
+    command = ["dials.scale", refl, expt, "target_mtz=%s" % target_mtz]
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("scaled.refl").check()
+
+
 def test_scale_physical(dials_regression, tmpdir):
     """Test standard scaling of one dataset."""
 
