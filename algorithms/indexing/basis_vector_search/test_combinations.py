@@ -8,12 +8,12 @@ import scitbx.matrix
 from scitbx.math import euler_angles_as_matrix
 from dxtbx.model import Crystal
 
-from . import combinations, fft1d
+from . import combinations, FFT1D
 
 
 def test_combinations(setup_rlp):
     max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-    strategy = fft1d.FFT1D(max_cell)
+    strategy = FFT1D(max_cell)
     basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
 
     for target_symmetry in (

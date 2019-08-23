@@ -4,7 +4,7 @@ from libtbx import phil
 from scitbx.array_family import flex
 from scitbx import matrix
 
-from . import strategies
+from . import Strategy
 
 
 fft1d_phil_str = """\
@@ -16,7 +16,7 @@ characteristic_grid = None
 """
 
 
-class FFT1D(strategies.Strategy):
+class FFT1D(Strategy):
     """Basis vector search using a 1D FFT.
 
     See:

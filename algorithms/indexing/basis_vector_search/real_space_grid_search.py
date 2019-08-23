@@ -11,7 +11,7 @@ from rstbx.array_family import (
 from rstbx.dps_core import SimpleSamplerTool
 
 
-from . import strategies
+from . import Strategy
 from . import group_vectors
 
 
@@ -27,7 +27,7 @@ max_vectors = 30
 """
 
 
-class RealSpaceGridSearch(strategies.Strategy):
+class RealSpaceGridSearch(Strategy):
     """Basis vector search using a real space grid search.
 
     See:

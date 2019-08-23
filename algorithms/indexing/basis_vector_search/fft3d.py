@@ -15,7 +15,7 @@ from scitbx import matrix
 from dials.algorithms import indexing
 import dials_algorithms_indexing_ext
 
-from . import strategies
+from . import Strategy
 from . import is_approximate_integer_multiple, group_vectors
 
 
@@ -47,7 +47,7 @@ reciprocal_space_grid {
 """
 
 
-class FFT3D(strategies.Strategy):
+class FFT3D(Strategy):
     """Basis vector search using a 3D FFT.
 
     See:
