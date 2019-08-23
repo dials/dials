@@ -37,7 +37,7 @@ def generate_experiments_reflections(
     expts = ExperimentList()
     refl_tables = []
 
-    for dataset in datasets:
+    for i, dataset in enumerate(datasets):
         B = scitbx.matrix.sqr(
             dataset.unit_cell().fractionalization_matrix()
         ).transpose()
@@ -48,6 +48,7 @@ def generate_experiments_reflections(
         )
         refl = flex.reflection_table()
         refl["miller_index"] = dataset.indices()
+        refl["id"] = flex.int(refl.size(), i)
         refl["intensity.sum.value"] = dataset.data()
         refl["intensity.sum.variance"] = flex.pow2(dataset.sigmas())
         refl.set_flags(flex.bool(len(refl), True), refl.flags.integrated_sum)

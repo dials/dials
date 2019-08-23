@@ -7,12 +7,9 @@ import procrunner
 from cctbx import sgtbx, uctbx
 from dxtbx.serialize import load
 from dials.array_family import flex
-from dials.command_line.cosym import cosym, phil_scope
-from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
@@ -115,7 +112,7 @@ def test_synthetic(
     space_group = sgtbx.space_group_info(space_group).group()
     if unit_cell is not None:
         unit_cell = uctbx.unit_cell(unit_cell)
-    experiments, reflections, reindexing_ops = generate_experiments_reflections(
+    experiments, reflections, _ = generate_experiments_reflections(
         space_group=space_group,
         unit_cell=unit_cell,
         unit_cell_volume=10000,
@@ -123,23 +120,54 @@ def test_synthetic(
         map_to_p1=True,
         d_min=1.5,
     )
-    params = phil_scope.extract()
+
+    experiments.as_json("tmp.expt")
+    expt_file = tmpdir.join("tmp.expt").strpath
+    joint_table = flex.reflection_table()
+    for r in reflections:
+        joint_table.extend(r)
+    joint_table.as_pickle("tmp.refl")
+    refl_file = tmpdir.join("tmp.refl").strpath
+
+    command = [
+        "dials.cosym",
+        expt_file,
+        refl_file,
+        "output.experiments=symmetrized.expt",
+        "output.reflections=symmetrized.refl",
+        "output.html=cosym.html",
+        "output.json=cosym.json",
+    ]
+
     if use_known_space_group:
-        params.space_group = space_group.info()
+        command.append("space_group=%s" % space_group.info())
     if use_known_lattice_group:
-        params.lattice_group = space_group.info()
+        command.append("lattice_group=%s" % space_group.info())
     if dimensions is not None:
-        params.dimensions = dimensions
-    experiments, reflections = assign_unique_identifiers(experiments, reflections)
+        command.append("dimensions=%s" % dimensions)
+
+    result = procrunner.run(command, working_directory=tmpdir.strpath)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("symmetrized.refl").check(file=1)
+    assert tmpdir.join("symmetrized.expt").check(file=1)
+    assert tmpdir.join("cosym.html").check(file=1)
+    assert tmpdir.join("cosym.json").check(file=1)
+
+    """experiments, reflections = assign_unique_identifiers(experiments, reflections)
     cosym_instance = cosym(experiments, reflections, params=params)
     register_default_cosym_observers(cosym_instance)
     cosym_instance.run()
     cosym_instance.export()
+
+
+
     assert os.path.exists(params.output.experiments)
     assert os.path.exists(params.output.reflections)
     assert os.path.exists(params.output.html)
-    assert os.path.exists(params.output.json)
-    cosym_expts = load.experiment_list(params.output.experiments, check_format=False)
+    assert os.path.exists(params.output.json)"""
+    cosym_expts = load.experiment_list(
+        tmpdir.join("symmetrized.expt").strpath, check_format=False
+    )
     assert len(cosym_expts) == len(experiments)
     for expt in cosym_expts:
         if unit_cell is not None:
