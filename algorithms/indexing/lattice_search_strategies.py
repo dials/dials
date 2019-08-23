@@ -163,7 +163,7 @@ class LowResSpotMatch(Strategy):
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
-        """Construct a real_space_grid_search object.
+        """Construct a LowResSpotMatch object.
 
         Args:
             target_symmetry_primitive (cctbx.crystal.symmetry): The target
