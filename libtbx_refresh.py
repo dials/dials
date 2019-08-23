@@ -13,12 +13,12 @@ libtbx.pkg_utils.define_entry_points(
             "KB = dials.algorithms.scaling.model.scaling_model_ext:KBScalingModelExt",
             "array = dials.algorithms.scaling.model.scaling_model_ext:ArrayScalingModelExt",
         ],
-        "dials.index.basis_vector_search_strategy": [
+        "dials.index.basis_vector_search": [
             "fft1d = dials.algorithms.indexing.basis_vector_search:FFT1D",
             "fft3d = dials.algorithms.indexing.basis_vector_search:FFT3D",
             "real_space_grid_search = dials.algorithms.indexing.basis_vector_search:RealSpaceGridSearch",
         ],
-        "dials.index.lattice_search_strategy": [
+        "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search_strategies:LowResSpotMatch"
         ],
     }

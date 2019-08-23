@@ -438,7 +438,7 @@ class Indexer(object):
 
             IndexerType = None
             for entry_point in pkg_resources.iter_entry_points(
-                "dials.index.basis_vector_search_strategy"
+                "dials.index.basis_vector_search"
             ):
                 if params.indexing.method == entry_point.name:
                     if use_stills_indexer:
@@ -453,7 +453,7 @@ class Indexer(object):
 
             if IndexerType is None:
                 for entry_point in pkg_resources.iter_entry_points(
-                    "dials.index.lattice_search_strategy"
+                    "dials.index.lattice_search"
                 ):
                     if params.indexing.method == entry_point.name:
                         if use_stills_indexer:

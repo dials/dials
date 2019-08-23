@@ -76,8 +76,8 @@ import pkg_resources
 
 methods = []
 for entry_point in itertools.chain(
-    pkg_resources.iter_entry_points("dials.index.basis_vector_search_strategy"),
-    pkg_resources.iter_entry_points("dials.index.lattice_search_strategy"),
+    pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
+    pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
     scope = (
         """\
@@ -109,7 +109,7 @@ class LatticeSearch(indexer.Indexer):
 
         strategy_class = None
         for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.lattice_search_strategy"
+            "dials.index.lattice_search"
         ):
             if entry_point.name == params.indexing.method:
                 strategy_class = entry_point.load()
@@ -299,7 +299,7 @@ class BasisVectorSearch(LatticeSearch):
 
         strategy_class = None
         for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.basis_vector_search_strategy"
+            "dials.index.basis_vector_search"
         ):
             if entry_point.name == params.indexing.method:
                 strategy_class = entry_point.load()
