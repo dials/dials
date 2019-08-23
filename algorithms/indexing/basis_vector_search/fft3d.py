@@ -16,7 +16,7 @@ from dials.algorithms import indexing
 import dials_algorithms_indexing_ext
 
 from . import Strategy
-from . import is_approximate_integer_multiple, group_vectors
+from .utils import is_approximate_integer_multiple, group_vectors
 
 
 logger = logging.getLogger(__name__)

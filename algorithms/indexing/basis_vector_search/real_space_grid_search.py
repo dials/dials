@@ -12,7 +12,7 @@ from rstbx.dps_core import SimpleSamplerTool
 
 
 from . import Strategy
-from . import group_vectors
+from .utils import group_vectors
 
 
 logger = logging.getLogger(__name__)

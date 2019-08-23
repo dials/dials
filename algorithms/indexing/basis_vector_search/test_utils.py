@@ -4,8 +4,8 @@ import pytest
 
 from scitbx import matrix
 
-from . import is_approximate_integer_multiple
-from . import vector_group, group_vectors
+from .utils import is_approximate_integer_multiple
+from .utils import vector_group, group_vectors
 
 
 def test_is_approximate_integer_multiple():
