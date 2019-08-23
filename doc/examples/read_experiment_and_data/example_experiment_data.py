@@ -84,7 +84,8 @@ class Script(object):
         # now perform some calculations - the only things different from one
         # experiment to the next will be crystal models
         print("Crystals:")
-        [experiment.crystal.show() for experiment in experiments]
+        for experiment in experiments:
+            print(experiment.crystal)
         detector = experiments[0].detector
         beam = experiments[0].beam
         imageset = experiments[0].imageset
