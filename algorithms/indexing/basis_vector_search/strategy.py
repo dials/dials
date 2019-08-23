@@ -2,13 +2,9 @@
 
 from __future__ import absolute_import, division, print_function
 
-import abc
-
 
 class Strategy(object):
     """A base class for basis vector search strategies."""
-
-    __metaclass__ = abc.ABCMeta
 
     phil_scope = None
 
@@ -25,7 +21,6 @@ class Strategy(object):
         if self._params is None and self.phil_scope is not None:
             self._params = self.phil_scope.extract()
 
-    @abc.abstractmethod
     def find_basis_vectors(self, reciprocal_lattice_vectors):
         """Find a list of likely basis vectors.
 
@@ -38,4 +33,4 @@ class Strategy(object):
             identifying which reflections were used in indexing.
 
         """
-        pass
+        raise NotImplementedError()
