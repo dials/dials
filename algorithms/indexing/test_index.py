@@ -9,6 +9,7 @@ import procrunner
 from scitbx import matrix
 from cctbx import uctbx
 from dxtbx.serialize import load
+from dxtbx.model import ExperimentList
 from dials.array_family import flex
 
 
@@ -68,6 +69,7 @@ def run_indexing(
     assert len(experiments_list.crystals()) == n_expected_lattices
     indexed_reflections = flex.reflection_table.from_file(out_refls.strpath)
     rmsds = None
+    indexed_reflections.assert_experiment_identifiers_are_consistent(experiments_list)
 
     for i, experiment in enumerate(experiments_list):
         assert unit_cells_are_similar(
@@ -84,14 +86,17 @@ def run_indexing(
             sg.type().hall_symbol(),
             expected_hall_symbol,
         )
-        reflections = indexed_reflections.select(indexed_reflections["id"] == i)
+        reflections = indexed_reflections.select_on_id_values([i])
+        # N.B could also use:
+        # reflections = indexed_reflections.select_on_experiment_identifiers(
+        #   [experiment.identifier])
         mi = reflections["miller_index"]
         assert (mi != (0, 0, 0)).count(False) == 0
         reflections = reflections.select(mi != (0, 0, 0))
         reflections = reflections.select(
             reflections.get_flags(reflections.flags.used_in_refinement)
         )
-        assert len(reflections) > 0
+        assert reflections
         obs_x, obs_y, obs_z = reflections["xyzobs.mm.value"].parts()
         calc_x, calc_y, calc_z = reflections["xyzcal.mm"].parts()
         rmsd_x = flex.mean(flex.pow2(obs_x - calc_x)) ** 0.5
@@ -100,6 +105,10 @@ def run_indexing(
         rmsds = (rmsd_x, rmsd_y, rmsd_z)
         for actual, expected in zip(rmsds, expected_rmsds):
             assert actual <= expected, "%s %s" % (rmsds, expected_rmsds)
+        assert experiment.identifier != ""
+        expt = ExperimentList()
+        expt.append(experiment)
+        reflections.assert_experiment_identifiers_are_consistent(expt)
 
     return _indexing_result(indexed_reflections, experiments_list, rmsds)
 
@@ -785,8 +794,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
 
     import libtbx
     from dxtbx.model.experiment_list import ExperimentListFactory
-    from dxtbx.model.experiment_list import Experiment, ExperimentList
-    from dials.array_family import flex
+    from dxtbx.model.experiment_list import Experiment
     from dxtbx.model import Crystal
     from scitbx.matrix import col
     from dials.algorithms.indexing.stills_indexer import StillsIndexer
@@ -848,7 +856,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
     # Get default params from stills_process and construct StillsIndexer, then run refinement
     params = stills_process_phil_scope.extract()
     SI = StillsIndexer(reflist, unrefined_explist, params=params)
-    refined_explist, new_reflist = SI.refine(unrefined_explist, reflist)
+    refined_explist, _ = SI.refine(unrefined_explist, reflist)
     # Now check whether the models have mosaicity after stills_indexer refinement
     for crys in refined_explist.crystals():
         assert isinstance(crys, dxtbx_model_ext.MosaicCrystalSauter2014)

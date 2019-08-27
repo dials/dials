@@ -11,10 +11,10 @@ from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
 from dials.util.slice import slice_reflections
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.util import Sorry
+from dials.util.multi_dataset_handling import renumber_table_id_columns
+
 
 logger = logging.getLogger("dials.command_line.index")
 
@@ -189,7 +189,7 @@ class Index(object):
                             known_crystal_models=known_crystal_models,
                         )
                     )
-
+                tables_list = []
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         idx_expts, idx_refl = future.result()
@@ -198,14 +198,14 @@ class Index(object):
                     else:
                         if idx_expts is None:
                             continue
-                        for j_expt, _ in enumerate(idx_expts):
-                            sel = idx_refl["id"] == j_expt
-                            idx_refl["id"].set_selected(
-                                sel, len(self._indexed_experiments) + j_expt
-                            )
-                        idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
-                        self._indexed_reflections.extend(idx_refl)
+                        ##FIXME below, is i_expt correct - or should it be the
+                        # index of the 'future'?
+                        idx_refl["imageset_id"] = flex.size_t(idx_refl.size(), i_expt)
+                        tables_list.append(idx_refl)
                         self._indexed_experiments.extend(idx_expts)
+                tables_list = renumber_table_id_columns(tables_list)
+                for table in tables_list:
+                    self._indexed_reflections.extend(table)
 
     def export_experiments(self, filename):
         experiments = self._indexed_experiments

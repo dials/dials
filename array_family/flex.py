@@ -1377,6 +1377,25 @@ Found %s"""
             del self.experiment_identifiers()[id_val]
         return self
 
+    def select_on_id_values(self, values):
+        """Select a subset of the reflection table based on the "id" column
+        values.
+
+        The experiment identifiers map is also updated.
+
+        Args:
+            value (list): a list of integers
+
+        Returns:
+            A reflection table containing a subset of the data
+        """
+        sel = flex.bool(self.size(), False)
+        for val in values:
+            sel |= self["id"] == val
+        selected_table = self.select(sel)
+        selected_table.clean_experiment_identifiers_map()
+        return selected_table
+
     def clean_experiment_identifiers_map(self):
         """
         Remove any entries from the identifier map that do not have any

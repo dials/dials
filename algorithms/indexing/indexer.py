@@ -28,6 +28,7 @@ from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 from dials.util import Sorry
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dxtbx.model import ExperimentList
 
 logger = logging.getLogger(__name__)
@@ -562,22 +563,14 @@ class Indexer(object):
             if self.d_min is None:
                 self.d_min = self.params.refinement_protocol.d_min_start
 
-            def assign_unique_identifiers(experiments):
-                """Assign unique identifiers to each experiment."""
-                import uuid
-
-                for expt in experiments:
-                    expt.identifier = str(uuid.uuid4())
-                    print("assigned %s" % expt.identifier)
-
             if len(experiments) == 0:
                 new_exp = self.find_lattices()
-                assign_unique_identifiers(new_exp)
+                generate_experiment_identifiers(new_exp)
                 experiments.extend(new_exp)
             else:
                 try:
                     new = self.find_lattices()
-                    assign_unique_identifiers(new)
+                    generate_experiment_identifiers(new)
                     experiments.extend(new)
                 except Sorry:
                     logger.info("Indexing remaining reflections failed")

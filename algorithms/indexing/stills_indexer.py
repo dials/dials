@@ -15,6 +15,7 @@ from dials.algorithms.indexing.known_orientation import IndexerKnownOrientation
 from dials.algorithms.indexing.lattice_search import BasisVectorSearch, LatticeSearch
 from dials.algorithms.indexing.nave_parameters import NaveParameters
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 
 logger = logging.getLogger(__name__)
 
@@ -138,12 +139,15 @@ class StillsIndexer(Indexer):
 
             # index multiple lattices per shot
             if len(experiments) == 0:
-                experiments.extend(self.find_lattices())
+                new = self.find_lattices()
+                generate_experiment_identifiers(new)
+                experiments.extend(new)
                 if len(experiments) == 0:
                     raise DialsIndexError("No suitable lattice could be found.")
             else:
                 try:
                     new = self.find_lattices()
+                    generate_experiment_identifiers(new)
                     experiments.extend(new)
                 except Exception as e:
                     logger.info("Indexing remaining reflections failed")
