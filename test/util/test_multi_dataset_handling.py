@@ -10,6 +10,7 @@ from dials.util.multi_dataset_handling import (
     parse_multiple_datasets,
     select_datasets_on_ids,
     sort_tables_to_experiments_order,
+    renumber_table_id_columns,
 )
 from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
 from dxtbx.model import Experiment, ExperimentList
@@ -285,6 +286,52 @@ def test_sort_tables_to_experiments_order_multi_dataset_files():
     assert refls[1] is reflection_tables[0]
     assert list(refls[0].experiment_identifiers().values()) == ["0"]
     assert list(refls[1].experiment_identifiers().values()) == ["1", "2"]
+
+
+def test_renumber_table_id_columns():
+    """Test the correct handling of duplicate table id values.
+
+    Note that this function does not have the ability to update the
+    experiment string identifier, only ensure that the table id values
+    do not clash.
+    """
+    # Test the case of two single reflection tables.
+    rs = [
+        mock_reflection_file_object(id_=0).data,
+        mock_reflection_file_object(id_=0).data,
+    ]
+    rs = renumber_table_id_columns(rs)
+    assert list(rs[0]["id"]) == [-1, 0, 0]
+    assert list(rs[0].experiment_identifiers().keys()) == [0]
+    assert list(rs[0].experiment_identifiers().values()) == ["0"]
+    assert list(rs[1]["id"]) == [-1, 1, 1]
+    assert list(rs[1].experiment_identifiers().keys()) == [1]
+    assert list(rs[1].experiment_identifiers().values()) == ["0"]
+
+    # Now test the case where one reflection table contains two experiments
+    rs = [
+        mock_two_reflection_file_object().data,
+        mock_reflection_file_object(id_=0).data,
+    ]
+    rs = renumber_table_id_columns(rs)
+    assert list(rs[0]["id"]) == [-1, 0, 0, 1, 1]
+    assert list(rs[0].experiment_identifiers().keys()) == [0, 1]
+    assert list(rs[0].experiment_identifiers().values()) == ["0", "2"]
+    assert list(rs[1]["id"]) == [-1, 2, 2]
+    assert list(rs[1].experiment_identifiers().keys()) == [2]
+    assert list(rs[1].experiment_identifiers().values()) == ["0"]
+
+    rs = [
+        mock_reflection_file_object(id_=0).data,
+        mock_two_reflection_file_object(ids=[1, 2]).data,
+    ]
+    rs = renumber_table_id_columns(rs)
+    assert list(rs[0]["id"]) == [-1, 0, 0]
+    assert list(rs[0].experiment_identifiers().keys()) == [0]
+    assert list(rs[0].experiment_identifiers().values()) == ["0"]
+    assert list(rs[1]["id"]) == [-1, 1, 1, 2, 2]
+    assert list(rs[1].experiment_identifiers().keys()) == [1, 2]
+    assert list(rs[1].experiment_identifiers().values()) == ["1", "2"]
 
 
 def test_sort_tables_to_experiments_order_single_dataset_files():
