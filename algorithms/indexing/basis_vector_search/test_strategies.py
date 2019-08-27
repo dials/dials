@@ -2,7 +2,9 @@ from __future__ import absolute_import, division
 
 import pytest
 
-from dials.algorithms.indexing.basis_vector_search import strategies
+from . import RealSpaceGridSearch
+from . import FFT1D
+from . import FFT3D
 
 
 class TestStrategies(object):
@@ -17,19 +19,19 @@ class TestStrategies(object):
 
     def test_fft1d(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.FFT1D(max_cell)
+        strategy = FFT1D(max_cell)
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
         self.check_results(setup_rlp["crystal_symmetry"].unit_cell(), basis_vectors)
 
     def test_fft3d(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.FFT3D(max_cell)
+        strategy = FFT3D(max_cell)
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])
         self.check_results(setup_rlp["crystal_symmetry"].unit_cell(), basis_vectors)
 
     def test_real_space_grid_search(self, setup_rlp):
         max_cell = 1.3 * max(setup_rlp["crystal_symmetry"].unit_cell().parameters()[:3])
-        strategy = strategies.RealSpaceGridSearch(
+        strategy = RealSpaceGridSearch(
             max_cell, target_unit_cell=setup_rlp["crystal_symmetry"].unit_cell()
         )
         basis_vectors, used = strategy.find_basis_vectors(setup_rlp["rlp"])

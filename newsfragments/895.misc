@@ -1,0 +1,1 @@
+Refactoring of ``dials.algorithms.indexing.basis_vector_search``, in particular ``RealSpaceGridSearch`` class.

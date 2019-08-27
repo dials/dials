@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division
 from __future__ import print_function
 
-import abc
 import logging
 
 import copy
@@ -25,8 +24,6 @@ logger = logging.getLogger(__name__)
 class Strategy(object):
     """A base class for lattice search strategies."""
 
-    __metaclass__ = abc.ABCMeta
-
     phil_scope = None
 
     def __init__(self, params=None, *args, **kwargs):
@@ -40,7 +37,6 @@ class Strategy(object):
         if self._params is None and self.phil_scope is not None:
             self._params = self.phil_scope.extract()
 
-    @abc.abstractmethod
     def find_crystal_models(self, reflections, experiments):
         """Find a list of likely crystal models.
 
@@ -55,7 +51,7 @@ class Strategy(object):
             A list of candidate crystal models.
 
         """
-        pass
+        raise NotImplementedError()
 
 
 class CompleteGraph(object):
@@ -163,7 +159,7 @@ class LowResSpotMatch(Strategy):
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
     ):
-        """Construct a real_space_grid_search object.
+        """Construct a LowResSpotMatch object.
 
         Args:
             target_symmetry_primitive (cctbx.crystal.symmetry): The target

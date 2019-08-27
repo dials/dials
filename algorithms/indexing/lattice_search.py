@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
-# dials.algorithms.indexing.fft1d.py
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division
 from __future__ import print_function
 
@@ -88,8 +76,8 @@ import pkg_resources
 
 methods = []
 for entry_point in itertools.chain(
-    pkg_resources.iter_entry_points("dials.index.basis_vector_search_strategy"),
-    pkg_resources.iter_entry_points("dials.index.lattice_search_strategy"),
+    pkg_resources.iter_entry_points("dials.index.basis_vector_search"),
+    pkg_resources.iter_entry_points("dials.index.lattice_search"),
 ):
     scope = (
         """\
@@ -121,7 +109,7 @@ class LatticeSearch(indexer.Indexer):
 
         strategy_class = None
         for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.lattice_search_strategy"
+            "dials.index.lattice_search"
         ):
             if entry_point.name == params.indexing.method:
                 strategy_class = entry_point.load()
@@ -311,7 +299,7 @@ class BasisVectorSearch(LatticeSearch):
 
         strategy_class = None
         for entry_point in pkg_resources.iter_entry_points(
-            "dials.index.basis_vector_search_strategy"
+            "dials.index.basis_vector_search"
         ):
             if entry_point.name == params.indexing.method:
                 strategy_class = entry_point.load()
