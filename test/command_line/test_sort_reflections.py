@@ -77,7 +77,7 @@ def test_default_sort_on_miller_index_verbose(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("sorted4.refl").check(file=1)
-    assert "Head of sorted list miller_index:" in result.stdout
+    assert b"Head of sorted list miller_index:" in result.stdout
 
 
 def assert_sorted(data, reverse=False):
