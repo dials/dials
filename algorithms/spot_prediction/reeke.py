@@ -274,6 +274,7 @@ class reeke_model:
         # The correct sign is determined by whether the plane normal vector is
         # more closely parallel or antiparallel to the beam direction.
 
+        # FIXME: is the == 0 case actually relevant?
         if dp_beg == 0:
             limits = [0, 0]
         else:
@@ -286,13 +287,6 @@ class reeke_model:
         else:
             limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
-        if dp_end < 0:
-            sign = -1
-        elif dp_end == 0:
-            sign = 0
-        else:
-            sign = 1
-
         self._ewald_p_lim_end = tuple(sorted(limits))
 
         # Now determine limits for the planes of p that touch the circle of
@@ -303,15 +297,31 @@ class reeke_model:
         assert abs(sin_theta) <= 1.0  # sanity check
         sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
+        # FIXME
+        # I assume the sign trickery in the following block was done in error
+        # and should not really happen: The original code redefined 'sign' in
+        # the block above this code and as a result ends up attaching the sign
+        # of dp_end to the absolute value of db_beg. I have faithfully retained
+        # this behaviour below.
+        # I suspect in reality the abs() in e=... should be dropped and the
+        # 'sign' in the final expression replaced by 1, similar to the second
+        # block dealing with dp_end.
+        # Note the value of 'sign' is still used further down the line.
         e = 2.0 * abs(dp_beg) * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
+        if dp_end < 0:
+            sign = -1
+        elif dp_end == 0:
+            sign = 0
+        else:
+            sign = 1
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
-        e = 2.0 * abs(dp_end) * sin_theta ** 2
+        e = 2.0 * dp_end * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_end ** 2, 0))
-        limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
+        limits = [(e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_end = tuple(sorted(limits))
 
