@@ -1,18 +1,19 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
-from dials.util import wx_viewer
+
 import copy
+
+import libtbx.phil
+import gltbx
 import wx
 import wxtbx.utils
+from dials.util import wx_viewer
+from dxtbx.model import MultiAxisGoniometer
 from gltbx.gl import *
-import gltbx
 from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
-import libtbx.phil
-from dxtbx.model import MultiAxisGoniometer
 
 help_message = """
 

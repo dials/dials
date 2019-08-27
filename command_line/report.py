@@ -17,10 +17,10 @@ from __future__ import absolute_import, division, print_function
 import copy
 import math
 from collections import OrderedDict
-import numpy as np
 
+import numpy as np
+import dials.util.log
 from cctbx import uctbx
-import dials.util.banner  # noqa: F401 - Importing means that it prints
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_library import (
     merging_stats_from_scaled_array,
@@ -2435,6 +2435,7 @@ class Script(object):
             check_format=False,
             epilog=help_message,
         )
+        dials.util.log.print_banner()
 
     def run(self):
         """ Run the script. """

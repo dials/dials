@@ -1,11 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
-
 import logging
 import sys
-
-logger = logging.getLogger("dials.command_line.cosym")
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -22,6 +18,7 @@ from dials.util.filter_reflections import filtered_arrays_from_experiments_refle
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym import CosymAnalysis
 
+logger = logging.getLogger("dials.command_line.cosym")
 
 phil_scope = iotbx.phil.parse(
     """\

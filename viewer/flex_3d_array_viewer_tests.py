@@ -1,29 +1,9 @@
-#!/usr/bin/env python
-#
-#  flex_3d_array_viewer_test.py
-#
-#  test for slice_viewer.py
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.viewer.slice_viewer import show_3d
-from dials.algorithms.shoebox import MaskCode
-
-attempt_to_fix_a_crash = """
-try:
-  import scipy.linalg # import dependency
-except ImportError as e:
-  pass
-"""
 
 if __name__ == "__main__":
     lst_flex = []

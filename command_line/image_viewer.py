@@ -1,23 +1,11 @@
-#!/usr/bin/env python
-#
-# image_viewer.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
+
 import sys
 
-import dials.util.banner  # noqa: F401 - Importing means that it prints
+import dials.util.log
 import iotbx.phil
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
-
 
 help_message = """
 
@@ -170,14 +158,8 @@ if __name__ == "__main__":
     from dials.util.options import flatten_reflections
     from dials.util.options import flatten_experiments
 
-    import libtbx.load_env
-
-    usage_message = (
-        """
-    %s models.expt [observations.refl]
-  """
-        % libtbx.env.dispatcher_name
-    )
+    dials.util.log.print_banner()
+    usage_message = "dials.image_viewer models.expt [observations.refl]"
     parser = OptionParser(
         usage=usage_message,
         phil=phil_scope,

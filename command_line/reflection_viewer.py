@@ -1,18 +1,6 @@
-#!/usr/bin/env python
-#
-# dials.reflection_viewer.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst and Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 
 help_message = """
@@ -33,10 +21,8 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
-        usage = "usage: %s [options] experiment.expt" % libtbx.env.dispatcher_name
+        usage = "dials.reflection_viewer [options] experiment.expt"
 
         # Create the parser
         self.parser = OptionParser(
