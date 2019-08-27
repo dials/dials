@@ -332,13 +332,8 @@ class reeke_model:
             p_max_beg = min(max(self._res_p_lim_beg), max(self._ewald_p_lim_beg))
             p_max_end = min(max(self._res_p_lim_end), max(self._ewald_p_lim_end))
 
-        p_lim_beg = (p_min_beg, p_max_beg)
-        p_lim_end = (p_min_end, p_max_end)
-        # p_lim_beg = sorted(self._ewald_p_lim_beg + self._res_p_lim_beg)[1:3]
-        # p_lim_end = sorted(self._ewald_p_lim_end + self._res_p_lim_end)[1:3]
-
         # single set of limits covering overall range
-        p_lim = sorted(p_lim_beg + p_lim_end)[0::3]
+        p_lim = sorted((p_min_beg, p_max_beg, p_min_end, p_max_end))[0::3]
         p_lim[0] = int(p_lim[0]) - self._margin
         p_lim[1] = int(p_lim[1]) + self._margin
 
