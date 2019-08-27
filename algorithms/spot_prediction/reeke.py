@@ -260,8 +260,8 @@ class reeke_model:
 
         # Find distances between p = 0 and the plane passing through the
         # centre of the Ewald sphere
-        dp_beg = abs(v_beg.dot(self._source))
-        dp_end = abs(v_end.dot(self._source))
+        dp_beg = v_beg.dot(self._source)
+        dp_end = v_end.dot(self._source)
 
         # There are two planes of constant p that are tangential to the Ewald
         # sphere, on either side of the sphere. The smaller in magnitude of p
@@ -274,19 +274,24 @@ class reeke_model:
         # The correct sign is determined by whether the plane normal vector is
         # more closely parallel or antiparallel to the beam direction.
 
-        sign = cmp(v_beg.dot(self._source), 0)
+        sign = cmp(dp_beg, 0)
 
         limits = [
-            (sign * s * (self._source.length() + s * dp_beg) / p_dist) for s in (-1, 1)
+            (sign * s * (self._source.length() + s * abs(dp_beg)) / p_dist)
+            for s in (-1, 1)
         ]
 
         self._ewald_p_lim_beg = tuple(sorted(limits))
 
-        sign = cmp(v_end.dot(self._source), 0)
+        sign = cmp(dp_end, 0)
 
         limits = [
-            (sign * s * (self._source.length() + s * dp_end) / p_dist) for s in (-1, 1)
+            (sign * s * (self._source.length() + s * abs(dp_end)) / p_dist)
+            for s in (-1, 1)
         ]
+
+        dp_beg = abs(dp_beg)
+        dp_end = abs(dp_end)
 
         self._ewald_p_lim_end = tuple(sorted(limits))
 
