@@ -9,12 +9,11 @@
 #  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
-from past.builtins import cmp
-import os
 import builtins
 import collections
 import logging
 import operator
+import os
 import warnings
 
 import boost.python
@@ -495,7 +494,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         :param name: The name of the column
         :param reverse: Reverse the sort order
         :param order: For multi element items specify order
-
         """
 
         if type(self[name]) in [
@@ -506,7 +504,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             miller_index,
         ]:
             data = self[name]
-            if order is None:
+            if not order:
                 perm = flex.size_t(
                     builtins.sorted(
                         range(len(self)), key=lambda x: data[x], reverse=reverse
@@ -514,17 +512,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
                 )
             else:
                 assert len(order) == len(data[0])
-
-                def compare(x, y):
-                    a = tuple(x[i] for i in order)
-                    b = tuple(y[i] for i in order)
-                    return cmp(a, b)
-
                 perm = flex.size_t(
                     builtins.sorted(
                         range(len(self)),
-                        key=lambda x: data[x],
-                        cmp=compare,
+                        key=lambda x: tuple(data[x][i] for i in order),
                         reverse=reverse,
                     )
                 )
@@ -533,8 +524,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         self.reorder(perm)
 
     """
-  Sorting the reflection table within an already sorted column
-  """
+    Sorting the reflection table within an already sorted column
+    """
 
     def subsort(self, key0, key1, reverse=False):
         """
