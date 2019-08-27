@@ -246,7 +246,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
         """
         Read the reflection table from file in msgpack format
         """
-        import blosc.blosc_extension
+        try:
+            import blosc.blosc_extension
+
+            blosc_error = blosc.blosc_extension.error
+        except ImportError:
+            # We never officially supported blosc in a release, so ignoring
+            # errors here should be mostly fine.
+            blosc = None
+            blosc_error = AttributeError  # hacky hack
 
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
@@ -257,7 +265,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
             warnings.warn(
                 "blosc compression is deprecated", DeprecationWarning, stacklevel=2
             )
-        except blosc.blosc_extension.error:
+        except blosc_error:
             # We now accept uncompressed data
             pass
         return reflection_table.from_msgpack(infile_data)
