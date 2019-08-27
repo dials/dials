@@ -1,10 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import libtbx
 import pytest
 
-import libtbx
 from cctbx import sgtbx
-
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_test_data
 from dials.algorithms.symmetry.cosym import phil_scope
 from dials.algorithms.symmetry.cosym import CosymAnalysis
@@ -97,6 +96,7 @@ def test_cosym(
     assert len(reindexing_ops) == len(expected_reindexing_ops)
     assert sorted(reindexing_ops.keys()) == sorted(expected_reindexing_ops.keys())
     assert len(space_groups) == 1
+    space_group_info = list(space_groups)[0].info()
 
     if use_known_space_group:
         expected_sg = sgtbx.space_group_info(space_group).group()
@@ -115,7 +115,7 @@ def test_cosym(
             reindexed = (
                 datasets[d_id]
                 .change_basis(cb_op)
-                .customized_copy(space_group_info=space_groups.keys()[0].info())
+                .customized_copy(space_group_info=space_group_info)
             )
             assert reindexed.is_compatible_unit_cell(), str(
                 reindexed.crystal_symmetry()

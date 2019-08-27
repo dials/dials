@@ -2,12 +2,14 @@
 Observers for the cosym procedure.
 """
 from __future__ import absolute_import, division, print_function
-from collections import OrderedDict
+
 import json
-from dials.util.observer import Observer, singleton
+from collections import OrderedDict
+
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.algorithms.symmetry.cosym import SymmetryAnalysis
 from dials.algorithms.clustering.observers import UnitCellAnalysisObserver
+from dials.util.observer import Observer, singleton
 from jinja2 import Environment, ChoiceLoader, PackageLoader
 
 
@@ -64,7 +66,6 @@ class CosymHTMLGenerator(Observer):
 
 @singleton
 class CosymJSONGenerator(Observer):
-
     """
     Observer to make a html report
     """
@@ -78,7 +79,7 @@ class CosymJSONGenerator(Observer):
         self.data.update(UnitCellAnalysisObserver().make_plots())
         self.data.update(SymmetryAnalysisObserver().get_data())
         print("Writing json to: %s" % filename)
-        with open(filename, "wb") as f:
+        with open(filename, "w") as f:
             json.dump(self.data, f)
 
 

@@ -5,10 +5,12 @@ import copy
 import logging
 import math
 
-from cctbx.array_family import flex
-from cctbx import sgtbx
-from cctbx import miller
 import cctbx.sgtbx.cosets
+from cctbx import miller
+from cctbx import sgtbx
+from cctbx.array_family import flex
+from libtbx import easy_mp
+from scipy import sparse
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,6 @@ class Target(object):
 
     Attributes:
       dim (int): The number of dimensions used in the analysis.
-
     """
 
     def __init__(
@@ -182,8 +183,6 @@ class Target(object):
             n_sym_ops = len(self._sym_ops)
             NN = n_lattices * n_sym_ops
 
-            from scipy import sparse
-
             rij_row = []
             rij_col = []
             rij_data = []
@@ -247,7 +246,7 @@ class Target(object):
                                 cc = None
                                 n = None
 
-                        if n < self._min_pairs:
+                        if self._min_pairs is not None and n < self._min_pairs:
                             continue
 
                         if cc is not None and n is not None:
@@ -273,8 +272,6 @@ class Target(object):
                 wij = sparse.coo_matrix((wij_data, (wij_row, wij_col)), shape=(NN, NN))
 
             return rij, wij
-
-        from libtbx import easy_mp
 
         args = [(i,) for i in range(n_lattices)]
         results = easy_mp.parallel_map(
@@ -346,7 +343,6 @@ class Target(object):
         Returns:
           grad (scitbx.array_family.flex.double):
           The gradients of the target function with respect to the parameters.
-
         """
         grad = flex.double(x.size(), 0)
         for i in range(grad.size()):
@@ -416,7 +412,6 @@ class Target(object):
         Returns:
           curvs (scitbx.array_family.flex.double):
           The curvature of the target function with respect to the parameters.
-
         """
         coords = []
         NN = x.size() // self.dim
@@ -448,7 +443,6 @@ class Target(object):
         Returns:
           curvs (scitbx.array_family.flex.double):
           The curvature of the target function with respect to the parameters.
-
         """
         f = self.compute_functional(x)
         curvs = flex.double(x.size(), 0)
@@ -466,6 +460,5 @@ class Target(object):
 
         Returns:
           List[cctbx.sgtbx.rt_mx]: The list of symmetry operations.
-
         """
         return self._sym_ops
