@@ -4,6 +4,7 @@ import os
 
 import procrunner
 import pytest
+from dxtbx.serialize import load
 
 
 def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir):
@@ -39,12 +40,12 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(
         tmpdir.join("experiments_multiple_sweeps.expt").strpath
     )
     assert len(experiments) == 2
+    for experiment in experiments:
+        assert experiment.identifier != ""
 
 
 def test_with_mask(dials_data, tmpdir):
@@ -64,11 +65,10 @@ def test_with_mask(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_with_mask.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(
         tmpdir.join("experiments_with_mask.expt").strpath
     )
+    assert experiments[0].identifier != ""
     assert (
         experiments[0].imageset.external_lookup.mask.filename == mask_filename.strpath
     )
@@ -121,9 +121,8 @@ def test_override_geometry(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("override_geometry.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(tmpdir.join("override_geometry.expt").strpath)
+    assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
 
     beam = imgset.get_beam()
@@ -150,7 +149,7 @@ def test_override_geometry(dials_data, tmpdir):
     assert scan.get_oscillation() == (1, 2)
 
 
-def tst_import_beam_centre(dials_data, run_in_tmpdir):
+def tst_import_beam_centre(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
 
@@ -167,9 +166,8 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("mosflm_beam_centre.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt").strpath)
+    assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
@@ -192,7 +190,7 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
     assert beam_centre == pytest.approx((200, 100))
 
 
-def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
+def test_slow_fast_beam_centre(dials_regression, tmpdir):
     # test slow_fast_beam_centre with a multi-panel CS-PAD image
     impath = os.path.join(
         dials_regression,
@@ -211,9 +209,8 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
     assert not result.returncode and not result.stderr
     assert os.path.exists("slow_fast_beam_centre.expt")
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list("slow_fast_beam_centre.expt")
+    assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
     # beam centre on 18th panel
     s0 = imgset.get_beam().get_s0()
@@ -258,6 +255,10 @@ def test_from_image_files(dials_data, tmpdir):
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
 
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
+
 
 def test_from_template(dials_data, tmpdir):
     # Find the image files
@@ -274,6 +275,10 @@ def test_from_template(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
+
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_extrapolate_scan(dials_data, tmpdir):
@@ -292,3 +297,7 @@ def test_extrapolate_scan(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)
+
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("import_extrapolate.expt").strpath)
+    assert exp[0].identifier != ""

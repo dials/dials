@@ -31,6 +31,15 @@ phil_scope = iotbx.phil.parse(
 )
 
 
+def generate_experiment_identifiers(experiments, identifier_type="uuid"):
+    """Generate unique identifiers for each experiment."""
+    if identifier_type == "uuid":
+        for expt in experiments:
+            expt.identifier = str(uuid.uuid4())
+    elif identifier_type == "timestamp":
+        pass
+
+
 def split_reflection_tables_on_ids(reflection_tables):
     """"Split a list of multi-dataset reflection tables, selecting on id.
 
