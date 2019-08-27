@@ -277,7 +277,7 @@ class reeke_model:
         sign = cmp(dp_beg, 0)
 
         limits = [
-            ((sign * s * self._source.length()) + (sign * s * s * abs(dp_beg))) / p_dist
+            ((sign * s * self._source.length()) + dp_beg) / p_dist
             for s in (-1, 1)
         ]
 
@@ -286,7 +286,7 @@ class reeke_model:
         sign = cmp(dp_end, 0)
 
         limits = [
-            ((sign * s * self._source.length()) + (sign * s * s * abs(dp_end))) / p_dist
+            ((sign * s * self._source.length()) + dp_end) / p_dist
             for s in (-1, 1)
         ]
 
