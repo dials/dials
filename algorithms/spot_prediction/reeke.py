@@ -281,12 +281,17 @@ class reeke_model:
 
         self._ewald_p_lim_beg = tuple(sorted(limits))
 
-        sign = cmp(dp_end, 0)
-
         if dp_end == 0:
             limits = [0, 0]
         else:
             limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
+
+        if dp_end < 0:
+            sign = -1
+        elif dp_end == 0:
+            sign = 0
+        else:
+            sign = 1
 
         dp_beg = abs(dp_beg)
         dp_end = abs(dp_end)
