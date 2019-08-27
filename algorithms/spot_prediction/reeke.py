@@ -293,9 +293,6 @@ class reeke_model:
         else:
             sign = 1
 
-        dp_beg = abs(dp_beg)
-        dp_end = abs(dp_end)
-
         self._ewald_p_lim_end = tuple(sorted(limits))
 
         # Now determine limits for the planes of p that touch the circle of
@@ -306,13 +303,13 @@ class reeke_model:
         assert abs(sin_theta) <= 1.0  # sanity check
         sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
-        e = 2.0 * sin_theta ** 2 * dp_beg
+        e = 2.0 * abs(dp_beg) * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
-        e = 2.0 * sin_theta ** 2 * dp_end
+        e = 2.0 * abs(dp_end) * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_end ** 2, 0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
