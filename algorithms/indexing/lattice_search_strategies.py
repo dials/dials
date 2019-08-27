@@ -1,19 +1,18 @@
 """Lattice search strategies."""
 
-from __future__ import absolute_import, division
-from __future__ import print_function
-
-import logging
+from __future__ import absolute_import, division, print_function
 
 import copy
+import logging
 import math
+import operator
+
 import cctbx.miller
 from dials.array_family import flex
-import operator
-from scitbx import matrix
-from scitbx.math import superpose, least_squares_plane
 from dxtbx.model import Crystal
 from libtbx import phil
+from scitbx import matrix
+from scitbx.math import superpose, least_squares_plane
 
 TWO_PI = 2.0 * math.pi
 FIVE_DEG = TWO_PI * 5.0 / 360.0
@@ -56,7 +55,6 @@ class Strategy(object):
 
 class CompleteGraph(object):
     def __init__(self, seed_vertex):
-
         self.vertices = [seed_vertex]
         self.weight = [{0: 0.0}]
         self.total_weight = 0.0
@@ -88,10 +86,10 @@ class CompleteGraph(object):
 
         # Sort the vertices and weights by spot_id
         l = zip(g.vertices, g.weight)
-        l.sort(key=lambda v_w: v_w[0]["spot_id"])
+        l = sorted(l, key=lambda v_w: v_w[0]["spot_id"])
         v, w = zip(*l)
-        g.vertices = [e for e in v]
-        g.weight = [e for e in w]
+        g.vertices = list(v)
+        g.weight = list(w)
 
         return g
 
@@ -380,8 +378,6 @@ class LowResSpotMatch(Strategy):
             self.spots["d_star_outer"] - self.spots["d_star_inner"]
         )
 
-        return
-
     def _calc_seeds_and_stems(self):
         # As the first stage of search, determine a list of seed spots for further
         # stages. Order these by distance of observed d* from the candidate
@@ -428,7 +424,6 @@ class LowResSpotMatch(Strategy):
                 )
 
         self.stems.sort(key=operator.itemgetter("residual_d_star"))
-        return
 
     def _pairs_with_seed(self, seed):
 
