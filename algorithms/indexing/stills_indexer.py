@@ -807,6 +807,14 @@ class StillsIndexer(Indexer):
         reflections["xyzcal.mm"] = xyzcal_mm
         reflections.set_flags(matches["iobs"], reflections.flags.used_in_refinement)
         reflections["entering"] = flex.bool(len(reflections), False)
+
+        if self.all_params.stills.set_domain_size_ang_value is not None:
+            for exp in ref_experiments:
+                exp.crystal.set_domain_size_ang(self.all_params.stills.set_domain_size_ang_value)
+        if self.all_params.stills.set_mosaic_half_deg_value is not None:
+            for exp in ref_experiments:
+                exp.crystal.set_half_mosaicity_deg(self.all_params.stills.set_mosaic_half_deg_value)
+
         return ref_experiments, reflections
 
 
