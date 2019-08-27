@@ -274,21 +274,19 @@ class reeke_model:
         # The correct sign is determined by whether the plane normal vector is
         # more closely parallel or antiparallel to the beam direction.
 
-        sign = cmp(dp_beg, 0)
-
-        limits = [
-            ((sign * s * self._source.length()) + dp_beg) / p_dist
-            for s in (-1, 1)
-        ]
+        if dp_beg == 0:
+            limits = [0, 0]
+        else:
+            limits = [(dp_beg + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         self._ewald_p_lim_beg = tuple(sorted(limits))
 
         sign = cmp(dp_end, 0)
 
-        limits = [
-            ((sign * s * self._source.length()) + dp_end) / p_dist
-            for s in (-1, 1)
-        ]
+        if dp_end == 0:
+            limits = [0, 0]
+        else:
+            limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         dp_beg = abs(dp_beg)
         dp_end = abs(dp_end)
