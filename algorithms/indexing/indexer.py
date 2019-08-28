@@ -291,6 +291,12 @@ indexing {
         .help=Known beam position in mm X,Y, rmsd_target_mm is reused here as a circle of confusion
         .help=to assure that no images are accepted where the lattice is misindexed by a unit shift.
     }
+    set_domain_size_ang_value = None
+      .type=float
+      .help=If specified, will set the domain size ang value and override the value determined from nave refinement
+    set_mosaic_half_deg_value = None
+      .type=float
+      .help=If specified, will set the mosaic half degree value and override the value determined from nave refinement
   }
 }
 """
