@@ -74,7 +74,7 @@ def save_experiments(experiments, filename):
     """Save the experiments json."""
     st = time()
     logger.info("Saving the experiments to %s", filename)
-    experiments.as_file(filename, split=True)
+    experiments.as_file(filename)
     logger.info("Time taken: %g", (time() - st))
 
 
