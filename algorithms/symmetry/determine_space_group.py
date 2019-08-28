@@ -519,11 +519,12 @@ class ScoreSymmetryElement(object):
             outliers = flex.bool(len(x.data()), False)
             iqr_multiplier = 20  # very generous tolerance
             for col in (x.data(), y.data()):
-                min_x, q1_x, med_x, q3_x, max_x = five_number_summary(col)
-                iqr_x = q3_x - q1_x
-                cut_x = iqr_multiplier * iqr_x
-                outliers.set_selected(col > q3_x + cut_x, True)
-                outliers.set_selected(col < q1_x - cut_x, True)
+                if col.size():
+                    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(col)
+                    iqr_x = q3_x - q1_x
+                    cut_x = iqr_multiplier * iqr_x
+                    outliers.set_selected(col > q3_x + cut_x, True)
+                    outliers.set_selected(col < q1_x - cut_x, True)
             if outliers.count(True):
                 logger.debug(
                     "Rejecting %s outlier value%s"
