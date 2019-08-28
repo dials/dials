@@ -76,6 +76,7 @@ def test_ScalingModelObserver():
 
     KB_dict = {
         "__id__": "KB",
+        "is_scaled": True,
         "scale": {
             "n_parameters": 1,
             "parameters": [0.5],

@@ -242,6 +242,7 @@ def test_scale_script_prepare_input():
     ]
 
 
+@pytest.mark.xfail(reason="Fix for targeted scaling not yet implemented")
 def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     """Test targeted scaling against an mtz generated with dials.scale."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
