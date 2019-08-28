@@ -35,6 +35,8 @@ def test_find_spots_from_images(dials_data, tmpdir):
         (1399.1190476190477, 514.2142857142857, 0.5)
     )
     assert "shoebox" in reflections
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
 
 def test_find_spots_with_resolution_filter(dials_data, tmpdir):
@@ -59,6 +61,8 @@ def test_find_spots_with_resolution_filter(dials_data, tmpdir):
         reflections = pickle.load(f)
     assert len(reflections) in range(467, 469)
     assert "shoebox" not in reflections
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
 
 def test_find_spots_with_hot_mask(dials_data, tmpdir):
@@ -84,6 +88,8 @@ def test_find_spots_with_hot_mask(dials_data, tmpdir):
         reflections = pickle.load(f)
     assert len(reflections) in range(653, 655)
     assert "shoebox" not in reflections
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
     with tmpdir.join("hot_mask_0.pickle").open("rb") as f:
         mask = pickle.load(f)
@@ -115,6 +121,8 @@ def test_find_spots_with_hot_mask_with_prefix(dials_data, tmpdir):
         reflections = pickle.load(f)
     assert len(reflections) in range(653, 655)
     assert "shoebox" not in reflections
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
     with tmpdir.join("my_hot_mask_0.pickle").open("rb") as f:
         mask = pickle.load(f)
     assert len(mask) == 1
@@ -142,6 +150,8 @@ def test_find_spots_with_generous_parameters(dials_data, tmpdir):
     with tmpdir.join("spotfinder.refl").open("rb") as f:
         reflections = pickle.load(f)
     assert len(reflections) in range(678, 680)
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
 
 def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
@@ -165,6 +175,8 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
 
     with tmpdir.join("spotfinder.refl").open("rb") as f:
         reflections = pickle.load(f)
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 
@@ -178,6 +190,7 @@ def test_find_spots_with_user_defined_mask(dials_data, tmpdir):
     for x, y, z in reflections["xyzobs.px.value"]:
         d = detector[0].get_resolution_at_pixel(beam.get_s0(), (x, y))
         assert d >= 3
+    reflections.assert_experiment_identifiers_are_consistent(experiments)
 
 
 def test_find_spots_with_user_defined_region(dials_data, tmpdir):
@@ -203,6 +216,8 @@ def test_find_spots_with_user_defined_region(dials_data, tmpdir):
     assert y.all_ge(800)
     assert x.all_lt(1200)
     assert y.all_lt(1200)
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
 
 
 def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
@@ -226,3 +241,5 @@ def test_find_spots_with_xfel_stills(dials_regression, tmpdir):
     with tmpdir.join("spotfinder.refl").open("rb") as f:
         reflections = pickle.load(f)
     assert len(reflections) == 2643
+    assert list(reflections.experiment_identifiers().keys()) == [0]
+    assert reflections.experiment_identifiers().values()
