@@ -104,14 +104,15 @@ class ScalingSummaryGenerator(Observer):
         valid_ranges = get_valid_image_ranges(scaling_script.experiments)
         image_ranges = get_image_ranges(scaling_script.experiments)
         msg = []
-        for (img, valid, exp) in zip(
-            image_ranges, valid_ranges, scaling_script.experiments
+        for (img, valid, refl) in zip(
+            image_ranges, valid_ranges, scaling_script.reflections
         ):
             if valid:
+                id_ = list(set(refl["id"]).difference(set([-1])))[0]
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
-                        % (exp.identifier, list(img), list(valid))
+                        "Excluded images for dataset %s; image range: %s, limited range: %s"
+                        % (id_, list(img), list(valid))
                     )
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
@@ -212,8 +213,7 @@ class ScalingModelObserver(Observer):
         if not active_scalers:
             active_scalers = [scaler]
         for s in active_scalers:
-            id_ = s.experiment.identifier
-            self.data[id_] = s.experiment.scaling_model.to_dict()
+            self.data[s.id_] = s.experiment.scaling_model.to_dict()
 
     def make_plots(self):
         """Generate scaling model component plot data."""
@@ -272,14 +272,13 @@ class ScalingOutlierObserver(Observer):
         if not active_scalers:
             active_scalers = [scaler]
         for scaler in active_scalers:
-            id_ = scaler.experiment.identifier
             outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
                 scaler.outliers
             )
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
-            self.data[id_] = {
+            self.data[scaler.id_] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),

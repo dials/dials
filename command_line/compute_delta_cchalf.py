@@ -21,7 +21,7 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 
 matplotlib.use("Agg")
 from matplotlib import pylab
@@ -397,12 +397,12 @@ class Script(object):
                 identifier = reflections.experiment_identifiers()[exp_id]
                 if expid_to_image_groups[exp_id][-1] == id_:  # is last group
                     image_ranges_removed.append([image_range, exp_id])
+                    index = list(experiments.identifiers()).index(identifier)
                     logger.info(
                         "Removing image range %s from experiment %s",
                         image_range,
-                        identifier,
+                        str(index),
                     )
-                    index = list(experiments.identifiers()).index(identifier)
                     exclude_images.append(
                         [
                             str(index)
@@ -440,10 +440,15 @@ class Script(object):
                 exp.identifier
             ):  # if all removed above
                 experiments_to_delete.append(exp.identifier)
+                # want to know the id value this corresponds to.
+        table_ids_values = []
         if experiments_to_delete:
-            experiments, reflection_list = select_datasets_on_ids(
+            experiments, reflection_list = select_datasets_on_identifiers(
                 experiments, reflection_list, exclude_datasets=experiments_to_delete
             )
+            for k in reflections.experiment_identifiers().keys():
+                if reflections.experiment_identifiers()[k] in experiments_to_delete:
+                    table_ids_values.append(k)
         assert len(reflection_list) == len(experiments)
 
         output_reflections = flex.reflection_table()
@@ -456,7 +461,7 @@ class Script(object):
         results_summary["dataset_removal"].update(
             {
                 "image_ranges_removed": image_ranges_removed,
-                "experiments_fully_removed": experiments_to_delete,
+                "experiments_fully_removed": table_ids_values,
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }

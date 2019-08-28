@@ -94,10 +94,11 @@ def test_ScalingModelObserver():
     scaler1 = mock.Mock()
     scaler1.experiment = experiment
     scaler1.active_scalers = None
+    scaler1.id_ = 0
 
     observer = ScalingModelObserver()
     observer.update(scaler1)
-    assert observer.data["0"] == KB_dict
+    assert observer.data[0] == KB_dict
 
     msg = observer.return_model_error_summary()
     assert msg != ""
@@ -118,13 +119,14 @@ def test_ScalingModelObserver():
     scaler2 = mock.Mock()
     scaler2.experiment = experiment2
     scaler2.active_scalers = None
+    scaler2.id_ = 1
 
     multiscaler = mock.Mock()
     multiscaler.active_scalers = [scaler1, scaler2]
     observer.data = {}
     observer.update(multiscaler)
-    assert observer.data["0"] == KB_dict
-    assert observer.data["1"] == KB_dict
+    assert observer.data[0] == KB_dict
+    assert observer.data[1] == KB_dict
 
     mock_func = mock.Mock()
     mock_func.return_value = {"plot": {"layout": {"title": ""}}}
@@ -153,17 +155,19 @@ def test_ScalingOutlierObserver():
     scaler.reflection_table = {
         "xyzobs.px.value": flex.vec3_double(
             [(0, 1, 2), (10, 11, 12), (20, 21, 22), (30, 31, 32)]
-        )
+        ),
+        "id": flex.int([0, 0, 0, 0]),
     }
     scaler.experiment.identifier = "0"
     scaler.experiment.detector = [mock_detector]
     scaler.experiment.scan = mock_scan
     scaler.active_scalers = None
+    scaler.id_ = 0
 
     observer = ScalingOutlierObserver()
     observer.update(scaler)
     assert observer.data == {
-        "0": {
+        0: {
             "x": [10],
             "y": [11],
             "z": [12],
@@ -181,7 +185,7 @@ def test_ScalingOutlierObserver():
     with mock.patch("dials.algorithms.scaling.observers.plot_outliers", new=mock_func):
         r = observer.make_plots()
         assert mock_func.call_count == 1
-        assert mock_func.call_args_list == [mock.call(observer.data["0"])]
+        assert mock_func.call_args_list == [mock.call(observer.data[0])]
         assert all(
             i in r["outlier_plots"] for i in ["outlier_plot_0", "outlier_plot_z0"]
         )

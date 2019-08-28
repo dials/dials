@@ -317,27 +317,28 @@ def select_datasets_on_ids(
     """
     Select a subset of experiments and reflection tables based on id values.
 
-    This performs a similar function to the select/remove_on_experiment_identifiers
-    methods of ExperimentList and reflection_table, with additional logic to handle
-    the case of a list of reflection tables, rather than a single one and to catch
-    bad input. Does not require reflection tables containing data from multiple
-    experiments to be split.
+    This function selects or removes datasets from the list of experiments and
+    reflection tables based on the "id" columns in the reflection tables.
+    Each table must only contain one dataset, and this function assumes that
+    the order of experiments and reflection tables are consistent.
 
     Args:
         experiments: An ExperimentList
-        reflection_table_list (list): a list of reflection tables
-        exclude_datasets (list): a list of experiment_identifiers to exclude
-        use_datasets (list): a list of experiment_identifiers to use
+        single_reflection_tables (list): a list of single-dataset reflection
+            tables
+        exclude_datasets (list): a list of numerical ids to exclude
+        use_datasets (list): a list of numerical ids to use
 
     Returns:
         (tuple): tuple containing:
             experiments: The updated ExperimentList
-            list_of_reflections (list): A list of the updated reflection tables
+            list_of_reflections (list): A list of the selected reflection tables
 
     Raises:
-        ValueError: If both use_datasets and exclude datasets are used, if not all
-            experiment identifiers are set, if an identifier in exclude_datasets
-            or use_datasets is not in the list.
+        ValueError: If both use_datasets and exclude datasets are used, if an
+            id value in exclude_datasets or use_datasets is not found in any
+            reflection table, if a reflection table is not a single-dataset
+            table.
     """
     assert len(experiments) == len(single_reflection_tables)
     # Assume in matched order (should be from loading correctly)
@@ -346,13 +347,6 @@ def select_datasets_on_ids(
     if (use_datasets is not None) and (exclude_datasets is not None):
         raise ValueError(
             "The options use_datasets and exclude_datasets cannot be used in conjuction."
-        )
-    if experiments.identifiers().count("") > 0:
-        raise ValueError(
-            """
-            Not all experiment identifiers set in the ExperimentList.
-            Current identifiers set as: %s"""
-            % list(experiments.identifiers())
         )
 
     list_of_reflections = []

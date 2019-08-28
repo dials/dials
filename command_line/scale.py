@@ -284,7 +284,9 @@ class Script(Subject):
                     "Finishing scaling and filtering as no data removed in this cycle."
                 )
                 if self.params.scaling_options.full_matrix:
-                    self.reflections = parse_multiple_datasets(script.reflections)
+                    self.reflections = split_reflection_tables_on_ids(
+                        script.reflections
+                    )
                     results = self._run_final_scale_cycle(results)
                 else:
                     self.reflections = script.reflections
@@ -292,7 +294,7 @@ class Script(Subject):
                 break
 
             # Need to split reflections for further processing.
-            self.reflections = parse_multiple_datasets(script.reflections)
+            self.reflections = split_reflection_tables_on_ids(script.reflections)
 
             if (
                 latest_results["cumul_percent_removed"]
@@ -355,95 +357,55 @@ Warning: the command line option space_group has been deprecated,
 please use dials.reindex, dials.symmetry or dials.cosym to
 prepare the data in the correct space group.\n"""
             )
+
         if len(reflection_tables) > 1:
             # want to reorder id columns and not allow use of exclude/use datasets
             single_tables = parse_multiple_datasets(reflection_tables)
-            logger.info(
-                "Found %s reflection tables & %s experiments in total.",
-                len(single_tables),
-                len(experiments),
-            )
-            if len(experiments) != len(single_tables):
-                raise Sorry(
-                    "Mismatched number of experiments and reflection tables found."
-                )
-
-            if "" in experiments.identifiers():
-                try:
-                    experiments, single_tables = assign_unique_identifiers(
-                        experiments, single_tables
-                    )
-                except ValueError as e:
-                    raise Sorry(e)
-
-            if (use is not None) or (exclude is not None):
-                logger.warn(
-                    "Cannot use exclude_datasets/use_datasets with multi-file input"
-                )
-
         else:
-            # split, then assign, then exclude
             single_tables = split_reflection_tables_on_ids(reflection_tables)
-            logger.info(
-                "Found %s reflection tables & %s experiments in total.",
-                len(single_tables),
-                len(experiments),
-            )
-            if len(experiments) != len(single_tables):
-                raise Sorry(
-                    "Mismatched number of experiments and reflection tables found."
-                )
 
-            if "" in experiments.identifiers():
-                try:
-                    experiments, single_tables = assign_unique_identifiers(
-                        experiments, single_tables
-                    )
-                except ValueError as e:
-                    raise Sorry(e)
-
-            # can now exclude using id column values
-            if (use is not None) or (exclude is not None):
-                try:
-                    experiments, single_tables = select_datasets_on_ids(
-                        experiments,
-                        single_tables,
-                        params.dataset_selection.exclude_datasets,
-                        params.dataset_selection.use_datasets,
-                    )
-                    logger.info(
-                        "\nRemoved datasets with ids %s \n",
-                        params.dataset_selection.exclude_datasets,
-                    )
-                except ValueError as e:
-                    raise Sorry(e)
-        reflections = single_tables
-        #### Split the reflections tables into a list of reflection tables,
-        #### with one table per experiment.
-        """logger.info(
-            "Checking for the existence of a reflection table \n"
-            "containing multiple datasets \n"
-        )
-        reflections = parse_multiple_datasets(reflections)"""
-        """logger.info(
+        logger.info(
             "Found %s reflection tables & %s experiments in total.",
             len(single_tables),
             len(experiments),
         )
-        reflections = single_tables
-        if len(experiments) != len(reflections):
+        if len(experiments) != len(single_tables):
             raise Sorry("Mismatched number of experiments and reflection tables found.")
 
-        #### Assign experiment identifiers.
-        try:
-            experiments, reflections = assign_unique_identifiers(
-                experiments, reflections
-            )
-        except ValueError as e:
-            raise Sorry(e)
-        logger.info(
-            "\nDataset unique identifiers are %s \n", list(experiments.identifiers())
-        )"""
+        if "" in experiments.identifiers():
+            try:
+                experiments, single_tables = assign_unique_identifiers(
+                    experiments, single_tables
+                )
+            except ValueError as e:
+                raise Sorry(e)
+
+        if (use is not None) or (exclude is not None):
+            if len(reflection_tables) > 1:
+                # Cannot assume that ids are conserved in this case
+                logger.warn(
+                    "Cannot use exclude_datasets/use_datasets with multi-file input"
+                )
+            else:
+                try:
+                    experiments, single_tables = select_datasets_on_ids(
+                        experiments, single_tables, exclude, use
+                    )
+                    if exclude is not None:
+                        logger.info(
+                            "\nRemoved datasets with ids %s \n",
+                            ", ".join([str(i) for i in exclude]),
+                        )
+                    if use is not None:
+                        logger.info(
+                            "\nRetained datasets with ids %s \n",
+                            ", ".join([str(i) for i in use]),
+                        )
+                except ValueError as e:
+                    raise Sorry(e)
+
+        reflections = single_tables
+
         try:
             reflections, experiments = exclude_image_ranges_for_scaling(
                 reflections, experiments, params.exclude_images
@@ -553,11 +515,7 @@ prepare the data in the correct space group.\n"""
         # remove any bad datasets:
         removed_ids = self.scaler.removed_datasets
         if removed_ids:
-            logger.info("deleting removed datasets from memory: %s", removed_ids)
-            expids = list(self.experiments.identifiers())
-            locs_in_list = []
-            for id_ in removed_ids:
-                locs_in_list.append(expids.index(id_))
+            logger.info("Deleting removed datasets from memory: %s", removed_ids)
             self.experiments, self.reflections = select_datasets_on_ids(
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )

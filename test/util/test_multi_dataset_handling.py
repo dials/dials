@@ -8,7 +8,7 @@ from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
-    select_datasets_on_ids,
+    select_datasets_on_identifiers,
     sort_tables_to_experiments_order,
     renumber_table_id_columns,
 )
@@ -57,7 +57,7 @@ def reflections_024(reflections):
 
 def test_select_specific_datasets_using_id(experiments_024, reflections_024):
     use_datasets = ["0", "2"]
-    experiments, refl = select_datasets_on_ids(
+    experiments, refl = select_datasets_on_identifiers(
         experiments_024, reflections_024, use_datasets=use_datasets
     )
     assert len(experiments) == 2
@@ -66,7 +66,7 @@ def test_select_specific_datasets_using_id(experiments_024, reflections_024):
 
 
 def test_exclude_specific_datasets_using_id(experiments_024, reflections_024):
-    experiments, refl = select_datasets_on_ids(
+    experiments, refl = select_datasets_on_identifiers(
         experiments_024, reflections_024, exclude_datasets=["0"]
     )
     assert len(refl) == 2
@@ -78,7 +78,7 @@ def test_raise_exception_when_selecting_and_excluding_datasets_at_same_time(
     experiments_024, reflections_024
 ):
     with pytest.raises(ValueError):
-        experiments, refl = select_datasets_on_ids(
+        experiments, refl = select_datasets_on_identifiers(
             experiments_024,
             reflections_024,
             use_datasets=["2", "4"],
@@ -90,13 +90,13 @@ def test_raise_exception_when_excluding_non_existing_dataset(
     experiments_024, reflections_024
 ):
     with pytest.raises(ValueError):
-        experiments, refl = select_datasets_on_ids(
+        experiments, refl = select_datasets_on_identifiers(
             experiments_024, reflections_024, exclude_datasets=["1"]
         )
 
 
 def test_selecting_everything_is_identity_function(experiments_024, reflections_024):
-    exp, refl = select_datasets_on_ids(experiments_024, reflections_024)
+    exp, refl = select_datasets_on_identifiers(experiments_024, reflections_024)
     assert exp is experiments_024
     assert refl is reflections_024
 
@@ -105,7 +105,7 @@ def test_raise_exception_when_not_all_identifiers_set(experiments, reflections_0
     experiments[0].identifier = "0"
     experiments[1].identifier = "2"
     with pytest.raises(ValueError):
-        exp, refl = select_datasets_on_ids(
+        exp, refl = select_datasets_on_identifiers(
             experiments, reflections_024, use_datasets=["2"]
         )
 
@@ -114,7 +114,7 @@ def test_raise_exception_when_selecting_non_existing_dataset(
     experiments_024, reflections_024
 ):
     with pytest.raises(ValueError):
-        exp, refl = select_datasets_on_ids(
+        exp, refl = select_datasets_on_identifiers(
             experiments_024, reflections_024, use_datasets=["3"]
         )
 
@@ -125,7 +125,7 @@ def test_correct_handling_with_multi_dataset_table(experiments_024):
     reflections.experiment_identifiers()[0] = "0"
     reflections.experiment_identifiers()[1] = "2"
     reflections.experiment_identifiers()[2] = "4"
-    exp, refl = select_datasets_on_ids(
+    exp, refl = select_datasets_on_identifiers(
         experiments_024, [reflections], exclude_datasets=["2"]
     )
     assert list(refl[0].experiment_identifiers().values()) == ["0", "4"]

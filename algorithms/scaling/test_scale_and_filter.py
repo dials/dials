@@ -164,7 +164,7 @@ def test_compute_delta_cchalf_returned_results():
     )
     assert "experiments_fully_removed" in results_summary["dataset_removal"]
     assert "n_reflections_removed" in results_summary["dataset_removal"]
-    assert results_summary["dataset_removal"]["experiments_fully_removed"] == ["0"]
+    assert results_summary["dataset_removal"]["experiments_fully_removed"] == [0]
     assert results_summary["dataset_removal"]["n_reflections_removed"] == 10
 
     # Check for correct recording for image group mode.
@@ -190,7 +190,7 @@ def test_compute_delta_cchalf_returned_results():
     assert "experiments_fully_removed" in results_summary["dataset_removal"]
     assert "n_reflections_removed" in results_summary["dataset_removal"]
     assert "image_ranges_removed" in results_summary["dataset_removal"]
-    assert results_summary["dataset_removal"]["experiments_fully_removed"] == ["0"]
+    assert results_summary["dataset_removal"]["experiments_fully_removed"] == [0]
     assert results_summary["dataset_removal"]["n_reflections_removed"] == 10
     assert results_summary["dataset_removal"]["image_ranges_removed"] == [
         [(6, 10), 0],

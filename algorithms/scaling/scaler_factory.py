@@ -78,9 +78,6 @@ class ScalerFactory(object):
         id_vals = list(reflection_table.experiment_identifiers().values())
         assert experiment.identifier in id_vals, (experiment.identifier, list(id_vals))
         assert len(id_vals) == 1, list(id_vals)
-        logger.info(
-            "The experiment identifier for this dataset is %s", experiment.identifier
-        )
 
 
 class SingleScalerFactory(ScalerFactory):
@@ -95,7 +92,7 @@ class SingleScalerFactory(ScalerFactory):
         logger.info(
             "Preprocessing data for scaling. The id assigned to this \n"
             "dataset is %s, and the scaling model type being applied is %s. \n",
-            list(reflection_table.experiment_identifiers().values())[0],
+            list(reflection_table.experiment_identifiers().keys())[0],
             experiment.scaling_model.id_,
         )
 

@@ -89,6 +89,11 @@ class ScalerBase(Subject):
         return self._removed_datasets
 
     @property
+    def id_(self):
+        """The numerical id value in the (single-dataset) reflection table."""
+        return self._id_
+
+    @property
     def final_rmsds(self):
         """Holder for final R-factors from last minimisation."""
         return self._final_rmsds
@@ -260,6 +265,9 @@ class SingleScaler(ScalerBase):
         self._var_cov = sparse.matrix(n_model_params, n_model_params)
         self._initial_keys = list(reflection_table.keys())
         self._reflection_table = reflection_table
+        id_ = list(set(self._reflection_table["id"]).difference(set([-1])))
+        assert len(id_) == 1
+        self._id_ = id_[0]
         self._Ih_table = None  # stores data for reflections used for minimisation
         self.suitable_refl_for_scaling_sel = self.get_suitable_for_scaling_sel(
             self._reflection_table
@@ -685,10 +693,9 @@ class MultiScalerBase(ScalerBase):
         """
         initial_number = len(scalers)
         for n in n_list[::-1]:
-            self._removed_datasets.append(scalers[n].experiment.identifier)
+            self._removed_datasets.append(n)
             del scalers[n]
-        if 0 in n_list:
-            self._experiment = scalers[0].experiments
+        self._experiment = scalers[0].experiment
         assert len(scalers) == initial_number - len(n_list)
         logger.info("Removed datasets: %s", n_list)
 
@@ -847,13 +854,13 @@ class MultiScalerBase(ScalerBase):
         removed.
         """
         datasets_to_remove = []
-        for i, scaler in enumerate(self.active_scalers):
+        for scaler in self.active_scalers:
             if outlier:
                 scaler.scaling_selection = scaler.scaling_subset_sel & ~scaler.outliers
             else:
                 scaler.scaling_selection = copy.deepcopy(scaler.scaling_subset_sel)
             if scaler.scaling_selection.count(True) == 0:
-                datasets_to_remove.append(i)
+                datasets_to_remove.append(scaler.id_)
         if datasets_to_remove:
             self.remove_datasets(self.active_scalers, datasets_to_remove)
         self._create_Ih_table()
@@ -928,7 +935,7 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_selection |= sel
                 rows.append(
                     [
-                        scaler.experiment.identifier,
+                        str(scaler.id_),
                         str(indices_for_dataset.size()),
                         str(sel.count(True)),
                         str(scaler.scaling_selection.count(True)),
