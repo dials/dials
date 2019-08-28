@@ -30,7 +30,7 @@ def test_parse_exclude_images_commands():
     """Test for namesake function"""
     commands = [["1:101:200"], ["0:201:300"]]
     ranges = _parse_exclude_images_commands(commands)
-    assert ranges == [("1", (101, 200)), ("0", (201, 300))]
+    assert ranges == [(1, (101, 200)), (0, (201, 300))]
     with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101-200"]])
     with pytest.raises(ValueError):
