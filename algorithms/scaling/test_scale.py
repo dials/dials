@@ -157,42 +157,40 @@ def test_scale_script_prepare_input():
         _ = Script(params, exp, reflections)
 
     params, exp, reflections = generate_test_input()
-    # Try to use use_datasets when not identifiers set
-    params.dataset_selection.use_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
-    # Try to use use_datasets when not identifiers set
-    params.dataset_selection.use_datasets = None
-    params.dataset_selection.exclude_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
 
     # Now make two experiments with identifiers and select on them
     params, exp, reflections = generate_test_input(n=2)
     exp[0].identifier = "0"
+    joint_refl = flex.reflection_table()
     reflections[0].experiment_identifiers()[0] = "0"
     exp[1].identifier = "1"
-    reflections[1].experiment_identifiers()[0] = "1"
+    reflections[1]["id"] = flex.int(reflections[1].size(), 1)
+    reflections[1].experiment_identifiers()[1] = "1"
     list1 = ExperimentList().append(exp[0])
     list2 = ExperimentList().append(exp[1])
     reflections[0].assert_experiment_identifiers_are_consistent(list1)
     reflections[1].assert_experiment_identifiers_are_consistent(list2)
-    params.dataset_selection.use_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    joint_refl.extend(reflections[0])
+    joint_refl.extend(reflections[1])
+    params.dataset_selection.use_datasets = [0]
+    params, exp, script_reflections = Script.prepare_input(params, exp, [joint_refl])
 
     assert len(script_reflections) == 1
 
     # Try again, this time excluding
     params, exp, reflections = generate_test_input(n=2)
+    joint_refl = flex.reflection_table()
     exp[0].identifier = "0"
     reflections[0].experiment_identifiers()[0] = "0"
     exp[1].identifier = "1"
-    reflections[1].experiment_identifiers()[0] = "1"
-    params.dataset_selection.exclude_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    reflections[1]["id"] = flex.int(reflections[1].size(), 1)
+    reflections[1].experiment_identifiers()[1] = "1"
+    joint_refl.extend(reflections[0])
+    joint_refl.extend(reflections[1])
+    params.dataset_selection.exclude_datasets = [0]
+    params, exp, script_reflections = Script.prepare_input(params, exp, [joint_refl])
 
     assert len(script_reflections) == 1
-    assert script_reflections[0] is reflections[1]
 
     # Try having two unequal space groups
     params, exp, reflections = generate_test_input(n=2)

@@ -11,7 +11,7 @@ from dials.util.options import flatten_experiments, flatten_reflections
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
-    select_datasets_on_ids,
+    select_datasets_on_identifiers,
 )
 from dials.util.observer import Subject
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
@@ -96,7 +96,7 @@ class cosym(Subject):
                     len(identifiers),
                     str(identifiers),
                 )
-                self._experiments, self._reflections = select_datasets_on_ids(
+                self._experiments, self._reflections = select_datasets_on_identifiers(
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
@@ -218,7 +218,7 @@ class cosym(Subject):
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
             identifiers.append(expt.identifier)
 
-        return select_datasets_on_ids(
+        return select_datasets_on_identifiers(
             experiments, reflections, use_datasets=identifiers
         )
 
@@ -229,7 +229,7 @@ class cosym(Subject):
             if len(refl) >= self.params.min_reflections:
                 identifiers.append(expt.identifier)
 
-        return select_datasets_on_ids(
+        return select_datasets_on_identifiers(
             experiments, reflections, use_datasets=identifiers
         )
 

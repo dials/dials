@@ -12,17 +12,18 @@ import uuid
 logger = logging.getLogger("dials")
 
 import iotbx.phil
+from dxtbx.model import ExperimentList
 
 phil_scope = iotbx.phil.parse(
     """
   dataset_selection {
     use_datasets = None
-      .type = strings
+      .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to use from a multi-dataset input."
       .expert_level = 2
     exclude_datasets = None
-      .type = strings
+      .type = ints
       .help = "Choose a subset of datasets, based on the dataset id (as defined
                in the reflection table), to exclude from a multi-dataset input."
       .expert_level = 2
@@ -231,29 +232,25 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
     return experiments, reflections
 
 
-def select_datasets_on_ids(
+def select_datasets_on_identifiers(
     experiments, reflection_table_list, exclude_datasets=None, use_datasets=None
 ):
     """
     Select a subset of experiments and reflection tables based on identifiers.
-
     This performs a similar function to the select/remove_on_experiment_identifiers
     methods of ExperimentList and reflection_table, with additional logic to handle
     the case of a list of reflection tables, rather than a single one and to catch
     bad input. Does not require reflection tables containing data from multiple
     experiments to be split.
-
     Args:
         experiments: An ExperimentList
         reflection_table_list (list): a list of reflection tables
         exclude_datasets (list): a list of experiment_identifiers to exclude
         use_datasets (list): a list of experiment_identifiers to use
-
     Returns:
         (tuple): tuple containing:
             experiments: The updated ExperimentList
             list_of_reflections (list): A list of the updated reflection tables
-
     Raises:
         ValueError: If both use_datasets and exclude datasets are used, if not all
             experiment identifiers are set, if an identifier in exclude_datasets
@@ -311,4 +308,80 @@ are not found in the experiment list / reflection tables."""
             else:
                 list_of_reflections.append(reflection_table)
         experiments.remove_on_experiment_identifiers(exclude_datasets)
+    return experiments, list_of_reflections
+
+
+def select_datasets_on_ids(
+    experiments, single_reflection_tables, exclude_datasets=None, use_datasets=None
+):
+    """
+    Select a subset of experiments and reflection tables based on id values.
+
+    This performs a similar function to the select/remove_on_experiment_identifiers
+    methods of ExperimentList and reflection_table, with additional logic to handle
+    the case of a list of reflection tables, rather than a single one and to catch
+    bad input. Does not require reflection tables containing data from multiple
+    experiments to be split.
+
+    Args:
+        experiments: An ExperimentList
+        reflection_table_list (list): a list of reflection tables
+        exclude_datasets (list): a list of experiment_identifiers to exclude
+        use_datasets (list): a list of experiment_identifiers to use
+
+    Returns:
+        (tuple): tuple containing:
+            experiments: The updated ExperimentList
+            list_of_reflections (list): A list of the updated reflection tables
+
+    Raises:
+        ValueError: If both use_datasets and exclude datasets are used, if not all
+            experiment identifiers are set, if an identifier in exclude_datasets
+            or use_datasets is not in the list.
+    """
+    assert len(experiments) == len(single_reflection_tables)
+    # Assume in matched order (should be from loading correctly)
+    if (use_datasets is None) and (exclude_datasets is None):
+        return experiments, single_reflection_tables
+    if (use_datasets is not None) and (exclude_datasets is not None):
+        raise ValueError(
+            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+        )
+    if experiments.identifiers().count("") > 0:
+        raise ValueError(
+            """
+            Not all experiment identifiers set in the ExperimentList.
+            Current identifiers set as: %s"""
+            % list(experiments.identifiers())
+        )
+
+    list_of_reflections = []
+    if use_datasets is not None:
+        new_experiments = ExperimentList()
+        for experiment, table in zip(experiments, single_reflection_tables):
+            ids = list(set(table["id"]).difference(set([-1])))
+            if len(ids) > 1:
+                raise ValueError("Input data must be single-dataset reflection tables")
+            if ids[0] in use_datasets:
+                list_of_reflections.append(table)
+                new_experiments.append(experiment)
+        if len(list_of_reflections) != len(use_datasets):
+            raise ValueError(
+                """Attempting to select datasets based on id values that
+are not found in the reflection tables."""
+            )
+        return new_experiments, list_of_reflections
+
+    elif exclude_datasets is not None:
+        locs_to_remove = []
+        for i, table in enumerate(single_reflection_tables):
+            ids = list(set(table["id"]).difference(set([-1])))
+            if len(ids) > 1:
+                raise ValueError("Input data must be single-dataset reflection tables")
+            if ids[0] in exclude_datasets:
+                locs_to_remove.append(i)
+            else:
+                list_of_reflections.append(table)
+        for loc in sorted(locs_to_remove, reverse=True):
+            del experiments[loc]
     return experiments, list_of_reflections
