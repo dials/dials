@@ -6,7 +6,6 @@ import math
 
 from scitbx.array_family import flex
 from cctbx import sgtbx
-from rstbx.indexing_api import tools
 from dxtbx.model import Crystal
 
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -114,15 +113,7 @@ def filter_known_symmetry(
         )
         target_min_cell = None
 
-    transformations = [
-        sgtbx.change_of_basis_op(
-            str(sgtbx.rt_mx(sgtbx.rot_mx(T["trans"].transpose().as_int())))
-        )
-        for T in tools.R
-        if T["mod"] < 5
-    ]
-    transformations = []  # XXX temporarily disable cell doubling checks
-    transformations.insert(0, sgtbx.change_of_basis_op())
+    transformations = [sgtbx.change_of_basis_op()]
 
     for model in crystal_models:
         best_model = None
