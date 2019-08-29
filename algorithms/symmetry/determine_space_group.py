@@ -1,22 +1,19 @@
 """Algorithms for determination of Laue group symmetry."""
 from __future__ import division, absolute_import, print_function
 
+import json
 import logging
-
-logger = logging.getLogger(__name__)
-
 import math
 
-import scipy.stats
-
 import libtbx
+import scipy.stats
+from cctbx import crystal, sgtbx
+from dials.algorithms.symmetry import symmetry_base
 from libtbx import table_utils
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
-from cctbx import crystal, sgtbx
-
-from dials.algorithms.symmetry import symmetry_base
+logger = logging.getLogger(__name__)
 
 
 class determine_space_group(symmetry_base):
@@ -91,7 +88,6 @@ class determine_space_group(symmetry_base):
         The constant CCsigFac is obtained from a linear fit of
         sigma(CC) to 1/N^(1/2), i.e.:
             sigma(CC) = CCsigFac/N^(1/2)
-
         """
 
         max_bins = 500
@@ -393,14 +389,11 @@ class determine_space_group(symmetry_base):
           str:
 
         """
-        d = self.as_dict()
-        import json
-
-        json_str = json.dumps(d, indent=indent)
-        if filename is not None:
-            with open(filename, "wb") as f:
+        json_str = json.dumps(self.as_dict(), indent=indent)
+        if filename:
+            with open(filename, "w") as f:
                 f.write(json_str)
-        return json.dumps(d, indent=indent)
+        return json_str
 
 
 class ScoreCorrelationCoefficient(object):
@@ -433,14 +426,12 @@ class ScoreCorrelationCoefficient(object):
         """Probability of observing this CC if the sym op is present, p(CC; S).
 
         Modelled by a Cauchy distribution centred on cc_true and width gamma = sigma_cc
-
         """
         return self._p_cc_given_s
 
     @property
     def p_cc_given_not_s(self):
         """Probability of observing this CC if the sym op is NOT present, p(CC; !S).
-
         """
         return self._p_cc_given_not_s
 
@@ -449,7 +440,6 @@ class ScoreCorrelationCoefficient(object):
         """The likelihood of this symmetry element being present.
 
         p(S; CC) = p(CC; S) / (p(CC; S) + p(CC; !S))
-
         """
         return self._p_cc_given_s / (self._p_cc_given_s + self._p_cc_given_not_s)
 
@@ -482,7 +472,6 @@ class ScoreSymmetryElement(object):
 
     See appendix A1 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
     <https://doi.org/10.1107/S090744491003982X>`_
-
     """
 
     def __init__(self, intensities, sym_op, cc_true, cc_sig_fac):
@@ -495,7 +484,6 @@ class ScoreSymmetryElement(object):
           cc_true (float): the expected value of CC if the symmetry element is present,
             E(CC; S)
           cc_sig_fac (float): Estimation of sigma(CC) as a function of sample size.
-
         """
         self.sym_op = sym_op
         assert self.sym_op.r().info().sense() >= 0
@@ -555,7 +543,6 @@ class ScoreSymmetryElement(object):
 
         Returns:
           str:
-
         """
         return "%.3f %.2f %.2f %i %s" % (
             self.likelihood,
@@ -613,7 +600,6 @@ class ScoreSubGroup(object):
             :class:`cctbx.sgtbx.lattice_symmetry.metric_subgroups`.
           sym_op_scores (list): A list of :class:`ScoreSymmetryElement` objects for each
             symmetry element possibly in the lattice symmetry.
-
         """
         # Combined correlation coefficients for symmetry operations
         # present/absent from subgroup
@@ -662,7 +648,6 @@ class ScoreSubGroup(object):
 
         Returns:
           str:
-
         """
         return "%s %.3f %.2f %.2f %.2f %.2f %.2f" % (
             self.subgroup["best_subsym"].space_group_info(),
@@ -697,7 +682,6 @@ class ScoreSubGroup(object):
 
         Returns:
           dict:
-
         """
         return {
             "patterson_group": self.subgroup["best_subsym"]
@@ -730,7 +714,6 @@ class CorrelationCoefficientAccumulator(object):
         Args:
           x (list): Optional list of `x` values to initialise the accumulator.
           y (list): Optional list of `y` values to initialise the accumulator.
-
         """
         self._n = 0
         self._sum_x = 0
@@ -778,7 +761,7 @@ class CorrelationCoefficientAccumulator(object):
         return self._n
 
     def numerator(self):
-        r""""Calculate the numerator of the correlation coefficient formula.
+        r"""Calculate the numerator of the correlation coefficient formula.
 
         .. math:: n \sum{x y} - \sum{x} \sum{y}
 
@@ -789,7 +772,7 @@ class CorrelationCoefficientAccumulator(object):
         return self._n * self._sum_xy - self._sum_x * self._sum_y
 
     def denominator(self):
-        r""""Calculate the denominator of the correlation coefficient formula.
+        r"""Calculate the denominator of the correlation coefficient formula.
 
         .. math:: \sqrt{n \sum{x^2} - \sum{x}^2} \sqrt{n \sum{y^2} - \sum{y}^2}
 
