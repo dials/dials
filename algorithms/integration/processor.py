@@ -21,8 +21,10 @@ from dials_algorithms_integration_integrator_ext import *
 logger = logging.getLogger(__name__)
 
 
-class ExecutorAux(Executor, boost.python.injector):
-    def __getinitargs__(self):
+@boost.python.inject_into(Executor)
+class _(object):
+    @staticmethod
+    def __getinitargs__():
         return ()
 
 

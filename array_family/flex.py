@@ -83,10 +83,10 @@ def default_centroid_algorithm():
     return strategy(SimpleCentroidExt)
 
 
-class reflection_table_aux(boost.python.injector, reflection_table):
+@boost.python.inject_into(reflection_table)
+class _(object):
     """
     An injector class to add additional methods to the reflection table.
-
     """
 
     # Set the default algorithms. These are set as class variables so that if they
@@ -1520,12 +1520,6 @@ Found %s"""
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
 
         self["entering"] = enterings
-
-
-try:
-    boost.python.inject_into(reflection_table)(reflection_table_aux)
-except AttributeError:
-    pass
 
 
 class reflection_table_selector(object):
