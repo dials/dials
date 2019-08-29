@@ -6,6 +6,7 @@ import os
 import stat
 import sys
 import time
+from distutils.version import LooseVersion as parse_version
 
 import dials.precommitbx._precommitbx
 import libtbx.introspection
@@ -35,6 +36,7 @@ python_source_version = "3.7.4"
 sqlite_source_size = 2833613
 sqlite_source_version = 3290000
 sqlite_version = "3.29.0"
+precommit_package_min_version = dials.precommitbx._precommitbx.__precommit_min_version__
 
 environment_override = {
     "LD_LIBRARY_PATH": "",
@@ -242,6 +244,20 @@ def python_version(python):
 def precommit_version(python):
     result = clean_run(
         [python, "-c", "import _precommitbx;print(_precommitbx.__version__)"],
+        working_directory=precommit_home.join("..").join(".."),
+    )
+    if result.returncode:
+        return False
+    return result.stdout.strip()
+
+
+def precommit_package_version(python):
+    result = clean_run(
+        [
+            python,
+            "-c",
+            "import pre_commit.constants;print(pre_commit.constants.VERSION)",
+        ],
         working_directory=precommit_home.join("..").join(".."),
     )
     if result.returncode:
@@ -643,6 +659,23 @@ def main():
         else:
             pc_ver = RED + "not installed" + NC
             changes_required = True
+        pcp_ver = precommit_package_version(python)
+        if not pcp_ver:
+            pc_ver = RED + "not installed" + NC
+            changes_required = True
+        elif parse_version(pcp_ver) < parse_version(precommit_package_min_version):
+            pcp_ver = (
+                YELLOW
+                + pcp_ver
+                + NC
+                + " (expected minimum: "
+                + precommit_package_min_version
+                + ")"
+            )
+            changes_required = True
+        else:
+            pcp_ver = GREEN + pcp_ver + NC
+        print("Precommit Package:", pcp_ver)
         print("Precommit Python:", py_ver)
         print("Precommitbx:", pc_ver)
 
