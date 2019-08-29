@@ -836,10 +836,14 @@ namespace dials { namespace af { namespace boost_python {
    * @param self The reflection table
    * @returns The msgpack string
    */
-  std::string reflection_table_as_msgpack(reflection_table self) {
+  boost::python::object reflection_table_as_msgpack(reflection_table self) {
     std::stringstream buffer;
     msgpack::pack(buffer, self);
-    return buffer.str();
+    // Convert to a python bytes object
+    std::string data = buffer.str();
+    boost::python::object data_bytes(
+      boost::python::handle<>(PyBytes_FromStringAndSize(data.c_str(), data.size())));
+    return data_bytes;
   }
 
   /**
