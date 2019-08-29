@@ -6,6 +6,8 @@ repos:
   hooks:
   - id: black
     args: [--safe, --quiet]
+    files: \.pyi?$|SConscript$|^libtbx_config$
+    types: [file]
 
 # Syntax check and some basic flake8
 - repo: https://github.com/pre-commit/pre-commit-hooks
