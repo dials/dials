@@ -193,7 +193,7 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
         if n_datasets > 1:
             raise ValueError(
                 "Reflection table %s contains %s datasets (must contain a single dataset)"
-                % (i, n_datasest)
+                % (i, n_datasets)
             )
     # if identifiers given, use these to set the identifiers
     if identifiers:

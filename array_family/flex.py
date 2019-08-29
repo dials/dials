@@ -21,10 +21,10 @@ import cctbx
 import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
-from cctbx.array_family.flex import *
+from cctbx.array_family.flex import *  # noqa: F403
 from cctbx.array_family import flex
 from cctbx import miller
-from dials_array_family_flex_ext import *
+from dials_array_family_flex_ext import *  # noqa: F403
 from dials.util import Sorry
 from scitbx import matrix
 

@@ -36,7 +36,7 @@ def set_image_ranges_in_scaling_models(experiments):
     for exp in experiments:
         if exp.scan:
             valid_image_ranges = exp.scan.get_valid_image_ranges(exp.identifier)
-            if not "valid_image_range" in exp.scaling_model.configdict:
+            if "valid_image_range" not in exp.scaling_model.configdict:
                 # only set if not currently set i.e. set initial
                 exp.scaling_model.set_valid_image_range(exp.scan.get_image_range())
             if exp.scaling_model.configdict["valid_image_range"] != [
@@ -71,7 +71,7 @@ def choose_scaling_intensities(reflection_table, intensity_choice="profile"):
     reflection_table = calculate_prescaling_correction(reflection_table)
     conv = reflection_table["prescaling_correction"]
     intstr = "intensity." + intensity_choice + ".value"
-    if not intstr in reflection_table:
+    if intstr not in reflection_table:
         # Can't find selection, try to choose prf, if not then sum (also catches combine
         # which should not be used at this point)
         if "intensity.prf.value" in reflection_table:
@@ -274,7 +274,7 @@ def create_Ih_table(experiments, reflections, selections=None, n_blocks=1):
     input_tables = []
     indices_lists = []
     for i, reflection in enumerate(reflections):
-        if not "inverse_scale_factor" in reflection:
+        if "inverse_scale_factor" not in reflection:
             reflection["inverse_scale_factor"] = flex.double(reflection.size(), 1.0)
         if selections:
             input_tables.append(reflection.select(selections[i]))
