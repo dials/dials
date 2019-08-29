@@ -318,9 +318,12 @@ class ModelEvaluation(Strategy):
         self._params.refinement.parameterisation.auto_reduction.action = "fix"
         self._params.refinement.parameterisation.scan_varying = False
         self._params.refinement.refinery.max_iterations = 4
-        self._params.refinement.reflections.reflections_per_degree = min(
-            self._params.refinement.reflections.reflections_per_degree, 20
-        )
+        if self._params.refinement.reflections.reflections_per_degree is libtbx.Auto:
+            self._params.refinement.reflections.reflections_per_degree = 20
+        else:
+            self._params.refinement.reflections.reflections_per_degree = min(
+                self._params.refinement.reflections.reflections_per_degree, 20
+            )
         if self._params.refinement.reflections.outlier.block_width is libtbx.Auto:
             # auto block_width determination is potentially too expensive to do at
             # this stage: instead set separate_blocks=False and increase value
