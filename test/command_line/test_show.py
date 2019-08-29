@@ -11,7 +11,8 @@ def test_dials_show(dials_regression):
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
     assert not result.returncode and not result.stderr
-    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -79,7 +80,8 @@ def test_dials_show_i04_weak_data(dials_regression):
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
     assert not result.returncode and not result.stderr
-    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -133,7 +135,8 @@ def test_dials_show_centroid_test_data(dials_data):
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
-    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         "\n".join(output[4:])
         == """
@@ -190,7 +193,8 @@ def test_dials_show_multi_panel_i23(dials_regression):
         ["dials.show", path], environment_override={"DIALS_NOBANNER": "1"}
     )
     assert not result.returncode and not result.stderr
-    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
 
     assert (
         "\n".join(output[4:25])
@@ -274,7 +278,8 @@ def test_dials_show_reflection_table(dials_data):
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
-    output = [_f for _f in (s.rstrip() for s in result.stdout.split("\n")) if _f]
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
 
     assert output[4] == "Reflection list contains 2269 reflections"
     headers = ["Column", "min", "max", "mean"]
@@ -332,7 +337,8 @@ def test_dials_show_image_statistics(dials_regression):
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
-    output = list(filter(None, (s.rstrip() for s in result["stdout"].split("\n"))))
+    output = result.stdout.decode("latin-1")
+    output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         output[-1]
         == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
