@@ -20,7 +20,7 @@ from cctbx import miller, crystal, uctbx
 from dxtbx.model import Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
+from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
@@ -224,34 +224,34 @@ def create_auto_scaling_model(params, experiments, reflections):
                             params.parameterisation.absorption_term = False
 
                 # now load correct factory and make scaling model.
-                factory = None
+                model_class = None
                 for entry_point in pkg_resources.iter_entry_points(
                     "dxtbx.scaling_model_ext"
                 ):
                     if entry_point.name == params.model:
-                        factory = entry_point.load().factory()
+                        model_class = entry_point.load()
                         break
-                exp.scaling_model = factory.create(params, exp, refl)
+                exp.scaling_model = model_class.from_data(params, exp, refl)
     return experiments
 
 
-def create_scaling_model(params, experiments, reflections):
+def create_scaling_model(params, experiments, reflection_tables):
     """Create or load a scaling model for multiple datasets."""
     models = experiments.scaling_models()
     if (
         None in models or params.overwrite_existing_models
     ):  # else, don't need to anything if all have models
-        factory = None
+        model_class = None
         for entry_point in pkg_resources.iter_entry_points("dxtbx.scaling_model_ext"):
             if entry_point.name == params.model:
-                factory = entry_point.load().factory()
+                model_class = entry_point.load()
                 break
-        if not factory:
+        if not model_class:
             raise ValueError("Unable to create scaling model of type %s" % params.model)
-        for (exp, refl) in zip(experiments, reflections):
-            model = exp.scaling_model
+        for (expt, refl) in zip(experiments, reflection_tables):
+            model = expt.scaling_model
             if not model or params.overwrite_existing_models:
-                exp.scaling_model = factory.create(params, exp, refl)
+                expt.scaling_model = model_class.from_data(params, expt, refl)
     return experiments
 
 
@@ -489,7 +489,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     params = Mock()
     params.parameterisation.decay_term.return_value = False
     params.parameterisation.scale_term.return_value = True
-    exp.scaling_model = KBSMFactory.create(params, [], [])
+    exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
 
     return exp, r_t
@@ -506,7 +506,7 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     params = Mock()
     params.parameterisation.decay_term.return_value = False
     params.parameterisation.scale_term.return_value = True
-    exp.scaling_model = KBSMFactory.create(params, [], [])
+    exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
 
     # Now put the calculated I's on roughly a common scale with the data.

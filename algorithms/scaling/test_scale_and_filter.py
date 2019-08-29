@@ -6,7 +6,7 @@ from libtbx import phil
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Experiment, Scan
 from dials.util.options import OptionParser
-from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
+from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.array_family import flex
 from dials.command_line.compute_delta_cchalf import Script as DeltaCCHalfScript
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
@@ -43,7 +43,7 @@ def generated_params():
 
 
 def get_scaling_model():
-    return KBSMFactory.create(generated_params(), [], [])
+    return KBScalingModel.from_data(generated_params(), [], [])
 
 
 def generate_test_experiments(n=2):

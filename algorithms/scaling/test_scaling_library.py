@@ -23,7 +23,6 @@ from dials.algorithms.scaling.scaling_library import (
     create_auto_scaling_model,
 )
 from dials.algorithms.scaling.model.model import KBScalingModel, PhysicalScalingModel
-from dials.algorithms.scaling.model.scaling_model_factory import PhysicalSMFactory
 
 
 @pytest.fixture
@@ -194,7 +193,7 @@ def test_create_scaling_model():
     params = generated_param()
     exp = generated_exp()
     rt = generated_refl()
-    exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
+    exp[0].scaling_model = PhysicalScalingModel.from_data(params, exp[0], rt)
     old_scaling_model = exp[0].scaling_model
     params.__inject__("model", "KB")
     new_exp = create_scaling_model(params, exp, [rt])
@@ -207,7 +206,7 @@ def test_create_scaling_model():
     rt = generated_refl()
     rt_2 = generated_refl()
     rt_3 = generated_refl()
-    exp[0].scaling_model = PhysicalSMFactory().create(params, exp[0], rt)
+    exp[0].scaling_model = PhysicalScalingModel.from_data(params, exp[0], rt)
     params.__inject__("model", "KB")
     new_exp = create_scaling_model(params, exp, [rt, rt_2, rt_3])
     assert new_exp[0].scaling_model is exp[0].scaling_model

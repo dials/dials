@@ -14,7 +14,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 from dials.algorithms.scaling.scaling_library import scale_against_target
-from dials.algorithms.scaling.model.scaling_model_factory import KBSMFactory
+from dials.algorithms.scaling.model.model import KBScalingModel
 
 
 def generated_target_refl():
@@ -119,8 +119,8 @@ def test_scale_against_target(KB_test_param):
 
     experiments = test_exp()
     experiments.append(test_exp(idval=1)[0])
-    experiments[0].scaling_model = KBSMFactory.create(KB_test_param, [], [])
-    experiments[1].scaling_model = KBSMFactory.create(KB_test_param, [], [])
+    experiments[0].scaling_model = KBScalingModel.from_data(KB_test_param, [], [])
+    experiments[1].scaling_model = KBScalingModel.from_data(KB_test_param, [], [])
     target_reflections = test_target_refl()
     reflections = test_refl_to_scale()
     # Repeat the test but calling the TargetScaler directly, to allow inspection
