@@ -1,6 +1,6 @@
 """Merging functions for experiment lists and reflection tables."""
 import logging
-from cStringIO import StringIO
+
 from dials.array_family import flex
 from dials.command_line.space_group import run_sys_abs_checks
 from dials.algorithms.scaling.scaling_library import (
@@ -12,6 +12,7 @@ from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.report.analysis import make_merging_statistics_summary
 from dxtbx.model import ExperimentList
 from mmtbx.scaling import data_statistics
+from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials")
 

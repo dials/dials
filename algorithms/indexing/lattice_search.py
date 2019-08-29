@@ -1,21 +1,20 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import itertools
 import logging
 import math
+import pkg_resources
 
 import libtbx.phil
-from scitbx.array_family import flex
 import scitbx.matrix
-from dxtbx.model.experiment_list import Experiment, ExperimentList
-
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing.basis_vector_search import optimise
 from dials.algorithms.indexing.basis_vector_search import combinations
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from scitbx.array_family import flex
+from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger(__name__)
-
 
 basis_vector_search_phil_str = """\
 basis_vector_combinations
@@ -71,8 +70,6 @@ optimise_initial_basis_vectors = False
 """
 
 basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)
-
-import pkg_resources
 
 methods = []
 for entry_point in itertools.chain(
@@ -401,9 +398,6 @@ class BasisVectorSearch(LatticeSearch):
 
         if self.params.debug:
             # print a table of the angles between each pair of vectors
-
-            from cStringIO import StringIO
-
             s = StringIO()
 
             angles = flex.double(len(vectors) ** 2)

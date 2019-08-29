@@ -4,9 +4,10 @@
 Command line script to allow merging and truncating of a dials dataset.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 import sys
-from cStringIO import StringIO
+
 from dials.util import log, show_mail_on_error, Sorry
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
@@ -17,6 +18,7 @@ from dials.algorithms.merging.merge import (
     merge_and_truncate,
 )
 from libtbx import phil
+from six.moves import cStringIO as StringIO
 
 
 help_message = """Program to merge scaled dials data."""
