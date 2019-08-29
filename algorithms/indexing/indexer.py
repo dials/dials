@@ -606,7 +606,8 @@ class Indexer(object):
                 ):
                     d_min = self.d_min - self.params.refinement_protocol.d_min_step
                     d_min = max(d_min, 0)
-                    d_min = max(d_min, self.params.refinement_protocol.d_min_final)
+                    if self.params.refinement_protocol.d_min_final is not None:
+                        d_min = max(d_min, self.params.refinement_protocol.d_min_final)
                     if d_min >= 0:
                         self.d_min = d_min
                         logger.info("Increasing resolution to %.2f Angstrom" % d_min)
