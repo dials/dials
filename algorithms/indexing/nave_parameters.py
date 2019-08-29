@@ -9,6 +9,7 @@ import math
 
 from dials.array_family import flex
 from scitbx.matrix import col, sqr
+from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,14 @@ class NaveParameters(object):
         crystal.set_domain_size_ang(
             crystal.get_domain_size_ang() / model_expansion_factor
         )
+
+        if (
+            self.ewald_proximal_volume()
+            > self.params.indexing.stills.ewald_proximal_volume_max
+        ):
+            raise DialsIndexError(
+                "Ewald proximity volume too high, %f" % best.ewald_proximal_volume
+            )
 
         return crystal
 
