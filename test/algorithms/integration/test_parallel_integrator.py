@@ -1,32 +1,34 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
+import collections
 import math
+import os
 
 import pytest
+import six
+import six.moves.cPickle as pickle
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
 
 
 @pytest.fixture(scope="module")
 def data(dials_regression):  # read experiments and reflections
-    from collections import namedtuple
-    from dials.array_family import flex
-    from dxtbx.model.experiment_list import ExperimentListFactory
-    from os.path import join
-
-    directory = join(dials_regression, "integration_test_data", "shoeboxes")
-    experiments_filename = join(directory, "integrated_experiments.json")
-    reflections_filename = join(directory, "shoeboxes_0_0.pickle")
-    reference_filename = join(directory, "reference_profiles.pickle")
+    directory = os.path.join(dials_regression, "integration_test_data", "shoeboxes")
+    experiments_filename = os.path.join(directory, "integrated_experiments.json")
+    reflections_filename = os.path.join(directory, "shoeboxes_0_0.pickle")
+    reference_filename = os.path.join(directory, "reference_profiles.pickle")
 
     experiments = ExperimentListFactory.from_json_file(
         experiments_filename, check_format=False
     )
     reflections = flex.reflection_table.from_file(reflections_filename)
     with open(reference_filename, "rb") as fh:
-        reference = pickle.load(fh)
+        if six.PY3:
+            reference = pickle.load(fh, encoding="bytes")
+        else:
+            reference = pickle.load(fh)
 
-    Data = namedtuple("Data", ["experiments", "reflections", "reference"])
+    Data = collections.namedtuple("Data", ["experiments", "reflections", "reference"])
     return Data(experiments=experiments, reflections=reflections, reference=reference)
 
 
@@ -48,14 +50,14 @@ def test_simple_background_calculator(data):
     algorithm = SimpleBackgroundCalculatorFactory.create(data.experiments)
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r)
         except Exception:
-            count += 1
+            errors += 1
     assert len(reflections) == 15193
-    assert count == 333
+    assert errors == 333
 
 
 def test_glm_background_calculator(data):
@@ -64,18 +66,14 @@ def test_glm_background_calculator(data):
     algorithm = GLMBackgroundCalculatorFactory.create(data.experiments)
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r)
         except Exception:
-            count += 1
+            errors += 1
     assert len(reflections) == 15193
-    assert count == 333
-
-
-def test_gmodel_background_calculator():
-    pass
+    assert errors == 333
 
 
 class IntensityCalculatorFactory(object):
@@ -144,15 +142,15 @@ def test_gaussianrs_reciprocal_space_intensity_calculator(data):
 
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r, [])
-        except Exception as e:
-            count += 1
+        except Exception:
+            errors += 1
 
     assert len(reflections) == 15193
-    assert count == 5296
+    assert errors == 5296
 
 
 def test_gaussianrs_detector_space_intensity_calculator(data):
@@ -162,21 +160,21 @@ def test_gaussianrs_detector_space_intensity_calculator(data):
 
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r, [])
             partiality_old = r.get("partiality_old")
             partiality_new = r.get("partiality")
-        except Exception as e:
-            count += 1
+        except Exception:
+            errors += 1
             continue
 
         assert partiality_old < 1.0 and partiality_old >= 0
         assert partiality_new < 1.0 and partiality_new >= 0
 
     assert len(reflections) == 15193
-    assert count == 4802
+    assert errors == 4802
 
 
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data):
@@ -187,21 +185,21 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator(data)
 
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r, [])
             partiality_old = r.get("partiality_old")
             partiality_new = r.get("partiality")
-        except Exception as e:
-            count += 1
+        except Exception:
+            errors += 1
             continue
 
         assert partiality_old < 1.0 and partiality_old >= 0
         assert partiality_new < 1.0 and partiality_new >= 0
 
     assert len(reflections) == 15193
-    assert count == 4802
+    assert errors == 4802
 
 
 def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data):
@@ -270,7 +268,6 @@ def test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2(data
     )
 
     compute_intensity(R, [R1, R2])
-    # compute_intensity(R, [R1, R2])
 
     R_deconvolution = R.copy()
 
@@ -354,14 +351,14 @@ def test_gaussianrs_reference_profile_calculator(data):
     algorithm = GaussianRSReferenceCalculatorFactory.create(data.experiments)
     reflections = flex.reflection_table_to_list_of_reflections(data.reflections)
 
-    count = 0
+    errors = 0
     for r in reflections:
         try:
             algorithm(r)
         except Exception:
-            count += 1
+            errors += 1
     assert len(reflections) == 15193
-    assert count == 0
+    assert errors == 0
 
     profiles = algorithm.reference_profiles()
 
