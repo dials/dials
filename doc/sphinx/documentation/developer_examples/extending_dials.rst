@@ -56,6 +56,43 @@ to the `dxtbx repository <https://github.com/cctbx/dxtbx>`_.
 To register format classes stored in ~/.dxtbx you need to run
 'dxtbx.install_format -u' whenever you add or remove format classes.
 
+Writing a new format class
+--------------------------
+
+The `dxtbx` format class framework enables beamline staff and users to easily add
+support for new detector types and beamlines. In essence all that is needed is to
+implement a Python class which extends the Format class to add some specific details
+about this detector and the associated beamline/experimental environment.
+
+In particular there are two groups of things which need to be
+implemented - a static method named `understand` which will take a
+look at the image and return True if it understands it, and a number of
+class methods which need to override the construction of the `dxtbx` models.
+
+`understand` Static Method
+--------------------------
+
+This method is the key to how the whole framework operates - you write code
+which looks at the image to decide whether it is right for this class. If it is
+not you must return False - i.e. if you are making a custom class for a given
+detector serial number and it is given an image from a different detector.
+
+Ideally your implementation will inherit from a similar Format class
+and just apply further customizations.  Your implementation will be
+chosen to read the image if it is the most customized, i.e. it derives
+from the longest chain of ancestors, all of which claim to understand
+the image.
+
+Class Methods
+-------------
+
+The class methods need to use the built in factories to construct descriptions
+of the experimental apparatus from the image, namely the goniometer, detector,
+beam and scan. In many cases the "simple" model will be the best which is
+often trivial. In other cases it may be more complex but will hopefully
+correspond to an already existing factory method.
+
+
 As an example, let's pretend your beamline has a "reversed" rotation axis. We can create
 a new format class that correctly understands images from your beamline and instantiates
 a goniometer model with a reversed direction goniometer:
