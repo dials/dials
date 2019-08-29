@@ -43,9 +43,7 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
     else:
         cnames = params.output.crystal_names
 
-    for dname, cname, (wavelength, exp_nos) in zip(
-        dnames, cnames, wavelengths.iteritems()
-    ):
+    for dname, cname, (wavelength, exp_nos) in zip(dnames, cnames, wavelengths.items()):
         expids = []
         new_exps = ExperimentList()
         for i in exp_nos:
