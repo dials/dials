@@ -249,7 +249,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "data": [
                     {
                         "y": overall_ccs,
-                        "x": range(1, n_datasets + 1),
+                        "x": list(range(1, n_datasets + 1)),
                         "type": "scatter",
                         "mode": "lines",
                     }
@@ -268,7 +268,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "data": [
                     {
                         "y": overall_rpim,
-                        "x": range(1, n_datasets + 1),
+                        "x": list(range(1, n_datasets + 1)),
                         "type": "scatter",
                         "mode": "lines",
                     }
@@ -287,7 +287,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "data": [
                     {
                         "y": overall_ioversigma,
-                        "x": range(1, n_datasets + 1),
+                        "x": list(range(1, n_datasets + 1)),
                         "type": "scatter",
                         "mode": "lines",
                     }
@@ -306,7 +306,7 @@ def make_filtering_merging_stats_plots(merging_stats):
                 "data": [
                     {
                         "y": overall_completeness,
-                        "x": range(1, n_datasets + 1),
+                        "x": list(range(1, n_datasets + 1)),
                         "type": "scatter",
                         "mode": "lines",
                     }
@@ -456,7 +456,7 @@ def make_histogram_plots(cycle_results):
                 "data": [
                     {
                         "y": overall_mean_ccs,
-                        "x": range(1, n + 1),
+                        "x": list(range(1, n + 1)),
                         "type": "scatter",
                         "mode": "lines",
                     }
