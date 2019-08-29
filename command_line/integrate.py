@@ -158,7 +158,7 @@ class Script(object):
     def run(self, args=None):
         """ Perform the integration. """
         from dials.util.command_line import heading
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
         from dials.util import log
         from time import time
         from dials.util import Sorry
@@ -168,8 +168,9 @@ class Script(object):
 
         # Parse the command line
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
-        reference = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reference, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
         if len(reference) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return

@@ -11,7 +11,7 @@ from StringIO import StringIO
 
 from dials.util import Sorry, log, show_mail_on_error
 from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
 from dials.algorithms.integration import filtering
 from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
@@ -430,8 +430,9 @@ def run():
     )
 
     params, options = parser.parse_args(show_diff_phil=True)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     log.config(verbosity=options.verbose)
 

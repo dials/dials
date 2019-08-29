@@ -24,8 +24,7 @@ from dxtbx.model import Crystal
 # from dials.util.command_line import Importer
 from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 
 help_message = """
@@ -151,8 +150,9 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(experiments) == 0 and len(reflections) == 0:
         parser.print_help()
         return

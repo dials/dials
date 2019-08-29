@@ -24,8 +24,7 @@ from rstbx.dps_core import Direction, Directional_FFT
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import log
 from dials.util import Sorry
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_reflections
 
 logger = logging.getLogger("dials.command_line.search_beam_position")
@@ -527,8 +526,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(show_diff_phil=False)
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 or len(reflections) == 0:
         parser.print_help()

@@ -9,9 +9,7 @@ import iotbx.phil
 import libtbx
 from dials.array_family import flex
 from dials.util import Sorry
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 help_message = """
@@ -155,8 +153,9 @@ def run(args=None):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(reflections) == 0 or len(experiments) == 0:
         parser.print_help()
         return

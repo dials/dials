@@ -154,9 +154,7 @@ if __name__ == "__main__":
         #       without having to alter the package
         wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
 
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     dials.util.log.print_banner()
     usage_message = "dials.image_viewer models.expt [observations.refl]"
@@ -170,13 +168,14 @@ if __name__ == "__main__":
     )
     params, options = parser.parse_args(show_diff_phil=True)
     experiments = [x.data for x in params.input.experiments]
-    reflections = flatten_reflections(params.input.reflections)
 
     if len(experiments) == 0:
         parser.print_help()
         exit(0)
 
-    flat_expts = flatten_experiments(params.input.experiments)
+    reflections, flat_expts = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if params.load_models:
         if any(e.detector is None for e in flat_expts):
             sys.exit("Error: experiment has no detector")

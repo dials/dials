@@ -2439,7 +2439,7 @@ class Script(object):
 
     def run(self):
         """ Run the script. """
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -2449,8 +2449,9 @@ class Script(object):
             self.parser.print_help()
             exit(0)
 
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         # Analyse the reflections
         analyse = Analyser(

@@ -327,9 +327,7 @@ def run(args=None, phil=working_phil):
     """
 
     import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     import libtbx.load_env
 
     start_time = time()
@@ -352,8 +350,9 @@ def run(args=None, phil=working_phil):
 
     # Parse the command line
     params, options = parser.parse_args(args=args, show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # Configure the logging
     dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)

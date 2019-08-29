@@ -538,9 +538,7 @@ class Script(object):
 def run(args=None, phil=phil_scope):
     """Run the command-line script."""
     import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
@@ -557,8 +555,9 @@ def run(args=None, phil=phil_scope):
 
     dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     script = Script(params, experiments, reflections)
     script.run()

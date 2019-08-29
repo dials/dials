@@ -34,9 +34,7 @@ output {
 
 def run(args):
     usage = "dials.plot_reflections models.expt observations.refl [options]"
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from scitbx.array_family import flex
     from scitbx import matrix
 
@@ -49,8 +47,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(show_diff_phil=True)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(experiments.imagesets()) > 0:
         imageset = experiments.imagesets()[0]
         imageset.set_detector(experiments[0].detector)
