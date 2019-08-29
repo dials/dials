@@ -246,26 +246,29 @@ class Target(object):
                                 cc = None
                                 n = None
 
-                        if self._min_pairs is not None and n < self._min_pairs:
+                        if (
+                            n is None
+                            or cc is None
+                            or (self._min_pairs is not None and n < self._min_pairs)
+                        ):
                             continue
 
-                        if cc is not None and n is not None:
-                            if self._weights == "count":
-                                wij_row.extend([ik, jk])
-                                wij_col.extend([jk, ik])
-                                wij_data.extend([n, n])
-                            elif self._weights == "standard_error":
-                                assert n > 2
-                                # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
-                                se = math.sqrt((1 - cc ** 2) / (n - 2))
-                                wij = 1 / se
-                                wij_row.extend([ik, jk])
-                                wij_col.extend([jk, ik])
-                                wij_data.extend([wij, wij])
+                        if self._weights == "count":
+                            wij_row.extend([ik, jk])
+                            wij_col.extend([jk, ik])
+                            wij_data.extend([n, n])
+                        elif self._weights == "standard_error":
+                            assert n > 2
+                            # http://www.sjsu.edu/faculty/gerstman/StatPrimer/correlation.pdf
+                            se = math.sqrt((1 - cc ** 2) / (n - 2))
+                            wij = 1 / se
+                            wij_row.extend([ik, jk])
+                            wij_col.extend([jk, ik])
+                            wij_data.extend([wij, wij])
 
-                            rij_row.append(ik)
-                            rij_col.append(jk)
-                            rij_data.append(cc)
+                        rij_row.append(ik)
+                        rij_col.append(jk)
+                        rij_data.append(cc)
 
             rij = sparse.coo_matrix((rij_data, (rij_row, rij_col)), shape=(NN, NN))
             if self._weights is not None:
