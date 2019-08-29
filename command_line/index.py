@@ -166,7 +166,7 @@ class Index(object):
                     known_crystal_models=known_crystal_models,
                 )
             except DialsIndexError as e:
-                raise Sorry(e.message)
+                raise Sorry(str(e))
         else:
             self._indexed_experiments = ExperimentList()
             self._indexed_reflections = flex.reflection_table()

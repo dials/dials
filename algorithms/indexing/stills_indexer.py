@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
-
 from __future__ import absolute_import, division, print_function
 
+import copy
 import math
 import logging
 
@@ -20,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 def calc_2D_rmsd_and_displacements(reflections):
-
     displacements = flex.vec2_double(
         reflections["xyzobs.px.value"].parts()[0],
         reflections["xyzobs.px.value"].parts()[1],
@@ -44,8 +40,6 @@ def plot_displacements(reflections, predictions, experiments):
     plt.axes().set_aspect("equal")
     plt.show()
     plt.close()
-
-    from matplotlib import pyplot as plt
 
     plt.figure()
     sz1, sz2 = experiments[0].detector[0].get_image_size()
@@ -195,8 +189,6 @@ class StillsIndexer(Indexer):
                 logger.info("Starting refinement")
                 logger.info("#" * 80)
                 logger.info("")
-
-                import copy
 
                 isoform_experiments = ExperimentList()
                 isoform_reflections = flex.reflection_table()
@@ -468,15 +460,11 @@ class StillsIndexer(Indexer):
         return experiments
 
     def choose_best_orientation_matrix(self, candidate_orientation_matrices):
-        import copy
-
         logger.info("*" * 80)
         logger.info("Selecting the best orientation matrix")
         logger.info("*" * 80)
 
-        from libtbx import group_args
-
-        class CandidateInfo(group_args):
+        class CandidateInfo(libtbx.group_args):
             pass
 
         candidates = []
@@ -604,7 +592,12 @@ class StillsIndexer(Indexer):
                         R.predict_for_reflection_table(indexed)
                     )
                 except Exception as e:
-                    logger.info("Couldn't refine candiate %d, %s", icm, str(e))
+                    logger.info(
+                        "Couldn't refine candidate %d, %s: %s",
+                        icm,
+                        e.__class__.__name__,
+                        str(e),
+                    )
                 else:
                     logger.info(
                         "$$$ stills_indexer::choose_best_orientation_matrix, candidate %d done",
