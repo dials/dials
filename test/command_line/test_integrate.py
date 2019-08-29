@@ -244,7 +244,6 @@ def test_output_rubbish(dials_data, tmpdir):
     with tmpdir.join("integrated.refl").open("rb") as fh:
         table = pickle.load(fh)
 
-    assert table.get_flags(table.flags.bad_reference) > 0
     assert "id" in table
     for row in table:
         assert row["id"] == 0
