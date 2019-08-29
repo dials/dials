@@ -248,12 +248,9 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
             text.append(str(expt.scan))
         if expt.goniometer is not None:
             text.append(show_goniometer(expt.goniometer))
-        from six.moves import cStringIO as StringIO
 
-        s = StringIO()
         if expt.crystal is not None:
-            expt.crystal.show(show_scan_varying=show_scan_varying, out=s)
-            text.append(s.getvalue())
+            text.append(expt.crystal.as_str(show_scan_varying=show_scan_varying))
             if expt.crystal.num_scan_points:
                 from scitbx.array_family import flex
                 from cctbx import uctbx
