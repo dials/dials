@@ -137,6 +137,7 @@ class Index(object):
             reflections[0]["imageset_id"] = reflections[0]["id"]
         elif len(reflections) > 1:
             assert len(reflections) == len(experiments)
+            reflections = renumber_table_id_columns(reflections)
             for i in range(len(reflections)):
                 reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
                 if i > 0:
