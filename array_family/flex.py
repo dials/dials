@@ -1,12 +1,3 @@
-#
-# flex.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 import builtins
@@ -14,7 +5,6 @@ import collections
 import logging
 import operator
 import os
-import warnings
 
 import boost.python
 import cctbx
@@ -246,29 +236,10 @@ class _(object):
         """
         Read the reflection table from file in msgpack format
         """
-        try:
-            import blosc.blosc_extension
-
-            blosc_error = blosc.blosc_extension.error
-        except ImportError:
-            # We never officially supported blosc in a release, so ignoring
-            # errors here should be mostly fine.
-            blosc = None
-            blosc_error = AttributeError  # hacky hack
-
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            infile_data = infile.read()
-        try:  # remove in DIALS 2.1
-            infile_data = blosc.decompress(infile_data)
-            warnings.warn(
-                "blosc compression is deprecated", DeprecationWarning, stacklevel=2
-            )
-        except blosc_error:
-            # We now accept uncompressed data
-            pass
-        return reflection_table.from_msgpack(infile_data)
+            return reflection_table.from_msgpack(infile.read())
 
     @staticmethod
     def from_h5(filename):
