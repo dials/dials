@@ -96,10 +96,6 @@ phil_scope = parse(
 
   }
 
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   input {
 
     ignore_unhandled = False
@@ -208,9 +204,7 @@ class ImageSetImporter(object):
             # import the images based on the template input
             if len(self.params.input.template) > 0:
                 importer = ExperimentListTemplateImporter(
-                    self.params.input.template,
-                    max(self.params.verbosity - 1, 0),
-                    format_kwargs=format_kwargs,
+                    self.params.input.template, format_kwargs=format_kwargs
                 )
                 experiments = importer.experiments
                 if len(experiments) == 0:
@@ -220,9 +214,7 @@ class ImageSetImporter(object):
                     )
             elif len(self.params.input.directory) > 0:
                 experiments = ExperimentListFactory.from_filenames(
-                    self.params.input.directory,
-                    max(self.params.verbosity - 1, 0),
-                    format_kwargs=format_kwargs,
+                    self.params.input.directory, format_kwargs=format_kwargs
                 )
                 if len(experiments) == 0:
                     raise Sorry(
