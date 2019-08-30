@@ -709,7 +709,7 @@ class ReflectionManager(object):
             y_resid = l["y_resid"]
             phi_resid = l["phi_resid"]
             w_x, w_y, w_phi = l["xyzobs.mm.weights"].parts()
-        except RuntimeError:  # wish it were KeyError
+        except KeyError:
             return
 
         msg = (
@@ -806,7 +806,7 @@ class StillsReflectionManager(ReflectionManager):
             delpsi = l["delpsical.rad"]
             w_x, w_y, _ = l["xyzobs.mm.weights"].parts()
             w_delpsi = l["delpsical.weights"]
-        except RuntimeError:  # wish it were KeyError
+        except KeyError:
             return
 
         header = ["", "Min", "Q1", "Med", "Q3", "Max"]

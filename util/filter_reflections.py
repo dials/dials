@@ -41,12 +41,14 @@ Classes:
       implements filtering methods for using all of prf, sum and scale intensities
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
 from collections import defaultdict
+
 from cctbx import crystal, miller
-from libtbx.table_utils import simple_table
 from dials.array_family import flex
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
+from libtbx.table_utils import simple_table
 
 logger = logging.getLogger("dials")
 
@@ -195,7 +197,7 @@ def filtered_arrays_from_experiments_reflections(
             try:
                 refl["intensity"] = refl[intensity_to_use + ".value"]
                 refl["variance"] = refl[intensity_to_use + ".variance"]
-            except RuntimeError:  # catch case where prf were removed.
+            except KeyError:  # catch case where prf were removed.
                 refl["intensity"] = refl["intensity.sum.value"]
                 refl["variance"] = refl["intensity.sum.variance"]
             if outlier_rejection_after_filter and intensity_to_use != "intensity.scale":

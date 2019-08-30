@@ -461,7 +461,7 @@ class _(object):
                 self["intensity." + intensity + ".value"],
                 self["intensity." + intensity + ".variance"],
             )
-        except RuntimeError as e:
+        except KeyError as e:
             logger.error(e)
             raise Sorry(
                 "Unable to find %s, %s in reflection table"
