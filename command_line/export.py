@@ -336,7 +336,7 @@ class SadabsExporter(object):
     def export(self):
         from dials.util.export_sadabs import export_sadabs
 
-        if not "profile" in params.intensity and not "sum" in params.intensity:
+        if "profile" not in params.intensity and "sum" not in params.intensity:
             raise Sorry(
                 """Only intensity options containing sum or profile are compatible with
 export to sadabs format."""
@@ -387,7 +387,7 @@ class XDSASCIIExporter(object):
     def export(self):
         from dials.util.export_xds_ascii import export_xds_ascii
 
-        if not "profile" in params.intensity and not "sum" in params.intensity:
+        if "profile" not in params.intensity and "sum" not in params.intensity:
             raise Sorry(
                 """Only intensity options containing sum or profile are compatible with
 export to xds_ascii format."""
