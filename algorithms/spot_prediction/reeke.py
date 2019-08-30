@@ -3,6 +3,7 @@ prediction based on the Reeke algorithm (see Mosflm)"""
 
 from __future__ import absolute_import, division, print_function
 
+from past.builtins import cmp
 import math
 
 from scitbx import matrix
@@ -15,9 +16,7 @@ def solve_quad(a, b, c):
     discriminant = b ** 2 - 4 * a * c
 
     if discriminant > 0:
-        sign = cmp(b, 0)
-        if sign == 0:
-            sign = 1.0
+        sign = math.copysign(1, b)
         q = -0.5 * (b + sign * math.sqrt(discriminant))
         x1 = q / a if a != 0 else None
         x2 = c / q if q != 0 else None

@@ -572,23 +572,37 @@ def test_del_selected():
 
 def test_sort():
     table = flex.reflection_table()
-    table["a"] = flex.int([2, 4, 3, 1, 5])
-    table["b"] = flex.vec2_double([(3, 2), (3, 1), (1, 3), (4, 5), (4, 3)])
+    table["a"] = flex.int([2, 4, 3, 1, 5, 6])
+    table["b"] = flex.vec2_double([(3, 2), (3, 1), (1, 3), (4, 5), (4, 3), (2, 0)])
     table["c"] = flex.miller_index(
-        [(3, 2, 1), (3, 1, 1), (2, 4, 2), (2, 1, 1), (1, 1, 1)]
+        [(3, 2, 1), (3, 1, 1), (2, 4, 2), (2, 1, 1), (1, 1, 1), (1, 1, 2)]
     )
 
     table.sort("a")
-    assert list(table["a"]) == [1, 2, 3, 4, 5]
+    assert list(table["a"]) == [1, 2, 3, 4, 5, 6]
 
     table.sort("b")
-    assert list(table["b"]) == [(1, 3), (3, 1), (3, 2), (4, 3), (4, 5)]
+    assert list(table["b"]) == [(1, 3), (2, 0), (3, 1), (3, 2), (4, 3), (4, 5)]
 
     table.sort("c")
-    assert list(table["c"]) == [(1, 1, 1), (2, 1, 1), (2, 4, 2), (3, 1, 1), (3, 2, 1)]
+    assert list(table["c"]) == [
+        (1, 1, 1),
+        (1, 1, 2),
+        (2, 1, 1),
+        (2, 4, 2),
+        (3, 1, 1),
+        (3, 2, 1),
+    ]
 
     table.sort("c", order=(1, 2, 0))
-    assert list(table["c"]) == [(1, 1, 1), (2, 1, 1), (3, 1, 1), (3, 2, 1), (2, 4, 2)]
+    assert list(table["c"]) == [
+        (1, 1, 1),
+        (2, 1, 1),
+        (3, 1, 1),
+        (1, 1, 2),
+        (3, 2, 1),
+        (2, 4, 2),
+    ]
 
 
 def test_flags():
