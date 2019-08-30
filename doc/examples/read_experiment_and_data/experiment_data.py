@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# experiment_data.py
 #
 # Example code for how to load experiments and reflections in the DIALS
 # framework
 
 from __future__ import absolute_import, division, print_function
 
+import dials.util.options
 from dials.util import show_mail_on_error
 from libtbx.phil import parse
 
@@ -29,11 +29,9 @@ class Script(object):
     """A class for running the script."""
 
     def __init__(self):
-        from dials.util.options import OptionParser
+        usage = "dials.experiment_data [options] indexed.expt indexed.refl"
 
-        usage = "dials.example_experiment_data [options] indexed.expt indexed.refl"
-
-        self.parser = OptionParser(
+        self.parser = dials.util.options.OptionParser(
             usage=usage,
             phil=phil_scope,
             epilog=help_message,
@@ -44,13 +42,11 @@ class Script(object):
 
     def run(self):
         from scitbx import matrix
-        from dials.util.options import flatten_experiments
-        from dials.util.options import flatten_reflections
 
         params, options = self.parser.parse_args(show_diff_phil=True)
 
-        experiments = flatten_experiments(params.input.experiments)
-        reflections = flatten_reflections(params.input.reflections)
+        experiments = dials.util.options.flatten_experiments(params.input.experiments)
+        reflections = dials.util.options.flatten_reflections(params.input.reflections)
 
         if len(experiments) == 0:
             self.parser.print_help()
