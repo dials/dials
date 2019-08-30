@@ -7,11 +7,10 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import procrunner
-from scitbx import matrix
-from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.algorithms.refinement.engine import Journal
-from dials.array_family import flex  # noqa: F401
 import pytest
+from dials.algorithms.refinement.engine import Journal
+from dxtbx.model.experiment_list import ExperimentListFactory
+from scitbx import matrix
 
 
 def test(dials_regression, run_in_tmpdir):

@@ -19,7 +19,6 @@ def test(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    from dials.array_family import flex  # noqa: F401, import dependency
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     experiments = ExperimentListFactory.from_json_file(output_filename)
@@ -47,7 +46,6 @@ def test_experiments(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    from dials.array_family import flex  # noqa: F401, import dependency
     from dxtbx.model.experiment_list import ExperimentListFactory
 
     experiments = ExperimentListFactory.from_json_file(output_filename)
