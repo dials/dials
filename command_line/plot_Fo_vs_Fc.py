@@ -11,7 +11,7 @@ Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 
 from __future__ import division, print_function, absolute_import
 import sys
-from dials.util import Sorry
+from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser
 
 # from libtbx.table_utils import simple_table
@@ -96,38 +96,39 @@ class Script(object):
         # The phil scope
         phil_scope = parse(
             """
-      hklin = None
-        .type = path
-        .help = "MTZ file (containing observed and calculated structure factors)"
+            hklin = None
+                .type = path
+                .help = "MTZ file (containing observed and calculated structure "
+                        "factors)"
 
-      Fo = F
-        .type = str
-        .help = "MTZ column name for Fobs"
+            Fo = F
+                .type = str
+                .help = "MTZ column name for Fobs"
 
-      Fc = FC_ALL
-        .type = str
-        .help = "MTZ column name for Fcalc (FC_ALL from Refmac includes the"
-                "bulk solvent contribution)"
+            Fc = FC_ALL
+                .type = str
+                .help = "MTZ column name for Fcalc (FC_ALL from Refmac includes the "
+                        "bulk solvent contribution)"
 
-      max_Fc = 300
-        .type = float
-        .help = "Set plot limits to display data up to this value of Fc"
+            max_Fc = 300
+                .type = float
+                .help = "Set plot limits to display data up to this value of Fc"
 
-      plot_filename = Fo_vs_Fc.pdf
-        .type = str
-        .help = "Filename for plot"
+            plot_filename = Fo_vs_Fc.pdf
+                .type = str
+                .help = "Filename for plot"
 
-      fit_hyperbola = True
-        .type = bool
-        .help = "Calculate and show the fit of a hyperbolic function given by"
-                "|Fo|^2 = |Fc|^2 + |Fe|^2, where |Fe| describes the error term"
-                "containing information about dynamic scattering and other"
-                "effects"
+            fit_hyperbola = True
+                .type = bool
+                .help = "Calculate and show the fit of a hyperbolic function given by "
+                        "|Fo|^2 = |Fc|^2 + |Fe|^2, where |Fe| describes the error term "
+                        "containing information about dynamic scattering and other "
+                        "effects"
 
-      show_y_eq_x = True
-        .type = bool
-        .help = "Plot y=x as a dashed line"
-    """,
+            show_y_eq_x = True
+                .type = bool
+                .help = "Plot y=x as a dashed line"
+            """,
             process_includes=True,
         )
 
@@ -247,10 +248,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    from dials.util import halraiser
-
-    try:
+    with show_mail_on_error():
         script = Script()
         script.run()
-    except Exception as e:
-        halraiser(e)
