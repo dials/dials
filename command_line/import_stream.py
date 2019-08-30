@@ -56,10 +56,6 @@ phil_scope = parse(
 
   }
 
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   input {
 
     host = localhost
@@ -105,7 +101,9 @@ class Script(object):
 
         # Configure logging
         log.config(
-            params.verbosity, info=params.output.log, debug=params.output.debug_log
+            verbosity=options.verbose,
+            info=params.output.log,
+            debug=params.output.debug_log,
         )
         from dials.util.version import dials_version
 

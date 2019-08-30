@@ -121,10 +121,6 @@ phil_scope = parse(
     .type = ints
     .help = "Exclude images from integration (e.g. 1,2,3,4,5 etc)"
 
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.profile_model.factory.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
@@ -190,7 +186,9 @@ class Script(object):
         if __name__ == "__main__":
             # Configure logging
             log.config(
-                params.verbosity, info=params.output.log, debug=params.output.debug_log
+                verbosity=options.verbose,
+                info=params.output.log,
+                debug=params.output.debug_log,
             )
 
         from dials.util.version import dials_version

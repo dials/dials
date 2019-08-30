@@ -80,10 +80,6 @@ phil_scope = parse(
     .type = bool
     .help = "Whether or not to print a table of per-image statistics."
 
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   include scope dials.algorithms.spot_finding.factory.phil_scope
 
 """,
@@ -129,7 +125,9 @@ class Script(object):
         if __name__ == "__main__":
             # Configure the logging
             log.config(
-                params.verbosity, info=params.output.log, debug=params.output.debug_log
+                verbosity=options.verbose,
+                info=params.output.log,
+                debug=params.output.debug_log,
             )
 
         from dials.util.version import dials_version

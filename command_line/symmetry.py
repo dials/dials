@@ -39,10 +39,6 @@ normalisation = kernel quasi ml_iso *ml_aniso
 lattice_group = None
   .type = space_group
 
-verbosity = 0
-  .type = int(value_min=0)
-  .help = "The verbosity level"
-
 seed = 230
   .type = int(value_min=0)
 
@@ -179,12 +175,14 @@ def run(args):
         epilog=help_message,
     )
 
-    params, _, args = parser.parse_args(
+    params, options, args = parser.parse_args(
         args=args, show_diff_phil=False, return_unhandled=True
     )
 
     # Configure the logging
-    log.config(params.verbosity, info=params.output.log, debug=params.output.debug_log)
+    log.config(
+        verbosity=options.verbose, info=params.output.log, debug=params.output.debug_log
+    )
 
     from dials.util.version import dials_version
 

@@ -28,10 +28,6 @@ seperately.
 from libtbx.phil import parse
 
 control_phil_str = """
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   input {
     file_list = None
       .type = path
@@ -331,7 +327,9 @@ class Script(object):
 
         # Configure logging
         log.config(
-            params.verbosity, info="dials.process.log", debug="dials.process.debug.log"
+            verbosity=options.verbose,
+            info="dials.process.log",
+            debug="dials.process.debug.log",
         )
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
@@ -546,7 +544,7 @@ class Script(object):
 
             from dials.util import log
 
-            log.config(params.verbosity, info=info_path, debug=debug_path)
+            log.config(verbosity=options.verbose, info=info_path, debug=debug_path)
 
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [

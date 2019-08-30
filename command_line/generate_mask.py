@@ -74,9 +74,6 @@ phil_scope = phil.parse(
 
     include scope dials.util.masking.phil_scope
 
-    verbosity = 0
-        .type = int(value_min=0)
-        .help = "The verbosity level."
     """,
     process_includes=True,
 )
@@ -176,7 +173,7 @@ def run(phil=phil_scope, args=None):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure logging
-    dials.util.log.config(params.verbosity, info=params.output.log)
+    dials.util.log.config(options.verbose, info=params.output.log)
 
     # Check number of args
     if len(experiments) == 0:

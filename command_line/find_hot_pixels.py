@@ -14,9 +14,6 @@ output {
     .type = path
 }
 
-verbosity = 0
-  .type = int(value_min=0)
-  .help = "The verbosity level"
 """,
     process_includes=True,
 )
@@ -64,7 +61,7 @@ def run(args):
 
     # Configure the log
     log.config(
-        params.verbosity,
+        verbosity=options.verbose,
         info="dials.find_hot_pixels.log",
         debug="dials.find_hot_pixels.debug.log",
     )

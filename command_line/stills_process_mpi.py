@@ -83,7 +83,7 @@ class Script(base_script):
         all_paths = transmitted_info["a"]
 
         # Configure logging
-        log.config(self.params.verbosity, info=None, debug=None)
+        log.config(verbosity=self.options.verbose, info=None, debug=None)
 
         for abs_params in self.params.integration.absorption_correction:
             if abs_params.apply:
