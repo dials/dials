@@ -1,0 +1,9 @@
+reflection tables now behave more like python dictionaries
+
+Methods .keys(), .values() and .items() return iterators for the
+keys, values, or item tuples respectively. Using the reflection
+table in an iterator context is now equivalent to .keys() rather than
+.rows().
+
+Attempting to access unknown keys raises a KeyError instead of a
+RuntimeError

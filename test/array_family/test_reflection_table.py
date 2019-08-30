@@ -19,6 +19,17 @@ def test_accessing_invalid_key_throws_keyerror():
     assert e.value.args[0] == "Unknown column 'missing_key'"
 
 
+def test_reflection_table_behaves_like_a_python_dictionary():
+    flex_A = flex.int([1])
+    flex_B = flex.int([2])
+    table = flex.reflection_table([("A", flex_A), ("B", flex_B)])
+    assert len(table) == 1
+    assert list(table.keys()) == ["A", "B"]
+    assert list(table.values()) == [flex_A, flex_B]
+    assert list(table.items()) == [("A", flex_A), ("B", flex_B)]
+    assert list(table) == ["A", "B"]
+
+
 def test_init():
     # test default
     table = flex.reflection_table()
