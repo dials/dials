@@ -853,12 +853,6 @@ class OptionParser(OptionParserBase):
             quick_parse=quick_parse,
         )
 
-        # If there is a phil verbosity setting then add both together
-        # and share the value between them
-        if options.verbose and hasattr(params, "verbosity"):
-            params.verbosity += options.verbose
-            options.verbose = params.verbosity
-
         # Print the diff phil
         if show_diff_phil:
             diff_phil_str = self.diff_phil.as_str()
