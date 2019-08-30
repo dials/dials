@@ -572,6 +572,10 @@ class StillsIndexer(Indexer):
                         graph_verbose=False,
                     )
                     crystal_model = nv()
+                    assert (
+                        len(crystal_model) == 1
+                    ), "$$$ stills_indexer::choose_best_orientation_matrix, Only one crystal at this stage"
+                    crystal_model = crystal_model[0]
 
                     # Drop candidates that after refinement can no longer be converted to the known target space group
                     if (
