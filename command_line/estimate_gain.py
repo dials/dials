@@ -142,10 +142,6 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=False)
 
-    ## Configure the logging
-    # log.config(
-    # params.verbosity, info='dials.estimate_gain.log', debug='dials.estimate_gain.debug.log')
-
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
     if diff_phil != "":

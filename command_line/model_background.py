@@ -75,10 +75,6 @@ phil_scope = parse(
       .help = "The polar model background image"
   }
 
-  verbosity = 0
-    .type = int(value_min=0)
-    .help = "The verbosity level"
-
   modeller {
 
     min_images = 10
@@ -341,7 +337,9 @@ class Script(object):
 
         # Configure the logging
         log.config(
-            params.verbosity, info=params.output.log, debug=params.output.debug_log
+            verbosity=options.verbose,
+            info=params.output.log,
+            debug=params.output.debug_log,
         )
 
         from dials.util.version import dials_version
