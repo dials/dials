@@ -4,7 +4,6 @@ cross validator for dials.scale
 """
 from __future__ import absolute_import, division, print_function
 
-import abc
 import itertools
 from copy import deepcopy
 
@@ -18,8 +17,6 @@ class CrossValidator(object):
 
     """Abstract class defining common methods for cross validation and methods
     that must be implemented for concrete implementations"""
-
-    __metaclass__ = abc.ABCMeta
 
     # metadata needed when constructing the results table
     results_metadata = {
@@ -35,31 +32,31 @@ class CrossValidator(object):
         self.reflections = reflections
         self.results_dict = {}
 
-    @abc.abstractmethod
     def run_script(self, params, config_no):
         """Run the appropriate command line script with the params, get the
         free/work set results and add to the results dict. Indicate the
         configuration number being run."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def get_results_from_script(self, script):
         """Return the work/free results list from the command line script object"""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def get_parameter_type(self, name):
         """Find the parameter type for a discreet phil option - bool or choice."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def set_parameter(self, params, name, val):
         """Find the name in the params scope extract and set it to the val"""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def set_free_set_offset(self, params, n):
         """Set the free set offset in the correct place in the scope"""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def get_free_set_percentage(self, params):
         """Inspect the free set percentage in the correct place in the scope"""
+        raise NotImplementedError()
 
     @staticmethod
     def _avg_sd_from_list(lst):

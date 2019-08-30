@@ -8,7 +8,6 @@ and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 from __future__ import absolute_import, division, print_function
-import abc
 import logging
 from scitbx.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -138,8 +137,6 @@ class OutlierRejectionBase(object):
             create the Ih_table.
     """
 
-    __metaclass__ = abc.ABCMeta
-
     def __init__(self, Ih_table, zmax):
         """Set up and run the outlier rejection algorithm."""
         assert (
@@ -183,9 +180,9 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
             offset += self._block_selections[i].size()
         return final_outlier_arrays
 
-    @abc.abstractmethod
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
+        raise NotImplementedError()
 
 
 class TargetedOutlierRejection(OutlierRejectionBase):

@@ -96,22 +96,7 @@ def generated_param():
 def test_ScalingModelBase(mock_errormodel):
     """Test for base scaling model class"""
 
-    class SM_base_filler(ScalingModelBase):
-        """Fill in abstract methid"""
-
-        def consecutive_refinement_order(self):
-            """Fill in abstract method."""
-
-        def from_dict(self, obj):
-            """Fill in abstract method."""
-
-        def configure_components(self, _, __, ___):
-            """Fill in abstract method."""
-
-        def from_data(self, _, __, ___):
-            """Fill in abstract method."""
-
-    SM_base = SM_base_filler(configdict={})
+    SM_base = ScalingModelBase(configdict={})
     assert not SM_base.is_scaled
     SM_base.set_scaling_model_as_scaled()
     assert SM_base.is_scaled
@@ -126,7 +111,6 @@ def test_ScalingModelBase(mock_errormodel):
         == mock_errormodel.refined_parameters
     )
     assert SM_base.error_model is mock_errormodel
-    _ = SM_base.configure_components(1.0, 2.0, 0.0)  # Check method exists
     SM_base.show()
 
 

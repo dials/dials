@@ -25,20 +25,8 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
 def test_ScaleComponentBase():
     """Test for the ScaleComponentBase class."""
 
-    class base_SF_filler(ScaleComponentBase):
-        """Subclass to fill in the abstract method."""
-
-        def update_reflection_data(self, selection=None, block_selections=None):
-            """Fill in abstract method."""
-
-        def calculate_scales_and_derivatives(self, block_id=0):
-            """Fill in abstract method."""
-
-        def calculate_scales(self, block_id=0):
-            """Fill in abstract method."""
-
     # Test initialisation with no parameter esds.
-    base_SF = base_SF_filler(flex.double([1.0] * 3))
+    base_SF = ScaleComponentBase(flex.double([1.0] * 3))
     assert base_SF.n_params == 3
     assert base_SF.parameter_esds is None
     assert list(base_SF.parameters) == [1.0, 1.0, 1.0]
@@ -58,7 +46,7 @@ def test_ScaleComponentBase():
     assert base_SF.calculate_restraints() is None
     assert base_SF.calculate_jacobian_restraints() is None
 
-    base_SF = base_SF_filler(flex.double(3, 1.0), flex.double(3, 0.1))
+    base_SF = ScaleComponentBase(flex.double(3, 1.0), flex.double(3, 0.1))
     assert list(base_SF.parameter_esds) == [0.1] * 3
 
 
@@ -276,7 +264,7 @@ def test_SmoothScaleFactor2D():
 
     # Test again with a small number of params to check different behaviour.
     SF = SmoothScaleComponent2D(flex.double(6, 1.1), shape=(3, 2))
-    rt = flex.reflection_table()
+    _ = flex.reflection_table()
     norm_rot = flex.double(6, 0.5)
     norm_time = flex.double(6, 0.5)
     norm_rot[0] = 0.0

@@ -12,7 +12,6 @@ defined for targeted scaling.
 """
 from __future__ import absolute_import, division, print_function
 
-import abc
 import copy
 import logging
 import time
@@ -59,8 +58,6 @@ class ScalerBase(Subject):
     """
     Abstract base class for all scalers (single and multiple).
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self):
         """Define the properties of a scaler."""
@@ -158,13 +155,13 @@ class ScalerBase(Subject):
         """A list of initial reflection table keys."""
         return self._initial_keys
 
-    @abc.abstractmethod
     def update_for_minimisation(self, apm, block_id):
         """Update the scale factors and Ih for the next minimisation iteration."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def expand_scales_to_all_reflections(self, caller=None, calc_cov=False):
         """Expand scales from a subset to all reflections."""
+        raise NotImplementedError()
 
     @Subject.notify_event(event="performed_scaling")
     def perform_scaling(

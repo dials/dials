@@ -6,7 +6,6 @@ methods to define how these are composed into one model.
 """
 from __future__ import absolute_import, division, print_function
 
-import abc
 import logging
 from collections import OrderedDict
 
@@ -38,8 +37,6 @@ class ScalingModelBase(object):
 
     id_ = None
 
-    __metaclass__ = abc.ABCMeta
-
     def __init__(self, configdict, is_scaled=False):
         """Initialise the model with no components and a :obj:`configdict`."""
         self._components = OrderedDict()
@@ -69,14 +66,14 @@ class ScalingModelBase(object):
         """Set the boolean 'is_scaled' flag as False."""
         self._is_scaled = False
 
-    @abc.abstractmethod
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
+        raise NotImplementedError()
 
     @classmethod
-    @abc.abstractmethod
     def from_data(cls, params, experiment, reflection_table):
         """Create the model from input data."""
+        raise NotImplementedError()
 
     def set_valid_image_range(self, image_range):
         """Set the valid image range for the model in the :obj:`configdict`."""
@@ -105,7 +102,6 @@ class ScalingModelBase(object):
         """:obj:`dict`: a dictionary of the model components."""
         return sum(c.parameters.size() for c in self._components.values())
 
-    @abc.abstractproperty
     def consecutive_refinement_order(self):
         """:obj:`list`: a nested list of component names.
 
@@ -114,6 +110,7 @@ class ScalingModelBase(object):
         e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
         refine scale and decay, and then absorption in a subsequent cycle.
         """
+        raise NotImplementedError()
 
     def to_dict(self):
         """Serialize the model to a dictionary.
@@ -143,9 +140,9 @@ class ScalingModelBase(object):
         return dictionary
 
     @classmethod
-    @abc.abstractmethod
     def from_dict(cls, obj):
         """Create a scaling model from a dictionary."""
+        raise NotImplementedError()
 
     def set_error_model(self, error_model):
         """Associate an error model with the dataset."""

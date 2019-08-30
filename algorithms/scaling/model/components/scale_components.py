@@ -21,7 +21,6 @@ the Ih_table datastructures so that the data in the components is split in
 the same way as the data in the Ih_table datastructure.
 """
 from __future__ import absolute_import, division, print_function
-import abc
 from dials.array_family import flex
 from scitbx import sparse
 from dials_scaling_ext import calculate_harmonic_tables_from_selections
@@ -41,8 +40,6 @@ class ScaleComponentBase(object):
     This behaviour allows data to easily be added/changed after selecting
     subsets of the data.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, initial_values, parameter_esds=None):
         """Set the initial parameter values, parameter esds and n_params."""
@@ -132,7 +129,6 @@ assignment: was %s, attempting %s""" % (
         """Return a list of the number of reflections in each block."""
         return self._n_refl
 
-    @abc.abstractmethod
     def update_reflection_data(self, selection=None, block_selections=None):
         """
         Update the internal data arrays.
@@ -150,14 +146,15 @@ assignment: was %s, attempting %s""" % (
             block_selections (list): A list of flex.size_t arrays to select
                 subsets of the internal data.
         """
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def calculate_scales_and_derivatives(self, block_id=0):
         """Calculate and return inverse scales and derivatives for a given block."""
+        raise NotImplementedError()
 
-    @abc.abstractmethod
     def calculate_scales(self, block_id=0):
         """Calculate and return inverse scales for a given block."""
+        raise NotImplementedError()
 
 
 class SingleScaleFactor(ScaleComponentBase):
@@ -332,7 +329,7 @@ class SHScaleComponent(ScaleComponentBase):
         try:
             assert set(data.keys()) == {"s1_lookup", "s0_lookup"}, set(data.keys())
             self._mode = "memory"
-        except AssertionError as e:
+        except AssertionError:
             assert set(data.keys()) == {"sph_harm_table"}, set(data.keys())
             self._mode = "speed"  # Note: only speedier for small datasets
         self._data = data

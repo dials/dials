@@ -42,7 +42,6 @@ Classes:
 """
 from __future__ import absolute_import, division, print_function
 import logging
-import abc
 from collections import defaultdict
 from cctbx import crystal, miller
 from libtbx.table_utils import simple_table
@@ -384,8 +383,6 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
     types can be implemented in a subclass.
     """
 
-    __metaclass__ = abc.ABCMeta
-
     allowed_intensities = ["prf", "scale", "sum"]  # Supported intensities
     # subclasses must define a class attribute intensities, which is a list
     # of a subset of the allowed intensities.
@@ -436,9 +433,9 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         return reflection_table
 
     @staticmethod
-    @abc.abstractmethod
     def reduce_on_intensities(reflection_table):
         """Select reflections successfully processed by the relevant method."""
+        raise NotImplementedError()
 
     @classmethod
     def filter_bad_variances(cls, reflection_table):
@@ -457,9 +454,9 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         return reflection_table
 
     @classmethod
-    @abc.abstractmethod
     def apply_scaling_factors(cls, reflection_table):
         """Apply the relevent scaling factors including lp, qde, scale etc."""
+        raise NotImplementedError()
 
 
 class PrfIntensityReducer(FilterForExportAlgorithm):
