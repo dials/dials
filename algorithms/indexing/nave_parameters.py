@@ -184,18 +184,21 @@ class NaveParameters(object):
                 > self.params.indexing.stills.ewald_proximal_volume_max
             ):
                 raise DialsIndexError(
-                    "Ewald proximity volume too high, %f" % best.ewald_proximal_volume
+                    "Ewald proximity volume too high, %f"
+                    % self.ewald_proximal_volume(iid)
                 )
 
             all_crystals.append(crystal)
         return all_crystals
 
-    def ewald_proximal_volume(self, expt_id = 0):
+    def ewald_proximal_volume(self, expt_id=0):
         """computes the volume of reciprocal space (actually, half the volume, in this implementation) in which
         reciprocal lattice centroids will fall under the green curve.  In other words, this is proportional to the
         number of predicted reflections."""
 
-        R_L = 1.0 / self.experiments[expt_id].beam.get_wavelength()  # radius of Ewald sphere
+        R_L = (
+            1.0 / self.experiments[expt_id].beam.get_wavelength()
+        )  # radius of Ewald sphere
 
         # TT is the outermost two-theta angle to perform the volume integration (hi-resolution cutoff)
         TT = 2.0 * math.asin(
