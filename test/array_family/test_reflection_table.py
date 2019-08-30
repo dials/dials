@@ -12,6 +12,13 @@ from dxtbx.model import ExperimentList, Experiment, Crystal
 from dxtbx.serialize import load
 
 
+def test_accessing_invalid_key_throws_keyerror():
+    table = flex.reflection_table()
+    with pytest.raises(KeyError) as e:
+        table["missing_key"]
+    assert e.value.args[0] == "Unknown column 'missing_key'"
+
+
 def test_init():
     # test default
     table = flex.reflection_table()

@@ -16,6 +16,7 @@
 #include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/python.hpp>
 #include <boost/variant.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/remove_if.hpp>
@@ -25,15 +26,7 @@
 
 namespace dials { namespace af {
 
-  /**
-   * A class to represent an unknown column.
-   */
-  class UnknownColumnError : public dials::error {
-  public:
-    UnknownColumnError(const char *k)
-        : dials::error(std::string("Could not find \"") + std::string(k)
-                       + std::string("\" in table")) {}
-  };
+  using namespace boost::python;
 
   /**
    * Init to zero
@@ -170,7 +163,8 @@ namespace dials { namespace af {
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->find(k_);
         if (it == table->end()) {
-          throw UnknownColumnError(k_.c_str());
+          PyErr_SetObject(PyExc_KeyError, PyString_FromFormat("Unknown column '%s'", k_.c_str()));
+          boost::python::throw_error_already_set();
         }
         return it->second;
       }
