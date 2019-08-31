@@ -1,91 +1,10 @@
-algorithms/indexing/test_index.py::test_index_4rotation
-algorithms/indexing/test_index.py::test_index_ED_still_low_res_spot_match[stills-True]
-algorithms/indexing/test_index.py::test_index_ED_still_low_res_spot_match[sweeps-False]
-algorithms/indexing/test_index.py::test_index_i04_weak_data_fft1d
-algorithms/indexing/test_index.py::test_index_i04_weak_data_fft3d
-algorithms/indexing/test_index.py::test_index_imosflm_tutorial[False]
-algorithms/indexing/test_index.py::test_index_imosflm_tutorial[True]
-algorithms/indexing/test_index.py::test_index_insulin_force_stills[fft1d]
-algorithms/indexing/test_index.py::test_index_insulin_force_stills[fft3d]
-algorithms/indexing/test_index.py::test_index_insulin_force_stills[real_space_grid_search]
-algorithms/indexing/test_index.py::test_index_insulin_multi_sweep[fft1d]
-algorithms/indexing/test_index.py::test_index_insulin_multi_sweep[fft3d]
-algorithms/indexing/test_index.py::test_index_insulin_multi_sweep[real_space_grid_search]
-algorithms/indexing/test_index.py::test_index_peak_search_clean
-algorithms/indexing/test_index.py::test_index_small_molecule_ice_max_cell
-algorithms/indexing/test_index.py::test_index_small_molecule_multi_sweep_3
-algorithms/indexing/test_index.py::test_index_small_molecule_multi_sweep_4
-algorithms/indexing/test_index.py::test_index_trypsin_four_lattice_P212121
-algorithms/indexing/test_index.py::test_index_trypsin_index_assignment_local
-algorithms/indexing/test_index.py::test_multiple_experiments
-algorithms/indexing/test_index.py::test_refinement_failure_on_max_lattices_a15
-algorithms/indexing/test_index.py::test_stills_indexer_multi_lattice_bug_MosaicSauter2014
-algorithms/indexing/test_lattice_search.py::test_BasisVectorSearch_i04_weak_data[fft1d-None-None]
-algorithms/indexing/test_lattice_search.py::test_BasisVectorSearch_i04_weak_data[fft3d-None-None]
-algorithms/indexing/test_lattice_search.py::test_BasisVectorSearch_i04_weak_data[real_space_grid_search-P422-unit_cell2]
-algorithms/indexing/test_lattice_search.py::test_stills_indexer_methods_i04_weak_data[fft1d-P422-unit_cell1]
-algorithms/indexing/test_lattice_search.py::test_stills_indexer_methods_i04_weak_data[fft3d-P422-unit_cell0]
-algorithms/indexing/test_lattice_search.py::test_stills_indexer_methods_i04_weak_data[low_res_spot_match-P422-unit_cell3]
-algorithms/indexing/test_lattice_search.py::test_stills_indexer_methods_i04_weak_data[real_space_grid_search-P422-unit_cell2]
-algorithms/indexing/test_model_evaluation.py::test_ModelEvaluation
-algorithms/indexing/test_non_primitive_basis.py::test_detect[C 1 2 1]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[C 2 2 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[F 2 2 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[F 4 3 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[I 2 2 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 2 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[I 4 3 2]
-algorithms/indexing/test_non_primitive_basis.py::test_detect[R 3 2 :H]
-algorithms/indexing/test_phi_scan.py::test_run
-algorithms/scaling/test_scale.py::test_incremental_scale_workflow
-algorithms/scaling/test_scale.py::test_scale_and_filter_dataset_mode
-algorithms/scaling/test_scale.py::test_scale_and_filter_image_group_mode
-algorithms/scaling/test_scale.py::test_scale_physical
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[I23-None-dimensions2-10-False-False]
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[I23-None-dimensions3-10-True-False]
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P2-None-None-10-False-False]
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P3-None-None-20-False-False]
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P321-unit_cell5-None-5-False-False]
-algorithms/symmetry/cosym/test_cosym_analyse_datasets.py::test_cosym[P422-unit_cell4-None-20-True-True]
-algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[I23]
-algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P2]
-algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P3]
-algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[P6]
-algorithms/symmetry/cosym/test_cosym_target.py::test_cosym_target[R3:h]
 test/algorithms/background/test_mosflm_outlier_rejector.py::test_run
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_detector_space_intensity_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_detector_space_with_deconvolution_intensity_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_detector_space_with_deconvolution_intensity_calculator2
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_mask_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_profile_data_pickling
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_reciprocal_space_intensity_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_gaussianrs_reference_profile_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_glm_background_calculator
-test/algorithms/integration/test_parallel_integrator.py::test_reflection_manager
-test/algorithms/integration/test_parallel_integrator.py::test_simple_background_calculator
-test/algorithms/refinement/test_multi_experiment_refinement.py::test
 test/algorithms/refinement/test_refiner_config.py::test_multi_panel_parameterisations[single]
 test/algorithms/refinement/test_restraints_gradients.py::test
 test/algorithms/refinement/test_scan_varying_beam_refinement.py::test_refinement_and_compare_with_known_truth
-test/algorithms/refinement/test_scan_varying_block_calculation.py::test_per_width_and_per_image_are_equivalent
-test/algorithms/refinement/test_sv_multi_panel_refinement.py::test_scan_varying_refinement_of_a_multiple_panel_detector
-test/algorithms/spot_prediction/test_reeke.py::test_regression
-test/algorithms/spot_prediction/test_reeke_index_generator.py::Test::()::test_compare_py_with_cpp
-test/array_family/test_reflection_table.py::test_experiment_identifiers
-test/array_family/test_reflection_table.py::test_sort
-test/array_family/test_reflection_table.py::test_to_from_msgpack
 test/command_line/test_align_crystal.py::test_align_crystal
 test/command_line/test_apply_mask.py::test
 test/command_line/test_apply_mask.py::test_experiments
-test/command_line/test_cosym.py::test_cosym[None]
-test/command_line/test_cosym.py::test_cosym[P 1]
-test/command_line/test_cosym.py::test_cosym[P 4]
-test/command_line/test_cosym.py::test_cosym_partial_dataset
-test/command_line/test_cosym.py::test_synthetic[I23-None-2-10-False-False]
-test/command_line/test_cosym.py::test_synthetic[P2-None-None-10-False-False]
-test/command_line/test_cosym.py::test_synthetic[P3-None-None-20-False-False]
-test/command_line/test_cosym.py::test_synthetic[P321-unit_cell4-None-5-False-False]
-test/command_line/test_cosym.py::test_synthetic[P422-unit_cell3-None-10-True-False]
 test/command_line/test_estimate_gain.py::test
 test/command_line/test_export.py::test_json
 test/command_line/test_export.py::test_json_shortened
@@ -109,32 +28,16 @@ test/command_line/test_generate_mask.py::test_generate_mask_function_with_untrus
 test/command_line/test_goniometer_calibration.py::test_goniometer_calibration
 test/command_line/test_import.py::test_with_mask
 test/command_line/test_integrate.py::test_integrate_with_kapton
-test/command_line/test_integrate.py::test_output_rubbish
 test/command_line/test_merge.py::test_merge
 test/command_line/test_merge.py::test_merge_bad_input
 test/command_line/test_merge.py::test_merge_multi_wavelength
 test/command_line/test_merge_cbf.py::test_merge_cbf
-test/command_line/test_refine.py::test2
-test/command_line/test_refine.py::test3
 test/command_line/test_refine_bravais_settings.py::test_refine_bravais_settings_3
-test/command_line/test_reindex.py::test_reindex
-test/command_line/test_reindex.py::test_reindex_multi_sweep
-test/command_line/test_search_beam_position.py::test_index_after_search
-test/command_line/test_show.py::test_dials_show
-test/command_line/test_show.py::test_dials_show_centroid_test_data
-test/command_line/test_show.py::test_dials_show_i04_weak_data
-test/command_line/test_show.py::test_dials_show_image_statistics
-test/command_line/test_show.py::test_dials_show_multi_panel_i23
-test/command_line/test_show.py::test_dials_show_reflection_table
 test/command_line/test_split_experiments.py::test_split_by_wavelength
 test/command_line/test_spotfinder.py::test_find_spots_with_hot_mask
 test/command_line/test_spotfinder.py::test_find_spots_with_hot_mask_with_prefix
 test/command_line/test_spotfinder.py::test_find_spots_with_user_defined_mask
-test/command_line/test_stills_process.py::test_cspad_cbf_in_memory
-test/command_line/test_stills_process.py::test_sacla_h5[False]
-test/command_line/test_symmetry.py::test_symmetry
 test/model/data/test_shoebox.py::test_all_foreground_valid
-test/test_scan_varying_integration_bug.py::test_1
 test/util/test_ascii_art.py::test_spot_counts_per_image_plot
 test/util/test_nexus.py::test_run
 test/util/test_nexus_multi_experiment.py::test_run
