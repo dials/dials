@@ -20,14 +20,30 @@ def test_accessing_invalid_key_throws_keyerror():
 
 
 def test_reflection_table_behaves_like_a_python_dictionary():
+    def identical(flex1, flex2):
+        return (flex1 == flex2).all_eq(True)
+
     flex_A = flex.int([1])
     flex_B = flex.int([2])
     table = flex.reflection_table([("A", flex_A), ("B", flex_B)])
     assert len(table) == 1
     assert list(table.keys()) == ["A", "B"]
-    assert list(table.values()) == [flex_A, flex_B]
-    assert list(table.items()) == [("A", flex_A), ("B", flex_B)]
+
+    values = list(table.values())
+    assert len(values) == 2
+    assert (values[0] == flex_A).all_eq(True)
+    assert (values[1] == flex_B).all_eq(True)
+
+    items = list(table.items())
+    assert len(items) == 2
+    assert items[0][0] == "A" and (items[0][1] == flex_A).all_eq(True)
+    assert items[1][0] == "B" and (items[1][1] == flex_B).all_eq(True)
+
     assert list(table) == ["A", "B"]
+
+    assert "A" in table and "B" in table and "C" not in table
+    assert (table["A"] == flex_A).all_eq(True)
+    assert (table["B"] == flex_B).all_eq(True)
 
 
 def test_init():
