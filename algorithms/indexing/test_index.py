@@ -845,6 +845,7 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
         if ii == 1:
             assert crys.get_domain_size_ang() == pytest.approx(2689.0, rel=0.1)
 
+
 @pytest.mark.parametrize("indexer_type,fix_cell", (("sweeps", False), ("stills", True)))
 def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix_cell):
 

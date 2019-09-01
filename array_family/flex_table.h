@@ -168,11 +168,11 @@ namespace dials { namespace af {
         iterator it = table->find(k_);
         if (it == table->end()) {
           PyErr_SetObject(PyExc_KeyError,
-            #ifdef IS_PY3K
-              PyUnicode_FromFormat("Unknown column '%s'", k_.c_str())
-            #else
-              PyString_FromFormat("Unknown column '%s'", k_.c_str())
-            #endif
+#ifdef IS_PY3K
+                          PyUnicode_FromFormat("Unknown column '%s'", k_.c_str())
+#else
+                          PyString_FromFormat("Unknown column '%s'", k_.c_str())
+#endif
           );
           boost::python::throw_error_already_set();
         }
