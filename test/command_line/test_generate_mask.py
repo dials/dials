@@ -11,7 +11,12 @@ from dxtbx.serialize import load
 @pytest.fixture(
     params=[
         "centroid_test_data",
-        pytest.param("l_cysteine_dials_output", marks=pytest.mark.xfail),
+        pytest.param(
+            "l_cysteine_dials_output",
+            marks=pytest.mark.xfail(
+                reason="test depends on https://github.com/dials/data/pull/40"
+            ),
+        ),
     ],
     ids=["One sweep", "Four sweeps"],
 )
