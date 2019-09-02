@@ -31,7 +31,7 @@ dials.algorithms.indexing.basis_vector_search
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.algorithms.indexing.basis_vector_search.strategies
+.. automodule:: dials.algorithms.indexing.basis_vector_search.strategy
     :members:
     :undoc-members:
     :show-inheritance:
