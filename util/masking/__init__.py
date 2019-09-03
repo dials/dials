@@ -76,7 +76,7 @@ phil_scope = parse(
 
     pixel = None
       .type = ints(2, value_min=0)
-      .help = "An untrusted pixel (x, y)"
+      .help = "An untrusted pixel (y, x)"
 
   }
 
