@@ -98,6 +98,7 @@ phil_scope = parse(
     d_min = None
       .type = float(value_min=0.0)
       .help = "The high resolution limit (otherwise use detector d_min)"
+      .expert_level = 1
   }
 
 """,
