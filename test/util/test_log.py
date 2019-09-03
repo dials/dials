@@ -1,13 +1,15 @@
 from __future__ import absolute_import, division
 
 import logging
+import pytest
 
 from dials.util.log import config_simple_stdout, LoggingContext
 
 
 def test_LoggingContext():
-    # configure logging
-    config_simple_stdout()
+    with pytest.deprecated_call():
+        # configure logging
+        config_simple_stdout()
 
     # get some loggers
     idx_logger = logging.getLogger("dials.algorithms.indexing")
