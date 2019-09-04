@@ -93,10 +93,7 @@ class Render3d(object):
     def map_points_to_reciprocal_space(self):
         reflections = flex.reflection_table()
         for i, expt in enumerate(self.experiments):
-            if "imageset_id" in self.reflections_input:
-                sel = self.reflections_input["imageset_id"] == i
-            else:
-                sel = self.reflections_input["id"] == i
+            sel = self.reflections_input["id"] == i
             if isinstance(self.reflections_input["id"], flex.size_t):
                 self.reflections_input["id"] = self.reflections_input["id"].as_int()
 
