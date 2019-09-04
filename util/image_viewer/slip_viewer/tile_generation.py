@@ -421,14 +421,9 @@ class _Tiles(object):
             assert w == 512
             assert h == 512
             wx_image = wx.EmptyImage(w / 2, h / 2)
-            try:
-                import PIL.Image as Image
-            except ImportError:
-                import Image
-            try:
-                I = Image.fromstring("RGB", (512, 512), self.flex_image.export_string)
-            except NotImplementedError:
-                I = Image.frombytes("RGB", (512, 512), self.flex_image.export_string)
+            import PIL.Image as Image
+
+            I = Image.frombytes("RGB", (512, 512), self.flex_image.as_bytes())
             J = I.resize((256, 256), Image.ANTIALIAS)
             wx_image.SetData(J.tostring())
             return wx_image.ConvertToBitmap()
@@ -441,7 +436,7 @@ class _Tiles(object):
             assert w == 256
             assert h == 256
             wx_image = wx.EmptyImage(w, h)
-            wx_image.SetData(self.flex_image.export_string)
+            wx_image.SetData(self.flex_image.as_bytes())
             return wx_image.ConvertToBitmap()
         else:
             wx_image = wx.EmptyImage(256, 256)
