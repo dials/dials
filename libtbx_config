@@ -3,7 +3,7 @@
     "modules_required_for_use": ["boost_adaptbx", "iotbx", "mmtbx"],
     "optional_modules": ["crys3d", "gltbx", "xfel"],
     "python_required": [
-        "dials-data>=2.0",
+        "dials-data>=2.0.37",
         "Jinja2",
         "pytest-mock",
         "mock>=2.0",
