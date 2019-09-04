@@ -117,6 +117,12 @@ phil_scope = parse(
               "will override the geometry from the "
               "image headers."
 
+    check_reference_geometry = True
+      .type = bool
+      .expert_level = 2
+      .help = "If True, assert the reference geometry is similar to"
+              "the image geometry"
+
     allow_multiple_sweeps = False
       .type = bool
       .help = "If False, raise an error if multiple sweeps are found"
@@ -241,6 +247,7 @@ class ReferenceGeometryUpdater(object):
         Load the reference geometry
 
         """
+        self.params = params
         self.reference = self.load_reference_geometry(params)
 
     def __call__(self, imageset):
@@ -248,10 +255,11 @@ class ReferenceGeometryUpdater(object):
         Replace with the reference geometry
 
         """
-        # Check static detector items are the same
-        assert self.reference.detector.is_similar_to(
-            imageset.get_detector(), static_only=True
-        ), "Reference detector model does not match input detector model"
+        if self.params.input.check_reference_geometry:
+            # Check static detector items are the same
+            assert self.reference.detector.is_similar_to(
+                imageset.get_detector(), static_only=True
+            ), "Reference detector model does not match input detector model"
 
         # Set beam and detector
         imageset.set_beam(self.reference.beam)
