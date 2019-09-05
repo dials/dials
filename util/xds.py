@@ -1,14 +1,6 @@
-#!/usr/bin/env python
-#
-# dials.util.xds.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
+
+import os
 
 
 def dump(experiments, reflections, directory):
@@ -16,7 +8,6 @@ def dump(experiments, reflections, directory):
     Dump the files in XDS format
 
     """
-    import os
     from dxtbx.serialize import xds
     from scitbx import matrix
 
@@ -52,8 +43,8 @@ def dump(experiments, reflections, directory):
             xds_inp = os.path.join(sub_dir, "XDS.INP")
             xparm_xds = os.path.join(sub_dir, "XPARM.XDS")
             print("Exporting experiment to %s and %s" % (xds_inp, xparm_xds))
-            with open(xds_inp, "wb") as f:
-                print(
+            with open(xds_inp, "w") as f:
+                f.write(
                     to_xds.XDS_INP(
                         space_group_number=crystal_model.get_space_group()
                         .type()
@@ -64,13 +55,14 @@ def dump(experiments, reflections, directory):
                         job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT",
                     )
                 )
-            with open(xparm_xds, "wb") as f:
-                to_xds.xparm_xds(
-                    real_space_a,
-                    real_space_b,
-                    real_space_c,
-                    crystal_model.get_space_group().type().number(),
-                    out=f,
+            with open(xparm_xds, "w") as f:
+                f.write(
+                    to_xds.xparm_xds(
+                        real_space_a,
+                        real_space_b,
+                        real_space_c,
+                        crystal_model.get_space_group().type().number(),
+                    )
                 )
 
             if reflections is not None and len(reflections) > 0:
