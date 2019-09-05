@@ -1,13 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-import BaseHTTPServer as server_base
+import http.server as server_base
+import json
 import logging
 import os
 import sys
 import time
 from multiprocessing import Process
 
-import libtbx.load_env
 import libtbx.phil
 
 from dials.util import Sorry
@@ -289,9 +289,7 @@ class handler(server_base.BaseHTTPRequestHandler):
         except Exception as e:
             d["error"] = str(e)
 
-        import json
-
-        response = json.dumps(d)
+        response = json.dumps(d).encode("latin-1")
         s.wfile.write(response)
 
 
@@ -328,7 +326,7 @@ def main(nproc, port):
 
 
 if __name__ == "__main__":
-    usage = "%s [options]" % libtbx.env.dispatcher_name
+    usage = "dials.find_spots_server [options]"
 
     from dials.util.options import OptionParser
 
