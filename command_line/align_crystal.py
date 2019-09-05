@@ -4,10 +4,10 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
+import json
 
 import iotbx.phil
 from cctbx import sgtbx
-from orderedset import OrderedSet
 from scitbx import matrix
 
 help_message = """
@@ -224,8 +224,9 @@ class align_crystal(object):
             for solutions in result.values():
                 for solution in solutions:
                     k = tuple(round(a, 3) for a in solution[1:])
-                    self.unique_solutions.setdefault(k, OrderedSet())
-                    self.unique_solutions[k].add((v1, v2))
+                    self.unique_solutions.setdefault(k, [])
+                    if all(v1 != z1 or v2 != z2 for z1, z2 in self.unique_solutions[k]):
+                        self.unique_solutions[k].append((v1, v2))
 
     def _vector_as_str(self, v):
         v = v.elems
@@ -252,10 +253,9 @@ class align_crystal(object):
             for angles, solns in self.unique_solutions.items()
         ]
         d = {"solutions": solutions, "goniometer": self.experiment.goniometer.to_dict()}
-        import json
 
         if filename:
-            with open(filename, "wb") as fh:
+            with open(filename, "w") as fh:
                 json.dump(d, fh, indent=2)
         else:
             return json.dumps(d, indent=2)
