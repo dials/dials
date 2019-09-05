@@ -3,22 +3,18 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import pytest
-from libtbx import phil
-from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.algorithms.refinement.refiner import phil_scope
-from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement import DialsRefineConfigError, RefinerFactory
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
+from libtbx import phil
 
 
 @pytest.mark.parametrize(
     "detector_parameterisation_choice",
-    [
-        "automatic",
-        pytest.param("single", marks=pytest.mark.xfail()),
-        "multiple",
-        "hierarchical",
-    ],
+    ["automatic", "single", "multiple", "hierarchical"],
 )
 def test_multi_panel_parameterisations(
     dials_regression, detector_parameterisation_choice
@@ -40,7 +36,15 @@ def test_multi_panel_parameterisations(
     )
 
     # Construct refiner
-    refiner = RefinerFactory.from_parameters_data_experiments(
-        params, reflections, experiments
-    )
-    assert refiner.experiment_type == "stills"
+
+    if detector_parameterisation_choice == "single":
+        with pytest.raises(DialsRefineConfigError):
+            # Cannot create a single panel parameterisation for a multi-panel detector
+            RefinerFactory.from_parameters_data_experiments(
+                params, reflections, experiments
+            )
+    else:
+        refiner = RefinerFactory.from_parameters_data_experiments(
+            params, reflections, experiments
+        )
+        assert refiner.experiment_type == "stills"
