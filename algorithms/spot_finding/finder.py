@@ -14,6 +14,7 @@ import logging
 import math
 import os
 
+from dials.array_family import flex
 from dials.util import Sorry
 import libtbx
 
@@ -89,7 +90,6 @@ class ExtractPixelsFromImage(object):
         """
         from dials.model.data import PixelList
         from dxtbx.imageset import ImageSweep
-        from dials.array_family import flex
 
         # Parallel reading of HDF5 from the same handle is not allowed. Python
         # multiprocessing is a bit messed up and used fork on linux so need to
@@ -306,7 +306,6 @@ class PixelListToShoeboxes(object):
         Convert the pixel list to shoeboxes
         """
         from dxtbx.imageset import ImageSweep
-        from dials.array_family import flex
 
         # Extract the pixel lists into a list of reflections
         shoeboxes = flex.shoebox()
@@ -365,8 +364,6 @@ class ShoeboxesToReflectionTable(object):
         """
         Filter shoeboxes and create reflection table
         """
-        from dials.array_family import flex
-
         # Calculate the spot centroids
         centroid = shoeboxes.centroid_valid()
         logger.info("Calculated {} spot centroids".format(len(shoeboxes)))
@@ -607,7 +604,6 @@ class ExtractSpots(object):
         :param imageset: The imageset to process
         :return: The list of spot shoeboxes
         """
-        from dials.array_family import flex
         from dials.util.mp import batch_multi_node_parallel_map
 
         # Change the number of processors if necessary
@@ -752,7 +748,6 @@ class SpotFinder(object):
         :param experiments: The experiments to process
         :return: The observed spots
         """
-        from dials.array_family import flex
         import six.moves.cPickle as pickle
         from dxtbx.format.image import ImageBool
 
@@ -806,7 +801,6 @@ class SpotFinder(object):
         :param imageset: The imageset to process
         :return: The observed spots
         """
-        from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
 
         # The input mask
@@ -880,8 +874,6 @@ class SpotFinder(object):
         """
         Find hot pixels in images
         """
-        from dials.array_family import flex
-
         # Write the hot mask
         if self.write_hot_mask:
 
@@ -891,7 +883,7 @@ class SpotFinder(object):
                 for p in imageset.get_detector()
             )
             num_hot = 0
-            if hot_pixels > 0:
+            if hot_pixels:
                 for hp, hm in zip(hot_pixels, hot_mask):
                     for i in range(len(hp)):
                         hm[hp[i]] = False

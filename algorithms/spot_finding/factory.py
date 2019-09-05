@@ -1,6 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import time
+
+import six
+import six.moves.cPickle as pickle
 
 logger = logging.getLogger(__name__)
 
@@ -257,8 +261,6 @@ class BackgroundGradientFilter(object):
         shoeboxes = shoeboxes.select(perm)
         buffer_size = 1
         bg_plus_buffer = self.background_size + buffer_size
-
-        import time
 
         t0 = time.time()
         for i, shoebox in enumerate(shoeboxes):
@@ -576,8 +578,6 @@ class SpotFinderFactory(object):
         :return: The image or None
 
         """
-        import six.moves.cPickle as pickle
-
         # If no filename is set then return None
         if not filename_or_data:
             return None
@@ -588,7 +588,10 @@ class SpotFinderFactory(object):
 
         # Read the image and return the image data
         with open(filename_or_data, "rb") as fh:
-            image = pickle.load(fh)
+            if six.PY3:
+                image = pickle.load(fh, encoding="bytes")
+            else:
+                image = pickle.load(fh)
         if not isinstance(image, tuple):
             image = (image,)
         return image

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
 from dials.array_family import flex
 
 schema_url = "https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml"
@@ -33,7 +34,6 @@ def make_float(handle, name, data, description, units=None):
 
 def make_vlen_uint(handle, name, data, description, units=None):
     import h5py
-    import numpy as np
 
     dtype = h5py.special_dtype(vlen=np.dtype("uint64"))
     dset = handle.create_dataset(name, (len(data),), dtype=dtype)
@@ -192,7 +192,6 @@ def write(handle, key, data):
 
 def read(handle, key):
     from dxtbx.format.nexus import convert_units
-    import numpy as np
 
     if key == "miller_index":
         h = flex.int(handle["h"][:].astype(np.int32))
@@ -320,8 +319,6 @@ def dump(entry, reflections, experiments):
         features.resize((len(features) + 1,))
         features[len(features) - 1] = 7
     else:
-        import numpy as np
-
         features = entry.create_dataset(
             "features", (1,), maxshape=(None,), dtype=np.uint64
         )
@@ -337,7 +334,7 @@ def dump(entry, reflections, experiments):
     definition.attrs["version"] = 1
     definition.attrs["URL"] = schema_url
 
-    refls["experiments"] = experiments
+    refls["experiments"] = [np.string_(e) for e in experiments]
 
     if reflections is None:
         return
@@ -347,7 +344,7 @@ def dump(entry, reflections, experiments):
         try:
             write(refls, key, data)
         except KeyError as e:
-            print(e)
+            print(e.args[0])
 
     # FIXME Write the overlaps (for testing at the moment)
     overlaps = [[] for i in range(len(reflections))]
