@@ -1,13 +1,8 @@
 #!/usr/bin/env python
-# merge_cbf.py
-#
-#   Copyright (C) 2015 Diamond Light Source, Richard Gildea
-#
-#   This code is distributed under the BSD license, a copy of which is
-#   included in the root directory of this package.
-#
 
 from __future__ import absolute_import, division, print_function
+
+import binascii
 
 import iotbx.phil
 
@@ -56,14 +51,13 @@ def get_raw_data_from_file(imageset, i):
     through the imageset, in order to work for multi-panel detectors and other
     situations where the format class modifies the raw array"""
     from cbflib_adaptbx import uncompress
-    import binascii
 
     file_name = imageset.get_image_identifier(i)
     with open(file_name, "rb") as cbf:
         data = cbf.read()
     start_tag = binascii.unhexlify("0c1a04d5")
     data_offset = data.find(start_tag) + 4
-    cbf_header = data[: data_offset - 4]
+    cbf_header = data[: data_offset - 4].decode("latin-1")
     fast = slow = length = 0
     for record in cbf_header.split("\n"):
         if "X-Binary-Size-Fastest-Dimension" in record:
@@ -71,7 +65,6 @@ def get_raw_data_from_file(imageset, i):
         elif "X-Binary-Size-Second-Dimension" in record:
             slow = int(record.split()[-1])
         elif "X-Binary-Size:" in record:
-            xbsize_record = record
             length = int(record.split()[-1])
     values = uncompress(
         packed=data[data_offset : data_offset + length], fast=fast, slow=slow
@@ -80,7 +73,6 @@ def get_raw_data_from_file(imageset, i):
 
 
 def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=True):
-
     from dxtbx.format.FormatCBF import FormatCBF
 
     assert issubclass(
@@ -88,14 +80,10 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
     ), "Only CBF format images supported"
 
     from cbflib_adaptbx import compress
-    import binascii
 
     assert len(imageset) >= n_images
 
     n_output_images = len(imageset) // n_images
-
-    in_oscillation = imageset.get_scan().get_oscillation()[1]
-    out_oscillation = in_oscillation * n_images
 
     for i_out in range(n_output_images):
         data_out = None
@@ -126,9 +114,10 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
         start_tag = binascii.unhexlify("0c1a04d5")
 
-        data = open(imageset.get_path(i_out * n_images), "rb").read()
+        with open(imageset.get_path(i_out * n_images), "rb") as fh:
+            data = fh.read()
         data_offset = data.find(start_tag)
-        cbf_header = data[:data_offset]
+        cbf_header = data[:data_offset].decode("latin-1")
 
         new_header = []
         compressed = compress(data_out)
@@ -214,19 +203,18 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
         tailer = data[data_offset + 4 + old_size :]
 
         with open(out_image, "wb") as f:
-            f.write("".join(new_header) + start_tag + compressed + tailer)
-            print("%s written" % out_image)
-
-    return
+            f.write("".join(new_header).encode("latin-1"))
+            f.write(start_tag)
+            f.write(compressed)
+            f.write(tailer)
+        print("%s written" % out_image)
 
 
 def run():
-    import libtbx.load_env
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
 
-    usage = "%s [options] image_*.cbf" % libtbx.env.dispatcher_name
+    usage = "dials.merge_cbf [options] image_*.cbf"
 
     parser = OptionParser(
         usage=usage,
