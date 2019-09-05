@@ -13,7 +13,7 @@ from dxtbx.serialize import load
         "centroid_test_data",
         pytest.param(
             "l_cysteine_dials_output",
-            marks=pytest.mark.xfail(
+            marks=pytest.mark.skip(
                 reason="test depends on https://github.com/dials/data/pull/40"
             ),
         ),
@@ -29,9 +29,9 @@ def test_generate_mask(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels.mask").check()
@@ -41,12 +41,12 @@ def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels2.mask",
             "output.experiments=masked.expt",
             "untrusted.rectangle=100,200,100,200",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels2.mask").check()
@@ -61,11 +61,11 @@ def test_generate_mask_with_untrusted_circle(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels3.mask",
             "untrusted.circle=100,100,10",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels3.mask").check()
@@ -75,11 +75,11 @@ def test_generate_mask_with_resolution_range(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels4.mask",
             "resolution_range=2,3",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels4.mask").check()
@@ -89,12 +89,12 @@ def test_generate_mask_with_d_min_d_max(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels5.mask",
             "d_min=3",
             "d_max=2",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels5.mask").check()
@@ -104,11 +104,11 @@ def test_generate_mask_with_ice_rings(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels6.mask",
             "ice_rings{filter=True;d_min=2}",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels6.mask").check()
@@ -118,13 +118,13 @@ def test_generate_mask_with_untrusted_polygon_and_pixels(dials_data, tmpdir):
     result = procrunner.run(
         [
             "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json").strpath,
+            dials_data("centroid_test_data").join("experiments.json"),
             "output.mask=pixels3.mask",
             "untrusted.polygon=100,100,100,200,200,200,200,100",
             "untrusted.pixel=0,0",
             "untrusted.pixel=1,1",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("pixels3.mask").check()
