@@ -1298,7 +1298,7 @@ class Integrator(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sweeps or all stills")
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        return table(rows, has_header=True, justify="right", prefix=" ")
 
 
 class Integrator3D(Integrator):
@@ -1560,7 +1560,7 @@ class Integrator3DThreaded(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sweeps or all stills")
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        return table(rows, has_header=True, justify="right", prefix=" ")
 
 
 class IntegratorFactory(object):
