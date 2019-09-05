@@ -8,7 +8,6 @@ from __future__ import absolute_import, division, print_function
 import os
 
 import pytest
-import six
 
 
 def pytest_addoption(parser):
@@ -27,14 +26,6 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
-
-
-def pytest_configure(config):
-    if six.PY3:
-        import dxtbx.tests.python3_test_filter as ptf
-
-        exp = ptf.Python3TestFailureExpectationPlugin(config)
-        config.pluginmanager.register(exp)
 
 
 @pytest.fixture(scope="session")
