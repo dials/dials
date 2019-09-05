@@ -413,11 +413,11 @@ def load(entry):
     for key in columns:
         try:
             col = read(refls, key)
-            if table is None:
-                table = flex.reflection_table()
-            table[key] = col
         except KeyError:
-            pass
+            continue
+        if table is None:
+            table = flex.reflection_table()
+        table[key] = col
 
     # Return the table
     return table, experiments
