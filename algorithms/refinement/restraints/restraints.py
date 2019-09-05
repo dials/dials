@@ -28,12 +28,9 @@ class DerivedParameterTie(object):
     of the model"""
 
     def __init__(self, target, weight):
-
         self._target = target
         self._w = weight
         self._dRdp = None
-
-        return
 
     def residual(self, parameter_value, parameter_gradients):
         """Calculate residual R, cache gradients"""
@@ -49,7 +46,6 @@ class DerivedParameterTie(object):
 
     def weight(self):
         """Return restraint weight"""
-
         return self._w
 
 
@@ -66,7 +62,7 @@ class SingleUnitCellTie(object):
 
         sigma is a sequence of 6 elements giving the 'sigma' for each of the
         terms in target, from which weights for the residuals will be calculated.
-        Values of zero  will remove the restraint for the cell parameter at
+        Values of zero will remove the restraint for the cell parameter at
         that position"""
 
         self._xlucp = model_parameterisation
@@ -74,6 +70,7 @@ class SingleUnitCellTie(object):
 
         assert len(self._target) == 6
         assert len(sigma) == 6
+        assert None not in sigma
 
         # calculate gradients of cell parameters wrt model parameters.
         grads = self._calculate_uc_gradients()
@@ -128,7 +125,7 @@ class SingleUnitCellTie(object):
         for i, (sig, grad, pname) in enumerate(
             zip(sigma, grads, ["a", "b", "c", "alpha", "beta", "gamma"])
         ):
-            tst = [abs(g) > 1.0e-10 for g in grad]
+            tst = (abs(g) > 1.0e-10 for g in grad)
             if any(tst):
                 if sig == 0.0:
                     sig = None
@@ -148,8 +145,6 @@ class SingleUnitCellTie(object):
 
         # set up empty weights list
         self._weights = []
-
-        return
 
     def _calculate_uc_gradients(self, sel=[True] * 6):
         """Calculate gradients of the unit cell parameters with respect to
@@ -316,7 +311,7 @@ class MeanUnitCellTie(object):
             for i, (grad, pname) in enumerate(
                 zip(grads, ["a", "b", "c", "alpha", "beta", "gamma"])
             ):
-                tst = [abs(g) <= 1.0e-10 for g in grad]
+                tst = (abs(g) <= 1.0e-10 for g in grad)
                 if all(tst):
                     # this parameter is constrained, so remove any requested restraints
                     # at this position
@@ -337,8 +332,6 @@ class MeanUnitCellTie(object):
         self._weights = weights[0]
         for w in weights[1:]:
             self._weights.extend(w)
-
-        return
 
     @staticmethod
     def average_fn(vals):
