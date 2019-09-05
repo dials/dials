@@ -13,8 +13,8 @@ def test(dials_data, tmpdir):
             "output.reflections=spotfinder.refl",
             "output.shoeboxes=True",
         ]
-        + [f.strpath for f in images],
-        working_directory=tmpdir.strpath,
+        + images,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("spotfinder.expt").check()
@@ -27,11 +27,10 @@ def test(dials_data, tmpdir):
             "input.reflections=spotfinder.refl",
             "output.mask=hot_pixels.mask",
         ],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("hot_pixels.mask").check()
     assert (
-        "Found 8 hot pixels" in result["stdout"]
-        or "Found 9 hot pixels" in result["stdout"]
+        b"Found 8 hot pixels" in result.stdout or b"Found 9 hot pixels" in result.stdout
     )
