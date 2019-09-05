@@ -207,7 +207,9 @@ def identify_likely_solutions(all_solutions):
                 solution.min_cc is None or solution.min_cc < 0.5
             ) and solution.rmsd > 1.5 * rmsd_p1:
                 continue
-        elif solution.min_cc < 0.7 and solution.rmsd > 2.0 * rmsd_p1:
+        elif (
+            solution.min_cc is None or solution.min_cc < 0.7
+        ) and solution.rmsd > 2.0 * rmsd_p1:
             continue
         elif solution.rmsd > 3 * rmsd_p1:
             continue

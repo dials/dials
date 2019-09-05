@@ -8,7 +8,7 @@ def test(dials_data, tmpdir):
 
     result = procrunner.run(
         ["dials.estimate_gain", "input.experiments=" + input_filename],
-        working_directory=tmpdir.strpath,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert "Estimated gain: 1.0" in result["stdout"]
+    assert b"Estimated gain: 1.0" in result["stdout"]

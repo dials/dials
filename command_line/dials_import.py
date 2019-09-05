@@ -1,19 +1,11 @@
-#!/usr/bin/env python
-#
-# import.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 # LIBTBX_SET_DISPATCHER_NAME dials.import
 from __future__ import absolute_import, division, print_function
 
 import logging
+from collections import namedtuple
 
-import libtbx.load_env
+import six
+import six.moves.cPickle as pickle
 from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import Experiment
 from dxtbx.model.experiment_list import ExperimentList
@@ -22,8 +14,17 @@ from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSweep
 from dials.util.options import flatten_experiments
+from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.import")
+
+
+def _pickle_load(fh):
+    if six.PY3:
+        return pickle.load(fh, encoding="bytes")
+    else:
+        return pickle.load(fh)
+
 
 help_message = """
 
@@ -71,8 +72,6 @@ Examples::
 
 
 # Create the phil parameters
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
 
@@ -265,8 +264,6 @@ class ReferenceGeometryUpdater(object):
         Load a reference geometry file
 
         """
-        from collections import namedtuple
-
         # Load reference geometry
         reference_detector = None
         reference_beam = None
@@ -597,9 +594,6 @@ class MetaDataUpdater(object):
         Get the lookup data
 
         """
-        from collections import namedtuple
-        import six.moves.cPickle as pickle
-
         # Check the lookup inputs
         mask_filename = None
         gain_filename = None
@@ -615,14 +609,14 @@ class MetaDataUpdater(object):
         if params.lookup.mask is not None:
             mask_filename = params.lookup.mask
             with open(mask_filename, "rb") as fh:
-                mask = pickle.load(fh)
+                mask = _pickle_load(fh)
             if not isinstance(mask, tuple):
                 mask = (mask,)
             lookup_size = [m.all() for m in mask]
         if params.lookup.gain is not None:
             gain_filename = params.lookup.gain
             with open(gain_filename, "rb") as fh:
-                gain = pickle.load(fh)
+                gain = _pickle_load(fh)
             if not isinstance(gain, tuple):
                 gain = (gain,)
             if lookup_size is None:
@@ -634,7 +628,7 @@ class MetaDataUpdater(object):
         if params.lookup.pedestal is not None:
             dark_filename = params.lookup.pedestal
             with open(dark_filename, "rb") as fh:
-                dark = pickle.load(fh)
+                dark = _pickle_load(fh)
             if not isinstance(dark, tuple):
                 dark = (dark,)
             if lookup_size is None:
@@ -646,7 +640,7 @@ class MetaDataUpdater(object):
         if params.lookup.dx is not None:
             dx_filename = params.lookup.dx
             with open(dx_filename, "rb") as fh:
-                dx = pickle.load(fh)
+                dx = _pickle_load(fh)
             if not isinstance(dx, tuple):
                 dx = (dx,)
             if lookup_size is None:
@@ -658,7 +652,7 @@ class MetaDataUpdater(object):
         if params.lookup.dy is not None:
             dy_filename = params.lookup.dy
             with open(dx_filename, "rb") as fh:
-                dy = pickle.load(fh)
+                dy = _pickle_load(fh)
             if not isinstance(dy, tuple):
                 dy = (dy,)
             if lookup_size is None:
@@ -701,7 +695,7 @@ class Script(object):
         from dials.util.options import OptionParser
 
         # Create the option parser
-        usage = "usage: %s [options] /path/to/image/files" % libtbx.env.dispatcher_name
+        usage = "dials.import [options] /path/to/image/files"
         self.parser = OptionParser(
             usage=usage,
             sort_options=True,

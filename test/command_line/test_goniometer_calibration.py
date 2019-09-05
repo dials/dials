@@ -26,7 +26,7 @@ def test_goniometer_calibration(dials_regression, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
-    expected_output = """
+    expected_output = b"""
 Goniometer axes and angles (ImgCIF coordinate system):
 GON_PHI:  rotation of 47.976 degrees about axis (0.99997,-0.00588,-0.00586)
 GON_KAPPA:  rotation of 47.773 degrees about axis (0.91314,0.27943,-0.29681)
