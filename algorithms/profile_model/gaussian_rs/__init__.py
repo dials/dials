@@ -1,14 +1,9 @@
 from __future__ import absolute_import, division, print_function
-from dials.array_family import flex  # import dependency
+
 from dials.algorithms.profile_model import modeller  # import dependency
 from dials_algorithms_profile_model_gaussian_rs_ext import *
 
-from dials.algorithms.profile_model.gaussian_rs.model import (
-    phil_scope,
-)  # implicit dependency
-from dials.algorithms.profile_model.gaussian_rs.model import (
-    Model,
-)  # implicit dependency
+from dials.algorithms.profile_model.gaussian_rs.model import phil_scope, Model
 
 
 def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):

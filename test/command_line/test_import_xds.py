@@ -1,10 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
-import pickle
-
 import procrunner
-
-from dials.array_family import flex
+import six.moves.cPickle as pickle
 
 
 def test_import_integrate_hkl(dials_data, tmpdir):

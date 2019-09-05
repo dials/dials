@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
-from copy import deepcopy
+
 import pytest
-from mock import Mock
+from cctbx.sgtbx import space_group, uctbx
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
-from cctbx.sgtbx import space_group, uctbx
+from mock import Mock
 from scitbx import sparse
 
 

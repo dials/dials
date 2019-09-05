@@ -24,8 +24,6 @@ def add_hash(integrated_data):
     as new column to reflection table - should be P1 unique for 360 degree
     scans"""
 
-    from dials.array_family import flex
-
     integrated_data = integrated_data.select(integrated_data["id"] >= 0)
     assert max(integrated_data["id"]) == 0
 

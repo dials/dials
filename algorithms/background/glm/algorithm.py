@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# general.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -24,7 +13,6 @@ class BackgroundAlgorithm(object):
         :param experiments: The list of experiments
         :param model: The background model
         :param tuning_constant: The robust tuning constant
-
         """
         from dials.algorithms.background.glm import Creator
 
@@ -50,10 +38,7 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
-        from dials.array_family import flex
-
         # Do the background subtraction
         if image_volume is None:
             success = self._create(reflections["shoebox"])
@@ -79,7 +64,6 @@ class GLMBackgroundCalculatorFactory(object):
         :param experiments: The list of experiments
         :param model: The background model
         :param tuning_constant: The robust tuning constant
-
         """
         from dials.algorithms.integration.parallel_integrator import (
             GLMBackgroundCalculator,

@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import os
+
+from scitbx import matrix
 
 
 def test(dials_data):
@@ -47,7 +48,6 @@ def test(dials_data):
         beam, detector, goniometer, scan, delta_d, delta_m
     )
 
-    from scitbx import matrix
     from scitbx.array_family import flex
     from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
@@ -126,11 +126,6 @@ def test(dials_data):
                         e82 / delta_d
                     ) ** 2  # +(e83/delta_m)**2
                     de = math.sqrt(min([de1, de2, de3, de4, de5, de6, de7, de8]))
-                    gx = min([e11, e21, e31, e41, e51, e61, e71, e81])
-                    gy = min([e12, e22, e32, e42, e52, e62, e72, e82])
-                    gz = min([e13, e23, e33, e43, e53, e63, e73, e83])
-                    dee = (gx / delta_d) ** 2 + (gy / delta_d) ** 2  # + (gz/delta_m)**2
-                    # print math.sqrt(dee), de
                     if (
                         x0 + i < 0
                         or y0 + j < 0
@@ -161,7 +156,6 @@ def test(dials_data):
 
 def generate_reflections(detector, beam, scan, experiment, num):
     from random import randint, seed
-    from scitbx import matrix
     from dials.array_family import flex
     from dials.algorithms.shoebox import MaskCode
 
@@ -184,12 +178,6 @@ def generate_reflections(detector, beam, scan, experiment, num):
         (x, y) = detector[0].pixel_to_millimeter((x, y))
         xyzcal_mm[i] = (x, y, phi)
         panel[i] = 0
-
-    sigma_b = experiment[0].beam.get_sigma_divergence(deg=False)
-    try:
-        sigma_m = experiment[0].crystal.get_mosaicity(deg=False)
-    except AttributeError:
-        sigma_m = 0
 
     rlist = flex.reflection_table()
     rlist["id"] = flex.int(len(beam_vector), 0)

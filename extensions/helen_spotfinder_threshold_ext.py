@@ -76,7 +76,6 @@ class HelenSpotFinderThresholdExt(object):
         result = self._algorithm.threshold(image, mask)
 
         if self.params.spotfinder.threshold.helen.debug:
-            from dials.array_family import flex
 
             corr = self._algorithm.correlation(image, mask)
             import six.moves.cPickle as pickle

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import to give access from here
-from dxtbx.serialize.load import imageset as sweep  # implicit import
+from dxtbx.serialize.load import imageset as sweep  # exported symbol
 
 import six.moves.cPickle as pickle
 

@@ -4,7 +4,6 @@ import six.moves.cPickle as pickle
 import os
 
 import procrunner
-from dials.array_family import flex  # import dependency
 
 
 def plausible(table):
