@@ -128,7 +128,7 @@ class MyGrid(gridlib.Grid):
         self.data = []
         self.sorted_flags = []
 
-        for key in table_in:
+        for key in table_in.keys():
             if key != "shoebox":
                 col_label = str(key)
                 col_content = list(map(str, table_in[key]))
