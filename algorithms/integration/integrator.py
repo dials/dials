@@ -5,6 +5,7 @@ import logging
 import math
 import random
 
+import six
 import six.moves.cPickle as pickle
 from dials_algorithms_integration_integrator_ext import *
 from dials.algorithms.integration.processor import Processor3D
@@ -1591,9 +1592,15 @@ class IntegratorFactory(object):
                 )
 
         # Read the mask in if necessary
-        if params.integration.lookup.mask is not None:
-            if isinstance(params.integration.lookup.mask, str):
-                with open(params.integration.lookup.mask, "rb") as infile:
+        if params.integration.lookup.mask and isinstance(
+            params.integration.lookup.mask, str
+        ):
+            with open(params.integration.lookup.mask, "rb") as infile:
+                if six.PY3:
+                    params.integration.lookup.mask = pickle.load(
+                        infile, encoding="bytes"
+                    )
+                else:
                     params.integration.lookup.mask = pickle.load(infile)
 
         # Initialise the strategy classes
