@@ -2,12 +2,25 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
+import os
 
-from dials.util.filter_reflections import (
-    filter_reflection_table,
-    FilteringReductionMethods,
-)
+import libtbx.phil
+from cctbx.miller import map_to_asu
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 from scitbx import matrix
+
+import dxtbx.model
+from dials.array_family import flex
+from dials.util import Sorry
+from dials.util.filter_reflections import (
+    FilteringReductionMethods,
+    filter_reflection_table,
+)
+
+try:
+    from typing import Tuple
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -16,21 +29,43 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
     """Export data from integrated_data corresponding to experiment_list to
     an XDS_ASCII.HKL formatted text file."""
 
-    from dials.array_family import flex
+    if len(experiment_list) == 1:
+        experiment_data = integrated_data.select(integrated_data["id"] >= 0)
+        _export_experiment(
+            params.xds_ascii.hklout,
+            experiment_data,
+            experiment_list[0],
+            params,
+            var_model,
+        )
+    else:
+        for i, experiment in enumerate(experiment_list):
+            experiment_data = integrated_data.select(integrated_data["id"] == i)
+            name, ext = os.path.splitext(params.xds_ascii.hklout)
+            filename = name + "_{}".format(i) + ext
+            _export_experiment(filename, experiment_data, experiment, params, var_model)
 
-    # for the moment assume (and assert) that we will convert data from exactly
-    # one lattice...
 
-    assert len(experiment_list) == 1
-    # select reflections that are assigned to an experiment (i.e. non-negative id)
+def _export_experiment(filename, integrated_data, experiment, params, var_model=(1, 0)):
+    # type: (str, flex.reflection_table, dxtbx.model.Experiment, libtbx.phil.scope_extract, Tuple)
+    """Export a single experiment to an XDS_ASCII.HKL format file.
 
-    integrated_data = integrated_data.select(integrated_data["id"] >= 0)
-    assert max(integrated_data["id"]) == 0
-
+    Args:
+        filename: The file to write to
+        integrated_data: The reflection table, pre-selected to one experiment
+        experiment: The experiment list entry to export
+        params: The PHIL configuration object
+        var_model:
+    """
     # export for xds_ascii should only be for non-scaled reflections
     assert any(
         [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
     )
+    # Handle requesting profile intensities (default via auto) but no column
+    if "profile" in params.intensity and "intensity.prf.value" not in integrated_data:
+        raise Sorry(
+            "Requested profile intensity data but only summed present. Use intensity=sum."
+        )
 
     integrated_data = filter_reflection_table(
         integrated_data,
@@ -48,31 +83,29 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
         integrated_data
     )
 
-    experiment = experiment_list[0]
-
     # sort data before output
     nref = len(integrated_data["miller_index"])
     indices = flex.size_t_range(nref)
 
     unique = copy.deepcopy(integrated_data["miller_index"])
-    from cctbx.miller import map_to_asu
 
     map_to_asu(experiment.crystal.get_space_group().type(), False, unique)
 
     perm = sorted(indices, key=lambda k: unique[k])
     integrated_data = integrated_data.select(flex.size_t(perm))
 
-    from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-
-    assert experiment.goniometer is not None
+    if experiment.goniometer is None:
+        print("Warning: No goniometer. Experimentally exporting with (1 0 0) axis")
 
     unit_cell = experiment.crystal.get_unit_cell()
 
-    from scitbx.array_family import flex
-
-    assert experiment.scan is not None
-    image_range = experiment.scan.get_image_range()
-    phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
+    if experiment.scan is None:
+        print("Warning: No Scan. Experimentally exporting no-oscillation values")
+        image_range = (1, 1)
+        phi_start, phi_range = 0.0, 0.0
+    else:
+        image_range = experiment.scan.get_image_range()
+        phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
     # gather the required information for the reflection file
 
@@ -105,7 +138,7 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
         V = var_model[0] * (V + var_model[1] * I * I)
         sigI = flex.sqrt(V)
 
-    fout = open(params.xds_ascii.hklout, "w")
+    fout = open(filename, "w")
 
     # first write the header - in the "standard" coordinate frame...
 
@@ -133,7 +166,11 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
     UB = Rd * matrix.sqr(experiment.crystal.get_A())
     real_space_ABC = UB.inverse().elems
 
-    axis = Rd * experiment.goniometer.get_rotation_axis()
+    if experiment.goniometer is not None:
+        axis = Rd * experiment.goniometer.get_rotation_axis()
+    else:
+        axis = Rd * (1, 0, 0)
+
     beam = Rd * experiment.beam.get_s0()
     cell_fmt = "%9.3f %9.3f %9.3f %7.3f %7.3f %7.3f"
     axis_fmt = "%9.3f %9.3f %9.3f"
@@ -230,4 +267,4 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
 
     fout.write("!END_OF_DATA\n")
     fout.close()
-    logger.info("Output %d reflections to %s" % (nref, params.xds_ascii.hklout))
+    logger.info("Output %d reflections to %s" % (nref, filename))
