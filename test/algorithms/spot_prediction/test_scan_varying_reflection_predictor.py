@@ -227,7 +227,7 @@ def test_scan_varying_results_are_close_to_static_prediction_when_model_is_stati
 
     def compare(refs1, refs2):
         assert len(refs1) == len(refs2)
-        for r1, r2 in zip(refs1, refs2):
+        for r1, r2 in zip(refs1.rows(), refs2.rows()):
             assert r1["miller_index"] == r2["miller_index"]
             # differences less than one hundredth of a pixel/image
             for e1, e2 in zip(r1["xyzcal.px"], r2["xyzcal.px"]):

@@ -102,8 +102,7 @@ def test():
     s0 = matrix.col(mybeam.get_s0())
     spindle = matrix.col(mygonio.get_rotation_axis())
 
-    for ref in obs_refs:
-
+    for ref in obs_refs.rows():
         # get the s1 vector of this reflection
         s1 = matrix.col(ref["s1"])
 

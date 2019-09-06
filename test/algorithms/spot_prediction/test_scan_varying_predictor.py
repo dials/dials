@@ -134,7 +134,7 @@ def ref_gen_varying(experiments):
 def sort_refs(reflections):
     """Sort reflections by Miller index and entering flag"""
 
-    refs_sorted = sorted(reflections, key=lambda x: x["entering"])
+    refs_sorted = sorted(reflections.rows(), key=lambda x: x["entering"])
     refs_sorted = sorted(refs_sorted, key=lambda x: x["miller_index"][2])
     refs_sorted = sorted(refs_sorted, key=lambda x: x["miller_index"][1])
     refs_sorted = sorted(refs_sorted, key=lambda x: x["miller_index"][0])

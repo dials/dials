@@ -927,7 +927,7 @@ def test_split_partials():
     r.split_partials()
     assert len(r) == len(expected)
     EPS = 1e-7
-    for r1, r2 in zip(r, expected):
+    for r1, r2 in zip(r.rows(), expected):
         assert abs(r1["value1"] - r2["value1"]) < EPS
         assert r1["value2"] == r2["value2"]
         assert abs(r1["value3"] - r2["value3"]) < EPS
@@ -999,7 +999,7 @@ def test_split_partials_with_shoebox():
     r.split_partials_with_shoebox()
     assert len(r) == len(expected)
     EPS = 1e-7
-    for r1, r2 in zip(r, expected):
+    for r1, r2 in zip(r.rows(), expected):
         assert abs(r1["value1"] - r2["value1"]) < EPS
         assert r1["value2"] == r2["value2"]
         assert abs(r1["value3"] - r2["value3"]) < EPS

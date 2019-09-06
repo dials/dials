@@ -364,7 +364,7 @@ def run_dps(args):
     # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
 
     data = flex.vec3_double()
-    for spot in spots_mm:
+    for spot in spots_mm.rows():
         data.append(
             (
                 spot["xyzobs.mm.value"][0],
@@ -376,7 +376,8 @@ def run_dps(args):
     logger.info("Running DPS using %i reflections" % len(data))
 
     DPS.index(
-        raw_spot_input=data, panel_addresses=flex.int([s["panel"] for s in spots_mm])
+        raw_spot_input=data,
+        panel_addresses=flex.int(s["panel"] for s in spots_mm.rows()),
     )
     solutions = DPS.getSolutions()
 

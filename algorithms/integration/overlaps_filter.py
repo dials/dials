@@ -47,7 +47,7 @@ class OverlapsFilter(object):
 
     def create_simple_mask(self):
         self.masks["simple_mask"] = flex.size_t(self.array_size)
-        for obs in self.refl:
+        for obs in self.refl.rows():
             shoebox = obs["shoebox"]
             fast_coords = range(shoebox.xsize())
             slow_coords = range(shoebox.ysize())

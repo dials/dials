@@ -290,7 +290,7 @@ class MMCIFOutputFile(object):
 
         cif_loop = iotbx.cif.model.loop(header=header)
 
-        for i, r in enumerate(reflections):
+        for i, r in enumerate(reflections.rows()):
             refl_id = i + 1
             scan_id = r["id"] + 1
             _, _, _, _, z0, z1 = r["bbox"]

@@ -53,7 +53,7 @@ def test_split_blocks_1_frame():
     jobs.split(r)
     assert len(r) == len(expected)
     EPS = 1e-7
-    for r1, r2 in zip(r, expected):
+    for r1, r2 in zip(r.rows(), expected):
         assert r1["bbox"] == r2["bbox"]
         assert r1["partial_id"] == r2["partial_id"]
         assert abs(r1["value1"] - r2["value1"]) < EPS
@@ -136,7 +136,7 @@ def test_split_blocks_non_overlapping():
     jobs.split(r)
     assert len(r) == len(expected)
     EPS = 1e-7
-    for r1, r2 in zip(r, expected):
+    for r1, r2 in zip(r.rows(), expected):
         assert r1["bbox"] == r2["bbox"]
         assert r1["partial_id"] == r2["partial_id"]
         assert abs(r1["value1"] - r2["value1"]) < EPS
@@ -215,7 +215,7 @@ def test_split_blocks_overlapping():
 
     jobs.split(r)
     assert len(r) > 100
-    for r1 in r:
+    for r1 in r.rows():
         v1 = r1["value1"]
         v2 = r1["value2"]
         v3 = r1["value3"]
@@ -499,7 +499,7 @@ def test_summation(dials_data):
 
     # result1 and result2 should be the same
     assert len(result1) == len(result2)
-    for r1, r2 in zip(result1, result2):
+    for r1, r2 in zip(result1.rows(), result2.rows()):
         assert r1["partial_id"] == r2["partial_id"]
         assert r1["bbox"] == r2["bbox"]
         assert r1["entering"] == r2["entering"]
@@ -519,7 +519,7 @@ def test_summation(dials_data):
 
     # result3 and result4 should be the same
     assert len(result3) == len(result4)
-    for r3, r4 in zip(result3, result4):
+    for r3, r4 in zip(result3.rows(), result4.rows()):
         assert r3["partial_id"] == r4["partial_id"]
         assert r3["bbox"] == r4["bbox"]
         assert r3["entering"] == r4["entering"]
@@ -544,7 +544,7 @@ def test_summation(dials_data):
     expected1 = rlist.copy()
     expected1["intensity.sum.value"] = flex.double(len(rlist), 0)
     expected1["intensity.sum.variance"] = flex.double(len(rlist), 0)
-    for r1 in result1:
+    for r1 in result1.rows():
         pid = r1["partial_id"]
         r2 = expected1[pid]
         assert r1["entering"] == r2["entering"]
@@ -559,7 +559,7 @@ def test_summation(dials_data):
     expected3 = rlist.copy()
     expected3["intensity.sum.value"] = flex.double(len(rlist), 0)
     expected3["intensity.sum.variance"] = flex.double(len(rlist), 0)
-    for r1 in result3:
+    for r1 in result3.rows():
         pid = r1["partial_id"]
         r2 = expected3[pid]
         assert r1["entering"] == r2["entering"]
@@ -571,6 +571,6 @@ def test_summation(dials_data):
         assert approx_equal_dict(r1, r2, "xyzcal.px")
         expected3["intensity.sum.value"][pid] += r1["intensity.sum.value"]
         expected3["intensity.sum.variance"][pid] += r1["intensity.sum.variance"]
-    for r1, r3 in zip(expected1, expected3):
+    for r1, r3 in zip(expected1.rows(), expected3.rows()):
         assert approx_equal_dict(r1, r3, "intensity.sum.value")
         assert approx_equal_dict(r1, r3, "intensity.sum.variance")
