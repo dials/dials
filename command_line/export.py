@@ -1,17 +1,7 @@
-#!/usr/bin/env python
-#
-# export.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 from __future__ import absolute_import, division, print_function
 
 import logging
+import os
 import sys
 
 from libtbx.phil import parse
@@ -336,16 +326,14 @@ class SadabsExporter(object):
     def export(self):
         from dials.util.export_sadabs import export_sadabs
 
-        if not "profile" in params.intensity and not "sum" in params.intensity:
+        if "profile" not in params.intensity and "sum" not in params.intensity:
             raise Sorry(
                 """Only intensity options containing sum or profile are compatible with
 export to sadabs format."""
             )
         if not any(
-            [
-                i in self.reflections
-                for i in ["intensity.sum.value", "intensity.prf.value"]
-            ]
+            i in self.reflections
+            for i in ["intensity.sum.value", "intensity.prf.value"]
         ):
             raise Sorry(
                 """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
@@ -387,16 +375,14 @@ class XDSASCIIExporter(object):
     def export(self):
         from dials.util.export_xds_ascii import export_xds_ascii
 
-        if not "profile" in params.intensity and not "sum" in params.intensity:
+        if "profile" not in params.intensity and "sum" not in params.intensity:
             raise Sorry(
                 """Only intensity options containing sum or profile are compatible with
 export to xds_ascii format."""
             )
         if not any(
-            [
-                i in self.reflections
-                for i in ["intensity.sum.value", "intensity.prf.value"]
-            ]
+            i in self.reflections
+            for i in ["intensity.sum.value", "intensity.prf.value"]
         ):
             raise Sorry(
                 """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
@@ -688,7 +674,6 @@ if __name__ == "__main__":
     from dials.util.version import dials_version
     from dials.util import log
     from dials.util import Sorry
-    import os
 
     usage = "dials.export models.expt reflections.pickle [options]"
 

@@ -2,12 +2,14 @@
 Optimise the combination of profile and summation intensity values.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
+
 import boost.python
-from libtbx.table_utils import simple_table
 from cctbx import miller, crystal
-from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
+from dials.array_family import flex
+from libtbx.table_utils import simple_table
 
 miller_ext = boost.python.import_ext("cctbx_miller_ext")
 logger = logging.getLogger("dials")
@@ -173,7 +175,7 @@ class SingleDatasetIntensityCombiner(object):
             # record the results
             results[Imid] = rmeas
             res_str = {0: "prf only", 1: "sum only"}
-            if not Imid in res_str:
+            if Imid not in res_str:
                 res_str[Imid] = "Imid = " + str(round(Imid, 2))
             rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
 
@@ -326,7 +328,7 @@ class MultiDatasetIntensityCombiner(object):
             # record the results
             results[Imid] = rmeas
             res_str = {0: "prf only", 1: "sum only"}
-            if not Imid in res_str:
+            if Imid not in res_str:
                 res_str[Imid] = "Imid = " + str(round(Imid, 2))
             rows.append([res_str[Imid], str(round(cchalf, 5)), str(round(rmeas, 5))])
         return rows, results

@@ -656,10 +656,7 @@ class XrayFrame(AppFrame, XFBaseClass):
         ### XXX TODO: Save overlays
         ### XXX TODO: Fix bug where multi-asic images are slightly cropped due to tranformation error'
 
-        try:
-            import PIL.Image as Image
-        except ImportError:
-            import Image
+        import PIL.Image as Image
 
         dialog = wx.FileDialog(
             self,
@@ -813,15 +810,10 @@ class XrayFrame(AppFrame, XFBaseClass):
                 flex_img.spot_convention(0)
                 flex_img.adjust(color_scheme=self.settings.color_scheme)
                 flex_img.prep_string()
-                data_string = flex_img.export_string
-                try:
-                    imageout = Image.fromstring(
-                        "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), data_string
-                    )
-                except NotImplementedError:
-                    imageout = Image.frombytes(
-                        "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), data_string
-                    )
+                data_string = flex_img.as_bytes()
+                imageout = Image.frombytes(
+                    "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), data_string
+                )
 
             out = StringIO()
             imageout.save(out, "PNG")
@@ -870,14 +862,9 @@ class XrayFrame(AppFrame, XFBaseClass):
             # XXX Order of size1/size2 correct?
             pdf_size = (flex_img.size2() * inch / DPI, flex_img.size1() * inch / DPI)
             pdf_canvas = canvas.Canvas(filename=file_name, pagesize=pdf_size)
-            try:
-                pil_img = Image.fromstring(
-                    "RGB", (flex_img.size2(), flex_img.size1()), flex_img.export_string
-                )
-            except NotImplementedError:
-                pil_img = Image.frombytes(
-                    "RGB", (flex_img.size2(), flex_img.size1()), flex_img.export_string
-                )
+            pil_img = Image.frombytes(
+                "RGB", (flex_img.size2(), flex_img.size1()), flex_img.as_bytes()
+            )
 
             pdf_canvas.drawInlineImage(
                 pil_img, 0, 0, width=pdf_size[0], height=pdf_size[1]

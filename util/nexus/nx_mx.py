@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import math
 from copy import deepcopy
 
+import numpy as np
 from scitbx import matrix
 
 # Extensions to NXMX
@@ -55,7 +57,7 @@ def convert_to_nexus_beam_direction(experiments):
     # Rotate the beams
     rotations = []
     for exp in experiments:
-        d = matrix.col(exp.beam.get_direction()).normalize()
+        d = matrix.col(exp.beam.get_sample_to_source_direction()).normalize()
         angle = d.angle(zaxis, deg=False)
         if abs(angle - math.pi) < EPS:
             axis = (1, 0, 0)
@@ -69,7 +71,7 @@ def convert_to_nexus_beam_direction(experiments):
         if exp.goniometer:
             exp.goniometer.rotate_around_origin(axis, angle, deg=False)
         exp.crystal.rotate_around_origin(axis, angle, deg=False)
-        d = matrix.col(exp.beam.get_direction())
+        d = matrix.col(exp.beam.get_sample_to_source_direction())
         assert abs(d.angle(zaxis)) < EPS
         rotations.append((axis, angle))
 
@@ -82,7 +84,7 @@ def convert_from_nexus_beam_direction(experiments, rotations):
 
     zaxis = matrix.col((0, 0, -1))
     for exp, (axis, angle) in zip(experiments, rotations):
-        d = matrix.col(exp.beam.get_direction()).normalize()
+        d = matrix.col(exp.beam.get_sample_to_source_direction()).normalize()
         assert abs(d.angle(zaxis)) < EPS
         exp.beam.rotate_around_origin(axis, angle, deg=False)
         exp.detector.rotate_around_origin(axis, angle, deg=False)
@@ -179,7 +181,7 @@ def dump_beam(entry, beam):
     nx_beam = get_nx_beam(nx_sample, "beam")
 
     # Generate the stokes polarization parameters
-    d = matrix.col(beam.get_direction()).normalize()
+    d = matrix.col(beam.get_sample_to_source_direction()).normalize()
     n = matrix.col(beam.get_polarization_normal()).normalize()
     p = beam.get_polarization_fraction()
     assert abs(n.dot(d)) < EPS
@@ -537,11 +539,11 @@ def load_detector(entry):
         panel = detector.add_panel()
         panel.set_frame(fast_axis, slow_axis, origin)
         panel.set_pixel_size(pixel_size)
-        panel.set_image_size(image_size)
+        panel.set_image_size([int(x) for x in image_size])
         panel.set_type(det_type)
         panel.set_thickness(thickness)
         panel.set_material(material)
-        panel.set_trusted_range(trusted_range)
+        panel.set_trusted_range([float(x) for x in trusted_range])
         i += 1
 
     # Return the detector and panel
@@ -821,7 +823,7 @@ def load(entry, exp_index):
 
     assert len(entries) == len(exp_index)
     for nxmx, name in zip(entries, exp_index):
-        assert nxmx.name == name
+        assert np.string_(nxmx.name) == name, (nxmx.name, name)
 
     index = []
     rotations = []
@@ -889,7 +891,7 @@ def load(entry, exp_index):
         if image_range is not None and experiment.scan is not None:
             num = image_range[1] - image_range[0] + 1
             assert num == len(experiment.scan)
-            experiment.scan.set_image_range(image_range)
+            experiment.scan.set_image_range([int(x) for x in image_range])
 
         # Return the experiment list
         experiment_list.append(experiment)
@@ -897,13 +899,11 @@ def load(entry, exp_index):
     # Convert from nexus beam direction
     experiment_list = convert_from_nexus_beam_direction(experiment_list, rotations)
 
-    from collections import defaultdict
-
-    beam = defaultdict(list)
-    detector = defaultdict(list)
-    goniometer = defaultdict(list)
-    scan = defaultdict(list)
-    crystal = defaultdict(list)
+    beam = collections.defaultdict(list)
+    detector = collections.defaultdict(list)
+    goniometer = collections.defaultdict(list)
+    scan = collections.defaultdict(list)
+    crystal = collections.defaultdict(list)
     for i, ind in enumerate(index):
         beam[ind[0]].append(i)
         detector[ind[1]].append(i)

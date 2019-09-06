@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# algorithm.py
-#
-#  Copyright (C) 2017 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -83,7 +72,6 @@ class GaussianRSReferenceCalculatorFactory(object):
         from dials.algorithms.profile_model.modeller import SingleSampler
         from dials.algorithms.profile_model.modeller import CircleSampler
         from dials.algorithms.profile_model.modeller import GridSampler
-        from dials.algorithms.profile_model.modeller import EwaldSphereSampler
         from dials.algorithms.profile_model.gaussian_rs.transform import TransformSpec
 
         from math import ceil

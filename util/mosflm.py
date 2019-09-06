@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from dxtbx.model import Crystal
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+from scitbx import matrix
 
 
 def dump(experiments, directory):
@@ -13,8 +15,6 @@ def dump(experiments, directory):
     :param directory: The directory to write to
 
     """
-    from scitbx import matrix
-
     for i, experiment in enumerate(experiments):
         suffix = ""
         if len(experiments) > 1:
@@ -25,14 +25,11 @@ def dump(experiments, directory):
             os.makedirs(sub_dir)
         detector = experiment.detector
         beam = experiment.beam
-        scan = experiment.scan
         goniometer = experiment.goniometer
 
         # XXX imageset is getting the experimental geometry from the image files
         # rather than the input models.expt file
         imageset = experiment.imageset
-
-        from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 
         R_to_mosflm = align_reference_frame(
             beam.get_s0(),
@@ -67,7 +64,7 @@ def dump(experiments, directory):
         mosflm_in = os.path.join(sub_dir, "mosflm.in")
         print("Exporting experiment to %s and %s" % (index_mat, mosflm_in))
 
-        with open(index_mat, "wb") as f:
+        with open(index_mat, "w") as f:
             f.write(format_mosflm_mat(w * A_mosflm, U_mosflm, cryst.get_unit_cell()))
 
         img_dir, template = os.path.split(imageset.get_template())
@@ -75,7 +72,7 @@ def dump(experiments, directory):
         beam_centre = tuple(reversed(detector[0].get_beam_centre(beam.get_s0())))
         distance = detector[0].get_directed_distance()
 
-        with open(mosflm_in, "wb") as f:
+        with open(mosflm_in, "w") as f:
             f.write(
                 write_mosflm_input(
                     directory=img_dir,

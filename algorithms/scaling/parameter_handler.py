@@ -4,12 +4,12 @@ to use a scaler to determine the correct call to the apm factories.
 """
 from __future__ import absolute_import, division, print_function
 
+import six
 from dials.algorithms.scaling.active_parameter_managers import (
     active_parameter_manager,
     ConcurrentAPMFactory,
     ConsecutiveAPMFactory,
 )
-import six
 
 
 class scaling_active_parameter_manager(active_parameter_manager):
@@ -21,7 +21,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
     def __init__(self, components, selection_list):
         self.constant_g_values = None
         for component, obj in six.iteritems(components):
-            if not component in selection_list:
+            if component not in selection_list:
                 n_blocks = len(obj.n_refl)
                 if self.constant_g_values is None:
                     self.constant_g_values = [None] * n_blocks

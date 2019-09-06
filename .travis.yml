@@ -58,25 +58,6 @@ jobs:
       script:
          - python3 -m compileall -q *
 
-    - stage: test
-      before_script:
-         # Inject DIALS. Again.
-         - rm -rf $HOME/build_dials/modules/dials
-         - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
-
-         # Enter CCTBX environment
-         - cd $HOME/build_dials/build
-         - . setpaths.sh
-
-         # If needed allow up to further 30 minutes worth of building time
-         - $HOME/build_dials/modules/dials/.travis/build-for 30m if_required
-
-      script:
-         # Finally. Do what we are here for. Run tests. Yay.
-         - cd $HOME/build_dials/modules/dials
-         - pytest -ra -n 2 --runslow
-         - .travis/check-working-directory-is-clean
-
     - name: "Build - Python 3.6"
          # Same as above really, but on Python 3 this time
       python: 3.6
@@ -107,8 +88,26 @@ jobs:
          # it will be resumed from that point in the next build.
          - $HOME/build_dials/modules/dials/.travis/build-for 40m
 
-    - stage: python3
-      name: "Test - Python 3.6"
+    - stage: test
+      before_script:
+         # Inject DIALS. Again.
+         - rm -rf $HOME/build_dials/modules/dials
+         - mv $HOME/build/dials/dials $HOME/build_dials/modules/dials
+
+         # Enter CCTBX environment
+         - cd $HOME/build_dials/build
+         - . setpaths.sh
+
+         # If needed allow up to further 30 minutes worth of building time
+         - $HOME/build_dials/modules/dials/.travis/build-for 30m if_required
+
+      script:
+         # Finally. Do what we are here for. Run tests. Yay.
+         - cd $HOME/build_dials/modules/dials
+         - pytest -ra -n 2 --runslow
+         - .travis/check-working-directory-is-clean
+
+    - name: "Test - Python 3.6"
          # Same as above really, but on Python 3 this time
       python: 3.6
       before_script:

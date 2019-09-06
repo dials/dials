@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
+import random
 
+import pytest
+import six
 from dials.array_family import flex
 from dials.util.reciprocal_lattice import Render3d
 
@@ -91,12 +93,11 @@ def test_Render3d_integrated(mocker, centroid_test_data):
     render.load_models(experiments, reflections)
     assert render.viewer.set_points.call_args[0][0].size() == 1885
 
-    import random
-
     random.seed(42)
     reflections["n_signal"] = flex.size_t(
         random.randint(1, 100) for i in range(len(reflections))
     )
+
     render = Render3d()
     render.viewer = mocker.Mock()
     render.settings.n_min = None
@@ -109,4 +110,8 @@ def test_Render3d_integrated(mocker, centroid_test_data):
     render.settings.n_min = 20
     render.settings.n_max = 80
     render.load_models(experiments, reflections)
-    assert render.viewer.set_points.call_args[0][0].size() == 1402
+    if six.PY3:
+        expected = 1368
+    else:
+        expected = 1402
+    assert render.viewer.set_points.call_args[0][0].size() == expected

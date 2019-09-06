@@ -4,6 +4,7 @@ import os
 
 import procrunner
 import pytest
+from dxtbx.serialize import load
 
 
 def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir):
@@ -39,8 +40,6 @@ def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(
         tmpdir.join("experiments_multiple_sweeps.expt").strpath
     )
@@ -63,8 +62,6 @@ def test_with_mask(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_with_mask.expt").check(file=1)
-
-    from dxtbx.serialize import load
 
     experiments = load.experiment_list(
         tmpdir.join("experiments_with_mask.expt").strpath
@@ -121,8 +118,6 @@ def test_override_geometry(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("override_geometry.expt").check(file=1)
 
-    from dxtbx.serialize import load
-
     experiments = load.experiment_list(tmpdir.join("override_geometry.expt").strpath)
     imgset = experiments[0].imageset
 
@@ -132,7 +127,7 @@ def test_override_geometry(dials_data, tmpdir):
     scan = imgset.get_scan()
 
     assert beam.get_wavelength() == 2
-    assert beam.get_direction() == (-1, 0, 0)
+    assert beam.get_sample_to_source_direction() == (-1, 0, 0)
     assert detector[0].get_name() == "New panel"
     assert detector[0].get_type() == "New type"
     assert detector[0].get_pixel_size() == (10, 20)
@@ -150,7 +145,7 @@ def test_override_geometry(dials_data, tmpdir):
     assert scan.get_oscillation() == (1, 2)
 
 
-def tst_import_beam_centre(dials_data, run_in_tmpdir):
+def test_import_beam_centre(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
 
@@ -161,13 +156,11 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
             "mosflm_beam_centre=100,200",
             "output.experiments=mosflm_beam_centre.expt",
         ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("mosflm_beam_centre.expt").check(file=1)
-
-    from dxtbx.serialize import load
 
     experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt").strpath)
     imgset = experiments[0].imageset
@@ -181,8 +174,8 @@ def tst_import_beam_centre(dials_data, run_in_tmpdir):
             "reference_geometry=mosflm_beam_centre.expt",
             "output.experiments=mosflm_beam_centre2.expt",
         ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("mosflm_beam_centre2.expt").check(file=1)
@@ -210,8 +203,6 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert os.path.exists("slow_fast_beam_centre.expt")
-
-    from dxtbx.serialize import load
 
     experiments = load.experiment_list("slow_fast_beam_centre.expt")
     imgset = experiments[0].imageset

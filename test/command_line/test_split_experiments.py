@@ -66,7 +66,7 @@ def test_split_by_wavelength(tmpdir):
         working_directory=tmpdir,
     )
     assert result.returncode == 1
-    assert result.stderr.startswith("Sorry")
+    assert result.stderr.startswith(b"Sorry")
 
     experiments[0].identifier = "0"
     experiments[1].identifier = "1"
@@ -79,4 +79,4 @@ def test_split_by_wavelength(tmpdir):
         working_directory=tmpdir,
     )
     assert result.returncode == 1
-    assert result.stderr.startswith("Sorry")
+    assert result.stderr.startswith(b"Sorry")

@@ -4,19 +4,20 @@ Tools to run cluster processing using DRMAA
 from __future__ import absolute_import, division, print_function
 
 import os
+import multiprocessing
 import sys
+
+import six.moves.cPickle as pickle
 
 
 class InputWriter(object):
     """
     A class to write the input files
-
     """
 
     def __init__(self, directory, function, iterable):
         """
         Save the function and iterable
-
         """
         self.directory = directory
         self.function = function
@@ -25,9 +26,7 @@ class InputWriter(object):
     def __call__(self):
         """
         Call this to write input files
-
         """
-        import six.moves.cPickle as pickle
 
         for i, item in enumerate(self.iterable, start=1):
             with open(os.path.join(self.directory, "%d.input" % i), "wb") as outfile:
@@ -46,8 +45,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
     :param nslots: The number of processes to request per cluster node
 
     """
-    import multiprocessing
-    import six.moves.cPickle as pickle
     import tempfile
     import drmaa
 
@@ -136,7 +133,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
 
 if __name__ == "__main__":
     from dials.util.cluster_func_test import func
-    from dials.util.mp import MultiNodeClusterFunction
 
     print(
         cluster_map(

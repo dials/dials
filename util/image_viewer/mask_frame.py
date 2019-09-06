@@ -3,10 +3,6 @@ from __future__ import absolute_import, division, print_function
 import wx
 from wxtbx.phil_controls.floatctrl import FloatCtrl as _FloatCtrl
 
-# -*- Mode: Python; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 8 -*-
-#
-# $Id
-
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
 from wxtbx.phil_controls import EVT_PHIL_CONTROL
 from wxtbx.phil_controls.intctrl import IntCtrl
@@ -592,7 +588,6 @@ class MaskSettingsPanel(wx.Panel):
             self._resolution_range_d_max = 0
 
         from dials.util import masking
-        from libtbx.utils import flat_list
 
         untrusted_rectangle = self.untrusted_rectangle_ctrl.GetValue().strip()
         if len(untrusted_rectangle.strip()) > 0:
@@ -675,7 +670,6 @@ class MaskSettingsPanel(wx.Panel):
     def OnSaveMaskParams(self, event):
         from dials.util.masking import phil_scope
 
-        params = phil_scope.extract()
         file_name = self.params.output.mask_params
         with open(file_name, "wb") as f:
             print("Saving parameters to %s" % file_name)
@@ -944,7 +938,6 @@ class MaskSettingsPanel(wx.Panel):
         y1 = min(panel.get_image_size()[1], y1)
 
         from dials.util import masking
-        from libtbx.utils import flat_list
 
         region = masking.phil_scope.extract().untrusted[0]
         region.rectangle = [int(x0), int(x1), int(y0), int(y1)]
@@ -992,18 +985,7 @@ class MaskSettingsPanel(wx.Panel):
         if r == 0:
             return
 
-        e1 = matrix.col((1, 0))
-        e2 = matrix.col((0, 1))
-        circle_data = (
-            center + r * (e1 + e2),
-            center + r * (e1 - e2),
-            center + r * (-e1 - e2),
-            center + r * (-e1 + e2),
-            center + r * (e1 + e2),
-        )
-
         from dials.util import masking
-        from libtbx.utils import flat_list
 
         region = masking.phil_scope.extract().untrusted[0]
         region.circle = [int(xc), int(yc), int(r)]

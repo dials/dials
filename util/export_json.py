@@ -61,7 +61,7 @@ class ReciprocalLatticeJson(object):
         else:
             text = json.dumps(d, separators=(",", ": "), indent=1, ensure_ascii=True)
         if filename is not None:
-            with open(filename, "wb") as f:
+            with open(filename, "w") as f:
                 f.write(text)
         else:
             return text

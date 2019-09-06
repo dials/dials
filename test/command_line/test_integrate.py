@@ -271,7 +271,7 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
     shutil.copy(pickle_path, loc)
     shutil.copy(image_path, loc)
 
-    with open(json_name, "wb") as w, open(json_path, "rb") as r:
+    with open(json_name, "w") as w, open(json_path, "r") as r:
         w.write(r.read() % loc.replace("\\", "\\\\"))
 
     templ_phil = """
@@ -318,10 +318,10 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
         "True",
     )
 
-    with open("integrate_without_kapton.phil", "wb") as f:
+    with open("integrate_without_kapton.phil", "w") as f:
         f.write(without_kapton_phil)
 
-    with open("integrate_with_kapton.phil", "wb") as f:
+    with open("integrate_with_kapton.phil", "w") as f:
         f.write(with_kapton_phil)
 
     # Call dials.integrate with and without kapton correction

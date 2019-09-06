@@ -1,42 +1,28 @@
-#!/usr/bin/env python
-#
-# algorithm.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
+
+import six.moves.cPickle as pickle
 
 
 class ModelCache(object):
     """
     A class to cache the model
-
     """
 
     def __init__(self):
         """
         Create a model dictionary
-
         """
         self.model = dict()
 
     def get(self, name):
         """
         Get the model
-
         """
         if name is None:
             raise RuntimeError("Model is not specified")
         try:
             model = self.model[name]
         except KeyError:
-            import six.moves.cPickle as pickle
-
             with open(name, "rb") as infile:
                 model = pickle.load(infile)
                 self.model[name] = model
@@ -65,7 +51,6 @@ class BackgroundAlgorithm(object):
         :param model: The background model
         :param robust: Use the robust background algorithm
         :param tuning_constant: The robust tuning constant
-
         """
         from dials.algorithms.background.gmodel import Creator
 
@@ -86,10 +71,7 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
-        from dials.array_family import flex
-
         # Do the background subtraction
         if image_volume is None:
             success = self._create(reflections)
@@ -116,7 +98,6 @@ class GModelBackgroundCalculatorFactory(object):
         :param model: The background model
         :param robust: Use the robust background algorithm
         :param tuning_constant: The robust tuning constant
-
         """
         from dials.algorithms.integration.parallel_integrator import (
             GModelBackgroundCalculator,

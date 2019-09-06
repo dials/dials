@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-import os
 import random
 
 import pytest
+from scitbx import matrix
 
 
 @pytest.fixture
@@ -42,7 +42,6 @@ def setup(dials_data):
 
 
 def test_outer_bounds(setup):
-    from scitbx import matrix
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     assert len(setup["detector"]) == 1
@@ -69,8 +68,6 @@ def test_outer_bounds(setup):
 
         # Calculate the bounding box
         bbox = setup["calculate_bbox"](s1, z, panel)
-        x1, x2 = bbox[0], bbox[1]
-        y1, y2 = bbox[2], bbox[3]
         z1, z2 = bbox[4], bbox[5]
 
         # Calculate the rotation angle for each point
@@ -127,7 +124,6 @@ def test_outer_bounds(setup):
 
 
 def test_radius(setup):
-    from scitbx import matrix
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     s0 = setup["beam"].get_s0()
@@ -135,9 +131,7 @@ def test_radius(setup):
     s0_length = matrix.col(setup["beam"].get_s0()).length()
 
     width, height = setup["detector"][0].get_image_size()
-    zrange = setup["scan"].get_array_range()
     radius12 = setup["delta_divergence"]
-    radius3 = setup["delta_mosaicity"]
 
     for i in range(1000):
 
@@ -156,13 +150,6 @@ def test_radius(setup):
 
         # Calculate the bounding box
         bbox = setup["calculate_bbox"](s1, z, panel)
-        x1, x2 = bbox[0], bbox[1]
-        y1, y2 = bbox[2], bbox[3]
-        z1, z2 = bbox[4], bbox[5]
-
-        # Calculate the rotation angle for each point
-        phi_dash1 = setup["scan"].get_angle_from_array_index(z1, deg=False)
-        phi_dash2 = setup["scan"].get_angle_from_array_index(z2, deg=False)
 
         # Create the XDS coordinate system
         xcs = CoordinateSystem(m2, s0, s1, phi)

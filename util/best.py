@@ -13,7 +13,7 @@ def write_background_file(file_name, imageset, n_bins):
     d, I, sig = background(imageset, imageset.indices()[0], n_bins=n_bins)
 
     logger.info("Saving background file to %s" % file_name)
-    with open(file_name, "wb") as f:
+    with open(file_name, "w") as f:
         for d_, I_, sig_ in zip(d, I, sig):
             f.write("%10.4f %10.2f %10.2f" % (d_, I_, sig_) + os.linesep)
 
@@ -35,7 +35,7 @@ def write_integrated_hkl(prefix, reflections):
             suffix = "%i" % (i_expt + 1)
         file_name = "%s%s.hkl" % (prefix, suffix)
         logger.info("Saving reflections to %s" % file_name)
-        with open(file_name, "wb") as f:
+        with open(file_name, "w") as f:
             for i in range(len(integrated)):
                 f.write(
                     "%4.0f %4.0f %4.0f %10.2f %10.2f"
@@ -74,14 +74,12 @@ def write_par_file(file_name, experiment):
     cryst_mosflm = Crystal(
         real_space_a, real_space_b, real_space_c, space_group=cryst.get_space_group()
     )
-    A_mosflm = matrix.sqr(cryst_mosflm.get_A())
     U_mosflm = matrix.sqr(cryst_mosflm.get_U())
     B_mosflm = matrix.sqr(cryst_mosflm.get_B())
     UB_mosflm = U_mosflm * B_mosflm
     uc_params = cryst_mosflm.get_unit_cell().parameters()
     assert U_mosflm.is_r3_rotation_matrix(), U_mosflm
 
-    symmetry = cryst_mosflm.get_space_group().type().number()
     beam_centre = tuple(reversed(detector[0].get_beam_centre(beam.get_s0())))
     distance = detector[0].get_directed_distance()
     polarization = R_to_mosflm * matrix.col(beam.get_polarization_normal())
@@ -129,7 +127,7 @@ def write_par_file(file_name, experiment):
         return symbol
 
     logger.info("Saving BEST parameter file to %s" % file_name)
-    with open(file_name, "wb") as f:  #
+    with open(file_name, "w") as f:
         print("# parameter file for BEST", file=f)
         print("TITLE          From DIALS", file=f)
         print("DETECTOR       PILA", file=f)
@@ -139,7 +137,7 @@ def write_par_file(file_name, experiment):
             % (max(detector[0].get_image_size()) * detector[0].get_pixel_size()[0]),
             file=f,
         )
-        print("PIXEL          %s" % detector[0].get_pixel_size()[0], file=f)
+        print("PIXEL          %s" % round(detector[0].get_pixel_size()[0], 10), file=f)
         print("ROTAXIS        %4.2f %4.2f %4.2f" % rotation.elems, direction, file=f)
         print("POLAXIS        %4.2f %4.2f %4.2f" % polarization.elems, file=f)
         print("GAIN               1.00", file=f)  # correct for Pilatus images

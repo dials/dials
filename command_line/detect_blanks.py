@@ -195,12 +195,10 @@ def blank_regions_from_sel(d):
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
     from dials.util import log
-    import libtbx.load_env
 
     usage = "dials.detect_blanks [options] models.expt observations.refl"
 

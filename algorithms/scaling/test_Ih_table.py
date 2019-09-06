@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
-from copy import deepcopy
+
 import pytest
-from mock import Mock
+from cctbx.sgtbx import space_group, uctbx
 from dials.algorithms.scaling.Ih_table import IhTable, IhTableBlock, map_indices_to_asu
 from dials.array_family import flex
-from cctbx.sgtbx import space_group, uctbx
+from mock import Mock
 from scitbx import sparse
 
 
@@ -176,7 +176,7 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
 
     assert list(block.intensities) == list(large_reflection_table["intensity"])
     assert list(block.weights) == list(1.0 / large_reflection_table["variance"])
-    assert not "Ih_values" in block.Ih_table
+    assert "Ih_values" not in block.Ih_table
     block.calc_Ih()
     assert list(block.Ih_values) == [
         x / 2.0 for x in [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]

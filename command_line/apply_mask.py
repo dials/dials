@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
-from six.moves import cPickle as pickle
-
+import six
 from dials.util import show_mail_on_error
 from dxtbx.format.image import ImageBool
 from iotbx.phil import parse
+from six.moves import cPickle as pickle
 
 help_message = """
 
@@ -85,8 +85,11 @@ class Script(object):
 
         for i, imageset in enumerate(imagesets):
             # Set the lookup
-            with open(params.input.mask[i]) as f:
-                mask = pickle.load(f)
+            with open(params.input.mask[i], "rb") as f:
+                if six.PY3:
+                    mask = pickle.load(f, encoding="bytes")
+                else:
+                    mask = pickle.load(f)
             imageset.external_lookup.mask.filename = params.input.mask[i]
             imageset.external_lookup.mask.data = ImageBool(mask)
 

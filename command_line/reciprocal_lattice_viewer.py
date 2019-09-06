@@ -6,14 +6,12 @@ from __future__ import absolute_import, division, print_function
 import copy
 import sys
 
-import libtbx.load_env
 from scitbx.array_family import flex
 import wxtbx.app
 
+import dials.util.log
 from dials.util.reciprocal_lattice.viewer import ReciprocalLatticeViewer, phil_scope
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
-
-import dials.util.banner  # noqa: F401; prints banner as side effect
 
 help_message = """
 Visualise the strong spots from spotfinding in reciprocal space.
@@ -28,7 +26,7 @@ Examples::
 
 
 def run(args):
-    usage = "%s [options] models.expt observations.refl" % (libtbx.env.dispatcher_name)
+    usage = "dials.reciprocal_lattice_viewer [options] models.expt observations.refl"
 
     parser = OptionParser(
         usage=usage,
@@ -71,9 +69,9 @@ def run(args):
     f.load_models(experiments, reflections)
     f.Show()
     a.SetTopWindow(f)
-    # a.Bind(wx.EVT_WINDOW_DESTROY, lambda evt: tb_icon.Destroy(), f)
     a.MainLoop()
 
 
 if __name__ == "__main__":
+    dials.util.log.print_banner()
     run(sys.argv[1:])

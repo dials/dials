@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import random
 import math
 
 import pytest
-
 from dials.algorithms.refinement.parameterisation.goniometer_parameters import (
     GoniometerParameterisation,
 )

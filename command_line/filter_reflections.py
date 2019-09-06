@@ -1,14 +1,13 @@
-#!/usr/bin/env python
-
 # LIBTBX_SET_DISPATCHER_NAME dials.filter_reflections
 
 from __future__ import absolute_import, division, print_function
-import logging
-from operator import itemgetter
-import token
-from tokenize import generate_tokens, TokenError, untokenize
-from StringIO import StringIO
 
+import logging
+import token
+from operator import itemgetter
+from tokenize import generate_tokens, TokenError, untokenize
+
+from cctbx import uctbx
 from dials.util import Sorry, log, show_mail_on_error
 from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
@@ -17,7 +16,6 @@ from dials.algorithms.integration import filtering
 from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
-from cctbx import uctbx
 
 
 logger = logging.getLogger("dials")
@@ -119,7 +117,8 @@ def eval_flag_expression(expression, reflections):
     evaluate it"""
 
     result = []
-    g = generate_tokens(StringIO(expression).readline)
+    tokens = iter(expression.split("\n"))
+    g = generate_tokens(lambda: next(tokens))
 
     flags = list(flex.reflection_table.flags.names.items())
     flags.sort(key=itemgetter(0))
@@ -130,7 +129,6 @@ def eval_flag_expression(expression, reflections):
         return reflections.get_flags(getattr(reflections.flags, flag))
 
     while True:
-
         # Extract next token, catching unmatched brackets
         try:
             toknum, tokval, _, _, _ = next(g)
@@ -139,9 +137,17 @@ def eval_flag_expression(expression, reflections):
         except StopIteration:
             break
 
+        # Skip newline characters
+        if toknum == token.NEWLINE:
+            continue
+
         # Catch unwanted token types
         if toknum not in [token.OP, token.NAME, token.ENDMARKER]:
-            raise Sorry("invalid tokens found in {}".format(expression))
+            raise Sorry(
+                "invalid token {} found in {}".format(
+                    token.tok_name[toknum], expression
+                )
+            )
 
         # Catch unwanted operators
         if toknum is token.OP and tokval not in "()|&~":
@@ -186,8 +192,6 @@ def run_analysis(flags, reflections):
         print(st.format())
     else:
         print("No flags set")
-
-    return
 
 
 def run_filtering(params, experiments, reflections):
@@ -345,8 +349,6 @@ def run_filtering(params, experiments, reflections):
             )
         )
         reflections.as_file(params.output.reflections)
-
-    return
 
 
 def filter_by_dead_time(reflections, experiments, dead_time=0, reject_fraction=0):

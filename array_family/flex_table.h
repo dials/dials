@@ -24,10 +24,6 @@
 #include <dials/error.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
-#if PY_MAJOR_VERSION >= 3
-#define IS_PY3K
-#endif
-
 namespace dials { namespace af {
 
   using namespace boost::python;
@@ -167,13 +163,7 @@ namespace dials { namespace af {
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->find(k_);
         if (it == table->end()) {
-          PyErr_SetObject(PyExc_KeyError,
-            #ifdef IS_PY3K
-              PyUnicode_FromFormat("Unknown column '%s'", k_.c_str())
-            #else
-              PyString_FromFormat("Unknown column '%s'", k_.c_str())
-            #endif
-          );
+          PyErr_Format(PyExc_KeyError, "Unknown column '%s'", k_.c_str());
           boost::python::throw_error_already_set();
         }
         return it->second;

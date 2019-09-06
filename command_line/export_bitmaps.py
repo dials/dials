@@ -157,7 +157,6 @@ def imageset_as_bitmaps(imageset, params):
     for i_image in image_range:
         image = imageset.get_raw_data(i_image - start)
 
-        trange = [p.get_trusted_range() for p in detector]
         mask = imageset.get_mask(i_image - start)
         if mask is None:
             mask = [p.get_trusted_range_mask(im) for im, p in zip(image, detector)]
@@ -205,23 +204,12 @@ def imageset_as_bitmaps(imageset, params):
 
         # now export as a bitmap
         flex_image.prep_string()
-        try:
-            from PIL import Image
-        except ImportError:
-            import Image
+        from PIL import Image
+
         # XXX is size//binning safe here?
-        try:  # fromstring raises Exception in Pillow >= 3.0.0
-            pil_img = Image.fromstring(
-                "RGB",
-                (flex_image.ex_size2(), flex_image.ex_size1()),
-                flex_image.export_string,
-            )
-        except NotImplementedError:
-            pil_img = Image.frombytes(
-                "RGB",
-                (flex_image.ex_size2(), flex_image.ex_size1()),
-                flex_image.export_string,
-            )
+        pil_img = Image.frombytes(
+            "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
+        )
         if params.output_file:
             path = os.path.join(output_dir, params.output_file)
         else:

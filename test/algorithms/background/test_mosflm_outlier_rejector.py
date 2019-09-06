@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import math
 import os
+
+import six
 import six.moves.cPickle as pickle
 
 
@@ -22,14 +25,16 @@ def test_run(dials_regression):
     linear_modeller = Linear2dModeller()
 
     from dials.array_family import flex
-    from math import sqrt
     from dials.algorithms.shoebox import MaskCode
 
     print(shoebox_filename)
     # Read the data
     rtable = flex.reflection_table.from_file(reflection_filename)
     with open(shoebox_filename, "rb") as fh:
-        shoeboxes, masks = pickle.load(fh)
+        if six.PY3:
+            shoeboxes, masks = pickle.load(fh, encoding="bytes")
+        else:
+            shoeboxes, masks = pickle.load(fh)
     assert len(rtable) == len(shoeboxes)
     assert len(rtable) == len(masks)
 
@@ -37,7 +42,7 @@ def test_run(dials_regression):
     # read from the mosflm.lp file. Currently this fails for 1 strange
     # reflection whose pixel values in the mosflm file do not match those
     # extracted from the images.
-    count = 0
+    errors = 0
     VAR1 = []
     VAR2 = []
     DIFF = []
@@ -46,18 +51,14 @@ def test_run(dials_regression):
         Ivar = rtable[i]["intensity.sum.variance"]
         data = shoeboxes[i].as_double()
         mask = masks[i]
-        try:
-            assert len(data.all()) == 2
-            assert len(mask.all()) == 2
-            data.reshape(flex.grid(1, *data.all()))
-            mask.reshape(flex.grid(1, *mask.all()))
-            outlier_rejector(data, mask)
-            mask2 = (mask.as_1d() & int(MaskCode.BackgroundUsed)) != 0
-            mask2.reshape(flex.grid(*mask.all()))
-            model = linear_modeller.create(data, mask2)
-        except Exception:
-            count += 1
-            raise
+        assert len(data.all()) == 2
+        assert len(mask.all()) == 2
+        data.reshape(flex.grid(1, *data.all()))
+        mask.reshape(flex.grid(1, *mask.all()))
+        outlier_rejector(data, mask)
+        mask2 = (mask.as_1d() & int(MaskCode.BackgroundUsed)) != 0
+        mask2.reshape(flex.grid(*mask.all()))
+        model = linear_modeller.create(data, mask2)
         assert len(model.params()) == 3
         hy = data.all()[1] // 2
         hx = data.all()[2] // 2
@@ -74,7 +75,7 @@ def test_run(dials_regression):
             assert abs(b1 + a2) < 0.01
             assert abs(c3 - c2) < 0.1
         except Exception:
-            count += 1
+            errors += 1
             continue
 
         background = data.as_double()
@@ -100,15 +101,15 @@ def test_run(dials_regression):
         I1 = I
         Ivar1 = Ivar
         if mask.count(0) == 0 and mask.count(2) == 0 and I1 > 0:
-            VAR1.append(sqrt(Ivar1))
-            VAR2.append(sqrt(Ivar2))
-            DIFF.append(sqrt(Ivar1) - sqrt(Ivar2))
+            VAR1.append(math.sqrt(Ivar1))
+            VAR2.append(math.sqrt(Ivar2))
+            DIFF.append(math.sqrt(Ivar1) - math.sqrt(Ivar2))
             try:
                 assert abs(I1 - I2) < 1.0
-                assert abs(sqrt(Ivar1) - sqrt(Ivar2)) < 1.0
+                assert abs(math.sqrt(Ivar1) - math.sqrt(Ivar2)) < 1.0
             except Exception:
-                count += 1
+                errors += 1
                 continue
 
     # Only 1 should fail
-    assert count == 1
+    assert errors == 1

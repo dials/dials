@@ -5,6 +5,7 @@ import logging
 import math
 import random
 
+import six
 import six.moves.cPickle as pickle
 from dials_algorithms_integration_integrator_ext import *
 from dials.algorithms.integration.processor import Processor3D
@@ -1297,7 +1298,7 @@ class Integrator(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sweeps or all stills")
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        return table(rows, has_header=True, justify="right", prefix=" ")
 
 
 class Integrator3D(Integrator):
@@ -1559,7 +1560,7 @@ class Integrator3DThreaded(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sweeps or all stills")
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        return table(rows, has_header=True, justify="right", prefix=" ")
 
 
 class IntegratorFactory(object):
@@ -1591,9 +1592,15 @@ class IntegratorFactory(object):
                 )
 
         # Read the mask in if necessary
-        if params.integration.lookup.mask is not None:
-            if isinstance(params.integration.lookup.mask, str):
-                with open(params.integration.lookup.mask, "rb") as infile:
+        if params.integration.lookup.mask and isinstance(
+            params.integration.lookup.mask, str
+        ):
+            with open(params.integration.lookup.mask, "rb") as infile:
+                if six.PY3:
+                    params.integration.lookup.mask = pickle.load(
+                        infile, encoding="bytes"
+                    )
+                else:
                     params.integration.lookup.mask = pickle.load(infile)
 
         # Initialise the strategy classes

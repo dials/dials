@@ -148,7 +148,7 @@ class IntegrateHKLImporter(object):
         from scitbx import matrix
 
         dA = matrix.sqr(self._experiment.crystal.get_A())
-        dbeam = matrix.col(self._experiment.beam.get_direction())
+        dbeam = matrix.col(self._experiment.beam.get_sample_to_source_direction())
         daxis = matrix.col(self._experiment.goniometer.get_rotation_axis())
         n = dbeam.cross(daxis)
         xbeam = matrix.col(handle.beam_vector).normalize()
@@ -348,7 +348,7 @@ class XDSFileImporter(object):
         # coordinate frame conversions
         from scitbx import matrix
 
-        dbeam = matrix.col(experiment.beam.get_direction())
+        dbeam = matrix.col(experiment.beam.get_sample_to_source_direction())
         daxis = matrix.col(experiment.goniometer.get_rotation_axis())
         xbeam = matrix.col(xds_beam).normalize()
         xaxis = matrix.col(xds_axis).normalize()

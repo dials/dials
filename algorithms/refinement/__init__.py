@@ -9,7 +9,11 @@ class DialsRefineRuntimeError(RuntimeError):
     pass
 
 
-from dials.algorithms.refinement.refiner import (
-    Refiner,
-    RefinerFactory,
-)  # import dependency
+from dials.algorithms.refinement.refiner import Refiner, RefinerFactory
+
+__all__ = [
+    "DialsRefineConfigError",
+    "DialsRefineRuntimeError",
+    "Refiner",
+    "RefinerFactory",
+]

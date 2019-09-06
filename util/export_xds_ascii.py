@@ -1,10 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import logging
+
 from dials.util.filter_reflections import (
     filter_reflection_table,
     FilteringReductionMethods,
 )
+from scitbx import matrix
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +54,6 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
     nref = len(integrated_data["miller_index"])
     indices = flex.size_t_range(nref)
 
-    import copy
-
     unique = copy.deepcopy(integrated_data["miller_index"])
     from cctbx.miller import map_to_asu
 
@@ -61,23 +62,21 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
     perm = sorted(indices, key=lambda k: unique[k])
     integrated_data = integrated_data.select(flex.size_t(perm))
 
-    from scitbx import matrix
     from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
 
-    assert not experiment.goniometer is None
+    assert experiment.goniometer is not None
 
     unit_cell = experiment.crystal.get_unit_cell()
 
     from scitbx.array_family import flex
 
-    assert not experiment.scan is None
+    assert experiment.scan is not None
     image_range = experiment.scan.get_image_range()
     phi_start, phi_range = experiment.scan.get_image_oscillation(image_range[0])
 
     # gather the required information for the reflection file
 
     nref = len(integrated_data["miller_index"])
-    zdet = flex.double(integrated_data["xyzcal.px"].parts()[2])
 
     miller_index = integrated_data["miller_index"]
 
@@ -193,7 +192,6 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
         X = (UB * (h, k, l)).rotate(axis, phi, deg=True)
         s = s0 + X
         g = s.cross(s0).normalize()
-        f = (s - s0).normalize()
 
         # find component of beam perpendicular to f, e
         e = -(s + s0).normalize()

@@ -51,7 +51,9 @@ def make_detector():
     return d
 
 
-@pytest.mark.xfail(reason="dx,dy maps not loaded from json")
+@pytest.mark.skip(
+    reason="dx,dy maps not loaded from json, https://github.com/dials/dials/issues/471"
+)
 def test_translate(dials_regression, run_in_tmpdir):
     """Test as written in https://github.com/dials/dials/issues/471. This
     is pretty slow!"""

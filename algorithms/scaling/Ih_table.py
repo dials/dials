@@ -6,9 +6,9 @@ symmetry equivalent reflections, as required for scaling.
 """
 from __future__ import absolute_import, division, print_function
 
-from orderedset import OrderedSet
-from dials.array_family import flex
 from cctbx import miller, crystal, uctbx
+from dials.array_family import flex
+from orderedset import OrderedSet
 from scitbx import sparse
 
 
@@ -218,7 +218,7 @@ class IhTable(object):
         """
         joint_asu_indices = flex.miller_index()
         for table in reflection_tables:
-            if not "asu_miller_index" in table:
+            if "asu_miller_index" not in table:
                 table["asu_miller_index"] = map_indices_to_asu(
                     table["miller_index"], self.space_group
                 )

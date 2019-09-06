@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import iotbx.phil
+from scitbx import matrix
 
 help_message = """
 dials.goniometer_calibration is a tool to aid calibration of multi-axis
@@ -36,11 +39,8 @@ output {
 
 
 def run(args):
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
-    from dials.util import Sorry
 
     usage = "dials.goniometer_calibration [options] models.expt"
 
@@ -54,7 +54,7 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
     if not params.use_space_group_from_experiments and params.space_group is None:
-        raise Sorry(
+        sys.exit(
             "Either space_group must be specified or set the parameter use_space_group_from_experiments=True"
         )
     experiments = flatten_experiments(params.input.experiments)
@@ -65,9 +65,7 @@ def run(args):
     from dials.algorithms.indexing.compare_orientation_matrices import (
         difference_rotation_matrix_axis_angle,
     )
-    from scitbx import matrix
 
-    crystals = []
     for experiment in experiments:
         crystal = experiment.crystal
         gonio = experiment.goniometer
@@ -88,7 +86,6 @@ def run(args):
     rows = []
 
     from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-    from scitbx import matrix
 
     R_to_mosflm = align_reference_frame(
         experiments[0].beam.get_s0(),
@@ -184,7 +181,7 @@ def run(args):
 
 
 def write_xoalign_config(file_name, axes, names):
-    with open(file_name, "wb") as f:
+    with open(file_name, "w") as f:
         print("GONIOMETER_AXES_NAMES = " + str(tuple(names)), file=f)
         print(
             "GONIOMETER_AXES = "
@@ -199,6 +196,4 @@ def write_xoalign_config(file_name, axes, names):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

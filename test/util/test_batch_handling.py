@@ -18,7 +18,6 @@ from dials.util.batch_handling import (
 from mock import Mock
 from dials.array_family import flex
 from dxtbx.model import Experiment, Scan
-import pytest
 
 
 def reflections_1():
@@ -74,63 +73,6 @@ def test_assign_batches_to_reflections():
     reflections = assign_batches_to_reflections(reflections, batch_offsets=[0, 100])
     assert list(reflections[0]["batch"]) == [1, 2]
     assert list(reflections[1]["batch"]) == [101, 102]
-
-
-'''def test_exclude_batches_in_reflections():
-  """Tests for namesake function"""
-  # Simple case
-  explist = mock_experiments()
-  reflections = [reflections_1(), reflections_2()]
-  in_use_batch_ranges = [(1, 100), (201, 300)]
-  exclude_batches = [[251, 300]]
-  reflections, new_ranges = exclude_batches_in_reflections(
-    reflections, explist, in_use_batch_ranges, exclude_batches)
-  assert new_ranges[0] == (1, 100)
-  assert new_ranges[1] == (201, 250)
-  assert list(reflections[0].get_flags(reflections[0].flags.user_excluded_in_scaling)) == \
-    [False] * 10
-  assert list(reflections[1].get_flags(reflections[1].flags.user_excluded_in_scaling)) == \
-    [False] * 5 + [True] * 5
-
-  # Case where excluding multiple ranges
-  reflections = [reflections_1(), reflections_2()]
-  exclude_batches = [[251, 300], [201, 220], [1, 20]]
-  reflections, new_ranges = exclude_batches_in_reflections(
-    reflections, explist, in_use_batch_ranges, exclude_batches)
-  assert new_ranges[0] == (21, 100)
-  assert new_ranges[1] == (221, 250)
-  assert list(reflections[0].get_flags(reflections[0].flags.user_excluded_in_scaling)) == \
-    [True] * 2 + [False] * 8
-  assert list(reflections[1].get_flags(reflections[1].flags.user_excluded_in_scaling)) == \
-    [True] * 2 + [False] * 3 + [True] * 5
-
-  # Case where excluding in middle - returns initial range but excludes in middle
-  reflections = [reflections_1(), reflections_2()]
-  exclude_batches = [[251, 270]]
-  reflections, new_ranges = exclude_batches_in_reflections(
-    reflections, explist, in_use_batch_ranges, exclude_batches)
-  assert new_ranges[0] == (1, 100)
-  assert new_ranges[1] == (201, 300)
-  assert list(reflections[0].get_flags(reflections[0].flags.user_excluded_in_scaling)) == \
-    [False] * 10
-  assert list(reflections[1].get_flags(reflections[1].flags.user_excluded_in_scaling)) == \
-    [False] * 5 + [True] * 2 + [False] * 3
-
-  with pytest.raises(ValueError):
-    reflections, new_ranges = exclude_batches_in_reflections(
-      reflections, explist, in_use_batch_ranges, [[1, 100]])
-
-  #Test case where request outside of range - should not apply this exclusion
-  exclude_batches = [[251, 350]]
-  reflections = [reflections_1(), reflections_2()]
-  reflections, new_ranges = exclude_batches_in_reflections(
-    reflections, explist, in_use_batch_ranges, exclude_batches)
-  assert new_ranges[0] == (1, 100)
-  assert new_ranges[1] == (201, 300)
-  assert list(reflections[0].get_flags(reflections[0].flags.user_excluded_in_scaling)) == \
-    [False] * 10
-  assert list(reflections[1].get_flags(reflections[1].flags.user_excluded_in_scaling)) == \
-    [False] * 10'''
 
 
 def test_calculate_batch_offsets():

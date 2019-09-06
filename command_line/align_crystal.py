@@ -4,10 +4,10 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import copy
+import json
 
 import iotbx.phil
 from cctbx import sgtbx
-from orderedset import OrderedSet
 from scitbx import matrix
 
 help_message = """
@@ -136,7 +136,7 @@ class align_crystal(object):
 
         from dials.algorithms.refinement import rotation_decomposition
 
-        results = collections.OrderedDict()
+        results = []
 
         # from https://github.com/legrandp/xdsme/blob/master/XOalign/XOalign.py#L427
         #  referential_permutations sign permutations for four permutations of
@@ -156,10 +156,11 @@ class align_crystal(object):
         )
 
         for (v1_, v2_) in self.vectors:
-            results[(v1_, v2_)] = collections.OrderedDict()
+            result_dictionary = collections.OrderedDict()
+            results.append((v1_, v2_, result_dictionary))
             space_group = self.experiment.crystal.get_space_group()
             for smx in list(space_group.smx())[:]:
-                results[(v1_, v2_)][smx] = []
+                result_dictionary[smx] = []
                 crystal = copy.deepcopy(self.experiment.crystal)
                 cb_op = sgtbx.change_of_basis_op(smx)
                 crystal = crystal.change_basis(cb_op)
@@ -214,17 +215,18 @@ class align_crystal(object):
                     if solutions is None:
                         continue
 
-                    results[(v1_, v2_)][smx].extend(solutions)
+                    result_dictionary[smx].extend(solutions)
 
         self.all_solutions = results
 
         self.unique_solutions = collections.OrderedDict()
-        for (v1, v2), result in results.items():
+        for v1, v2, result in results:
             for solutions in result.values():
                 for solution in solutions:
                     k = tuple(round(a, 3) for a in solution[1:])
-                    self.unique_solutions.setdefault(k, OrderedSet())
-                    self.unique_solutions[k].add((v1, v2))
+                    self.unique_solutions.setdefault(k, [])
+                    if all(v1 != z1 or v2 != z2 for z1, z2 in self.unique_solutions[k]):
+                        self.unique_solutions[k].append((v1, v2))
 
     def _vector_as_str(self, v):
         v = v.elems
@@ -251,10 +253,9 @@ class align_crystal(object):
             for angles, solns in self.unique_solutions.items()
         ]
         d = {"solutions": solutions, "goniometer": self.experiment.goniometer.to_dict()}
-        import json
 
         if filename:
-            with open(filename, "wb") as fh:
+            with open(filename, "w") as fh:
                 json.dump(d, fh, indent=2)
         else:
             return json.dumps(d, indent=2)

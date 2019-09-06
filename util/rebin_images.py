@@ -1,5 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import binascii
+import os
+import random
+
 
 def gz_open(filename, mode):
     import gzip
@@ -9,7 +13,6 @@ def gz_open(filename, mode):
 
 def split_counts(image, split):
     from scitbx.array_family import flex
-    import random
 
     new_images = [flex.int(flex.grid(image.focus()), 0) for k in range(split)]
 
@@ -39,9 +42,6 @@ def merge_counts(images):
 
 
 def read_image(in_image):
-    from scitbx.array_family import flex
-    import binascii
-    import os
     from dxtbx import load
 
     assert os.path.exists(in_image)
@@ -58,8 +58,6 @@ def read_image(in_image):
 
 def write_image(out_image, pixel_values, header):
     from cbflib_adaptbx import compress
-    import binascii
-    import os
 
     assert not os.path.exists(out_image)
     start_tag = binascii.unhexlify("0c1a04d5")
@@ -69,7 +67,6 @@ def write_image(out_image, pixel_values, header):
     fixed_header = ""
     for record in header.split("\n")[:-1]:
         if "X-Binary-Size:" in record:
-            old_size = int(record.split()[-1])
             fixed_header += "X-Binary-Size: %d\r\n" % len(compressed)
         elif "Content-MD5" in record:
             pass
@@ -84,7 +81,6 @@ def write_image(out_image, pixel_values, header):
 def main(in_images, out_images):
     assert len(in_images) == len(out_images)
     n = len(in_images)
-    import os
 
     for i in in_images:
         assert os.path.exists(i)
@@ -109,9 +105,6 @@ def main(in_images, out_images):
 
 
 def main_sum(in_images, out_image):
-    n = len(in_images)
-    import os
-
     for i in in_images:
         assert os.path.exists(i)
     assert not os.path.exists(out_image)

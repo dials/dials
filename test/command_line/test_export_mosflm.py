@@ -20,7 +20,7 @@ def test_export_mosflm(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
     assert os.path.exists("mosflm/index.mat")
-    with open("mosflm/index.mat", "rb") as f:
+    with open("mosflm/index.mat", "r") as f:
         lines = f.read()
     assert (
         lines
@@ -39,7 +39,7 @@ def test_export_mosflm(dials_regression, tmpdir):
         )
     )
     assert os.path.exists("mosflm/mosflm.in")
-    with open("mosflm/mosflm.in", "rb") as f:
+    with open("mosflm/mosflm.in", "r") as f:
         lines = f.read()
     assert (
         lines

@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import sys
 
 import procrunner
 import pytest
@@ -55,8 +54,7 @@ def test_refinement_and_compare_with_known_truth(dials_regression, run_in_tmpdir
     bc_scan_points = [detector[0].get_beam_centre_px(s0) for s0 in s0_scan_points]
 
     # Set up the nanoBragg object as used in the simulation
-    sys.path.append(data_dir)
-    from sim_images import Simulation
+    from .sim_images import Simulation
 
     sim = Simulation()
     sim.set_varying_beam(along="both")

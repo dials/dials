@@ -1,12 +1,32 @@
 """Tests for dials.merge command line program."""
-import pytest
+
+from __future__ import absolute_import, division, print_function
+
 import procrunner
-from iotbx import mtz
-from dxtbx.model.experiment_list import ExperimentListFactory
+import pytest
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentListFactory
+from iotbx import mtz
 
 
-def test_merge(dials_data, tmpdir):
+def validate_mtz(mtz_file, expected_labels, unexpected_labels=None):
+    assert mtz_file.check()
+    m = mtz.object(mtz_file.strpath)
+
+    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
+    labels = set()
+    for ma in m.as_miller_arrays(merge_equivalents=False):
+        labels.update(ma.info().labels)
+    for l in expected_labels:
+        assert l in labels
+    if unexpected_labels:
+        for l in unexpected_labels:
+            assert l not in labels
+
+
+@pytest.mark.parametrize("anomalous", [True, False])
+@pytest.mark.parametrize("truncate", [True, False])
+def test_merge(dials_data, tmpdir, anomalous, truncate):
     """Test the command line script with LCY data"""
     # Main options: truncate on/off, anomalous on/off
 
@@ -16,79 +36,43 @@ def test_merge(dials_data, tmpdir):
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)"]
 
     location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    refls = location.join("scaled_20_25.refl")
+    expts = location.join("scaled_20_25.expt")
 
-    # First try with defaults (truncate on, anomalous on)
+    mtz_file = tmpdir.join("merge-%s-%s.mtz" % (anomalous, truncate))
+
     command = [
         "dials.merge",
         refls,
         expts,
-        "truncate=True",
-        "anomalous=True",
+        "truncate=%s" % truncate,
+        "anomalous=%s" % anomalous,
+        "output.mtz=%s" % mtz_file.strpath,
         "project_name=ham",
         "crystal_name=jam",
         "dataset_name=spam",
     ]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
-    assert tmpdir.join("merged.mtz").check()
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
+    assert not result.returncode and not result.stderr
+    expected_labels = mean_labels
+    unexpected_labels = []
 
-    assert m.as_miller_arrays()[0].info().wavelength == pytest.approx(0.6889)
-    labels = []
-    for ma in m.as_miller_arrays(merge_equivalents=False):
-        labels.extend(ma.info().labels)
-    assert all(x in labels for x in mean_labels)
-    assert all(x in labels for x in anom_labels)
-    assert all(x in labels for x in amp_labels)
-    assert all(x in labels for x in anom_amp_labels)
+    if truncate:
+        expected_labels += amp_labels
+    else:
+        unexpected_labels += amp_labels
 
-    # now try with no truncate option
-    command = ["dials.merge", refls, expts, "truncate=False", "anomalous=True"]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
-    assert tmpdir.join("merged.mtz").check()
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
-    labels = []
-    for ma in m.as_miller_arrays(merge_equivalents=False):
-        labels.extend(ma.info().labels)
-    assert all(x in labels for x in mean_labels)
-    assert all(x in labels for x in anom_labels)
-    assert all(x not in labels for x in amp_labels)
-    assert all(x not in labels for x in anom_amp_labels)
+    if anomalous:
+        expected_labels += anom_labels
+    else:
+        unexpected_labels += anom_labels
 
-    # now try with no anomalous option
-    command = ["dials.merge", refls, expts, "anomalous=False", "truncate=True"]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
-    assert tmpdir.join("merged.mtz").check()
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
-    labels = []
-    for ma in m.as_miller_arrays(merge_equivalents=False):
-        labels.extend(ma.info().labels)
-    assert all(x in labels for x in mean_labels)
-    assert all(x not in labels for x in anom_labels)
-    assert all(x in labels for x in amp_labels)
-    assert all(x not in labels for x in anom_amp_labels)
+    if anomalous and truncate:
+        expected_labels += anom_amp_labels
+    else:
+        unexpected_labels += anom_amp_labels
 
-    # now try with no truncate or anomalous
-    command = ["dials.merge", refls, expts, "truncate=False", "anomalous=False"]
-    result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
-    assert tmpdir.join("merged.mtz").check()
-    m = mtz.object(tmpdir.join("merged.mtz").strpath)
-    labels = []
-    for ma in m.as_miller_arrays(merge_equivalents=False):
-        labels.extend(ma.info().labels)
-    assert all(x in labels for x in mean_labels)
-    assert all(x not in labels for x in anom_labels)
-    assert all(x not in labels for x in amp_labels)
-    assert all(x not in labels for x in anom_amp_labels)
+    validate_mtz(mtz_file, expected_labels, unexpected_labels)
 
 
 def test_merge_multi_wavelength(dials_data, tmpdir):
@@ -137,8 +121,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     # Can now run after creating our 'fake' multiwavelength dataset
     command = ["dials.merge", tmp_refl, tmp_expt, "truncate=True", "anomalous=True"]
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 0
-    assert result.stderr == ""
+    assert not result.returncode and not result.stderr
     assert tmpdir.join("merged.mtz").check()
     m = mtz.object(tmpdir.join("merged.mtz").strpath)
     labels = []
@@ -154,23 +137,39 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert m.as_miller_arrays()[5].info().wavelength == pytest.approx(0.6889)
 
 
-def test_merge_bad_input(dials_data, tmpdir):
-    """Test suitable exit for bad input."""
+@pytest.mark.skip(reason="Test broken, https://github.com/dials/dials/issues/910")
+def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     location = dials_data("vmxi_proteinase_k_sweeps")
 
-    command = ["dials.merge", "output.experiments=symmetrized.expt"]
-    command.append(location.join("experiments_0.json").strpath)
-    command.append(location.join("reflections_0.pickle").strpath)
+    command = [
+        "dials.merge",
+        "output.experiments=symmetrized.expt",
+        location.join("experiments_0.json"),
+        location.join("reflections_0.pickle"),
+    ]
 
     # unscaled data
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 1
-    assert result.stderr.startswith("Sorry")
+    assert result.returncode
+    assert result.stderr.startswith(b"Sorry")
 
-    command.append(location.join("experiments_1.json").strpath)
-    command.append(location.join("reflections_1.pickle").strpath)
+
+@pytest.mark.skip(reason="Test broken, https://github.com/dials/dials/issues/910")
+def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
+    dials_data, tmpdir
+):
+    location = dials_data("vmxi_proteinase_k_sweeps")
+
+    command = [
+        "dials.merge",
+        "output.experiments=symmetrized.expt",
+        location.join("experiments_0.json"),
+        location.join("reflections_0.pickle"),
+        location.join("experiments_1.json"),
+        location.join("reflections_1.pickle"),
+    ]
 
     # more than one reflection table.
     result = procrunner.run(command, working_directory=tmpdir)
-    assert result.returncode == 1
-    assert result.stderr.startswith("Sorry")
+    assert result.returncode
+    assert result.stderr.startswith(b"Sorry")
