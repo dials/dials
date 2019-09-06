@@ -29,11 +29,6 @@ def test_reflection_table_behaves_like_a_python_dictionary():
     assert len(table) == 1
     assert list(table.keys()) == ["A", "B"]
 
-    values = list(table.values())
-    assert len(values) == 2
-    assert (values[0] == flex_A).all_eq(True)
-    assert (values[1] == flex_B).all_eq(True)
-
     items = list(table.items())
     assert len(items) == 2
     assert items[0][0] == "A" and (items[0][1] == flex_A).all_eq(True)

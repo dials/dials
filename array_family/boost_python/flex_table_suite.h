@@ -985,50 +985,6 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
   };
 
   /**
-   * A proxy iterator to iterate over the table column objects
-   */
-  template <typename T>
-  class column_object_iterator {
-  public:
-    typedef T table_type;
-    typedef typename T::const_iterator base_iterator;
-    typedef ptrdiff_t difference_type;
-    typedef std::forward_iterator_tag iterator_category;
-    typedef object value_type;
-    typedef const value_type *pointer;
-    typedef const value_type reference;
-
-    column_object_iterator(base_iterator it) : it_(it) {}
-
-    reference operator*() {
-      column_to_object_visitor visitor;
-      return it_->second.apply_visitor(visitor);
-    }
-
-    column_object_iterator &operator++() {
-      ++it_;
-      return *this;
-    }
-
-    column_object_iterator operator++(int) {
-      column_object_iterator result(*this);
-      ++(*this);
-      return result;
-    }
-
-    bool operator==(const column_object_iterator &rhs) const {
-      return it_ == rhs.it_;
-    }
-
-    bool operator!=(const column_object_iterator &rhs) const {
-      return !(*this == rhs);
-    }
-
-  private:
-    base_iterator it_;
-  };
-
-  /**
    * Proxy iterator to iterate through the table rows
    */
   template <typename T>
@@ -1226,7 +1182,6 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
         .def("items", make_iterator<column_iterator<flex_table_type> >::range())
         .def("rows", make_iterator<row_iterator<flex_table_type> >::range())
         .def("keys", make_iterator<key_iterator<flex_table_type> >::range())
-        .def("values", make_iterator<column_object_iterator<flex_table_type> >::range())
         .def("select", &select_rows_index<flex_table_type>)
         .def("select", &select_rows_flags<flex_table_type>)
         .def("select", &select_cols_keys<flex_table_type>)
