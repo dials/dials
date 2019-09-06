@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.compute_delta_cchalf
-#
-#  Copyright (C) 2018 Diamond Light Source
-#
-#  Authors: James Parkhurst, James Beilsten-Edmands
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 from __future__ import absolute_import, division, print_function
 import collections
 import logging

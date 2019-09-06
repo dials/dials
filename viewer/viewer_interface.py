@@ -1,14 +1,3 @@
-#
-#  DIALS viewer_interface
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package."
-#
-#
 from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex

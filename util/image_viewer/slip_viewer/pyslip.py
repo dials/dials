@@ -1,4 +1,4 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil -*-
+# coding: utf-8
 
 """
 A 'slippy map' widget for wxPython.

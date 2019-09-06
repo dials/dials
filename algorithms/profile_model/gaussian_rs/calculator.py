@@ -1,10 +1,3 @@
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 # FIXME Mosaicity seems to be overestimated
 # FIXME Don't know how XDS REFLECTING_RANGE is calculated
 # FIXME Don't know what XDS REFLECTION_RANGE is used for

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process_mpi
 
 from __future__ import absolute_import, division, print_function

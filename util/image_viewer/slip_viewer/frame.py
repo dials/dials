@@ -1,9 +1,8 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
+# coding: utf-8
 #
 # Known issues: Recentering on resize and when switching between
 # different image types.  Ring centre on image switch.
-#
-# $Id$
+
 
 from __future__ import absolute_import, division, print_function
 from six.moves import range

@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-# export_json.py
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 import json

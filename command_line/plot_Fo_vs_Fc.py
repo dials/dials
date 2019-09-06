@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # LIBTBX_SET_DISPATCHER_NAME dials.plot_Fo_vs_Fc
 
 """

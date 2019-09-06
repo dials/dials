@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 """
 Command line script to assess the space group symmetry (for MX datasets)

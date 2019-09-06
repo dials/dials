@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.rs_mapper.py
-#
-#  Copyright (C) 2014 Takanori Nakane
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import math

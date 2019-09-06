@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Print a table of the orientation for every image of a dataset. The
 orientation is expressed as a zone axis (a direction referenced to the direct

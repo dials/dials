@@ -1,12 +1,3 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Contains classes for refinement engines. Refinery is the shared interface,
 LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
 are the current concrete implementations"""
