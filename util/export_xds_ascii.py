@@ -4,15 +4,23 @@ import copy
 import logging
 import os
 
+import libtbx.phil
 from cctbx.miller import map_to_asu
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+from scitbx import matrix
+
+import dxtbx.model
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.filter_reflections import (
     FilteringReductionMethods,
     filter_reflection_table,
 )
-from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-from scitbx import matrix
+
+try:
+    from typing import Tuple
+except ImportError:
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +47,7 @@ def export_xds_ascii(integrated_data, experiment_list, params, var_model=(1, 0))
 
 
 def _export_experiment(filename, integrated_data, experiment, params, var_model=(1, 0)):
-    # type: (str, flex.reflection_table, dxtbx.model.Experiment, phil_scope, Tuple)
+    # type: (str, flex.reflection_table, dxtbx.model.Experiment, libtbx.phil.scope_extract, Tuple)
     """Export a single experiment to an XDS_ASCII.HKL format file.
 
     Args:
@@ -54,7 +62,7 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
         [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
     )
     # Handle requesting profile intensities (default via auto) but no column
-    if "profile" in params.intensity and not "intensity.prf.value" in integrated_data:
+    if "profile" in params.intensity and "intensity.prf.value" not in integrated_data:
         raise Sorry(
             "Requested profile intensity data but only summed present. Use intensity=sum."
         )
