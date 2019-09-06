@@ -308,10 +308,10 @@ def test_PrfIntensityReducer():
 
     assert list(reflections["fractioncalc"]) == [1.0] * 4
 
-    assert not "intensity.sum.value" in reflections
-    assert not "intensity.scale.value" in reflections
-    assert not "intensity.sum.variance" in reflections
-    assert not "intensity.scale.variance" in reflections
+    assert "intensity.sum.value" not in reflections
+    assert "intensity.scale.value" not in reflections
+    assert "intensity.sum.variance" not in reflections
+    assert "intensity.scale.variance" not in reflections
 
 
 def test_SumIntensityReducer():
@@ -362,10 +362,10 @@ def test_SumIntensityReducer():
     assert list(reflections["intensity.sum.value"]) == pytest.approx([22.0, 24.0])
     assert list(reflections["intensity.sum.variance"]) == pytest.approx([4.4, 4.8])
 
-    assert not "intensity.prf.value" in reflections
-    assert not "intensity.scale.value" in reflections
-    assert not "intensity.prf.variance" in reflections
-    assert not "intensity.scale.variance" in reflections
+    assert "intensity.prf.value" not in reflections
+    assert "intensity.scale.value" not in reflections
+    assert "intensity.prf.variance" not in reflections
+    assert "intensity.scale.variance" not in reflections
 
 
 def test_SumAndPrfIntensityReducer():
@@ -406,8 +406,8 @@ def test_SumAndPrfIntensityReducer():
     # test filtering for export
     reflections = generate_integrated_test_reflections()
     reflections = SumAndPrfIntensityReducer.filter_for_export(reflections)
-    assert not "intensity.scale.value" in reflections
-    assert not "intensity.scale.variance" in reflections
+    assert "intensity.scale.value" not in reflections
+    assert "intensity.scale.variance" not in reflections
 
 
 def test_ScaleIntensityReducer():
@@ -469,10 +469,10 @@ def test_ScaleIntensityReducer():
         [2.3 / 25.0, 0.024, 0.025]
     )
 
-    assert not "intensity.prf.value" in reflections
-    assert not "intensity.sum.value" in reflections
-    assert not "intensity.prf.variance" in reflections
-    assert not "intensity.sum.variance" in reflections
+    assert "intensity.prf.value" not in reflections
+    assert "intensity.sum.value" not in reflections
+    assert "intensity.prf.variance" not in reflections
+    assert "intensity.sum.variance" not in reflections
 
 
 def test_AllSumPrfScaleIntensityReducer():
@@ -498,23 +498,23 @@ def test_filter_reflection_table():
     reflections = generate_integrated_test_reflections()
     reflections = filter_reflection_table(reflections, ["sum"])
     assert "intensity.sum.value" in reflections
-    assert not "intensity.prf.value" in reflections
-    assert not "intensity.scale.value" in reflections
+    assert "intensity.prf.value" not in reflections
+    assert "intensity.scale.value" not in reflections
     reflections = generate_integrated_test_reflections()
     reflections = filter_reflection_table(reflections, ["profile"])
     assert "intensity.prf.value" in reflections
-    assert not "intensity.sum.value" in reflections
-    assert not "intensity.scale.value" in reflections
+    assert "intensity.sum.value" not in reflections
+    assert "intensity.scale.value" not in reflections
     reflections = generate_integrated_test_reflections()
     reflections = filter_reflection_table(reflections, ["scale"])
     assert "intensity.scale.value" in reflections
-    assert not "intensity.prf.value" in reflections
-    assert not "intensity.sum.value" in reflections
+    assert "intensity.prf.value" not in reflections
+    assert "intensity.sum.value" not in reflections
     reflections = generate_integrated_test_reflections()
     reflections = filter_reflection_table(reflections, ["sum", "profile"])
     assert "intensity.sum.value" in reflections
     assert "intensity.prf.value" in reflections
-    assert not "intensity.scale.value" in reflections
+    assert "intensity.scale.value" not in reflections
     reflections = generate_integrated_test_reflections()
     reflections = filter_reflection_table(reflections, ["sum", "profile", "scale"])
     assert "intensity.sum.value" in reflections
@@ -531,7 +531,7 @@ def test_filter_reflection_table():
     reflections = filter_reflection_table(reflections, ["sum", "profile"])
     # should try profile but fail and so retry with just sum
     assert "intensity.sum.value" in reflections
-    assert not "intensity.prf.value" in reflections
+    assert "intensity.prf.value" not in reflections
 
     reflections = generate_integrated_test_reflections()
     reflections.unset_flags(
@@ -540,7 +540,7 @@ def test_filter_reflection_table():
     reflections = filter_reflection_table(reflections, ["sum", "profile", "scale"])
     # should try profile but fail and so retry with just sum
     assert "intensity.sum.value" in reflections
-    assert not "intensity.prf.value" in reflections
+    assert "intensity.prf.value" not in reflections
     assert "intensity.scale.value" in reflections
 
     reflections = generate_integrated_test_reflections()

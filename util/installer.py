@@ -16,7 +16,7 @@ from libtbx.auto_build import install_distribution
 libtbx_path = os.path.join(
     os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "lib"
 )
-if not libtbx_path in sys.path:
+if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
 
 

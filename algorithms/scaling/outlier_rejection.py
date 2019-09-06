@@ -8,10 +8,12 @@ and experiment object, and determine_outlier_index_arrays, which takes an
 Ih_table and returns flex.size_t index arrays of the outlier positions.
 """
 from __future__ import absolute_import, division, print_function
+
 import logging
-from scitbx.array_family import flex
+
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials_scaling_ext import determine_outlier_indices
+from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
 
@@ -45,7 +47,7 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
     assert "intensity" in reflection_table, "reflection table has no 'intensity' column"
     assert "variance" in reflection_table, "reflection table has no 'variance' column"
 
-    if not "inverse_scale_factor" in reflection_table:
+    if "inverse_scale_factor" not in reflection_table:
         reflection_table["inverse_scale_factor"] = flex.double(
             reflection_table.size(), 1.0
         )

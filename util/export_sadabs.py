@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
+import math
 import os
 import re
 
-import logging
 from dials.util.filter_reflections import filter_reflection_table
+from scitbx import matrix
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +17,6 @@ def export_sadabs(integrated_data, experiment_list, params):
     well..."""
 
     from dials.array_family import flex
-    from scitbx import matrix
-    import math
 
     # for the moment assume (and assert) that we will convert data from exactly
     # one lattice...
@@ -43,7 +43,7 @@ def export_sadabs(integrated_data, experiment_list, params):
     )
 
     experiment = experiment_list[0]
-    assert not experiment.scan is None
+    assert experiment.scan is not None
 
     # sort data before output
     nref = len(integrated_data["miller_index"])
@@ -51,7 +51,7 @@ def export_sadabs(integrated_data, experiment_list, params):
     perm = sorted(indices, key=lambda k: integrated_data["miller_index"][k])
     integrated_data = integrated_data.select(flex.size_t(perm))
 
-    assert not experiment.goniometer is None
+    assert experiment.goniometer is not None
 
     # Warn of unhelpful SADABS behaviour for certain multi-sweep data sets
     hkl_file_root, _ = os.path.splitext(params.sadabs.hklout)
@@ -100,7 +100,6 @@ def export_sadabs(integrated_data, experiment_list, params):
     slow_axis = matrix.col(panel.get_slow_axis())
     normal = fast_axis.cross(slow_axis)
     detector2t = s0.angle(normal, deg=True)
-    origin = matrix.col(panel.get_origin())
 
     if params.debug:
         logger.info("Detector fast, slow axes:")
@@ -119,7 +118,6 @@ def export_sadabs(integrated_data, experiment_list, params):
     # gather the required information for the reflection file
 
     nref = len(integrated_data["miller_index"])
-    zdet = flex.double(integrated_data["xyzcal.px"].parts()[2])
 
     miller_index = integrated_data["miller_index"]
 
