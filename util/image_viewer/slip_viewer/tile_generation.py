@@ -1,27 +1,14 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
-# $Id$
-
 from __future__ import absolute_import, division, print_function
-from six.moves import range
 
 import math
+
+import six
 import wx
+from six.moves import range
 
 ######
 # Base class for a tile object - handles access to tiles.
 ######
-"""Jan '12 ... make it so the rstbx widget actually zooms in DONE
-           ... draggable area large enough for whole image DONE
-           ... remove the dependency on map tile library geological DONE
-           ... provide cache  DONE
-           ... put in negative zoom levels  DONE
-           ... tighten up the flex image  -- refactor  DONE
-           ... connect the open filename command line option to the tile generator DONE
-           ... check in the code so far.  Put most of it in cxi xdr xes DONE
-           ... provide cache invalidation DONE
-           ... give mechanism to change brightness; color scheme
-"""
 
 
 def _get_flex_image(
@@ -132,11 +119,10 @@ def _get_flex_image_multipanel(
     # XXX If a point is contained in two panels simultaneously, it will
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
-    for i in range(len(panels)):
+    for i, panel in enumerate(panels):
         # Determine the pixel size for the panel (in meters), as pixel
         # sizes need not be identical.
         data = raw_data[i]
-        panel = panels[i]
         pixel_size = (
             panel.get_pixel_size()[0] * 1e-3,
             panel.get_pixel_size()[1] * 1e-3,
@@ -271,12 +257,11 @@ class _Tiles(object):
         self.show_untrusted = False
 
     def set_image(self, file_name_or_data, metrology_matrices=None, get_raw_data=None):
-
         self.reset_the_cache()
         if file_name_or_data is None:
             self.raw_image = None
             return
-        if type(file_name_or_data) is type(""):
+        if isinstance(file_name_or_data, six.string_types):
             from iotbx.detectors import ImageFactory
 
             self.raw_image = ImageFactory(file_name_or_data)
@@ -393,7 +378,6 @@ class _Tiles(object):
         self.current_color_scheme = color_scheme
 
     def reset_the_cache(self):
-
         # setup the tile caches and Least Recently Used lists
         self.cache = {}
         self.lru = {}
