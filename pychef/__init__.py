@@ -1,9 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
-import dials_pychef_ext
+from dials_pychef_ext import ChefStatistics, Observations
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
+
+__all__ = [
+    "ChefStatistics",
+    "Observations",
+    "Statistics",
+    "batches_to_dose",
+    "dose_phil_str",
+    "phil_scope",
+    "remove_batch_gaps",
+    "resolution_limit",
+    "run",
+    "table_data",
+]
 
 dose_phil_str = """\
 dose {
@@ -112,7 +125,7 @@ class Statistics(object):
         binner_non_anom = intensities.as_non_anomalous_array().use_binning(self.binner)
         n_complete = flex.size_t(binner_non_anom.counts_complete()[1:-1])
 
-        chef_stats = dials_pychef_ext.ChefStatistics(
+        chef_stats = ChefStatistics(
             intensities.indices(),
             intensities.data(),
             intensities.sigmas(),

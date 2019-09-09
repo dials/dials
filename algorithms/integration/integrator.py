@@ -7,7 +7,11 @@ import random
 
 import six
 import six.moves.cPickle as pickle
-from dials_algorithms_integration_integrator_ext import Executor
+from dials_algorithms_integration_integrator_ext import (
+    Executor,
+    JobList,
+    ReflectionManager,
+)
 from dials.algorithms.integration.processor import Processor3D
 from dials.algorithms.integration.processor import ProcessorFlat3D
 from dials.algorithms.integration.processor import Processor2D
@@ -21,6 +25,43 @@ from dials.util import phil
 from dials.util import Sorry
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "Executor",
+    "FinalizerBase",
+    "FinalizerRot",
+    "FinalizerStills",
+    "ImageIntegrator",
+    "InitializerRot",
+    "InitializerStills",
+    "Integrator",
+    "Integrator2D",
+    "Integrator3D",
+    "Integrator3DThreaded",
+    "IntegratorExecutor",
+    "IntegratorFactory",
+    "IntegratorFlat3D",
+    "IntegratorSingle2D",
+    "IntegratorStills",
+    "IntegratorVolume",
+    "JobList",
+    "Parameters",
+    "Processor2D",
+    "Processor3D",
+    "ProcessorBuilder",
+    "ProcessorFlat3D",
+    "ProcessorSingle2D",
+    "ProcessorStills",
+    "ProfileModellerExecutor",
+    "ProfileValidatorExecutor",
+    "ReflectionManager",
+    "frame_hist",
+    "generate_phil_scope",
+    "hist",
+    "job",
+    "nframes_hist",
+    "phil_scope",
+]
 
 
 def generate_phil_scope():

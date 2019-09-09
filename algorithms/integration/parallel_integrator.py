@@ -11,12 +11,50 @@ import logging
 
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
+    GaussianRSIntensityCalculator,
+    GaussianRSMaskCalculator,
+    GaussianRSMultiCrystalMaskCalculator,
+    GaussianRSMultiCrystalReferenceProfileData,
+    GaussianRSReferenceCalculator,
+    GaussianRSReferenceProfileData,
+    GLMBackgroundCalculator,
     MultiThreadedIntegrator,
     MultiThreadedReferenceProfiler,
-    NullTask,
+    ReferenceProfileData,
+    SimpleBackgroundCalculator,
     SimpleBlockList,
     SimpleReflectionManager,
 )
+from dials.algorithms.integration.processor import NullTask
+
+__all__ = [
+    "BackgroundCalculatorFactory",
+    "GLMBackgroundCalculator",
+    "GaussianRSIntensityCalculator",
+    "GaussianRSMaskCalculator",
+    "GaussianRSMultiCrystalMaskCalculator",
+    "GaussianRSMultiCrystalReferenceProfileData",
+    "GaussianRSReferenceCalculator",
+    "GaussianRSReferenceProfileData",
+    "IntegrationJob",
+    "IntegrationManager",
+    "IntegratorProcessor",
+    "IntensityCalculatorFactory",
+    "Logger",
+    "MaskCalculatorFactory",
+    "MultiThreadedIntegrator",
+    "MultiThreadedReferenceProfiler",
+    "ReferenceCalculatorFactory",
+    "ReferenceCalculatorJob",
+    "ReferenceCalculatorManager",
+    "ReferenceCalculatorProcessor",
+    "ReferenceProfileData",
+    "Result",
+    "SimpleBackgroundCalculator",
+    "SimpleBlockList",
+    "SimpleReflectionManager",
+    "assert_enough_memory",
+]
 
 logger = logging.getLogger(__name__)
 
