@@ -47,6 +47,10 @@ output {
     .help = "Override for mosaic angle. If None, use the crystal's mosaic angle, if"
             "available"
 }
+max_scan_points = None
+  .type = int
+  .expert_level = 2
+  .help = Limit number of scan points
 """
 )
 
@@ -115,7 +119,19 @@ class Script(object):
             "xyzobs.px.value",
             "xyzobs.px.variance",
         ]:
-            new_reflections[key] = type(reflections[key])()
+            if key in reflections:
+                new_reflections[key] = type(reflections[key])()
+            elif key == "imageset_id":
+                assert len(experiments.imagesets()) == 1
+                reflections["imageset_id"] = flex.int(len(reflections), 0)
+                new_reflections["imageset_id"] = flex.int()
+            elif key == "entering":
+                reflections["entering"] = flex.bool(len(reflections), False)
+                new_reflections["entering"] = flex.bool()
+            else:
+                raise RuntimeError(
+                    "Expected key not found in reflection table: %s" % key
+                )
 
         for expt_id, experiment in enumerate(experiments):
             # Get the goniometr setting matrix
@@ -130,6 +146,8 @@ class Script(object):
 
             # Create an experiment for each scanpoint
             for i_scan_point in range(*experiment.scan.get_array_range()):
+                if params.max_scan_points and i_scan_point >= params.max_scan_points:
+                    break
                 # The A matrix is the goniometer setting matrix for this scan point
                 # times the scan varying A matrix at this scan point. Note, the
                 # goniometer setting matrix for scan point zero will be the identity
