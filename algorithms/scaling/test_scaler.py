@@ -92,6 +92,7 @@ def generated_param():
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   """,
         process_includes=True,
@@ -100,7 +101,7 @@ def generated_param():
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.__inject__("model", "KB")
+    parameters.model = "KB"
     return parameters
 
 

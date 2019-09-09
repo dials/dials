@@ -98,11 +98,7 @@ Incremental scaling (with different options per dataset)::
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
-  model = physical array KB
-    .type = choice
-    .help = "Set scaling model to be applied to input datasets without
-            an existing model. "
-    .expert_level = 0
+  include scope dials.algorithms.scaling.model.model.model_phil_scope
   stats_only = False
     .type = bool
     .help = "Only read input files and output merging stats."

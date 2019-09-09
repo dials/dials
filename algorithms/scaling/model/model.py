@@ -6,9 +6,11 @@ methods to define how these are composed into one model.
 """
 from __future__ import absolute_import, division, print_function
 
+import itertools
 import logging
 from collections import OrderedDict
 
+from libtbx import phil
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import (
     SingleScaleFactor,
@@ -30,6 +32,91 @@ from dials_scaling_ext import (
 import six
 
 logger = logging.getLogger("dials")
+
+import pkg_resources
+
+
+kb_model_phil_str = """\
+decay_correction = True
+    .type = bool
+    .help = "Option to turn off decay correction (for physical/array/KB
+            default models)."
+    .expert_level = 1
+"""
+
+physical_model_phil_str = """\
+scale_interval = 15.0
+    .type = float(value_min=1.0)
+    .help = "Rotation (phi) interval between model parameters for the scale"
+            "component."
+    .expert_level = 1
+decay_correction = True
+    .type = bool
+    .help = "Option to turn off decay correction."
+    .expert_level = 1
+decay_interval = 20.0
+    .type = float(value_min=1.0)
+    .help = "Rotation (phi) interval between model parameters for the decay"
+            "component."
+    .expert_level = 1
+decay_restraint = 1e-1
+    .type = float(value_min=0.0)
+    .help = "Weight to weakly restrain B-values to 0."
+    .expert_level = 2
+absorption_correction = True
+    .type = bool
+    .help = "Option to turn off absorption correction."
+    .expert_level = 1
+lmax = 4
+    .type = int(value_min=2)
+    .help = "Number of spherical harmonics to include for absorption"
+            "correction, recommended to be no more than 6."
+    .expert_level = 1
+surface_weight = 1e6
+    .type = float(value_min=0.0)
+    .help = "Restraint weight applied to spherical harmonic terms in the"
+            "absorption correction."
+    .expert_level = 1
+"""
+
+array_model_phil_str = """\
+decay_correction = True
+    .type = bool
+    .help = "Option to turn off decay correction (a 2D grid of parameters as"
+            "a function of rotation and resolution (d-value))."
+    .expert_level = 1
+decay_interval = 20.0
+    .type = float(value_min=1.0)
+    .help = "Rotation (phi) interval between model parameters for the decay"
+            "and absorption corrections."
+    .expert_level = 1
+n_resolution_bins = 10
+    .type = int(value_min=1)
+    .help = "Number of resolution bins to use for the decay term."
+    .expert_level = 1
+absorption_correction = True
+    .type = bool
+    .help = "Option to turn off absorption correction (a 3D grid of"
+            "parameters as a function of rotation angle, detector-x and"
+            "detector-y position)."
+    .expert_level = 1
+n_absorption_bins = 3
+    .type = int(value_min=1)
+    .help = "Number of bins in each dimension (applied to both x and y) for"
+            "binning the detector position for the absorption term of the"
+            "array model."
+    .expert_level = 1
+modulation_correction = False
+    .type = bool
+    .help = "Option to turn on a detector correction for the array default"
+            "model."
+    .expert_level = 2
+n_modulation_bins = 20
+    .type = int(value_min=1)
+    .help = "Number of bins in each dimension (applied to both x and y) for"
+            "binning the detector position for the modulation correction."
+    .expert_level = 2
+"""
 
 
 class ScalingModelBase(object):
@@ -192,6 +279,8 @@ class PhysicalScalingModel(ScalingModelBase):
 
     id_ = "physical"
 
+    phil_scope = phil.parse(physical_model_phil_str)
+
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the phyiscal scaling model components."""
         super(PhysicalScalingModel, self).__init__(configdict, is_scaled)
@@ -231,7 +320,7 @@ class PhysicalScalingModel(ScalingModelBase):
             )
             self.components["decay"].parameter_restraints = flex.double(
                 self.components["decay"].parameters.size(),
-                params.parameterisation.decay_restraint,
+                params.physical.decay_restraint,
             )
             self.components["decay"].data = {"x": norm, "d": reflection_table["d"]}
         if "absorption" in self.components:
@@ -355,6 +444,7 @@ class PhysicalScalingModel(ScalingModelBase):
     def from_data(cls, params, experiment, reflection_table):
         """Create the scaling model defined by the params."""
 
+        params = params.physical
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
@@ -362,23 +452,22 @@ class PhysicalScalingModel(ScalingModelBase):
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
 
-        if params.parameterisation.scale_term:
-            configdict["corrections"].append("scale")
-            n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
-                osc_range, one_osc_width, params.parameterisation.scale_interval
-            )
-            configdict.update(
-                {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
-            )
-            parameters_dict["scale"] = {
-                "parameters": flex.double(n_scale_param, 1.0),
-                "parameter_esds": None,
-            }
+        configdict["corrections"].append("scale")
+        n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
+            osc_range, one_osc_width, params.scale_interval
+        )
+        configdict.update(
+            {"s_norm_fac": s_norm_fac, "scale_rot_interval": scale_rot_int}
+        )
+        parameters_dict["scale"] = {
+            "parameters": flex.double(n_scale_param, 1.0),
+            "parameter_esds": None,
+        }
 
-        if params.parameterisation.decay_term:
+        if params.decay_correction:
             configdict["corrections"].append("decay")
             n_decay_param, d_norm_fac, decay_rot_int = initialise_smooth_input(
-                osc_range, one_osc_width, params.parameterisation.decay_interval
+                osc_range, one_osc_width, params.decay_interval
             )
             configdict.update(
                 {"d_norm_fac": d_norm_fac, "decay_rot_interval": decay_rot_int}
@@ -388,12 +477,12 @@ class PhysicalScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        if params.parameterisation.absorption_term:
+        if params.absorption_correction:
             configdict["corrections"].append("absorption")
-            lmax = params.parameterisation.lmax
+            lmax = params.lmax
             n_abs_param = (2 * lmax) + (lmax ** 2)  # arithmetic sum formula (a1=3, d=2)
             configdict.update({"lmax": lmax})
-            surface_weight = params.parameterisation.surface_weight
+            surface_weight = params.surface_weight
             configdict.update({"abs_surface_weight": surface_weight})
             parameters_dict["absorption"] = {
                 "parameters": flex.double(n_abs_param, 0.0),
@@ -437,6 +526,8 @@ class ArrayScalingModel(ScalingModelBase):
     """A scaling model for an array-based parameterisation."""
 
     id_ = "array"
+
+    phil_scope = phil.parse(array_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the array scaling model components."""
@@ -578,6 +669,7 @@ class ArrayScalingModel(ScalingModelBase):
     @classmethod
     def from_data(cls, params, experiment, reflection_table):
         """create an array-based scaling model."""
+        params = params.array
         reflections = reflection_table.select(reflection_table["d"] > 0.0)
         configdict = OrderedDict({"corrections": []})
         # First initialise things common to more than one correction.
@@ -585,7 +677,7 @@ class ArrayScalingModel(ScalingModelBase):
         osc_range = experiment.scan.get_oscillation_range()
         configdict.update({"valid_osc_range": osc_range})
         n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
-            osc_range, one_osc_width, params.parameterisation.decay_interval
+            osc_range, one_osc_width, params.decay_correction
         )
         (xvalues, yvalues, _) = reflections["xyzobs.px.value"].parts()
         (xmax, xmin) = (flex.max(xvalues) + 0.001, flex.min(xvalues) - 0.001)
@@ -593,11 +685,11 @@ class ArrayScalingModel(ScalingModelBase):
 
         parameters_dict = {}
 
-        if params.parameterisation.decay_term:
+        if params.decay_correction:
             configdict["corrections"].append("decay")
             resmax = (1.0 / (flex.min(reflections["d"]) ** 2)) + 0.001
             resmin = (1.0 / (flex.max(reflections["d"]) ** 2)) - 0.001
-            n_res_bins = params.parameterisation.n_resolution_bins
+            n_res_bins = params.n_resolution_bins
             n_res_param, res_bin_width = calc_n_param_from_bins(
                 resmin, resmax, n_res_bins
             )
@@ -616,9 +708,9 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        if params.parameterisation.absorption_term:
+        if params.absorption_correction:
             configdict["corrections"].append("absorption")
-            nxbins = nybins = params.parameterisation.n_absorption_bins
+            nxbins = nybins = params.n_absorption_bins
             n_x_param, x_bin_width = calc_n_param_from_bins(xmin, xmax, nxbins)
             n_y_param, y_bin_width = calc_n_param_from_bins(ymin, ymax, nybins)
             configdict.update(
@@ -639,9 +731,9 @@ class ArrayScalingModel(ScalingModelBase):
                 "parameter_esds": None,
             }
 
-        if params.parameterisation.modulation_term:
+        if params.modulation_correction:
             configdict["corrections"].append("modulation")
-            nx_det_bins = ny_det_bins = params.parameterisation.n_modulation_bins
+            nx_det_bins = ny_det_bins = params.n_modulation_bins
             n_x_mod_param, x_det_bw = calc_n_param_from_bins(xmin, xmax, nx_det_bins)
             n_y_mod_param, y_det_bw = calc_n_param_from_bins(ymin, ymax, ny_det_bins)
             configdict.update(
@@ -697,12 +789,7 @@ class KBScalingModel(ScalingModelBase):
 
     id_ = "KB"
 
-    # Creating a scaling model, want a configdict
-    # configdict = {"corrections" : [name1, name2]} and any other data
-    # that may be required for the model
-    # parameters_dict = {
-    #   "correction name" : {"parameters" : '', "parameter_esds" : '}
-    # }
+    phil_scope = phil.parse(kb_model_phil_str)
 
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the KB scaling model components."""
@@ -764,18 +851,17 @@ class KBScalingModel(ScalingModelBase):
         configdict = OrderedDict({"corrections": []})
         parameters_dict = {}
 
-        if params.parameterisation.decay_term:
+        if params.KB.decay_correction:
             configdict["corrections"].append("decay")
             parameters_dict["decay"] = {
                 "parameters": flex.double([0.0]),
                 "parameter_esds": None,
             }
-        if params.parameterisation.scale_term:
-            configdict["corrections"].append("scale")
-            parameters_dict["scale"] = {
-                "parameters": flex.double([1.0]),
-                "parameter_esds": None,
-            }
+        configdict["corrections"].append("scale")
+        parameters_dict["scale"] = {
+            "parameters": flex.double([1.0]),
+            "parameter_esds": None,
+        }
 
         return cls(parameters_dict, configdict)
 
@@ -847,3 +933,29 @@ def calc_n_param_from_bins(value_min, value_max, n_bins):
     else:
         n_param = n_bins + 2
     return n_param, bin_width
+
+
+model_phil_scope = phil.parse("")
+models = []
+for entry_point in itertools.chain(
+    pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+):
+    models.append(entry_point.name)
+model_phil_scope.adopt_scope(
+    phil.parse(
+        "model ="
+        + " ".join(m for m in models)
+        + "\n    .type = choice"
+        + "\n    .help = Set scaling model to be applied to input datasets"
+        + "\n    .expert_level = 0"
+    )
+)
+for entry_point in itertools.chain(
+    pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+):
+    ext_master_scope = phil.parse("%s .expert_level=1 {}" % entry_point.name)
+    ext_phil_scope = ext_master_scope.get_without_substitution(entry_point.name)
+    assert len(ext_phil_scope) == 1
+    ext_phil_scope = ext_phil_scope[0]
+    ext_phil_scope.adopt_scope(entry_point.load().phil_scope)
+    model_phil_scope.adopt_scope(ext_master_scope)

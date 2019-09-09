@@ -324,7 +324,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     params, _ = optionparser.parse_args(args=[], quick_parse=True)
     params.model = "physical"
     lmax = 2
-    params.parameterisation.lmax = lmax
+    params.physical.lmax = lmax
 
     reflection_table = flex.reflection_table.from_file(pickle_path)
     experiments = load.experiment_list(sweep_path, check_format=False)

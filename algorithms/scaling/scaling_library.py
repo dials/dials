@@ -136,18 +136,18 @@ def scale_against_target(
     Returns the reflection table, with added columns 'inverse_scale_factor' and
     'inverse_scale_factor_variance'."""
 
-    assert model in ["physical", "array", "KB"]
     if not params:
         phil_scope = phil.parse(
             """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
     """,
             process_includes=True,
         )
         optionparser = OptionParser(phil=phil_scope, check_format=False)
         params, _ = optionparser.parse_args(args=[], quick_parse=True)
-        params.__inject__("model", model)
+        params.model = model
 
     from dials.algorithms.scaling.scaler_factory import TargetScalerFactory
 
@@ -171,10 +171,10 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
     Returns the reflection table, with added columns 'inverse_scale_factor' and
     'inverse_scale_factor_variance'."""
 
-    assert model in ["physical", "array"]
     if not params:
         phil_scope = phil.parse(
             """
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_options.phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
     """,
@@ -182,7 +182,8 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
         )
         optionparser = OptionParser(phil=phil_scope, check_format=False)
         params, _ = optionparser.parse_args(args=[], quick_parse=True)
-    params.__inject__("model", model)
+
+    params.model = model
 
     from dials.algorithms.scaling.scaler_factory import SingleScalerFactory
 
@@ -220,10 +221,10 @@ def create_auto_scaling_model(params, experiments, reflections):
                     else:
                         scale_interval, decay_interval = (15.0, 20.0)
                     if params.model == "physical":
-                        params.parameterisation.scale_interval = scale_interval
-                        params.parameterisation.decay_interval = decay_interval
+                        params.physical.scale_interval = scale_interval
+                        params.physical.decay_interval = decay_interval
                         if osc_range < 60.0:
-                            params.parameterisation.absorption_term = False
+                            params.physical.absorption_correction = False
 
                 # now load correct factory and make scaling model.
                 model_class = None
@@ -489,8 +490,7 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
     # create a new KB scaling model for the target and set as scaled to fix scale
     # for targeted scaling.
     params = Mock()
-    params.parameterisation.decay_term.return_value = False
-    params.parameterisation.scale_term.return_value = True
+    params.KB.decay_correction.return_value = False
     exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
 
@@ -506,8 +506,7 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     ic = intensity_array_from_cif_file(cif_file)
     exp = deepcopy(experiments[0])
     params = Mock()
-    params.parameterisation.decay_term.return_value = False
-    params.parameterisation.scale_term.return_value = True
+    params.decay_correction.return_value = False
     exp.scaling_model = KBScalingModel.from_data(params, [], [])
     exp.scaling_model.set_scaling_model_as_scaled()  # Set as scaled to fix scale.
 

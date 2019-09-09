@@ -24,6 +24,7 @@ def run_one_scaling(working_directory, argument_list):
     command = ["dials.scale"] + argument_list
     print(command)
     result = procrunner.run(command, working_directory=working_directory)
+    print(result.stderr)
     assert not result.returncode and not result.stderr
     assert working_directory.join("scaled.expt").check()
     assert working_directory.join("scaled.refl").check()
@@ -433,7 +434,7 @@ def test_scale_array(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "xia2-28")
     refl = os.path.join(data_dir, "20_integrated.pickle")
     expt = os.path.join(data_dir, "20_integrated_experiments.json")
-    extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
+    extra_args = ["model=array", "array.absorption_correction=0", "full_matrix=0"]
 
     run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
@@ -603,7 +604,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     ("mode", "parameter", "parameter_values"),
     [
         ("single", None, None),
-        ("multi", "absorption_term", None),
+        ("multi", "absorption_correction", None),
         ("multi", "model", "physical array"),
     ],
 )

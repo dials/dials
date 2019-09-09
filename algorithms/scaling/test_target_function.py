@@ -169,6 +169,7 @@ def generated_param(model="KB"):
     """Generate the scaling phil param scope."""
     phil_scope = phil.parse(
         """
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_options.phil_scope
   """,
         process_includes=True,
@@ -178,8 +179,8 @@ def generated_param(model="KB"):
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.__inject__("model", model)
-    parameters.parameterisation.absorption_term = False
+    parameters.model = model
+    parameters.physical.absorption_correction = False
     return parameters
 
 
@@ -492,7 +493,7 @@ def test_target_jacobian_calculation_finite_difference(
 ):
     """Test the calculated jacobian against a finite difference calculation."""
     test_params, exp, test_refl = physical_param, single_exp, large_reflection_table
-    test_params.parameterisation.decay_term = False
+    test_params.physical.decay_correction = False
     test_params.model = "physical"
     experiments = create_scaling_model(test_params, exp, test_refl)
     assert experiments[0].scaling_model.id_ == "physical"

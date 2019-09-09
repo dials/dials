@@ -66,13 +66,12 @@ def mock_errormodel():
 def mock_physical_params():
     """Return a mock params object for a physical model."""
     params = Mock()
-    params.parameterisation.scale_term = True
-    params.parameterisation.scale_interval = 10.0
-    params.parameterisation.decay_term = True
-    params.parameterisation.decay_interval = 15.0
-    params.parameterisation.absorption_term = True
-    params.parameterisation.lmax = 4
-    params.parameterisation.decay_restraint = 1e-1
+    params.physical.scale_interval = 10.0
+    params.physical.decay_correction = True
+    params.physical.decay_interval = 15.0
+    params.physical.absorption_correction = True
+    params.physical.lmax = 4
+    params.physical.decay_restraint = 1e-1
     return params
 
 
@@ -81,6 +80,7 @@ def generated_param():
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
   """,
         process_includes=True,
     )
@@ -89,7 +89,7 @@ def generated_param():
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.parameterisation.modulation_term = True
+    parameters.array.modulation_correction = True
     return parameters
 
 
@@ -214,9 +214,7 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     physicalmodel = PhysicalScalingModel.from_data(
         mock_physical_params, mock_exp, test_reflections
     )
-    assert physicalmodel.configdict["lmax"] == (
-        mock_physical_params.parameterisation.lmax
-    )
+    assert physicalmodel.configdict["lmax"] == (mock_physical_params.physical.lmax)
     assert physicalmodel.components["absorption"].n_params == 24
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
 
@@ -256,7 +254,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
 
     # Test configure reflection table
     mock_params = Mock()
-    mock_params.parameterisation.decay_restraint = 0.0
+    mock_params.physical.decay_restraint = 0.0
     physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
     # Test normalise components.
     physicalmodel.components["scale"].update_reflection_data()
