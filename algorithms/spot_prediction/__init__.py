@@ -1,9 +1,38 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_algorithms_spot_prediction_ext import *
+import dials_algorithms_spot_prediction_ext
+from dials_algorithms_spot_prediction_ext import (
+    IndexGenerator,
+    NaveStillsReflectionPredictor,
+    PixelLabeller,
+    PixelToMillerIndex,
+    ray_intersection,
+    ReekeIndexGenerator,
+    RotationAngles,
+    ScanStaticRayPredictor,
+    ScanVaryingRayPredictor,
+    SphericalRelpStillsReflectionPredictor,
+    StillsDeltaPsiReflectionPredictor,
+    StillsRayPredictor,
+)
 
-# Override constructor with factory
-_ScanStaticReflectionPredictor = ScanStaticReflectionPredictor
+__all__ = [
+    "IndexGenerator",
+    "NaveStillsReflectionPredictor",
+    "PixelLabeller",
+    "PixelToMillerIndex",
+    "ray_intersection",
+    "ReekeIndexGenerator",
+    "RotationAngles",
+    "ScanStaticRayPredictor",
+    "ScanStaticReflectionPredictor",
+    "ScanVaryingRayPredictor",
+    "ScanVaryingReflectionPredictor",
+    "SphericalRelpStillsReflectionPredictor",
+    "StillsDeltaPsiReflectionPredictor",
+    "StillsRayPredictor",
+    "StillsReflectionPredictor",
+]
 
 
 def ScanStaticReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **kwargs):
@@ -26,7 +55,7 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **
     space_group = space_group.build_derived_patterson_group()
 
     # Create the reflection predictor
-    return _ScanStaticReflectionPredictor(
+    return dials_algorithms_spot_prediction_ext.ScanStaticReflectionPredictor(
         experiment.beam,
         experiment.detector,
         experiment.goniometer,
@@ -37,10 +66,6 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **
         margin,
         padding,
     )
-
-
-# Override constructor with factory
-_ScanVaryingReflectionPredictor = ScanVaryingReflectionPredictor
 
 
 def ScanVaryingReflectionPredictor(
@@ -65,7 +90,7 @@ def ScanVaryingReflectionPredictor(
     space_group = space_group.build_derived_patterson_group()
 
     # Create the reflection predictor
-    return _ScanVaryingReflectionPredictor(
+    return dials_algorithms_spot_prediction_ext.ScanVaryingReflectionPredictor(
         experiment.beam,
         experiment.detector,
         experiment.goniometer,

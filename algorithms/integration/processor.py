@@ -6,7 +6,49 @@ from time import time
 
 import boost.python
 import libtbx
-from dials_algorithms_integration_integrator_ext import *
+from dials_algorithms_integration_integrator_ext import (
+    Executor,
+    Group,
+    GroupList,
+    Job,
+    JobList,
+    ReflectionManager,
+    ReflectionManagerPerImage,
+    ShoeboxProcessor,
+)
+
+__all__ = [
+    "Block",
+    "Debug",
+    "ExecuteParallelTask",
+    "Executor",
+    "Group",
+    "GroupList",
+    "Job",
+    "job",
+    "JobList",
+    "Lookup",
+    "Manager",
+    "ManagerRot",
+    "ManagerStills",
+    "MultiProcessing",
+    "NullTask",
+    "Parameters",
+    "Processor",
+    "Processor2D",
+    "Processor3D",
+    "ProcessorBuilder",
+    "ProcessorFlat3D",
+    "ProcessorSingle2D",
+    "ProcessorStills",
+    "ReflectionManager",
+    "ReflectionManagerPerImage",
+    "Result",
+    "Shoebox",
+    "ShoeboxProcessor",
+    "Task",
+    "TimingInfo",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +72,6 @@ job = _Job()
 class MultiProcessing(object):
     """
     Multi processing parameters
-
     """
 
     def __init__(self):
@@ -49,7 +90,6 @@ class MultiProcessing(object):
 class Lookup(object):
     """
     Lookup parameters
-
     """
 
     def __init__(self):
@@ -62,7 +102,6 @@ class Lookup(object):
 class Block(object):
     """
     Block parameters
-
     """
 
     def __init__(self):
@@ -83,7 +122,6 @@ class Block(object):
 class Shoebox(object):
     """
     Shoebox parameters
-
     """
 
     def __init__(self):
@@ -98,7 +136,6 @@ class Shoebox(object):
 class Debug(object):
     """
     Debug parameters
-
     """
 
     def __init__(self):
@@ -117,13 +154,11 @@ class Debug(object):
 class Parameters(object):
     """
     Class to handle parameters for the processor
-
     """
 
     def __init__(self):
         """
         Initialize the parameters
-
         """
         self.mp = MultiProcessing()
         self.lookup = Lookup()
@@ -134,7 +169,6 @@ class Parameters(object):
     def update(self, other):
         """
         Update the parameters
-
         """
         self.mp.update(other.mp)
         self.lookup.update(other.lookup)
@@ -146,7 +180,6 @@ class Parameters(object):
 class TimingInfo(object):
     """
     A class to contain timing info.
-
     """
 
     def __init__(self):
@@ -177,7 +210,6 @@ class TimingInfo(object):
 class ExecuteParallelTask(object):
     """
     Helper class to run things on cluster
-
     """
 
     def __call__(self, task):
@@ -203,7 +235,6 @@ class Processor(object):
 
         :param manager: The processing manager
         :param params: The phil parameters
-
         """
         self.manager = manager
 
@@ -213,7 +244,6 @@ class Processor(object):
         Get the executor
 
         :return: The executor
-
         """
         return self.manager.executor
 
@@ -223,7 +253,6 @@ class Processor(object):
         Set the executor
 
         :param function: The executor
-
         """
         self.manager.executor = function
 
@@ -232,7 +261,6 @@ class Processor(object):
         Do all the processing tasks.
 
         :return: The processing results
-
         """
         from dials.util.mp import multi_node_parallel_map
         import platform
@@ -300,7 +328,6 @@ class Processor(object):
 class Result(object):
     """
     A class representing a processing result.
-
     """
 
     def __init__(self, index, reflections, data=None):
@@ -310,7 +337,6 @@ class Result(object):
         :param index: The processing job index
         :param reflections: The processed reflections
         :param data: Other processed data
-
         """
         self.index = index
         self.reflections = reflections
@@ -320,7 +346,6 @@ class Result(object):
 class NullTask(object):
     """
     A class to perform a null task.
-
     """
 
     def __init__(self, index, reflections):
@@ -330,7 +355,6 @@ class NullTask(object):
         :param index: The index of the processing job
         :param experiments: The list of experiments
         :param reflections: The list of reflections
-
         """
         self.index = index
         self.reflections = reflections
@@ -340,7 +364,6 @@ class NullTask(object):
         Do the processing.
 
         :return: The processed data
-
         """
         result = Result(self.index, self.reflections, None)
         result.read_time = 0
@@ -353,7 +376,6 @@ class NullTask(object):
 class Task(object):
     """
     A class to perform a processing task.
-
     """
 
     def __init__(self, index, job, experiments, reflections, params, executor=None):
@@ -368,7 +390,6 @@ class Task(object):
         :param flatten: Flatten the shoeboxes
         :param save_shoeboxes: Save the shoeboxes to file
         :param executor: The executor class
-
         """
         assert executor is not None, "No executor given"
         assert len(reflections) > 0, "Zero reflections given"
@@ -386,7 +407,6 @@ class Task(object):
         Do the processing.
 
         :return: The processed data
-
         """
         from dials.array_family import flex
         from dials.model.data import make_image
@@ -541,7 +561,6 @@ class Task(object):
 class Manager(object):
     """
     A class to manage processing book-keeping
-
     """
 
     def __init__(self, experiments, reflections, params):
@@ -551,7 +570,6 @@ class Manager(object):
         :param experiments: The list of experiments
         :param reflections: The list of reflections
         :param params: The phil parameters
-
         """
 
         # Initialise the callbacks
@@ -576,7 +594,6 @@ class Manager(object):
     def initialize(self):
         """
         Initialise the processing
-
         """
         # Get the start time
         start_time = time()
@@ -606,7 +623,6 @@ class Manager(object):
     def task(self, index):
         """
         Get a task.
-
         """
         job = self.manager.job(index)
         frames = job.frames()
@@ -633,7 +649,6 @@ class Manager(object):
     def tasks(self):
         """
         Iterate through the tasks.
-
         """
         for i in range(len(self)):
             yield self.task(i)
@@ -650,7 +665,6 @@ class Manager(object):
     def finalize(self):
         """
         Finalize the processing and finish.
-
         """
         # Get the start time
         start_time = time()
@@ -667,7 +681,6 @@ class Manager(object):
         Return the result.
 
         :return: The result
-
         """
         assert self.finalized, "Manager is not finalized"
         return self.manager.data(), self.data
@@ -677,7 +690,6 @@ class Manager(object):
         Return if all tasks have finished.
 
         :return: True/False all tasks have finished
-
         """
         return self.finalized and self.manager.finished()
 
@@ -686,14 +698,12 @@ class Manager(object):
         Return the number of tasks.
 
         :return: the number of tasks
-
         """
         return len(self.manager)
 
     def compute_blocks(self):
         """
         Compute the processing block size.
-
         """
 
         if self.params.block.size == libtbx.Auto:
@@ -715,7 +725,6 @@ class Manager(object):
     def compute_jobs(self):
         """
         Compute the jobs
-
         """
         from itertools import groupby
 
@@ -746,14 +755,15 @@ class Manager(object):
             elif self.params.block.units == "frames":
                 block_size_frames = int(math.ceil(self.params.block.size))
             else:
-                raise RuntimeError("Unknown block_size_units = %s" % block_size_units)
+                raise RuntimeError(
+                    "Unknown block_size units %r" % self.params.block.units
+                )
             self.jobs.add((i0, i1), array_range, block_size_frames)
         assert len(self.jobs) > 0, "Invalid number of jobs"
 
     def split_reflections(self):
         """
         Split the reflections into partials or over job boundaries
-
         """
 
         # Optionally split the reflection table into partials, otherwise,
@@ -785,7 +795,6 @@ class Manager(object):
     def compute_processors(self):
         """
         Compute the number of processors
-
         """
         from libtbx.introspection import machine_memory_info
         from dials.array_family import flex
@@ -826,7 +835,6 @@ class Manager(object):
     def summary(self):
         """
         Get a summary of the processing
-
         """
         from libtbx.table_utils import format as table
 
@@ -1017,7 +1025,6 @@ class ProcessorStills(Processor):
 class ProcessorBuilder(object):
     """
     A class to simplify building the processor
-
     """
 
     def __init__(self, Class, experiments, reflections, params=None):
@@ -1028,7 +1035,6 @@ class ProcessorBuilder(object):
         :param experiments: The input experiments
         :param reflections: The reflections
         :param params: Optionally input parameters
-
         """
         self.Class = Class
         self.experiments = experiments
@@ -1042,6 +1048,5 @@ class ProcessorBuilder(object):
         Build the class
 
         :return: The processor class
-
         """
         return self.Class(self.experiments, self.reflections, self.params)
