@@ -161,23 +161,23 @@ def test_dialsscalecrossvalidator():
 
     # test get/set parameters
     assert crossvalidator.get_parameter_type("model") == "choice"
-    assert crossvalidator.get_parameter_type("absorption_term") == "bool"
-    assert crossvalidator.get_parameter_type("lmax") == "int"
-    assert crossvalidator.get_parameter_type("decay_interval") == "float"
+    assert crossvalidator.get_parameter_type("physical.absorption_correction") == "bool"
+    assert crossvalidator.get_parameter_type("physical.lmax") == "int"
+    assert crossvalidator.get_parameter_type("physical.decay_interval") == "float"
 
-    params = crossvalidator.set_parameter(params, "model", "KB")
-    assert params.model == "KB"
-    params = crossvalidator.set_parameter(params, "decay_interval", 50.0)
-    assert params.parameterisation.decay_interval == 50.0
-    params = crossvalidator.set_parameter(params, "lmax", 10)
-    assert params.parameterisation.lmax == 10
-    params = crossvalidator.set_parameter(params, "optimise_errors", False)
+    params = crossvalidator.set_parameter(params, "model", "physical")
+    assert params.model == "physical"
+    params = crossvalidator.set_parameter(params, "physical.decay_interval", 50.0)
+    assert params.physical.decay_interval == 50.0
+    params = crossvalidator.set_parameter(params, "physical.lmax", 10)
+    assert params.physical.lmax == 10
+    params = crossvalidator.set_parameter(params, "weighting.optimise_errors", False)
     assert params.weighting.optimise_errors is False
-    params = crossvalidator.set_parameter(params, "d_min", 1.8)
+    params = crossvalidator.set_parameter(params, "cut_data.d_min", 1.8)
     assert params.cut_data.d_min == 1.8
-    params = crossvalidator.set_parameter(params, "outlier_zmax", 7.53)
+    params = crossvalidator.set_parameter(params, "scaling_options.outlier_zmax", 7.53)
     assert params.scaling_options.outlier_zmax == 7.53
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         _ = crossvalidator.set_parameter(params, "bad_parameter", 7.53)
 
     # defer testing of run_script to command line tests
@@ -219,22 +219,22 @@ def test_cross_validate_script():
         with mock.patch(
             fpath + "crossvalidator.DialsScaleCrossValidator.interpret_results"
         ) as mock_interpret:
-            param.cross_validation.parameter = "absorption_term"
+            param.cross_validation.parameter = "physical.absorption_correction"
             cross_validate(param, crossvalidator)
             assert mock_run_script.call_count == 4
             assert mock_interpret.call_count == 1
 
-            param.cross_validation.parameter = "decay_interval"
+            param.cross_validation.parameter = "physical.decay_interval"
             with pytest.raises(ValueError):
                 cross_validate(param, crossvalidator)
 
-            param.cross_validation.parameter = "absorption_term"
+            param.cross_validation.parameter = "physical.absorption_correction"
             param.cross_validation.parameter_values = ["True", "False"]
             cross_validate(param, crossvalidator)
             assert mock_run_script.call_count == 8
             assert mock_interpret.call_count == 2
 
-            param.cross_validation.parameter = "decay_interval"
+            param.cross_validation.parameter = "physical.decay_interval"
             param.cross_validation.parameter_values = ["5.0", "10.0"]
             cross_validate(param, crossvalidator)
             assert mock_run_script.call_count == 12
@@ -246,7 +246,7 @@ def test_cross_validate_script():
             assert mock_run_script.call_count == 16
             assert mock_interpret.call_count == 4
 
-            param.cross_validation.parameter = "lmax"
+            param.cross_validation.parameter = "physical.lmax"
             param.cross_validation.parameter_values = ["4", "6"]
             cross_validate(param, crossvalidator)
             assert mock_run_script.call_count == 20

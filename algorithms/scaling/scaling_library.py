@@ -196,9 +196,19 @@ def scale_single_dataset(reflection_table, experiment, params=None, model="physi
 
 
 def create_auto_scaling_model(params, experiments, reflections):
-    """Create a scaling model with auto determined parameterisation."""
+    """Create a scaling model with auto determined parameterisation.
+
+    Assumes that only called when model parameter not specified by user."""
     models = experiments.scaling_models()
     if None in models or params.overwrite_existing_models:
+        phil_scope = phil.parse(
+            """
+        include scope dials.command_line.scale.phil_scope
+        """,
+            process_includes=True,
+        )
+        optionparser = OptionParser(phil=phil_scope, check_format=False)
+        default_params, _ = optionparser.parse_args(args=[], quick_parse=True)
         for exp, refl in zip(experiments, reflections):
             model = exp.scaling_model
             if not model or params.overwrite_existing_models:
@@ -221,9 +231,22 @@ def create_auto_scaling_model(params, experiments, reflections):
                     else:
                         scale_interval, decay_interval = (15.0, 20.0)
                     if params.model == "physical":
-                        params.physical.scale_interval = scale_interval
-                        params.physical.decay_interval = decay_interval
-                        if osc_range < 60.0:
+                        # only set these if not changed by the user
+                        if (
+                            default_params.physical.scale_interval
+                            == params.physical.scale_interval
+                        ):
+                            params.physical.scale_interval = scale_interval
+                        if (
+                            default_params.physical.decay_interval
+                            == params.physical.decay_interval
+                        ):
+                            params.physical.decay_interval = decay_interval
+                        if (
+                            osc_range < 60.0
+                            and default_params.physical.absorption_correction
+                            == params.physical.absorption_correction
+                        ):
                             params.physical.absorption_correction = False
 
                 # now load correct factory and make scaling model.

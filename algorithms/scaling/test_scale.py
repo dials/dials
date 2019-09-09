@@ -604,7 +604,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     ("mode", "parameter", "parameter_values"),
     [
         ("single", None, None),
-        ("multi", "absorption_correction", None),
+        ("multi", "physical.absorption_correction", None),
         ("multi", "model", "physical array"),
     ],
 )
