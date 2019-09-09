@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_pychef_ext import *
-
+import dials_pychef_ext
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
@@ -113,7 +112,7 @@ class Statistics(object):
         binner_non_anom = intensities.as_non_anomalous_array().use_binning(self.binner)
         n_complete = flex.size_t(binner_non_anom.counts_complete()[1:-1])
 
-        chef_stats = ChefStatistics(
+        chef_stats = dials_pychef_ext.ChefStatistics(
             intensities.indices(),
             intensities.data(),
             intensities.sigmas(),

@@ -3,8 +3,9 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
-from dials.algorithms.profile_model.gaussian_rs import *
 import pytest
+from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
+from scitbx import matrix
 
 ### Test the XDS coordinate system class
 
@@ -28,8 +29,6 @@ def xdscoordinates():
 
 def test_coordinate_system_data(xdscoordinates):
     """ Test all the input data """
-    from scitbx import matrix
-
     eps = 1e-7
     s0 = matrix.col(xdscoordinates["s0"])
     s1 = matrix.col(xdscoordinates["s1"])
@@ -41,11 +40,7 @@ def test_coordinate_system_data(xdscoordinates):
     assert abs(xdscoordinates["cs"].phi() - xdscoordinates["phi"]) <= eps
 
 
-def test_axis_length(xdscoordinates):
-    """Ensure axes are of unit length"""
-    from scitbx import matrix
-
-    # Check all axes are of length 1
+def test_ensure_axes_have_length_of_one(xdscoordinates):
     eps = 1e-7
     assert abs(matrix.col(xdscoordinates["cs"].e1_axis()).length() - 1.0) <= eps
     assert abs(matrix.col(xdscoordinates["cs"].e2_axis()).length() - 1.0) <= eps
@@ -59,8 +54,6 @@ def test_axis_orthogonal(xdscoordinates):
     e2.s1 = 0, e2.e1 = 0
     e3.e1 = 0, e3.p* = 0
     """
-    from scitbx import matrix
-
     # Get as matrices
     e1 = matrix.col(xdscoordinates["cs"].e1_axis())
     e2 = matrix.col(xdscoordinates["cs"].e2_axis())
@@ -83,13 +76,8 @@ def test_axis_orthogonal(xdscoordinates):
     assert abs(e3.dot(s1 - s0) - 0.0) <= eps
 
 
-def test_limits(xdscoordinates):
-    """Test the coordinate system limits
-
-    Ensure limits e1/e2 == |s1| and limit e3 == |s0 - s1|
-    """
-    from scitbx import matrix
-
+def test_the_coordinate_system_limits(xdscoordinates):
+    """Ensure limits e1/e2 == |s1| and limit e3 == |s0 - s1|"""
     # Get the incident and diffracted beam vectors
     s0 = matrix.col(xdscoordinates["s0"])
     s1 = matrix.col(xdscoordinates["s1"])
@@ -138,8 +126,6 @@ def test_beamvector_limit(beamvector):
 
     Ensure that coordinate where s1' is orthogonal to s1 is at limit.
     """
-    from scitbx import matrix
-
     # Get the limit of s1'
     s_dash = matrix.col(beamvector["s1"]).cross(matrix.col(beamvector["s0"]))
     s_dash = s_dash.normalize() * matrix.col(beamvector["s1"]).length()
@@ -206,8 +192,6 @@ def test_from_rotation_angle_e3_coordinate_approximation(rotationangle):
 
 def test_to_beamvector_xds_origin(beamvector):
     """Test the beam vector at the XDS origin is equal to s1."""
-    from scitbx import matrix
-
     eps = 1e-7
     s_dash = beamvector["cs"].to_beam_vector((0, 0))
     assert abs(matrix.col(s_dash) - matrix.col(beamvector["s1"])) <= eps
@@ -248,9 +232,6 @@ def test_to_beamvector_forward_and_reverse_transform(beamvector):
     """Test the forward and reverse Beam Vector -> XDS transforms Create
     a beam vector, transform it to XDS and then transform back. The new
     value should be equal to the original value."""
-
-    from scitbx import matrix
-
     eps = 1e-7
 
     # Set the parameters

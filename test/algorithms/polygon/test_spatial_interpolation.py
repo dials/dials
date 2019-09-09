@@ -2,7 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 import random
 
-from dials.algorithms.polygon.spatial_interpolation import *
+from dials.algorithms.polygon.spatial_interpolation import (
+    regrid_irregular_grid_to_grid,
+    regrid_grid_to_irregular_grid,
+)
 
 
 class TestRegridIrregularToRegular(object):
