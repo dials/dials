@@ -5,7 +5,7 @@ from wx.lib.agw import floatspin
 
 import libtbx.phil
 import gltbx
-from gltbx.gl import *
+import gltbx.gl as gl
 from scitbx.array_family import flex
 from scitbx.math import minimum_covering_sphere
 import wxtbx.utils
@@ -122,7 +122,7 @@ class ReciprocalLatticeViewer(wx.Frame, Render3d):
     def do_Step(self, dx, dy, scale):
         v = self.viewer
         rc = v.rotation_center
-        glMatrixMode(GL_MODELVIEW)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
         gltbx.util.rotate_object_about_eye_x_and_y(
             scale, rc[0], rc[1], rc[2], dx, dy, 0, 0
         )
@@ -464,7 +464,7 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         if self.points_display_list is None:
             self.points_display_list = gltbx.gl_managed.display_list()
             self.points_display_list.compile()
-            glLineWidth(1)
+            gl.glLineWidth(1)
             if self.colors is None:
                 self.colors = flex.vec3_double(len(self.points), (1, 1, 1))
             for point, color in zip(self.points, self.colors):
@@ -521,70 +521,70 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         s = self.minimum_covering_sphere
         scale = max(max(s.box_max()), abs(min(s.box_min())))
         gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
-        glDisable(GL_LIGHTING)
-        glColor3f(1.0, 1.0, 1.0)
-        glLineWidth(1.0)
-        glBegin(GL_LINES)
-        glVertex3f(0.0, 0.0, 0.0)
-        glVertex3f(axis[0] * scale, axis[1] * scale, axis[2] * scale)
-        glEnd()
-        glRasterPos3f(
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glColor3f(1.0, 1.0, 1.0)
+        gl.glLineWidth(1.0)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(0.0, 0.0, 0.0)
+        gl.glVertex3f(axis[0] * scale, axis[1] * scale, axis[2] * scale)
+        gl.glEnd()
+        gl.glRasterPos3f(
             0.5 + axis[0] * scale, 0.2 + axis[1] * scale, 0.2 + axis[2] * scale
         )
         gltbx.fonts.ucs_bitmap_8x13.render_string(label)
-        glEnable(GL_LINE_STIPPLE)
-        glLineStipple(4, 0xAAAA)
-        glBegin(GL_LINES)
-        glVertex3f(0.0, 0.0, 0.0)
-        glVertex3f(-axis[0] * scale, -axis[1] * scale, -axis[2] * scale)
-        glEnd()
-        glDisable(GL_LINE_STIPPLE)
+        gl.glEnable(gl.GL_LINE_STIPPLE)
+        gl.glLineStipple(4, 0xAAAA)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(0.0, 0.0, 0.0)
+        gl.glVertex3f(-axis[0] * scale, -axis[1] * scale, -axis[2] * scale)
+        gl.glEnd()
+        gl.glDisable(gl.GL_LINE_STIPPLE)
 
     def draw_cell(self, axes, color):
         astar, bstar, cstar = axes[0], axes[1], axes[2]
         gltbx.fonts.ucs_bitmap_8x13.setup_call_lists()
-        glDisable(GL_LIGHTING)
-        glColor3f(*color)
-        glLineWidth(2.0)
-        glBegin(GL_LINES)
-        glVertex3f(0.0, 0.0, 0.0)
-        glVertex3f(*astar.elems)
-        glVertex3f(0.0, 0.0, 0.0)
-        glVertex3f(*bstar.elems)
-        glVertex3f(0.0, 0.0, 0.0)
-        glVertex3f(*cstar.elems)
-        glEnd()
-        glRasterPos3f(*(1.01 * astar).elems)
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glColor3f(*color)
+        gl.glLineWidth(2.0)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(0.0, 0.0, 0.0)
+        gl.glVertex3f(*astar.elems)
+        gl.glVertex3f(0.0, 0.0, 0.0)
+        gl.glVertex3f(*bstar.elems)
+        gl.glVertex3f(0.0, 0.0, 0.0)
+        gl.glVertex3f(*cstar.elems)
+        gl.glEnd()
+        gl.glRasterPos3f(*(1.01 * astar).elems)
         gltbx.fonts.ucs_bitmap_8x13.render_string("a*")
-        glRasterPos3f(*(1.01 * bstar).elems)
+        gl.glRasterPos3f(*(1.01 * bstar).elems)
         gltbx.fonts.ucs_bitmap_8x13.render_string("b*")
-        glRasterPos3f(*(1.01 * cstar).elems)
+        gl.glRasterPos3f(*(1.01 * cstar).elems)
         gltbx.fonts.ucs_bitmap_8x13.render_string("c*")
-        glEnable(GL_LINE_STIPPLE)
-        glLineStipple(4, 0xAAAA)
+        gl.glEnable(gl.GL_LINE_STIPPLE)
+        gl.glLineStipple(4, 0xAAAA)
         farpoint = astar + bstar + cstar
         # a* face
-        glBegin(GL_LINE_LOOP)
-        glVertex3f(*farpoint.elems)
-        glVertex3f(*(farpoint - bstar).elems)
-        glVertex3f(*(farpoint - bstar - cstar).elems)
-        glVertex3f(*(farpoint - cstar).elems)
-        glEnd()
+        gl.glBegin(gl.GL_LINE_LOOP)
+        gl.glVertex3f(*farpoint.elems)
+        gl.glVertex3f(*(farpoint - bstar).elems)
+        gl.glVertex3f(*(farpoint - bstar - cstar).elems)
+        gl.glVertex3f(*(farpoint - cstar).elems)
+        gl.glEnd()
         # b* face
-        glBegin(GL_LINE_LOOP)
-        glVertex3f(*farpoint.elems)
-        glVertex3f(*(farpoint - astar).elems)
-        glVertex3f(*(farpoint - astar - cstar).elems)
-        glVertex3f(*(farpoint - cstar).elems)
-        glEnd()
+        gl.glBegin(gl.GL_LINE_LOOP)
+        gl.glVertex3f(*farpoint.elems)
+        gl.glVertex3f(*(farpoint - astar).elems)
+        gl.glVertex3f(*(farpoint - astar - cstar).elems)
+        gl.glVertex3f(*(farpoint - cstar).elems)
+        gl.glEnd()
         # c* face
-        glBegin(GL_LINE_LOOP)
-        glVertex3f(*farpoint.elems)
-        glVertex3f(*(farpoint - bstar).elems)
-        glVertex3f(*(farpoint - bstar - astar).elems)
-        glVertex3f(*(farpoint - astar).elems)
-        glEnd()
-        glDisable(GL_LINE_STIPPLE)
+        gl.glBegin(gl.GL_LINE_LOOP)
+        gl.glVertex3f(*farpoint.elems)
+        gl.glVertex3f(*(farpoint - bstar).elems)
+        gl.glVertex3f(*(farpoint - bstar - astar).elems)
+        gl.glVertex3f(*(farpoint - astar).elems)
+        gl.glEnd()
+        gl.glDisable(gl.GL_LINE_STIPPLE)
 
     def rotate_view(self, x1, y1, x2, y2, shift_down=False, scale=0.1):
         super(RLVWindow, self).rotate_view(
@@ -600,4 +600,4 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
         self.rotation_center = (0, 0, 0)
         self.move_to_center_of_viewport(self.rotation_center)
         if self.settings.model_view_matrix is not None:
-            glLoadMatrixd(self.settings.model_view_matrix)
+            gl.glLoadMatrixd(self.settings.model_view_matrix)
