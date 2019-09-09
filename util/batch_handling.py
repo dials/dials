@@ -70,9 +70,9 @@ class batch_manager(object):
                     "text": "%s" % batch["id"],
                     "showarrow": False,
                     "yshift": 20,
-                    #'arrowhead': 7,
-                    #'ax': 0,
-                    #'ay': -40
+                    # 'arrowhead': 7,
+                    # 'ax': 0,
+                    # 'ay': -40
                 }
             )
             sel = (batches >= batch["range"][0]) & (batches <= batch["range"][1])

@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
-#
-# report.py
 #
 #  Copyright (C) 2015 Diamond Light Source
 #
@@ -9,8 +6,6 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
-#
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 from __future__ import absolute_import, division, print_function
 
@@ -980,7 +975,7 @@ class CentroidAnalyser(object):
                 "layout": {
                     "title": "Difference between observed and calculated centroids vs phi",
                     "yaxis3": {"domain": [0, 0.266]},
-                    #'legend': {'traceorder': 'reversed'},
+                    # 'legend': {'traceorder': 'reversed'},
                     "xaxis3": {"anchor": "y3"},
                     "xaxis2": {"anchor": "y2"},
                     "yaxis2": {"domain": [0.366, 0.633]},
@@ -1015,7 +1010,7 @@ class CentroidAnalyser(object):
                 "layout": {
                     "title": "RMSD between observed and calculated centroids vs phi",
                     "yaxis3": {"domain": [0, 0.266], "rangemode": "tozero"},
-                    #'legend': {'traceorder': 'reversed'},
+                    # 'legend': {'traceorder': 'reversed'},
                     "xaxis3": {"anchor": "y3"},
                     "xaxis2": {"anchor": "y2"},
                     "yaxis2": {"domain": [0.366, 0.633], "rangemode": "tozero"},
@@ -1095,23 +1090,23 @@ class CentroidAnalyser(object):
         d["residuals_xy"] = {
             "data": [
                 # {
-                #'x': list(dx),
-                #'y': list(dy),
-                #'mode': 'markers',
-                #'name': 'points',
-                #'marker': {
-                #'color': 'rgb(102,0,0)',
-                #'size': 2,
-                #'opacity': 0.4
+                # 'x': list(dx),
+                # 'y': list(dy),
+                # 'mode': 'markers',
+                # 'name': 'points',
+                # 'marker': {
+                # 'color': 'rgb(102,0,0)',
+                # 'size': 2,
+                # 'opacity': 0.4
                 # },
-                #'type': 'scatter',
+                # 'type': 'scatter',
                 # },
                 {
                     "x": xedges.tolist(),
                     "y": yedges.tolist(),
                     "z": Hxy.transpose().tolist(),
                     "name": "density",
-                    #'ncontours': 20,
+                    # 'ncontours': 20,
                     "colorscale": "Hot",
                     "reversescale": True,
                     "showscale": False,
@@ -1145,23 +1140,23 @@ class CentroidAnalyser(object):
             d["residuals_zy"] = {
                 "data": [
                     # {
-                    #'x': list(dz),
-                    #'y': list(dy),
-                    #'mode': 'markers',
-                    #'name': 'points',
-                    #'marker': {
-                    #'color': 'rgb(102,0,0)',
-                    #'size': 2,
-                    #'opacity': 0.4
+                    # 'x': list(dz),
+                    # 'y': list(dy),
+                    # 'mode': 'markers',
+                    # 'name': 'points',
+                    # 'marker': {
+                    # 'color': 'rgb(102,0,0)',
+                    # 'size': 2,
+                    # 'opacity': 0.4
                     # },
-                    #'type': 'scatter',
+                    # 'type': 'scatter',
                     # },
                     {
                         "x": zedges.tolist(),
                         "y": yedges.tolist(),
                         "z": Hzy.transpose().tolist(),
                         "name": "density",
-                        #'ncontours': 20,
+                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,
@@ -1194,23 +1189,23 @@ class CentroidAnalyser(object):
             d["residuals_xz"] = {
                 "data": [
                     # {
-                    #'x': list(dx),
-                    #'y': list(dz),
-                    #'mode': 'markers',
-                    #'name': 'points',
-                    #'marker': {
-                    #'color': 'rgb(102,0,0)',
-                    #'size': 2,
-                    #'opacity': 0.4
+                    # 'x': list(dx),
+                    # 'y': list(dz),
+                    # 'mode': 'markers',
+                    # 'name': 'points',
+                    # 'marker': {
+                    # 'color': 'rgb(102,0,0)',
+                    # 'size': 2,
+                    # 'opacity': 0.4
                     # },
-                    #'type': 'scatter',
+                    # 'type': 'scatter',
                     # },
                     {
                         "x": xedges.tolist(),
                         "y": zedges.tolist(),
                         "z": Hxz.transpose().tolist(),
                         "name": "density",
-                        #'ncontours': 20,
+                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,

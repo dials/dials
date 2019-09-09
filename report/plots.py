@@ -4,7 +4,9 @@ This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
 from __future__ import absolute_import, division, print_function
+
 from collections import OrderedDict
+
 import numpy as np
 from cctbx import uctbx
 from scitbx.array_family import flex
@@ -268,7 +270,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
                     "xaxis": {"title": "Multiplicity"},
                     "yaxis": {
                         "title": "Frequency",
-                        #'rangemode': 'tozero'
+                        # 'rangemode': 'tozero'
                     },
                     "bargap": 0,
                     "barmode": "overlay",

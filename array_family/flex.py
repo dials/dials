@@ -770,15 +770,6 @@ class _(object):
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
 
-    # def is_bbox_inside_image_range(self, experiment):
-    #''' Check if bbox is within image range. '''
-    # from dials.algorithms import filtering
-    # assert(len(experiment.detector) == 1)
-    # return filtering.is_bbox_outside_image_range(
-    # self['bbox'],
-    # experiment.detector[0].get_image_size()[::-1],
-    # experiment.scan.get_array_range()) != True
-
     def compute_zeta(self, experiment):
         """
         Compute zeta for each reflection.

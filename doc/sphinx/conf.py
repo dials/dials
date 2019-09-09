@@ -127,15 +127,15 @@ extensions.append("alabaster")
 html_theme = "alabaster"
 html_sidebars = {
     "**": [
-        #'about.html',
+        # 'about.html',
         "navigation.html",
-        #'searchbox.html',
-        #'donate.html',
+        # 'searchbox.html',
+        # 'donate.html',
     ]
 }
 
 html_theme_options = {
-    #'logo': 'dials_icon.png',
+    # 'logo': 'dials_icon.png',
     "github_button": False,
     "show_powered_by": False,
     "description": "Diffraction Integration for Advanced Light Sources",
@@ -216,11 +216,11 @@ htmlhelp_basename = "DIALSdoc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

@@ -56,7 +56,7 @@ def parse_multiple_datasets(reflections):
                 "containing %s datasets. \n",
                 len(dataset_ids),
             )
-            ##FIXME fix split_by_experiment_id so that don't need to filter
+            # FIXME fix split_by_experiment_id so that don't need to filter
             # unindxeded reflections here to get rid of id = -1
             if -1 in refl_table["id"]:
                 refl_table = refl_table.select(refl_table["id"] != -1)
