@@ -184,7 +184,7 @@ class Script(object):
                 # such that any reflection on this scan point is included with this image
                 new_id = len(new_experiments) - 1
                 subrefls = refls.select((i_scanpoint >= z1) & (i_scanpoint < z2))
-                for refl in subrefls:  # this will break when #908 is merged
+                for refl in subrefls.rows():
                     assert i_scanpoint in range(*refl["bbox"][4:6])
 
                     new_sb = Shoebox()
