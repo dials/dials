@@ -114,13 +114,10 @@ def run(args):
                 reflection_list["id"] == params.crystal_id
             )
 
-        xyzcal_px = None
-        xyzcal_px = None
+        xyzobs_px = None
         xyzobs_mm = None
         xyzcal_mm = None
 
-        if "xyzcal.px" in reflection_list:
-            xyzcal_px = reflection_list["xyzcal.px"]
         if "xyzobs.px.value" in reflection_list:
             xyzobs_px = reflection_list["xyzobs.px.value"]
         if "xyzcal.mm" in reflection_list:
