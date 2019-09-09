@@ -29,7 +29,7 @@ def export_sadabs(integrated_data, experiment_list, params):
 
     # export for sadabs should only be for non-scaled reflections
     assert any(
-        [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
+        i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]
     )
 
     integrated_data = filter_reflection_table(

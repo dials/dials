@@ -128,7 +128,7 @@ min_per_area : %s, n_resolution_bins: %s""",
                 n_resolution_bins,
             )
         else:
-            if sum([r.size() for r in reflections]) < 40000:
+            if sum(r.size() for r in reflections) < 40000:
                 params.reflection_selection.method = "use_all"
                 logger.info(
                     "Using all reflections for minimisation as less than 40000 reflections in total."

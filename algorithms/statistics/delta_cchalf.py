@@ -123,7 +123,7 @@ def compute_cchalf(mean, var):
     n = len(mean)
     mean_of_means = sum(mean) / n
     sigma_e = sum(var) / n
-    sigma_y = sum([(m - mean_of_means) ** 2 for m in mean]) / (n - 1)
+    sigma_y = sum((m - mean_of_means) ** 2 for m in mean) / (n - 1)
     cchalf = (sigma_y - sigma_e) / (sigma_y + sigma_e)
     return cchalf
 

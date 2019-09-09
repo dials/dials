@@ -1,8 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-# -*- Mode: Python; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 8 -*-
-#
-# $Id$
+import math
 
 import wx
 
@@ -155,8 +153,6 @@ class RingSettingsPanel(wx.Panel):
         self.DrawRing()
 
     def OnAutoFit(self, event):
-        import math
-
         jitter = 6
 
         detector = self._pyslip.tiles.raw_image.get_detector()
@@ -178,7 +174,7 @@ class RingSettingsPanel(wx.Panel):
                     detector[0].get_beam_centre(beam.get_s0())
                 )
 
-        avg_distance = -sum([p.get_distance() for p in detector]) / len(detector)
+        avg_distance = -sum(p.get_distance() for p in detector) / len(detector)
 
         beam_pixel_fast += self._center[0]
         beam_pixel_slow += self._center[1]
@@ -289,7 +285,6 @@ class RingSettingsPanel(wx.Panel):
 
     def DrawRing(self):
         detector = self._pyslip.tiles.raw_image.get_detector()
-        beam = self._pyslip.tiles.raw_image.get_beam()
 
         xrayframe = self.GetParent().GetParent()
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()

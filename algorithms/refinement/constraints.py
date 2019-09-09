@@ -276,9 +276,7 @@ class ConstraintManagerFactory(object):
         cell_c = options.crystal.unit_cell.constraints
 
         # quit early if there are no constraints to apply
-        n_constraints = sum(
-            [len(e) for e in [detector_c, beam_c, orientation_c, cell_c]]
-        )
+        n_constraints = sum(len(e) for e in [detector_c, beam_c, orientation_c, cell_c])
         if n_constraints == 0:
             return None
 

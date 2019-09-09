@@ -1,5 +1,3 @@
-#!/usr/bin/env cctbx.python
-#
 #  Copyright (C) (2016) STFC Rutherford Appleton Laboratory, UK.
 #
 #  Author: David Waterman.
@@ -12,12 +10,12 @@ outlier rejection parameters automatically"""
 
 from __future__ import absolute_import, division, print_function
 
-from math import pi
+import math
 
 from dials.array_family import flex
 from scitbx.math.periodogram import Periodogram
 
-RAD2DEG = 180.0 / pi
+RAD2DEG = 180.0 / math.pi
 
 
 class CentroidAnalyser(object):
@@ -40,18 +38,17 @@ class CentroidAnalyser(object):
         self._nexp = flex.max(reflections["id"]) + 1
 
         # Ensure required keys are present
-        if not all([k in reflections for k in ["x_resid", "y_resid", "phi_resid"]]):
+        if not all(k in reflections for k in ["x_resid", "y_resid", "phi_resid"]):
             x_obs, y_obs, phi_obs = reflections["xyzobs.mm.value"].parts()
             x_cal, y_cal, phi_cal = reflections["xyzcal.mm"].parts()
 
             # do not wrap around multiples of 2*pi; keep the full rotation
             # from zero to differentiate repeat observations.
-            from math import pi
 
-            TWO_PI = 2.0 * pi
+            TWO_PI = 2.0 * math.pi
             resid = phi_cal - (flex.fmod_positive(phi_obs, TWO_PI))
             # ensure this is the smaller of two possibilities
-            resid = flex.fmod_positive((resid + pi), TWO_PI) - pi
+            resid = flex.fmod_positive((resid + math.pi), TWO_PI) - math.pi
             phi_cal = phi_obs + resid
             reflections["x_resid"] = x_cal - x_obs
             reflections["y_resid"] = y_cal - y_obs

@@ -70,8 +70,6 @@ class poly_fitter(object):
             flex.double([math.pow(x, j) for j in range(order)]) for x in self._x
         ]
 
-        return
-
     def refine(self):
         """Actually perform the parameter refinement."""
 
@@ -92,7 +90,7 @@ class poly_fitter(object):
     def evaluate(self, x):
         """Evaluate the resulting fit at point x."""
 
-        return sum([math.pow(x, k) * self.x[k] for k in range(len(self.x))])
+        return sum(math.pow(x, k) * sxk for k, sxk in enumerate(self.x))
 
 
 def fit(x, y, order):
@@ -363,7 +361,7 @@ class resolutionizer(object):
                     batches = array
             if i_obs is None:
                 if len(all_i_obs) == 0:
-                    raise Sorry("No intensities found in %s." % file_name)
+                    raise Sorry("No intensities found")
                 elif len(all_i_obs) > 1:
                     if params.labels is not None:
                         from iotbx.reflection_file_utils import label_table

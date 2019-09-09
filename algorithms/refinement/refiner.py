@@ -462,10 +462,10 @@ class RefinerFactory(object):
         """
 
         if not any(
-            [
+            (
                 params.crystal.unit_cell.restraints.tie_to_target,
                 params.crystal.unit_cell.restraints.tie_to_group,
-            ]
+            )
         ):
             return None
         if params.scan_varying:

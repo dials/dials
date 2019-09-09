@@ -173,7 +173,7 @@ def test_ResolutionPlotsAndStats(iobs):
     # test plots individually
     d = plotter.cc_one_half_plot()
     assert len(d["cc_one_half"]["data"]) == 4
-    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"]])
+    assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"])
 
     d = plotter.i_over_sig_i_plot()
     assert len(d["i_over_sig_i"]["data"]) == 1
@@ -191,7 +191,7 @@ def test_ResolutionPlotsAndStats(iobs):
     plotter = ResolutionPlotsAndStats(result, anom_result, is_centric=True)
     d = plotter.cc_one_half_plot(method="sigma_tau")
     assert len(d["cc_one_half"]["data"]) == 4
-    assert all([len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:2]])
+    assert all(len(x["x"]) == n_bins for x in d["cc_one_half"]["data"][:2])
     assert d["cc_one_half"]["data"][2] == {}  # no anomalous plots
     assert d["cc_one_half"]["data"][3] == {}  # no anomalous plots
     d = plotter.completeness_plot()

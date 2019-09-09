@@ -272,7 +272,7 @@ class ConsecutiveAPMFactory(object):
                     if corr in self.data_managers[0].components:
                         corrlist.append(corr)
                 self.param_lists.append(corrlist)
-            self.n_cycles = sum([1 for i in self.param_lists if i])
+            self.n_cycles = sum(1 for i in self.param_lists if i)
 
         else:
             for data_manager in self.data_managers:

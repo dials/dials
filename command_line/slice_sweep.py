@@ -143,7 +143,7 @@ class Script(object):
         slice_refs = len(reflections) > 0
 
         # Catch case of nothing to do
-        if not any([slice_exps, slice_refs]):
+        if not slice_exps and not slice_refs:
             print("No suitable input provided")
             self.parser.print_help()
             return

@@ -57,7 +57,7 @@ def run(args):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    if not any([reflections, experiments]):
+    if not reflections and not experiments:
         parser.print_help()
         return
 

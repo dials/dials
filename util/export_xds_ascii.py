@@ -59,7 +59,7 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
     """
     # export for xds_ascii should only be for non-scaled reflections
     assert any(
-        [i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]]
+        i in integrated_data for i in ["intensity.sum.value", "intensity.prf.value"]
     )
     # Handle requesting profile intensities (default via auto) but no column
     if "profile" in params.intensity and "intensity.prf.value" not in integrated_data:

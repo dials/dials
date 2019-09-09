@@ -267,10 +267,8 @@ class KaptonTape_2019(object):
                 tolerance = min(panel.get_pixel_size()) * 2.0
                 if (
                     sum(
-                        [
-                            (col(trial_pt) - col(int_point)).length() <= tolerance
-                            for trial_pt in all_ints
-                        ]
+                        (col(trial_pt) - col(int_point)).length() <= tolerance
+                        for trial_pt in all_ints
                     )
                     == 0
                 ):

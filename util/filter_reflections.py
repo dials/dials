@@ -89,11 +89,11 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:
         reducer = PrfIntensityReducer
-    elif all([i in intensity_choice for i in ["sum", "scale", "profile"]]):
+    elif all(i in intensity_choice for i in ["sum", "scale", "profile"]):
         reducer = AllSumPrfScaleIntensityReducer
-    elif all([i in intensity_choice for i in ["sum", "profile"]]):
+    elif all(i in intensity_choice for i in ["sum", "profile"]):
         reducer = SumAndPrfIntensityReducer
-    elif all([i in intensity_choice for i in ["sum", "scale"]]):
+    elif all(i in intensity_choice for i in ["sum", "scale"]):
         reducer = SumAndScaleIntensityReducer
     else:
         raise ValueError(
@@ -738,7 +738,7 @@ def sum_partial_reflections(reflection_table):
 
         # do the summing of the partiality values separately to allow looping
         # over multiple times
-        total_partiality = sum([reflection_table["partiality"][i] for i in j])
+        total_partiality = sum(reflection_table["partiality"][i] for i in j)
         if "prf" in intensities:
             reflection_table = _sum_prf_partials(reflection_table, j)
         if "sum" in intensities:

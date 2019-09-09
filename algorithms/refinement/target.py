@@ -382,18 +382,6 @@ class Target(object):
 
         return (L, dL_dp, curvs)
 
-    # def curvatures(self):
-    #  """First order approximation to the diagonal of the Hessian based on the
-    #  least squares form of the target"""
-    #
-    #  # relies on compute_functional_and_gradients being called first to set
-    #  # self._curv
-    #
-    #  # Curvatures of zero will cause a crash, because their inverse is taken.
-    #  assert all([c > 0.0 for c in self._curv])
-    #
-    #  return self._curv
-
     def compute_residuals(self):
         """return the vector of residuals plus their weights"""
 
