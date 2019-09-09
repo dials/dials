@@ -89,7 +89,6 @@ phil_scope = parse(
       .help = "The high resolution limit (otherwise use detector d_min)"
       .expert_level = 1
   }
-
 """,
     process_includes=True,
 )
@@ -98,7 +97,6 @@ phil_scope = parse(
 def generate_ice_ring_resolution_ranges(beam, panel, params):
     """
     Generate a set of resolution ranges from the ice ring parameters
-
     """
     if params.filter is True:
 

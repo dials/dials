@@ -57,7 +57,6 @@ class symmetry_base(object):
             consistency of input unit cells against the median unit cell.
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
-
         """
         self.input_intensities = intensities
 
@@ -179,7 +178,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         normalisation = absolute_scaling.kernel_normalisation(
             intensities, auto_kernel=True
@@ -195,7 +193,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         # handle negative reflections to minimise effect on mean I values.
         intensities.data().set_selected(intensities.data() < 0.0, 0.0)
@@ -226,7 +223,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         return symmetry_base._ml_normalisation(intensities, aniso=True)
 
@@ -239,7 +235,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         return symmetry_base._ml_normalisation(intensities, aniso=False)
 

@@ -32,7 +32,6 @@ class RealSpaceGridSearch(Strategy):
 
     See:
         Gildea, R. J., Waterman, D. G., Parkhurst, J. M., Axford, D., Sutton, G., Stuart, D. I., Sauter, N. K., Evans, G. & Winter, G. (2014). Acta Cryst. D70, 2652-2666.
-
     """
 
     phil_scope = phil.parse(real_space_grid_search_phil_str)
@@ -63,7 +62,6 @@ class RealSpaceGridSearch(Strategy):
         """Generator of the search vectors.
 
         The lengths of the vectors correspond to the target unit cell dimensions.
-
         """
         unique_cell_dimensions = set(self._target_unit_cell.parameters()[:3])
         for i, direction in enumerate(self.search_directions):
@@ -109,7 +107,6 @@ class RealSpaceGridSearch(Strategy):
         Args:
             reciprocal_lattice_vectors (scitbx.array_family.flex.vec3_double):
                 The list of reciprocal lattice vectors to search for periodicity.
-
         """
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         logger.info("Indexing from %i reflections" % used_in_indexing.count(True))

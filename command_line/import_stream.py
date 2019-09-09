@@ -9,8 +9,6 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 logger = logging.getLogger("dials.command_line.import_stream")
 
 help_message = """
-
-
 """
 
 # Create the phil parameters
@@ -57,7 +55,6 @@ phil_scope = parse(
       .help = "The input port"
 
   }
-
 """
 )
 
@@ -170,7 +167,6 @@ class Script(object):
     def write_experiments(self, experiments, params):
         """
         Output the experiments to file.
-
         """
         if params.output.experiments:
             logger.info("-" * 80)

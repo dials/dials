@@ -18,7 +18,6 @@ class MedianBackgroundExt(object):
 
         :param params: The input parameters
         :param experiments: The list of experiments
-
         """
         from dials.algorithms.background.median import BackgroundAlgorithm
 
@@ -29,7 +28,6 @@ class MedianBackgroundExt(object):
         Compute the background.
 
         :param reflections: The list of reflections
-
         """
         return self._algorithm.compute_background(
             reflections, image_volume=image_volume

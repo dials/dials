@@ -17,7 +17,6 @@ Examples::
   dials.merge_cbf image_*.cbf
 
   dials.merge_cbf image_*.cbf merge_n_images=10
-
 """
 
 phil_scope = iotbx.phil.parse(

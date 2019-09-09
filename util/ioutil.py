@@ -9,7 +9,6 @@ def get_inverse_ub_matrix_from_xparm(handle):
 
     Returns:
         The inverse_ub_matrix
-
     """
     from scitbx import matrix
 
@@ -26,7 +25,6 @@ def get_ub_matrix_from_xparm(handle):
 
     Returns:
         The ub_matrix
-
     """
     return get_inverse_ub_matrix_from_xparm(handle).inverse()
 
@@ -39,7 +37,6 @@ def get_unit_cell_from_xparm(handle):
 
     Returns:
         The unit cell object
-
     """
     from cctbx import uctbx
 
@@ -54,7 +51,6 @@ def get_space_group_type_from_xparm(handle):
 
     Returns:
         The space group type object
-
     """
     from cctbx import sgtbx
 

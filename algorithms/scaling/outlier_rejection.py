@@ -42,7 +42,6 @@ def reject_outliers(reflection_table, experiment, method="standard", zmax=6.0):
 
     Returns:
         reflection_table: The input table with the outlier_in_scaling flag set.
-
     """
     assert "intensity" in reflection_table, "reflection table has no 'intensity' column"
     assert "variance" in reflection_table, "reflection table has no 'variance' column"
@@ -93,7 +92,6 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
 
     Raises:
         ValueError: if an invalid choice is made for the method.
-
     """
     if method == "standard":
         outlier_index_arrays = NormDevOutlierRejection(
@@ -167,7 +165,6 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
             final_outlier_arrays (:obj:`list`): A list of flex.size_t arrays of
                 outlier indices w.r.t. the order of the data in the initial
                 reflection tables used to create the Ih_table.
-
         """
         if self._n_datasets == 1:
             return [self._block_selections[0].select(self._outlier_indices)]
@@ -307,7 +304,6 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         Args:
             other_potential_outliers: A flex.size_t array of indices with respect
                 to the initial Ih_table data
-
         """
         # Find outlier indices with respect to reduced Ih_table block
         internal_outlier_indices, internal_other_potential_outliers = (
@@ -334,7 +330,6 @@ class NormDevOutlierRejection(OutlierRejectionBase):
                     the symmetry groups where outliers were found, excluding the
                     indices of the outliers themselves (indices w.r.t current
                     Ih_table).
-
         """
         Ih_table = self._Ih_table_block
         I = Ih_table.intensities

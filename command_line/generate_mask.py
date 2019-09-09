@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """
 Mask images to remove unwanted pixels.
 
@@ -17,7 +16,6 @@ Examples::
     untrusted.circle=200,200,100
 
   dials.generate_mask models.expt resolution.d_max=2.00
-
 """
 
 from __future__ import absolute_import, division, print_function
@@ -63,7 +61,6 @@ phil_scope = phil.parse(
     }
 
     include scope dials.util.masking.phil_scope
-
     """,
     process_includes=True,
 )

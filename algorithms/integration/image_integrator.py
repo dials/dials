@@ -8,7 +8,6 @@ logger = logging.getLogger(__name__)
 class TimingInfo(object):
     """
     A class to contain timing info.
-
     """
 
     def __init__(self):
@@ -47,7 +46,6 @@ class ProcessorImageBase(object):
 
         :param manager: The processing manager
         :param params: The phil parameters
-
         """
         self.manager = manager
 
@@ -57,7 +55,6 @@ class ProcessorImageBase(object):
         Get the executor
 
         :return: The executor
-
         """
         return self.manager.executor
 
@@ -67,7 +64,6 @@ class ProcessorImageBase(object):
         Set the executor
 
         :param function: The executor
-
         """
         self.manager.executor = function
 
@@ -76,7 +72,6 @@ class ProcessorImageBase(object):
         Do all the processing tasks.
 
         :return: The processing results
-
         """
         from time import time
         from dials.util.mp import multi_node_parallel_map
@@ -142,7 +137,6 @@ class ProcessorImageBase(object):
 class Result(object):
     """
     A class representing a processing result.
-
     """
 
     def __init__(self, index, reflections):
@@ -152,7 +146,6 @@ class Result(object):
         :param index: The processing job index
         :param reflections: The processed reflections
         :param data: Other processed data
-
         """
         self.index = index
         self.reflections = reflections
@@ -186,7 +179,6 @@ class Dataset(object):
 class Task(object):
     """
     A class to perform a null task.
-
     """
 
     def __init__(self, index, frames, reflections, experiments, params, executor):
@@ -199,7 +191,6 @@ class Task(object):
         :param reflections: The list of reflections
         :param params The processing parameters
         :param executor: The executor class
-
         """
         self.index = index
         self.frames = frames
@@ -213,7 +204,6 @@ class Task(object):
         Do the processing.
 
         :return: The processed data
-
         """
         from dials.model.data import make_image
         from dials.model.data import MultiPanelImageVolume
@@ -304,7 +294,6 @@ class Task(object):
 class ManagerImage(object):
     """
     A class to manage processing book-keeping
-
     """
 
     def __init__(self, experiments, reflections, params):
@@ -314,7 +303,6 @@ class ManagerImage(object):
         :param experiments: The list of experiments
         :param reflections: The list of reflections
         :param params: The phil parameters
-
         """
         # Initialise the callbacks
         self.executor = None
@@ -335,7 +323,6 @@ class ManagerImage(object):
     def initialize(self):
         """
         Initialise the processing
-
         """
         from dials_algorithms_integration_integrator_ext import (
             ReflectionManagerPerImage,
@@ -368,7 +355,6 @@ class ManagerImage(object):
     def task(self, index):
         """
         Get a task.
-
         """
         return Task(
             index=index,
@@ -382,7 +368,6 @@ class ManagerImage(object):
     def tasks(self):
         """
         Iterate through the tasks.
-
         """
         for i in range(len(self)):
             yield self.task(i)
@@ -390,7 +375,6 @@ class ManagerImage(object):
     def accumulate(self, result):
         """
         Accumulate the results.
-
         """
         self.manager.accumulate(result.index, result.reflections)
         if result.data is not None:
@@ -402,7 +386,6 @@ class ManagerImage(object):
     def finalize(self):
         """
         Finalize the processing and finish.
-
         """
         from time import time
 
@@ -421,7 +404,6 @@ class ManagerImage(object):
         Return the result.
 
         :return: The result
-
         """
         assert self.finalized, "Manager is not finalized"
         return self.reflections
@@ -431,7 +413,6 @@ class ManagerImage(object):
         Return if all tasks have finished.
 
         :return: True/False all tasks have finished
-
         """
         return self.finalized and self.manager.finished()
 
@@ -440,7 +421,6 @@ class ManagerImage(object):
         Return the number of tasks.
 
         :return: the number of tasks
-
         """
         return len(self.manager)
 
@@ -450,7 +430,6 @@ class ManagerImage(object):
     def _split_reflections(self):
         """
         Split the reflections into partials or over job boundaries
-
         """
 
         # Optionally split the reflection table into partials, otherwise,
@@ -482,13 +461,11 @@ class ProcessorImage(ProcessorImageBase):
 class InitializerRot(object):
     """
     A pre-processing class for oscillation data.
-
     """
 
     def __init__(self, experiments, params):
         """
         Initialise the pre-processor.
-
         """
         self.experiments = experiments
         self.params = params
@@ -496,7 +473,6 @@ class InitializerRot(object):
     def __call__(self, reflections):
         """
         Do some pre-processing.
-
         """
         from dials.array_family import flex
 
@@ -518,13 +494,11 @@ class InitializerRot(object):
 class FinalizerRot(object):
     """
     A post-processing class for oscillation data.
-
     """
 
     def __init__(self, experiments, params):
         """
         Initialise the post processor.
-
         """
         self.experiments = experiments
         self.params = params
@@ -532,7 +506,6 @@ class FinalizerRot(object):
     def __call__(self, reflections):
         """
         Do some post processing.
-
         """
 
         # Compute the corrections
@@ -613,7 +586,6 @@ class ImageIntegrator(object):
     """
     A class that does integration directly on the image skipping the shoebox
     creation step.
-
     """
 
     def __init__(self, experiments, reflections, params):
@@ -623,7 +595,6 @@ class ImageIntegrator(object):
         :param experiments: The experiment list
         :param reflections: The reflections to process
         :param params: The parameters to use
-
         """
         # Check all reflections have same imageset and get it
         imageset = experiments[0].imageset
@@ -640,7 +611,6 @@ class ImageIntegrator(object):
     def integrate(self):
         """
         Integrate the data
-
         """
         from dials.algorithms.integration.report import IntegrationReport
         from dials.util.command_line import heading

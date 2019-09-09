@@ -62,7 +62,6 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
   Args:
     plot_name (str): The file name to save the plot to.
       If this is not defined then the plot is displayed in interactive mode.
-
   """
     rij = rij_matrix.as_1d()
     rij = rij.select(rij != 0)

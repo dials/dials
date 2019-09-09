@@ -21,7 +21,6 @@ def test_register_scaling_observers():
     """Test the registering of the standard scaling observers."""
 
     class Scaler(Subject):
-
         """Test scaler class"""
 
         def __init__(self):
@@ -34,7 +33,6 @@ def test_register_scaling_observers():
             )
 
     class TestScript(Subject):
-
         """Test script class"""
 
         def __init__(self):
@@ -273,7 +271,6 @@ def test_MergingStatisticsObserver():
     assert "scale_vs_batch" in observer.data
 
     class MockResolution(object):
-
         """A Mock class for ResolutionPlotsAndStats and IntensityStatisticsPlots."""
 
         def __init__(self, *_, **__):

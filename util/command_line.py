@@ -156,7 +156,6 @@ class ProgressBar:
             self._title = string
         else:
             string = ""
-
         """ Print the 'end of comand' string."""
         if self._estimate_time:
             # Get the time string

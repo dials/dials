@@ -66,7 +66,6 @@ method = None
 optimise_initial_basis_vectors = False
     .type = bool
     .expert_level = 2
-
 """
 
 basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)

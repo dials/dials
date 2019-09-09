@@ -105,7 +105,6 @@ class AutoReduce(object):
                 data for refinement
             scan_varying (bool): Whether preparing for scan-varying refinement or
                 scan static refinement
-
         """
 
         self.det_params = det_params

@@ -33,7 +33,6 @@ class seed_clustering(object):
 
     Attributes:
       cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
-
     """
 
     def __init__(
@@ -52,7 +51,6 @@ class seed_clustering(object):
             in automatic determination of the number of clusters.
           n_clusters (int): Optionally override the automatic determination of the
             number of clusters.
-
         """
         self.coords = coordinates
 
@@ -83,7 +81,6 @@ class seed_clustering(object):
         Returns:
           cluster_labels (scitbx.array_family.flex.int): A label for each coordinate, labelled from
           0 .. n_sym_ops.
-
         """
         # initialise cluster labels: -1 signifies doesn't belong to a cluster
         cluster_labels = flex.int(self.coords.all()[0], -1)
@@ -149,7 +146,6 @@ class seed_clustering(object):
             A tuple containing
             the distance matrix as output by :func:`scipy.spatial.distance.pdist` and
             the linkage matrix as output by :func:`scipy.cluster.hierarchy.linkage`.
-
         """
         cluster_centroids = []
         X = self.coords.as_numpy_array()
@@ -179,7 +175,6 @@ class seed_clustering(object):
 
         Returns:
           cluster_labels (scitbx.array_family.flex.int): A label for each coordinate.
-
         """
         eps = 1e-6
         X = self.coords.as_numpy_array()

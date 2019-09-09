@@ -23,7 +23,6 @@ Examples::
   dials.export_bitmaps models.expt
 
   dials.export_bitmaps image.cbf display=variance colour_scheme=inverse_greyscale
-
 """
 
 phil_scope = iotbx.phil.parse(
@@ -82,7 +81,6 @@ jpeg {
     .type = int(value_min=1, value_max=95)
     .help = "The image quality, on a scale from 1 (worst) to 95 (best)"
 }
-
 """,
     process_includes=True,
 )

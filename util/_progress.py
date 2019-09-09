@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """
 Customisable progressbar decorator for iterators.
 

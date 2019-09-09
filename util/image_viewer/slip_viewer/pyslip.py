@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """
 A 'slippy map' widget for wxPython.
 
@@ -2812,7 +2811,6 @@ class PySlip(_BufferedCanvas):
         if update == True (default) then self.Update() is called to redraw the canvas.
 
         The tile stuff has already been set to the correct level.
-
         """
         # set view state
         (map_x, map_y) = self.GetMapCoordsFromView(xy)
@@ -2831,7 +2829,6 @@ class PySlip(_BufferedCanvas):
         xy  is a tuple (x, y) of pixel coords of new centre after zoom
 
         The tile stuff has already been set to the correct level.
-
         """
         # set view state
         (map_x, map_y) = self.GetMapCoordsFromView(xy)

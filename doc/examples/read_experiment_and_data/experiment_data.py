@@ -10,7 +10,6 @@ from libtbx.phil import parse
 help_message = """
 
 pass experiment.expt indexed.refl
-
 """
 
 phil_scope = parse(

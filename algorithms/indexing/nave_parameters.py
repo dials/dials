@@ -10,7 +10,6 @@ from scitbx.matrix import col, sqr
 from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
-
 """
 Class to determine mosaicity and effective domain size for a crystal given a set of indexed reflections
 """

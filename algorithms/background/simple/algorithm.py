@@ -11,7 +11,6 @@ class BackgroundAlgorithm(object):
         :param experiments: The list of experiments
         :param outlier: The outlier rejection algorithm
         :param model: The background model algorithm
-
         """
         from dials.algorithms.background.simple import Creator
         from dials.algorithms.background.simple import TruncatedOutlierRejector
@@ -70,7 +69,6 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
         from dials.array_family import flex
 
@@ -101,7 +99,6 @@ class SimpleBackgroundCalculatorFactory(object):
         :param experiments: The list of experiments
         :param outlier: The outlier rejection algorithm
         :param model: The background model algorithm
-
         """
         from dials.algorithms.integration.parallel_integrator import (
             SimpleBackgroundCalculator,

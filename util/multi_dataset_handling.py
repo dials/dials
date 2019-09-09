@@ -43,7 +43,6 @@ def parse_multiple_datasets(reflections):
 
     Returns:
         (list): a list of reflection tables corresponding to single datasets
-
     """
     single_reflection_tables = []
     dataset_id_list = []
@@ -91,7 +90,6 @@ def get_next_unique_id(unique_id, used_ids):
 
     Returns:
         (int): The lowest int >= unique_id for which str(int) is not in used_ids
-
     """
     while str(unique_id) in used_ids:
         unique_id += 1

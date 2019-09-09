@@ -7,7 +7,6 @@ import logging
 logger = logging.getLogger("dials.unit_cell_histogram")
 
 help_message = """
-
 """
 
 phil_scope = libtbx.phil.parse(

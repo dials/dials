@@ -1,6 +1,5 @@
 """
 Tests for the constraints system used in refinement
-
 """
 
 from __future__ import absolute_import, division, print_function

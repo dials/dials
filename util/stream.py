@@ -8,13 +8,11 @@ logger = logging.getLogger(__name__)
 class ZMQStream:
     """
     A class to listen to a zeromq stream
-
     """
 
     def __init__(self, host, port=9999):
         """
         create stream listener object
-
         """
         self.host = host
         self.port = port
@@ -27,7 +25,6 @@ class ZMQStream:
         Enable stream, connect to zmq host
 
         :return: receiver object
-
         """
         import zmq
 
@@ -46,7 +43,6 @@ class ZMQStream:
     def receive(self):
         """
         Receive and return zmq frames
-
         """
         logger.info("Waiting for frame")
         frames = self.receiver.recv_multipart(copy=False)
@@ -55,7 +51,6 @@ class ZMQStream:
     def close(self):
         """
         Close and disable stream
-
         """
         logger.info("Closing stream")
         return self.receiver.close()
@@ -64,7 +59,6 @@ class ZMQStream:
 class Result(object):
     """
     A class to represent a result
-
     """
 
     def __init__(self):
@@ -73,21 +67,18 @@ class Result(object):
     def is_header(self):
         """
         Return not a header
-
         """
         return False
 
     def is_image(self):
         """
         Return not an image
-
         """
         return False
 
     def is_endofseries(self):
         """
         Return not an endofseries
-
         """
         return False
 
@@ -95,13 +86,11 @@ class Result(object):
 class Header(Result):
     """
     A class representing a header
-
     """
 
     def __init__(self, frames, directory, image_template):
         """
         Create a header object
-
         """
         import json
 
@@ -137,14 +126,12 @@ class Header(Result):
     def is_header(self):
         """
         This is a header object
-
         """
         return True
 
     def as_imageset(self, filename):
         """
         Return as an imageset
-
         """
         from dxtbx.format.FormatEigerStream import FormatEigerStream
         from dxtbx.imageset import MultiFileReader, ImageSweep
@@ -159,13 +146,11 @@ class Header(Result):
 class Image(Result):
     """
     A class to represent an image
-
     """
 
     def __init__(self, frames, header):
         """
         Create the image object
-
         """
         import json
 
@@ -184,9 +169,7 @@ class Image(Result):
 
         # The dimensions
         shape = info["shape"]
-        dtype = info["type"]
-        denco = info["encoding"]
-        dsize = info["size"]
+        # denco = info["encoding"]
 
         # The timing info
         self.start_time = time["start_time"]
@@ -209,7 +192,6 @@ class Image(Result):
     def is_image(self):
         """
         Return that the object is an image
-
         """
         return True
 
@@ -217,13 +199,11 @@ class Image(Result):
 class EndOfSeries(Result):
     """
     Class to represent the end of a series
-
     """
 
     def is_endofseries(self):
         """
         Get the end of series
-
         """
         return True
 
@@ -231,13 +211,11 @@ class EndOfSeries(Result):
 class Decoder(object):
     """
     Decodes zmq frames from EIGER ZMQ stream into dxtbx format object
-
     """
 
     def __init__(self, directory, image_template):
         """
         Initialize the processor
-
         """
         self.header = None
         self.directory = directory
@@ -246,7 +224,6 @@ class Decoder(object):
     def decode(self, frames):
         """
         Decode and process EIGER ZMQ stream frames
-
         """
         import json
 
@@ -263,7 +240,6 @@ class Decoder(object):
     def decode_header(self, frames):
         """
         Decode a header message
-
         """
         self.header = Header(frames, self.directory, self.image_template)
         return self.header
@@ -271,7 +247,6 @@ class Decoder(object):
     def decode_image(self, frames):
         """
         Decode an image object
-
         """
         if self.header is None:
             raise RuntimeError("Need header information before reading images")
@@ -280,6 +255,5 @@ class Decoder(object):
     def decode_endofseries(self, frames):
         """
         Decode an endofseries object
-
         """
         return EndOfSeries()

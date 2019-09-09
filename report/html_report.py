@@ -136,7 +136,6 @@ class html_report(object):
 </style>
 
 </head>
-
 """ % {
             "plotly_js": plotly_js,
             "bootstrap_js": bootstrap_js,

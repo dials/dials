@@ -159,7 +159,6 @@ were considered for use when refining the scaling model.
 
 @singleton
 class ScalingHTMLGenerator(Observer):
-
     """
     Observer to make a html report
     """
@@ -201,7 +200,6 @@ class ScalingHTMLGenerator(Observer):
 
 @singleton
 class ScalingModelObserver(Observer):
-
     """
     Observer to record scaling model data and make model plots.
     """
@@ -306,7 +304,6 @@ class ScalingOutlierObserver(Observer):
 
 @singleton
 class ErrorModelObserver(Observer):
-
     """
     Observer to record scaling error model data and make a plot.
     """
@@ -340,7 +337,6 @@ class ErrorModelObserver(Observer):
 
 @singleton
 class FilteringObserver(Observer):
-
     """
     Observer to record data from the scaling and filtering algorithm.
     """

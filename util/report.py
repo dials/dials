@@ -4,13 +4,11 @@ from __future__ import absolute_import, division, print_function
 class Array(object):
     """
     A class to represent an array
-
     """
 
     def __init__(self):
         """
         Initialise the array
-
         """
         self.name = ""
         self.title = ""
@@ -21,7 +19,6 @@ class Array(object):
         Return as a dictionary
 
         :return: The dictionary
-
         """
         from collections import OrderedDict
 
@@ -36,7 +33,6 @@ class Array(object):
         Return as a string
 
         :return: The string
-
         """
         return ""
 
@@ -44,13 +40,11 @@ class Array(object):
 class Table(object):
     """
     A class to represent a table
-
     """
 
     def __init__(self):
         """
         Initialize the table
-
         """
         self.name = ""
         self.title = ""
@@ -62,7 +56,6 @@ class Table(object):
         Return as a dictionary
 
         :return: The dictionary
-
         """
         from collections import OrderedDict
 
@@ -89,7 +82,6 @@ class Table(object):
         Return the table as a string
 
         :return: The string
-
         """
         from libtbx.table_utils import format as table
 
@@ -107,13 +99,11 @@ class Table(object):
 class Report(object):
     """
     A class to represent the report
-
     """
 
     def __init__(self):
         """
         Initialize the tables
-
         """
         self.tables = []
         self.arrays = []
@@ -123,7 +113,6 @@ class Report(object):
         Add an array to the report
 
         :param array: The array to add
-
         """
         self.arrays.append(array)
 
@@ -132,7 +121,6 @@ class Report(object):
         Add a table to the report
 
         :param table: The table to add
-
         """
         self.tables.append(table)
 
@@ -141,7 +129,6 @@ class Report(object):
         Combine two reports
 
         :param other: The other report
-
         """
         self.tables.extend(other.tables)
         self.arrays.extend(other.arrays)
@@ -151,7 +138,6 @@ class Report(object):
         Return the report as a dictionary
 
         :return: The dictionary
-
         """
         from collections import OrderedDict
 
@@ -165,7 +151,6 @@ class Report(object):
         Return the report as a string
 
         :return: The string
-
         """
         return "\n".join([table.as_str(prefix) for table in self.tables])
 
@@ -174,7 +159,6 @@ class Report(object):
         Save the report as a json file
 
         :return: The json string
-
         """
         import json
 
@@ -185,7 +169,6 @@ class Report(object):
         Save the report as an xml file
 
         :return: The XML string
-
         """
         from xml.dom import minidom
 
@@ -221,7 +204,6 @@ class Report(object):
         Export as a file (either json or xml depending on extension
 
         :param filename: The filename
-
         """
         from os.path import splitext
 

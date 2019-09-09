@@ -11,7 +11,6 @@ import six
 def flex_ios(val, var):
     """
     Compute I/sigma or return zero for each element.
-
     """
     assert len(val) == len(var)
     result = flex.double(len(val), 0)
@@ -26,7 +25,6 @@ def flex_ios(val, var):
 def generate_integration_report(experiment, reflections, n_resolution_bins=20):
     """
     Generate the integration report
-
     """
     from dials.algorithms.statistics import pearson_correlation_coefficient
     from dials.algorithms.statistics import spearman_correlation_coefficient
@@ -295,7 +293,6 @@ def generate_integration_report(experiment, reflections, n_resolution_bins=20):
 class IntegrationReport(Report):
     """
     A class to store the integration report
-
     """
 
     def __init__(self, experiments, reflections):
@@ -304,7 +301,6 @@ class IntegrationReport(Report):
 
         :param experiments: The experiment list
         :param reflections: The reflection table
-
         """
         # Initialise the report class
         super(IntegrationReport, self).__init__()
@@ -443,7 +439,6 @@ class IntegrationReport(Report):
 class ProfileModelReport(Report):
     """
     A class to store the profile model report
-
     """
 
     def __init__(self, experiments, fitter, reflections):
@@ -453,7 +448,6 @@ class ProfileModelReport(Report):
         :param experiments: The experiment list
         :param profile_model: The profile model
         :param reflections: The reflection table
-
         """
         # Initialise the report class
         super(ProfileModelReport, self).__init__()
@@ -508,7 +502,6 @@ class ProfileModelReport(Report):
 class ProfileModelReport2(Report):
     """
     A class to store the profile model report
-
     """
 
     def __init__(self, experiments, reference, reflections):
@@ -518,7 +511,6 @@ class ProfileModelReport2(Report):
         :param experiments: The experiment list
         :param reference: The reference profiles
         :param reflections: The reflection table
-
         """
         # Initialise the report class
         super(ProfileModelReport2, self).__init__()
@@ -573,7 +565,6 @@ class ProfileModelReport2(Report):
 class ProfileValidationReport(Report):
     """
     A class to store the profile validation report
-
     """
 
     def __init__(self, experiments, profile_fitter, reflections, num_folds):
@@ -583,7 +574,6 @@ class ProfileValidationReport(Report):
         :param experiments: The experiment list
         :param profile_model: The profile model
         :param reflections: The reflection table
-
         """
         # Initialise the report class
         super(ProfileValidationReport, self).__init__()

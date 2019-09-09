@@ -17,7 +17,6 @@ def print_info(cbf_path):
     - The type of each element in each row/column element.
 
     :param cbf_path: The path to the cbf file
-
     """
     # Read the CBF file
     cbf_handle = pycbf.cbf_handle_struct()
@@ -78,7 +77,6 @@ def get_beam_direction(cbf_handle):
 
     :param cbf_handle: The cbf file handle
     :returns: The beam vector
-
     """
     cbf_handle.find_category("axis")
     cbf_handle.find_column("equipment")
@@ -97,7 +95,6 @@ def compute_central_rotation_matrix(gonio):
 
     :param gonio: The goniometer struct
     :returns: The central rotation matrix
-
     """
     x = gonio.rotate_vector(0.5, 1, 0, 0)
     y = gonio.rotate_vector(0.5, 0, 1, 0)
@@ -119,7 +116,6 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
     :param row: Row in which image is contained
     :param element: Element in which image is contained
     :returns: An array of image data
-
     """
     # Find the given category, column and row
     cbf_handle.find_category(category)
@@ -157,7 +153,6 @@ def get_image_volume(cbf_paths):
     :param width The width (xsize) of the volume
     :param height The height (ysize) of the volume
     :returns: The 3D volume array
-
     """
     # Read the first image and get the size
     cbf_handle = pycbf.cbf_handle_struct()
@@ -188,7 +183,6 @@ def search_for_image_volume(search_path):
 
     Returns:
         The image volume
-
     """
     from glob import glob
 

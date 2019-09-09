@@ -13,7 +13,6 @@ output {
   mask = hot_pixels.pickle
     .type = path
 }
-
 """,
     process_includes=True,
 )
@@ -35,7 +34,6 @@ help_message = """
 
   Examples::
     dials.find_hot_pixels models.expt strong.refl
-
 """
 
 

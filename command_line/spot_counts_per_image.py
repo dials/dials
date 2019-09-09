@@ -18,7 +18,6 @@ Examples::
   dials.spot_counts_per_image imported.expt strong.refl
 
   dials.spot_counts_per_image imported.expt strong.refl plot=per_image.png
-
 """
 
 phil_scope = iotbx.phil.parse(

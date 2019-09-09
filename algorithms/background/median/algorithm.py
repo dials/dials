@@ -9,7 +9,6 @@ class BackgroundAlgorithm(object):
         Initialise the algorithm.
 
         :param experiments: The list of experiments
-
         """
         pass
 
@@ -18,7 +17,6 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
         from dials.algorithms.background.median import create
         from dials.array_family import flex

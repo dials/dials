@@ -123,7 +123,6 @@ def generate_phil_scope():
         .help = "When chunksize is auto, this is the minimum chunksize"
     }
   }
-
   """,
         process_includes=True,
     )
@@ -141,7 +140,6 @@ phil_scope = generate_phil_scope()
 class FilterRunner(object):
     """
     A class to run multiple filters in succession.
-
     """
 
     def __init__(self, filters=None):
@@ -149,7 +147,6 @@ class FilterRunner(object):
         Initialise with a list of filters.
 
         :param filters: The list of filters
-
         """
         if filters is None:
             self.filters = []
@@ -162,7 +159,6 @@ class FilterRunner(object):
 
         :param flags: The input flags
         :returns: The filtered flags
-
         """
         flags = self.check_flags(flags, **kwargs)
         for f in self.filters:
@@ -181,7 +177,6 @@ class FilterRunner(object):
         :param observations: The observations
         :param shoeboxes: The shoeboxes
         :return: The filtered flags
-
         """
         from scitbx.array_family import flex
 
@@ -214,14 +209,12 @@ class PeakCentroidDistanceFilter(object):
         Initialise
 
         :param maxd: The maximum distance allowed
-
         """
         self.maxd = maxd
 
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
         """
         Run the filtering.
-
         """
 
         # Get the peak locations and the centroids and return the flags of
@@ -446,7 +439,6 @@ class SpotDensityFilter(object):
 class SpotFinderFactory(object):
     """
     Factory class to create spot finders
-
     """
 
     @staticmethod
@@ -456,7 +448,6 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :returns: The spot finder instance
-
         """
         from dials.util.masking import MaskGenerator
         from dials.algorithms.spot_finding.finder import SpotFinder
@@ -526,7 +517,6 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :return: The threshold algorithm
-
         """
         import dials.extensions
 
@@ -543,7 +533,6 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :return: The filter algorithm
-
         """
         # Initialise an empty list of filters
         filters = []
@@ -576,7 +565,6 @@ class SpotFinderFactory(object):
 
         :param filename_or_data: The input filename (or data)
         :return: The image or None
-
         """
         # If no filename is set then return None
         if not filename_or_data:

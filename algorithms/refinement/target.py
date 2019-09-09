@@ -58,7 +58,6 @@ class TargetFactory(object):
         do_stills=False,
         do_sparse=False,
     ):
-
         """Given a set of parameters, configure a factory to build a
         target function
 

@@ -7,8 +7,6 @@ from dials.util import show_mail_on_error
 logger = logging.getLogger("dials.command_line.model_background")
 
 help_message = """
-
-
 """
 
 # Set the phil scope
@@ -89,7 +87,6 @@ phil_scope = parse(
 
   include scope dials.algorithms.integration.integrator.phil_scope
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
-
 """,
     process_includes=True,
 )
@@ -98,13 +95,11 @@ phil_scope = parse(
 class ImageGenerator(object):
     """
     Generate diagnostic images
-
     """
 
     def __init__(self, model):
         """
         Init the model
-
         """
         import matplotlib
 
@@ -114,7 +109,6 @@ class ImageGenerator(object):
     def save_min(self, filename):
         """
         Save the mean image
-
         """
         from matplotlib import pylab
 
@@ -136,7 +130,6 @@ class ImageGenerator(object):
     def save_max(self, filename):
         """
         Save the mean image
-
         """
         from matplotlib import pylab
 
@@ -158,7 +151,6 @@ class ImageGenerator(object):
     def save_mean(self, filename):
         """
         Save the mean image
-
         """
         from matplotlib import pylab
 
@@ -180,7 +172,6 @@ class ImageGenerator(object):
     def save_variance(self, filename):
         """
         Save the variance image
-
         """
         from matplotlib import pylab
 
@@ -204,7 +195,6 @@ class ImageGenerator(object):
     def save_dispersion(self, filename):
         """
         Save the dispersion image
-
         """
         from matplotlib import pylab
 
@@ -227,7 +217,6 @@ class ImageGenerator(object):
     def save_mask(self, filename):
         """
         Save the dispersion image
-
         """
         from matplotlib import pylab
 
@@ -246,7 +235,6 @@ class ImageGenerator(object):
     def save_model(self, filename):
         """
         Save the model image
-
         """
         from matplotlib import pylab
 
@@ -270,7 +258,6 @@ class ImageGenerator(object):
     def save_polar_model(self, filename):
         """
         Save the polar model image
-
         """
         from matplotlib import pylab
 

@@ -11,7 +11,6 @@ This program does not perform any calculation ... just visualizations
 Example for invoking from CLI:
 
 dials.reflection_viewer observations.refl
-
 """
 
 

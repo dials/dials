@@ -15,7 +15,6 @@ Examples::
   dials.predict models.expt force_static=True
 
   dials.predict models.expt d_min=2.0
-
 """
 
 phil_scope = parse(

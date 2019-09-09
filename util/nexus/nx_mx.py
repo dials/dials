@@ -789,7 +789,6 @@ def dump(entry, experiments):
 def find_nx_mx_entries(nx_file, entry):
     """
     Find NXmx entries
-
     """
     hits = []
 

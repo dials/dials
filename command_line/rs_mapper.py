@@ -20,7 +20,6 @@ Examples::
   dials.rs_mapper image_00*.cbf
 
   dials.rs_mapper imported.expt
-
 """
 
 phil_scope = phil.parse(

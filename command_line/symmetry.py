@@ -64,7 +64,6 @@ output {
   json = dials.symmetry.json
     .type = path
 }
-
 """,
     process_includes=True,
 )
@@ -159,7 +158,6 @@ reflections.
 Examples::
 
   dials.symmetry models.expt observations.refl
-
 """
 
 

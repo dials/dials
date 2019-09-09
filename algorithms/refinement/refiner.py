@@ -627,7 +627,6 @@ class Refiner(object):
       * get_matches exposes the function of the same name from the privately
         stored reflection manager
       * The return value of selection_used_for_refinement is a flex.bool
-
     """
 
     def __init__(
@@ -641,7 +640,6 @@ class Refiner(object):
           refman - A ReflectionManager object
           target - An object derived from the Target class
           refinery - An object derived from the Refinery class
-
         """
 
         # the experimental models

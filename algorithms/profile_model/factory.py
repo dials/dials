@@ -6,7 +6,6 @@ def generate_phil_scope():
     Generate the phil scope for profile model
 
     :return: The phil scope
-
     """
     import dials.extensions
 
@@ -20,7 +19,6 @@ phil_scope = generate_phil_scope()
 class ProfileModelFactory(object):
     """
     Factory for creating profile models
-
     """
 
     @classmethod
@@ -32,7 +30,6 @@ class ProfileModelFactory(object):
         :param experiments: The experiment list
         :param reflections: The reflection table
         :return: The profile model
-
         """
         import dials.extensions
 

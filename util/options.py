@@ -142,7 +142,6 @@ class ConfigWriter(object):
         Initialise with the master phil.
 
         :param master_phil: The master phil scope
-
         """
         self._master_phil = master_phil
 
@@ -152,7 +151,6 @@ class ConfigWriter(object):
 
         :param params: The input phil parameters
         :param filename: The output filename
-
         """
         # Get the modified phil
         modified_phil = self._master_phil.format(python_object=params)
@@ -318,7 +316,6 @@ class Importer(object):
         :param check_format: True/False check the image format
         :param verbose: Print verbose output
         :returns: Unhandled arguments
-
         """
         from dials.util.phil import ExperimentListConverters
         from dxtbx.model.experiment_list import InvalidExperimentListError
@@ -345,7 +342,6 @@ class Importer(object):
         :param args: The input arguments
         :param verbose: Print verbose output
         :returns: Unhandled arguments
-
         """
         from dials.util.phil import ReflectionTableConverters
 
@@ -387,7 +383,6 @@ class PhilCommandParser(object):
         :param read_reflections: Try to read the reflections
         :param read_experiments_from_images: Try to read the experiments from images
         :param check_format: Check the format when reading images
-
         """
         from dials.util.phil import parse
 
@@ -417,7 +412,6 @@ class PhilCommandParser(object):
         Get the phil object
 
         :return: The phil scope
-
         """
         return self._phil
 
@@ -427,7 +421,6 @@ class PhilCommandParser(object):
         Get the system phil.
 
         :return: The system phil scope
-
         """
         return self._system_phil
 
@@ -437,7 +430,6 @@ class PhilCommandParser(object):
         Get the diff phil.
 
         :return: The difference phil scope
-
         """
         return self.system_phil.fetch_diff(source=self.phil)
 
@@ -453,7 +445,6 @@ class PhilCommandParser(object):
         :param quick_parse: Return as fast as possible and without reading any data,
                             ignoring class constructor options.
         :return: The options and parameters and (optionally) unhandled arguments
-
         """
         from dxtbx.model.experiment_list import BeamComparison
         from dxtbx.model.experiment_list import DetectorComparison
@@ -584,7 +575,6 @@ class PhilCommandParser(object):
         Generate the required input scope.
 
         :return: The input phil scope
-
         """
         from dials.util.phil import parse
 
@@ -643,7 +633,6 @@ class OptionParserBase(optparse.OptionParser, object):
 
         :param config_options: True/False show configuration options
         :param sort_options: True/False show argument sorting options
-
         """
 
         # Initialise the option parser
@@ -715,7 +704,6 @@ class OptionParserBase(optparse.OptionParser, object):
 
         :param args: The arguments to parse.
         :returns: The options and phil parameters
-
         """
 
         # Parse the command line arguments, this will separate out
@@ -774,7 +762,6 @@ class OptionParser(OptionParserBase):
         :param read_experiments_from_images: Try to read the experiments from images
         :param check_format: Check the format when reading images
         :param sort_options: Show argument sorting options
-
         """
 
         # Create the phil parser
@@ -812,7 +799,6 @@ class OptionParser(OptionParserBase):
         :param quick_parse: Return as fast as possible and without reading any data,
                             ignoring class constructor options
         :return: The options and phil parameters
-
         """
 
         # Parse the command line arguments, this will separate out
@@ -947,7 +933,6 @@ class OptionParser(OptionParserBase):
         Get the phil object
 
         :returns: The phil scope
-
         """
         return self._phil_parser.phil
 
@@ -957,7 +942,6 @@ class OptionParser(OptionParserBase):
         Get the system phil.
 
         :returns: The system phil scope
-
         """
         return self._phil_parser.system_phil
 
@@ -967,7 +951,6 @@ class OptionParser(OptionParserBase):
         Get the diff phil.
 
         :returns: The diff phil scope
-
         """
         return self._phil_parser.diff_phil
 
@@ -977,7 +960,6 @@ class OptionParser(OptionParserBase):
 
         :param text: The text to strip
         :return: The stripped text
-
         """
         return text.replace("::", ":")
 
@@ -987,7 +969,6 @@ class OptionParser(OptionParserBase):
 
         :param formatter: The formatter to use
         :return: The formatted help text
-
         """
         result = super(OptionParser, self).format_help(formatter=formatter)
         return self._strip_rst_markup(result)

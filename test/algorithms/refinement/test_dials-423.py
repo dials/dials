@@ -25,7 +25,6 @@ def test_run(dials_regression):
 
     reflections = flex.reflection_table.from_file(ref_file)
     experiments = ExperimentListFactory.from_json_file(exp_file, check_format=False)
-
     """Test that the detector remains similar after refiner construction"""
 
     params = phil_scope.fetch(source=phil.parse("")).extract()

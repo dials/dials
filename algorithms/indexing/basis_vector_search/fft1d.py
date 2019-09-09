@@ -22,7 +22,6 @@ class FFT1D(Strategy):
     See:
         Steller, I., Bolotovsky, R. & Rossmann, M. G. (1997). J. Appl. Cryst. 30, 1036-1040.
         Sauter, N. K., Grosse-Kunstleve, R. W. & Adams, P. D. (2004). J. Appl. Cryst. 37, 399-409.
-
     """
 
     phil_scope = phil.parse(fft1d_phil_str)
@@ -36,7 +35,6 @@ class FFT1D(Strategy):
             characteristic_grid (float): Sampling frequency in radians. See Steller 1997.
                 If None, determine a grid sampling automatically using the input
                 reflections, using at most 0.029 radians.
-
         """
         super(FFT1D, self).__init__(max_cell, params=params, *args, **kwargs)
 
@@ -50,7 +48,6 @@ class FFT1D(Strategy):
         Returns:
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
-
         """
         from rstbx.phil.phil_preferences import indexing_api_defs
         import iotbx.phil

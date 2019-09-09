@@ -25,7 +25,6 @@ Examples::
   # two experiments and reflections with IDs '0' and '1'
   dials.slice_sweep models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
-
 """
 
 # The phil scope
@@ -62,7 +61,6 @@ phil_scope = parse(
     .help = "Overrides image_range if present. This option splits each sweep"
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
-
 """
 )
 

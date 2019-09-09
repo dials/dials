@@ -37,7 +37,6 @@ class HelenSpotFinderThresholdExt(object):
         .type = bool
         .expert_level = 2
         .help = "Write out correlation"
-
     """
         )
         return phil
@@ -47,7 +46,6 @@ class HelenSpotFinderThresholdExt(object):
         Initialise the algorithm.
 
         :param params: The input parameters
-
         """
         self.params = params
 
@@ -58,7 +56,6 @@ class HelenSpotFinderThresholdExt(object):
         :param image: The image to process
         :param mask: The pixel mask on the image
         :returns: A boolean mask showing foreground/background pixels
-
         """
         from dials.algorithms.spot_finding.helen import BlobThresholdAlgorithm
 

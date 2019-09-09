@@ -20,7 +20,6 @@ Examples::
   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
   dials.reciprocal_lattice_viewer indexed.expt indexed.refl
-
 """
 
 

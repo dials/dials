@@ -38,7 +38,6 @@ method of Sauter et al., J. Appl. Cryst. 37, 399-409 (2004).
 Examples::
 
   dials.search_beam_position imported.expt strong.refl
-
 """
 
 phil_scope = iotbx.phil.parse(

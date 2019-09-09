@@ -32,7 +32,6 @@ def register_default_cosym_observers(script):
 
 @singleton
 class CosymHTMLGenerator(Observer):
-
     """
     Observer to make a html report
     """
@@ -85,7 +84,6 @@ class CosymJSONGenerator(Observer):
 
 @singleton
 class CosymClusterAnalysisObserver(Observer):
-
     """
     Observer to record cosym cluster analysis data and make model plots.
     """
@@ -107,7 +105,6 @@ class CosymClusterAnalysisObserver(Observer):
 
 @singleton
 class SymmetryAnalysisObserver(Observer):
-
     """
     Observer to record symmetry analysis data and make tables.
     """

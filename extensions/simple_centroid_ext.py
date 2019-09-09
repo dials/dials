@@ -13,7 +13,6 @@ class SimpleCentroidExt(object):
 
         :param params: The input phil parameters
         :param experiments: The experiment list
-
         """
         self.experiments = experiments
 
@@ -22,7 +21,6 @@ class SimpleCentroidExt(object):
         Compute the centroid.
 
         :param reflections: The list of reflections
-
         """
         from dials.algorithms.centroid.simple.algorithm import Algorithm
 

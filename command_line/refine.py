@@ -1,5 +1,4 @@
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-
 """
 Refine the diffraction geometry of input experiments against the input indexed
 reflections. For rotation scans, the model may be either static (the same for
@@ -13,7 +12,6 @@ Examples::
   dials.refine indexed.expt indexed.refl
 
   dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
-
 """
 
 from __future__ import absolute_import, division, print_function

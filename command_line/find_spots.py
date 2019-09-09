@@ -33,7 +33,6 @@ Examples::
   dials.find_spots models.expt
 
   dials.find_spots models.expt output.reflections=strong.refl
-
 """
 
 # Set the phil scope
@@ -70,7 +69,6 @@ phil_scope = parse(
     .help = "Whether or not to print a table of per-image statistics."
 
   include scope dials.algorithms.spot_finding.factory.phil_scope
-
 """,
     process_includes=True,
 )

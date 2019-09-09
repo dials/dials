@@ -9,7 +9,6 @@ Compute resolution-wise distribution of spots
 Examples::
 
   dials.spot_resolution_shells models.expt strong.refl
-
 """
 
 phil_scope = libtbx.phil.parse(

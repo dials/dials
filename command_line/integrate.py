@@ -27,7 +27,6 @@ Examples::
   dials.integrate models.expt refined.refl profile.fitting=False
 
   dials.integrate models.expt refined.refl background.algorithm=glm
-
 """
 
 # Create the phil scope
@@ -115,7 +114,6 @@ phil_scope = parse(
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
   include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
-
 """,
     process_includes=True,
 )
@@ -481,7 +479,6 @@ class Script(object):
     def filter_reference_pixels(self, reference, experiments):
         """
         Set any pixel closer to other reflections to background
-
         """
         modified_count = 0
         for experiment, indices in reference.iterate_experiments_and_indices(

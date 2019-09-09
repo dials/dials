@@ -33,7 +33,6 @@ phil_scope = parse(
 class PowderRingFilter:
     """
     A class to do powder ring filtering.
-
     """
 
     def __init__(self, unit_cell, space_group, d_min, width):
@@ -44,7 +43,6 @@ class PowderRingFilter:
         :param space_group: The space group of the powder rings
         :param d_min: The maximum resolution to filter to
         :param width: The resolution width to filter around
-
         """
         from cctbx.miller import index_generator
         from dials.array_family import flex
@@ -69,7 +67,6 @@ class PowderRingFilter:
 
         :param d: The resolution
         :return: True/False in powder ring
-
         """
         from dials.array_family import flex
         from cctbx import uctbx
@@ -87,7 +84,6 @@ class PowderRingFilter:
 
         :param params: The input phil parameters
         :return: The powder ring filter
-
         """
         return PowderRingFilter(
             params.unit_cell, params.space_group.group(), params.d_min, params.width
@@ -97,13 +93,11 @@ class PowderRingFilter:
 class MultiPowderRingFilter:
     """
     A class to encapsulate multiple powder ring filters
-
     """
 
     def __init__(self):
         """
         Init the filter.
-
         """
         self._filters = []
 
@@ -112,7 +106,6 @@ class MultiPowderRingFilter:
         Add another powder ring filter.
 
         :param filter: The filter to add
-
         """
         self._filters.append(filter)
 
@@ -122,7 +115,6 @@ class MultiPowderRingFilter:
 
         :param index: The index of the filter
         :return: The requested filter
-
         """
         return self._filters[index]
 
@@ -132,7 +124,6 @@ class MultiPowderRingFilter:
 
         :param d: The resolution
         :return: True/False if within a powder ring
-
         """
         from dials.array_family import flex
 
@@ -144,14 +135,12 @@ class MultiPowderRingFilter:
     def __len__(self):
         """
         :return: The number of filters.
-
         """
         return len(self._filters)
 
     def __iter__(self):
         """
         Iterate through filters.
-
         """
         for i in range(len(self)):
             yield self[i]
@@ -163,7 +152,6 @@ class MultiPowderRingFilter:
 
         :param params: The input phil parameters
         :return: The powder ring filter
-
         """
         filters = cls()
         for i in range(len(params.powder.apply)):
@@ -175,7 +163,6 @@ class MultiPowderRingFilter:
 class IceRingFilter:
     """
     A class to do ice ring filtering
-
     """
 
     def __init__(self):
@@ -183,7 +170,6 @@ class IceRingFilter:
         Initialise the filter.
 
         :param width: The resolution width to filter around
-
         """
         # Hexagonal ice ring resolution ranges in 1/d^2
         self.ice_rings = [
@@ -209,7 +195,6 @@ class IceRingFilter:
 
         :param d: The resolution
         :return: True/False in powder ring
-
         """
         from dials.array_family import flex
 

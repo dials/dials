@@ -21,7 +21,6 @@ Examples::
   dials.image_viewer models.expt strong.refl
 
   dials.image_viewer models.expt integrated.refl
-
 """
 
 phil_scope = iotbx.phil.parse(

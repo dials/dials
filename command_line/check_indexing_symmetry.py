@@ -37,7 +37,6 @@ Examples::
 
   dials.check_indexing_symmetry indexed.expt indexed.refl \\
     grid_l=3 symop_threshold=0.7
-
 """
 
 phil_scope = iotbx.phil.parse(

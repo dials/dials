@@ -173,7 +173,6 @@ https://doi.org/10.1107/S0907444910014836
 
 
 class ResolutionPlotterMixin(object):
-
     """Define additional helper methods for plotting"""
 
     @staticmethod
@@ -186,7 +185,6 @@ class ResolutionPlotterMixin(object):
 
 
 class IntensityStatisticsPlots(ResolutionPlotterMixin):
-
     """Generate plots for intensity-derived statistics."""
 
     def __init__(
@@ -485,7 +483,6 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
 
 
 class ResolutionPlotsAndStats(ResolutionPlotterMixin):
-
     """
     Use iotbx dataset statistics objects to make plots and tables for reports.
 

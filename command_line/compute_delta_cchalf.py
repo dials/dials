@@ -20,7 +20,6 @@ logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 help_message = """
 
 This program computes the delta cchalf excluding images
-
 """
 
 # Set the phil scope
@@ -213,7 +212,6 @@ class Script(object):
     def read_experiments(self, experiments, reflections):
         """
         Get information from experiments and reflections
-
         """
 
         # Get space group and unit cell
@@ -274,7 +272,6 @@ class Script(object):
     def read_mtzfile(self, filename):
         """
         Read the mtz file
-
         """
         # Read the mtz file
         reader = any_reflection_file(filename)

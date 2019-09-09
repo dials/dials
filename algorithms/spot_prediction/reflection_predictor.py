@@ -32,7 +32,6 @@ phil_scope = parse(
       .type = float(value_min=0)
       .help = "The padding in degrees"
   }
-
 """
 )
 
@@ -41,7 +40,6 @@ class ReflectionPredictor(object):
     """
     A reflection predictor that takes a number of experiments and does the proper
     prediction for each type of experiment.
-
     """
 
     def __init__(
@@ -55,7 +53,6 @@ class ReflectionPredictor(object):
         :param dmax: The minimum resolution
         :param margin: The margin of hkl to predict
         :param force_static: force scan varying prediction to be static
-
         """
         from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
         from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
@@ -175,7 +172,6 @@ class ReflectionPredictor(object):
         Predict all the observable reflections.
 
         :return: A reflection table
-
         """
         logger.info("Prediction type: %s" % self._predict.name)
         table = self._predict()
@@ -188,6 +184,5 @@ class ReflectionPredictor(object):
 
         :param index: The experiment index
         :return: The predictor
-
         """
         return self._predict[index]

@@ -28,7 +28,6 @@ class MaskerBase(object):
 
         Returns:
             The masked reflection list
-
         """
 
         # Mask the overlaps if an adjacency list is given
@@ -53,7 +52,6 @@ class Masker3DProfile(MaskerBase):
             experiment The experiment data
             delta_d The extent of the reflection in reciprocal space
             delta_m The extent of the reflection in reciprocal space
-
         """
         super(Masker3DProfile, self).__init__(experiments[0])
         self._experiments = experiments
@@ -67,7 +65,6 @@ class Masker3DProfile(MaskerBase):
 
         Returns:
             The masked reflection list
-
         """
         reflections = super(Masker3DProfile, self).__call__(reflections, adjacency_list)
 
@@ -93,7 +90,6 @@ class MaskerEmpirical(MaskerBase):
 
         Params:
             experiment The experiment data
-
         """
         super(MaskerEmpirical, self).__init__(experiment)
 
@@ -112,7 +108,6 @@ class MaskerEmpirical(MaskerBase):
 
         Returns:
             The masked reflection list
-
         """
         reflections = super(MaskerEmpirical, self).__call__(reflections, adjacency_list)
 

@@ -43,7 +43,6 @@ def cluster_map(func, iterable, callback=None, nslots=1, njobs=1, job_category="
     :param iterable: The iterable to pass to each function call
     :param callback: A callback function when each job completes
     :param nslots: The number of processes to request per cluster node
-
     """
     import tempfile
     import drmaa

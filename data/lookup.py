@@ -11,6 +11,5 @@ lookup
     .help = "The path to the mask file."
     .type = str
 }
-
 """
 )

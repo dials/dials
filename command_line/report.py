@@ -50,7 +50,6 @@ Examples::
   dials.report refined.expt
 
   dials.report integrated.refl integrated.expt
-
 """
 
 import libtbx.phil

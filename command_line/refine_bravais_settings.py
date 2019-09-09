@@ -40,7 +40,6 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl
 
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
-
 """
 
 phil_scope = iotbx.phil.parse(

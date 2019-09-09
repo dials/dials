@@ -45,7 +45,6 @@ class PredictionParameterisation(object):
     object directly, which takes the list of parameters, and indirectly via a
     Target function object, which takes the list of derivatives and composes the
     derivatives of a Target function from them.
-
     """
 
     def __init__(

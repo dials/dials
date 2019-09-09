@@ -14,7 +14,6 @@ import six
 
 
 class CrossValidator(object):
-
     """Abstract class defining common methods for cross validation and methods
     that must be implemented for concrete implementations"""
 
@@ -128,7 +127,6 @@ class CrossValidator(object):
 
 
 class DialsScaleCrossValidator(CrossValidator):
-
     """An implementation of the CrossValidator for running dials.scale"""
 
     results_metadata = {  # metadata used when constructing the results table

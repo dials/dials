@@ -48,7 +48,6 @@ Examples::
   dials.index imported.expt strong.refl unit_cell=37,79,79,90,90,90 space_group=P43212
 
   dials.index imported.expt strong.refl indexing.method=fft1d
-
 """
 
 
@@ -87,7 +86,6 @@ output {
   log = dials.index.log
     .type = str
 }
-
 """,
     process_includes=True,
 )

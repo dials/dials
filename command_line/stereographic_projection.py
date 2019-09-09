@@ -30,7 +30,6 @@ Examples::
   dials.stereographic_projection experiments.json hkl_limit=2
 
   dials.stereographic_projection experiments_1.json experiments_2.json hkl=1,0,0 expand_to_p1=True
-
 """
 
 phil_scope = iotbx.phil.parse(

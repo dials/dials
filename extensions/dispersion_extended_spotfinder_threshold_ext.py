@@ -30,7 +30,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
         Initialise the algorithm.
 
         :param params: The input parameters
-
         """
         self.params = params
 
@@ -41,7 +40,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
         :param image: The image to process
         :param mask: The pixel mask on the image
         :returns: A boolean mask showing foreground/background pixels
-
         """
 
         params = self.params

@@ -17,6 +17,5 @@ mp {
     .type = int(value_min=1)
     .help = "The number of local threads to use for openmp."
 }
-
 """
 )

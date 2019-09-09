@@ -102,7 +102,6 @@ def test_general_apm():
 
 
 def test_multi_apm():
-
     """Test for the general multi_active_parameter_manage class."""
 
     components_1 = {

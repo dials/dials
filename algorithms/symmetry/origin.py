@@ -49,7 +49,6 @@ def compute_miller_set_correlation(
     Returns:
       tuple[int, float]: A tuple of the number of observations and the correlation
       coefficient.
-
     """
     if map_to_asu:
         # not obvious that this will help for the reasons stated below

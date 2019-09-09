@@ -23,7 +23,6 @@ def determine_reindex_operator_against_reference(test_miller_set, reference_mill
     Returns:
       cctbx.sgtbx.change_of_basis_op: The change of basis operator which should be
       applied to the test dataset to give consistent indexing with the reference.
-
     """
     if (
         reference_miller_set.space_group().type().number()

@@ -31,7 +31,6 @@ Examples::
   dials.align_crystal models.expt vector=0,0,1 vector=0,1,0
 
   dials.align_crystal models.expt frame=direct
-
 """
 
 phil_scope = iotbx.phil.parse(

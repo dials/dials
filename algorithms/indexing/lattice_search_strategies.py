@@ -30,7 +30,6 @@ class Strategy(object):
 
         Args:
             params: an extracted PHIL scope containing the parameters
-
         """
         self._params = params
         if self._params is None and self.phil_scope is not None:
@@ -48,7 +47,6 @@ class Strategy(object):
 
         Returns:
             A list of candidate crystal models.
-
         """
         raise NotImplementedError()
 
@@ -164,7 +162,6 @@ class LowResSpotMatch(Strategy):
                 crystal symmetry and unit cell
 
             max_lattices (int): The maximum number of lattice models to find
-
         """
         super(LowResSpotMatch, self).__init__(params=params, *args, **kwargs)
         self._target_symmetry_primitive = target_symmetry_primitive
@@ -183,7 +180,6 @@ class LowResSpotMatch(Strategy):
 
             experiments (dxtbx.model.experiment_list.ExperimentList):
                 The experimental geometry models
-
         """
 
         # Take a subset of the observations at the same resolution and calculate

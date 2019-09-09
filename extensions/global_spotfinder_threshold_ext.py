@@ -29,7 +29,6 @@ class GlobalSpotFinderThresholdExt(object):
         Initialise the algorithm.
 
         :param params: The input parameters
-
         """
         self.params = params
 
@@ -40,6 +39,5 @@ class GlobalSpotFinderThresholdExt(object):
         :param image: The image to process
         :param mask: The pixel mask on the image
         :returns: A boolean mask showing foreground/background pixels
-
         """
         return (image > self.params.spotfinder.threshold.single.global_threshold) & mask

@@ -10,7 +10,6 @@ with ersatz miniCBF header. Can be used e.g. with HDF5 format data.
 Examples::
 
   dials.convert_to_cbf models.expt prefix=data_as_cbf
-
 """
 
 phil_scope = iotbx.phil.parse(

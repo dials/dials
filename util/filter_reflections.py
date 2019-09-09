@@ -81,7 +81,6 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
         ValueError: if invalid intensity_choice given, if one step of filtering
             causes no reflections to remain, if no profile reflections remain
             after filtering and the choice is "profile".
-
     """
     if intensity_choice == ["scale"]:
         reducer = ScaleIntensityReducer
@@ -150,7 +149,6 @@ def filtered_arrays_from_experiments_reflections(
 
     Raises:
         ValueError: if no datasets remain after filtering.
-
     """
     miller_arrays = []
     ids_to_del = []
@@ -474,7 +472,6 @@ class PrfIntensityReducer(FilterForExportAlgorithm):
         Raises:
             NoProfilesException: Custom Exception to indicate no reflections
                 with the integrated_prf flag.
-
         """
         selection = reflection_table.get_flags(reflection_table.flags.integrated_prf)
         if selection.count(True) == 0:

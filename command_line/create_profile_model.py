@@ -17,7 +17,6 @@ occasions it may be desirable to compute the profile model independently.
 Examples::
 
   dials.create_profile_model models.expt observations.refl
-
 """
 
 phil_scope = parse(
@@ -201,7 +200,6 @@ class Script(object):
     def filter_reference_pixels(self, reference, experiments):
         """
         Set any pixel closer to other reflections to background
-
         """
         modified_count = 0
         for experiment, indices in reference.iterate_experiments_and_indices(

@@ -36,7 +36,6 @@ autospin = False
   .type = bool
 model_view_matrix = None
   .type = floats(size=16)
-
 """,
     process_includes=True,
 )

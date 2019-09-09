@@ -59,7 +59,6 @@ Any valid ``dials.find_spots`` parameter may be passed to
 To stop the server::
 
   dials.find_spots_client stop [host=hostname] [port=1234]
-
 """
 
 stop = False

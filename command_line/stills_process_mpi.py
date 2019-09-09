@@ -47,7 +47,6 @@ class Script(base_script):
         self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def assign_work(self):
-
         """Execute the script."""
 
         if self.rank == 0:

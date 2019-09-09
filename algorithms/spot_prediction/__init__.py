@@ -43,7 +43,6 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, margin=1, padding=0, **
     :param dmin: The maximum resolution to predict to
     :param margin: The margin for prediction
     :return: The spot predictor
-
     """
 
     # Get dmin if it is not set
@@ -78,7 +77,6 @@ def ScanVaryingReflectionPredictor(
     :param dmin: The maximum resolution to predict to
     :param margin: The margin for prediction
     :return: The spot predictor
-
     """
 
     # Get dmin if it is not set
@@ -110,7 +108,6 @@ def StillsReflectionPredictor(experiment, dmin=None, spherical_relp=False, **kwa
     :param dmin: The maximum resolution to predict to
     :param spherical_relp: Whether to use the spherical relp prediction model
     :return: The spot predictor
-
     """
 
     # FIXME Selection of reflection predictor type is ugly. What is a better

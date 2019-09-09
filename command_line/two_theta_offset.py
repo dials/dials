@@ -6,7 +6,6 @@ from libtbx.phil import parse
 help_message = """
 
 dials.two_theta_offset experiment_one.expt experiment_two.expt
-
 """
 
 phil_scope = parse(

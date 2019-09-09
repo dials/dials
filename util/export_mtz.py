@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 class MTZWriter(object):
-
     """Class to help with adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
@@ -78,7 +77,6 @@ class MTZWriter(object):
 
 
 class MergedMTZWriter(MTZWriter):
-
     """Mtz writer for merged data."""
 
     def add_dataset(
@@ -104,7 +102,6 @@ class MergedMTZWriter(MTZWriter):
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
-
     """Mtz writer for multi-wavelength merged data."""
 
     def add_dataset(

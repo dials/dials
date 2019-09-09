@@ -14,7 +14,6 @@ class Strategy(object):
         Args:
             max_cell (float): An estimate of the maximum cell dimension of the primitive
                 cell.
-
         """
         self._max_cell = max_cell
         self._params = params
@@ -31,6 +30,5 @@ class Strategy(object):
         Returns:
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
-
         """
         raise NotImplementedError()

@@ -42,7 +42,6 @@ Examples::
 
   dials.reindex indexed.expt indexed.refl reference.experiments=reference.expt
     reference.reflections=reference.refl
-
 """
 
 phil_scope = iotbx.phil.parse(

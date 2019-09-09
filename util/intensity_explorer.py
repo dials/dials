@@ -421,7 +421,6 @@ def data_from_pickle_and_json():
     dials.util.intensity_explorer indexed.refl indexed.expt
 
     dials.util.intensity_explorer integrated.refl integrated.expt
-
     """
 
     # Create the parser

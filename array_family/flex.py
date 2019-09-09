@@ -36,7 +36,6 @@ def strategy(cls, params=None):
     :param cls: The class to wrap
     :param params: The input parameters
     :return: A function to instantiate the strategy
-
     """
 
     class Strategy(cls):
@@ -54,7 +53,6 @@ def default_background_algorithm():
     Get the default background algorithm.
 
     :return: The default background algorithm
-
     """
     from dials.extensions.glm_background_ext import GLMBackgroundExt
 
@@ -66,7 +64,6 @@ def default_centroid_algorithm():
     Get the default centroid algorithm.
 
     :return: The default centroid algorithm
-
     """
     from dials.extensions.simple_centroid_ext import SimpleCentroidExt
 
@@ -101,7 +98,6 @@ class _(object):
         :param force_static: Do static prediction with a scan varying model
         :param padding: Padding in degrees
         :return: The reflection table of predictions
-
         """
         if experiment.profile is not None:
             return experiment.profile.predict_reflections(
@@ -145,7 +141,6 @@ class _(object):
         :param force_static: Do static prediction with a scan varying model
         :param padding: Padding in degrees
         :return: The reflection table of predictions
-
         """
         from scitbx.array_family import flex
 
@@ -171,7 +166,6 @@ class _(object):
         :param experiments: The experiments
         :param params: The input parameters
         :return: The reflection table of observations
-
         """
         from dials.algorithms.spot_finding.factory import SpotFinderFactory
         from libtbx import Auto
@@ -210,7 +204,6 @@ class _(object):
 
         :param filename: The pickle filename
         :return: The reflection table
-
         """
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
@@ -248,7 +241,6 @@ class _(object):
 
         :param filename: The hdf5 filename
         :return: The reflection table
-
         """
         from dials.util.nexus_old import NexusFile
 
@@ -260,7 +252,6 @@ class _(object):
     def as_file(self, filename):
         """
         Write the reflection table to file in either msgpack or pickle format
-
         """
         if os.getenv("DIALS_USE_MESSAGEPACK"):
             self.as_msgpack_file(filename)
@@ -271,7 +262,6 @@ class _(object):
     def from_file(filename):
         """
         Read the reflection table from either pickle or msgpack
-
         """
         try:
             return reflection_table.from_msgpack_file(filename)
@@ -286,7 +276,6 @@ class _(object):
 
         :param nrows: The number of rows to create
         :return: The reflection table
-
         """
 
         assert nrows > 0
@@ -328,7 +317,6 @@ class _(object):
         :param table: The reflection table
         :param detector: The detector model
         :param key: The key to plot
-
         """
         from matplotlib import pyplot as plt
         from matplotlib.patches import Polygon
@@ -385,7 +373,6 @@ class _(object):
         Write the reflection table as a pickle file.
 
         :param filename: The output filename
-
         """
         # Clean up any removed experiments from the identifiers map
         self.clean_experiment_identifiers_map()
@@ -398,7 +385,6 @@ class _(object):
         Write the reflection table as a HDF5 file.
 
         :param filename: The output filename
-
         """
         from dials.util.nexus_old import NexusFile
 
@@ -424,7 +410,6 @@ class _(object):
 
         Raises:
             Sorry: If chosen intensity values cannot be found in the table.
-
         """
 
         try:
@@ -460,7 +445,6 @@ class _(object):
         Copy everything.
 
         :return: A copy of the reflection table
-
         """
         from scitbx.array_family import flex
 
@@ -512,7 +496,6 @@ class _(object):
 
         :param key0: The name of the column values to sort within
         :param key1: The sorting key name within the selected column
-
         """
         import copy
 
@@ -530,7 +513,6 @@ class _(object):
         :param other: The reflection table to match against
         :return: A tuple containing the matches in the reflection table and the
                  other reflection table
-
         """
         from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
 
@@ -544,7 +526,6 @@ class _(object):
 
         :param other: The reflection table to match against
         :return: The matches
-
         """
         logger.info("Matching reference spots with predicted reflections")
         logger.info(" %d observed reflections input" % len(other))
@@ -659,7 +640,6 @@ class _(object):
 
         :param other: The reflection table to match against
         :return: The matches
-
         """
         logger.info("Matching reference spots with predicted reflections")
         logger.info(" %d observed reflections input" % len(other))
@@ -776,7 +756,6 @@ class _(object):
 
         :param experiment: The experimental models
         :return: Zeta for each reflection
-
         """
         from dials.algorithms.profile_model.gaussian_rs import zeta_factor
 
@@ -791,7 +770,6 @@ class _(object):
 
         :param experiments: The list of experiments
         :return: Zeta for each reflection
-
         """
         from dials.algorithms.profile_model.gaussian_rs import zeta_factor
 
@@ -809,7 +787,6 @@ class _(object):
 
         :param experiment: The experimental models
         :return: The resolution for each reflection
-
         """
         from dials.array_family import flex
 
@@ -824,7 +801,6 @@ class _(object):
 
         :param experiments: The experiment list
         :return: The resolution for each reflection
-
         """
         from dials.array_family import flex
 
@@ -843,7 +819,6 @@ class _(object):
         :param profile_model: The profile models
         :param sigma_b_multiplier: Multiplier to cover extra background
         :return: The bounding box for each reflection
-
         """
         self["bbox"] = int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
@@ -868,7 +843,6 @@ class _(object):
         :param experiments: The experiment list
         :param profile_model: The profile models
         :return: The partiality for each reflection
-
         """
         self["partiality"] = flex.double(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
@@ -891,7 +865,6 @@ class _(object):
 
         :param experiments: The list of experiments
         :param profile_model: The profile model
-
         """
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             result = expr.profile.compute_mask(
@@ -912,7 +885,6 @@ class _(object):
         """
         A helper function to interate through experiments and indices of reflections
         for each experiment
-
         """
         assert len(experiments) > 0
         index_list = self.split_indices_by_experiment_id(len(experiments))
@@ -929,7 +901,6 @@ class _(object):
         Helper function to compute the background.
 
         :param experiments: The list of experiments
-
         """
         success = self._background_algorithm(experiments).compute_background(
             self, image_volume
@@ -941,7 +912,6 @@ class _(object):
         Helper function to compute the centroid.
 
         :param experiments: The list of experiments
-
         """
         self._centroid_algorithm(experiments).compute_centroid(
             self, image_volume=image_volume
@@ -950,7 +920,6 @@ class _(object):
     def compute_summed_intensity(self, image_volume=None):
         """
         Compute intensity via summation integration.
-
         """
         from dials.algorithms.integration.sum import IntegrationAlgorithm
 
@@ -964,7 +933,6 @@ class _(object):
 
         :param experiments: The list of experiments
         :param profile_model: The profile model
-
         """
         success = fitter.fit(self)
         self.set_flags(~success, self.flags.failed_during_profile_fitting)
@@ -975,7 +943,6 @@ class _(object):
 
         :param experiments: The list of experiments
         :return: The LP correction for each reflection
-
         """
         from dials.algorithms.integration import Corrections, CorrectionsMulti
 
@@ -1003,7 +970,6 @@ class _(object):
         :param experiments: The list of experiments
         :param profile_model: The profile model
         :param reference_selector: The algorithm to choose reference spots
-
         """
         self.compute_background(experiments)
         self.compute_centroid(experiments)
@@ -1021,7 +987,6 @@ class _(object):
         :param nthreads: The number of threads to use
         :param verbose: The verbosity
         :return: A tuple containing read time and extract time
-
         """
         from dials.model.data import make_image
         from time import time
@@ -1062,7 +1027,6 @@ class _(object):
 
         :param experiments: The experiment list
         :return: True/False overloaded for each reflection
-
         """
         from dials.algorithms.shoebox import OverloadChecker
 
@@ -1081,7 +1045,6 @@ class _(object):
         Check if the shoebox contains invalid pixels.
 
         :return: True/False invalid for each reflection
-
         """
         from dials.algorithms.shoebox import MaskCode
 
@@ -1110,7 +1073,6 @@ class _(object):
         :param experiments: The experiment list
         :param tolerance: A positive integer specifying border around shoebox
         :return: The overlap list
-
         """
         from dials.algorithms.shoebox import OverlapFinder
         from itertools import groupby
@@ -1164,7 +1126,6 @@ class _(object):
 
         :param overlaps: The list of overlaps
         :return: The fraction of shoebox overlapped with other reflections
-
         """
         from dials.array_family import flex
 
@@ -1210,7 +1171,6 @@ class _(object):
     def assert_experiment_identifiers_are_consistent(self, experiments=None):
         """
         Check the experiment identifiers
-
         """
         identifiers = self.experiment_identifiers()
         if len(identifiers) > 0:
@@ -1235,7 +1195,6 @@ class _(object):
     def are_experiment_identifiers_consistent(self, experiments=None):
         """
         Check the experiment identifiers
-
         """
         try:
             self.assert_experiment_identifiers_are_consistent(experiments)
@@ -1246,7 +1205,6 @@ class _(object):
     def compute_miller_indices_in_asu(self, experiments):
         """
         Compute miller indices in the asu
-
         """
         self["miller_index_asu"] = miller_index(len(self))
         for idx, experiment in enumerate(experiments):
@@ -1369,7 +1327,6 @@ Found %s"""
           detector(dxtbx.model.detector.Detector): a dxtbx detector object
           scan (dxtbx.model.scan.Scan): a dxtbx scan object. May be None, e.g. for
             a still image.
-
         """
 
         from dials.algorithms.centroid import centroid_px_to_mm_panel
@@ -1407,7 +1364,6 @@ Found %s"""
           beam(dxtbx.model.beam.Beam): A dxtbx beam object.
           goniometer(dxtbx.model.goniometer.Goniometer): A dxtbx goniometer object.
             May be None, e.g. for a still image.
-
         """
 
         self["s1"] = flex.vec3_double(len(self))
@@ -1455,7 +1411,6 @@ Found %s"""
         Args:
 
             experiments: The experiment list to use in calculating the entering flags.
-
         """
 
         assert "s1" in self
@@ -1481,7 +1436,6 @@ class reflection_table_selector(object):
     A class to select columns from reflection table.
 
     This is mainly useful for specifying selections from phil parameters
-
     """
 
     def __init__(self, column, op, value):
@@ -1491,7 +1445,6 @@ class reflection_table_selector(object):
         :param col: The column name
         :param op: The operator
         :param value: The value
-
         """
         # Set the column and value
         self.column = column
@@ -1549,7 +1502,6 @@ class reflection_table_selector(object):
         :param reflections: The reflections
 
         :return: The selection as a mask
-
         """
         if self.column == "intensity.sum.i_over_sigma":
             I = reflections["intensity.sum.value"]

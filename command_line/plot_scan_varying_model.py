@@ -61,7 +61,6 @@ and beam centre, from the input refined.expt
 Examples::
 
   dials.plot_scan_varying_model refined.expt
-
 """
 
 

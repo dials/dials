@@ -91,7 +91,6 @@ phil_scope = parse(
 
     }
   }
-
 """
 )
 
@@ -223,7 +222,6 @@ class Model(ProfileModelExt):
         :param goniometer: The goniometer model
         :param scan: The scan model
         :return: An instance of the profile model
-
         """
         if reflections is not None:
             model = cls.create_from_reflections(
@@ -258,7 +256,6 @@ class Model(ProfileModelExt):
         :param goniometer: The goniometer model
         :param scan: The scan model
         :return: An instance of the profile model
-
         """
         if profile is not None:
             sigma_b = profile.sigma_b()
@@ -303,7 +300,6 @@ class Model(ProfileModelExt):
         :param goniometer: The goniometer model
         :param scan: The scan model
         :return: An instance of the profile model
-
         """
         from dials.algorithms.profile_model.gaussian_rs.calculator import (
             ProfileModelCalculator,
@@ -426,7 +422,6 @@ class Model(ProfileModelExt):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         from dxtbx.model.experiment_list import Experiment
         from dials.algorithms.spot_prediction.reflection_predictor import (
@@ -463,7 +458,6 @@ class Model(ProfileModelExt):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         from dials.algorithms.profile_model.gaussian_rs import PartialityCalculator
 
@@ -500,7 +494,6 @@ class Model(ProfileModelExt):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator
 
@@ -546,7 +539,6 @@ class Model(ProfileModelExt):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         from dials.algorithms.profile_model.gaussian_rs import MaskCalculator
 
@@ -582,7 +574,6 @@ class Model(ProfileModelExt):
         Get the profile fitting algorithm associated with this profile model
 
         :return: The profile fitting class
-
         """
 
         # Check input

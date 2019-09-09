@@ -29,7 +29,6 @@ Examples::
   dials.analyse_output refined.refl
 
   dials.analyse_output integrated.refl
-
 """
 
 # Create the phil parameters
@@ -1375,7 +1374,6 @@ def analyse(rlist, directory, grid_size=None, pixels_per_bin=10, centroid_diff_m
             directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
         ),
     ]
-
     """ Do all the analysis. """
     for a in analysers:
         a(copy.deepcopy(rlist))

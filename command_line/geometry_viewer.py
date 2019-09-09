@@ -15,7 +15,6 @@ from scitbx.math import minimum_covering_sphere
 from scitbx.array_family import flex
 
 help_message = """
-
 """
 
 phil_scope = libtbx.phil.parse(

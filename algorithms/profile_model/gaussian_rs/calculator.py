@@ -25,7 +25,6 @@ class ComputeEsdBeamDivergence(object):
             detector The detector class
             reflections The reflections
             centroid_definition ENUM com or s1
-
         """
         from scitbx.array_family import flex
 
@@ -53,7 +52,6 @@ class ComputeEsdBeamDivergence(object):
 
         Returns:
             The list of variances
-
         """
         from scitbx.array_family import flex
 
@@ -102,7 +100,6 @@ class FractionOfObservedIntensity(object):
         Params:
             reflections The list of reflections
             experiment The experiment object
-
         """
         from dials.array_family import flex
 
@@ -129,7 +126,6 @@ class FractionOfObservedIntensity(object):
 
         Returns:
             (list of tau, list of zeta)
-
         """
         from scitbx.array_family import flex
         from dials.algorithms.shoebox import MaskCode
@@ -167,7 +163,6 @@ class FractionOfObservedIntensity(object):
 
         Returns:
             A list of log intensity fractions
-
         """
         from scitbx.array_family import flex
         import scitbx.math
@@ -271,7 +266,6 @@ class ComputeEsdReflectingRange(object):
 
             Returns:
                 (list of tau, list of zeta)
-
             """
             from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
@@ -429,7 +423,6 @@ class ComputeEsdReflectingRange(object):
 
             Returns:
                 (list of tau, list of zeta)
-
             """
             from scitbx.array_family import flex
             from dials.algorithms.shoebox import MaskCode
@@ -478,7 +471,6 @@ class ComputeEsdReflectingRange(object):
 
         params:
             scan the scan object
-
         """
 
         if algorithm == "basic":

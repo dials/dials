@@ -25,7 +25,6 @@ def reference(obj, outfile):
 
     :param obj: The reference list to dump
     :param outfile: The output file name or file object
-
     """
 
     if isinstance(outfile, str):

@@ -16,7 +16,6 @@ class ComputeDetectorNoise(object):
 
         Params:
             image The image to use
-
         """
         # Get size of the image
         height, width = image.all()
@@ -32,7 +31,6 @@ class ComputeDetectorNoise(object):
 
         Returns:
             The array of pixel intensities
-
         """
         return self._pixels
 
@@ -41,7 +39,6 @@ class ComputeDetectorNoise(object):
 
         Returns:
             The calculated detector noise
-
         """
         from scitbx.array_family import flex
 

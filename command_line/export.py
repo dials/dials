@@ -67,7 +67,6 @@ Examples::
   dials.export indexed.pickle format=xds
   dials.export models.expt format=xds
   dials.export models.expt indexed.pickle format=xds
-
 """
 
 phil_scope = parse(
@@ -253,7 +252,6 @@ class BaseExporter(object):
 class MTZExporter(object):
     """
     A class to export reflections in MTZ format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -263,7 +261,6 @@ class MTZExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -280,7 +277,6 @@ class MTZExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.export_mtz import export_mtz
 
@@ -299,7 +295,6 @@ class MTZExporter(object):
 class SadabsExporter(object):
     """
     A class to export data in HKL format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -309,7 +304,6 @@ class SadabsExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -348,7 +342,6 @@ columns in reflection table."""
 class XDSASCIIExporter(object):
     """
     A class to export data in XDS_ASCII format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -358,7 +351,6 @@ class XDSASCIIExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -397,7 +389,6 @@ columns in reflection table."""
 class NexusExporter(object):
     """
     A class to export data in Nexus format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -407,7 +398,6 @@ class NexusExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -424,7 +414,6 @@ class NexusExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.nexus import dump
 
@@ -434,7 +423,6 @@ class NexusExporter(object):
 class MMCIFExporter(object):
     """
     A class to export data in CIF format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -444,7 +432,6 @@ class MMCIFExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -461,7 +448,6 @@ class MMCIFExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.export_mmcif import MMCIFOutputFile
 
@@ -475,7 +461,6 @@ class MMCIFExporter(object):
 class MosflmExporter(object):
     """
     A class to export stuff in mosflm format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -485,7 +470,6 @@ class MosflmExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -501,7 +485,6 @@ class MosflmExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.mosflm import dump
 
@@ -511,7 +494,6 @@ class MosflmExporter(object):
 class XDSExporter(object):
     """
     A class to export stuff in xds format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -521,7 +503,6 @@ class XDSExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
         self.reflections = None
 
@@ -539,7 +520,6 @@ class XDSExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.xds import dump
 
@@ -549,7 +529,6 @@ class XDSExporter(object):
 class BestExporter(object):
     """
     A class to export stuff in BEST format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -559,7 +538,6 @@ class BestExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -576,7 +554,6 @@ class BestExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util import best
 
@@ -610,7 +587,6 @@ class BestExporter(object):
 class JsonExporter(object):
     """
     A class to export reflections in json format
-
     """
 
     def __init__(self, params, reflections, experiments=None):
@@ -620,7 +596,6 @@ class JsonExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -637,7 +612,6 @@ class JsonExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util import export_json
         from scitbx.array_family import flex

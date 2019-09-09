@@ -9,7 +9,6 @@ from dials.viewer.viewer_low_level_util import (
 
 
 class show_3d(object):
-
     """
 
     This is a useful class for developers to view 3D flex array(s) at low level code
@@ -65,7 +64,6 @@ class show_3d(object):
 
     #to see data and mask from a set shoeboxes
     show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
-
     """
 
     def __init__(self, flex_arr_one, flex_arr_two=None):

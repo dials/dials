@@ -15,7 +15,6 @@ Examples::
   dials.find_shared_models models.expt
 
   dials.find_shared_models experiments1.expt experiments2.expt
-
 """
 
 # Set the phil scope
@@ -32,7 +31,6 @@ phil_scope = parse(
       .type = str
       .help = "The debug log filename"
   }
-
 """,
     process_includes=True,
 )

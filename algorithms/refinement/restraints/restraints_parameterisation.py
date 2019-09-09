@@ -66,7 +66,6 @@ restraints
       .type = ints(value_min=0)
   }
 }
-
 """
 
 uc_phil_scope = parse(uc_phil_str)

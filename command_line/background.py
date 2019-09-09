@@ -18,7 +18,6 @@ help_message = """
 Examples::
 
   dials.background image_*.cbf
-
 """
 
 phil_scope = iotbx.phil.parse(

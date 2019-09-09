@@ -108,7 +108,6 @@ phil_str = """
     }
 
     include scope dials.util.masking.phil_scope ice_rings
-
 """
 
 

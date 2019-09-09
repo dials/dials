@@ -12,7 +12,6 @@ Utility script to sort reflection tables by the values in a column.
 Example::
 
   dev.dials.sort_reflections key=miller_index output=sorted.refl
-
 """
 
 
@@ -39,7 +38,6 @@ class Sort(object):
             output = sorted.refl
                 .type = str
                 .help = "The output reflection filename"
-
             """
         )
 

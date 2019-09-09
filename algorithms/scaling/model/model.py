@@ -54,7 +54,6 @@ class ScalingModelBase(object):
 
         Args:
             new_image_range (tuple): The (start, end) of the new image range.
-
         """
         pass
 
@@ -117,7 +116,6 @@ class ScalingModelBase(object):
 
         Returns:
             dict: A dictionary representation of the model.
-
         """
         dictionary = OrderedDict({"__id__": self.id_})
         dictionary["is_scaled"] = self._is_scaled
@@ -281,7 +279,6 @@ class PhysicalScalingModel(ScalingModelBase):
 
         Args:
             new_image_range (tuple): The (start, end) of the new image range.
-
         """
         conf = self.configdict
         current_image_range = conf["valid_image_range"]
@@ -515,7 +512,6 @@ class ArrayScalingModel(ScalingModelBase):
 
         Args:
             new_image_range (tuple): The (start, end) of the new image range.
-
         """
         conf = self.configdict
         current_image_range = conf["valid_image_range"]
@@ -792,7 +788,6 @@ def calculate_new_offset(
     Returns:
         int: An offset to apply when selecting the new parameters from the
           existing parameters.
-
     """
     if n_old_param == 2:
         return 0  # cant have less than two params
@@ -821,7 +816,6 @@ def initialise_smooth_input(osc_range, one_osc_width, interval):
             n_params (:obj:`int`): The number of parameters to use.
             norm_fac (:obj:`float`): The degrees to parameters space normalisation factor.
             interval (:obj:`float`): The actual interval in degrees between the parameters.
-
     """
     interval += 0.00001
     if (osc_range[1] - osc_range[0]) < (2.0 * interval):

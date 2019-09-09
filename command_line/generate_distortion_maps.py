@@ -16,7 +16,6 @@ Examples::
 
   {0} image_001.cbf dx=0.5 dy=1.5
   {0} models.expt mode=ellipse phi=0 l2=0.95
-
 """.format(
     libtbx.env.dispatcher_name
 )

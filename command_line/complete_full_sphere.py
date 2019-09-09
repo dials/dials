@@ -15,7 +15,6 @@ logger = logging.getLogger("dials.command_line.complete_full_sphere")
 help_message = """
 
 dials.complete_full_sphere [resolution=1.6] models.expt
-
 """
 
 phil_scope = parse(
@@ -26,7 +25,6 @@ resolution = 0.0
 shadow = True
   .type = bool
   .help = "Consider shadowing in calculating overall completeness"
-
 """
 )
 

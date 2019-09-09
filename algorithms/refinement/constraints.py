@@ -33,7 +33,6 @@ constraints
             "'Detector1' will be ignored as parameterisations are already"
             "identified by experiment id"
 }
-
 """
 
 phil_scope = parse(phil_str)

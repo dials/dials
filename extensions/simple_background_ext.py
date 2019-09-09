@@ -93,7 +93,6 @@ class SimpleBackgroundExt(object):
       min_pixels = 10
         .type = int(value_min=1)
         .help = "The minimum number of pixels to compute the background"
-
     """
         )
         return phil
@@ -104,7 +103,6 @@ class SimpleBackgroundExt(object):
 
         :param params: The input parameters
         :param experiments: The list of experiments
-
         """
         from libtbx.phil import parse
         from dials.algorithms.background.simple import BackgroundAlgorithm
@@ -148,7 +146,6 @@ class SimpleBackgroundExt(object):
         Compute the background.
 
         :param reflections: The list of reflections
-
         """
         return self._algorithm.compute_background(
             reflections, image_volume=image_volume

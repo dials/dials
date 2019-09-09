@@ -29,7 +29,6 @@ Examples::
   dials.rl_png imported.expt strong.refl
 
   dials.rl_png indexed.expt indexed.refl
-
 """
 
 phil_scope = libtbx.phil.parse(

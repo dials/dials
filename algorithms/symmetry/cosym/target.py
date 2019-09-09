@@ -55,7 +55,6 @@ class Target(object):
             equal to the greater of 2 or the number of symmetry operations in the
             lattice group.
           nproc (int): number of processors to use for computing the rij matrix.
-
         """
         if weights is not None:
             assert weights in ("count", "standard_error")
@@ -111,7 +110,6 @@ class Target(object):
 
         Args:
           dimensions (int): The number of dimensions to be used.
-
         """
         self.dim = dimensions
         logger.info("Using %i dimensions for analysis" % self.dim)
@@ -317,7 +315,6 @@ class Target(object):
 
         Returns:
           f (float): The value of the target function at coordinates `x`.
-
         """
         assert (x.size() // self.dim) == (self._lattices.size() * len(self._sym_ops))
         inner = self.rij_matrix.deep_copy()
@@ -370,7 +367,6 @@ class Target(object):
           Tuple[float, scitbx.array_family.flex.double]:
           f: The value of the target function at coordinates `x`.
           grad: The gradients of the target function with respect to the parameters.
-
         """
         f = self.compute_functional(x)
         grad = flex.double()

@@ -103,7 +103,6 @@ cluster {
 nproc = 1
   .type = int(value_min=1)
   .help = "The number of processes to use."
-
 """
 )
 
@@ -116,7 +115,6 @@ class CosymAnalysis(symmetry_base, Subject):
     <https://doi.org/10.1107/S2059798318002978>`_ for
     determination of Patterson group symmetry from sparse multi-crystal data sets in
     the presence of an indexing ambiguity.
-
     """
 
     def __init__(self, intensities, params):
@@ -126,7 +124,6 @@ class CosymAnalysis(symmetry_base, Subject):
           intensities (cctbx.miller.array): The intensities on which to perform
             cosym anaylsis.
           params (libtbx.phil.scope_extract): Parameters for the analysis.
-
         """
         super(CosymAnalysis, self).__init__(
             intensities,
@@ -514,7 +511,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
         Returns:
           dict
-
         """
         d = {
             "input_symmetry": {
@@ -547,7 +543,6 @@ class CosymAnalysis(symmetry_base, Subject):
 
         Returns:
           str:
-
         """
         d = self.as_dict()
 
@@ -694,7 +689,6 @@ class SymmetryAnalysis(object):
 
         Returns:
           str:
-
         """
         output = []
         output.append("Scoring individual symmetry elements")
@@ -728,7 +722,6 @@ class SymmetryAnalysis(object):
 
         Returns:
           dict
-
         """
         d = {"cb_op_inp_min": self.cb_op_inp_min.as_xyz()}
 
@@ -764,7 +757,6 @@ class ScoreSymmetryElement(object):
 
     See appendix A1 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
     <https://doi.org/10.1107/S090744491003982X>`_
-
     """
 
     def __init__(self, cc, sigma_cc, cc_true):
@@ -775,7 +767,6 @@ class ScoreSymmetryElement(object):
           sigma_cc (float): the estimated error in the correlation coefficient
           cc_true (float): the expected value of CC if the symmetry element is present,
             E(CC; S)
-
         """
 
         self.cc = cc
@@ -810,7 +801,6 @@ class ScoreSymmetryElement(object):
 
         Returns:
           dict:
-
         """
 
         return {
@@ -831,7 +821,6 @@ class ScoreSubGroup(object):
 
     See appendix A2 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
     <https://doi.org/10.1107/S090744491003982X>`_
-
     """
 
     def __init__(self, subgroup, sym_op_scores):
@@ -842,7 +831,6 @@ class ScoreSubGroup(object):
             :class:`cctbx.sgtbx.lattice_symmetry.metric_subgroups`.
           sym_op_scores (list): A list of :class:`ScoreSymmetryElement` objects for each
             symmetry element possibly in the lattice symmetry.
-
         """
         # Combined correlation coefficients for symmetry operations
         # present/absent from subgroup
@@ -882,7 +870,6 @@ class ScoreSubGroup(object):
 
         Returns:
           str:
-
         """
         return "%s %.3f %.2f %.2f %.2f" % (
             self.subgroup["best_subsym"].space_group_info(),
@@ -923,7 +910,6 @@ class ScoreSubGroup(object):
 
         Returns:
           dict:
-
         """
         return {
             "patterson_group": self.subgroup["best_subsym"]

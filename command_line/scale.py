@@ -92,7 +92,6 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated.refl integrated.expt scale_interval=10.0
 
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt scale_interval=15.0
-
 """
 
 

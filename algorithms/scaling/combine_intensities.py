@@ -76,7 +76,6 @@ def _make_reflection_table_from_scaler(scaler):
 
 
 class SingleDatasetIntensityCombiner(object):
-
     """
     Class to combine profile and summation intensities for a single datset.
     """
@@ -218,7 +217,6 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
 
 
 class MultiDatasetIntensityCombiner(object):
-
     """
     Class to combine profile and summation intensities for multiple datasets.
     """

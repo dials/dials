@@ -21,7 +21,6 @@ required.
 Example::
 
   dials.split_experiments combined.expt combined.refl
-
 """
 
 

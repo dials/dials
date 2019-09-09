@@ -13,7 +13,6 @@ class lbfgs_with_curvs(object):
 
     Implementation of an LBFGS minimiser using curvature information, according
     to the interface defined by :mod:`scitbx.lbfgs`.
-
     """
 
     def __init__(self, target, coords, use_curvatures=True, termination_params=None):
@@ -27,7 +26,6 @@ class lbfgs_with_curvs(object):
             minimisation. Defaults to True.
           termination_params (scitbx.lbfgs.termination_parameters):
             Override the default termination parameters for the minimisation.
-
         """
         self.target = target
 
@@ -49,7 +47,6 @@ class lbfgs_with_curvs(object):
         Returns:
           tuple: A tuple of the functional, gradients and diagonal, where the
           diagonal is the reciprocal of the curvatures.
-
         """
         f, g, curvs = self.compute_functional_gradients_and_curvatures()
 
@@ -67,7 +64,6 @@ class lbfgs_with_curvs(object):
 
         Returns:
           tuple: A tuple of the functional, gradients and curvatures.
-
         """
         self.f, self.g = self.target.compute_functional_and_gradients(self.x)
         self.c = self.curvatures()
@@ -78,7 +74,6 @@ class lbfgs_with_curvs(object):
 
         Returns:
           tuple: A tuple of the functional and gradients.
-
         """
         self.f, self.g = self.target.compute_functional_and_gradients(self.x)
         return self.f, self.g
