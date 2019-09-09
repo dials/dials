@@ -7,9 +7,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dxtbx.model.experiment_list import Experiment, ExperimentList
-from scitbx.matrix import sqr, col
+from scitbx import matrix
 from dxtbx.model import MosaicCrystalSauter2014
-from cctbx import crystal_orientation
 from dials.model.data import Shoebox
 from dials.algorithms.refinement.prediction.managed_predictors import (
     ExperimentsPredictorFactory,
@@ -17,11 +16,11 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 from dials.util import show_mail_on_error
 from libtbx.phil import parse
 
-logger = logging.getLogger("dials.command_line.stills_process")
+logger = logging.getLogger("dials.command_line.sweep_to_stills")
 
 help_message = """
 
-Utility script to split a sweep into a set of stills.
+Split a sweep into a set of stills.
 
 Example::
 
@@ -41,11 +40,11 @@ output {
     .help = "Filename for the reflection tables with split shoeboxes (3D to 2D)"
   domain_size_ang = None
     .type = float
-    .help = "Override for mosaic angle. If None, use the crystals mosaic angle, if"
+    .help = "Override for domain size. If None, use the crystal's domain size, if"
             "available"
   half_mosaicity_deg = None
     .type = float
-    .help = "Override for mosaic angle. If None, use the crystals mosaic angle, if"
+    .help = "Override for mosaic angle. If None, use the crystal's mosaic angle, if"
             "available"
 }
 """
@@ -88,6 +87,11 @@ class Script(object):
             print("No Experiments found in the input")
             self.parser.print_help()
             return
+        if not params.input.reflections:
+            print("No reflections found in the input")
+            self.parser.print_help()
+            return
+
         experiments = flatten_experiments(params.input.experiments)
         reflections = flatten_reflections(params.input.reflections)
         assert len(reflections) == 1
@@ -115,40 +119,35 @@ class Script(object):
 
         for expt_id, experiment in enumerate(experiments):
             # Get the goniometr setting matrix
-            goniometer_setting_matrix = sqr(
+            goniometer_setting_matrix = matrix.sqr(
                 experiment.goniometer.get_setting_rotation()
             )
-            goniometer_axis = col(experiment.goniometer.get_rotation_axis())
+            goniometer_axis = matrix.col(experiment.goniometer.get_rotation_axis())
             step = experiment.scan.get_oscillation()[1]
 
             refls = reflections.select(reflections["id"] == expt_id)
             _, _, _, _, z1, z2 = refls["bbox"].parts()
 
             # Create an experiment for each scanpoint
-            for i_scanpoint in range(*experiment.scan.get_array_range()):
-                # The A matrix is the goniometer setting matrix for this scan point times the scan varying A matrix at this scan point
-                # Note, the goniometer setting matrix for scan point zero will be the identity matrix and represents the beginning of the oscillation.
-                # For stills, the A matrix needs to be positioned in the midpoint of an oscillation step. Hence, here the goniometer setting matrix
-                # is rotated by a further half oscillation step.
+            for i_scan_point in range(*experiment.scan.get_array_range()):
+                # The A matrix is the goniometer setting matrix for this scan point
+                # times the scan varying A matrix at this scan point. Note, the
+                # goniometer setting matrix for scan point zero will be the identity
+                # matrix and represents the beginning of the oscillation.
+                # For stills, the A matrix needs to be positioned in the midpoint of an
+                # oscillation step. Hence, here the goniometer setting matrixis rotated
+                # by a further half oscillation step.
                 A = (
                     goniometer_axis.axis_and_angle_as_r3_rotation_matrix(
-                        angle=experiment.scan.get_angle_from_array_index(i_scanpoint)
+                        angle=experiment.scan.get_angle_from_array_index(i_scan_point)
                         + (step / 2),
                         deg=True,
                     )
                     * goniometer_setting_matrix
-                    * sqr(experiment.crystal.get_A_at_scan_point(i_scanpoint))
+                    * matrix.sqr(experiment.crystal.get_A_at_scan_point(i_scan_point))
                 )
-                ori = crystal_orientation.crystal_orientation(
-                    A, crystal_orientation.basis_type.reciprocal
-                )
-                direct_matrix = ori.direct_matrix()
-                real_a = direct_matrix[0:3]
-                real_b = direct_matrix[3:6]
-                real_c = direct_matrix[6:9]
-                crystal = MosaicCrystalSauter2014(
-                    real_a, real_b, real_c, experiment.crystal.get_space_group()
-                )
+                crystal = MosaicCrystalSauter2014(experiment.crystal)
+                crystal.set_A(A)
 
                 # Copy in mosaic parameters if available
                 if params.output.domain_size_ang is None and hasattr(
@@ -169,26 +168,26 @@ class Script(object):
                 elif params.output.half_mosaicity_deg is not None:
                     crystal.set_half_mosaicity_deg(params.output.half_mosaicity_deg)
 
-                new_experiment = Experiment()
-                new_experiment.detector = experiment.detector
-                new_experiment.beam = experiment.beam
-                new_experiment.crystal = crystal
-                new_experiment.scan = None
-                new_experiment.goniometer = None
-                new_experiment.imageset = experiment.imageset.as_imageset()[
-                    i_scanpoint : i_scanpoint + 1
-                ]
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    imageset=experiment.imageset.as_imageset()[
+                        i_scan_point : i_scan_point + 1
+                    ],
+                )
                 new_experiments.append(new_experiment)
 
-                # Each reflection in a 3D shoebox can be found on multiple images. Slice the reflections
-                # such that any reflection on this scan point is included with this image
+                # Each reflection in a 3D shoebox can be found on multiple images.
+                # Slice the reflections such that any reflection on this scan point
+                # is included with this image
                 new_id = len(new_experiments) - 1
-                subrefls = refls.select((i_scanpoint >= z1) & (i_scanpoint < z2))
+                subrefls = refls.select((i_scan_point >= z1) & (i_scan_point < z2))
                 for refl in subrefls.rows():
-                    assert i_scanpoint in range(*refl["bbox"][4:6])
+                    assert i_scan_point in range(*refl["bbox"][4:6])
 
                     new_sb = Shoebox()
-                    start = i_scanpoint - refl["bbox"][4]  # z1
+                    start = i_scan_point - refl["bbox"][4]  # z1
                     new_sb.data = refl["shoebox"].data[start : start + 1, :, :]
                     new_sb.background = refl["shoebox"].background[
                         start : start + 1, :, :
