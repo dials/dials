@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 """
 Command line script to allow merging and truncating of a dials dataset.

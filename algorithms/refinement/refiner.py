@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.algorithms.refinement.refiner.py
-#
-#  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
-#                     Laboratory, UK.
-#
-#  Authors: James Parkhurst, David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 """Refiner is the refinement module public interface. RefinerFactory is
 what should usually be used to construct a Refiner."""
 

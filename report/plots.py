@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 This module defines a number of general plots, which may be relevant to
 for reports of several programs.

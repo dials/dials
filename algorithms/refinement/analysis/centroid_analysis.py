@@ -1,10 +1,3 @@
-#  Copyright (C) (2016) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 """Analysis of centroid residuals for determining suitable refinement and
 outlier rejection parameters automatically"""
 

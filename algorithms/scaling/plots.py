@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """

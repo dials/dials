@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.refine.py
-#
-#  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
-#  Laboratory, UK.
-#
-#  Author: James Parkhurst and David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 """

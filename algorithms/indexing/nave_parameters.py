@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
 

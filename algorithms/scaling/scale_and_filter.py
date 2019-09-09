@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """Definitions of functions and classes for scaling and filtering algorithm."""
 from __future__ import absolute_import, division, print_function
 

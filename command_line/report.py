@@ -1,11 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-#  Copyright (C) 2015 Diamond Light Source
-#
-#  Author: James Parkhurst, Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
 

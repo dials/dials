@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
 from __future__ import absolute_import, division, print_function

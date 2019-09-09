@@ -1,14 +1,3 @@
-#!/usr/bin/env cctbx.python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Test analytical calculation of gradients of the target function versus finite
 difference calculations"""
 

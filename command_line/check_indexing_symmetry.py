@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.command_line.check_indexing_symmetry.py
-#
-#  Copyright (C) 2015 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import math
