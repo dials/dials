@@ -4,28 +4,16 @@ import logging
 import sys
 
 from libtbx.phil import parse
-from libtbx import Auto
 
 logger = logging.getLogger("dials.command_line.export_best")
 
 help_message = """
 This program is used to export the results of dials processing for the strategy
 program BEST.
-
 """
 
 phil_scope = parse(
     """
-
-  intensity = *auto profile sum scale
-    .type = choice(multi=True)
-    .help = "Choice of which intensities to export. Allowed combinations:
-            scale, profile, sum, profile+sum, sum+profile+scale. Auto will
-            default to scale or profile+sum depending on if the data are scaled."
-
-  debug = False
-    .type = bool
-    .help = "Output additional debugging information"
 
   n_bins = 100
     .type = int(value_min=1)
@@ -147,19 +135,6 @@ if __name__ == "__main__":
     # Get the experiments and reflections
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
-
-    # do auto intepreting of intensity choice:
-    # note that this may still fail certain checks further down the processing,
-    # but these are the defaults to try
-    if params.intensity in ([None], [Auto], ["auto"]) and reflections:
-        if ("intensity.scale.value" in reflections[0]) and (
-            "intensity.scale.variance" in reflections[0]
-        ):
-            params.intensity = ["scale"]
-            logger.info("Data appears to be scaled, setting intensity = scale")
-        else:
-            params.intensity = ["profile", "sum"]
-            logger.info("Data appears to be unscaled, setting intensity = profile+sum")
 
     exporter = BestExporter(params, experiments, reflections)
     exporter.export()
