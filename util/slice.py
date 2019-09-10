@@ -7,17 +7,19 @@ from scitbx.array_family import flex
 
 def slice_experiments(experiments, image_ranges):
     """
-
     :param experiments
     :type experiments: dxtbx.model.experiment_list.ExperimentList
     :param image_range:
-    :type image_range: list of 2-tuples defining scan range for each experiment"""
+    :type image_range: list of 2-tuples defining scan range for each experiment
+    """
 
     # copy the experiments
     experiments = copy.deepcopy(experiments)
 
     if len(experiments) != len(image_ranges):
-        raise Sorry("Input experiment list and image_ranges are not of the same length")
+        raise ValueError(
+            "Input experiment list and image_ranges are not of the same length"
+        )
 
     for exp, sr in zip(experiments, image_ranges):
         if sr is None:
@@ -39,12 +41,12 @@ def slice_experiments(experiments, image_ranges):
 
 def slice_reflections(reflections, image_ranges):
     """
-
     :param reflections: reflection table of input reflections
     :type reflections: dials.array_family.flex.reflection_table
     :param image_range: list of 2-tuples defining scan range for each experiment
                        id contained within the reflections
-    :type image_range: list of 2-tuples defining scan range for each experiment"""
+    :type image_range: list of 2-tuples defining scan range for each experiment
+    """
 
     # copy the reflections
     reflections = copy.deepcopy(reflections)

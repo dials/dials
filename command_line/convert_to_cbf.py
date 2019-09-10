@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import iotbx.phil
 
 help_message = """
@@ -37,16 +39,12 @@ def convert_to_cbf(imageset, template):
             template % (i + 1),
         )
 
-    return
-
 
 def run():
-    import libtbx.load_env
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
 
-    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "dials.convert_to_cbf [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -68,7 +66,7 @@ def run():
         return
 
     if len(experiments) > 1:
-        raise Sorry("Only one experiment can be processed at a time")
+        sys.exit("Only one experiment can be processed at a time")
     else:
         imagesets = experiments.imagesets()
         assert len(imagesets) == 1, len(imagesets)

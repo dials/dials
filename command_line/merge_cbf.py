@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import binascii
+import sys
 
 import iotbx.phil
 
@@ -234,7 +235,7 @@ def run():
         return
 
     if len(experiments) > 1:
-        raise Sorry("Only one experiment can be processed at a time")
+        sys.exit("Only one experiment can be processed at a time")
     else:
         imagesets = experiments.imagesets()
         assert len(imagesets) == 1
