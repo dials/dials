@@ -78,8 +78,6 @@ reference = None
 output {
   log = dials.check_indexing_symmetry.log
     .type = str
-  debug_log = dials.check_indexing_symmetry.debug.log
-    .type = str
 }
 """,
     process_includes=True,
@@ -323,7 +321,7 @@ def run(args):
     params, options = parser.parse_args(show_diff_phil=True)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(logfile=params.output.log)
     logger.info(dials_version())
 
     reflections = flatten_reflections(params.input.reflections)

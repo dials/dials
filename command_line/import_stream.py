@@ -26,10 +26,6 @@ phil_scope = parse(
       .type = str
       .help = "The log filename"
 
-    debug_log = 'dials.import_stream.debug.log'
-      .type = str
-      .help = "The debug log filename"
-
     compact = False
       .type = bool
       .help = "For JSON output use compact representation"
@@ -87,11 +83,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
 
         # Configure logging
-        log.config(
-            verbosity=options.verbose,
-            info=params.output.log,
-            debug=params.output.debug_log,
-        )
+        log.config(verbosity=options.verbose, logfile=params.output.log)
         from dials.util.version import dials_version
 
         logger.info(dials_version())

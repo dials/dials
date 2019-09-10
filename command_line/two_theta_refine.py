@@ -46,9 +46,6 @@ phil_scope = parse(
     log = dials.two_theta_refine.log
       .type = str
 
-    debug_log = dials.two_theta_refine.debug.log
-      .type = str
-
     cif = None
       .type = str
       .help = "Write unit cell error information to a Crystallographic"
@@ -472,7 +469,7 @@ class Script(object):
         self.check_input(reflections)
 
         # Configure the logging
-        log.config(info=params.output.log, debug=params.output.debug_log)
+        log.config(logfile=params.output.log)
         logger.info(dials_version())
 
         # Log the diff phil

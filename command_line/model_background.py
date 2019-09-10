@@ -24,10 +24,6 @@ phil_scope = parse(
       .type = str
       .help = "The log filename"
 
-    debug_log = 'dials.model_background.debug.log'
-      .type = str
-      .help = "The debug log filename"
-
     mean_image_prefix = 'mean'
       .type = str
       .help = "The mean background image"
@@ -311,11 +307,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=False)
 
         # Configure the logging
-        log.config(
-            verbosity=options.verbose,
-            info=params.output.log,
-            debug=params.output.debug_log,
-        )
+        log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 

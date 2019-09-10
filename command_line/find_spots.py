@@ -58,10 +58,6 @@ phil_scope = parse(
     log = 'dials.find_spots.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.find_spots.debug.log'
-      .type = str
-      .help = "The debug log filename"
   }
 
   per_image_statistics = False
@@ -111,11 +107,7 @@ class Script(object):
 
         if __name__ == "__main__":
             # Configure the logging
-            log.config(
-                verbosity=options.verbose,
-                info=params.output.log,
-                debug=params.output.debug_log,
-            )
+            log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 

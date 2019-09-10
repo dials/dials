@@ -160,7 +160,7 @@ def run(phil=phil_scope, args=None):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure logging
-    dials.util.log.config(options.verbose, info=params.output.log)
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     # Check number of args
     if len(experiments) == 0:

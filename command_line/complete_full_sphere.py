@@ -53,10 +53,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=True)
         from dials.util import log
 
-        log.config(
-            info="dials.complete_full_sphere.log",
-            debug="dials.complete_full_sphere.debug.log",
-        )
+        log.config(logfile="dials.complete_full_sphere.log")
 
         import math
         from scitbx import matrix
