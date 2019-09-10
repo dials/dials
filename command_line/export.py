@@ -197,15 +197,9 @@ phil_scope = parse(
   }
 
   output {
-
     log = dials.export.log
       .type = path
       .help = "The log filename"
-
-    debug_log = dials.export.debug.log
-      .type = path
-      .help = "The debug log filename"
-
   }
 """
 )
@@ -569,7 +563,7 @@ if __name__ == "__main__":
     params, options = parser.parse_args(show_diff_phil=False)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(info=params.output.log)
 
     # Print the version number
     logger.info(dials_version())

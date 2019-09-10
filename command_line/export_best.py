@@ -27,32 +27,24 @@ phil_scope = parse(
     .type = bool
     .help = "Output additional debugging information"
 
-  best {
+  prefix = best
+    .type = str
+    .help = "The prefix for the output file names for best"
+            "(.hkl, .dat and .par files)"
 
-    prefix = best
-      .type = str
-      .help = "The prefix for the output file names for best"
-              "(.hkl, .dat and .par files)"
+  n_bins = 100
+    .type = int(value_min=1)
+    .help = "Number of resolution bins for background estimation"
 
-    n_bins = 100
-      .type = int(value_min=1)
-      .help = "Number of resolution bins for background estimation"
-
-    min_partiality = 0.1
-      .type = float(value_min=0, value_max=1)
-      .help = "Minimum partiality of reflections to export"
-
-  }
+  min_partiality = 0.1
+    .type = float(value_min=0, value_max=1)
+    .help = "Minimum partiality of reflections to export"
 
   output {
 
     log = dials.export_best.log
       .type = path
       .help = "The log filename"
-
-    debug_log = dials.export_best.debug.log
-      .type = path
-      .help = "The debug log filename"
 
   }
 """
@@ -89,25 +81,25 @@ class BestExporter(object):
         experiment = self.experiments[0]
         reflections = self.reflections[0]
         partiality = reflections["partiality"]
-        sel = partiality >= self.params.best.min_partiality
+        sel = partiality >= self.params.min_partiality
         logger.info(
             "Selecting %s/%s reflections with partiality >= %s",
             sel.count(True),
             sel.size(),
-            self.params.best.min_partiality,
+            self.params.min_partiality,
         )
         if sel.count(True) == 0:
             raise Sorry(
                 "No reflections remaining after filtering for minimum partiality (min_partiality=%f)"
-                % (self.params.best.min_partiality)
+                % (self.params.min_partiality)
             )
         reflections = reflections.select(sel)
 
         imageset = experiment.imageset
-        prefix = self.params.best.prefix
+        prefix = self.params.prefix
 
         best.write_background_file(
-            "%s.dat" % prefix, imageset, n_bins=self.params.best.n_bins
+            "%s.dat" % prefix, imageset, n_bins=self.params.n_bins
         )
         best.write_integrated_hkl(prefix, reflections)
         best.write_par_file("%s.par" % prefix, experiment)
@@ -137,7 +129,7 @@ if __name__ == "__main__":
     params, options = parser.parse_args(show_diff_phil=False)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(info=params.output.log)
 
     # Print the version number
     logger.info(dials_version())
