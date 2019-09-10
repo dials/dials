@@ -229,26 +229,6 @@ phil_scope = parse(
 )
 
 
-class BaseExporter(object):
-    """
-    A base class for export reflections - though do we need a class here
-    - could just have entry points registered?
-    """
-
-    def __init__(self, params, experiments, reflections):
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-
-    def check(self):
-        """Check the input provided was sane."""
-        raise NotImplementedError("Function check() must be overloaded")
-
-    def export(self):
-        """Export the data in the desired format."""
-        raise NotImplementedError("Function export() must be overloaded")
-
-
 class MTZExporter(object):
     """
     A class to export reflections in MTZ format
