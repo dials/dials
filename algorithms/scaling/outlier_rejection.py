@@ -250,10 +250,12 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
     def _do_outlier_rejection(self):
         """Add indices (w.r.t. the Ih_table data) to self._outlier_indices."""
         Ih_table = self._Ih_table_block
-        I = Ih_table.intensities
+        intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = Ih_table.weights
-        wgIsum = ((w * g * I) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = (
+            (w * g * intensity) * Ih_table.h_index_matrix
+        ) * Ih_table.h_expand_matrix
         wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
 
         # guard against zero divison errors - can happen due to rounding errors
@@ -264,7 +266,7 @@ class SimpleNormDevOutlierRejection(OutlierRejectionBase):
         wg2sum.set_selected(zero_sel, 1.0)
 
         assert w.all_gt(0)  # guard against division by zero
-        norm_dev = (I - (g * wgIsum / wg2sum)) / (
+        norm_dev = (intensity - (g * wgIsum / wg2sum)) / (
             ((1.0 / w) + ((g / wg2sum) ** 2)) ** 0.5
         )
         norm_dev.set_selected(zero_sel, 1000)  # to trigger rejection
@@ -332,12 +334,14 @@ class NormDevOutlierRejection(OutlierRejectionBase):
                     Ih_table).
         """
         Ih_table = self._Ih_table_block
-        I = Ih_table.intensities
+        intensity = Ih_table.intensities
         g = Ih_table.inverse_scale_factors
         w = Ih_table.weights
-        wgIsum = ((w * g * I) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
+        wgIsum = (
+            (w * g * intensity) * Ih_table.h_index_matrix
+        ) * Ih_table.h_expand_matrix
         wg2sum = ((w * g * g) * Ih_table.h_index_matrix) * Ih_table.h_expand_matrix
-        wgIsum_others = wgIsum - (w * g * I)
+        wgIsum_others = wgIsum - (w * g * intensity)
         wg2sum_others = wg2sum - (w * g * g)
         # Now do the rejection analyis if n_in_group > 2
         nh = Ih_table.calc_nh()
@@ -352,7 +356,7 @@ class NormDevOutlierRejection(OutlierRejectionBase):
         # g is near zero, if w is zero then throw an assertionerror.
         wg2sum_others_sel.set_selected(zero_sel, 1.0)
         g_sel = g.select(sel)
-        I_sel = I.select(sel)
+        I_sel = intensity.select(sel)
         w_sel = w.select(sel)
 
         assert w_sel.all_gt(0)  # guard against division by zero

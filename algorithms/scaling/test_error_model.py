@@ -2,7 +2,9 @@
 Tests for the error model.
 """
 from __future__ import absolute_import, division, print_function
-from math import sqrt
+
+import math
+
 import pytest
 from libtbx.test_utils import approx_equal
 from dials.algorithms.scaling.error_model.error_model import get_error_model
@@ -80,10 +82,10 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
     for i, idx in zip(mean_intensities, ms.indices()):
         g = variate(poisson_distribution(mean=i))
         for _ in range(multiplicity):
-            I = next(g)
-            alpha = (1.0 + (b ** 2 * I)) ** 0.5
-            intensities.append(int((alpha * I) + ((1.0 - alpha) * i)))
-            variances.append(I + background_variance)
+            intensity = next(g)
+            alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
+            intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
+            variances.append(intensity + background_variance)
             miller_index.append(idx)
 
     reflections = flex.reflection_table()
@@ -202,12 +204,12 @@ def test_errormodel(large_reflection_table, test_sg):
     error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])  # Reset
     # Calculate example for three elements, with intensities 1, 5 and 10 and
     # variances 1, 5 and 10 using he formula
-    # delta_hl = sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
+    # delta_hl = math.sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
     error_model.delta_hl = error_model.calc_deltahl()
     expected_deltas = [
-        (-3.0 / 2.0) * sqrt(2.0 / 3.0),
-        (5.0 / 2.0) * sqrt(2.0 / 15.0),
-        5.0 * sqrt(2.0 / 30.0),
+        (-3.0 / 2.0) * math.sqrt(2.0 / 3.0),
+        (5.0 / 2.0) * math.sqrt(2.0 / 15.0),
+        5.0 * math.sqrt(2.0 / 30.0),
         -0.117647058824,
         0.124783549621,
     ]

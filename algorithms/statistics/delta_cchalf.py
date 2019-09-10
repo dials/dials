@@ -250,10 +250,10 @@ class PerImageCChalfStatistics(object):
         # Compute the Overall Sum(X) and Sum(X^2) for each unique reflection
         reflection_sums = defaultdict(ReflectionSum)
         for h in index_lookup:
-            I = [intensity[i] for i in index_lookup[h]]
-            n = len(I)
-            sum_x = sum(I)
-            sum_x2 = sum(II ** 2 for II in I)
+            intensities = [intensity[i] for i in index_lookup[h]]
+            n = len(intensities)
+            sum_x = sum(intensities)
+            sum_x2 = sum(i ** 2 for i in intensities)
             reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
 
         # Compute some numbers

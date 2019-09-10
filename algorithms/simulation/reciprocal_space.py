@@ -1,5 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import random
+
+from dials.array_family import flex
+
 
 class Simulator(object):
     """ Class to help with simulation from reciprocal space. """
@@ -11,13 +15,11 @@ class Simulator(object):
         self.sigma_m = sigma_m
         self.n_sigma = n_sigma
 
-    def with_given_intensity(self, N, I, Ba, Bb, Bc, Bd):
+    def with_given_intensity(self, N, In, Ba, Bb, Bc, Bd):
         """ Generate reflections with a given intensity and background. """
-        from dials.array_family import flex
-
         return self.with_individual_given_intensity(
             N,
-            flex.int(N, I),
+            flex.int(N, In),
             flex.int(N, Ba),
             flex.int(N, Bb),
             flex.int(N, Bc),
@@ -26,12 +28,10 @@ class Simulator(object):
 
     def with_random_intensity(self, N, Imax, Bamax, Bbmax, Bcmax, Bdmax):
         """ Generate reflections with a random intensity and background. """
-        from dials.array_family import flex
-
         if Imax == 0:
-            I = flex.size_t(N).as_int()
+            In = flex.size_t(N).as_int()
         else:
-            I = flex.random_size_t(N, Imax).as_int()
+            In = flex.random_size_t(N, Imax).as_int()
         if Bamax == 0:
             Ba = flex.size_t(N).as_int()
         else:
@@ -48,11 +48,10 @@ class Simulator(object):
             Bd = flex.size_t(N).as_int()
         else:
             Bd = flex.random_size_t(N, Bdmax).as_int()
-        return self.with_individual_given_intensity(N, I, Ba, Bb, Bc, Bd)
+        return self.with_individual_given_intensity(N, In, Ba, Bb, Bc, Bd)
 
-    def with_individual_given_intensity(self, N, I, Ba, Bb, Bc, Bd):
+    def with_individual_given_intensity(self, N, In, Ba, Bb, Bc, Bd):
         """ Generate reflections with given intensity and background. """
-        from dials.array_family import flex
         from dials.util.command_line import ProgressBar
         from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
         from dials.algorithms.simulation.generate_test_reflections import (
@@ -60,7 +59,7 @@ class Simulator(object):
         )
 
         # Check the lengths
-        assert N == len(I)
+        assert N == len(In)
         assert N == len(Ba)
         assert N == len(Bb)
         assert N == len(Bc)
@@ -80,7 +79,7 @@ class Simulator(object):
         m = int(len(refl) / 100)
         I_exp = flex.double(len(refl), 0)
         for i in range(len(refl)):
-            if I[i] > 0:
+            if In[i] > 0:
                 data = shoebox[i].data.as_double()
                 I_exp[i] = simulate_reciprocal_space_gaussian(
                     self.experiment.beam,
@@ -92,7 +91,7 @@ class Simulator(object):
                     s1[i],
                     phi[i],
                     bbox[i],
-                    I[i],
+                    In[i],
                     data,
                     shoebox[i].mask,
                 )
@@ -124,7 +123,7 @@ class Simulator(object):
         # I_exp = flex.double(len(refl), 0)
         # m = int(len(refl) / 100)
         # for i in range(len(refl)):
-        # if I[i] > 0:
+        # if In[i] > 0:
         # I_exp[i] = integrate_reciprocal_space_gaussian(
         # self.experiment.beam,
         # self.experiment.detector,
@@ -142,7 +141,7 @@ class Simulator(object):
         # progress.finished('Integrated expected signal impacts for %d reflections' % len(refl))
 
         # Save the expected intensity and background
-        refl["intensity.sim"] = I
+        refl["intensity.sim"] = In
         refl["background.sim.a"] = Ba
         refl["background.sim.b"] = Bb
         refl["background.sim.c"] = Bc
@@ -155,12 +154,10 @@ class Simulator(object):
     def generate_predictions(self, N):
         """ Generate some reflections. """
         from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
-        from dials.array_family import flex
         from dials.util.command_line import Command
         from dials.algorithms import filtering
         from dials.algorithms.shoebox import MaskCode
         from dials.algorithms.profile_model.gaussian_rs import Model as ProfileModel
-        import random
 
         # Set the profile model
         self.experiment.profile = ProfileModel(
@@ -246,8 +243,7 @@ if __name__ == "__main__":
     n_sigma = 3
 
     N = 100
-    I = 1000
+    In = 1000
     B = 10
     simulate = Simulator(experiments[0], sigma_b, sigma_m, n_sigma)
-    simulate.with_random_intensity(N, I, B, 0, 0, 0)
-#  simulate(experiments[0], sigma_b, sigma_m, n_sigma, N, I, B)
+    simulate.with_random_intensity(N, In, B, 0, 0, 0)
