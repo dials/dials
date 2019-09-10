@@ -254,3 +254,84 @@ Extending profile models
 
 Extending dials.scale
 =====================
+
+`dials.scale` can be extended by defining new scaling models using the
+entry point ``dxtbx.scaling_model_ext``.
+
+
+Defining a scaling model
+------------------------
+A new scaling model can be defined, which should inherit from the class
+:class:`dials.algorithms.scaling.model.model.ScalingModelBase`. A new
+scaling model must define the `from_dict`, `from_data` and
+`configure_components` methods, and should also define an `__init__` method. The model
+must also define `consecutive_refinement_order` to indicate which order the components
+should be refined for the consecutive scaling mode.
+The scaling model must be comprised of multiplicative components, which must
+inherit from
+:class:`dials.algorithms.scaling.model.components.scale_components.ScaleComponentBase`.
+
+.. code-block:: python
+
+  from libtbx import phil
+  from scitbx.array_family import flex
+  from dials.algorithms.scaling.model.model import ScalingModelBase
+  from mypath.components import SpecialComponent
+
+  mymodel_phil_str = """\
+  special_correction = True
+      .help = "Option to toggle the special correction."
+      .type = bool
+  """
+
+  class MyScalingModel(ScalingModelBase):
+      """My scaling model."""
+
+      id_ = "modelname"
+
+      phil_scope = phil.parse(mymodel_phil_str)
+
+      def __init__(self, parameters_dict, configdict, is_scaled=False):
+          super(MyScalingModel, self).__init__(configdict, is_scaled)
+          if "special" in configdict["corrections"]:
+              self._components["special"] = SpecialComponent(
+                  parameters_dict["special"]["parameters"],
+                  parameters_dict["special"]["parameter_esds"],
+              )
+
+      @classmethod
+      def from_dict(cls, obj):
+          """Create a MyScalingModel from a dictionary."""
+          configdict = obj["configuration_parameters"]
+          is_scaled = obj["is_scaled"]
+          if "special" in configdict["corrections"]:
+              parameters = flex.double(obj["special"]["parameters"])
+              if "est_standard_devs" in obj["special"]:
+                  parameter_esds = flex.double(obj["special"]["est_standard_devs"])
+          parameters_dict = {"special : {"parameters" : parameters, "parameter_esds" : parameter_esds}}
+          return cls(parameters_dict, configdict, is_scaled)
+
+      @classmethod
+      def from_data(cls, params, experiment, reflection_table):
+          """Create the MycalingModel from data."""
+          configdict = OrderedDict({"corrections": []})
+          parameters_dict = {}
+
+          if params.modelname.special_correction:
+              configdict["corrections"].append("special")
+              parameters_dict["special"] = {
+                  "parameters": flex.double([1.0, 1.0, 1.0]),
+                  "parameter_esds": None,
+              }
+          configdict["important_number"] = len(reflection_table)
+
+          return cls(parameters_dict, configdict)
+
+      def configure_components(self, reflection_table, experiment, params):
+          """Add the required reflection table data to the model components."""
+          if "special" in self.components:
+              self.components["special"].data = {"d": reflection_table["d"]}
+
+      def consecutive_refinement_order(self):
+          "A nested list of the refinement order".
+          return [["special"]]
