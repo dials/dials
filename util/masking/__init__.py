@@ -208,31 +208,23 @@ class MaskGenerator(object):
                     if region.pixel is not None:
                         mask[region.pixel] = False
 
-            # Create the resolution mask generator
-            class ResolutionMaskGeneratorGetter(object):
-                def __init__(self, beam, panel):
-                    self.beam = beam
-                    self.panel = panel
-                    self.result = None
-
-                def __call__(self):
-                    if self.result is None:
-                        self.result = ResolutionMaskGenerator(beam, panel)
-                    return self.result
-
-            get_resolution_mask_generator = ResolutionMaskGeneratorGetter(beam, panel)
+            # cache ResolutionMaskGenerator instance if used
+            def mask_resolution(*args):
+                if not hasattr(mask_resolution, "masker"):
+                    mask_resolution.masker = ResolutionMaskGenerator(beam, panel)
+                mask_resolution.masker.apply(mask, *args)
 
             # Generate high and low resolution masks
             if self.params.d_min is not None:
                 logger.info("Generating high resolution mask:")
                 logger.info(" d_min = %f" % self.params.d_min)
-                get_resolution_mask_generator().apply(mask, 0, self.params.d_min)
+                mask_resolution(0, self.params.d_min)
             if self.params.d_max is not None:
                 logger.info("Generating low resolution mask:")
                 logger.info(" d_max = %f" % self.params.d_max)
                 d_min = self.params.d_max
                 d_max = max(d_min + 1, 1e9)
-                get_resolution_mask_generator().apply(mask, d_min, d_max)
+                mask_resolution(d_min, d_max)
 
             try:
                 # Mask out the resolution range
@@ -243,13 +235,11 @@ class MaskGenerator(object):
                     logger.info("Generating resolution range mask:")
                     logger.info(" d_min = %f" % d_min)
                     logger.info(" d_max = %f" % d_max)
-                    get_resolution_mask_generator().apply(mask, d_min, d_max)
+                    mask_resolution(d_min, d_max)
             except TypeError:
                 # Catch the default value None of self.params.resolution_range
                 if any(self.params.resolution_range):
                     raise
-                else:
-                    pass
 
             # Mask out the resolution ranges for the ice rings
             for drange in generate_ice_ring_resolution_ranges(
@@ -261,7 +251,7 @@ class MaskGenerator(object):
                 logger.info("Generating ice ring mask:")
                 logger.info(" d_min = %f" % d_min)
                 logger.info(" d_max = %f" % d_max)
-                get_resolution_mask_generator().apply(mask, d_min, d_max)
+                mask_resolution(d_min, d_max)
 
             # Add to the list
             masks.append(mask)
