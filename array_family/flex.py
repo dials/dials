@@ -17,6 +17,13 @@ import six.moves.cPickle as pickle
 from dials.util import Sorry
 from scitbx import matrix
 
+# Note: Right at the end of this file all names from
+#         cctbx.array_family.flex and
+#         dials_array_family_flex_ext
+#       are imported into the local namespace, and added to __all__.
+#       This is done at the end of the file so that within the body of this
+#       file namessuch as 'int' and 'bool' refer to the python default
+#       definitions rather than the cctbx.flex definitions.
 __all__ = ["reflection_table_selector"]
 
 logger = logging.getLogger(__name__)
