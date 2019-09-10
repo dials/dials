@@ -43,10 +43,9 @@ filtering {
 """
 )
 
-ordinal = lambda n: "%d%s" % (
-    n,
-    "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4],
-)
+
+def ordinal(n):
+    return "%d%s" % (n, "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4])
 
 
 def log_cycle_results(results, scaling_script, filter_script):
