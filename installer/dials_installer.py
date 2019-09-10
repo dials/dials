@@ -65,7 +65,7 @@ class installer(install_distribution.installer):
         """Intercept any errors and print log excerpt"""
         try:
             return super(installer, self).reconfigure(log=log, *args, **kwargs)
-        except Exception as e:
+        except Exception:
             if not self.options.verbose:
                 print("\n" + " -=-" * 20)
                 print("\nAn error occured during installation\n")

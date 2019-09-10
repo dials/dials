@@ -51,7 +51,6 @@ def test():
 
     # random initial orientations with a random parameter shift at each
     attempts = 100
-    failures = 0
     for i in range(attempts):
 
         # make a random P1 crystal and parameterise it

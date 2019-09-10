@@ -132,7 +132,5 @@ def test_robust(dials_data, model, tmpdir):
     assert len(integrated2) > 0
     assert len(integrated2) == len(integrated4)
 
-    mean_bg2 = integrated2["background.mean"]
-    mean_bg4 = integrated4["background.mean"]
     scale4 = integrated4["background.scale"]
     assert (scale4 > 0).count(False) == 0

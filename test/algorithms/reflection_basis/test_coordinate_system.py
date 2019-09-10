@@ -79,17 +79,14 @@ def test_axis_orthogonal(xdscoordinates):
 def test_the_coordinate_system_limits(xdscoordinates):
     """Ensure limits e1/e2 == |s1| and limit e3 == |s0 - s1|"""
     # Get the incident and diffracted beam vectors
-    s0 = matrix.col(xdscoordinates["s0"])
-    s1 = matrix.col(xdscoordinates["s1"])
-
     eps = 1e-7
 
     # Get the limits
     lim = xdscoordinates["cs"].limits()
 
     # Check the limits
-    assert abs(-1.0 - lim[0]) <= eps
-    assert abs(1.0 - lim[1]) <= eps
+    assert lim[0] == pytest.approx(-1.0, abs=eps)
+    assert lim[1] == pytest.approx(1.0, abs=eps)
 
 
 ### Test the FromBeamVectorToXds class
@@ -175,7 +172,6 @@ def test_from_rotation_angle_coordinate_of_phi(rotationangle):
 
 def test_from_rotation_angle_e3_coordinate_approximation(rotationangle):
     # Select a random rotation from phi
-    s_dash = rotationangle["s1"]
     phi_dash = rotationangle["phi"] + (2.0 * random.random() - 1.0) * math.pi / 180
 
     # Calculate the XDS coordinate, this class uses an approximation
@@ -202,30 +198,27 @@ def test_to_beamvector_far_out_coordinates(beamvector):
     a coordinate that cannot be mapped onto the ewald sphere)."""
     eps = 1e-7
 
-    # Setting c2 and c3 to zero
     c2 = 0
 
     # A large value which is still valid
     c1 = 1.0 - eps
-    s_dash = beamvector["cs"].to_beam_vector((c1, c2))
+    assert beamvector["cs"].to_beam_vector((c1, c2))
 
     # A large value which is raises an exception
     with pytest.raises(RuntimeError):
         c1 = 1.0 + eps
-        s_dash = beamvector["cs"].to_beam_vector((c1, c2))
+        assert beamvector["cs"].to_beam_vector((c1, c2))
 
-    # Setting c2 and c3 to zero
     c1 = 0
-    c3 = 0
 
     # A large value which is still valid
     c2 = 1.0 - eps
-    s_dash = beamvector["cs"].to_beam_vector((c1, c2))
+    assert beamvector["cs"].to_beam_vector((c1, c2))
 
     # A large value which is raises an exception
     with pytest.raises(RuntimeError):
         c2 = 1.0 + eps
-        s_dash = beamvector["cs"].to_beam_vector((c1, c2))
+        assert beamvector["cs"].to_beam_vector((c1, c2))
 
 
 def test_to_beamvector_forward_and_reverse_transform(beamvector):

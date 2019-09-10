@@ -4,6 +4,7 @@ import math
 import os
 
 import pytest
+from scitbx import matrix
 
 
 class RayPredictor:
@@ -14,7 +15,6 @@ class RayPredictor:
         from dials.util import ioutil
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
-        from scitbx import matrix
 
         # The XDS files to read from
         integrate_filename = os.path.join(
@@ -154,8 +154,6 @@ def test_rotation_angles(raypredictor):
 
 def test_beam_vectors(raypredictor):
     """Ensure |s1| == |s0|"""
-    from scitbx import matrix
-
     s0_length = matrix.col(raypredictor.beam.get_s0()).length()
     for r in raypredictor.reflections:
         s1 = r["s1"]
@@ -238,13 +236,10 @@ def test_new_from_array(raypredictor):
 def test_scan_varying(raypredictor):
     from dials.algorithms.spot_prediction import ScanVaryingRayPredictor
     from dials.algorithms.spot_prediction import ReekeIndexGenerator
-    from scitbx import matrix
     import scitbx.math
 
     s0 = raypredictor.beam.get_s0()
     m2 = raypredictor.gonio.get_rotation_axis()
-    UB = raypredictor.ub_matrix
-    dphi = raypredictor.scan.get_oscillation_range(deg=False)
 
     # For quick comparison look at reflections on one frame only
     frame = 0

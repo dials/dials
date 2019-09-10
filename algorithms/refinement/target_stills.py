@@ -65,7 +65,6 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
         self._reflection_predictor(reflections)
 
         x_obs, y_obs, _ = reflections["xyzobs.mm.value"].parts()
-        delpsi = reflections["delpsical.rad"]
         x_calc, y_calc, _ = reflections["xyzcal.mm"].parts()
 
         # calculate residuals and assign columns

@@ -3,9 +3,10 @@ from __future__ import absolute_import, division, print_function
 # A class for producing efficient looping limits for reflection
 # prediction based on the Reeke algorithm (see Mosflm).
 
+import math
+
 from scitbx import matrix
 import scitbx.math
-import math
 from dials.algorithms.spot_prediction.reeke import reeke_model
 
 
@@ -13,8 +14,6 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     """Write an R script and an associated data file
     for visualisation of generated indices between phi_beg and phi_end,
     using R and the rgl add-on package."""
-
-    # Sorry, this is ugly. I don't know matplotlib yet.
 
     # write R script
 
@@ -105,47 +104,6 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     print("An R script for visualising these was written to %s," % rscript)
     print("which can be run from the R prompt with:")
     print("source('%s')" % rscript)
-
-
-def reeke_model_for_use_case(phi_beg, phi_end, margin):
-    """Construct a reeke_model for the geometry of the Use Case Thaumatin
-    dataset, taken from the XDS XPARM. The values are hard-
-    coded here so that this module does not rely on the location of that
-    file."""
-
-    axis = matrix.col([0.0, 1.0, 0.0])
-
-    # original (unrotated) setting
-    ub = matrix.sqr(
-        [
-            -0.0133393674072,
-            -0.00541609051856,
-            -0.00367748834997,
-            0.00989309470346,
-            0.000574825936669,
-            -0.0054505379664,
-            0.00475395109417,
-            -0.0163935257377,
-            0.00102384915696,
-        ]
-    )
-    r_beg = matrix.sqr(
-        scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis=self._axis, angle=phi_beg, deg=True
-        )
-    )
-    r_osc = matrix.sqr(
-        scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis=self._axis, angle=(phi_end - phi_beg), deg=True
-        )
-    )
-
-    ub_beg = r_beg * ub
-    ub_end = self._r_osc * ub_mid
-    s0 = matrix.col([0.00237878589035, 1.55544539299e-16, -1.09015329696])
-    dmin = 1.20117776325
-
-    return reeke_model(ub_beg, ub_end, axis, s0, dmin, margin)
 
 
 def test_regression():

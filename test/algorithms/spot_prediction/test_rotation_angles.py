@@ -4,12 +4,11 @@ import math
 import os
 
 import pytest
+from scitbx import matrix
 
 
 def test(dials_regression, run_in_tmpdir):
-    from scitbx import matrix
     from iotbx.xds import xparm, integrate_hkl
-    from dials.util import ioutil
     from dials.algorithms.spot_prediction import RotationAngles
     import dxtbx
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
@@ -28,22 +27,15 @@ def test(dials_regression, run_in_tmpdir):
     models = dxtbx.load(gxparm_filename)
     beam = models.get_beam()
     gonio = models.get_goniometer()
-    detector = models.get_detector()
     scan = models.get_scan()
 
     # Get the crystal parameters
-    space_group_type = ioutil.get_space_group_type_from_xparm(gxparm_handle)
     cfc = coordinate_frame_converter(gxparm_filename)
     a_vec = cfc.get("real_space_a")
     b_vec = cfc.get("real_space_b")
     c_vec = cfc.get("real_space_c")
-    unit_cell = cfc.get_unit_cell()
     UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
     ub_matrix = UB
-
-    # Get the minimum resolution in the integrate file
-    d = [unit_cell.d(h) for h in integrate_handle.hkl]
-    d_min = min(d)
 
     # Get the number of frames from the max z value
     xcal, ycal, zcal = zip(*integrate_handle.xyzcal)

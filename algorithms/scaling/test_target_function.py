@@ -433,7 +433,7 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
 
     expected_rmsd = (flex.sum(expected_residuals ** 2) / len(expected_residuals)) ** 0.5
     assert target._rmsds is None
-    rmsd = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
+    assert target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
     assert target._rmsds == pytest.approx([expected_rmsd])
 
 

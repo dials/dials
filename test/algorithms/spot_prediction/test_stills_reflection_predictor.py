@@ -22,7 +22,6 @@ class Model(object):
         # Detector fast, slow along X, -Y; beam in the centre, 200 mm distance
         dir1 = matrix.col((1, 0, 0))
         dir2 = matrix.col((0, -1, 0))
-        n = matrix.col((0, 0, 1))
         centre = matrix.col((0, 0, 200))
         npx_fast = npx_slow = 1000
         pix_size = 0.2
@@ -82,7 +81,6 @@ class Model(object):
         UB = self.crystal.get_A()
         axis = self.goniometer.get_rotation_axis()
         s0 = self.beam.get_s0()
-        dmin = 1.5
         # use the same UB at the beginning and end - the margin parameter ensures
         # we still have indices close to the Ewald sphere generated
         from dials.algorithms.spot_prediction import ReekeIndexGenerator
