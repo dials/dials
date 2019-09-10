@@ -84,8 +84,8 @@ def test_vec3_double(vec3_double):
         xx1 = random.randint(x0, x1)
         yy0 = random.randint(y0, y1)
         yy1 = random.randint(y0, y1)
-        zz0 = random.randint(y0, y1)
-        zz1 = random.randint(y0, y1)
+        zz0 = random.randint(z0, z1)
+        zz1 = random.randint(z0, z1)
         rg = (
             min(xx0, xx1),
             max(xx0, xx1) + 1,
