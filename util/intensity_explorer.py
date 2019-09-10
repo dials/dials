@@ -450,21 +450,3 @@ def data_from_pickle_and_json():
     rtable.del_selected(rtable["intensity.sum.variance"] <= 0)
 
     return rtable, elist
-
-
-if __name__ == "__main__":
-    # FIXME Now ∃ a dials tool for (unmerged MTZ) –> (exp list, refl table),
-    # use it!
-    # TODO Allow determination of output filename root.
-    # FIXME Give a pickle and a json file as arguments:
-
-    data_from_pickle_and_json()
-
-    data = IntensityDist(rtable, elist, outfile="Test")
-    data.plot_z_histogram()
-    data.probplot()
-    data.plot_time_series()
-    data.plot_z_map()
-    data.plot_z_vs_multiplicity()
-    data.plot_z_vs_I()
-    data.plot_z_vs_IsigI()
