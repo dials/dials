@@ -45,7 +45,7 @@ def dials_regression():
         reference_copy = "/dls/science/groups/scisoft/DIALS/repositories/git-reference/dials_regression"
         if (
             os.name == "posix"
-            and "diamond.ac.uk" in socket.gethostname()
+            and socket.gethostname().endswith(".diamond.ac.uk")
             and os.path.exists(reference_copy)
         ):
             return reference_copy
