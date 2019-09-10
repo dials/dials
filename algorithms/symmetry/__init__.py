@@ -115,7 +115,7 @@ class symmetry_base(object):
 
         # Correct SDs by "typical" SD factors
         self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
-
+        self._normalise(normalisation)
         self._resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 
     def _check_unit_cell_consistency(
@@ -132,16 +132,16 @@ class symmetry_base(object):
                     absolute_angle_tolerance,
                 ), (str(d.unit_cell()), str(self.median_unit_cell))
 
-    def _normalise(self):
-        if normalisation is None:
+    def _normalise(self, method):
+        if method is None:
             return
-        elif normalisation == "kernel":
+        elif method == "kernel":
             normalise = self.kernel_normalisation
-        elif normalisation == "quasi":
+        elif method == "quasi":
             normalise = self.quasi_normalisation
-        elif normalisation == "ml_iso":
+        elif method == "ml_iso":
             normalise = self.ml_iso_normalisation
-        elif normalisation == "ml_aniso":
+        elif method == "ml_aniso":
             normalise = self.ml_aniso_normalisation
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
@@ -153,6 +153,7 @@ class symmetry_base(object):
                 normalised_intensities = normalised_intensities.concatenate(
                     normalise(intensities)
                 )
+        x = 1
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()

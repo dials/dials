@@ -393,12 +393,15 @@ class CosymAnalysis(symmetry_base, Subject):
                             cb_op = sgtbx.change_of_basis_op(
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
+                            logger.info(cb_op)
                             reindexing_ops[i_cluster] = (
                                 self.cb_op_inp_min.inverse()
                                 * cb_op
                                 * self.cb_op_inp_min
                             ).as_xyz()
+                            logger.info(reindexing_ops[i_cluster])
 
+        logger.info(reindexing_ops)
         return reindexing_ops
 
     @Subject.notify_event(event="analysed_clusters")
