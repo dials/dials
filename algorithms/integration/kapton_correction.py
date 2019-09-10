@@ -217,19 +217,12 @@ class KaptonAbsorption(object):
         self.detector = detector
         self.beam = beam
 
-        if (
-            False and self.detector is not None
-        ):  ### XXX not implemented -- impose fast and slow axes for now
-            self.fast = matrix.col(self.detector[0].get_fast_axis())
-            self.slow = matrix.col(self.detector[0].get_slow_axis())
-            print("fast and slow detector axes:", tuple(self.fast), tuple(self.slow))
-        else:
-            self.fast = matrix.col((1, 0, 0))
-            self.slow = matrix.col((0, -1, 0))
-        if self.beam is not None:
-            self.beam_direction = matrix.col(self.beam.get_s0()).normalize()
-        else:
+        self.fast = matrix.col((1, 0, 0))
+        self.slow = matrix.col((0, -1, 0))
+        if self.beam is None:
             self.beam_direction = matrix.col((0, 0, -1))
+        else:
+            self.beam_direction = matrix.col(self.beam.get_s0()).normalize()
 
         # determine absorption coeff (mm-1) through kapton for a given X-ray energy
         G = get_absorption_correction()
@@ -351,7 +344,9 @@ class KaptonAbsorption(object):
             # ctr1_det_dot = self.center_normal_1 - self.det_normal # crosshairs part 1
             # ctr2_det_dot = self.center_normal_2 - self.det_normal # crosshairs part 2
             min_max_det_add = self.det_zero_mm.dot(self.det_normal)
+
             # get the distances along the detector edges to the minimum and maximum absorption edges
+
             def get_intersection(offset, direction, min_or_max_det_dot, dimension):
                 # offset is a number of pixels from the detector origin
                 # direction is the fast or slow axis of the detector
