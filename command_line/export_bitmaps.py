@@ -250,24 +250,21 @@ def image_filter(
         return raw_data
 
     assert gain_value > 0
-    gain_map = [
-        flex.double(raw_data[i].accessor(), gain_value) for i in range(len(raw_data))
-    ]
+    gain_map = [flex.double(rd.accessor(), gain_value) for rd in raw_data]
 
-    kabsch_debug_list = []
-    for i_panel in range(len(raw_data)):
-        kabsch_debug_list.append(
-            DispersionThresholdDebug(
-                raw_data[i_panel].as_double(),
-                mask[i_panel],
-                gain_map[i_panel],
-                kernel_size,
-                nsigma_b,
-                nsigma_s,
-                global_threshold,
-                min_local,
-            )
+    kabsch_debug_list = [
+        DispersionThresholdDebug(
+            data.as_double(),
+            mask[i_panel],
+            gain_map[i_panel],
+            kernel_size,
+            nsigma_b,
+            nsigma_s,
+            global_threshold,
+            min_local,
         )
+        for i_panel, data in enumerate(raw_data)
+    ]
 
     if display == "mean":
         display_data = [kabsch.mean() for kabsch in kabsch_debug_list]
@@ -277,28 +274,28 @@ def image_filter(
         display_data = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
     elif display == "sigma_b":
         cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = [kabsch.cv_mask() for kabsch in kabsch_debug_list]
-        display_data = [mask.as_1d().as_double() for mask in display_data]
-        for i, mask in enumerate(display_data):
-            mask.reshape(cv[i].accessor())
+        display_data = (kabsch.cv_mask() for kabsch in kabsch_debug_list)
+        display_data = [_mask.as_1d().as_double() for _mask in display_data]
+        for i, _mask in enumerate(display_data):
+            _mask.reshape(cv[i].accessor())
     elif display == "sigma_s":
         cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = [kabsch.value_mask() for kabsch in kabsch_debug_list]
-        display_data = [mask.as_1d().as_double() for mask in display_data]
-        for i, mask in enumerate(display_data):
-            mask.reshape(cv[i].accessor())
+        display_data = (kabsch.value_mask() for kabsch in kabsch_debug_list)
+        display_data = [_mask.as_1d().as_double() for _mask in display_data]
+        for i, _mask in enumerate(display_data):
+            _mask.reshape(cv[i].accessor())
     elif display == "global_threshold":
         cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = [kabsch.global_mask() for kabsch in kabsch_debug_list]
-        display_data = [mask.as_1d().as_double() for mask in display_data]
-        for i, mask in enumerate(display_data):
-            mask.reshape(cv[i].accessor())
+        display_data = (kabsch.global_mask() for kabsch in kabsch_debug_list)
+        display_data = [_mask.as_1d().as_double() for _mask in display_data]
+        for i, _mask in enumerate(display_data):
+            _mask.reshape(cv[i].accessor())
     elif display == "threshold":
         cv = [kabsch.index_of_dispersion() for kabsch in kabsch_debug_list]
-        display_data = [kabsch.final_mask() for kabsch in kabsch_debug_list]
-        display_data = [mask.as_1d().as_double() for mask in display_data]
-        for i, mask in enumerate(display_data):
-            mask.reshape(cv[i].accessor())
+        display_data = (kabsch.final_mask() for kabsch in kabsch_debug_list)
+        display_data = [_mask.as_1d().as_double() for _mask in display_data]
+        for i, _mask in enumerate(display_data):
+            _mask.reshape(cv[i].accessor())
 
     return display_data
 

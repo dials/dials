@@ -151,7 +151,7 @@ class CrystalUnitCellMixin(object):
 
         # get the derivatives of state wrt metrical matrix parameters on the
         # adjusted sale
-        dB_dval = [matrix.sqr(e) * 1.0e-5 for e in S.forward_gradients()]
+        dB_dval = [matrix.sqr(g) * 1.0e-5 for g in S.forward_gradients()]
 
         return newB, dB_dval
 

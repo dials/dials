@@ -2,8 +2,11 @@
 
 from __future__ import absolute_import, division, print_function
 
+import json
 import os
+import re
 import shutil
+from datetime import datetime
 from optparse import SUPPRESS_HELP, OptionParser
 
 import libtbx.load_env
@@ -41,9 +44,6 @@ def update_dials_download_links():
 
     release_info = None
     from libtbx.auto_build.bootstrap import Toolbox
-    from datetime import datetime
-    import json
-    import re
 
     print("Checking DIALS release status: ", end="")
     if Toolbox().download_to_file(
@@ -111,8 +111,8 @@ def update_dials_download_links():
         }
 
         buttons = [
-            download_button(long_names.get(asset, asset), version, link)
-            for asset, (_, version, link) in assets.items()
+            download_button(long_names.get(asset, asset), _version, link)
+            for asset, (_, _version, link) in assets.items()
         ]
 
         release.write("".join(sorted(buttons)))
