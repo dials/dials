@@ -563,7 +563,7 @@ if __name__ == "__main__":
     params, options = parser.parse_args(show_diff_phil=False)
 
     # Configure the logging
-    log.config(info=params.output.log)
+    log.config(logfile=params.output.log)
 
     # Print the version number
     logger.info(dials_version())
