@@ -27,11 +27,6 @@ phil_scope = parse(
     .type = bool
     .help = "Output additional debugging information"
 
-  prefix = best
-    .type = str
-    .help = "The prefix for the output file names for best"
-            "(.hkl, .dat and .par files)"
-
   n_bins = 100
     .type = int(value_min=1)
     .help = "Number of resolution bins for background estimation"
@@ -45,6 +40,11 @@ phil_scope = parse(
     log = dials.export_best.log
       .type = path
       .help = "The log filename"
+
+    prefix = best
+      .type = str
+      .help = "The prefix for the output file names for best"
+              "(.hkl, .dat and .par files)"
 
   }
 """
@@ -96,7 +96,7 @@ class BestExporter(object):
         reflections = reflections.select(sel)
 
         imageset = experiment.imageset
-        prefix = self.params.prefix
+        prefix = self.params.output.prefix
 
         best.write_background_file(
             "%s.dat" % prefix, imageset, n_bins=self.params.n_bins
