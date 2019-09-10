@@ -304,7 +304,7 @@ scaling model must define the `from_dict`, `from_data` and
 `configure_components` methods, and should also define an `__init__` method. The model
 must also define `consecutive_refinement_order` to indicate which order the components
 should be refined for the consecutive scaling mode.
-The scaling model must be comprised of multiplicative components, which must
+The scaling model must be composed of multiplicative components, which must
 inherit from
 :class:`dials.algorithms.scaling.model.components.scale_components.ScaleComponentBase`.
 
