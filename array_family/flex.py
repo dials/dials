@@ -2,31 +2,31 @@ from __future__ import absolute_import, division, print_function
 
 import builtins
 import collections
+import copy
 import logging
 import operator
 import os
 
 import boost.python
-import cctbx
+import cctbx.array_family.flex
+import cctbx.miller
+import dials_array_family_flex_ext
 import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
-from cctbx.array_family.flex import *
-from cctbx.array_family import flex
-from cctbx import miller
-from dials_array_family_flex_ext import *
 from dials.util import Sorry
 from scitbx import matrix
 
-logger = logging.getLogger(__name__)
+# Note: Right at the end of this file all names from
+#         cctbx.array_family.flex and
+#         dials_array_family_flex_ext
+#       are imported into the local namespace, and added to __all__.
+#       This is done at the end of the file so that within the body of this
+#       file namessuch as 'int' and 'bool' refer to the python default
+#       definitions rather than the cctbx.flex definitions.
+__all__ = ["reflection_table_selector"]
 
-# Set the 'real' type to either float or double
-if get_real_type() == "float":
-    real = flex.float
-elif get_real_type() == "double":
-    real = flex.double
-else:
-    raise TypeError('unknown "real" type')
+logger = logging.getLogger(__name__)
 
 
 def strategy(cls, params=None):
@@ -70,7 +70,7 @@ def default_centroid_algorithm():
     return strategy(SimpleCentroidExt)
 
 
-@boost.python.inject_into(reflection_table)
+@boost.python.inject_into(dials_array_family_flex_ext.reflection_table)
 class _(object):
     """
     An injector class to add additional methods to the reflection table.
@@ -142,11 +142,9 @@ class _(object):
         :param padding: Padding in degrees
         :return: The reflection table of predictions
         """
-        from scitbx.array_family import flex
-
-        result = reflection_table()
+        result = dials_array_family_flex_ext.reflection_table()
         for i, e in enumerate(experiments):
-            rlist = reflection_table.from_predictions(
+            rlist = dials_array_family_flex_ext.reflection_table.from_predictions(
                 e,
                 dmin=dmin,
                 dmax=dmax,
@@ -154,7 +152,7 @@ class _(object):
                 force_static=force_static,
                 padding=padding,
             )
-            rlist["id"] = flex.int(len(rlist), i)
+            rlist["id"] = cctbx.array_family.flex.int(len(rlist), i)
             result.extend(rlist)
         return result
 
@@ -212,7 +210,7 @@ class _(object):
                 result = pickle.load(infile, encoding="bytes")
             else:
                 result = pickle.load(infile)
-            assert isinstance(result, reflection_table)
+            assert isinstance(result, dials_array_family_flex_ext.reflection_table)
             return result
 
     def as_msgpack_file(self, filename):
@@ -232,7 +230,9 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_reading(filename, "rb") as infile:
-            return reflection_table.from_msgpack(infile.read())
+            return dials_array_family_flex_ext.reflection_table.from_msgpack(
+                infile.read()
+            )
 
     @staticmethod
     def from_h5(filename):
@@ -264,9 +264,11 @@ class _(object):
         Read the reflection table from either pickle or msgpack
         """
         try:
-            return reflection_table.from_msgpack_file(filename)
+            return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
+                filename
+            )
         except RuntimeError:
-            return reflection_table.from_pickle(filename)
+            return dials_array_family_flex_ext.reflection_table.from_pickle(filename)
 
     @staticmethod
     def empty_standard(nrows):
@@ -279,33 +281,37 @@ class _(object):
         """
 
         assert nrows > 0
-        table = reflection_table(nrows)
+        table = dials_array_family_flex_ext.reflection_table(nrows)
 
         # General properties
-        table["flags"] = flex.size_t(nrows, 0)
-        table["id"] = flex.int(nrows, 0)
-        table["panel"] = flex.size_t(nrows, 0)
+        table["flags"] = cctbx.array_family.flex.size_t(nrows, 0)
+        table["id"] = cctbx.array_family.flex.int(nrows, 0)
+        table["panel"] = cctbx.array_family.flex.size_t(nrows, 0)
 
         # Predicted properties
-        table["miller_index"] = flex.miller_index(nrows)
-        table["entering"] = flex.bool(nrows)
-        table["s1"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["xyzcal.mm"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["xyzcal.px"] = flex.vec3_double(nrows, (0, 0, 0))
-        # table['ub_matrix'] = flex.mat3_double(nrows, (0, 0, 0, 0, 0, 0, 0, 0, 0))
+        table["miller_index"] = cctbx.array_family.flex.miller_index(nrows)
+        table["entering"] = cctbx.array_family.flex.bool(nrows)
+        table["s1"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        table["xyzcal.mm"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        table["xyzcal.px"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        # table['ub_matrix'] = cctbx.array_family.flex.mat3_double(nrows, (0, 0, 0, 0, 0, 0, 0, 0, 0))
 
         # Observed properties
-        table["xyzobs.px.value"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["xyzobs.px.variance"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["xyzobs.mm.value"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["xyzobs.mm.variance"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["rlp"] = flex.vec3_double(nrows, (0, 0, 0))
-        table["intensity.sum.value"] = flex.double(nrows, 0)
-        table["intensity.sum.variance"] = flex.double(nrows, 0)
-        table["intensity.prf.value"] = flex.double(nrows, 0)
-        table["intensity.prf.variance"] = flex.double(nrows, 0)
-        table["lp"] = flex.double(nrows, 0)
-        table["profile.correlation"] = flex.double(nrows, 0)
+        table["xyzobs.px.value"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        table["xyzobs.px.variance"] = cctbx.array_family.flex.vec3_double(
+            nrows, (0, 0, 0)
+        )
+        table["xyzobs.mm.value"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        table["xyzobs.mm.variance"] = cctbx.array_family.flex.vec3_double(
+            nrows, (0, 0, 0)
+        )
+        table["rlp"] = cctbx.array_family.flex.vec3_double(nrows, (0, 0, 0))
+        table["intensity.sum.value"] = cctbx.array_family.flex.double(nrows, 0)
+        table["intensity.sum.variance"] = cctbx.array_family.flex.double(nrows, 0)
+        table["intensity.prf.value"] = cctbx.array_family.flex.double(nrows, 0)
+        table["intensity.prf.variance"] = cctbx.array_family.flex.double(nrows, 0)
+        table["lp"] = cctbx.array_family.flex.double(nrows, 0)
+        table["profile.correlation"] = cctbx.array_family.flex.double(nrows, 0)
 
         return table
 
@@ -427,16 +433,16 @@ class _(object):
                 )
             )
 
-        miller_set = miller.set(
+        miller_set = cctbx.miller.set(
             crystal_symmetry=experiment.crystal.get_crystal_symmetry(),
             indices=self["miller_index"],
             anomalous_flag=False,
         )
-        i_obs = miller.array(miller_set, data=intensities)
+        i_obs = cctbx.miller.array(miller_set, data=intensities)
         i_obs.set_observation_type_xray_intensity()
         i_obs.set_sigmas(variances ** 0.5)
         i_obs.set_info(
-            miller.array_info(source="DIALS", source_type="reflection_tables")
+            cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
         )
         return i_obs
 
@@ -446,9 +452,7 @@ class _(object):
 
         :return: A copy of the reflection table
         """
-        from scitbx.array_family import flex
-
-        return self.select(flex.bool(len(self), True))
+        return self.select(cctbx.array_family.flex.bool(len(self), True))
 
     def sort(self, name, reverse=False, order=None):
         """
@@ -460,22 +464,22 @@ class _(object):
         """
 
         if type(self[name]) in [
-            vec2_double,
-            vec3_double,
-            mat3_double,
-            int6,
-            miller_index,
+            cctbx.array_family.flex.vec2_double,
+            cctbx.array_family.flex.vec3_double,
+            cctbx.array_family.flex.mat3_double,
+            dials_array_family_flex_ext.int6,
+            cctbx.array_family.flex.miller_index,
         ]:
             data = self[name]
             if not order:
-                perm = flex.size_t(
+                perm = cctbx.array_family.flex.size_t(
                     builtins.sorted(
                         range(len(self)), key=lambda x: data[x], reverse=reverse
                     )
                 )
             else:
                 assert len(order) == len(data[0])
-                perm = flex.size_t(
+                perm = cctbx.array_family.flex.size_t(
                     builtins.sorted(
                         range(len(self)),
                         key=lambda x: tuple(data[x][i] for i in order),
@@ -483,7 +487,9 @@ class _(object):
                     )
                 )
         else:
-            perm = flex.sort_permutation(self[name], reverse=reverse, stable=True)
+            perm = cctbx.array_family.flex.sort_permutation(
+                self[name], reverse=reverse, stable=True
+            )
         self.reorder(perm)
 
     """
@@ -497,8 +503,6 @@ class _(object):
         :param key0: The name of the column values to sort within
         :param key1: The sorting key name within the selected column
         """
-        import copy
-
         uniq_values = self[key0]
         for ii in set(uniq_values):
             val = (uniq_values == ii).iselection()
@@ -590,11 +594,11 @@ class _(object):
                     match2.append(key1)
 
         # Select everything which matches
-        sind = flex.size_t(match1)
-        oind = flex.size_t(match2)
+        sind = cctbx.array_family.flex.size_t(match1)
+        oind = cctbx.array_family.flex.size_t(match2)
 
         # Sort by self index
-        sort_index = flex.size_t(
+        sort_index = cctbx.array_family.flex.size_t(
             builtins.sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
@@ -610,7 +614,9 @@ class _(object):
         assert (e1 == e2).all_eq(True)
         x1, y1, z1 = s2["xyzcal.px"].parts()
         x2, y2, z2 = o2["xyzcal.px"].parts()
-        distance = flex.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+        distance = cctbx.array_family.flex.sqrt(
+            (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+        )
         mask = distance < 2
         logger.info(" %d reflections matched" % len(o2))
         logger.info(" %d reflections accepted" % mask.count(True))
@@ -624,13 +630,14 @@ class _(object):
             self.flags.used_in_refinement,
         )
         other_matched_indices = oind.select(mask)
-        other_unmatched_mask = flex.bool(len(other), True)
+        other_unmatched_mask = cctbx.array_family.flex.bool(len(other), True)
         other_unmatched_mask.set_selected(
-            other_matched_indices, flex.bool(len(other_matched_indices), False)
+            other_matched_indices,
+            cctbx.array_family.flex.bool(len(other_matched_indices), False),
         )
         other_matched = other.select(other_matched_indices)
         other_unmatched = other.select(other_unmatched_mask)
-        mask2 = flex.bool(len(self), False)
+        mask2 = cctbx.array_family.flex.bool(len(self), False)
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
 
@@ -704,11 +711,11 @@ class _(object):
                     match2.append(key1)
 
         # Select everything which matches
-        sind = flex.size_t(match1)
-        oind = flex.size_t(match2)
+        sind = cctbx.array_family.flex.size_t(match1)
+        oind = cctbx.array_family.flex.size_t(match2)
 
         # Sort by self index
-        sort_index = flex.size_t(
+        sort_index = cctbx.array_family.flex.size_t(
             builtins.sorted(range(len(sind)), key=lambda x: sind[x])
         )
         sind = sind.select(sort_index)
@@ -724,7 +731,9 @@ class _(object):
         assert (e1 == e2).all_eq(True)
         x1, y1, z1 = s2["xyzcal.px"].parts()
         x2, y2, z2 = o2["xyzcal.px"].parts()
-        distance = flex.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2)
+        distance = cctbx.array_family.flex.sqrt(
+            (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+        )
         mask = distance < 2
         logger.info(" %d reflections matched" % len(o2))
         logger.info(" %d reflections accepted" % mask.count(True))
@@ -738,15 +747,16 @@ class _(object):
             self.flags.used_in_refinement,
         )
         other_matched_indices = oind.select(mask)
-        other_unmatched_mask = flex.bool(len(other), True)
+        other_unmatched_mask = cctbx.array_family.flex.bool(len(other), True)
         other_unmatched_mask.set_selected(
-            other_matched_indices, flex.bool(len(other_matched_indices), False)
+            other_matched_indices,
+            cctbx.array_family.flex.bool(len(other_matched_indices), False),
         )
         other_matched = other.select(other_matched_indices)
         other_unmatched = other.select(other_unmatched_mask)
         for key, column in self.select(sind.select(mask)).cols():
             other_matched[key] = column
-        mask2 = flex.bool(len(self), False)
+        mask2 = cctbx.array_family.flex.bool(len(self), False)
         mask2.set_selected(sind.select(mask), True)
         return mask2, other_matched, other_unmatched
 
@@ -773,8 +783,8 @@ class _(object):
         """
         from dials.algorithms.profile_model.gaussian_rs import zeta_factor
 
-        m2 = flex.vec3_double(len(experiments))
-        s0 = flex.vec3_double(len(experiments))
+        m2 = cctbx.array_family.flex.vec3_double(len(experiments))
+        s0 = cctbx.array_family.flex.vec3_double(len(experiments))
         for i, e in enumerate(experiments):
             m2[i] = e.goniometer.get_rotation_axis()
             s0[i] = e.beam.get_s0()
@@ -788,11 +798,11 @@ class _(object):
         :param experiment: The experimental models
         :return: The resolution for each reflection
         """
-        from dials.array_family import flex
-
-        uc = flex.unit_cell(1)
+        uc = dials_array_family_flex_ext.unit_cell(1)
         uc[0] = experiment.crystal.get_unit_cell()
-        self["d"] = uc.d(self["miller_index"], flex.size_t(len(self), 0))
+        self["d"] = uc.d(
+            self["miller_index"], cctbx.array_family.flex.size_t(len(self), 0)
+        )
         return self["d"]
 
     def compute_d(self, experiments):
@@ -802,13 +812,13 @@ class _(object):
         :param experiments: The experiment list
         :return: The resolution for each reflection
         """
-        from dials.array_family import flex
-
-        uc = flex.unit_cell(len(experiments))
+        uc = dials_array_family_flex_ext.unit_cell(len(experiments))
         for i, e in enumerate(experiments):
             uc[i] = e.crystal.get_unit_cell()
         assert self["id"].all_ge(0)
-        self["d"] = uc.d(self["miller_index"], flex.size_t(list(self["id"])))
+        self["d"] = uc.d(
+            self["miller_index"], cctbx.array_family.flex.size_t(list(self["id"]))
+        )
         return self["d"]
 
     def compute_bbox(self, experiments, sigma_b_multiplier=2.0):
@@ -820,7 +830,7 @@ class _(object):
         :param sigma_b_multiplier: Multiplier to cover extra background
         :return: The bounding box for each reflection
         """
-        self["bbox"] = int6(len(self))
+        self["bbox"] = dials_array_family_flex_ext.int6(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["bbox"].set_selected(
                 indices,
@@ -844,7 +854,7 @@ class _(object):
         :param profile_model: The profile models
         :return: The partiality for each reflection
         """
-        self["partiality"] = flex.double(len(self))
+        self["partiality"] = cctbx.array_family.flex.double(len(self))
         for expr, indices in self.iterate_experiments_and_indices(experiments):
             self["partiality"].set_selected(
                 indices,
@@ -878,7 +888,7 @@ class _(object):
             )
             if result is not None:
                 if "fraction" not in self:
-                    self["fraction"] = flex.double(len(self))
+                    self["fraction"] = cctbx.array_family.flex.double(len(self))
                 self["fraction"].set_selected(indices, result)
 
     def iterate_experiments_and_indices(self, experiments):
@@ -997,7 +1007,9 @@ class _(object):
             frame0, frame1 = imageset.get_array_range()
         except Exception:
             frame0, frame1 = (0, len(imageset))
-        extractor = ShoeboxExtractor(self, len(detector), frame0, frame1)
+        extractor = dials_array_family_flex_ext.ShoeboxExtractor(
+            self, len(detector), frame0, frame1
+        )
         logger.info(" Beginning to read images")
         read_time = 0
         extract_time = 0
@@ -1035,7 +1047,11 @@ class _(object):
         detectors = [expr.detector for expr in experiments]
         checker = OverloadChecker()
         for detector in detectors:
-            checker.add(flex.double(p.get_trusted_range()[1] for p in detector))
+            checker.add(
+                cctbx.array_family.flex.double(
+                    p.get_trusted_range()[1] for p in detector
+                )
+            )
         result = checker(self["id"], self["shoebox"])
         self.set_flags(result, self.flags.overloaded)
         return result
@@ -1086,7 +1102,7 @@ class _(object):
             y1 += border
             z0 -= border
             z1 += border
-            bbox = int6(x0, x1, y0, y1, z0, z1)
+            bbox = dials_array_family_flex_ext.int6(x0, x1, y0, y1, z0, z1)
         else:
             bbox = self["bbox"]
 
@@ -1102,11 +1118,11 @@ class _(object):
             for j, (key, indices) in enumerate(groups):
                 for i in indices:
                     lookup[i] = j
-            group_id = flex.size_t([lookup[i] for i in self["id"]])
+            group_id = cctbx.array_family.flex.size_t([lookup[i] for i in self["id"]])
         elif "imageset_id" in self:
             imageset_id = self["imageset_id"]
             assert imageset_id.all_ge(0)
-            group_id = flex.size_t(list(imageset_id))
+            group_id = cctbx.array_family.flex.size_t(list(imageset_id))
         else:
             raise RuntimeError("Either need to supply experiments or have imageset_id")
 
@@ -1127,9 +1143,7 @@ class _(object):
         :param overlaps: The list of overlaps
         :return: The fraction of shoebox overlapped with other reflections
         """
-        from dials.array_family import flex
-
-        result = flex.double(len(self))
+        result = cctbx.array_family.flex.double(len(self))
         bbox = self["bbox"]
         for i in range(len(self)):
             b1 = bbox[i]
@@ -1139,7 +1153,9 @@ class _(object):
             assert xs > 0
             assert ys > 0
             assert zs > 0
-            mask = flex.bool(flex.grid(zs, ys, xs), False)
+            mask = cctbx.array_family.flex.bool(
+                cctbx.array_family.flex.grid(zs, ys, xs), False
+            )
             for edge in overlaps.adjacent_vertices(i):
                 b2 = bbox[edge]
                 x0 = b2[0] - b1[0]
@@ -1163,7 +1179,9 @@ class _(object):
                 assert x1 > x0
                 assert y1 > y0
                 assert z1 > z0
-                m2 = flex.bool(flex.grid(z1 - z0, y1 - y0, x1 - x0), True)
+                m2 = cctbx.array_family.flex.bool(
+                    cctbx.array_family.flex.grid(z1 - z0, y1 - y0, x1 - x0), True
+                )
                 mask[z0:z1, y0:y1, x0:x1] = m2
             result[i] = (1.0 * mask.count(True)) / mask.size()
         return result
@@ -1206,7 +1224,7 @@ class _(object):
         """
         Compute miller indices in the asu
         """
-        self["miller_index_asu"] = miller_index(len(self))
+        self["miller_index_asu"] = cctbx.array_family.flex.miller_index(len(self))
         for idx, experiment in enumerate(experiments):
 
             # Create the crystal symmetry object
@@ -1217,7 +1235,7 @@ class _(object):
             # Get the selection and compute the miller indices
             selection = self["id"] == idx
             h = self["miller_index"].select(selection)
-            ms = miller.set(cs, h)
+            ms = cctbx.miller.set(cs, h)
             ms_asu = ms.map_to_asu()
             h_asu = ms_asu.indices()
 
@@ -1248,7 +1266,7 @@ Found %s"""
                 % (list_of_identifiers, id_values)
             )
         # Build up a selection and use this
-        sel = flex.bool(self.size(), False)
+        sel = cctbx.array_family.flex.bool(self.size(), False)
         for id_val, exp_id in zip(id_values, list_of_identifiers):
             id_sel = self["id"] == id_val
             sel.set_selected(id_sel, True)
@@ -1331,13 +1349,15 @@ Found %s"""
 
         from dials.algorithms.centroid import centroid_px_to_mm_panel
 
-        self["xyzobs.mm.value"] = flex.vec3_double(len(self))
-        self["xyzobs.mm.variance"] = flex.vec3_double(len(self))
+        self["xyzobs.mm.value"] = cctbx.array_family.flex.vec3_double(len(self))
+        self["xyzobs.mm.variance"] = cctbx.array_family.flex.vec3_double(len(self))
         # e.g. data imported from XDS; no variance known then; since is used
         # only for weights assign as 1 => uniform weights
         if "xyzobs.px.variance" not in self:
-            self["xyzobs.px.variance"] = flex.vec3_double(len(self), (1, 1, 1))
-        panel_numbers = flex.size_t(self["panel"])
+            self["xyzobs.px.variance"] = cctbx.array_family.flex.vec3_double(
+                len(self), (1, 1, 1)
+            )
+        panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
         for i_panel in range(len(detector)):
             sel = panel_numbers == i_panel
             centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
@@ -1345,7 +1365,7 @@ Found %s"""
                 scan,
                 self["xyzobs.px.value"].select(sel),
                 self["xyzobs.px.variance"].select(sel),
-                flex.vec3_double(sel.count(True), (1, 1, 1)),
+                cctbx.array_family.flex.vec3_double(sel.count(True), (1, 1, 1)),
             )
             self["xyzobs.mm.value"].set_selected(sel, centroid_position)
             self["xyzobs.mm.variance"].set_selected(sel, centroid_variance)
@@ -1366,16 +1386,18 @@ Found %s"""
             May be None, e.g. for a still image.
         """
 
-        self["s1"] = flex.vec3_double(len(self))
-        self["rlp"] = flex.vec3_double(len(self))
-        panel_numbers = flex.size_t(self["panel"])
+        self["s1"] = cctbx.array_family.flex.vec3_double(len(self))
+        self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
+        panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
         for i_panel in range(len(detector)):
             sel = panel_numbers == i_panel
             if calculated:
                 x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
             else:
                 x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
-            s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x, y))
+            s1 = detector[i_panel].get_lab_coord(
+                cctbx.array_family.flex.vec2_double(x, y)
+            )
             s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
             self["s1"].set_selected(sel, s1)
             S = s1 - beam.get_s0()
@@ -1417,7 +1439,7 @@ Found %s"""
 
         # Init entering flags. These are always False for experiments that have no
         # rotation axis.
-        enterings = flex.bool(len(self), False)
+        enterings = cctbx.array_family.flex.bool(len(self), False)
 
         for iexp, exp in enumerate(experiments):
             if not exp.goniometer:
@@ -1509,40 +1531,62 @@ class reflection_table_selector(object):
             mask1 = V > 0
             I = I.select(mask1)
             V = V.select(mask1)
-            data = I / flex.sqrt(V)
+            data = I / cctbx.array_family.flex.sqrt(V)
         elif self.column == "intensity.prf.i_over_sigma":
             I = reflections["intensity.prf.value"]
             V = reflections["intensity.prf.variance"]
             mask1 = V > 0
             I = I.select(mask1)
             V = V.select(mask1)
-            data = I / flex.sqrt(V)
+            data = I / cctbx.array_family.flex.sqrt(V)
         else:
             mask1 = None
             data = reflections[self.column]
-        if isinstance(data, double):
+        if isinstance(data, cctbx.array_family.flex.double):
             value = builtins.float(self.value)
-        elif isinstance(data, int):
+        elif isinstance(data, cctbx.array_family.flex.int):
             value = builtins.int(self.value)
-        elif isinstance(data, size_t):
+        elif isinstance(data, cctbx.array_family.flex.size_t):
             value = builtins.int(self.value)
-        elif isinstance(data, std_string):
+        elif isinstance(data, cctbx.array_family.flex.std_string):
             value = self.value
-        elif isinstance(data, vec3_double):
+        elif isinstance(data, cctbx.array_family.flex.vec3_double):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, vec2_double):
+        elif isinstance(data, cctbx.array_family.flex.vec2_double):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, mat3_double):
+        elif isinstance(data, cctbx.array_family.flex.mat3_double):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, int6):
+        elif isinstance(data, dials_array_family_flex_ext.int6):
             raise RuntimeError("Comparison not implemented")
-        elif isinstance(data, shoebox):
+        elif isinstance(data, dials_array_family_flex_ext.shoebox):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")
         mask2 = self.op(data, value)
         if mask1 is not None:
-            mask1.set_selected(size_t(range(len(mask1))).select(mask1), mask2)
+            mask1.set_selected(
+                cctbx.array_family.flex.size_t(range(len(mask1))).select(mask1), mask2
+            )
         else:
             mask1 = mask2
         return mask1
+
+
+# Finally, clobber the locals() namespace with cctbx and dials flex elements.
+# This overwrites definitions such as 'bool' and 'int', so should be done at
+# the end of the file.
+for _name in dir(cctbx.array_family.flex):
+    if not _name.startswith("_"):
+        locals()[_name] = getattr(cctbx.array_family.flex, _name)
+        __all__.append(_name)
+for _name in dir(dials_array_family_flex_ext):
+    if not _name.startswith("_"):
+        locals()[_name] = getattr(dials_array_family_flex_ext, _name)
+        __all__.append(_name)
+# Set the 'real' type to either float or double
+if dials_array_family_flex_ext.get_real_type() == "float":
+    real = cctbx.array_family.flex.float
+elif dials_array_family_flex_ext.get_real_type() == "double":
+    real = cctbx.array_family.flex.double
+else:
+    raise TypeError('unknown "real" type')
