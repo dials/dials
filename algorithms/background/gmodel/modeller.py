@@ -139,5 +139,5 @@ class Creator(object):
         )
         reflections["background.mean"] = mean
         reflections["background.scale"] = scale
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success

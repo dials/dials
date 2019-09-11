@@ -174,7 +174,7 @@ class Simulator(object):
         mask = filtering.by_zeta(
             self.experiment.goniometer, self.experiment.beam, refl["s1"], zeta
         )
-        refl.del_selected(mask != True)
+        refl.del_selected(~mask)
         Command.end("Filtered %d reflections by zeta >= %f" % (len(refl), zeta))
 
         # Compute the bounding box

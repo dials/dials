@@ -93,7 +93,7 @@ def test_map_frames_forward(dials_data):
             rev = False
             for i in range(1, len(f)):
                 curr = f[1]
-                if rev == False:
+                if rev is False:
                     if curr < last:
                         rev = True
                 else:
@@ -194,7 +194,7 @@ def test_map_frames_reverse(dials_data):
             rev = False
             for i in range(1, len(f)):
                 curr = f[1]
-                if rev == False:
+                if rev is False:
                     if curr < last:
                         rev = True
                 else:

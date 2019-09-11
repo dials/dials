@@ -84,7 +84,7 @@ class BackgroundAlgorithm(object):
             reflections["background.mean"] = reflections["shoebox"].mean_background()
         else:
             success = self._creator(reflections, image_volume)
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
 
 

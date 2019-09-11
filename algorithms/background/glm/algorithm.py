@@ -47,7 +47,7 @@ class BackgroundAlgorithm(object):
             ].mean_modelled_background()
         else:
             success = self._create(reflections, image_volume)
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
 
 

@@ -29,5 +29,5 @@ class BackgroundAlgorithm(object):
             )
         else:
             success = create(reflections, image_volume)
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
