@@ -2,6 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import math
 
+import numpy as np
+import pytest
+from dials.algorithms.integration.fit import ProfileFitter
+from dials.array_family import flex
+
 
 def evaluate_gaussian(x, a, x0, sx):
     assert len(x) == len(x0)
@@ -15,8 +20,6 @@ def evaluate_gaussian(x, a, x0, sx):
 
 
 def gaussian(size, a, x0, sx):
-    from scitbx.array_family import flex
-
     result = flex.double(flex.grid(size))
 
     index = [0] * len(size)
@@ -32,18 +35,13 @@ def gaussian(size, a, x0, sx):
 
 
 def add_poisson_noise(x):
-    from dials.array_family import flex
-    from numpy.random import poisson
-
     s = x.accessor()
-    y = flex.double(poisson(xx) for xx in x)
+    y = flex.double(np.random.poisson(xx) for xx in x)
     y.reshape(s)
     return y
 
 
 def generate_3_profiles():
-    from dials.array_family import flex
-
     p1 = gaussian((40, 9, 9), 1, (10.5, 4, 4), (2, 2, 2))
     p2 = gaussian((40, 9, 9), 1, (20.5, 4, 4), (2, 2, 2))
     p3 = gaussian((40, 9, 9), 1, (30.5, 4, 4), (2, 2, 2))
@@ -61,8 +59,6 @@ def generate_3_profiles():
 
 
 def generate_7_profiles():
-    from dials.array_family import flex
-
     p1 = gaussian((40, 40, 40), 1, (10.5, 20.5, 20.5), (2, 2, 2))
     p2 = gaussian((40, 40, 40), 1, (20.5, 20.5, 20.5), (2, 2, 2))
     p3 = gaussian((40, 40, 40), 1, (30.5, 20.5, 20.5), (2, 2, 2))
@@ -96,12 +92,7 @@ def generate_7_profiles():
 
 
 def test_zero():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -115,23 +106,18 @@ def test_zero():
 
     # Fit
     fit = ProfileFitter(c, b, m, p)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
     # Test intensity is the same
     eps = 1e-3
-    assert abs(I[0] - flex.sum(c)) < eps
-    assert abs(V[0] - I[0]) < eps
+    assert intensity[0] == pytest.approx(flex.sum(c), abs=eps)
+    assert intensity[0] == pytest.approx(V[0], abs=eps)
 
 
 def test_identical():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -145,23 +131,18 @@ def test_identical():
 
     # Fit
     fit = ProfileFitter(c, b, m, p)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
     # Test intensity is the same
     eps = 1e-3
-    assert abs(I[0] - flex.sum(c)) < eps
-    assert abs(V[0] - I[0]) < eps
+    assert intensity[0] == pytest.approx(flex.sum(c), abs=eps)
+    assert intensity[0] == pytest.approx(V[0], abs=eps)
 
 
 def test_with_no_background():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -175,23 +156,18 @@ def test_with_no_background():
 
     # Fit
     fit = ProfileFitter(c, b, m, p)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
     # Test intensity is the same
     eps = 1e-3
-    assert abs(I[0] - flex.sum(c)) < eps
-    assert abs(V[0] - I[0]) < eps
+    assert intensity[0] == pytest.approx(flex.sum(c), abs=eps)
+    assert intensity[0] == pytest.approx(V[0], abs=eps)
 
 
 def test_with_flat_background():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -207,7 +183,7 @@ def test_with_flat_background():
 
     # Fit
     fit = ProfileFitter(c, b, m, p)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
@@ -216,17 +192,12 @@ def test_with_flat_background():
 
     # Test intensity is the same
     eps = 1e-3
-    assert abs(I[0] - Iknown) < eps
-    assert abs(V[0] - Vknown) < eps
+    assert intensity[0] == pytest.approx(Iknown, abs=eps)
+    assert V[0] == pytest.approx(Vknown, abs=eps)
 
 
 def test_identical_partial():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -246,23 +217,18 @@ def test_identical_partial():
 
     # Fit
     fit = ProfileFitter(cp, bp, mp, pp)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
     # Test intensity is the same
     eps = 1e-7
-    assert abs(I[0] - flex.sum(p)) < eps
-    assert abs(V[0] - flex.sum(p)) < eps
+    assert intensity[0] == pytest.approx(flex.sum(p), abs=eps)
+    assert V[0] == pytest.approx(flex.sum(p), abs=eps)
 
 
 def test_with_no_background_partial():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -282,7 +248,7 @@ def test_with_no_background_partial():
 
     # Fit
     fit = ProfileFitter(cp, bp, mp, pp)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
@@ -291,17 +257,12 @@ def test_with_no_background_partial():
 
     # Test intensity is the same
     eps = 1e-7
-    assert abs(I[0] - Iknown) < eps
-    assert abs(V[0] - Vknown) < eps
+    assert intensity[0] == pytest.approx(Iknown, abs=eps)
+    assert V[0] == pytest.approx(Vknown, abs=eps)
 
 
 def test_with_flat_background_partial():
-
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     # Create profile
     p = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
@@ -322,7 +283,7 @@ def test_with_flat_background_partial():
 
     # Fit
     fit = ProfileFitter(cp, bp, mp, pp)
-    I = fit.intensity()
+    intensity = fit.intensity()
     V = fit.variance()
     assert fit.niter() < fit.maxiter()
 
@@ -331,16 +292,12 @@ def test_with_flat_background_partial():
 
     # Test intensity is the same
     eps = 1e-7
-    assert abs(I[0] - Iknown) < eps
-    assert abs(V[0] - Vknown) < eps
+    assert intensity[0] == pytest.approx(Iknown, abs=eps)
+    assert V[0] == pytest.approx(Vknown, abs=eps)
 
 
 def test_deconvolve_3_with_no_background():
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     I0 = [1000, 2000, 3000]
 
@@ -362,12 +319,12 @@ def test_deconvolve_3_with_no_background():
 
         # Fit
         fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
+        intensity = fit.intensity()
         V = fit.variance()
         assert fit.niter() < fit.maxiter()
 
         for i in range(3):
-            Ical[i].append(I[i])
+            Ical[i].append(intensity[i])
 
     for i in range(3):
         Ical[i] = sum(Ical[i]) / len(Ical[i])
@@ -377,16 +334,13 @@ def test_deconvolve_3_with_no_background():
     # Test intensity is the same
     eps = 1e-7
     for i in range(3):
-        assert abs(I[i] - Iknown[i]) < eps
-        assert abs(V[i] - Iknown[i]) < eps
+        assert intensity[i] == pytest.approx(Iknown[i], abs=eps)
+        assert V[i] == pytest.approx(Iknown[i], abs=eps)
 
 
 def test_deconvolve_3_with_flat_background():
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
 
-    seed(0)
+    np.random.seed(0)
 
     I0 = [1000, 2000, 3000]
 
@@ -409,12 +363,12 @@ def test_deconvolve_3_with_flat_background():
 
         # Fit
         fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
+        intensity = fit.intensity()
         V = fit.variance()
         assert fit.niter() < fit.maxiter()
 
         for i in range(3):
-            Ical[i].append(I[i])
+            Ical[i].append(intensity[i])
 
     for i in range(3):
         Ical[i] = sum(Ical[i]) / len(Ical[i])
@@ -425,16 +379,12 @@ def test_deconvolve_3_with_flat_background():
     # Test intensity is the same
     eps = 1e-7
     for i in range(3):
-        assert abs(I[i] - Iknown[i]) < eps
-        assert abs(V[i] - Vknown[i]) < eps
+        assert intensity[i] == pytest.approx(Iknown[i], abs=eps)
+        assert V[i] == pytest.approx(Vknown[i], abs=eps)
 
 
 def test_deconvolve_7_with_no_background():
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     I0 = [1000, 1500, 2000, 2500, 3000, 3500, 4000]
 
@@ -456,12 +406,12 @@ def test_deconvolve_7_with_no_background():
 
         # Fit
         fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
+        intensity = fit.intensity()
         V = fit.variance()
         assert fit.niter() < fit.maxiter()
 
         for i in range(7):
-            Ical[i].append(I[i])
+            Ical[i].append(intensity[i])
 
     for i in range(7):
         Ical[i] = sum(Ical[i]) / len(Ical[i])
@@ -479,16 +429,12 @@ def test_deconvolve_7_with_no_background():
     # Test intensity is the same
     eps = 1e-7
     for i in range(7):
-        assert abs(I[i] - Iknown[i]) < eps
-        assert abs(V[i] - Iknown[i]) < eps
+        assert intensity[i] == pytest.approx(Iknown[i], abs=eps)
+        assert V[i] == pytest.approx(Iknown[i], abs=eps)
 
 
 def test_deconvolve_7_with_flat_background():
-    from dials.algorithms.integration.fit import ProfileFitter
-    from scitbx.array_family import flex
-    from numpy.random import seed
-
-    seed(0)
+    np.random.seed(0)
 
     I0 = [1000, 1500, 2000, 2500, 3000, 3500, 4000]
 
@@ -511,12 +457,12 @@ def test_deconvolve_7_with_flat_background():
 
         # Fit
         fit = ProfileFitter(c, b, m, p)
-        I = fit.intensity()
+        intensity = fit.intensity()
         V = fit.variance()
         assert fit.niter() < fit.maxiter()
 
         for i in range(7):
-            Ical[i].append(I[i])
+            Ical[i].append(intensity[i])
 
     for i in range(7):
         Ical[i] = sum(Ical[i]) / len(Ical[i])
@@ -543,5 +489,5 @@ def test_deconvolve_7_with_flat_background():
     # Test intensity is the same
     eps = 1e-7
     for i in range(7):
-        assert abs(I[i] - Iknown[i]) < eps
-        assert abs(V[i] - Vknown[i]) < eps
+        assert intensity[i] == pytest.approx(Iknown[i], abs=eps)
+        assert V[i] == pytest.approx(Vknown[i], abs=eps)
