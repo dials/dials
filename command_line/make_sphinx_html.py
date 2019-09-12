@@ -6,11 +6,13 @@ import json
 import os
 import re
 import shutil
+import sys
 from datetime import datetime
 from optparse import SUPPRESS_HELP, OptionParser
 
 import libtbx.load_env
 import procrunner
+import py
 
 # Disable all HTTPS verification. This is to work around an issue
 # in biopython, possibly biopython relying on unreliable servers.
@@ -137,6 +139,15 @@ if __name__ == "__main__":
         help="Ignore any errors or warnings",
     )
     parser.add_option(
+        "-l",
+        "--logs",
+        dest="logs",
+        action="store",
+        type="string",
+        default=None,
+        help="Use generated dials output logs from this location",
+    )
+    parser.add_option(
         "--no-clean",
         dest="clean",
         action="store_false",
@@ -159,9 +170,23 @@ if __name__ == "__main__":
     dest_dir = dials_github_io
     os.chdir(os.path.join(dials_dir, "doc", "sphinx"))
 
-    env = {}
+    dials_dir = py.path.local(dials_dir)
+    tutorial_doc_dir = dials_dir / "doc" / "sphinx" / "documentation" / "tutorials"
+
+    sphinx_options = ""
     if options.strict:
-        env["SPHINXOPTS"] = "-W"
+        sphinx_options += " -W"
+    if options.logs:
+        sphinx_options += " -Ddials_logs=" + options.logs
+        for report in ("betalactamase", "thaumatin"):
+            py.path.local(options.logs).join(report).join("dials-report.html").copy(
+                tutorial_doc_dir.join(report + "-report.html")
+            )
+    else:
+        sys.exit(
+            "You must specify the location of the tutorial data output with the '-l' option"
+        )
+    env = {"SPHINXOPTS": sphinx_options}
 
     if options.clean:
         result = procrunner.run(["make", "clean"], environment_override=env)
