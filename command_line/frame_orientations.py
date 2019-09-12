@@ -7,7 +7,7 @@ Take into account any scan-varying models.
 Usage: dials.frame_orientations refined.expt
 """
 
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import sys
 

@@ -6,7 +6,7 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 import sys
 from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser

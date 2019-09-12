@@ -19,7 +19,7 @@ Usage:
 See https://github.com/tqdm/tqdm for more in-depth usage and options.
 """
 
-from __future__ import print_function, division, absolute_import
+from __future__ import absolute_import, division, print_function
 
 from tqdm import tqdm
 

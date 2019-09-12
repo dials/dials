@@ -1,4 +1,5 @@
 """Test scoring of screw axes."""
+from __future__ import absolute_import, division, print_function
 from dials.array_family import flex
 from dials.algorithms.symmetry.absences.screw_axes import (
     ScrewAxis41c,

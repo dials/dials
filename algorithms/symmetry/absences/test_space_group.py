@@ -1,4 +1,5 @@
 """Test the dials.space_group command line script."""
+from __future__ import absolute_import, division, print_function
 import os
 import procrunner
 from dxtbx.serialize import load
