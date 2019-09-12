@@ -41,6 +41,7 @@ extensions = [
     "libtbx.sphinx.python_string",
     "libtbx.sphinx.pubmed",
     "button",
+    "dials_tutorial_include",
 ]
 
 # Add CDN path for mathjax script, converting Latex to readable text on the fly.
