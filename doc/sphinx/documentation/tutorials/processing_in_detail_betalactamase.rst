@@ -513,7 +513,7 @@ a html report called :samp:`scaling.html`. This can be opened in your browser -
 nativigate to the section "scaling model plots" and take a look.
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
-and troughs 90° apart. This indicates that the illumated volume was changing
+and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as almost
 twice as intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.

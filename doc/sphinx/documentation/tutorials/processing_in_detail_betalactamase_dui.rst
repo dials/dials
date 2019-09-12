@@ -528,7 +528,7 @@ bottom under "Analysis of scaling model".
 .. image:: /figures/process_detail_betalactamase_dui/report_scaling_plots.png
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
-and troughs 90° apart. This indicates that the illumated volume was changing
+and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as twice as
 intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.
