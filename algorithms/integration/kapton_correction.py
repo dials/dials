@@ -490,9 +490,7 @@ class image_kapton_correction(object):
                 *map(float, self.panel_size_px)
             )
             detector = self.expt.detector
-            beam = self.expt.beam
             # y_max = int(detector[0].millimeter_to_pixel(detector[0].get_image_size())[1])
-            s0_fast, s0_slow = map(int, detector[0].get_beam_centre_px(beam.get_s0()))
 
             absorption_corrections = flex.double()
             absorption_sigmas = (
@@ -563,7 +561,7 @@ class image_kapton_correction(object):
             from matplotlib import pyplot as plt
 
             for (title, data) in [("corrections", corrections), ("sigmas", sigmas)]:
-                n, bins, patches = plt.hist(data, 20)
+                plt.hist(data, 20)
                 plt.title(title)
                 plt.show()
         if self.logger is not None:

@@ -443,14 +443,10 @@ class Script(object):
         # Parse the command line
         params, _ = self.parser.parse_args(show_diff_phil=False)
 
-        # set up global experiments and reflections lists
-
+        # set up global reflections list
         reflections = flex.reflection_table()
 
-        experiments = ExperimentList()
-
         # loop through the input, building up the global lists
-
         reflections_list = flatten_reflections(params.input.reflections)
         experiments = flatten_experiments(params.input.experiments)
 

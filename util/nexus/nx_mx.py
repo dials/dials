@@ -863,18 +863,11 @@ def load(entry, exp_index):
         assert transformations["angle"].attrs["depends_on"] == "."
         rotations.append((axis, angle))
 
-        # Get the template and imageset
+        # Get the imageset
         try:
-            template = list(nx_dials["template"])
-            image_range = None
+            image_range = nx_dials["template"].attrs["range"]
         except Exception:
-            template = nx_dials["template"][()]
-            if template == "":
-                template = None
-            if "range" in nx_dials["template"].attrs:
-                image_range = nx_dials["template"].attrs["range"]
-            else:
-                image_range = None
+            image_range = None
 
         # Create the experiment
         experiment = Experiment()

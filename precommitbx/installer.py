@@ -573,7 +573,7 @@ def install_python(check_only=False):
     )
     if result.stdout.strip() != sqlite_version:
         sys.exit("Python has not picked up correct SQLite headers")
-    result = clean_run(
+    clean_run(
         [compiled_python, "-c", "import ctypes"],
         working_directory=sourcedir,
         stop_on_error="Python is missing FFI support",

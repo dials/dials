@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
-from iotbx import phil
-from dials.array_family import flex
+
+import math
+
 import six.moves.cPickle as pickle
+from dials.array_family import flex
 from dials.util import Sorry
+from iotbx import phil
 from scitbx import matrix
-import libtbx.load_env
 
 help_message = """
 
@@ -14,11 +16,9 @@ represent distortion within the millimetre to pixel mapping
 
 Examples::
 
-  {0} image_001.cbf dx=0.5 dy=1.5
-  {0} models.expt mode=ellipse phi=0 l2=0.95
-""".format(
-    libtbx.env.dispatcher_name
-)
+  dials.generate_distortion_maps image_001.cbf dx=0.5 dy=1.5
+  dials.generate_distortion_maps models.expt mode=ellipse phi=0 l2=0.95
+"""
 
 scope = phil.parse(
     """
@@ -65,14 +65,12 @@ scope = phil.parse(
 
 
 def make_dx_dy_translate(imageset, dx, dy):
-
     images = imageset.indices()
-
     image = imageset[images[0]]
 
     if (len(dx) != len(image)) or (len(dx) != len(image)):
         raise Sorry(
-            "Please provide separate translations for each panel of the " "detector"
+            "Please provide separate translations for each panel of the detector"
         )
 
     distortion_map_x = []
@@ -90,12 +88,10 @@ def ellipse_matrix_form(phi, l1, l2):
     where the first axis makes an angle phi with the X axis and the scale factors
     for the axes are l1 and l2.
     See https://www.le.ac.uk/users/dsgp1/COURSES/TOPICS/quadrat.pdf"""
-    from math import cos, sin, pi
-
-    deg2rad = pi / 180.0
+    deg2rad = math.pi / 180.0
     phi *= deg2rad
-    cphi = cos(phi)
-    sphi = sin(phi)
+    cphi = math.cos(phi)
+    sphi = math.sin(phi)
 
     a11 = l1 * cphi ** 2 + l2 * sphi ** 2
     a12 = (l2 - l1) * sphi * cphi
@@ -142,12 +138,6 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
                 y = offset.dot(s0)  # undistorted Y coordinate (mm)
                 distort = M * matrix.col((x, y))  # distorted by ellipse matrix
 
-                # lab coord of distorted pixel position
-                new_lab = mid + distort[0] * f0 + distort[1] * s0
-
-                # pixel x,y-coordinate of detector reponse for this panel
-                xp, yp = panel.get_bidirectional_ray_intersection_px(new_lab)
-
                 # store correction in units of the pixel size
                 dx[elt] = (x - distort[0]) / size_x
                 dy[elt] = (y - distort[1]) / size_y
@@ -165,9 +155,8 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 def main():
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    import libtbx.load_env
 
-    usage = "%s [options] image_*.cbf" % (libtbx.env.dispatcher_name)
+    usage = "dials.generate_distortion_maps [options] image_*.cbf"
 
     parser = OptionParser(
         usage=usage,
