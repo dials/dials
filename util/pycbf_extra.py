@@ -29,12 +29,12 @@ def print_info(cbf_path):
 
     # Count the number of categories and loop through them
     num_categories = cbf_handle.count_categories()
-    for i in range(num_categories):
+    for category in range(num_categories):
 
         # Select the ith category and print its name
-        cbf_handle.select_category(i)
+        cbf_handle.select_category(category)
         category_name = cbf_handle.category_name()
-        print("Category:", i, category_name)
+        print("Category:", category, category_name)
 
         # Count the number of rows and columns in the category
         # and print them
@@ -44,19 +44,19 @@ def print_info(cbf_path):
 
         # Rewind the columns and print the name of each
         cbf_handle.rewind_column()
-        for i in range(num_cols):
-            cbf_handle.select_column(i)
+        for column in range(num_cols):
+            cbf_handle.select_column(column)
             column_name = cbf_handle.column_name()
-            print("\tColumn:", i, column_name)
+            print("\tColumn:", column, column_name)
 
         # Loop through all rows and columns and print the
         # type of the data stored in that table element
-        for j in range(num_rows):
-            cbf_handle.select_row(j)
+        for row in range(num_rows):
+            cbf_handle.select_row(row)
             cbf_handle.rewind_column()
-            print("\t\tRow:", j, cbf_handle.get_value())
-            for i in range(num_cols):
-                cbf_handle.select_column(i)
+            print("\t\tRow:", row, cbf_handle.get_value())
+            for column in range(num_cols):
+                cbf_handle.select_column(column)
                 type_of_value = cbf_handle.get_typeofvalue()
                 if type_of_value.find("dblq") > -1:
                     value = cbf_handle.get_value()
@@ -69,7 +69,7 @@ def print_info(cbf_path):
                     value = cbf_handle.get_value()
                 else:
                     value = "..."
-                print("\t\tColumn", i, "Type:", type_of_value, value)
+                print("\t\tColumn", column, "Type:", type_of_value, value)
 
 
 def get_beam_direction(cbf_handle):
