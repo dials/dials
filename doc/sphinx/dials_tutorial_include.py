@@ -11,6 +11,7 @@ import sphinx.directives.code as code
 def setup(app):
     app.add_config_value("dials_logs", None, "html")
     app.add_directive("dials_tutorial_include", DialsTutorialInclude)
+    return {"parallel_read_safe": True}
 
 
 class DialsTutorialInclude(code.LiteralInclude):
