@@ -1,0 +1,15 @@
+{# Import the theme's layout. #}
+{% extends "!page.html" %}
+
+{%- block body %}
+
+{%- if legacy_version -%}
+  <div class="seealso">
+    This documentation page refers to a previous release of DIALS ({{ legacy_version }}).<br/>
+    <a href="{{ pathto(master_doc) }}/../../{{ pagename }}{{ file_suffix }}">Click here to go to the corresponding page for the latest version of DIALS</a><br/>
+  </div>
+{%- endif -%}
+
+{{ super() }}
+
+{%- endblock %}

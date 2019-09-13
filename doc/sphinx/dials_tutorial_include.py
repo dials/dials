@@ -1,11 +1,13 @@
-# Add a directive to literal-include from generated DIALS output logs
-# and an associated configuration parameter pointing to the location of said logs
-
 from __future__ import absolute_import, division, print_function
 
 import os
 
 import sphinx.directives.code as code
+
+"""
+Add a directive to literal-include from generated DIALS output logs
+and an associated configuration parameter pointing to the location of said logs
+"""
 
 
 def setup(app):

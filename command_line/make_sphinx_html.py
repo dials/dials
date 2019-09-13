@@ -124,11 +124,28 @@ if __name__ == "__main__":
         help="Copy generated output to this location",
     )
     parser.add_option(
+        "--legacy-version",
+        dest="legacy_version",
+        action="store",
+        type="string",
+        default=None,
+        metavar="VERSION",
+        help="Add a warning message to every page saying that this documentation "
+        "relates to the out-of-date version VERSION",
+    )
+    parser.add_option(
         "--no-clean",
         dest="clean",
         action="store_false",
         default=True,
         help="Don't run 'make clean' before building the documentation",
+    )
+    parser.add_option(
+        "--parallel",
+        dest="parallel",
+        action="store_true",
+        default=False,
+        help="Build documentation in parallel",
     )
     options, _ = parser.parse_args()
 
@@ -143,10 +160,16 @@ if __name__ == "__main__":
     tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
 
     sphinx_options = ""
+    if options.parallel:
+        sphinx_options += " -j auto"
     if options.strict:
         sphinx_options += " -W"
+    if options.legacy_version:
+        if " " in options.legacy_version:
+            exit("legacy version must not contain spaces")
+        sphinx_options += " -A legacy_version=" + options.legacy_version
     if options.logs:
-        sphinx_options += " -Ddials_logs=" + options.logs
+        sphinx_options += " -D dials_logs=" + options.logs
         for report in ("betalactamase", "thaumatin"):
             py.path.local(options.logs).join(report).join("dials-report.html").copy(
                 tutorial_doc_dir.join(report + "-report.html")

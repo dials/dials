@@ -46,12 +46,14 @@ div.embedpdf {
 }
 
 div.seealso {
-  padding: 0.3em 1em;
-  margin-bottom: 0.5em;
+  padding: 1em 1em;
+  margin-bottom: 1em;
+  font-size: 120%;
+  border: medium solid red;
+  border-radius: 8px;
 }
 
 @media screen and (max-width: 870px) {
-
   body {
     margin-left: auto;
     margin-right: auto;
@@ -61,7 +63,6 @@ div.seealso {
     width: 100%;
     margin: 15px auto 0 auto;
   }
-
 }
 
 .toggle .header {
