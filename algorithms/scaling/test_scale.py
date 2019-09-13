@@ -331,18 +331,6 @@ def test_scale_physical(dials_regression, tmpdir):
         result.overall.cc_one_half > 0.995
     )  # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
     assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
-    # test the 'stats_only' option
-    extra_args = ["stats_only=True"]
-    run_one_scaling(tmpdir, ["scaled.refl", "scaled.expt"] + extra_args)
-    # test the 'export_mtz_only' option
-    extra_args = [
-        "export_mtz_only=True",
-        "unmerged_mtz=test_1.mtz",
-        "merged_mtz=test_2.mtz",
-    ]
-    run_one_scaling(tmpdir, ["scaled.refl", "scaled.expt"] + extra_args)
-    assert tmpdir.join("test_1.mtz").check()
-    assert tmpdir.join("test_2.mtz").check()
 
 
 def test_scale_and_filter_image_group_mode(dials_data, tmpdir):

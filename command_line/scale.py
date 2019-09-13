@@ -50,7 +50,6 @@ from dials.algorithms.scaling.observers import (
     register_scaler_observers,
 )
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
-from dials.report.analysis import make_merging_statistics_summary
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
 from dials.command_line.compute_delta_cchalf import Script as deltaccscript
@@ -99,13 +98,6 @@ logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
   include scope dials.algorithms.scaling.model.model.model_phil_scope
-  stats_only = False
-    .type = bool
-    .help = "Only read input files and output merging stats."
-  export_mtz_only = False
-    .type = bool
-    .help = "Only read input scaled input files and make mtz files if"
-            "user specified unmerged_mtz, merged_mtz."
   output {
     log = dials.scale.log
       .type = str
@@ -510,35 +502,6 @@ prepare the data in the correct space group.\n"""
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )
 
-    @staticmethod
-    def stats_only(reflections, experiments, params):
-        """Calculate and print merging stats."""
-        best_unit_cell = params.reflection_selection.best_unit_cell
-        if not params.reflection_selection.best_unit_cell:
-            best_unit_cell = determine_best_unit_cell(experiments)
-        scaled_miller_array = scaled_data_as_miller_array(
-            reflections, experiments, best_unit_cell=best_unit_cell
-        )
-        try:
-            res, _ = merging_stats_from_scaled_array(
-                scaled_miller_array,
-                params.output.merging.nbins,
-                params.output.use_internal_variance,
-            )
-            logger.info(make_merging_statistics_summary(res))
-        except DialsMergingStatisticsError as e:
-            logger.info(e)
-
-    @staticmethod
-    def export_mtz_only(reflections, experiments, params):
-        """Export data in mtz format."""
-        assert len(reflections) == 1, "Need a combined reflection table from scaling."
-        if params.output.unmerged_mtz:
-            _export_unmerged_mtz(params, experiments, reflections[0])
-
-        if params.output.merged_mtz:
-            _export_merged_mtz(params, experiments, reflections[0])
-
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
         try:
@@ -642,13 +605,6 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
 
 def run_scaling(params, experiments, reflections):
     """Run scaling algorithms; stats only, cross validation or standard."""
-    if params.stats_only:
-        Script.stats_only(reflections, experiments, params)
-        sys.exit()
-
-    if params.export_mtz_only:
-        Script.export_mtz_only(reflections, experiments, params)
-        sys.exit()
 
     if params.output.delete_integration_shoeboxes:
         for r in reflections:
