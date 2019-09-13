@@ -31,16 +31,17 @@ import os
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "button",
+    "dials_tutorial_include",
+    "libtbx.sphinx.phil",
+    "libtbx.sphinx.pubmed",
+    "libtbx.sphinx.python_string",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "libtbx.sphinx.phil",
-    "libtbx.sphinx.python_string",
-    "libtbx.sphinx.pubmed",
-    "button",
 ]
 
 # Add CDN path for mathjax script, converting Latex to readable text on the fly.

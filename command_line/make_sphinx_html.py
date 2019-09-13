@@ -2,66 +2,41 @@
 
 from __future__ import absolute_import, division, print_function
 
+import json
 import os
-import shutil
+import re
+import sys
+from datetime import datetime
 from optparse import SUPPRESS_HELP, OptionParser
 
-import libtbx.load_env
-from procrunner import run_process
+import dials
+import procrunner
+import py
 
 # Disable all HTTPS verification. This is to work around an issue
 # in biopython, possibly biopython relying on unreliable servers.
 os.environ["PYTHONHTTPSVERIFY"] = "0"
 
 
-def recursive_overwrite(src, dest, ignore=None):
-    if os.path.isdir(src):
-        if not os.path.isdir(dest):
-            os.makedirs(dest)
-        files = os.listdir(src)
-        if ignore is not None:
-            ignored = ignore(src, files)
-        else:
-            ignored = set()
-        for f in files:
-            if f not in ignored:
-                recursive_overwrite(os.path.join(src, f), os.path.join(dest, f), ignore)
-    else:
-        shutil.copyfile(src, dest)
+try:  # Python 3
+    from urllib.request import urlopen, Request
+except ImportError:  # Python 2
+    from urllib2 import urlopen, Request
 
 
 def update_dials_download_links():
-    dials_dir = libtbx.env.find_in_repositories("dials")
-    release_file = os.path.join(
-        dials_dir, "doc", "sphinx", "installation.stable_release"
-    )
-    release_json = os.path.join(
-        dials_dir, "doc", "sphinx", "installation.stable_release.json"
-    )
-
-    release_info = None
-    from libtbx.auto_build.bootstrap import Toolbox
-    from datetime import datetime
-    import json
-    import re
-
-    print("Checking DIALS release status: ", end="")
-    if Toolbox().download_to_file(
-        "https://api.github.com/repos/dials/dials/releases/latest",
-        release_json,
-        cache=False,
-    ):
-        with open(release_json, "r") as json_data:
-            release_info = json.load(json_data)
+    print("Checking DIALS release status")
+    url_request = Request("https://api.github.com/repos/dials/dials/releases/latest")
+    conn = urlopen(url_request)
     try:
-        os.remove(release_json)
-    except OSError:
-        pass
+        release_info = json.load(conn)
+    finally:
+        conn.close()
 
-    if not release_info:
-        release_info = {}
+    dials_dir = py.path.local(dials.__file__).dirpath()
+    release_file = dials_dir / "doc" / "sphinx" / "installation.stable_release"
 
-    with open(release_file, "w") as release:
+    with release_file.open("w") as release:
         caption = "Stable Release"
         if "name" in release_info:
             caption = caption + ": " + release_info["name"]
@@ -111,8 +86,8 @@ def update_dials_download_links():
         }
 
         buttons = [
-            download_button(long_names.get(asset, asset), version, link)
-            for asset, (_, version, link) in assets.iteritems()
+            download_button(long_names.get(asset, asset), _version, link)
+            for asset, (_, _version, link) in assets.items()
         ]
 
         release.write("".join(sorted(buttons)))
@@ -137,13 +112,48 @@ if __name__ == "__main__":
         help="Ignore any errors or warnings",
     )
     parser.add_option(
+        "-l",
+        "--logs",
+        dest="logs",
+        action="store",
+        type="string",
+        default=None,
+        help="Use generated dials output logs from this location",
+    )
+    parser.add_option(
+        "-o",
+        "--output",
+        dest="output",
+        action="store",
+        type="string",
+        default=None,
+        help="Copy generated output to this location",
+    )
+    parser.add_option(
+        "--legacy-version",
+        dest="legacy_version",
+        action="store",
+        type="string",
+        default=None,
+        metavar="VERSION",
+        help="Add a warning message to every page saying that this documentation "
+        "relates to the out-of-date version VERSION",
+    )
+    parser.add_option(
         "--no-clean",
         dest="clean",
         action="store_false",
         default=True,
         help="Don't run 'make clean' before building the documentation",
     )
-    options, args = parser.parse_args()
+    parser.add_option(
+        "--parallel",
+        dest="parallel",
+        action="store_true",
+        default=False,
+        help="Build documentation in parallel",
+    )
+    options, _ = parser.parse_args()
 
     try:
         update_dials_download_links()
@@ -151,26 +161,49 @@ if __name__ == "__main__":
         if options.strict:
             raise
         print("Ignoring error:", e)
-    dials_dir = libtbx.env.find_in_repositories("dials")
-    dials_github_io = libtbx.env.find_in_repositories("dials.github.io")
-    assert (
-        dials_github_io is not None
-    ), "Repository dials.github.io needs to be checked out and configured in modules directory"
-    dest_dir = dials_github_io
-    os.chdir(os.path.join(dials_dir, "doc", "sphinx"))
+    dials_dir = py.path.local(dials.__file__).dirpath()
+    sphinx_dir = dials_dir / "doc" / "sphinx"
+    tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
 
-    env = {}
+    sphinx_options = ""
+    if options.parallel:
+        print("DIALS 1.14 variant does not support parallel building")
     if options.strict:
-        env["SPHINXOPTS"] = "-W"
+        sphinx_options += " -W"
+    if options.legacy_version:
+        if " " in options.legacy_version:
+            exit("legacy version must not contain spaces")
+        sphinx_options += " -A legacy_version=" + options.legacy_version
+    if options.logs:
+        sphinx_options += " -D dials_logs=" + options.logs
+        for report in ("betalactamase", "thaumatin"):
+            py.path.local(options.logs).join(report).join("dials-report.html").copy(
+                tutorial_doc_dir.join(report + "-report.html")
+            )
+    else:
+        sys.exit(
+            "You must specify the location of the tutorial data output with the '-l' option"
+        )
+    env = {"SPHINXOPTS": sphinx_options}
+
+    # Disable all HTTPS verification. This is to work around an issue
+    # in biopython, possibly biopython relying on unreliable servers.
+    # env["PYTHONHTTPSVERIFY"] = "0"
 
     if options.clean:
-        result = run_process(["make", "clean"], environment_override=env)
-        assert result["exitcode"] == 0, (
+        result = procrunner.run(
+            ["make", "clean"], environment_override=env, working_directory=sphinx_dir.strpath
+        )
+        assert not result["exitcode"], (
             "make clean failed with exit code %d" % result["exitcode"]
         )
-    result = run_process(["make", "html"], environment_override=env)
-    assert result["exitcode"] == 0, (
+    result = procrunner.run(
+        ["make", "html"], environment_override=env, working_directory=sphinx_dir.strpath
+    )
+    assert not result["exitcode"], (
         "make html failed with exit code %d" % result["exitcode"]
     )
-    print("Copying HTML pages to", dest_dir)
-    recursive_overwrite("build/html", dest_dir)
+    if options.output:
+        print("Copying HTML pages to", options.output)
+        dest_dir = py.path.local(options.output)
+        sphinx_dir.join("build").join("html").copy(dest_dir)
