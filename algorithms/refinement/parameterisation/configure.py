@@ -107,6 +107,12 @@ phil_str = (
               "of the serialized model small. At the moment, this only has"
               "an effect for crystal unit cell (B matrix) errors."
 
+    allow_multiple_scans_per_crystal = False
+      .type = bool
+      .help = "If scan-varying refinement is done, allow multiple scans"
+              "per crystal.                                             "
+      .expert_level = 2
+
     debug_centroid_analysis = False
       .help = "Set True to write out a file containing the reflections used"
               "for centroid analysis for automatic setting of the  scan-varying"
@@ -488,7 +494,10 @@ def _parameterise_crystals(options, experiments, analysis):
                 )
             # If a crystal is scan-varying, then it must always be found alongside
             # the same Scan and Goniometer in any Experiments in which it appears
-            if not all(g is goniometer and s is scan for (g, s) in assoc_models):
+            if (
+                not all(g is goniometer and s is scan for (g, s) in assoc_models)
+                and not options.allow_multiple_scans_per_crystal
+            ):
                 raise DialsRefineConfigError(
                     "A single scan-varying crystal model cannot be refined "
                     "when associated with more than one scan or goniometer"
