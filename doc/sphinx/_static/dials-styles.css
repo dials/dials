@@ -22,10 +22,10 @@ div.document {
 div.logoheader {
   width: auto;
   margin: 0 auto 0 auto;
-  background-color: #061679;
+  background-color: #010e7a;
   border: medium solid black;
-  /* This makes the borders rounded on Mozilla, which pleases me */
-  -moz-border-radius: 8px;
+  /* This makes the borders rounded, which pleases me */
+  border-radius: 8px;
   padding: 0;
 }
 
@@ -45,6 +45,10 @@ div.embedpdf {
   height: 1132px;
 }
 
+div.seealso {
+  padding: 0.3em 1em;
+  margin-bottom: 0.5em;
+}
 
 @media screen and (max-width: 870px) {
 
