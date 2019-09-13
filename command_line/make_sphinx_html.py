@@ -88,6 +88,16 @@ if __name__ == "__main__":
         command.append("-W")
     if options.legacy_version:
         command.extend(["-A", "legacy_version=" + options.legacy_version])
+    if not options.logs:
+        # Try to automatically determine this
+        branch = "master"
+        if options.legacy_version:
+            branch = "dials-" + options.legacy_version
+        log_dir = dials_dir / ".." / "dials.github.io" / "tutorial_data" / branch
+        if log_dir.check(dir=1):
+            options.logs = log_dir.strpath
+            print("Using DIALS logs from", options.logs)
+
     if options.logs:
         command.extend(["-D", "dials_logs=" + options.logs])
         for report in ("betalactamase", "thaumatin"):
