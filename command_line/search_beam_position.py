@@ -79,8 +79,6 @@ output {
     .type = path
   log = "dials.search_beam_position.log"
     .type = str
-  debug_log = "dials.search_beam_position.debug.log"
-    .type = str
 }
 """
 )
@@ -534,7 +532,7 @@ def run(args):
         exit(0)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(logfile=params.output.log)
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()

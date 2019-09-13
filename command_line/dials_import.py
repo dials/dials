@@ -84,10 +84,6 @@ phil_scope = parse(
       .type = str
       .help = "The log filename"
 
-    debug_log = 'dials.import.debug.log'
-      .type = str
-      .help = "The debug log filename"
-
     compact = False
       .type = bool
       .help = "For JSON output use compact representation"

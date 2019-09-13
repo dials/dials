@@ -75,14 +75,9 @@ phil_scope = parse(
     .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
 
   output {
-
     log = 'dials.compute_delta_cchalf.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.compute_delta_cchalf.debug.log'
-      .type = str
-      .help = "The debug log filename"
   }
 """
 )
@@ -535,7 +530,7 @@ def run(args=None, phil=phil_scope):
 
     params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
-    dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
+    dials.util.log.config(logfile=params.output.log)
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)

@@ -152,7 +152,7 @@ def run():
         exit(0)
 
     # Configure the logging
-    log.config(info="dials.rl_png.log")
+    log.config(logfile="dials.rl_png.log")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()

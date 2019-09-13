@@ -49,8 +49,6 @@ output {
     .type = str
   log = dials.cosym.log
     .type = str
-  debug_log = dials.cosym.debug.log
-    .type = str
   experiments = "symmetrized.expt"
     .type = path
   reflections = "symmetrized.refl"
@@ -317,9 +315,7 @@ def run(args):
     )
 
     # Configure the logging
-    log.config(
-        verbosity=options.verbose, info=params.output.log, debug=params.output.debug_log
-    )
+    log.config(verbosity=options.verbose, logfile=params.output.log)
 
     from dials.util.version import dials_version
 
