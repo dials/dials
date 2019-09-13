@@ -45,7 +45,7 @@ div.embedpdf {
   height: 1132px;
 }
 
-a.seealso {
+a.old-documentation {
   display: block;
   padding: 1em 1em;
   margin-bottom: 1em;
@@ -54,7 +54,7 @@ a.seealso {
   border: medium solid red;
   border-radius: 8px;
 }
-a.seealso:hover {
+a.old-documentation:hover {
   background-color: #FCC;
 }
 
