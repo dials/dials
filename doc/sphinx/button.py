@@ -6,11 +6,7 @@ from docutils.parsers.rst import Directive
 from docutils.parsers.rst.directives import unchanged
 
 BUTTON_TEMPLATE = jinja2.Template(
-    u"""
-<a href="{{ link }}">
-                                  <span class="button">{{ text }}</span>
-</a>
-"""
+    u'<a href="{{ link }}" class="button"><span>{{ text }}</span></a>'
 )
 
 # placeholder node for document graph
@@ -27,11 +23,6 @@ class ButtonDirective(Directive):
     # it will insert a button_node into the document that will
     # get visisted during the build phase
     def run(self):
-        env = self.state.document.settings.env
-        app = env.app
-
-        app.add_stylesheet("button.css")
-
         node = button_node()
         node["text"] = self.options["text"]
         node["link"] = self.options["link"]
