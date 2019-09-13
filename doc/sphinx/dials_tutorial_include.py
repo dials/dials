@@ -27,17 +27,19 @@ class DialsTutorialInclude(code.LiteralInclude):
             return [
                 document.reporter.warning("File insertion disabled", line=self.lineno)
             ]
+        env = document.settings.env
+
         # convert options['diff'] to absolute path
         if "diff" in self.options:
-            _, path = self.env.relfn2path(self.options["diff"])
+            _, path = env.relfn2path(self.options["diff"])
             self.options["diff"] = path
 
         try:
             location = self.state_machine.get_source_and_line(self.lineno)
-            filename = os.path.join(self.config.dials_logs, self.arguments[0])
-            self.env.note_dependency(filename)
+            filename = os.path.join(env.config.dials_logs, self.arguments[0])
+            env.note_dependency(filename)
 
-            reader = code.LiteralIncludeReader(filename, self.options, self.config)
+            reader = code.LiteralIncludeReader(filename, self.options, env.config)
             text, lines = reader.read(location=location)
 
             retnode = code.nodes.literal_block(text, text, source=filename)
@@ -74,4 +76,4 @@ class DialsTutorialInclude(code.LiteralInclude):
 
             return [retnode]
         except Exception as exc:
-            return [document.reporter.warning(code.text_type(exc), line=self.lineno)]
+            return [document.reporter.warning(str(exc), line=self.lineno)]
