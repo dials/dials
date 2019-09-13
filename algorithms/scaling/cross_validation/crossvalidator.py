@@ -186,7 +186,12 @@ is provided. For example, physical.decay_correction rather than decay_correction
                 "dxtbx.scaling_model_ext"
             )
         ]
-        phil_branches = [params.weighting, params.cut_data, params.scaling_options]
+        phil_branches = [
+            params.weighting,
+            params.cut_data,
+            params.scaling_options,
+            params.reflection_selection,
+        ]
         if params.model:
             phil_branches.append(params.__getattribute__(str(params.model)))
         elif ("." in name) and (name.split(".")[0] in available_models):

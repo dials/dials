@@ -677,7 +677,7 @@ class ArrayScalingModel(ScalingModelBase):
         osc_range = experiment.scan.get_oscillation_range()
         configdict.update({"valid_osc_range": osc_range})
         n_time_param, time_norm_fac, time_rot_int = initialise_smooth_input(
-            osc_range, one_osc_width, params.decay_correction
+            osc_range, one_osc_width, params.decay_interval
         )
         (xvalues, yvalues, _) = reflections["xyzobs.px.value"].parts()
         (xmax, xmin) = (flex.max(xvalues) + 0.001, flex.min(xvalues) - 0.001)
