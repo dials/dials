@@ -88,6 +88,10 @@ def update_dials_download_links():
 
 
 if __name__ == "__main__":
+    dials_dir = py.path.local(dials.__file__).dirpath()
+    sphinx_dir = dials_dir / "doc" / "sphinx"
+    tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
+
     parser = OptionParser(description="Generate documentation website for DIALS")
     parser.add_option("-?", action="help", help=SUPPRESS_HELP)
     parser.add_option(
@@ -120,8 +124,8 @@ if __name__ == "__main__":
         dest="output",
         action="store",
         type="string",
-        default=None,
-        help="Copy generated output to this location",
+        default=(sphinx_dir / "build" / "html").strpath,
+        help="Generate output in this location",
     )
     parser.add_option(
         "--legacy-version",
@@ -134,11 +138,11 @@ if __name__ == "__main__":
         "relates to the out-of-date version VERSION",
     )
     parser.add_option(
-        "--no-clean",
+        "--clean",
         dest="clean",
-        action="store_false",
-        default=True,
-        help="Don't run 'make clean' before building the documentation",
+        action="store_true",
+        default=False,
+        help="Empty the output directory before building the documentation",
     )
     parser.add_option(
         "--parallel",
@@ -155,21 +159,22 @@ if __name__ == "__main__":
         if options.strict:
             raise
         print("Ignoring error:", e)
-    dials_dir = py.path.local(dials.__file__).dirpath()
-    sphinx_dir = dials_dir / "doc" / "sphinx"
-    tutorial_doc_dir = sphinx_dir / "documentation" / "tutorials"
 
-    sphinx_options = ""
+    output_dir = py.path.local(options.output)
+    if options.clean:
+        print("Cleaning out", output_dir.strpath)
+        output_dir.remove()
+    print("Generating documentation into", output_dir.strpath)
+
+    command = ["libtbx.sphinx-build", "-b", "html", ".", output_dir]
     if options.parallel:
-        sphinx_options += " -j auto"
+        command.extend(["-j", "auto"])
     if options.strict:
-        sphinx_options += " -W"
+        command.append("-W")
     if options.legacy_version:
-        if " " in options.legacy_version:
-            exit("legacy version must not contain spaces")
-        sphinx_options += " -A legacy_version=" + options.legacy_version
+        command.extend(["-A", "legacy_version=" + options.legacy_version])
     if options.logs:
-        sphinx_options += " -D dials_logs=" + options.logs
+        command.extend(["-D", "dials_logs=" + options.logs])
         for report in ("betalactamase", "thaumatin"):
             py.path.local(options.logs).join(report).join("dials-report.html").copy(
                 tutorial_doc_dir.join(report + "-report.html")
@@ -178,26 +183,14 @@ if __name__ == "__main__":
         sys.exit(
             "You must specify the location of the tutorial data output with the '-l' option"
         )
-    env = {"SPHINXOPTS": sphinx_options}
 
+    env = {}
     # Disable all HTTPS verification. This is to work around an issue
     # in biopython, possibly biopython relying on unreliable servers.
     # env["PYTHONHTTPSVERIFY"] = "0"
 
-    if options.clean:
-        result = procrunner.run(
-            ["make", "clean"], environment_override=env, working_directory=sphinx_dir
-        )
-        assert not result.returncode, (
-            "make clean failed with exit code %d" % result.returncode
-        )
     result = procrunner.run(
-        ["make", "html"], environment_override=env, working_directory=sphinx_dir
+        command, environment_override=env, working_directory=sphinx_dir
     )
-    assert not result.returncode, (
-        "make html failed with exit code %d" % result.returncode
-    )
-    if options.output:
-        print("Copying HTML pages to", options.output)
-        dest_dir = py.path.local(options.output)
-        sphinx_dir.join("build").join("html").copy(dest_dir)
+    if result.returncode:
+        sys.exit("Sphinx build failed with exit code %d" % result.returncode)
