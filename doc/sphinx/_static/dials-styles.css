@@ -45,12 +45,30 @@ div.embedpdf {
   height: 1132px;
 }
 
-div.seealso {
+a.old-documentation {
+  display: block;
   padding: 1em 1em;
   margin-bottom: 1em;
   font-size: 120%;
+  background-color: #EEE;
   border: medium solid red;
   border-radius: 8px;
+}
+a.old-documentation:hover {
+  background-color: #FCC;
+}
+
+a.new-documentation {
+  display: inline-block;
+  padding: 1em 1em;
+  margin-bottom: 1em;
+  background-color: #EEE;
+  border: medium solid green;
+  border-radius: 8px;
+}
+a.new-documentation:hover {
+  background-color: #CFC;
+  color: #000;
 }
 
 @media screen and (max-width: 870px) {
