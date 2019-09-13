@@ -9,30 +9,35 @@ Development Builds
 
 Nightly build installers are available for Linux and Mac OS and may be
 downloaded from `LBL <http://cci.lbl.gov/dials/installers/>`_ or
-`Diamond <http://dials.diamond.ac.uk/diamond_builds/>`_.
+`Diamond <https://dials.diamond.ac.uk/diamond_builds/>`_.
 Builds for Microsoft Windows are experimental and may not work as expected.
 For instructions on compiling from source or setting up a DIALS development
 environment, see :doc:`/documentation/installation_developer`.
 
 .. button::
    :text: Mac installer (OS X 10.11)
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx.pkg
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-macosx.pkg
 
 .. button::
    :text: Mac installer (OS X 10.6)
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.pkg
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.pkg
 
 .. button::
    :text: Linux installer
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz
+
+.. button::
+   :text: Linux installer (Python 3 preview, unsupported)
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64-conda3.tar.gz
 
 .. button::
    :text: Windows archive
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-windows.zip
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-windows.zip
 
 .. button::
    :text: Source installer
-   :link: http://dials.diamond.ac.uk/diamond_builds/dials-source.tar.xz
+   :link: https://dials.diamond.ac.uk/diamond_builds/dials-source.tar.xz
+
 
 Installation
 ============
@@ -41,9 +46,9 @@ Mac graphical binary installers
 -------------------------------
 
 We provide a graphical package installer for Mac users. Download the
-`Mac OS X 10.11 <http://dials.diamond.ac.uk/diamond_builds/dials-macosx.pkg>`_
+`Mac OS X 10.11 <https://dials.diamond.ac.uk/diamond_builds/dials-macosx.pkg>`_
 or
-`Mac OS X 10.6 <http://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.pkg>`_
+`Mac OS X 10.6 <https://dials.diamond.ac.uk/diamond_builds/dials-macosx-10.6.pkg>`_
 installer and double click the ``.pkg`` file to start the
 graphical installer. Follow the instructions, which will install DIALS in the
 ``/Applications/`` directory. To use DIALS, open a new terminal window and type,
@@ -60,13 +65,13 @@ Mac and Linux binary installers
 We provide binary ``tar.gz`` and ``tar.xz`` files for various Mac and Linux
 platforms, e.g. on Linux::
 
-  wget http://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz
+  wget https://dials.diamond.ac.uk/diamond_builds/dials-linux-x86_64.tar.xz
   tar -xJf dials-linux-x86_64.tar.xz
   cd dials-installer-dev
 
 Or on Mac::
 
-  curl http://dials.diamond.ac.uk/diamond_builds/dials-macosx.tar.gz > dials-macosx.tar.gz
+  curl https://dials.diamond.ac.uk/diamond_builds/dials-macosx.tar.gz > dials-macosx.tar.gz
   tar -xzf dials-macosx.tar.gz
   cd dials-installer-dev
 
