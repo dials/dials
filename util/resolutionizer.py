@@ -5,9 +5,15 @@ import math
 
 import iotbx.phil
 from cctbx.array_family import flex
+from cctbx import miller
 from dials.util import Sorry
 from scitbx import lbfgs
 
+from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from dials.util.batch_handling import (
+    calculate_batch_offsets,
+    assign_batches_to_reflections,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +175,51 @@ def interpolate_value(x, y, t):
 
         if (y0 - t) * (y1 - t) < 0:
             return x0 + (t - y0) * (x1 - x0) / (y1 - y0)
+
+
+def miller_array_from_mtz(unmerged_mtz, params):
+    from iotbx import reflection_file_reader
+
+    hkl_in = reflection_file_reader.any_reflection_file(unmerged_mtz)
+    miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
+    i_obs = None
+    batches = None
+    all_i_obs = []
+    for array in miller_arrays:
+        labels = array.info().label_string()
+        if array.is_xray_intensity_array():
+            all_i_obs.append(array)
+        if labels == "BATCH":
+            assert batches is None
+            batches = array
+    if i_obs is None:
+        if len(all_i_obs) == 0:
+            raise Sorry("No intensities found")
+        elif len(all_i_obs) > 1:
+            if params.labels is not None:
+                from iotbx.reflection_file_utils import label_table
+
+                lab_tab = label_table(all_i_obs)
+                i_obs = lab_tab.select_array(
+                    label=params.labels[0], command_line_switch="labels"
+                )
+            if i_obs is None:
+                raise Sorry(
+                    "Multiple intensity arrays - please specify one:\n%s"
+                    % "\n".join(
+                        ["  labels=%s" % a.info().label_string() for a in all_i_obs]
+                    )
+                )
+        else:
+            i_obs = all_i_obs[0]
+    if hkl_in.file_type() == "ccp4_mtz":
+        # need original miller indices otherwise we don't get correct anomalous
+        # merging statistics
+        mtz_object = hkl_in.file_content()
+        if "M_ISYM" in mtz_object.column_labels():
+            indices = mtz_object.extract_original_index_miller_indices()
+            i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+    return i_obs, batches
 
 
 phil_str = """
@@ -338,60 +389,42 @@ class Resolutionizer(object):
 
     @classmethod
     def from_unmerged_mtz(cls, scaled_unmerged, params):
-        def miller_array_from_mtz(unmerged_mtz):
-            from iotbx import reflection_file_reader
+        """Construct the resolutionizer from an mtz file."""
 
-            hkl_in = reflection_file_reader.any_reflection_file(scaled_unmerged)
-            miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
-            i_obs = None
-            batches = None
-            all_i_obs = []
-            for array in miller_arrays:
-                labels = array.info().label_string()
-                if array.is_xray_intensity_array():
-                    all_i_obs.append(array)
-                if labels == "BATCH":
-                    assert batches is None
-                    batches = array
-            if i_obs is None:
-                if len(all_i_obs) == 0:
-                    raise Sorry("No intensities found")
-                elif len(all_i_obs) > 1:
-                    if params.labels is not None:
-                        from iotbx.reflection_file_utils import label_table
-
-                        lab_tab = label_table(all_i_obs)
-                        i_obs = lab_tab.select_array(
-                            label=params.labels[0], command_line_switch="labels"
-                        )
-                    if i_obs is None:
-                        raise Sorry(
-                            "Multiple intensity arrays - please specify one:\n%s"
-                            % "\n".join(
-                                [
-                                    "  labels=%s" % a.info().label_string()
-                                    for a in all_i_obs
-                                ]
-                            )
-                        )
-                else:
-                    i_obs = all_i_obs[0]
-            if hkl_in.file_type() == "ccp4_mtz":
-                # need original miller indices otherwise we don't get correct anomalous
-                # merging statistics
-                mtz_object = hkl_in.file_content()
-                if "M_ISYM" in mtz_object.column_labels():
-                    indices = mtz_object.extract_original_index_miller_indices()
-                    i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
-            return i_obs, batches
-
-        i_obs, batches = miller_array_from_mtz(scaled_unmerged)
+        i_obs, batches = miller_array_from_mtz(scaled_unmerged, params)
         if params.reference is not None:
-            reference, _ = miller_array_from_mtz(params.reference)
+            reference, _ = miller_array_from_mtz(params.reference, params)
         else:
             reference = None
 
         return cls(i_obs, params, batches=batches, reference=reference)
+
+    @classmethod
+    def from_reflections_and_experiments(cls, reflection_tables, experiments, params):
+        """Construct the resolutionizer from native dials datatypes."""
+        # add some assertions about data
+
+        # Make a scaled miller array from scaled reflection table.
+        i_obs = scaled_data_as_miller_array(reflection_tables, experiments)
+
+        # Now do batch assignment (same functions as in dials.export)
+        offsets = calculate_batch_offsets(experiments)
+        reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
+        # filter bad refls and negative scales
+        batches = flex.int()
+        for r in reflection_tables:
+            sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
+            sel &= r["inverse_scale_factor"] > 0
+            batches.extend(r["batch"].select(sel))
+        ms = i_obs.customized_copy()
+        batch_array = miller.array(ms, data=batches)
+
+        if params.reference is not None:
+            reference, _ = miller_array_from_mtz(params.reference, params)
+        else:
+            reference = None
+
+        return cls(i_obs, params, batches=batch_array, reference=reference)
 
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
