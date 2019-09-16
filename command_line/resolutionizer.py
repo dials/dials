@@ -4,6 +4,8 @@
 import logging
 import sys
 
+import libtbx.phil
+
 from dials.util import resolutionizer
 from dials.util import log
 from dials.util.options import OptionParser
@@ -16,9 +18,17 @@ help_message = """
 """
 
 
-phil_scope = """
+phil_scope = libtbx.phil.parse(
+    """
 include scope dials.util.resolutionizer.phil_defaults
-"""
+
+output {
+  log = dials.resolutionizer.log
+    .type = path
+}
+""",
+    process_includes=True,
+)
 
 
 def run(args):
@@ -45,20 +55,18 @@ def run(args):
 
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
-    if len(reflections) == 0 or len(experiments) == 0 or len(unhandled) == 1:
+    if (len(reflections) == 0 or len(experiments) == 0) and len(unhandled) == 0:
         parser.print_help()
         return
 
-    # Configure the logging
-    log.config(logfile="dials.resolutionizer.log")
-    logger.info(dials_version())
-
     if len(unhandled) == 1:
         scaled_unmerged = unhandled[0]
-        m = resolutionizer.Resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
+        m = resolutionizer.Resolutionizer.from_unmerged_mtz(
+            scaled_unmerged, params.resolutionizer
+        )
     else:
         m = resolutionizer.Resolutionizer.from_reflections_and_experiments(
-            reflections, experiments, params
+            reflections, experiments, params.resolutionizer
         )
 
     m.resolution_auto()
