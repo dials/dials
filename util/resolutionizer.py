@@ -9,11 +9,12 @@ from cctbx import miller
 from dials.util import Sorry
 from scitbx import lbfgs
 
-from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
 from dials.util.batch_handling import (
     calculate_batch_offsets,
     assign_batches_to_reflections,
 )
+from dials.util.filter_reflections import filter_reflection_table
 
 logger = logging.getLogger(__name__)
 
@@ -404,18 +405,30 @@ class Resolutionizer(object):
         """Construct the resolutionizer from native dials datatypes."""
         # add some assertions about data
 
-        # Make a scaled miller array from scaled reflection table.
-        i_obs = scaled_data_as_miller_array(reflection_tables, experiments)
-
-        # Now do batch assignment (same functions as in dials.export)
+        # do batch assignment (same functions as in dials.export)
         offsets = calculate_batch_offsets(experiments)
         reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
-        # filter bad refls and negative scales
         batches = flex.int()
-        for r in reflection_tables:
-            sel = ~r.get_flags(r.flags.bad_for_scaling, all=False)
-            sel &= r["inverse_scale_factor"] > 0
-            batches.extend(r["batch"].select(sel))
+        intensities = flex.double()
+        indices = flex.miller_index()
+        variances = flex.double()
+        for table in reflection_tables:
+            table = filter_reflection_table(table, ["scale"])
+            batches.extend(table["batch"])
+            intensities.extend(table["intensity.scale.value"])
+            indices.extend(table["miller_index"])
+            variances.extend(table["intensity.scale.variance"])
+
+        crystal_symmetry = miller.crystal.symmetry(
+            unit_cell=determine_best_unit_cell(experiments),
+            space_group=experiments[0].crystal.get_space_group(),
+            assert_is_compatible_unit_cell=False,
+        )
+        miller_set = miller.set(crystal_symmetry, indices, anomalous_flag=False)
+        i_obs = miller.array(miller_set, data=intensities, sigmas=flex.sqrt(variances))
+        i_obs.set_observation_type_xray_intensity()
+        i_obs.set_info(miller.array_info(source="DIALS", source_type="refl"))
+
         ms = i_obs.customized_copy()
         batch_array = miller.array(ms, data=batches)
 
