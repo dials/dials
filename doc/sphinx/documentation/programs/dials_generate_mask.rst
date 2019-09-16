@@ -4,7 +4,7 @@ dials.generate_mask
 Introduction
 ------------
 
-.. python_string:: dials.command_line.generate_mask.help_message
+.. python_string:: dials.command_line.generate_mask.__doc__
 
 Basic parameters
 ----------------
