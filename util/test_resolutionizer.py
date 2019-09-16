@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import os
 import pytest
 
 import procrunner
@@ -14,16 +13,8 @@ import procrunner
     ],
 )
 def test_resolutionizer(input_files, dials_data, tmpdir):
-    import libtbx.load_env
-
-    paths = [
-        os.path.join(libtbx.env.find_in_repositories("data-files/x4wide"), p)
-        for p in input_files
-    ]
-    reference_mtz = os.path.join(
-        libtbx.env.find_in_repositories("data-files/x4wide"),
-        "AUTOMATIC_DEFAULT_scaled.mtz",
-    )
+    paths = [dials_data("x4wide_processed").join(p) for p in input_files]
+    reference_mtz = dials_data("x4wide_processed").join("AUTOMATIC_DEFAULT_scaled.mtz")
     result = procrunner.run(
         [
             "dials.resolutionizer",
