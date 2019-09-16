@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import binascii
-import math
 import sys
 
 import iotbx.phil
@@ -84,10 +83,8 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
     n_output_images = len(imageset) // n_images
 
-    n_digits = int(math.ceil(math.log10(n_output_images)))
-    if (10 ** n_digits) == n_output_images:
-        n_digits += 1
-    num_fmt = "%%0%dd" % n_digits
+    n_digits = len(str(n_output_images))
+
     for i_out in range(n_output_images):
         data_out = None
 
@@ -113,8 +110,9 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                 data_in.set_selected(data_special, 0)
                 data_out += data_in
 
-        num_str = num_fmt % (i_out + 1)
-        out_image = "%s%s.cbf" % (out_prefix, num_str)
+        out_image = "{prefix}{number:0{digits}d}.cbf".format(
+            prefix=out_prefix, number=i_out + 1, digits=n_digits
+        )
 
         start_tag = binascii.unhexlify("0c1a04d5")
 
