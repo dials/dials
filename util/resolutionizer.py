@@ -406,7 +406,7 @@ class Resolutionizer(object):
         indices = flex.miller_index()
         variances = flex.double()
         for table in reflection_tables:
-            table = filter_reflection_table(table, ["scale"])
+            table = filter_reflection_table(table, ["scale"], partiality_threshold=0.4)
             batches.extend(table["batch"])
             intensities.extend(table["intensity.scale.value"])
             indices.extend(table["miller_index"])
