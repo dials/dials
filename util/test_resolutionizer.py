@@ -21,16 +21,29 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
         for p in input_files
     ]
     result = procrunner.run(
-        ["dials.resolutionizer", "plot=True", "cc_half=0.9", "isigma=2", "misigma=3"]
+        [
+            "dials.resolutionizer",
+            "plot=True",
+            "cc_half=0.9",
+            "isigma=2",
+            "misigma=3",
+            "rmerge=0.5",
+            "completeness=1.0",
+            "i_mean_over_sigma_mean=3",
+        ]
         + paths,
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
+    print(result.stdout)
 
     expected_output = """\
+Resolution rmerge:       1.33
+Resolution completeness: 1.20
 Resolution cc_half:      1.40
 Resolution I/sig:        1.52
-Resolution Mn(I/sig):    1.43"""
+Resolution Mn(I/sig):    1.43
+Resolution Mn(I)/Mn(sig):    1.41"""
     for line in expected_output.splitlines():
         assert line in result.stdout
 
