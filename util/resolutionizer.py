@@ -1,25 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
 import math
-import sys
-import time
 
 import iotbx.phil
 from cctbx.array_family import flex
+from cctbx import miller
 from dials.util import Sorry
 from scitbx import lbfgs
 
+from dials.algorithms.scaling.scaling_library import determine_best_unit_cell
+from dials.util.batch_handling import (
+    calculate_batch_offsets,
+    assign_batches_to_reflections,
+)
+from dials.util.filter_reflections import filter_reflection_table
 
-def nint(a):
-    return int(round(a))
-
-
-start_time = time.time()
-
-
-def stamp(message):
-    #  print("[%7.3f] %s" % (time.time() - start_time, message))
-    return
+logger = logging.getLogger(__name__)
 
 
 def poly_residual(xp, y, params):
@@ -84,9 +81,6 @@ class poly_fitter(object):
             poly_gradients(self._xp, self._y, self.x),
         )
 
-    def get_parameters(self):
-        return list(self.x)
-
     def evaluate(self, x):
         """Evaluate the resulting fit at point x."""
 
@@ -98,11 +92,11 @@ def fit(x, y, order):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    stamp("fitter: %s %s %s" % (x, y, order))
+    logger.debug("fitter: %s %s %s", (x, y, order))
     pf = poly_fitter(x, y, order)
-    stamp("fitter: refine")
+    logger.debug("fitter: refine")
     pf.refine()
-    stamp("fitter: done")
+    logger.debug("fitter: done")
 
     return [pf.evaluate(_x) for _x in x]
 
@@ -175,6 +169,51 @@ def interpolate_value(x, y, t):
 
         if (y0 - t) * (y1 - t) < 0:
             return x0 + (t - y0) * (x1 - x0) / (y1 - y0)
+
+
+def miller_array_from_mtz(unmerged_mtz, params):
+    from iotbx import reflection_file_reader
+
+    hkl_in = reflection_file_reader.any_reflection_file(unmerged_mtz)
+    miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
+    i_obs = None
+    batches = None
+    all_i_obs = []
+    for array in miller_arrays:
+        labels = array.info().label_string()
+        if array.is_xray_intensity_array():
+            all_i_obs.append(array)
+        if labels == "BATCH":
+            assert batches is None
+            batches = array
+    if i_obs is None:
+        if len(all_i_obs) == 0:
+            raise Sorry("No intensities found")
+        elif len(all_i_obs) > 1:
+            if params.labels is not None:
+                from iotbx.reflection_file_utils import label_table
+
+                lab_tab = label_table(all_i_obs)
+                i_obs = lab_tab.select_array(
+                    label=params.labels[0], command_line_switch="labels"
+                )
+            if i_obs is None:
+                raise Sorry(
+                    "Multiple intensity arrays - please specify one:\n%s"
+                    % "\n".join(
+                        ["  labels=%s" % a.info().label_string() for a in all_i_obs]
+                    )
+                )
+        else:
+            i_obs = all_i_obs[0]
+    if hkl_in.file_type() == "ccp4_mtz":
+        # need original miller indices otherwise we don't get correct anomalous
+        # merging statistics
+        mtz_object = hkl_in.file_content()
+        if "M_ISYM" in mtz_object.column_labels():
+            indices = mtz_object.extract_original_index_miller_indices()
+            i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+    return i_obs, batches
 
 
 phil_str = """
@@ -298,7 +337,7 @@ class resolution_plot(object):
         self.fig.savefig(filename)
 
 
-class resolutionizer(object):
+class Resolutionizer(object):
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
@@ -344,95 +383,87 @@ class resolutionizer(object):
 
     @classmethod
     def from_unmerged_mtz(cls, scaled_unmerged, params):
-        def miller_array_from_mtz(unmerged_mtz):
-            from iotbx import reflection_file_reader
+        """Construct the resolutionizer from an mtz file."""
 
-            hkl_in = reflection_file_reader.any_reflection_file(scaled_unmerged)
-            miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
-            i_obs = None
-            batches = None
-            all_i_obs = []
-            for array in miller_arrays:
-                labels = array.info().label_string()
-                if array.is_xray_intensity_array():
-                    all_i_obs.append(array)
-                if labels == "BATCH":
-                    assert batches is None
-                    batches = array
-            if i_obs is None:
-                if len(all_i_obs) == 0:
-                    raise Sorry("No intensities found")
-                elif len(all_i_obs) > 1:
-                    if params.labels is not None:
-                        from iotbx.reflection_file_utils import label_table
-
-                        lab_tab = label_table(all_i_obs)
-                        i_obs = lab_tab.select_array(
-                            label=params.labels[0], command_line_switch="labels"
-                        )
-                    if i_obs is None:
-                        raise Sorry(
-                            "Multiple intensity arrays - please specify one:\n%s"
-                            % "\n".join(
-                                [
-                                    "  labels=%s" % a.info().label_string()
-                                    for a in all_i_obs
-                                ]
-                            )
-                        )
-                else:
-                    i_obs = all_i_obs[0]
-            if hkl_in.file_type() == "ccp4_mtz":
-                # need original miller indices otherwise we don't get correct anomalous
-                # merging statistics
-                mtz_object = hkl_in.file_content()
-                if "M_ISYM" in mtz_object.column_labels():
-                    indices = mtz_object.extract_original_index_miller_indices()
-                    i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
-            return i_obs, batches
-
-        i_obs, batches = miller_array_from_mtz(scaled_unmerged)
+        i_obs, batches = miller_array_from_mtz(scaled_unmerged, params)
         if params.reference is not None:
-            reference, _ = miller_array_from_mtz(params.reference)
+            reference, _ = miller_array_from_mtz(params.reference, params)
         else:
             reference = None
 
         return cls(i_obs, params, batches=batches, reference=reference)
 
+    @classmethod
+    def from_reflections_and_experiments(cls, reflection_tables, experiments, params):
+        """Construct the resolutionizer from native dials datatypes."""
+        # add some assertions about data
+
+        # do batch assignment (same functions as in dials.export)
+        offsets = calculate_batch_offsets(experiments)
+        reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
+        batches = flex.int()
+        intensities = flex.double()
+        indices = flex.miller_index()
+        variances = flex.double()
+        for table in reflection_tables:
+            table = filter_reflection_table(table, ["scale"], partiality_threshold=0.4)
+            batches.extend(table["batch"])
+            intensities.extend(table["intensity.scale.value"])
+            indices.extend(table["miller_index"])
+            variances.extend(table["intensity.scale.variance"])
+
+        crystal_symmetry = miller.crystal.symmetry(
+            unit_cell=determine_best_unit_cell(experiments),
+            space_group=experiments[0].crystal.get_space_group(),
+            assert_is_compatible_unit_cell=False,
+        )
+        miller_set = miller.set(crystal_symmetry, indices, anomalous_flag=False)
+        i_obs = miller.array(miller_set, data=intensities, sigmas=flex.sqrt(variances))
+        i_obs.set_observation_type_xray_intensity()
+        i_obs.set_info(miller.array_info(source="DIALS", source_type="refl"))
+
+        ms = i_obs.customized_copy()
+        batch_array = miller.array(ms, data=batches)
+
+        if params.reference is not None:
+            reference, _ = miller_array_from_mtz(params.reference, params)
+        else:
+            reference = None
+
+        return cls(i_obs, params, batches=batch_array, reference=reference)
+
     def resolution_auto(self):
         """Compute resolution limits based on the current self._params set."""
 
         if self._params.rmerge:
-            stamp("ra: rmerge")
-            print("Resolution rmerge:       %.2f" % self.resolution_rmerge())
+            logger.info("Resolution rmerge:       %.2f", self.resolution_rmerge())
 
         if self._params.completeness:
-            stamp("ra: comp")
-            print("Resolution completeness: %.2f" % self.resolution_completeness())
+            logger.info("Resolution completeness: %.2f", self.resolution_completeness())
 
         if self._params.cc_half:
-            stamp("ra: cc")
-            print("Resolution cc_half     : %.2f" % self.resolution_cc_half())
+            logger.info("Resolution cc_half:      %.2f", self.resolution_cc_half())
 
         if self._params.cc_ref and self._reference is not None:
-            stamp("ra: cc")
-            print("Resolution cc_ref      : %.2f" % self.resolution_cc_ref())
+            logger.info("Resolution cc_ref:       %.2f", self.resolution_cc_ref())
 
         if self._params.isigma:
-            stamp("ra: isig")
-            print("Resolution I/sig:        %.2f" % self.resolution_unmerged_isigma())
-
-        if self._params.misigma:
-            stamp("ra: mnisig")
-            print("Resolution Mn(I/sig):    %.2f" % self.resolution_merged_isigma())
-
-        if self._params.i_mean_over_sigma_mean:
-            print(
-                "Resolution Mn(I)/Mn(sig):    %.2f"
-                % self.resolution_i_mean_over_sigma_mean()
+            logger.info(
+                "Resolution I/sig:        %.2f", self.resolution_unmerged_isigma()
             )
 
-    def resolution_rmerge(self, limit=None, log=None):
+        if self._params.misigma:
+            logger.info(
+                "Resolution Mn(I/sig):    %.2f", self.resolution_merged_isigma()
+            )
+
+        if self._params.i_mean_over_sigma_mean:
+            logger.info(
+                "Resolution Mn(I)/Mn(sig):    %.2f",
+                self.resolution_i_mean_over_sigma_mean(),
+            )
+
+    def resolution_rmerge(self, limit=None):
         """Compute a resolution limit where either rmerge = 1.0 (limit if
         set) or the full extent of the data. N.B. this fit is only meaningful
         for positive values."""
@@ -462,14 +493,10 @@ class resolutionizer(object):
         else:
             rmerge_f = log_inv_fit(s_s, rmerge_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = rmerge_s[j]
-                    m = rmerge_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), rmerge_s[j], rmerge_f[j]
+                )
 
             try:
                 r_rmerge = 1.0 / math.sqrt(interpolate_value(s_s, rmerge_f, limit))
@@ -486,7 +513,7 @@ class resolutionizer(object):
 
         return r_rmerge
 
-    def resolution_i_mean_over_sigma_mean(self, limit=None, log=None):
+    def resolution_i_mean_over_sigma_mean(self, limit=None):
         """Compute a resolution limit where either <I>/<sigma> = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -511,14 +538,10 @@ class resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = isigma_s[j]
-                    m = isigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
+                )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -538,7 +561,7 @@ class resolutionizer(object):
 
         return r_isigma
 
-    def resolution_unmerged_isigma(self, limit=None, log=None):
+    def resolution_unmerged_isigma(self, limit=None):
         """Compute a resolution limit where either I/sigma = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -563,14 +586,10 @@ class resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = isigma_s[j]
-                    m = isigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
+                )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -587,7 +606,7 @@ class resolutionizer(object):
 
         return r_isigma
 
-    def resolution_merged_isigma(self, limit=None, log=None):
+    def resolution_merged_isigma(self, limit=None):
         """Compute a resolution limit where either Mn(I/sigma) = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -612,14 +631,10 @@ class resolutionizer(object):
         else:
             misigma_f = log_fit(s_s, misigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = misigma_s[j]
-                    m = misigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), misigma_s[j], misigma_f[j]
+                )
 
             try:
                 r_misigma = 1.0 / math.sqrt(interpolate_value(s_s, misigma_f, limit))
@@ -636,7 +651,7 @@ class resolutionizer(object):
 
         return r_misigma
 
-    def resolution_completeness(self, limit=None, log=None):
+    def resolution_completeness(self, limit=None):
         """Compute a resolution limit where completeness < 0.5 (limit if
         set) or the full extent of the data. N.B. this completeness is
         with respect to the *maximum* completeness in a shell, to reflect
@@ -661,14 +676,10 @@ class resolutionizer(object):
 
             rlimit = limit * max(comp_s)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = comp_s[j]
-                    m = comp_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), comp_s[j], comp_f[j]
+                )
 
             try:
                 r_comp = 1.0 / math.sqrt(interpolate_value(s_s, comp_f, rlimit))
@@ -685,7 +696,7 @@ class resolutionizer(object):
 
         return r_comp
 
-    def resolution_cc_half(self, limit=None, log=None):
+    def resolution_cc_half(self, limit=None):
         """Compute a resolution limit where cc_half < 0.5 (limit if
         set) or the full extent of the data."""
 
@@ -742,23 +753,17 @@ class resolutionizer(object):
         else:
             cc_f = fit(s_s[i:], cc_s[i:], 6)
 
-        stamp("rch: fits")
+        logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
-        if log:
-            fout = open(log, "w")
-            for j, s in enumerate(s_s):
-                d = 1.0 / math.sqrt(s)
-                o = cc_s[j]
-                m = cc_f[j]
-                fout.write("%f %f %f %f\n" % (s, d, o, m))
-            fout.close()
+        for j, s in enumerate(s_s[i:]):
+            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[i + j], cc_f[j])
 
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s[i:]))
-        stamp("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s", r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CC1/2")
@@ -773,7 +778,7 @@ class resolutionizer(object):
 
         return r_cc
 
-    def resolution_cc_ref(self, limit=None, log=None):
+    def resolution_cc_ref(self, limit=None):
         """Compute a resolution limit where cc_ref < 0.5 (limit if
         set) or the full extent of the data."""
 
@@ -804,23 +809,17 @@ class resolutionizer(object):
         else:
             cc_f = fit(s_s, cc_s, 6)
 
-        stamp("rch: fits")
+        logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
-        if log:
-            fout = open(log, "w")
-            for j, s in enumerate(s_s):
-                d = 1.0 / math.sqrt(s)
-                o = cc_s[j]
-                m = cc_f[j]
-                fout.write("%f %f %f %f\n" % (s, d, o, m))
-            fout.close()
+        for j, s in enumerate(s_s):
+            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
 
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s, cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s))
-        stamp("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s", r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CCref")
@@ -830,28 +829,3 @@ class resolutionizer(object):
             plot.savefig("cc_ref.png")
 
         return r_cc
-
-
-def run(args):
-    working_phil = phil_defaults
-    interp = working_phil.command_line_argument_interpreter(home_scope="resolutionizer")
-    params, unhandled = interp.process_and_fetch(
-        args, custom_processor="collect_remaining"
-    )
-    params = params.extract().resolutionizer
-    if len(unhandled) == 0:
-        working_phil.show()
-        exit()
-
-    assert len(unhandled) == 1
-    scaled_unmerged = unhandled[0]
-
-    stamp("Resolutionizer.py starting")
-    m = resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
-    stamp("instantiated")
-    m.resolution_auto()
-    stamp("the end.")
-
-
-if __name__ == "__main__":
-    run(sys.argv[1:])
