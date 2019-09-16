@@ -1,8 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
 import math
-import sys
-import time
 
 import iotbx.phil
 from cctbx.array_family import flex
@@ -10,16 +9,11 @@ from dials.util import Sorry
 from scitbx import lbfgs
 
 
+logger = logging.getLogger(__name__)
+
+
 def nint(a):
     return int(round(a))
-
-
-start_time = time.time()
-
-
-def stamp(message):
-    #  print("[%7.3f] %s" % (time.time() - start_time, message))
-    return
 
 
 def poly_residual(xp, y, params):
@@ -98,11 +92,11 @@ def fit(x, y, order):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    stamp("fitter: %s %s %s" % (x, y, order))
+    logger.debug("fitter: %s %s %s" % (x, y, order))
     pf = poly_fitter(x, y, order)
-    stamp("fitter: refine")
+    logger.debug("fitter: refine")
     pf.refine()
-    stamp("fitter: done")
+    logger.debug("fitter: done")
 
     return [pf.evaluate(_x) for _x in x]
 
@@ -403,33 +397,31 @@ class resolutionizer(object):
         """Compute resolution limits based on the current self._params set."""
 
         if self._params.rmerge:
-            stamp("ra: rmerge")
-            print("Resolution rmerge:       %.2f" % self.resolution_rmerge())
+            logger.info("Resolution rmerge:       %.2f", self.resolution_rmerge())
 
         if self._params.completeness:
-            stamp("ra: comp")
-            print("Resolution completeness: %.2f" % self.resolution_completeness())
+            logger.info("Resolution completeness: %.2f", self.resolution_completeness())
 
         if self._params.cc_half:
-            stamp("ra: cc")
-            print("Resolution cc_half     : %.2f" % self.resolution_cc_half())
+            logger.info("Resolution cc_half     : %.2f", self.resolution_cc_half())
 
         if self._params.cc_ref and self._reference is not None:
-            stamp("ra: cc")
-            print("Resolution cc_ref      : %.2f" % self.resolution_cc_ref())
+            logger.info("Resolution cc_ref      : %.2f", self.resolution_cc_ref())
 
         if self._params.isigma:
-            stamp("ra: isig")
-            print("Resolution I/sig:        %.2f" % self.resolution_unmerged_isigma())
+            logger.info(
+                "Resolution I/sig:        %.2f", self.resolution_unmerged_isigma()
+            )
 
         if self._params.misigma:
-            stamp("ra: mnisig")
-            print("Resolution Mn(I/sig):    %.2f" % self.resolution_merged_isigma())
+            logger.info(
+                "Resolution Mn(I/sig):    %.2f", self.resolution_merged_isigma()
+            )
 
         if self._params.i_mean_over_sigma_mean:
-            print(
-                "Resolution Mn(I)/Mn(sig):    %.2f"
-                % self.resolution_i_mean_over_sigma_mean()
+            logger.info(
+                "Resolution Mn(I)/Mn(sig):    %.2f",
+                self.resolution_i_mean_over_sigma_mean(),
             )
 
     def resolution_rmerge(self, limit=None, log=None):
@@ -742,7 +734,7 @@ class resolutionizer(object):
         else:
             cc_f = fit(s_s[i:], cc_s[i:], 6)
 
-        stamp("rch: fits")
+        logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
         if log:
@@ -758,7 +750,7 @@ class resolutionizer(object):
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s[i:]))
-        stamp("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s" % r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CC1/2")
@@ -804,7 +796,7 @@ class resolutionizer(object):
         else:
             cc_f = fit(s_s, cc_s, 6)
 
-        stamp("rch: fits")
+        logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
         if log:
@@ -820,7 +812,7 @@ class resolutionizer(object):
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s, cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s))
-        stamp("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s" % r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CCref")
@@ -830,28 +822,3 @@ class resolutionizer(object):
             plot.savefig("cc_ref.png")
 
         return r_cc
-
-
-def run(args):
-    working_phil = phil_defaults
-    interp = working_phil.command_line_argument_interpreter(home_scope="resolutionizer")
-    params, unhandled = interp.process_and_fetch(
-        args, custom_processor="collect_remaining"
-    )
-    params = params.extract().resolutionizer
-    if len(unhandled) == 0:
-        working_phil.show()
-        exit()
-
-    assert len(unhandled) == 1
-    scaled_unmerged = unhandled[0]
-
-    stamp("Resolutionizer.py starting")
-    m = resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
-    stamp("instantiated")
-    m.resolution_auto()
-    stamp("the end.")
-
-
-if __name__ == "__main__":
-    run(sys.argv[1:])
