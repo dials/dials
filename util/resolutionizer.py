@@ -19,10 +19,6 @@ from dials.util.filter_reflections import filter_reflection_table
 logger = logging.getLogger(__name__)
 
 
-def nint(a):
-    return int(round(a))
-
-
 def poly_residual(xp, y, params):
     """Compute the residual between the observations y[i] and sum_j
     params[j] x[i]^j. For efficiency, x[i]^j are pre-calculated in xp."""
@@ -84,9 +80,6 @@ class poly_fitter(object):
             poly_residual(self._xp, self._y, self.x),
             poly_gradients(self._xp, self._y, self.x),
         )
-
-    def get_parameters(self):
-        return list(self.x)
 
     def evaluate(self, x):
         """Evaluate the resulting fit at point x."""
