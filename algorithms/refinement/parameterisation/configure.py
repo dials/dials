@@ -494,9 +494,8 @@ def _parameterise_crystals(options, experiments, analysis):
                 )
             # If a crystal is scan-varying, then it must always be found alongside
             # the same Scan and Goniometer in any Experiments in which it appears
-            if (
-                not all(g is goniometer and s is scan for (g, s) in assoc_models)
-                and not options.allow_multiple_scans_per_crystal
+            if not options.allow_multiple_scans_per_crystal and not all(
+                g is goniometer and s is scan for (g, s) in assoc_models
             ):
                 raise DialsRefineConfigError(
                     "A single scan-varying crystal model cannot be refined "
