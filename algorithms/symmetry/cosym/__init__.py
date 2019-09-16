@@ -380,28 +380,42 @@ class CosymAnalysis(symmetry_base, Subject):
         n_clusters = len(set(self.cluster_labels)) - (
             1 if -1 in self.cluster_labels else 0
         )
+        logger.info("dataset_id: %s", dataset_id)
+        logger.info("sym_ops: %s", str([str(r) for r in sym_ops]))
 
         for i_cluster in range(n_clusters):
             isel = (self.cluster_labels == i_cluster).iselection()
             dataset_ids = isel % len(self.input_intensities)
             sel = (dataset_ids == dataset_id).iselection()
+            logger.info("i_cluster: %s", i_cluster)
+            logger.info(
+                "sym_op sel:%s",
+                str(
+                    [str(sym_ops[isel[s] // len(self.input_intensities)]) for s in sel]
+                ),
+            )
             for s in sel:
                 sym_op_id = isel[s] // len(self.input_intensities)
                 for partition in cosets.partitions:
+                    logger.info("partition: %s", str([str(r) for r in partition]))
                     if sym_ops[sym_op_id] in partition:
                         if i_cluster not in reindexing_ops:
                             cb_op = sgtbx.change_of_basis_op(
                                 partition[0]
                             ).new_denominators(self.cb_op_inp_min)
-                            logger.info(cb_op)
                             reindexing_ops[i_cluster] = (
                                 self.cb_op_inp_min.inverse()
                                 * cb_op
                                 * self.cb_op_inp_min
                             ).as_xyz()
+                            logger.info("sym_op_id: %s", sym_op_id)
+                            logger.info("cb_op: %s", cb_op)
                             logger.info(reindexing_ops[i_cluster])
+                        break
+                    else:
+                        pass
 
-        logger.info(reindexing_ops)
+        logger.info("reindexing_ops: %s", str(reindexing_ops))
         return reindexing_ops
 
     @Subject.notify_event(event="analysed_clusters")
