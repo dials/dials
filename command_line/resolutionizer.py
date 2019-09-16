@@ -59,6 +59,12 @@ def run(args):
         parser.print_help()
         return
 
+    if len(reflections) and len(experiments) and len(unhandled):
+        logger.info(
+            "Must provide either scaled unmerged mtz OR dials-format scaled reflections and experiments files"
+        )
+        exit(1)
+
     if len(unhandled) == 1:
         scaled_unmerged = unhandled[0]
         m = resolutionizer.Resolutionizer.from_unmerged_mtz(
