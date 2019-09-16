@@ -436,10 +436,10 @@ class Resolutionizer(object):
             logger.info("Resolution completeness: %.2f", self.resolution_completeness())
 
         if self._params.cc_half:
-            logger.info("Resolution cc_half     : %.2f", self.resolution_cc_half())
+            logger.info("Resolution cc_half:      %.2f", self.resolution_cc_half())
 
         if self._params.cc_ref and self._reference is not None:
-            logger.info("Resolution cc_ref      : %.2f", self.resolution_cc_ref())
+            logger.info("Resolution cc_ref:       %.2f", self.resolution_cc_ref())
 
         if self._params.isigma:
             logger.info(
