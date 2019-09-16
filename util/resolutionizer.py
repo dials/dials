@@ -99,7 +99,7 @@ def fit(x, y, order):
     be iterables containing floats of the same size. The order is the order
     of polynomial to use for this fit. This will be useful for e.g. I/sigma."""
 
-    logger.debug("fitter: %s %s %s" % (x, y, order))
+    logger.debug("fitter: %s %s %s", (x, y, order))
     pf = poly_fitter(x, y, order)
     logger.debug("fitter: refine")
     pf.refine()
@@ -470,7 +470,7 @@ class Resolutionizer(object):
                 self.resolution_i_mean_over_sigma_mean(),
             )
 
-    def resolution_rmerge(self, limit=None, log=None):
+    def resolution_rmerge(self, limit=None):
         """Compute a resolution limit where either rmerge = 1.0 (limit if
         set) or the full extent of the data. N.B. this fit is only meaningful
         for positive values."""
@@ -500,14 +500,10 @@ class Resolutionizer(object):
         else:
             rmerge_f = log_inv_fit(s_s, rmerge_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = rmerge_s[j]
-                    m = rmerge_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), rmerge_s[j], rmerge_f[j]
+                )
 
             try:
                 r_rmerge = 1.0 / math.sqrt(interpolate_value(s_s, rmerge_f, limit))
@@ -524,7 +520,7 @@ class Resolutionizer(object):
 
         return r_rmerge
 
-    def resolution_i_mean_over_sigma_mean(self, limit=None, log=None):
+    def resolution_i_mean_over_sigma_mean(self, limit=None):
         """Compute a resolution limit where either <I>/<sigma> = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -549,14 +545,10 @@ class Resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = isigma_s[j]
-                    m = isigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
+                )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -576,7 +568,7 @@ class Resolutionizer(object):
 
         return r_isigma
 
-    def resolution_unmerged_isigma(self, limit=None, log=None):
+    def resolution_unmerged_isigma(self, limit=None):
         """Compute a resolution limit where either I/sigma = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -601,14 +593,10 @@ class Resolutionizer(object):
         else:
             isigma_f = log_fit(s_s, isigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = isigma_s[j]
-                    m = isigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), isigma_s[j], isigma_f[j]
+                )
 
             try:
                 r_isigma = 1.0 / math.sqrt(interpolate_value(s_s, isigma_f, limit))
@@ -625,7 +613,7 @@ class Resolutionizer(object):
 
         return r_isigma
 
-    def resolution_merged_isigma(self, limit=None, log=None):
+    def resolution_merged_isigma(self, limit=None):
         """Compute a resolution limit where either Mn(I/sigma) = 1.0 (limit if
         set) or the full extent of the data."""
 
@@ -650,14 +638,10 @@ class Resolutionizer(object):
         else:
             misigma_f = log_fit(s_s, misigma_s, 6)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = misigma_s[j]
-                    m = misigma_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), misigma_s[j], misigma_f[j]
+                )
 
             try:
                 r_misigma = 1.0 / math.sqrt(interpolate_value(s_s, misigma_f, limit))
@@ -674,7 +658,7 @@ class Resolutionizer(object):
 
         return r_misigma
 
-    def resolution_completeness(self, limit=None, log=None):
+    def resolution_completeness(self, limit=None):
         """Compute a resolution limit where completeness < 0.5 (limit if
         set) or the full extent of the data. N.B. this completeness is
         with respect to the *maximum* completeness in a shell, to reflect
@@ -699,14 +683,10 @@ class Resolutionizer(object):
 
             rlimit = limit * max(comp_s)
 
-            if log:
-                fout = open(log, "w")
-                for j, s in enumerate(s_s):
-                    d = 1.0 / math.sqrt(s)
-                    o = comp_s[j]
-                    m = comp_f[j]
-                    fout.write("%f %f %f %f\n" % (s, d, o, m))
-                fout.close()
+            for j, s in enumerate(s_s):
+                logger.debug(
+                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), comp_s[j], comp_f[j]
+                )
 
             try:
                 r_comp = 1.0 / math.sqrt(interpolate_value(s_s, comp_f, rlimit))
@@ -723,7 +703,7 @@ class Resolutionizer(object):
 
         return r_comp
 
-    def resolution_cc_half(self, limit=None, log=None):
+    def resolution_cc_half(self, limit=None):
         """Compute a resolution limit where cc_half < 0.5 (limit if
         set) or the full extent of the data."""
 
@@ -783,20 +763,14 @@ class Resolutionizer(object):
         logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
-        if log:
-            fout = open(log, "w")
-            for j, s in enumerate(s_s):
-                d = 1.0 / math.sqrt(s)
-                o = cc_s[j]
-                m = cc_f[j]
-                fout.write("%f %f %f %f\n" % (s, d, o, m))
-            fout.close()
+        for j, s in enumerate(s_s):
+            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
 
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s[i:]))
-        logger.debug("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s", r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CC1/2")
@@ -811,7 +785,7 @@ class Resolutionizer(object):
 
         return r_cc
 
-    def resolution_cc_ref(self, limit=None, log=None):
+    def resolution_cc_ref(self, limit=None):
         """Compute a resolution limit where cc_ref < 0.5 (limit if
         set) or the full extent of the data."""
 
@@ -845,20 +819,14 @@ class Resolutionizer(object):
         logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
-        if log:
-            fout = open(log, "w")
-            for j, s in enumerate(s_s):
-                d = 1.0 / math.sqrt(s)
-                o = cc_s[j]
-                m = cc_f[j]
-                fout.write("%f %f %f %f\n" % (s, d, o, m))
-            fout.close()
+        for j, s in enumerate(s_s):
+            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
 
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s, cc_f, rlimit))
         except Exception:
             r_cc = 1.0 / math.sqrt(max(s_s))
-        logger.debug("rch: done : %s" % r_cc)
+        logger.debug("rch: done : %s", r_cc)
 
         if self._params.plot:
             plot = resolution_plot("CCref")
