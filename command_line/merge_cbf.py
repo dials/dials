@@ -84,8 +84,10 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
     n_output_images = len(imageset) // n_images
 
-    n_digits = 1 + int(math.ceil(math.log10(n_output_images)))
-    num_fmt = "%%%0%dd" % n_digits
+    n_digits = int(math.ceil(math.log10(n_output_images)))
+    if (10 ** n_digits) == n_output_images:
+        n_digits += 1
+    num_fmt = "%%0%dd" % n_digits
     for i_out in range(n_output_images):
         data_out = None
 
