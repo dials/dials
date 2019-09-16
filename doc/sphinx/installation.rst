@@ -4,6 +4,38 @@ Installation
 
 .. include:: installation.stable_release
 
+Sneak Preview: DIALS 2.0 (Alpha 1, 2019-09-15)
+==============================================
+
+We are currently preparing for the release of DIALS 2.0. If you want to help
+us with testing then you are welcome to use this version, but be aware that not
+everything may work as expected. Your bug reports are welcome.
+
+.. button::
+   :text: Mac installer (OS X 10.11)
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-macosx.pkg
+
+.. button::
+   :text: Mac installer (OS X 10.6)
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-macosx-10.6.pkg
+
+.. button::
+   :text: Linux installer
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-linux-x86_64.tar.xz
+
+.. button::
+   :text: Linux installer (Python 3 preview, unsupported)
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-linux-x86_64-conda3.tar.gz
+
+.. button::
+   :text: Windows archive
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-windows.zip
+
+.. button::
+   :text: Source installer
+   :link: https://dials.diamond.ac.uk/dials-2.0-preview/dials-source.tar.xz
+
+
 Development Builds
 ==================
 
