@@ -763,8 +763,8 @@ class Resolutionizer(object):
         logger.debug("rch: fits")
         rlimit = limit * max(cc_s)
 
-        for j, s in enumerate(s_s):
-            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[j], cc_f[j])
+        for j, s in enumerate(s_s[i:]):
+            logger.debug("%f %f %f %f\n", s, 1.0 / math.sqrt(s), cc_s[i + j], cc_f[j])
 
         try:
             r_cc = 1.0 / math.sqrt(interpolate_value(s_s[i:], cc_f, rlimit))

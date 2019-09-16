@@ -30,6 +30,9 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
             "rmerge=0.5",
             "completeness=1.0",
             "i_mean_over_sigma_mean=3",
+            "batch_range=1,20",
+            "batch_range=70,90",
+            "space_group=P43212",
         ]
         + paths,
         working_directory=tmpdir,
@@ -38,12 +41,12 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
     print(result.stdout)
 
     expected_output = """\
-Resolution rmerge:       1.33
+Resolution rmerge:       1.34
 Resolution completeness: 1.20
-Resolution cc_half:      1.40
-Resolution I/sig:        1.52
-Resolution Mn(I/sig):    1.43
-Resolution Mn(I)/Mn(sig):    1.41"""
+Resolution cc_half:      1.62
+Resolution I/sig:        1.53
+Resolution Mn(I/sig):    1.51
+Resolution Mn(I)/Mn(sig):    1.50"""
     for line in expected_output.splitlines():
         assert line in result.stdout
 
