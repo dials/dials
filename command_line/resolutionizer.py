@@ -6,31 +6,61 @@ import sys
 
 from dials.util import resolutionizer
 from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
-
 
 logger = logging.getLogger("dials.resolutionizer")
 
+help_message = """
+"""
+
+
+phil_scope = """
+include scope dials.util.resolutionizer.phil_defaults
+"""
+
 
 def run(args):
-    working_phil = resolutionizer.phil_defaults
-    interp = working_phil.command_line_argument_interpreter(home_scope="resolutionizer")
-    params, unhandled = interp.process_and_fetch(
-        args, custom_processor="collect_remaining"
+    usage = (
+        "dials.resolutionizer [options] scaled.expt scaled.refl | scaled_unmerged.mtz"
     )
-    params = params.extract().resolutionizer
-    if len(unhandled) == 0:
-        working_phil.show()
-        exit()
+
+    parser = OptionParser(
+        usage=usage,
+        phil=phil_scope,
+        read_reflections=True,
+        read_experiments=True,
+        check_format=False,
+        epilog=help_message,
+    )
+
+    params, options, unhandled = parser.parse_args(
+        return_unhandled=True, show_diff_phil=True
+    )
+
+    # Configure the logging
+    log.config(logfile=params.output.log)
+    logger.info(dials_version())
+
+    reflections = flatten_reflections(params.input.reflections)
+    experiments = flatten_experiments(params.input.experiments)
+    if len(reflections) == 0 or len(experiments) == 0 or len(unhandled) == 1:
+        parser.print_help()
+        return
 
     # Configure the logging
     log.config(logfile="dials.resolutionizer.log")
     logger.info(dials_version())
 
-    assert len(unhandled) == 1
-    scaled_unmerged = unhandled[0]
+    if len(unhandled) == 1:
+        scaled_unmerged = unhandled[0]
+        m = resolutionizer.Resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
+    else:
+        m = resolutionizer.Resolutionizer.from_reflections_and_experiments(
+            reflections, experiments, params
+        )
 
-    m = resolutionizer.Resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
     m.resolution_auto()
 
 
