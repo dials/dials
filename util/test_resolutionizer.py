@@ -20,6 +20,10 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
         os.path.join(libtbx.env.find_in_repositories("data-files/x4wide"), p)
         for p in input_files
     ]
+    reference_mtz = os.path.join(
+        libtbx.env.find_in_repositories("data-files/x4wide"),
+        "AUTOMATIC_DEFAULT_scaled.mtz",
+    )
     result = procrunner.run(
         [
             "dials.resolutionizer",
@@ -33,6 +37,9 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
             "batch_range=1,20",
             "batch_range=70,90",
             "space_group=P43212",
+            "reference=%s" % reference_mtz,
+            "cc_ref=0.9",
+            "labels=IMEAN,SIGIMEAN",
         ]
         + paths,
         working_directory=tmpdir,
@@ -44,12 +51,21 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
 Resolution rmerge:       1.34
 Resolution completeness: 1.20
 Resolution cc_half:      1.62
+Resolution cc_ref:       1.31
 Resolution I/sig:        1.53
 Resolution Mn(I/sig):    1.51
 Resolution Mn(I)/Mn(sig):    1.50"""
     for line in expected_output.splitlines():
         assert line in result.stdout
 
-    expected_png = ["cc_half.png", "isigma.png", "misigma.png"]
+    expected_png = [
+        "cc_half.png",
+        "isigma.png",
+        "misigma.png",
+        "completeness.png",
+        "rmerge.png",
+        "cc_ref.png",
+        "i_mean_over_sigma_mean.png",
+    ]
     for png in expected_png:
         assert tmpdir.join(png).check()
