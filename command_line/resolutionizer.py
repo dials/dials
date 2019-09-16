@@ -4,7 +4,7 @@
 import logging
 import sys
 
-from dials.util import Resolutionizer
+from dials.util import resolutionizer
 from dials.util import log
 from dials.util.version import dials_version
 
@@ -13,7 +13,7 @@ logger = logging.getLogger("dials.resolutionizer")
 
 
 def run(args):
-    working_phil = Resolutionizer.phil_defaults
+    working_phil = resolutionizer.phil_defaults
     interp = working_phil.command_line_argument_interpreter(home_scope="resolutionizer")
     params, unhandled = interp.process_and_fetch(
         args, custom_processor="collect_remaining"
@@ -30,7 +30,7 @@ def run(args):
     assert len(unhandled) == 1
     scaled_unmerged = unhandled[0]
 
-    m = Resolutionizer.resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
+    m = resolutionizer.Resolutionizer.from_unmerged_mtz(scaled_unmerged, params)
     m.resolution_auto()
 
 

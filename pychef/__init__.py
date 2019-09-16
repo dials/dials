@@ -552,9 +552,9 @@ def remove_batch_gaps(batches):
 
 
 def resolution_limit(mtz_file, min_completeness, n_bins):
-    from xia2.Modules.Resolutionizer import resolutionizer, phil_defaults
+    from dials.util.resolutionizer import Resolutionizer, phil_defaults
 
     params = phil_defaults.extract().resolutionizer
     params.nbins = n_bins
-    r = resolutionizer(mtz_file, params)
+    r = Resolutionizer(mtz_file, params)
     return r.resolution_completeness(limit=min_completeness)

@@ -292,7 +292,7 @@ class resolution_plot(object):
         self.fig.savefig(filename)
 
 
-class resolutionizer(object):
+class Resolutionizer(object):
     """A class to calculate things from merging reflections."""
 
     def __init__(self, i_obs, params, batches=None, reference=None):
