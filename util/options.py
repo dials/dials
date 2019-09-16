@@ -455,19 +455,26 @@ class PhilCommandParser(object):
         user_phils = []
         unhandled = []
         interpretor = self.system_phil.command_line_argument_interpreter()
+
+        def _is_a_phil_file(filename):
+            return any(
+                filename.endswith(phil_ext)
+                for phil_ext in (".phil", ".param", ".params", ".eff", ".def")
+            )
+
         for arg in args:
-            if os.path.isfile(arg) and os.path.getsize(arg) > 0:
-                name, ext = os.path.splitext(arg)
-                if ext in [".phil", ".param", ".params", ".eff", ".def"]:
-                    try:
-                        user_phils.append(parse(file_name=arg))
-                    except Exception:
-                        if return_unhandled:
-                            unhandled.append(arg)
-                        else:
-                            raise
-                else:
-                    unhandled.append(arg)
+            if (
+                _is_a_phil_file(arg)
+                and os.path.isfile(arg)
+                and os.path.getsize(arg) > 0
+            ):
+                try:
+                    user_phils.append(parse(file_name=arg))
+                except Exception:
+                    if return_unhandled:
+                        unhandled.append(arg)
+                    else:
+                        raise
             elif arg.find("=") >= 0:
                 try:
                     user_phils.append(interpretor.process_arg(arg=arg))
