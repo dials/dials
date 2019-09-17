@@ -690,7 +690,7 @@ class IntegrationManager(object):
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
             cutoff = int(block.threshold * len(nframes))
-            block_size = nframes[cutoff] * 2
+            block_size = nframes[cutoff]
             if block_size > max_block_size:
                 logger.warning(
                     "Computed block size (%s) > maximum block size (%s).",
@@ -1214,7 +1214,7 @@ class ReferenceCalculatorManager(object):
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
             cutoff = int(block.threshold * len(nframes))
-            block_size = nframes[cutoff] * 2
+            block_size = nframes[cutoff]
             if block_size > max_block_size:
                 logger.warning(
                     "Computed block size (%s) > maximum block size (%s).",

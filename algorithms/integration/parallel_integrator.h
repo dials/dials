@@ -1192,7 +1192,7 @@ namespace dials { namespace algorithms {
         nelements += xsize * ysize;
       }
       nelements *= block_size;
-      std::size_t nbytes = nelements * sizeof(double);
+      std::size_t nbytes = nelements * sizeof(Buffer::float_type);
       return nbytes;
     }
 
@@ -1212,7 +1212,7 @@ namespace dials { namespace algorithms {
         std::size_t ysize = detector[i].get_image_size()[1];
         nelements += xsize * ysize;
       }
-      std::size_t nbytes = nelements * sizeof(double);
+      std::size_t nbytes = nelements * sizeof(Buffer::float_type);
       DIALS_ASSERT(nbytes > 0);
       DIALS_ASSERT(max_memory_usage > nbytes);
       return (std::size_t)std::floor((float)max_memory_usage / (float)nbytes);
