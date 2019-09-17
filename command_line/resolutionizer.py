@@ -1,5 +1,4 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.resolutionizer
-# LIBTBX_SET_DISPATCHER_NAME xia2.resolutionizer
+from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
@@ -49,21 +48,20 @@ def run(args):
         return_unhandled=True, show_diff_phil=True
     )
 
-    # Configure the logging
-    log.config(logfile=params.output.log)
-    logger.info(dials_version())
-
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
-    if (len(reflections) == 0 or len(experiments) == 0) and len(unhandled) == 0:
+    if (not reflections or not experiments) and not unhandled:
         parser.print_help()
         return
 
-    if len(reflections) and len(experiments) and len(unhandled):
-        logger.info(
+    if reflections and experiments and unhandled:
+        sys.exit(
             "Must provide either scaled unmerged mtz OR dials-format scaled reflections and experiments files"
         )
-        exit(1)
+
+    # Configure the logging
+    log.config(logfile=params.output.log)
+    logger.info(dials_version())
 
     if len(unhandled) == 1:
         scaled_unmerged = unhandled[0]
