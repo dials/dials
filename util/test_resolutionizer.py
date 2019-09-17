@@ -46,7 +46,7 @@ Resolution cc_ref:       1.31
 Resolution I/sig:        1.53
 Resolution Mn(I/sig):    1.51
 Resolution Mn(I)/Mn(sig):    1.50"""
-    for line in expected_output.splitlines():
+    for line in expected_output.encode("latin-1").splitlines():
         assert line in result.stdout
 
     expected_png = [
