@@ -241,7 +241,7 @@ def refine_subgroup(args):
     subgroup.correlation_coefficients = []
     subgroup.cc_nrefs = []
 
-    with LoggingContext(logging.getLogger(), level=logging.ERROR):
+    with LoggingContext("dials.algorithms.refinement", level=logging.ERROR):
         try:
             outlier_algorithm = params.refinement.reflections.outlier.algorithm
             sel = used_reflections.get_flags(used_reflections.flags.used_in_refinement)
