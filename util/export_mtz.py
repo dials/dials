@@ -138,8 +138,8 @@ def _add_batch_list(
 
     # Recalculate useful numbers and references here
     n_batches = image_range[1] - image_range[0] + 1
-    phi_start = flex.float(n_batches)
-    phi_range = flex.float(n_batches)
+    phi_start = flex.float(n_batches, 0)
+    phi_range = flex.float(n_batches, 0)
     umat_array = flex.float(flex.grid(n_batches, 9))
     cell_array = flex.float(flex.grid(n_batches, 6))
 
@@ -153,8 +153,6 @@ def _add_batch_list(
     for i in range(n_batches):
         if experiment.scan:
             phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
-        else:
-            phi_start[i], phi_range[i] = 0.0, 0.0
 
         # unit cell (this is fine) and the what-was-refined-flags hardcoded
         # take time-varying parameters from the *end of the frame* unlikely to
