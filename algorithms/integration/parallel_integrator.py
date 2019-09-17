@@ -1,6 +1,9 @@
 from __future__ import absolute_import, division, print_function
+from dials.array_family import flex
 
 import logging
+
+from math import ceil
 
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
@@ -570,6 +573,7 @@ class IntegrationManager(object):
         # Compute the block size and jobs
         self.compute_blocks()
         self.compute_jobs()
+        self.split_reflections()
 
         # Create the reflection manager
         self.manager = SimpleReflectionManager(
@@ -732,6 +736,51 @@ class IntegrationManager(object):
         assert block.size > 0
         self.blocks = SimpleBlockList(array_range, block.size)
         assert len(self.blocks) > 0, "Invalid number of jobs"
+
+    def split_reflections(self):
+        """
+        Split the reflections into partials or over job boundaries
+        """
+
+        # Get the block size and num frames
+        block_size = self.params.integration.block.size
+        _, _, _, _, z0, z1 = self.reflections["bbox"].parts()
+        nframes = z1 - z0
+        num_full = len(self.reflections)
+
+        # See if any reflections need to be split
+        indices = nframes > block_size
+        if indices.count(True) > 0:
+
+            # Get the subset of reflections to be split
+            subset = self.reflections.select(indices)
+            newset = flex.reflection_table()
+            for i in range(len(subset)):
+                item = subset.select(flex.size_t([i]))
+                bbox = item["bbox"]
+                size = bbox[5] - bbox[4]
+                assert size > block_size
+                nsplits = int(ceil(float(size) / float(block_size)))
+                partsize = int(ceil(float(size) / float(nsplits)))
+                bbox0 = bbox[0:4] + (bbox[4], bbox[4] + partsize)
+                subset["bbox"][i] = bbox0
+                for j in range(1, nsplits):
+                    bbox0 = bbox0[0:4] + (bbox0[5], min(bbox0[5] + partsize, bbox[5]))
+                    assert bbox0[4] < bbox0[5]
+                    assert bbox0[5] <= bbox[5]
+                    item["bbox"][0] = bbox0
+                    newset.extend(item)
+
+            # Update the subset of trimmed reflections and add the new set of partials
+            self.reflections.set_selected(indices, subset)
+            self.reflections.extend(newset)
+
+        # Print some info
+        num_partial = len(self.reflections)
+        assert num_partial >= num_full, "Invalid number of partials"
+        if num_partial > num_full:
+            num_split = num_partial - num_full
+            logger.info(" Split %d reflections\n" % num_split)
 
     def summary(self):
         """
@@ -1046,6 +1095,7 @@ class ReferenceCalculatorManager(object):
         # Compute the block size and jobs
         self.compute_blocks()
         self.compute_jobs()
+        self.split_reflections()
 
         # Create the reflection manager
         self.manager = SimpleReflectionManager(
@@ -1207,6 +1257,51 @@ class ReferenceCalculatorManager(object):
         assert block.size > 0
         self.blocks = SimpleBlockList(array_range, block.size)
         assert len(self.blocks) > 0, "Invalid number of jobs"
+
+    def split_reflections(self):
+        """
+        Split the reflections into partials or over job boundaries
+        """
+
+        # Get the block size and num frames
+        block_size = self.params.integration.block.size
+        _, _, _, _, z0, z1 = self.reflections["bbox"].parts()
+        nframes = z1 - z0
+        num_full = len(self.reflections)
+
+        # See if any reflections need to be split
+        indices = nframes > block_size
+        if indices.count(True) > 0:
+
+            # Get the subset of reflections to be split
+            subset = self.reflections.select(indices)
+            newset = flex.reflection_table()
+            for i in range(len(subset)):
+                item = subset.select(flex.size_t([i]))
+                bbox = item["bbox"][0]
+                size = bbox[5] - bbox[4]
+                assert size > block_size
+                nsplits = int(ceil(float(size) / float(block_size)))
+                partsize = int(ceil(float(size) / float(nsplits)))
+                bbox0 = bbox[0:4] + (bbox[4], bbox[4] + partsize)
+                subset["bbox"][i] = bbox0
+                for j in range(1, nsplits):
+                    bbox0 = bbox0[0:4] + (bbox0[5], min(bbox0[5] + partsize, bbox[5]))
+                    assert bbox0[4] < bbox0[5]
+                    assert bbox0[5] <= bbox[5]
+                    item["bbox"][0] = bbox0
+                    newset.extend(item)
+
+            # Update the subset of trimmed reflections and add the new set of partials
+            self.reflections.set_selected(indices, subset)
+            self.reflections.extend(newset)
+
+        # Print some info
+        num_partial = len(self.reflections)
+        assert num_partial >= num_full, "Invalid number of partials"
+        if num_partial > num_full:
+            num_split = num_partial - num_full
+            logger.info(" Split %d reflections\n" % num_split)
 
     def summary(self):
         """
