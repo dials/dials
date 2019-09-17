@@ -1,36 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import platform
+from time import time
+
+import dials.algorithms.integration
 
 logger = logging.getLogger(__name__)
-
-
-class TimingInfo(object):
-    """
-    A class to contain timing info.
-    """
-
-    def __init__(self):
-        self.read = 0
-        self.initialize = 0
-        self.process = 0
-        self.finalize = 0
-        self.total = 0
-        self.user = 0
-
-    def __str__(self):
-        """ Convert to string. """
-        from libtbx.table_utils import format as table
-
-        rows = [
-            ["Read time", "%.2f seconds" % (self.read)],
-            ["Pre-process time", "%.2f seconds" % (self.initialize)],
-            ["Process time", "%.2f seconds" % (self.process)],
-            ["Post-process time", "%.2f seconds" % (self.finalize)],
-            ["Total time", "%.2f seconds" % (self.total)],
-            ["User time", "%.2f seconds" % (self.user)],
-        ]
-        return table(rows, justify="right", prefix=" ")
 
 
 class ProcessorImageBase(object):
@@ -73,9 +49,7 @@ class ProcessorImageBase(object):
 
         :return: The processing results
         """
-        from time import time
         from dials.util.mp import multi_node_parallel_map
-        import platform
 
         start_time = time()
         self.manager.initialize()
@@ -209,7 +183,6 @@ class Task(object):
         from dials.model.data import MultiPanelImageVolume
         from dials.model.data import ImageVolume
         from dials.algorithms.integration.processor import job
-        from time import time
 
         # Set the job index
         job.index = self.index
@@ -318,7 +291,7 @@ class ManagerImage(object):
         self.finalized = False
 
         # Initialise the timing information
-        self.time = TimingInfo()
+        self.time = dials.algorithms.integration.TimingInfo()
 
     def initialize(self):
         """
@@ -327,7 +300,6 @@ class ManagerImage(object):
         from dials_algorithms_integration_integrator_ext import (
             ReflectionManagerPerImage,
         )
-        from time import time
 
         # Get the start time
         start_time = time()
@@ -387,8 +359,6 @@ class ManagerImage(object):
         """
         Finalize the processing and finish.
         """
-        from time import time
-
         # Get the start time
         start_time = time()
 
@@ -619,28 +589,22 @@ class ImageIntegrator(object):
         self.profile_model_report = None
         self.integration_report = None
 
-        # Heading
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info(heading("Processing reflections"))
-        logger.info("")
-
-        # Create summary format
-        fmt = (
-            " Processing the following experiments:\n"
-            "\n"
-            " Experiments: %d\n"
-            " Beams:       %d\n"
-            " Detectors:   %d\n"
-            " Goniometers: %d\n"
-            " Scans:       %d\n"
-            " Crystals:    %d\n"
-            " Imagesets:   %d\n"
-        )
-
         # Print the summary
         logger.info(
-            fmt
+            "=" * 80
+            + (
+                "\n\n"
+                "Processing reflections\n\n"
+                " Processing the following experiments:\n"
+                "\n"
+                " Experiments: %d\n"
+                " Beams:       %d\n"
+                " Detectors:   %d\n"
+                " Goniometers: %d\n"
+                " Scans:       %d\n"
+                " Crystals:    %d\n"
+                " Imagesets:   %d\n"
+            )
             % (
                 len(self.experiments),
                 len(self.experiments.beams()),

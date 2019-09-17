@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
+import itertools
 import logging
 import math
 from time import time
 
 import boost.python
+import dials.algorithms.integration
 import libtbx
 from dials_algorithms_integration_integrator_ext import (
     Executor,
@@ -47,7 +49,6 @@ __all__ = [
     "Shoebox",
     "ShoeboxProcessor",
     "Task",
-    "TimingInfo",
 ]
 
 logger = logging.getLogger(__name__)
@@ -175,36 +176,6 @@ class Parameters(object):
         self.block.update(other.block)
         self.shoebox.update(other.shoebox)
         self.debug.update(other.debug)
-
-
-class TimingInfo(object):
-    """
-    A class to contain timing info.
-    """
-
-    def __init__(self):
-        self.read = 0
-        self.extract = 0
-        self.initialize = 0
-        self.process = 0
-        self.finalize = 0
-        self.total = 0
-        self.user = 0
-
-    def __str__(self):
-        """ Convert to string. """
-        from libtbx.table_utils import format as table
-
-        rows = [
-            ["Read time", "%.2f seconds" % (self.read)],
-            ["Extract time", "%.2f seconds" % (self.extract)],
-            ["Pre-process time", "%.2f seconds" % (self.initialize)],
-            ["Process time", "%.2f seconds" % (self.process)],
-            ["Post-process time", "%.2f seconds" % (self.finalize)],
-            ["Total time", "%.2f seconds" % (self.total)],
-            ["User time", "%.2f seconds" % (self.user)],
-        ]
-        return table(rows, justify="right", prefix=" ")
 
 
 class ExecuteParallelTask(object):
@@ -589,7 +560,7 @@ class Manager(object):
         self.finalized = False
 
         # Initialise the timing information
-        self.time = TimingInfo()
+        self.time = dials.algorithms.integration.TimingInfo()
 
     def initialize(self):
         """
@@ -726,9 +697,7 @@ class Manager(object):
         """
         Compute the jobs
         """
-        from itertools import groupby
-
-        groups = groupby(
+        groups = itertools.groupby(
             range(len(self.experiments)),
             lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
         )
