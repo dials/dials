@@ -757,7 +757,7 @@ class IntegrationManager(object):
             newset = flex.reflection_table()
             for i in range(len(subset)):
                 item = subset.select(flex.size_t([i]))
-                bbox = item["bbox"]
+                bbox = item["bbox"][0]
                 size = bbox[5] - bbox[4]
                 assert size > block_size
                 nsplits = int(ceil(float(size) / float(block_size)))
