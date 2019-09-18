@@ -89,7 +89,7 @@ def generate_phil_scope():
           .type = choice
           .help = "The units of the block size"
 
-        threshold = 0.9
+        threshold = 0.95
           .type = float(value_min=0.0, value_max=1.0)
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"

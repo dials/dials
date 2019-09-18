@@ -1273,6 +1273,14 @@ class ReferenceCalculatorManager(object):
         return fmt % (block_size, self.params.integration.block.units, task_table)
 
 
+def compute_required_memory(imageset, block_size):
+    """
+    Compute the required memory
+
+    """
+    return MultiThreadedIntegrator.compute_required_memory(imageset, block_size)
+
+
 class ReferenceCalculatorProcessor(object):
     def __init__(self, experiments, reflections, params=None):
         from dials.util import pprint
@@ -1285,6 +1293,15 @@ class ReferenceCalculatorProcessor(object):
 
         # Execute each task
         if params.integration.mp.njobs > 1:
+
+            if params.integration.mp.method == "multiprocessing":
+                assert_enough_memory(
+                    params.integration.mp.njobs
+                    * compute_required_memory(
+                        experiments[0].imageset, params.integration.block.size
+                    ),
+                    params.integration.block.max_memory_usage,
+                )
 
             def process_output(result):
                 for message in result[1]:
@@ -1356,6 +1373,15 @@ class IntegratorProcessor(object):
 
         # Execute each task
         if params.integration.mp.njobs > 1:
+
+            if params.integration.mp.method == "multiprocessing":
+                assert_enough_memory(
+                    params.integration.mp.njobs
+                    * compute_required_memory(
+                        experiments[0].imageset, params.integration.block.size
+                    ),
+                    params.integration.block.max_memory_usage,
+                )
 
             def process_output(result):
                 for message in result[1]:
