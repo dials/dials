@@ -574,7 +574,7 @@ class IntegrationManager(object):
         self.compute_blocks()
         self.compute_jobs()
         self.reflections = split_partials_over_boundaries(
-            self.reference, self.params.integration.block.size
+            self.reflections, self.params.integration.block.size
         )
 
         # Create the reflection manager
@@ -1053,7 +1053,7 @@ class ReferenceCalculatorManager(object):
         self.compute_blocks()
         self.compute_jobs()
         self.reflections = split_partials_over_boundaries(
-            self.reference, self.params.integration.block.size
+            self.reflections, self.params.integration.block.size
         )
 
         # Create the reflection manager
