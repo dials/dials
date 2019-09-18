@@ -1818,7 +1818,15 @@ namespace dials { namespace algorithms {
      */
     std::size_t num_reflections(std::size_t index) const {
       DIALS_ASSERT(index < finished_.size());
-      return lookup_.indices(index).size();
+      tiny<int, 2> frame = job(index);
+      tiny<int, 2> blocks = job_blocks_[index];
+      DIALS_ASSERT(frame[0] < frame[1]);
+      DIALS_ASSERT(blocks[0] < blocks[1]);
+      std::size_t n = 0;
+      for (std::size_t block = blocks[0]; block < blocks[1]; ++block) {
+        n += lookup_.indices(block).size();
+      }
+      return n;
     }
 
     /**
