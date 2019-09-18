@@ -1354,17 +1354,18 @@ def split_partials_over_boundaries(reflections, block_size):
 
     # Get the block size and num frames
     _, _, _, _, z0, z1 = reflections["bbox"].parts()
-    nframes = z1 - z0
+    n_frames_of_bboxes = z1 - z0
     num_full = len(reflections)
 
     # See if any reflections need to be split
-    indices = nframes > block_size
-    if indices.count(True) > 0:
+    refl_to_split_sel = n_frames_of_bboxes > block_size
+    if refl_to_split_sel.count(True) > 0:
 
         # Get the subset of reflections to be split
-        subset = reflections.select(indices)
+        subset = reflections.select(refl_to_split_sel)
         newset = flex.reflection_table()
         for i in range(len(subset)):
+            # get a copy of the reflection using selection
             item = subset.select(flex.size_t([i]))
             bbox = item["bbox"][0]
             size = bbox[5] - bbox[4]
@@ -1372,23 +1373,26 @@ def split_partials_over_boundaries(reflections, block_size):
             nsplits = int(ceil(float(size) / float(block_size)))
             partsize = int(ceil(float(size) / float(nsplits)))
             bbox0 = bbox[0:4] + (bbox[4], bbox[4] + partsize)
-            subset["bbox"][i] = bbox0
+            subset["bbox"][i] = bbox0  # set the updated bbox in the subset
             for _ in range(1, nsplits):
+                # make z0 start at end of previous bbox0
                 bbox0 = bbox0[0:4] + (bbox0[5], min(bbox0[5] + partsize, bbox[5]))
                 assert bbox0[4] < bbox0[5]
                 assert bbox0[5] <= bbox[5]
+                # set the split bbox as the updated bbox in the reflection copy
                 item["bbox"][0] = bbox0
+                # and add to newset as separate reflection
                 newset.extend(item)
 
         # Update the subset of trimmed reflections and add the new set of partials
-        reflections.set_selected(indices, subset)
+        reflections.set_selected(refl_to_split_sel, subset)
         reflections.extend(newset)
 
     # Print some info
-    num_partial = len(reflections)
-    assert num_partial >= num_full, "Invalid number of partials"
-    if num_partial > num_full:
-        num_split = num_partial - num_full
+    num_after_splitting = len(reflections)
+    assert num_after_splitting >= num_full, "Invalid number of partials"
+    if num_after_splitting > num_full:
+        num_split = num_after_splitting - num_full
         logger.info(" Split %d reflections\n", num_split)
 
     return reflections
