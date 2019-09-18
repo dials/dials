@@ -15,6 +15,10 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
     get_image_ranges,
 )
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
 from iotbx import mtz
 from scitbx import matrix
 from libtbx import env, Auto
@@ -395,10 +399,9 @@ def export_mtz(integrated_data, experiment_list, params):
     # First get the experiment identifier information out of the data
     expids_in_table = integrated_data.experiment_identifiers()
     if not list(expids_in_table.keys()):
-        from dials.util.multi_dataset_handling import assign_unique_identifiers
-
+        reflection_tables = parse_multiple_datasets([integrated_data])
         experiment_list, refl_list = assign_unique_identifiers(
-            experiment_list, [integrated_data]
+            experiment_list, reflection_tables
         )
         integrated_data = flex.reflection_table()
         for reflections in refl_list:
