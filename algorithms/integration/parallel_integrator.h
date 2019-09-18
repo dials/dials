@@ -1264,6 +1264,7 @@ namespace dials { namespace algorithms {
 
       // Loop through all the images
       for (std::size_t i = 0; i < zsize; ++i) {
+
         // Copy the image to the buffer. If the image number is greater than the
         // buffer size (i.e. we are now deleting old images) then wait for the
         // threads to finish so that we don't end up reading the wrong data
@@ -1276,8 +1277,10 @@ namespace dials { namespace algorithms {
           bm.copy_when_ready(imageset.get_corrected_data(i), i);
         }
 
+
         // Get the reflections recorded at this point
         af::const_ref<std::size_t> indices = lookup.indices(i);
+
 
         // Iterate through the reflection indices
         std::size_t count = 0;
@@ -1306,6 +1309,7 @@ namespace dials { namespace algorithms {
                         boost::ref(overlaps)),
             bbox[k][4]);
         }
+
 
         // Print some output
         std::ostringstream ss;

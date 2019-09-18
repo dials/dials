@@ -219,9 +219,9 @@ def generate_phil_scope():
       include scope dials.algorithms.integration.overlaps_filter.phil_scope
 
       mp {
-        method = *none drmaa sge lsf pbs
+        method = *multiprocessing drmaa sge lsf pbs
           .type = choice
-          .help = "The cluster method to use"
+          .help = "The multiprocessing method to use"
 
         njobs = 1
           .type = int(value_min=1)

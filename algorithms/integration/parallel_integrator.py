@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 from dials.array_family import flex
+from dials.algorithms.integration.processor import ExecuteParallelTask
+from dials.util.mp import multi_node_parallel_map
 
 import logging
 
@@ -1282,9 +1284,29 @@ class ReferenceCalculatorProcessor(object):
         logger.info(reference_manager.summary())
 
         # Execute each task
-        for task in reference_manager.tasks():
-            result = task()
-            reference_manager.accumulate(result)
+        if params.integration.mp.njobs > 1:
+
+            def process_output(result):
+                for message in result[1]:
+                    logger.log(message.levelno, message.msg)
+                reference_manager.accumulate(result[0])
+                result[0].reflections = None
+                result[0].data = None
+
+            multi_node_parallel_map(
+                func=ExecuteParallelTask(),
+                iterable=reference_manager.tasks(),
+                nproc=params.integration.mp.nproc,
+                njobs=params.integration.mp.njobs,
+                callback=process_output,
+                cluster_method=params.integration.mp.method,
+                preserve_order=True,
+                preserve_exception_message=True,
+            )
+        else:
+            for task in reference_manager.tasks():
+                result = task()
+                reference_manager.accumulate(result)
 
         # Finalize the processing
         reference_manager.finalize()
@@ -1333,9 +1355,29 @@ class IntegratorProcessor(object):
         logger.info(integration_manager.summary())
 
         # Execute each task
-        for task in integration_manager.tasks():
-            result = task()
-            integration_manager.accumulate(result)
+        if params.integration.mp.njobs > 1:
+
+            def process_output(result):
+                for message in result[1]:
+                    logger.log(message.levelno, message.msg)
+                integration_manager.accumulate(result[0])
+                result[0].reflections = None
+                result[0].data = None
+
+            multi_node_parallel_map(
+                func=ExecuteParallelTask(),
+                iterable=integration_manager.tasks(),
+                nproc=params.integration.mp.nproc,
+                njobs=params.integration.mp.njobs,
+                callback=process_output,
+                cluster_method=params.integration.mp.method,
+                preserve_order=True,
+                preserve_exception_message=True,
+            )
+        else:
+            for task in integration_manager.tasks():
+                result = task()
+                integration_manager.accumulate(result)
 
         # Finalize the processing
         integration_manager.finalize()

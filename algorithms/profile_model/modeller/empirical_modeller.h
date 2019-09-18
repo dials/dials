@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(datasize.all_gt(0));
       DIALS_ASSERT(threshold_ >= 0);
     }
-
+    
     virtual ~EmpiricalProfileModeller() {}
 
     /**
@@ -226,6 +226,20 @@ namespace dials { namespace algorithms {
     std::size_t size() const {
       return data_.size();
     }
+
+    /**
+     * @return The accessor
+     */
+    int3 datasize() const {
+      return int3(accessor_[0], accessor_[1], accessor_[2]);
+    }
+
+    /**
+     * @return The threshold
+     */
+    double threshold() const {
+      return threshold_;
+    } 
 
     /**
      * @return Is the profile valid
