@@ -1,5 +1,8 @@
-Import("env")
+Import("env", "env_etc")
 
 sources = ["boost_python/ext.cc"]
+
+ccp4io_lib = getattr(env_etc, "ccp4io_lib", "cmtz")
+env.Prepend(LIBS=["cctbx", ccp4io_lib])
 
 env.SharedLibrary(target="#/lib/dials_util_ext", source=sources, LIBS=env["LIBS"])
