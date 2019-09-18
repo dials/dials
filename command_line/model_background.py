@@ -1,8 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import six.moves.cPickle as pickle
+import sys
+from time import time
 
-from dials.util import show_mail_on_error
+import dials.util
+import dials.util.log
+from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.model_background")
 
@@ -10,8 +15,6 @@ help_message = """
 """
 
 # Set the phil scope
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
 
@@ -102,174 +105,87 @@ class ImageGenerator(object):
         matplotlib.use("Agg")
         self.model = model
 
-    def save_min(self, filename):
+    def _save_plot(
+        self, name, filename, extractor_fn, bounded=True, colorbar=True, vmax=None
+    ):
         """
-        Save the mean image
+        Save the image
         """
         from matplotlib import pylab
 
-        for i in range(len(self.model)):
-            min_image = self.model[i].min_image
-            vmax = sorted(list(min_image))[int(0.99 * len(min_image))]
+        for i, model in enumerate(self.model):
+            image = extractor_fn(model)
             pylab.figure(figsize=(6, 4))
-            pylab.imshow(
-                min_image.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
-            )
+            if bounded and vmax is None:
+                boundaries = {
+                    "vmin": 0,
+                    "vmax": sorted(list(image))[int(0.99 * len(image))],
+                }
+            elif bounded:
+                boundaries = {"vmin": 0, "vmax": vmax}
+            else:
+                boundaries = {}
+            pylab.imshow(image.as_numpy_array(), interpolation="none", **boundaries)
             ax1 = pylab.gca()
             ax1.get_xaxis().set_visible(False)
             ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info("Saving min image for panel %d to %s_%d.png" % (i, filename, i))
+            if colorbar:
+                cb = pylab.colorbar()
+                cb.ax.tick_params(labelsize=8)
+            logger.info(
+                "Saving %s image for panel %d to %s_%d.png" % (name, i, filename, i)
+            )
             pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+
+    def save_min(self, filename):
+        """
+        Save the min image
+        """
+        self._save_plot("min", filename, lambda m: m.min_image)
 
     def save_max(self, filename):
         """
-        Save the mean image
+        Save the max image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            max_image = self.model[i].max_image
-            vmax = sorted(list(max_image))[int(0.99 * len(max_image))]
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(
-                max_image.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
-            )
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info("Saving max image for panel %d to %s_%d.png" % (i, filename, i))
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("max", filename, lambda m: m.max_image)
 
     def save_mean(self, filename):
         """
         Save the mean image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            mean = self.model[i].mean
-            vmax = sorted(list(mean))[int(0.99 * len(mean))]
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(mean.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax)
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info(
-                "Saving mean image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("mean", filename, lambda m: m.mean)
 
     def save_variance(self, filename):
         """
         Save the variance image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            variance = self.model[i].variance
-            vmax = sorted(list(variance))[int(0.99 * len(variance))]
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(
-                variance.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
-            )
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info(
-                "Saving variance image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("variance", filename, lambda m: m.variance)
 
     def save_dispersion(self, filename):
         """
         Save the dispersion image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            dispersion = self.model[i].dispersion
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(
-                dispersion.as_numpy_array(), interpolation="none", vmin=0, vmax=2
-            )
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info(
-                "Saving dispersion image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("dispersion", filename, lambda m: m.dispersion, vmax=2)
 
     def save_mask(self, filename):
         """
         Save the dispersion image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            mask = self.model[i].mask
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(mask.as_numpy_array(), interpolation="none")
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            logger.info(
-                "Saving mask image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot(
+            "mask", filename, lambda m: m.mask, bounded=False, colorbar=False
+        )
 
     def save_model(self, filename):
         """
         Save the model image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            model = self.model[i].model
-            vmax = sorted(list(model))[int(0.99 * len(model))]
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(
-                model.as_numpy_array(), interpolation="none", vmin=0, vmax=vmax
-            )
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info(
-                "Saving model image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("model", filename, lambda m: m.model)
 
     def save_polar_model(self, filename):
         """
         Save the polar model image
         """
-        from matplotlib import pylab
-
-        for i in range(len(self.model)):
-            polar_model = self.model[i].polar_model
-            pylab.figure(figsize=(6, 4))
-            pylab.imshow(polar_model.as_numpy_array(), interpolation="none")
-            ax1 = pylab.gca()
-            ax1.get_xaxis().set_visible(False)
-            ax1.get_yaxis().set_visible(False)
-            cb = pylab.colorbar()
-            cb.ax.tick_params(labelsize=8)
-            logger.info(
-                "Saving polar model image for panel %d to %s_%d.png" % (i, filename, i)
-            )
-            pylab.savefig("%s_%d.png" % (filename, i), dpi=600, bbox_inches="tight")
+        self._save_plot("polar model", filename, lambda m: m.polar_model, bounded=False)
 
 
 class Script(object):
@@ -278,13 +194,8 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         from dials.util.options import OptionParser
-        import libtbx.load_env
 
-        # The script usage
-        usage = (
-            "usage: %s [options] [param.phil] "
-            "models.expt" % libtbx.env.dispatcher_name
-        )
+        usage = "dials.model_background [options] [param.phil] models.expt"
 
         # Initialise the base class
         self.parser = OptionParser(
@@ -296,9 +207,6 @@ class Script(object):
         from dials.util.command_line import heading
         from dials.array_family import flex
         from dials.util.options import flatten_experiments
-        from time import time
-        from dials.util import log
-        from dials.util import Sorry
         from dials.algorithms.background.modeller import BackgroundModeller
 
         start_time = time()
@@ -307,7 +215,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=False)
 
         # Configure the logging
-        log.config(verbosity=options.verbose, logfile=params.output.log)
+        dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 
@@ -328,7 +236,7 @@ class Script(object):
         # Only handle a single imageset at once
         imagesets = {expr.imageset for expr in experiments}
         if len(imagesets) != 1:
-            raise Sorry("Can only process a single imageset at a time")
+            sys.exit("Can only process a single imageset at a time")
 
         # Predict the reflections
         logger.info("")
@@ -353,11 +261,9 @@ class Script(object):
         from dials.algorithms.background.gmodel import StaticBackgroundModel
 
         static_model = StaticBackgroundModel()
-        for i in range(len(model)):
-            static_model.add(model[i].model)
+        for m in model:
+            static_model.add(m.model)
         with open(params.output.model, "wb") as outfile:
-            import six.moves.cPickle as pickle
-
             pickle.dump(static_model, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
         # Output some diagnostic images
@@ -376,6 +282,6 @@ class Script(object):
 
 
 if __name__ == "__main__":
-    with show_mail_on_error():
+    with dials.util.show_mail_on_error():
         script = Script()
         script.run()
