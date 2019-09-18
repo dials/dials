@@ -431,7 +431,9 @@ def run(args):
 
     reader = any_reflection_file(args[0])
     assert reader.file_type() == "ccp4_mtz"
-    arrays = reader.as_miller_arrays(merge_equivalents=False)
+    arrays = reader.as_miller_arrays(
+        merge_equivalents=False, anomalous=params.anomalous
+    )
     for ma in arrays:
         if ma.info().labels == ["BATCH"]:
             batches = ma

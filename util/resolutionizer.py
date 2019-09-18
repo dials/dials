@@ -175,7 +175,9 @@ def miller_array_from_mtz(unmerged_mtz, params):
     from iotbx import reflection_file_reader
 
     hkl_in = reflection_file_reader.any_reflection_file(unmerged_mtz)
-    miller_arrays = hkl_in.as_miller_arrays(merge_equivalents=False)
+    miller_arrays = hkl_in.as_miller_arrays(
+        merge_equivalents=False, anomalous=params.anomalous
+    )
     i_obs = None
     batches = None
     all_i_obs = []
