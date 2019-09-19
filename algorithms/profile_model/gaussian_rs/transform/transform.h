@@ -383,11 +383,14 @@ namespace dials {
           }
         }
 
+        vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1_);
+        double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
+
         af::versa<vec2<double>, af::c_grid<2> > gc_array(
           af::c_grid<2>(shoebox_size_[1] + 1, shoebox_size_[2] + 1));
         for (int j = 0; j <= shoebox_size_[1]; ++j) {
           for (int i = 0; i <= shoebox_size_[2]; ++i) {
-            gc_array(j, i) = gc(panel, j, i);
+            gc_array(j, i) = gc(panel, j, i, attenuation_length);
           }
         }
 
@@ -434,6 +437,17 @@ namespace dials {
        */
       vec2<double> gc(const Panel &panel, std::size_t j, std::size_t i) const {
         vec3<double> sp = panel.get_pixel_lab_coord(vec2<double>(x0_ + i, y0_ + j));
+        vec3<double> ds = sp.normalize() * s1_.length() - s1_;
+        return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
+                            grid_cent_[1] + (e2_ * ds) / step_size_[1]);
+      }
+
+      vec2<double> gc(const Panel &panel,
+                      std::size_t j,
+                      std::size_t i,
+                      double attenuation_length) const {
+        vec3<double> sp =
+          panel.get_pixel_lab_coord(vec2<double>(x0_ + i, y0_ + j), attenuation_length);
         vec3<double> ds = sp.normalize() * s1_.length() - s1_;
         return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
                             grid_cent_[1] + (e2_ * ds) / step_size_[1]);
