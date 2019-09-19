@@ -528,21 +528,26 @@ class ProfileModelCalculator(object):
 
         assert centroid_definition in ("s1", "com")
 
-        # Calculate the E.S.D of the beam divergence
-        logger.info("Calculating E.S.D Beam Divergence.")
-        beam_divergence = ComputeEsdBeamDivergence(
-            detector, reflections, centroid_definition
-        )
+        n_all = reflections.size()
 
-        # Set the sigma b
-        self._sigma_b = beam_divergence.sigma()
-
-        # FIXME Calculate properly
+        # stills images behave differently in here
         if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+            logger.info("Using %d reflections for sigma calculation" % n_all)
+            logger.info("Calculating E.S.D Beam Divergence.")
+            beam_divergence = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+            self._sigma_b = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+            # FIXME calculate properly
             self._sigma_m = 0.0
         else:
+            # filter reflections before determining the reflection profile
+            # parameters - first by used_in_refinement then by zeta
 
-            # Select by zeta
+            reflections = _select_reflections_for_sigma_calc(reflections)
+
             zeta = reflections.compute_zeta(
                 Experiment(
                     crystal=crystal,
@@ -552,10 +557,18 @@ class ProfileModelCalculator(object):
                     scan=scan,
                 )
             )
-            mask = flex.abs(zeta) >= min_zeta
-            reflections = reflections.select(mask)
+            reflections = reflections.select(flex.abs(zeta) >= min_zeta)
+            n_use = reflections.size()
 
-            # Calculate the E.S.D of the reflecting range
+            logger.info("Using %d / %d reflections for sigma calculation" %
+                        (n_use, n_all))
+            logger.info("Calculating E.S.D Beam Divergence.")
+            beam_divergence = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+
+            self._sigma_b = beam_divergence.sigma()
+
             logger.info("Calculating E.S.D Reflecting Range.")
             reflecting_range = ComputeEsdReflectingRange(
                 crystal,
@@ -567,10 +580,8 @@ class ProfileModelCalculator(object):
                 algorithm=algorithm,
             )
 
-            # Set the sigmas
             self._sigma_m = reflecting_range.sigma()
 
-        # Print the output
         logger.info(" sigma b: %f degrees", self._sigma_b * 180 / math.pi)
         logger.info(" sigma m: %f degrees", self._sigma_m * 180 / math.pi)
 
@@ -746,3 +757,45 @@ class ScanVaryingProfileModelCalculator(object):
     def sigma_m(self):
         """ Return the E.S.D reflecting range. """
         return self._sigma_m
+
+
+def _select_reflections_for_sigma_calc(reflections, min_number_of_refl=10000):
+    """Determine a subset of reflections to use for sigma_m calculation."""
+    from dials.array_family import flex
+
+    n_ref = reflections.size()
+    if n_ref > min_number_of_refl:
+        # ideally use well-sampled selection from refinement
+        used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
+        n_used_in_ref = used_in_ref.count(True)
+        if n_used_in_ref > min_number_of_refl:
+            selected_reflections = reflections.select(used_in_ref)
+            logger.debug(
+                "Using %s reflections with used_in_refinement flag for sigma calculation",
+                n_used_in_ref,
+            )
+
+        # handle case where used_in_refl not set/data not refined
+        else:
+            # more than min_no of refls, but refinement didn't use more than
+            # min_no: still use the ones from refinement and 'top up'
+            if n_used_in_ref:
+                selected_reflections = reflections.select(used_in_ref)
+                other_refls = reflections.select(~used_in_ref)
+            else:
+                selected_reflections = flex.reflection_table()
+                other_refls = reflections
+            # top up with every nth reflection needed to make up the number needed
+            n_sel = selected_reflections.size()
+            n_other = other_refls.size()
+            step_size = int(math.floor(n_other / (min_number_of_refl - n_sel)))
+            sel = flex.size_t(i for i in range(0, n_other, step_size))
+            selected_reflections.extend(other_refls.select(sel))
+            logger.debug(
+                "Using %s reflections for sigma calculation",
+                selected_reflections.size(),
+            )
+        return selected_reflections
+
+    logger.debug("Using all suitable reflections for sigma calculation")
+    return reflections
