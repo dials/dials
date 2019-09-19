@@ -57,7 +57,9 @@ def run(args):
                 assert os.path.isfile(arg), arg
                 reader = any_reflection_file(arg)
                 assert reader.file_type() == "ccp4_mtz"
-                arrays = reader.as_miller_arrays(merge_equivalents=False)
+                arrays = reader.as_miller_arrays(
+                    merge_equivalents=False, anomalous=False
+                )
                 crystal_symmetries.append(arrays[0].crystal_symmetry())
         else:
             parser.print_help()
