@@ -1192,7 +1192,7 @@ namespace dials { namespace algorithms {
         nelements += xsize * ysize;
       }
       nelements *= block_size;
-      std::size_t nbytes = nelements * sizeof(double);
+      std::size_t nbytes = nelements * sizeof(Buffer::float_type);
       return nbytes;
     }
 
@@ -1212,7 +1212,7 @@ namespace dials { namespace algorithms {
         std::size_t ysize = detector[i].get_image_size()[1];
         nelements += xsize * ysize;
       }
-      std::size_t nbytes = nelements * sizeof(double);
+      std::size_t nbytes = nelements * sizeof(Buffer::float_type);
       DIALS_ASSERT(nbytes > 0);
       DIALS_ASSERT(max_memory_usage > nbytes);
       return (std::size_t)std::floor((float)max_memory_usage / (float)nbytes);
@@ -1264,6 +1264,7 @@ namespace dials { namespace algorithms {
 
       // Loop through all the images
       for (std::size_t i = 0; i < zsize; ++i) {
+
         // Copy the image to the buffer. If the image number is greater than the
         // buffer size (i.e. we are now deleting old images) then wait for the
         // threads to finish so that we don't end up reading the wrong data
@@ -1276,8 +1277,10 @@ namespace dials { namespace algorithms {
           bm.copy_when_ready(imageset.get_corrected_data(i), i);
         }
 
+
         // Get the reflections recorded at this point
         af::const_ref<std::size_t> indices = lookup.indices(i);
+
 
         // Iterate through the reflection indices
         std::size_t count = 0;
@@ -1306,6 +1309,7 @@ namespace dials { namespace algorithms {
                         boost::ref(overlaps)),
             bbox[k][4]);
         }
+
 
         // Print some output
         std::ostringstream ss;
@@ -1818,7 +1822,15 @@ namespace dials { namespace algorithms {
      */
     std::size_t num_reflections(std::size_t index) const {
       DIALS_ASSERT(index < finished_.size());
-      return lookup_.indices(index).size();
+      tiny<int, 2> frame = job(index);
+      tiny<int, 2> blocks = job_blocks_[index];
+      DIALS_ASSERT(frame[0] < frame[1]);
+      DIALS_ASSERT(blocks[0] < blocks[1]);
+      std::size_t n = 0;
+      for (std::size_t block = blocks[0]; block < blocks[1]; ++block) {
+        n += lookup_.indices(block).size();
+      }
+      return n;
     }
 
     /**

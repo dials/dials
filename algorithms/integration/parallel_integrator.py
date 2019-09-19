@@ -1,6 +1,11 @@
 from __future__ import absolute_import, division, print_function
+from dials.array_family import flex
+from dials.algorithms.integration.processor import ExecuteParallelTask
+from dials.util.mp import multi_node_parallel_map
 
 import logging
+
+from math import ceil
 
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
@@ -570,6 +575,9 @@ class IntegrationManager(object):
         # Compute the block size and jobs
         self.compute_blocks()
         self.compute_jobs()
+        self.reflections = split_partials_over_boundaries(
+            self.reflections, self.params.integration.block.size
+        )
 
         # Create the reflection manager
         self.manager = SimpleReflectionManager(
@@ -686,7 +694,7 @@ class IntegrationManager(object):
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
             cutoff = int(block.threshold * len(nframes))
-            block_size = nframes[cutoff] * 2
+            block_size = nframes[cutoff]
             if block_size > max_block_size:
                 logger.warning(
                     "Computed block size (%s) > maximum block size (%s).",
@@ -1046,6 +1054,9 @@ class ReferenceCalculatorManager(object):
         # Compute the block size and jobs
         self.compute_blocks()
         self.compute_jobs()
+        self.reflections = split_partials_over_boundaries(
+            self.reflections, self.params.integration.block.size
+        )
 
         # Create the reflection manager
         self.manager = SimpleReflectionManager(
@@ -1164,7 +1175,7 @@ class ReferenceCalculatorManager(object):
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
             cutoff = int(block.threshold * len(nframes))
-            block_size = nframes[cutoff] * 2
+            block_size = nframes[cutoff]
             if block_size > max_block_size:
                 logger.warning(
                     "Computed block size (%s) > maximum block size (%s).",
@@ -1262,6 +1273,14 @@ class ReferenceCalculatorManager(object):
         return fmt % (block_size, self.params.integration.block.units, task_table)
 
 
+def compute_required_memory(imageset, block_size):
+    """
+    Compute the required memory
+
+    """
+    return MultiThreadedIntegrator.compute_required_memory(imageset, block_size)
+
+
 class ReferenceCalculatorProcessor(object):
     def __init__(self, experiments, reflections, params=None):
         from dials.util import pprint
@@ -1273,9 +1292,38 @@ class ReferenceCalculatorProcessor(object):
         logger.info(reference_manager.summary())
 
         # Execute each task
-        for task in reference_manager.tasks():
-            result = task()
-            reference_manager.accumulate(result)
+        if params.integration.mp.njobs > 1:
+
+            if params.integration.mp.method == "multiprocessing":
+                assert_enough_memory(
+                    params.integration.mp.njobs
+                    * compute_required_memory(
+                        experiments[0].imageset, params.integration.block.size
+                    ),
+                    params.integration.block.max_memory_usage,
+                )
+
+            def process_output(result):
+                for message in result[1]:
+                    logger.log(message.levelno, message.msg)
+                reference_manager.accumulate(result[0])
+                result[0].reflections = None
+                result[0].data = None
+
+            multi_node_parallel_map(
+                func=ExecuteParallelTask(),
+                iterable=reference_manager.tasks(),
+                nproc=params.integration.mp.nproc,
+                njobs=params.integration.mp.njobs,
+                callback=process_output,
+                cluster_method=params.integration.mp.method,
+                preserve_order=True,
+                preserve_exception_message=True,
+            )
+        else:
+            for task in reference_manager.tasks():
+                result = task()
+                reference_manager.accumulate(result)
 
         # Finalize the processing
         reference_manager.finalize()
@@ -1324,9 +1372,38 @@ class IntegratorProcessor(object):
         logger.info(integration_manager.summary())
 
         # Execute each task
-        for task in integration_manager.tasks():
-            result = task()
-            integration_manager.accumulate(result)
+        if params.integration.mp.njobs > 1:
+
+            if params.integration.mp.method == "multiprocessing":
+                assert_enough_memory(
+                    params.integration.mp.njobs
+                    * compute_required_memory(
+                        experiments[0].imageset, params.integration.block.size
+                    ),
+                    params.integration.block.max_memory_usage,
+                )
+
+            def process_output(result):
+                for message in result[1]:
+                    logger.log(message.levelno, message.msg)
+                integration_manager.accumulate(result[0])
+                result[0].reflections = None
+                result[0].data = None
+
+            multi_node_parallel_map(
+                func=ExecuteParallelTask(),
+                iterable=integration_manager.tasks(),
+                nproc=params.integration.mp.nproc,
+                njobs=params.integration.mp.njobs,
+                callback=process_output,
+                cluster_method=params.integration.mp.method,
+                preserve_order=True,
+                preserve_exception_message=True,
+            )
+        else:
+            for task in integration_manager.tasks():
+                result = task()
+                integration_manager.accumulate(result)
 
         # Finalize the processing
         integration_manager.finalize()
@@ -1336,3 +1413,54 @@ class IntegratorProcessor(object):
 
     def reflections(self):
         return self._reflections
+
+
+def split_partials_over_boundaries(reflections, block_size):
+    """
+    Split the reflections into partials or over job boundaries
+    """
+
+    # Get the block size and num frames
+    _, _, _, _, z0, z1 = reflections["bbox"].parts()
+    n_frames_of_bboxes = z1 - z0
+    num_full = len(reflections)
+
+    # See if any reflections need to be split
+    refl_to_split_sel = n_frames_of_bboxes > block_size
+    if refl_to_split_sel.count(True) > 0:
+
+        # Get the subset of reflections to be split
+        subset = reflections.select(refl_to_split_sel)
+        newset = flex.reflection_table()
+        for i in range(len(subset)):
+            # get a copy of the reflection using selection
+            item = subset.select(flex.size_t([i]))
+            bbox = item["bbox"][0]
+            size = bbox[5] - bbox[4]
+            assert size > block_size
+            nsplits = int(ceil(float(size) / float(block_size)))
+            partsize = int(ceil(float(size) / float(nsplits)))
+            bbox0 = bbox[0:4] + (bbox[4], bbox[4] + partsize)
+            subset["bbox"][i] = bbox0  # set the updated bbox in the subset
+            for _ in range(1, nsplits):
+                # make z0 start at end of previous bbox0
+                bbox0 = bbox0[0:4] + (bbox0[5], min(bbox0[5] + partsize, bbox[5]))
+                assert bbox0[4] < bbox0[5]
+                assert bbox0[5] <= bbox[5]
+                # set the split bbox as the updated bbox in the reflection copy
+                item["bbox"][0] = bbox0
+                # and add to newset as separate reflection
+                newset.extend(item)
+
+        # Update the subset of trimmed reflections and add the new set of partials
+        reflections.set_selected(refl_to_split_sel, subset)
+        reflections.extend(newset)
+
+    # Print some info
+    num_after_splitting = len(reflections)
+    assert num_after_splitting >= num_full, "Invalid number of partials"
+    if num_after_splitting > num_full:
+        num_split = num_after_splitting - num_full
+        logger.info(" Split %d reflections\n", num_split)
+
+    return reflections

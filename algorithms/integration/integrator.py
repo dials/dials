@@ -89,7 +89,7 @@ def generate_phil_scope():
           .type = choice
           .help = "The units of the block size"
 
-        threshold = 0.99
+        threshold = 0.95
           .type = float(value_min=0.0, value_max=1.0)
           .help = "For block size auto the block size is calculated by sorting"
                   "reflections by the number of frames they cover and then"
@@ -219,9 +219,9 @@ def generate_phil_scope():
       include scope dials.algorithms.integration.overlaps_filter.phil_scope
 
       mp {
-        method = *none drmaa sge lsf pbs
+        method = *multiprocessing drmaa sge lsf pbs
           .type = choice
-          .help = "The cluster method to use"
+          .help = "The multiprocessing method to use"
 
         njobs = 1
           .type = int(value_min=1)
