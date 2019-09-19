@@ -41,9 +41,9 @@ namespace dials {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Panel;
   using dxtbx::model::Scan;
+  using scitbx::af::int6;
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::af::int6;
 
   /**
    * Interface for bounding mask calculator.
@@ -361,11 +361,15 @@ namespace dials {
       // Mark those points within as Foreground and those without as
       // Background.
 
+      vec2<double> shoebox_centroid_px = panel.get_ray_intersection_px(s1);
+      double attenuation_length = panel.attenuation_length(shoebox_centroid_px);
+
       af::versa<double, af::c_grid<2> > dxy_array(af::c_grid<2>(ysize + 1, xsize + 1));
       for (int j = 0; j <= ysize; ++j) {
         for (int i = 0; i <= xsize; ++i) {
           vec2<double> gxy = cs.from_beam_vector(
-            panel.get_pixel_lab_coord(vec2<double>(x0 + i, y0 + j)).normalize()
+            panel.get_pixel_lab_coord(vec2<double>(x0 + i, y0 + j), attenuation_length)
+              .normalize()
             * s0_length);
           dxy_array(j, i) = (gxy[0] * gxy[0] + gxy[1] * gxy[1]) * delta_b_r2;
         }
