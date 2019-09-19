@@ -43,14 +43,20 @@ namespace dials { namespace util {
     CMtz::MTZ* ptr = mtz->ptr();
     CMtz::MTZBAT* p = ptr->batch;
     CMtz::MTZBAT* p_tail = p;
+    int max_batch_number = 0;
     while(p != 0) {
+      max_batch_number = std::max(max_batch_number, p->num);
       p_tail = p;
       p = p->next;
     }
     int i_batch;
     int n_batches = image_range[1] - image_range[0] + 1;
+    batch_offset += image_range[0] - 1;
+    if (max_batch_number > batch_offset) {
+      batch_offset = max_batch_number;
+    }
     for(i_batch = 0; i_batch < n_batches; i_batch++) {
-      int batch_num = i_batch + batch_offset + 1;
+      int batch_num = batch_offset + i_batch + 1;
 
       // original code from add_batch below - probably excessive in this
       // case but seems harmless at this point - moved sizeof() assert out
