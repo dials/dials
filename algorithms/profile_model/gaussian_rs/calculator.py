@@ -537,9 +537,7 @@ class ProfileModelCalculator(object):
             beam_divergence = ComputeEsdBeamDivergence(
                 detector, reflections, centroid_definition
             )
-            self._sigma_b = ComputeEsdBeamDivergence(
-                detector, reflections, centroid_definition
-            )
+            self._sigma_b = beam_divergence.sigma()
             # FIXME calculate properly
             self._sigma_m = 0.0
         else:
@@ -560,8 +558,9 @@ class ProfileModelCalculator(object):
             reflections = reflections.select(flex.abs(zeta) >= min_zeta)
             n_use = reflections.size()
 
-            logger.info("Using %d / %d reflections for sigma calculation" %
-                        (n_use, n_all))
+            logger.info(
+                "Using %d / %d reflections for sigma calculation" % (n_use, n_all)
+            )
             logger.info("Calculating E.S.D Beam Divergence.")
             beam_divergence = ComputeEsdBeamDivergence(
                 detector, reflections, centroid_definition
