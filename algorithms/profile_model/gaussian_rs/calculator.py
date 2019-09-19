@@ -528,21 +528,26 @@ class ProfileModelCalculator(object):
 
         assert centroid_definition in ("s1", "com")
 
-        # Calculate the E.S.D of the beam divergence
-        logger.info("Calculating E.S.D Beam Divergence.")
-        beam_divergence = ComputeEsdBeamDivergence(
-            detector, reflections, centroid_definition
-        )
+        n_all = reflections.size()
 
-        # Set the sigma b
-        self._sigma_b = beam_divergence.sigma()
-
-        # FIXME Calculate properly
+        # stills images behave differently in here
         if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+            logger.info("Using %d reflections for sigma calculation" % n_all)
+            logger.info("Calculating E.S.D Beam Divergence.")
+            beam_divergence = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+            self._sigma_b = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+            # FIXME calculate properly
             self._sigma_m = 0.0
         else:
+            # filter reflections before determining the reflection profile
+            # parameters - first by used_in_refinement then by zeta
 
-            # Select by zeta
+            reflections = _select_reflections_for_sigma_calc(reflections)
+
             zeta = reflections.compute_zeta(
                 Experiment(
                     crystal=crystal,
@@ -552,12 +557,19 @@ class ProfileModelCalculator(object):
                     scan=scan,
                 )
             )
-            mask = flex.abs(zeta) >= min_zeta
-            reflections = reflections.select(mask)
+            reflections = reflections.select(flex.abs(zeta) >= min_zeta)
+            n_use = reflections.size()
 
-            # Calculate the E.S.D of the reflecting range
+            logger.info("Using %d / %d reflections for sigma calculation" %
+                        (n_use, n_all))
+            logger.info("Calculating E.S.D Beam Divergence.")
+            beam_divergence = ComputeEsdBeamDivergence(
+                detector, reflections, centroid_definition
+            )
+
+            self._sigma_b = beam_divergence.sigma()
+
             logger.info("Calculating E.S.D Reflecting Range.")
-            reflections = _select_reflections_for_sigma_calc(reflections)
             reflecting_range = ComputeEsdReflectingRange(
                 crystal,
                 beam,
@@ -568,10 +580,8 @@ class ProfileModelCalculator(object):
                 algorithm=algorithm,
             )
 
-            # Set the sigmas
             self._sigma_m = reflecting_range.sigma()
 
-        # Print the output
         logger.info(" sigma b: %f degrees", self._sigma_b * 180 / math.pi)
         logger.info(" sigma m: %f degrees", self._sigma_m * 180 / math.pi)
 
