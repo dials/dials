@@ -22,7 +22,7 @@
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
+#include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <boost/graph/connected_components.hpp>
@@ -260,23 +260,30 @@ namespace dials { namespace algorithms {
           }
         }
 
+        // the predecessor map - this records the edges (p[u], u) in the MST
+        std::vector<Vertex> p(num_vertices(G));
+
+        // generate the MST
+        prim_minimum_spanning_tree(
+          G, &p[0], boost::weight_map(boost::get(&MyEdge::l_ij, G)));
+
         // create a graph for the MST
         Graph MST(reciprocal_space_points.size());
 
-        // compute the minimum spanning tree
-        std::vector<Edge> spanning_tree;
-        kruskal_minimum_spanning_tree(G,
-                                      std::back_inserter(spanning_tree),
-                                      boost::weight_map(boost::get(&MyEdge::l_ij, G)));
-
-        for (size_t i = 0; i < spanning_tree.size(); ++i) {
+        // add all the edges to the MST
+        for (size_t i = 0; i < p.size(); ++i) {
           // get the edge
-          Edge e1 = spanning_tree[i];
+          bool found;
+          Edge e1;
+          boost::tie(e1, found) = boost::edge(i, p[i], G);
+          if (!found) {
+            continue;
+          }
 
           // add the edge to MST
           Edge e2;
           bool b2;
-          boost::tie(e2, b2) = add_edge(source(e1, G), target(e1, G), MST);
+          boost::tie(e2, b2) = add_edge(i, p[i], MST);
 
           // copy over edge properties
           MST[e2].h_ij = G[e1].h_ij;
