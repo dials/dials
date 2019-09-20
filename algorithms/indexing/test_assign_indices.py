@@ -5,19 +5,28 @@ import os
 import random
 
 import pytest
+
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
-from scitbx import matrix
-from scitbx.math import euler_angles_as_matrix
-from dxtbx.serialize import load
-from dxtbx.model.experiment_list import Experiment, ExperimentList
-from dxtbx.model import Crystal
-from dials.array_family import flex
+from dials.algorithms.indexing import index_reflections
 from dials.algorithms.indexing.assign_indices import (
     AssignIndicesGlobal,
     AssignIndicesLocal,
 )
-from dials.algorithms.indexing import index_reflections
+from dials.array_family import flex
+from dxtbx.format import Format
+from dxtbx.imageset import ImageSetData, ImageSweep
+from dxtbx.model import (
+    BeamFactory,
+    Crystal,
+    DetectorFactory,
+    GoniometerFactory,
+    ScanFactory,
+)
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from dxtbx.serialize import load
+from scitbx import matrix
+from scitbx.math import euler_angles_as_matrix
 
 
 def random_rotation(angle_min=0, angle_max=360):
@@ -26,51 +35,80 @@ def random_rotation(angle_min=0, angle_max=360):
     return euler_angles_as_matrix(angles, deg=True)
 
 
+@pytest.fixture
+def crystal_factory():
+    def _crystal_factory(space_group_symbol):
+        # set random seeds so tests more reliable
+        seed = 54321
+        random.seed(seed)
+        flex.set_random_seed(seed)
+
+        space_group_info = sgtbx.space_group_info(symbol=space_group_symbol)
+        space_group = space_group_info.group()
+        unit_cell = space_group_info.any_compatible_unit_cell(
+            volume=random.uniform(1e4, 1e6)
+        )
+
+        crystal_symmetry = crystal.symmetry(
+            unit_cell=unit_cell, space_group=space_group
+        )
+        crystal_symmetry.show_summary()
+
+        # the reciprocal matrix
+        B = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
+        U = random_rotation()
+        A = U * B
+
+        direct_matrix = A.inverse()
+        return Crystal(
+            direct_matrix[0:3],
+            direct_matrix[3:6],
+            direct_matrix[6:9],
+            space_group=space_group,
+        )
+
+    return _crystal_factory
+
+
+@pytest.fixture
+def experiment():
+    beam = BeamFactory.make_beam(wavelength=0.97625, sample_to_source=(0, 0, 1))
+
+    detector = DetectorFactory.simple(
+        sensor="PAD",
+        distance=265.27,
+        beam_centre=(210.7602, 205.27684),
+        fast_direction="+x",
+        slow_direction="-y",
+        pixel_size=(0.172, 0.172),
+        image_size=(2463, 2527),
+        trusted_range=(-1, 1e8),
+    )
+
+    goniometer = GoniometerFactory.single_axis()
+
+    scan = ScanFactory.make_scan(
+        image_range=(1, 20),
+        exposure_times=0.067,
+        oscillation=(82, 0.15),
+        epochs=[0] * 20,
+    )
+
+    isetdata = ImageSetData(reader=Format.Reader(["path"] * len(scan)), masker=None)
+    iset = ImageSweep(
+        isetdata, beam=beam, detector=detector, goniometer=goniometer, scan=scan
+    )
+
+    return Experiment(
+        imageset=iset, beam=beam, detector=detector, goniometer=goniometer, scan=scan
+    )
+
+
 @pytest.mark.parametrize("space_group_symbol", bravais_types.acentric)
-def test_assign_indices(dials_regression, space_group_symbol):
-    experiments_json = os.path.join(
-        dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
-    )
+def test_assign_indices(space_group_symbol, experiment, crystal_factory):
+    cryst_model = crystal_factory(space_group_symbol)
+    experiment.crystal = cryst_model
 
-    experiments = load.experiment_list(experiments_json, check_format=False)
-    sweep = experiments.imagesets()[0]
-
-    sweep = sweep[:20]
-
-    # set random seeds so tests more reliable
-    seed = 54321
-    random.seed(seed)
-    flex.set_random_seed(seed)
-
-    space_group_info = sgtbx.space_group_info(symbol=space_group_symbol)
-    space_group = space_group_info.group()
-    unit_cell = space_group_info.any_compatible_unit_cell(
-        volume=random.uniform(1e4, 1e6)
-    )
-
-    crystal_symmetry = crystal.symmetry(unit_cell=unit_cell, space_group=space_group)
-    crystal_symmetry.show_summary()
-
-    # the reciprocal matrix
-    B = matrix.sqr(unit_cell.fractionalization_matrix()).transpose()
-    U = random_rotation()
-    A = U * B
-
-    direct_matrix = A.inverse()
-    cryst_model = Crystal(
-        direct_matrix[0:3],
-        direct_matrix[3:6],
-        direct_matrix[6:9],
-        space_group=space_group,
-    )
-    experiment = Experiment(
-        imageset=sweep,
-        beam=sweep.get_beam(),
-        detector=sweep.get_detector(),
-        goniometer=sweep.get_goniometer(),
-        scan=sweep.get_scan(),
-        crystal=cryst_model,
-    )
     predicted_reflections = flex.reflection_table.from_predictions(experiment)
     use_fraction = 0.3
     use_sel = flex.random_selection(
@@ -81,7 +119,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
     predicted_reflections["xyzobs.mm.value"] = predicted_reflections["xyzcal.mm"]
     predicted_reflections["id"] = flex.int(len(predicted_reflections), 0)
     predicted_reflections.map_centroids_to_reciprocal_space(
-        sweep.get_detector(), sweep.get_beam(), sweep.get_goniometer()
+        experiment.detector, experiment.beam, experiment.goniometer
     )
 
     # check that local and global indexing worked equally well in absence of errors
@@ -89,13 +127,13 @@ def test_assign_indices(dials_regression, space_group_symbol):
     assert result.misindexed_local == 0
     assert result.misindexed_global == 0
 
-    a, b, c = map(matrix.col, cryst_model.get_real_space_vectors())
+    a, b, c = map(matrix.col, experiment.crystal.get_real_space_vectors())
     relative_error = 0.02
     a *= 1 + relative_error
     b *= 1 + relative_error
     c *= 1 + relative_error
 
-    cryst_model2 = Crystal(a, b, c, space_group=space_group)
+    cryst_model2 = Crystal(a, b, c, space_group=cryst_model.get_space_group())
     experiment.crystal = cryst_model2
 
     result = CompareGlobalLocal(experiment, predicted_reflections, miller_indices)
@@ -116,7 +154,7 @@ def test_assign_indices(dials_regression, space_group_symbol):
         direct_matrix[0:3],
         direct_matrix[3:6],
         direct_matrix[6:9],
-        space_group=space_group,
+        space_group=cryst_model.get_space_group(),
     )
     experiment.crystal = cryst_model2
 
