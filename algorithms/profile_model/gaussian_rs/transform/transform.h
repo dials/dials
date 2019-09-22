@@ -30,10 +30,10 @@ namespace dials {
       namespace gaussian_rs {
   namespace transform {
 
+    using dials::algorithms::polygon::simple_area;
     using dials::algorithms::polygon::clip::quad_with_convex_quad;
     using dials::algorithms::polygon::clip::vert4;
     using dials::algorithms::polygon::clip::vert8;
-    using dials::algorithms::polygon::simple_area;
     using dials::algorithms::polygon::spatial_interpolation::Match;
     using dials::algorithms::polygon::spatial_interpolation::quad_to_grid;
     using dials::algorithms::polygon::spatial_interpolation::
@@ -45,12 +45,12 @@ namespace dials {
     using dxtbx::model::Detector;
     using dxtbx::model::Goniometer;
     using dxtbx::model::Scan;
+    using scitbx::vec2;
+    using scitbx::vec3;
     using scitbx::af::double3;
     using scitbx::af::int2;
     using scitbx::af::int3;
     using scitbx::af::int6;
-    using scitbx::vec2;
-    using scitbx::vec3;
 
     template <typename T>
     T min4(T a, T b, T c, T d) {

@@ -41,9 +41,9 @@ namespace dials {
   using dxtbx::model::Goniometer;
   using dxtbx::model::Panel;
   using dxtbx::model::Scan;
-  using scitbx::af::int6;
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::af::int6;
 
   /**
    * Interface for bounding mask calculator.

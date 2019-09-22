@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(datasize.all_gt(0));
       DIALS_ASSERT(threshold_ >= 0);
     }
-    
+
     virtual ~EmpiricalProfileModeller() {}
 
     /**
@@ -239,7 +239,7 @@ namespace dials { namespace algorithms {
      */
     double threshold() const {
       return threshold_;
-    } 
+    }
 
     /**
      * @return Is the profile valid

@@ -135,13 +135,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
   struct ThreadSafeEmpiricalProfileModellerPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getinitargs(const ThreadSafeEmpiricalProfileModeller &obj) {
-      return boost::python::make_tuple(
-          obj.size(),
-          obj.datasize(),
-          obj.threshold());
+    static boost::python::tuple getinitargs(
+      const ThreadSafeEmpiricalProfileModeller &obj) {
+      return boost::python::make_tuple(obj.size(), obj.datasize(), obj.threshold());
     }
-    static boost::python::tuple getstate(const ThreadSafeEmpiricalProfileModeller& obj) {
+    static boost::python::tuple getstate(
+      const ThreadSafeEmpiricalProfileModeller &obj) {
       typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
       typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
       boost::python::list data_list;
@@ -161,7 +160,8 @@ namespace dials { namespace algorithms { namespace boost_python {
         data_list, mask_list, nref_list, obj.finalized());
     }
 
-    static void setstate(ThreadSafeEmpiricalProfileModeller& obj, boost::python::tuple state) {
+    static void setstate(ThreadSafeEmpiricalProfileModeller &obj,
+                         boost::python::tuple state) {
       typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
       typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
       DIALS_ASSERT(boost::python::len(state) == 4);
@@ -238,10 +238,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::shared<TransformSpec> spec_list;
     for (std::size_t i = 0; i < boost::python::len(spec); ++i) {
       spec_list.push_back(boost::python::extract<TransformSpec>(spec[i])());
-      modeller_list.push_back(boost::python::extract<ThreadSafeEmpiricalProfileModeller>(modeller[i])());
+      modeller_list.push_back(
+        boost::python::extract<ThreadSafeEmpiricalProfileModeller>(modeller[i])());
     }
     return new GaussianRSReferenceCalculator(
-        sampler, spec_list.const_ref(), modeller_list.const_ref());
+      sampler, spec_list.const_ref(), modeller_list.const_ref());
   }
 
   /**
@@ -350,21 +351,19 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     // Export ThreadSafeEmpiricalProfileModeller
     class_<ThreadSafeEmpiricalProfileModeller, bases<EmpiricalProfileModeller> >(
-        "ThreadSafeEmpiricalProfileModeller", no_init)
+      "ThreadSafeEmpiricalProfileModeller", no_init)
       .def(init<std::size_t, int3, double>())
       .def("add_single", &ThreadSafeEmpiricalProfileModeller::add_single)
-      .def_pickle(ThreadSafeEmpiricalProfileModellerPickleSuite())
-      ;
+      .def_pickle(ThreadSafeEmpiricalProfileModellerPickleSuite());
 
     // Export GaussianRSReferenceCalculator
     class_<GaussianRSReferenceCalculator, bases<ReferenceCalculatorIface> >(
       "GaussianRSReferenceCalculator", no_init)
       .def(
         init<boost::shared_ptr<SamplerIface>, const af::const_ref<TransformSpec> &>())
-      .def(
-        init<boost::shared_ptr<SamplerIface>, 
-             const af::const_ref<TransformSpec> &, 
-             const af::const_ref<ThreadSafeEmpiricalProfileModeller>& >())
+      .def(init<boost::shared_ptr<SamplerIface>,
+                const af::const_ref<TransformSpec> &,
+                const af::const_ref<ThreadSafeEmpiricalProfileModeller> &>())
       .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init))
       .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init2))
       .def("accumulate", &GaussianRSReferenceCalculator::accumulate)

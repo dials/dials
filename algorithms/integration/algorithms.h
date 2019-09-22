@@ -913,7 +913,7 @@ namespace dials { namespace algorithms {
         mutex_.push_back(boost::make_shared<boost::mutex>());
       }
     }
-    
+
     /**
      * Add a profile with indices and weights
      * @param index The index of the profile to add to
@@ -943,9 +943,9 @@ namespace dials { namespace algorithms {
           modeller_(init_modeller(sampler, spec)) {}
 
     GaussianRSReferenceCalculator(
-        boost::shared_ptr<SamplerIface> sampler,
-        const af::const_ref<TransformSpec> &spec,
-        const af::const_ref<ThreadSafeEmpiricalProfileModeller> &modeller)
+      boost::shared_ptr<SamplerIface> sampler,
+      const af::const_ref<TransformSpec> &spec,
+      const af::const_ref<ThreadSafeEmpiricalProfileModeller> &modeller)
         : sampler_(sampler),
           spec_(spec.begin(), spec.end()),
           modeller_(modeller.begin(), modeller.end()) {}
