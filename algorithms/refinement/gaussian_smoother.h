@@ -254,7 +254,7 @@ namespace dials { namespace refinement {
       return MultiValueWeights(value, weight, sumweight);
     }
 
-  private:
+  protected:
     vec2<int> idx_range(double z) {
       int i1, i2;
       if (nvalues <= 3) {

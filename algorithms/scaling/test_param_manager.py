@@ -21,10 +21,10 @@ from dials.algorithms.scaling.parameter_handler import (
 def mock_component():
     """Return a mock component of a general model."""
     component = Mock()
-    component.parameters = flex.double([1.0])
+    component.free_parameters = flex.double([1.0])
+    component.free_parameter_esds = None
     component.n_params = 1
     component.var_cov_matrix = sparse.matrix(1, 1)
-    component.parameter_esds = None
     return component
 
 
@@ -40,8 +40,6 @@ def mock_data_manager(components):
     """Return a mock data manager of a general model."""
     dm = Mock()
     dm.components = components
-    # dm.consecutive_refinement_order = None
-    # dm.id_ = 'single'
     return dm
 
 
@@ -81,8 +79,8 @@ def test_general_apm():
     apm.set_param_vals(flex.double([2.0, 1.5]))
     assert apm.get_param_vals() == flex.double([2.0, 1.5])
     # Test params were updated in components
-    assert list(components["scale"].parameters) == [2.0]
-    assert list(components["decay"].parameters) == [1.5]
+    assert list(components["scale"].free_parameters) == [2.0]
+    assert list(components["decay"].free_parameters) == [1.5]
     # Test selection of parameters
     decay_params = apm.select_parameters("decay")
     assert len(decay_params) == 1
@@ -97,8 +95,8 @@ def test_general_apm():
 
     # Test set param esds.
     apm.set_param_esds(flex.double([0.1, 0.2]))
-    assert components["scale"].parameter_esds == flex.double([0.1])
-    assert components["decay"].parameter_esds == flex.double([0.2])
+    assert components["scale"].free_parameter_esds == flex.double([0.1])
+    assert components["decay"].free_parameter_esds == flex.double([0.2])
 
 
 def test_multi_apm():
@@ -134,9 +132,9 @@ def test_multi_apm():
 
     # Test setting parameter esds.
     multi_apm.set_param_esds(flex.double([0.1, 0.2, 0.3]))
-    assert components_1["scale"].parameter_esds == flex.double([0.1])
-    assert components_1["decay"].parameter_esds == flex.double([0.2])
-    assert components_2["scale"].parameter_esds == flex.double([0.3])
+    assert components_1["scale"].free_parameter_esds == flex.double([0.1])
+    assert components_1["decay"].free_parameter_esds == flex.double([0.2])
+    assert components_2["scale"].free_parameter_esds == flex.double([0.3])
 
     # Test setting var_cov matrices for each component.
     var_cov = flex.double([1.0, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 3.0])

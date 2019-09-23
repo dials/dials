@@ -164,7 +164,11 @@ class ScalerBase(Subject):
 
     @Subject.notify_event(event="performed_scaling")
     def perform_scaling(
-        self, target_type=ScalingTarget, engine=None, max_iterations=None
+        self,
+        target_type=ScalingTarget,
+        engine=None,
+        max_iterations=None,
+        tolerance=None,
     ):
         """Minimise the scaling model."""
         apm_factory = create_apm_factory(self)
@@ -182,6 +186,8 @@ class ScalerBase(Subject):
                 prediction_parameterisation=apm,
                 max_iterations=max_iterations,
             )
+            if tolerance:
+                refinery.set_tolerance(tolerance)
             try:
                 refinery.run()
             except Exception as e:
@@ -228,6 +234,9 @@ class ScalerBase(Subject):
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""
         self._Ih_table = []
+
+    def fix_initial_parameter(self):
+        return False
 
 
 class SingleScaler(ScalerBase):
@@ -289,6 +298,10 @@ class SingleScaler(ScalerBase):
             "\n" + "=" * 80 + "\n"
         )
         log_memory_usage()
+
+    def fix_initial_parameter(self):
+        fixed = self.experiment.scaling_model.fix_initial_parameter(self.params)
+        return fixed
 
     @staticmethod
     def get_suitable_for_scaling_sel(reflections):
@@ -980,6 +993,12 @@ class MultiScaler(MultiScalerBase):
         self._update_model_data()
         logger.info("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n")
         log_memory_usage()
+
+    def fix_initial_parameter(self):
+        for scaler in self.active_scalers:
+            fixed = scaler.experiment.scaling_model.fix_initial_parameter(self.params)
+            if fixed:
+                return fixed
 
     def combine_intensities(self):
         """Combine reflection intensities, either jointly or separately."""

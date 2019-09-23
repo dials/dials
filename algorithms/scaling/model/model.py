@@ -77,6 +77,12 @@ surface_weight = 1e6
     .help = "Restraint weight applied to spherical harmonic terms in the"
             "absorption correction."
     .expert_level = 1
+fix_initial = True
+    .type = bool
+    .help = "If performing full matrix minimisation, in the final cycle,"
+            "constrain the initial parameter for more reliable parameter and"
+            "scale factor error estimates."
+    .expert_level = 2
 """
 
 array_model_phil_str = """\
@@ -136,6 +142,10 @@ class ScalingModelBase(object):
         """:obj:`bool`: Indicte whether this model has previously been refined."""
         return self._is_scaled
 
+    def fix_initial_parameter(self, params):
+        """Fix a parameter of the scaling model."""
+        return False
+
     def limit_image_range(self, new_image_range):
         """Modify the model if necessary due to reducing the image range.
 
@@ -164,9 +174,6 @@ class ScalingModelBase(object):
     def set_valid_image_range(self, image_range):
         """Set the valid image range for the model in the :obj:`configdict`."""
         self._configdict["valid_image_range"] = image_range
-
-    def normalise_components(self):
-        """Optionally define a normalisation of the parameters after scaling."""
 
     @property
     def error_model(self):
@@ -305,6 +312,11 @@ class PhysicalScalingModel(ScalingModelBase):
         """:obj:`list`: a nested list of component names to indicate scaling order."""
         return [["scale", "decay"], ["absorption"]]
 
+    def fix_initial_parameter(self, params):
+        if "scale" in self.components and params.physical.fix_initial:
+            self.components["scale"].fix_initial_parameter()
+        return True
+
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
         if "scale" in self.components:
@@ -421,24 +433,6 @@ class PhysicalScalingModel(ScalingModelBase):
         )
         self._configdict["valid_osc_range"] = (new_osc_range_0, new_osc_range_1)
         self.set_valid_image_range(new_image_range)
-
-    def normalise_components(self):
-        """Do an invariant rescale of the scale at t=0 to one and the max B to zero."""
-        if "scale" in self.components:
-            joined_norm_vals = flex.double([])
-            joined_inv_scales = flex.double([])
-            for i in range(len(self.components["scale"].normalised_values)):
-                joined_norm_vals.extend(self.components["scale"].normalised_values[i])
-                joined_inv_scales.extend(
-                    self.components["scale"].calculate_scales(block_id=i)
-                )
-            mean_scale = flex.mean(joined_inv_scales)
-            if mean_scale > 0.0:
-                self.components["scale"].parameters /= mean_scale
-                logger.info(
-                    '\nThe "scale" model component has been rescaled, so that the\n'
-                    "average scale is 1.0."
-                )
 
     @classmethod
     def from_data(cls, params, experiment, reflection_table):

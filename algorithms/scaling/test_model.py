@@ -256,15 +256,6 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     mock_params = Mock()
     mock_params.physical.decay_restraint = 0.0
     physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
-    # Test normalise components.
-    physicalmodel.components["scale"].update_reflection_data()
-    physicalmodel.components["scale"].calculate_scales_and_derivatives()
-    physicalmodel.components["decay"].update_reflection_data()
-    physicalmodel.components["decay"].calculate_scales_and_derivatives()
-    physicalmodel.normalise_components()
-    assert list(physicalmodel.components["scale"].parameters) == pytest.approx(
-        [1.0091065, 0.925014], 1e-4
-    )
 
     # Test from_dict initialisation method.
     physical_dict = {

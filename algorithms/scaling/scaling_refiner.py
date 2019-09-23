@@ -191,6 +191,14 @@ class ScalingRefinery(object):
         self._rmsd_tolerance = scaler.params.scaling_refinery.rmsd_tolerance
         self._parameters = prediction_parameterisation
 
+    @property
+    def rmsd_tolerance(self):
+        return self._rmsd_tolerance
+
+    def set_tolerance(self, tolerance):
+        """Set a tolerance."""
+        self._rmsd_tolerance = tolerance
+
     def test_rmsd_convergence(self):
         """Test for convergence of RMSDs"""
 
@@ -239,7 +247,6 @@ class ScalingRefinery(object):
 
     def return_scaler(self):
         """return scaler method"""
-        from dials.algorithms.scaling.scaler import MultiScalerBase
 
         print_step_table(self)
 
@@ -252,9 +259,6 @@ class ScalingRefinery(object):
                 for i, scaler in enumerate(self._scaler.active_scalers):
                     scaler.update_var_cov(self._parameters.apm_list[i])
                     scaler.experiment.scaling_model.set_scaling_model_as_scaled()
-
-        if not isinstance(self._scaler, MultiScalerBase):
-            self._scaler.experiment.scaling_model.normalise_components()
 
         logger.debug("\n" + str(self._scaler.experiment.scaling_model))
 

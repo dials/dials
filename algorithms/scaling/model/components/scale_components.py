@@ -98,13 +98,31 @@ assignment: was %s, attempting %s""" % (
         self._parameters = new_parameters
 
     @property
+    def free_parameters(self):
+        return self._parameters
+
+    @free_parameters.setter
+    def free_parameters(self, parameters):
+        self._parameters = parameters
+
+    @property
     def parameter_esds(self):
         """Return the estimated standard deviations of the parameters."""
         return self._parameter_esds
 
     @parameter_esds.setter
     def parameter_esds(self, esds):
-        assert len(esds) == len(self._parameters)
+        assert len(esds) == len(self.parameters)
+        self._parameter_esds = esds
+
+    @property
+    def free_parameter_esds(self):
+        """Return the estimated standard deviations of the parameters."""
+        return self._parameter_esds
+
+    @free_parameter_esds.setter
+    def free_parameter_esds(self, esds):
+        assert len(esds) == len(self.free_parameters)
         self._parameter_esds = esds
 
     def calculate_restraints(self):

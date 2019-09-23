@@ -39,8 +39,8 @@ class active_parameter_manager(object):
                     obj, "parameters"
                 ), """component object must have the
           attribute 'parameters' for access to the component parameters."""
-                self.x.extend(obj.parameters)
-                n_params = len(obj.parameters)
+                self.x.extend(obj.free_parameters)
+                n_params = len(obj.free_parameters)
                 self.components.update(
                     {
                         component: {
@@ -69,7 +69,7 @@ class active_parameter_manager(object):
         self.x = x
         for component in self.components:
             component_obj = self.components[component]["object"]
-            component_obj.parameters = self.select_parameters(component)
+            component_obj.free_parameters = self.select_parameters(component)
 
     def get_param_vals(self):
         """Get method for refinement engine access."""
@@ -91,7 +91,7 @@ class active_parameter_manager(object):
         for component in self.components.values():
             start_idx = component["start_idx"]
             end_idx = component["end_idx"]
-            component["object"].parameter_esds = esds[start_idx:end_idx]
+            component["object"].free_parameter_esds = esds[start_idx:end_idx]
 
 
 class multi_active_parameter_manager(object):
