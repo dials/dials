@@ -258,7 +258,7 @@ class reeke_model:
         # Find distance between the planes of p
         p_dist = abs(self._rlv_beg[0].dot(v_beg))
 
-        # Find distances between p = 0 and the plane passing through the
+        # Find signed distances between p = 0 and the plane passing through the
         # centre of the Ewald sphere
         dp_beg = v_beg.dot(self._source)
         dp_end = v_end.dot(self._source)
@@ -274,18 +274,11 @@ class reeke_model:
         # The correct sign is determined by whether the plane normal vector is
         # more closely parallel or antiparallel to the beam direction.
 
-        # FIXME: is the == 0 case actually relevant?
-        if dp_beg == 0:
-            limits = [0, 0]
-        else:
-            limits = [(dp_beg + (s * self._source.length())) / p_dist for s in (-1, 1)]
+        limits = [(dp_beg + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         self._ewald_p_lim_beg = tuple(sorted(limits))
 
-        if dp_end == 0:
-            limits = [0, 0]
-        else:
-            limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
+        limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         self._ewald_p_lim_end = tuple(sorted(limits))
 
@@ -307,15 +300,9 @@ class reeke_model:
         # 'sign' in the final expression replaced by 1, similar to the second
         # block dealing with dp_end.
         # Note the value of 'sign' is still used further down the line.
-        e = 2.0 * abs(dp_beg) * sin_theta ** 2
+        e = 2.0 * dp_beg * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
-        if dp_end < 0:
-            sign = -1
-        elif dp_end == 0:
-            sign = 0
-        else:
-            sign = 1
-        limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
+        limits = [(e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
@@ -326,7 +313,7 @@ class reeke_model:
         self._res_p_lim_end = tuple(sorted(limits))
 
         # select between Ewald and resolution limits on the basis of sign
-        if sign < 0:  # p axis aligned with beam, against source
+        if dp_end < 0:  # p axis aligned with beam, against source
 
             p_min_beg = max(min(self._res_p_lim_beg), min(self._ewald_p_lim_beg))
             p_min_end = max(min(self._res_p_lim_end), min(self._ewald_p_lim_end))
