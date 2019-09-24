@@ -415,15 +415,13 @@ namespace dials { namespace algorithms {
                                        double dp_end,
                                        double p_dist) {
       // Calculate beg limit
-      int sign = v_beg * source_beg_ >= 0 ? 1 : -1;
-      ewald_p_lim_beg_ = vec2<double>(-sign * (source_beg_.length() - dp_beg) / p_dist,
-                                      sign * (source_beg_.length() + dp_beg) / p_dist);
+      ewald_p_lim_beg_ = vec2<double>((dp_beg - source_beg_.length()) / p_dist,
+                                      (dp_beg + source_beg_.length()) / p_dist);
       reeke_detail::sort2(ewald_p_lim_beg_);
 
       // Calculate end limit
-      sign = v_end * source_end_ >= 0 ? 1 : -1;
-      ewald_p_lim_end_ = vec2<double>(-sign * (source_end_.length() - dp_end) / p_dist,
-                                      sign * (source_end_.length() + dp_end) / p_dist);
+      ewald_p_lim_end_ = vec2<double>((dp_end - source_end_.length()) / p_dist,
+                                      (dp_end + source_end_.length()) / p_dist);
       reeke_detail::sort2(ewald_p_lim_end_);
     }
 
@@ -442,11 +440,10 @@ namespace dials { namespace algorithms {
       double sin_2theta = std::sin(2.0 * std::asin(sin_theta));
 
       // Calculate beg limit
-      int sign = v_end * source_beg_ >= 0 ? 1 : -1;
       double e = 2.0 * sin_theta * sin_theta * dp_beg;
       double f = sin_2theta
                  * std::sqrt(std::max(1.0 / wavelength_sq_beg_ - dp_beg * dp_beg, 0.0));
-      res_p_lim_beg_ = vec2<double>((sign * e - f) / p_dist, (sign * e + f) / p_dist);
+      res_p_lim_beg_ = vec2<double>((e - f) / p_dist, (e + f) / p_dist);
       reeke_detail::sort2(res_p_lim_beg_);
 
       sin_theta = 0.5 * wavelength_end_ * dstarmax_;
@@ -457,7 +454,7 @@ namespace dials { namespace algorithms {
       e = 2.0 * sin_theta * sin_theta * dp_end;
       f = sin_2theta
           * std::sqrt(std::max(1.0 / wavelength_sq_end_ - dp_end * dp_end, 0.0));
-      res_p_lim_end_ = vec2<double>((sign * e - f) / p_dist, (sign * e + f) / p_dist);
+      res_p_lim_end_ = vec2<double>((e - f) / p_dist, (e + f) / p_dist);
       reeke_detail::sort2(res_p_lim_end_);
     }
 
@@ -487,11 +484,11 @@ namespace dials { namespace algorithms {
       if (rlv_beg0 * v_beg < 0.0) v_beg = -v_beg;
       if (rlv_end0 * v_end < 0.0) v_end = -v_end;
 
-      // Find distance between the planes of p and find distances between p = 0
-      // and the plane passing through the centre of the Ewald sphere
+      // Find distance between the planes of p and find signed distances between
+      // p = 0 and the plane passing through the centre of the Ewald sphere
       double p_dist = std::abs(rlv_beg0 * v_beg);
-      double dp_beg = std::abs(v_beg * source_beg_);
-      double dp_end = std::abs(v_end * source_end_);
+      double dp_beg = v_beg * source_beg_;
+      double dp_end = v_end * source_end_;
 
       // Compute the ewald sphere and resolution limits
       compute_ewald_sphere_p_limits(v_beg, v_end, dp_beg, dp_end, p_dist);
@@ -499,8 +496,7 @@ namespace dials { namespace algorithms {
 
       // select between Ewald and resolution limits on the basis of sign
       af::tiny<double, 4> limits;
-      int sign = v_end * source_end_ >= 0 ? 1 : -1;
-      if (sign < 0) {
+      if (dp_end < 0) {
         // p axis aligned with beam, against source
         limits[0] = std::max(res_p_lim_beg_[0], ewald_p_lim_beg_[0]);
         limits[1] = std::max(res_p_lim_end_[0], ewald_p_lim_end_[0]);
