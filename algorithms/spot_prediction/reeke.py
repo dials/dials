@@ -290,16 +290,6 @@ class reeke_model:
         assert abs(sin_theta) <= 1.0  # sanity check
         sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
-        # FIXME
-        # I assume the sign trickery in the following block was done in error
-        # and should not really happen: The original code redefined 'sign' in
-        # the block above this code and as a result ends up attaching the sign
-        # of dp_end to the absolute value of db_beg. I have faithfully retained
-        # this behaviour below.
-        # I suspect in reality the abs() in e=... should be dropped and the
-        # 'sign' in the final expression replaced by 1, similar to the second
-        # block dealing with dp_end.
-        # Note the value of 'sign' is still used further down the line.
         e = 2.0 * dp_beg * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
         limits = [(e + s * f) / p_dist for s in (-1, 1)]
