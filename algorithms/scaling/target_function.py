@@ -22,9 +22,8 @@ class ScalingTarget(object):
     rmsd_names = ["RMSD_I"]
     rmsd_units = ["a.u"]
 
-    def __init__(self, curvatures=False):
+    def __init__(self):
         self._restr = None
-        self.curvatures = curvatures
         self.rmsd_names = ["RMSD_I"]
         self.rmsd_units = ["a.u"]
         # Quantities to cache each step
@@ -121,10 +120,6 @@ class ScalingTarget(object):
         )
         return jacobian
 
-    def calculate_curvatures(self, _):
-        """Return the second derivative of the target function."""
-        assert 0, "method not yet implemented."
-
     # The following methods are for adaptlbfgs.
     def compute_functional_gradients(self, Ih_table):
         """Return the functional and gradients."""
@@ -134,24 +129,15 @@ class ScalingTarget(object):
         functional = flex.sum(resids ** 2 * weights)
         return functional, gradients
 
-    def compute_functional_gradients_and_curvatures(self, Ih_table):
-        """Return the functional, gradients and curvatures."""
-        resids = self.calculate_residuals(Ih_table)
-        gradients = self.calculate_gradients(Ih_table)
-        curvatures = self.calculate_curvatures(Ih_table)
-        weights = Ih_table.weights
-        functional = flex.sum(resids ** 2 * weights)
-        return functional, gradients, curvatures
-
-    def compute_restraints_functional_gradients_and_curvatures(self, apm):
-        """Return the restrains for functional, gradients and curvatures."""
+    def compute_restraints_functional_gradients(self, apm):
+        """Return the restrains for functional and gradients."""
         restraints = None
         if self.param_restraints:
             restr = self.restraints_calculator.calculate_restraints(apm)
             if restr:
                 resid_restr = flex.sum(restr[0])  # add to total functional here
                 grad_restr = restr[1]
-                restraints = [resid_restr, grad_restr, None]
+                restraints = [resid_restr, grad_restr]
             else:
                 self.param_restraints = False
         return restraints  # list of restraints to add to resid, grads and curvs
@@ -198,73 +184,3 @@ class ScalingTargetFixedIH(ScalingTarget):
         """Calculate the jacobian matrix, size Ih_table.size by len(self.apm.x)."""
         jacobian = row_multiply(Ih_table.derivatives, -1.0 * Ih_table.Ih_values)
         return jacobian
-
-
-'''def calculate_curvatures(self, Ih_table)
-  """Calculate the second derivatives"""
-    # Make some shorthand notation
-    Ih_tab = self.scaler.Ih_table
-    w = Ih_tab.weights
-    I = Ih_tab.intensities
-    Ih = Ih_tab.Ih_values
-    g = Ih_tab.inverse_scale_factors
-    h_idx_transpose = Ih_tab.h_index_matrix.transpose()
-    gprime = self.apm.derivatives
-
-    #First calculate Ih' = ((suml wIg') - Ih(suml 2wgg'))/(suml wgg)
-    dIh = w * (I - (Ih * 2.0 * g))
-    gsq = g * g * w
-    v_inv = 1.0/(gsq * Ih_tab.h_index_matrix) #len(n_unique_groups)
-    Ihprime_numerator = h_idx_transpose * row_multiply(gprime, dIh)
-    Ihprime = row_multiply(Ihprime_numerator, v_inv)
-    #n_unique_groups x n_params matrix
-
-    Ihprime_expanded = (Ihprime.transpose() * Ih_tab.h_expand_matrix).transpose()
-    a = row_multiply(gprime, Ih)
-    b = row_multiply(Ihprime_expanded, g)
-    for j, col in enumerate(a.cols()):
-      b[:, j] += col #n_refl x n_params
-    rprime = b
-    rprimesq = elementwise_square(rprime)
-    # First term is sum_refl 2.0 * (r')2
-    first_term = 2.0 * w * rprimesq
-    #print(list(first_term))
-
-    # Second term is sum_refl -2.0 * r * r''
-    #  = -2.0 * r * (Ih g'' + 2g'Ih' + g Ih'') = A + B + C
-    # Ih '' = u'/v - Ih v'/v. so C = -2 r g u'/v + 2 r g Ih' v'/v = D + E
-    r = I - (g * Ih)
-    if self.apm.curvatures:
-      A = -2.0 * w * r * Ih * self.apm.curvatures #len n_params
-    B = row_multiply(gprime, (-4.0 * w * r)).transpose() * Ih_tab.h_index_matrix
-    B = B.transpose() * Ihprime_expanded #problem -
-    # need to do elementwise multiplication of two big matrices.
-
-    reduced_prefactor = (-2.0 * r * g * Ih_tab.h_index_matrix)
-    B = -4.0 * r * ((h_idx_transpose * gprime).transpose() * Ihprime) #len n_params
-    vprime_over_v = row_multiply((h_idx_transpose * row_multiply(gprime,
-      (2.0 * w * g))), v_inv) #len n_unique_groups x n_params
-    E = (-1.0 * reduced_prefactor * Ihprime) * vprime_over_v
-
-    #E = (2.0 * r * g * Ih_tab.h_index_matrix) * row_multiply(Ihprime,
-    # vprime_over_v) #len n_params
-
-    # n_unique_groups x n_params matrices
-    if self.apm.curvatures:
-      u1 = h_idx_transpose * row_multiply(self.apm.curvatures, w * I)
-      u4 = h_idx_transpose * row_multiply(self.apm.curvatures, 2.0 * g * Ih * w)
-    u2 = row_multiply((h_idx_transpose * row_multiply(gprime, 2.0 * w * g)), v_inv)
-    u3 = h_idx_transpose * row_multiply(elementwise_square(gprime), 2.0 * Ih * w)
-
-    if self.apm.curvatures:
-      D1 = reduced_prefactor * row_multiply(u1, v_inv) #len n_params
-      D4 = reduced_prefactor * row_multiply(u4, v_inv)
-    D2 = (reduced_prefactor * Ihprime) * u2 #len n_params
-    D3 = reduced_prefactor * row_multiply(u3, v_inv) #len n_params
-
-    if self.apm.curvatures:
-      curvs = A + B + D1 + D2 + D3 + D4 + E + first_term
-      return curvs
-    curvs = B + D2 + D3 + E + first_term
-
-    return curvs'''

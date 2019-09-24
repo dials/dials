@@ -244,7 +244,6 @@ def mock_apm():
     apm.var_cov_matrix.reshape(flex.grid(1, 1))
     apm.n_active_params = 1
     apm.n_obs = [2]
-    apm.curvatures = []
     apm.derivatives = [sparse.matrix(1, 1)]
     apm.components_list = ["scale"]
     apm.components = {

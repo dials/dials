@@ -95,7 +95,7 @@ def test_basis_function(small_reflection_table):
     assert d[1, 0] == dlist[0][1, 0]
     assert d[2, 0] == dlist[0][2, 0]
 
-    # Test again for two components, with curvatures.
+    # Test again for two components.
     components["decay"].parameters = flex.double([0.0])
     components["scale"].parameters = flex.double([1.0])
     components["abs"].parameters = flex.double([1.0])

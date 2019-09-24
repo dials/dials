@@ -238,10 +238,9 @@ def test_error_model_target(large_reflection_table, test_sg):
     r, g = target.compute_functional_gradients()
     assert r == residuals
     assert list(gradients) == list(g)
-    r, g, c = target.compute_functional_gradients_and_curvatures()
+    r, g = target.compute_functional_gradients()
     assert r == residuals
     assert list(gradients) == list(g)
-    assert c is None
 
 
 def calculate_gradient_fd(target):

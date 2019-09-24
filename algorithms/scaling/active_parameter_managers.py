@@ -30,7 +30,6 @@ class active_parameter_manager(object):
         self.x = flex.double([])
         self.components = OrderedDict()
         self.derivatives = None
-        self.curvatures = None
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
         n_cumul_params = 0
@@ -107,7 +106,6 @@ class multi_active_parameter_manager(object):
     def __init__(self, components_list, selection_lists, apm_class):
         self.x = flex.double([])
         self.derivatives = None
-        self.curvatures = None
         self.components_list = []  # A list of the component names.
         self.apm_list = []
         self.apm_data = OrderedDict()

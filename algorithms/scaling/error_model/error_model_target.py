@@ -46,11 +46,7 @@ class ErrorModelTarget(object):
         # cache rmsd calculation for achieved test
         R = self.calculate_residuals()
         n = R.size()
-        R.extend(
-            flex.double(
-                [self.compute_restraints_functional_gradients_and_curvatures()[0]]
-            )
-        )
+        R.extend(flex.double([self.compute_restraints_functional_gradients()[0]]))
         self._rmsds = [(flex.sum(R) / n) ** 0.5]
         return self._rmsds
 
@@ -113,11 +109,7 @@ class ErrorModelTarget(object):
         """Compute the functional and gradients vector."""
         return flex.sum(self.calculate_residuals()), self.calculate_gradients()
 
-    def compute_functional_gradients_and_curvatures(self):
-        """Compute the functional and gradients and curvatures vector."""
-        return (flex.sum(self.calculate_residuals()), self.calculate_gradients(), None)
-
-    def compute_restraints_functional_gradients_and_curvatures(self):
+    def compute_restraints_functional_gradients(self):
         """Compute the restraints for the functional and gradients.
 
         This is applicable to the basic error model so should be refactored."""
@@ -129,4 +121,4 @@ class ErrorModelTarget(object):
         gradient_restraint = flex.double(
             [-2.0 * R1 * (1.0 - self.x[0]), R2 * 2.0 * self.x[1]]
         )
-        return [residual_restraint, gradient_restraint, None]
+        return [residual_restraint, gradient_restraint]

@@ -347,17 +347,12 @@ def test_target_function(
     assert j.n_cols == 1  # Number of parameters as determined by jacob matrix.
     assert j.n_rows == r.size()
 
-    with pytest.raises(AssertionError):
-        _ = target.compute_functional_gradients_and_curvatures(mock_single_Ih_table)
-
     restraints = target.compute_restraints_residuals_and_gradients(apm_restr)
     assert len(restraints) == 3
     assert target.param_restraints is True
 
-    restraints = target.compute_restraints_functional_gradients_and_curvatures(
-        apm_restr
-    )
-    assert len(restraints) == 3
+    restraints = target.compute_restraints_functional_gradients(apm_restr)
+    assert len(restraints) == 2
 
     achieved = target.achieved()
     assert isinstance(achieved, bool)
@@ -369,9 +364,7 @@ def test_target_function(
     target = ScalingTarget()  # Need to make new instance or won't calc restr as
     # param_restraints is set to False
     assert target.param_restraints is True
-    restraints = target.compute_restraints_functional_gradients_and_curvatures(
-        apm_norestr
-    )
+    restraints = target.compute_restraints_functional_gradients(apm_norestr)
     assert restraints is None
     assert target.param_restraints is False
 

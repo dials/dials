@@ -11,10 +11,11 @@ from scitbx import sparse
 
 
 class basis_function(object):
-    """Class that takes in a scaling_apm and calcuates the scale factors,
-    derivatives and optionally curvatures for minimisation."""
+    """Class that takes in a scaling_apm and calcuates the scale factors
+    and derivatives for minimisation."""
 
-    def calc_component_scales_derivatives(self, apm, block_id):
+    @staticmethod
+    def calc_component_scales_derivatives(apm, block_id):
         """Calculate the scales and derivatives for all components for a given
         block, returning each as a list of values from the components."""
         scales = []
@@ -62,8 +63,7 @@ class basis_function(object):
         return derivatives
 
     def calculate_scales_and_derivatives(self, apm, block_id):
-        """Calculate and return scale factors, derivatives and optionally
-        curvatures to be used in minimisation."""
+        """Calculate scale factors and derivatives for minimisation."""
         scales, derivatives = self.calc_component_scales_derivatives(apm, block_id)
         return (
             self.calculate_scale_factors(apm, block_id, scales),
