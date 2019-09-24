@@ -2,7 +2,7 @@
 This module defines classes which implement the stages of the scaling algorithm.
 
 These 'scalers' act to initialise and connect various parts of the scaling
-algorithm and datastructures such as the Ih_table, basis_function etc, and
+algorithm and datastructures such as the Ih_table etc, and
 present a united interface to the main scaling algorithm for single, multi
 and targeted scaling.
 
@@ -22,7 +22,7 @@ from cctbx import crystal, sgtbx
 from dials_scaling_ext import row_multiply
 from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 from dials.array_family import flex
-from dials.algorithms.scaling.basis_functions import basis_function
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
@@ -75,7 +75,6 @@ class ScalerBase(Subject):
         self._Ih_table = None
         self._global_Ih_table = None
         self._initial_keys = []
-        self._basis_function = basis_function()
         self._final_rmsds = []
         self._removed_datasets = []
         self.error_model = None
@@ -357,11 +356,11 @@ class SingleScaler(ScalerBase):
     def update_for_minimisation(self, apm, block_id):
         """Update the scale factors and Ih for the next minimisation iteration."""
         apm_i = apm.apm_list[0]
-        basis_fn = self._basis_function.calculate_scales_and_derivatives(
+        scales_i, derivs_i = RefinerCalculator.calculate_scales_and_derivatives(
             apm_i, block_id
         )
-        self.Ih_table.set_derivatives(basis_fn[1], block_id)
-        self.Ih_table.set_inverse_scale_factors(basis_fn[0], block_id)
+        self.Ih_table.set_derivatives(derivs_i, block_id)
+        self.Ih_table.set_inverse_scale_factors(scales_i, block_id)
         self.Ih_table.update_weights(block_id)
         self.Ih_table.calc_Ih(block_id)
 
@@ -740,11 +739,11 @@ class MultiScalerBase(ScalerBase):
         scales = flex.double([])
         derivs = []
         for apm_i in apm.apm_list:
-            basis_fn = self._basis_function.calculate_scales_and_derivatives(
+            scales_i, derivs_i = RefinerCalculator.calculate_scales_and_derivatives(
                 apm_i, block_id
             )
-            scales.extend(basis_fn[0])
-            derivs.append(basis_fn[1])
+            scales.extend(scales_i)
+            derivs.append(derivs_i)
         deriv_matrix = sparse.matrix(scales.size(), apm.n_active_params)
         start_row_no = 0
         for j, deriv in enumerate(derivs):
@@ -758,7 +757,7 @@ class MultiScalerBase(ScalerBase):
         # The parallelisation below would work if sparse matrices were
         # pickleable (I think!) - with more benefit for larger number of datasets.'''
         """def task_wrapper(block):
-      bf = basis_function(block)
+      bf = RefinerCalculator(block)
       s, d = bf.calculate_scales_and_derivatives()
       return s, d
     blocks = apm.apm_list

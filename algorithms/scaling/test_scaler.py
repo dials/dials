@@ -10,7 +10,7 @@ from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
-from dials.algorithms.scaling.basis_functions import basis_function
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.parameter_handler import create_apm_factory
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.scaler import (
@@ -586,7 +586,7 @@ def test_SingleScaler_update_for_minimisation():
     assert list(Ih_table.Ih_values) == [10.0, 1.0]
     single_scaler.update_for_minimisation(apm, 0)
     # Should set new scale factors, and calculate Ih and weights.
-    bf = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 0)
+    bf = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 0)
     assert list(Ih_table.inverse_scale_factors) == list(bf[0])
     assert list(Ih_table.Ih_values) != [1.0, 10.0]
     assert approx_equal(list(Ih_table.Ih_values), list(Ih_table.intensities / bf[0]))
@@ -731,10 +731,10 @@ def test_multiscaler_update_for_minimisation():
     multiscaler.update_for_minimisation(apm, 0)
     multiscaler.update_for_minimisation(apm, 1)
     # bf[0], bf[1] should be list of scales and derivatives
-    s1, d1 = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 0)
-    s2, d2 = basis_function().calculate_scales_and_derivatives(apm.apm_list[1], 0)
-    s3, d3 = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 1)
-    s4, d4 = basis_function().calculate_scales_and_derivatives(apm.apm_list[1], 1)
+    s1, d1 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 0)
+    s2, d2 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[1], 0)
+    s3, d3 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 1)
+    s4, d4 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[1], 1)
     expected_scales_for_block_1 = s1
     expected_scales_for_block_1.extend(s2)
     expected_scales_for_block_2 = s3

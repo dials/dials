@@ -10,12 +10,12 @@ from dials_scaling_ext import row_multiply
 from scitbx import sparse
 
 
-class basis_function(object):
-    """Class that takes in a scaling_apm and calcuates the scale factors
+class RefinerCalculator(object):
+    """Class that takes in a scaling_apm and calculates the scale factors
     and derivatives for minimisation."""
 
     @staticmethod
-    def calc_component_scales_derivatives(apm, block_id):
+    def _calc_component_scales_derivatives(apm, block_id):
         """Calculate the scales and derivatives for all components for a given
         block, returning each as a list of values from the components."""
         scales = []
@@ -27,7 +27,7 @@ class basis_function(object):
         return scales, derivatives
 
     @staticmethod
-    def calculate_scale_factors(apm, block_id, scales):
+    def _calculate_scale_factors(apm, block_id, scales):
         """Calculate the overall scale factor for each reflection from individual
         components."""
         if not scales:
@@ -40,7 +40,7 @@ class basis_function(object):
         return multiplied_scale_factors
 
     @staticmethod
-    def calculate_derivatives(apm, block_id, scales, derivatives_list):
+    def _calculate_derivatives(apm, block_id, scales, derivatives_list):
         """Calculate the derivatives matrix."""
         if not scales:
             return None
@@ -62,10 +62,11 @@ class basis_function(object):
             col_idx += d.n_cols
         return derivatives
 
-    def calculate_scales_and_derivatives(self, apm, block_id):
+    @classmethod
+    def calculate_scales_and_derivatives(cls, apm, block_id):
         """Calculate scale factors and derivatives for minimisation."""
-        scales, derivatives = self.calc_component_scales_derivatives(apm, block_id)
+        scales, derivatives = cls._calc_component_scales_derivatives(apm, block_id)
         return (
-            self.calculate_scale_factors(apm, block_id, scales),
-            self.calculate_derivatives(apm, block_id, scales, derivatives),
+            cls._calculate_scale_factors(apm, block_id, scales),
+            cls._calculate_derivatives(apm, block_id, scales, derivatives),
         )
