@@ -8,9 +8,7 @@ from past.builtins import basestring, unicode
 import wx
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
-from dials.algorithms.image.threshold import (
-    DispersionExtendedThresholdDebug as DispersionThresholdDebug,
-)
+from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
 from dials.command_line.find_spots import phil_scope as find_spots_phil_scope
@@ -953,7 +951,7 @@ class SpotFrame(XrayFrame):
             kabsch_debug_list = []
             for i_panel in range(len(detector)):
                 kabsch_debug_list.append(
-                    DispersionThresholdDebug(
+                    DispersionExtendedThresholdDebug(
                         raw_data[i_panel].as_double(),
                         image_mask[i_panel],
                         gain_map[i_panel],
