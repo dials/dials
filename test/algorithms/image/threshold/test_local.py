@@ -1,7 +1,13 @@
 from __future__ import absolute_import, division, print_function
+import pytest
 from numpy.random import poisson
 from random import randint
 from math import exp
+from scitbx.array_family import flex
+from dials.algorithms.image.threshold import DispersionExtendedThreshold
+from dials.algorithms.image.threshold import DispersionThreshold
+from dials.algorithms.image.threshold import DispersionExtendedThresholdDebug
+from dials.algorithms.image.threshold import DispersionThresholdDebug
 
 
 class Test:
@@ -207,3 +213,77 @@ class Test:
         )
         result4 = debug.final_mask()
         assert result2 == result4
+
+    @pytest.mark.skip(
+        reason="DispersionExtendedThreshold sometimes fails: https://github.com/dials/dials/issues/946"
+    )
+    @pytest.mark.parametrize(
+        "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
+    )
+    def test_dispersion_algorithm_symmetry(self, algorithm):
+
+        nsig_b = 3
+        nsig_s = 3
+
+        thresholder = algorithm(
+            self.image.all(), (3, 3), nsig_b, nsig_s, 0, self.min_count
+        )
+        result1 = flex.bool(flex.grid(self.image.all()))
+        thresholder(self.image, self.mask, result1)
+
+        # Ugh. Is there an easier way to transpose a 2d flex.bool?
+        def transpose_a_flex_bool(arr):
+            arr_t = arr.as_1d().as_int()
+            arr_t.reshape(flex.grid(arr.all()))
+            arr_t.matrix_transpose_in_place()
+            new_dim = arr_t.all()
+            arr_t = arr_t.as_1d().as_bool()
+            arr_t.reshape(flex.grid(new_dim))
+            return arr_t
+
+        image_t = self.image.matrix_transpose()
+        mask_t = transpose_a_flex_bool(self.mask)
+        thresholder = algorithm(
+            image_t.all(), (3, 3), nsig_b, nsig_s, 0, self.min_count
+        )
+        result2 = flex.bool(flex.grid(image_t.all()))
+        thresholder(image_t, mask_t, result2)
+        result2_t = transpose_a_flex_bool(result2)
+
+        assert (result1 == result2_t).all_eq(True)
+
+    @pytest.mark.skip(
+        reason="DispersionExtendedThresholdDebug sometimes fails: https://github.com/dials/dials/issues/946"
+    )
+    @pytest.mark.parametrize(
+        "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug]
+    )
+    def test_dispersion_debug_algorithm_symmetry(self, algorithm):
+
+        nsig_b = 3
+        nsig_s = 3
+
+        threshold = algorithm(
+            self.image, self.mask, (3, 3), nsig_b, nsig_s, 0, self.min_count
+        )
+        result1 = threshold.final_mask()
+
+        # Ugh. Is there an easier way to transpose a 2d flex.bool?
+        def transpose_a_flex_bool(arr):
+            arr_t = arr.as_1d().as_int()
+            arr_t.reshape(flex.grid(arr.all()))
+            arr_t.matrix_transpose_in_place()
+            new_dim = arr_t.all()
+            arr_t = arr_t.as_1d().as_bool()
+            arr_t.reshape(flex.grid(new_dim))
+            return arr_t
+
+        image_t = self.image.matrix_transpose()
+        mask_t = transpose_a_flex_bool(self.mask)
+        threshold = algorithm(
+            image_t, mask_t, (3, 3), nsig_b, nsig_s, 0, self.min_count
+        )
+        result2 = threshold.final_mask()
+        result2_t = transpose_a_flex_bool(result2)
+
+        assert (result1 == result2_t).all_eq(True)
