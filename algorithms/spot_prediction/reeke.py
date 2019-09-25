@@ -257,10 +257,10 @@ class reeke_model:
         # Find distance between the planes of p
         p_dist = abs(self._rlv_beg[0].dot(v_beg))
 
-        # Find distances between p = 0 and the plane passing through the
+        # Find signed distances between p = 0 and the plane passing through the
         # centre of the Ewald sphere
-        dp_beg = abs(v_beg.dot(self._source))
-        dp_end = abs(v_end.dot(self._source))
+        dp_beg = v_beg.dot(self._source)
+        dp_end = v_end.dot(self._source)
 
         # There are two planes of constant p that are tangential to the Ewald
         # sphere, on either side of the sphere. The smaller in magnitude of p
@@ -273,19 +273,11 @@ class reeke_model:
         # The correct sign is determined by whether the plane normal vector is
         # more closely parallel or antiparallel to the beam direction.
 
-        sign = cmp(v_beg.dot(self._source), 0)
-
-        limits = [
-            (sign * s * (self._source.length() + s * dp_beg) / p_dist) for s in (-1, 1)
-        ]
+        limits = [(dp_beg + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         self._ewald_p_lim_beg = tuple(sorted(limits))
 
-        sign = cmp(v_end.dot(self._source), 0)
-
-        limits = [
-            (sign * s * (self._source.length() + s * dp_end) / p_dist) for s in (-1, 1)
-        ]
+        limits = [(dp_end + (s * self._source.length())) / p_dist for s in (-1, 1)]
 
         self._ewald_p_lim_end = tuple(sorted(limits))
 
@@ -297,20 +289,20 @@ class reeke_model:
         assert abs(sin_theta) <= 1.0  # sanity check
         sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
-        e = 2.0 * sin_theta ** 2 * dp_beg
+        e = 2.0 * dp_beg * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_beg ** 2, 0.0))
-        limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
+        limits = [(e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
-        e = 2.0 * sin_theta ** 2 * dp_end
+        e = 2.0 * dp_end * sin_theta ** 2
         f = sin_2theta * math.sqrt(max(1.0 / self._wavelength_sq - dp_end ** 2, 0))
-        limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
+        limits = [(e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_end = tuple(sorted(limits))
 
         # select between Ewald and resolution limits on the basis of sign
-        if sign < 0:  # p axis aligned with beam, against source
+        if dp_end < 0:  # p axis aligned with beam, against source
 
             p_min_beg = max(min(self._res_p_lim_beg), min(self._ewald_p_lim_beg))
             p_min_end = max(min(self._res_p_lim_end), min(self._ewald_p_lim_end))
@@ -326,13 +318,8 @@ class reeke_model:
             p_max_beg = min(max(self._res_p_lim_beg), max(self._ewald_p_lim_beg))
             p_max_end = min(max(self._res_p_lim_end), max(self._ewald_p_lim_end))
 
-        p_lim_beg = (p_min_beg, p_max_beg)
-        p_lim_end = (p_min_end, p_max_end)
-        # p_lim_beg = sorted(self._ewald_p_lim_beg + self._res_p_lim_beg)[1:3]
-        # p_lim_end = sorted(self._ewald_p_lim_end + self._res_p_lim_end)[1:3]
-
         # single set of limits covering overall range
-        p_lim = sorted(p_lim_beg + p_lim_end)[0::3]
+        p_lim = sorted((p_min_beg, p_max_beg, p_min_end, p_max_end))[0::3]
         p_lim[0] = int(p_lim[0]) - self._margin
         p_lim[1] = int(p_lim[1]) + self._margin
 
