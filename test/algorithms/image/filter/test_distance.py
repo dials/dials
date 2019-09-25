@@ -90,3 +90,20 @@ def test_chebyshev():
         M -= 1
         if (M > 0).count(True) == 0:
             break
+
+
+def test_chebyshev_small():
+    from dials.algorithms.image.filter import chebyshev_distance
+    from scitbx.array_family import flex
+
+    data = flex.bool(flex.grid(5, 5), True)
+    data[1, 1] = False
+
+    distance = chebyshev_distance(data, False)
+
+    known = flex.int(
+        [1, 1, 1, 2, 3, 1, 0, 1, 2, 3, 1, 1, 1, 2, 3, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3]
+    )
+    known.reshape(distance.accessor())
+
+    assert (known == distance).count(False) == 0

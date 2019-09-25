@@ -214,9 +214,6 @@ class Test:
         result4 = debug.final_mask()
         assert result2 == result4
 
-    @pytest.mark.skip(
-        reason="DispersionExtendedThreshold sometimes fails: https://github.com/dials/dials/issues/946"
-    )
     @pytest.mark.parametrize(
         "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
     )
@@ -252,9 +249,6 @@ class Test:
 
         assert (result1 == result2_t).all_eq(True)
 
-    @pytest.mark.skip(
-        reason="DispersionExtendedThresholdDebug sometimes fails: https://github.com/dials/dials/issues/946"
-    )
     @pytest.mark.parametrize(
         "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug]
     )

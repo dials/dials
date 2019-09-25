@@ -925,12 +925,12 @@ namespace dials { namespace algorithms {
       // Widen the kernel slightly and compute the mean image without strong pixels
       size[0] += 2;
       size[1] += 2;
-      mean_ = mean_filter_masked(image, temp_mask.ref(), size, 2, false);
+      mean2_ = mean_filter_masked(image, temp_mask.ref(), size, 2, false);
 
       // Compute the final thresholds
       for (std::size_t i = 0; i < image.size(); ++i) {
         if (mask[i]) {
-          double bnd_s = mean_[i] + nsig_s * std::sqrt(gain[i] * mean_[i]);
+          double bnd_s = mean2_[i] + nsig_s * std::sqrt(gain[i] * mean2_[i]);
           value_mask_[i] = (distance[i] >= erosion_distance) && (image[i] >= bnd_s);
           final_mask_[i] = cv_mask_[i] && value_mask_[i] && global_mask_[i];
         }
@@ -939,6 +939,7 @@ namespace dials { namespace algorithms {
     }
 
     af::versa<double, af::c_grid<2> > mean_;
+    af::versa<double, af::c_grid<2> > mean2_;
     af::versa<double, af::c_grid<2> > variance_;
     af::versa<double, af::c_grid<2> > cv_;
     af::versa<bool, af::c_grid<2> > global_mask_;
