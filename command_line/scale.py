@@ -190,7 +190,7 @@ class Script(Subject):
         """Run the scaling script."""
         start_time = time.time()
         self.scale()
-        self.remove_unwanted_datasets()
+        self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -211,7 +211,7 @@ class Script(Subject):
         self.scaler.params.scaling_options.full_matrix = False
         self.scaler = scaling_algorithm(self.scaler)
         self.scaler.params.scaling_options.full_matrix = initial_full_matrix
-        self.remove_unwanted_datasets()
+        self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -478,7 +478,7 @@ prepare the data in the correct space group.\n"""
         # or MultiScaler (not TargetScaler).
         self.scaler = scaling_algorithm(self.scaler)
 
-    def remove_unwanted_datasets(self):
+    def remove_bad_data(self):
         """Remove any target model/mtz data and any datasets which were removed
         from the scaler during scaling."""
         # first remove target refl/exps
@@ -501,6 +501,13 @@ prepare the data in the correct space group.\n"""
             self.experiments, self.reflections = select_datasets_on_ids(
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )
+        # also remove negative scales (or scales below 0.001)
+        n = 0
+        for table in self.reflections:
+            bad_sf = table["inverse_scale_factor"] < 0.001
+            n += bad_sf.count(True)
+            table.set_flags(bad_sf, table.flags.outlier_in_scaling)
+        logger.info("%s reflections set as outliers: scale factor < 0.001", n)
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
@@ -540,14 +547,14 @@ prepare the data in the correct space group.\n"""
             self.reflections[i] = 0
             gc.collect()
 
-        # remove reflections with neg sigma
-        sel = joint_table["inverse_scale_factor"] <= 0.0
+        # remove reflections with very low scale factors
+        sel = joint_table["inverse_scale_factor"] <= 0.001
         good_sel = ~joint_table.get_flags(joint_table.flags.bad_for_scaling, all=False)
         n_neg = (good_sel & sel).count(True)
         if n_neg > 0:
             logger.warning(
                 """
-Warning: %s non-excluded reflections were assigned negative scale factors
+Warning: %s non-excluded reflections were assigned scale factors < 0.001
 during scaling. These will be set as outliers in the reflection table. It
 may be best to rerun scaling from this point for an improved model.""",
                 n_neg,
