@@ -182,13 +182,13 @@ def sweep_to_stills(experiments, reflections, params):
                 for key in new_refl:
                     new_reflections[key][-1] = new_refl[key]
 
-        # Re-predict using the reflection slices and the stills predictors
-        ref_predictor = ExperimentsPredictorFactory.from_experiments(
-            new_experiments, force_stills=new_experiments.all_stills()
-        )
-        new_reflections = ref_predictor(new_reflections)
+    # Re-predict using the reflection slices and the stills predictors
+    ref_predictor = ExperimentsPredictorFactory.from_experiments(
+        new_experiments, force_stills=new_experiments.all_stills()
+    )
+    new_reflections = ref_predictor(new_reflections)
 
-        return (new_experiments, new_reflections)
+    return (new_experiments, new_reflections)
 
 
 def run(args=None, phil=phil_scope):
