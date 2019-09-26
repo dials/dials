@@ -3,8 +3,8 @@ prediction based on the Reeke algorithm (see Mosflm)"""
 
 from __future__ import absolute_import, division, print_function
 
-from past.builtins import cmp
 import math
+import warnings
 
 from scitbx import matrix
 
@@ -33,6 +33,13 @@ class reeke_model:
     """Model and methods for the Reeke algorithm"""
 
     def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin=3):
+
+        warnings.warn(
+            "reeke_model is deprecated, use "
+            "dials.algorithms.spot_prediction import ReekeIndexGenerator instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         # the source vector and wavelength
         self._source = -s0
