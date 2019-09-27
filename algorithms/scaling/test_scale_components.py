@@ -5,7 +5,6 @@ from __future__ import absolute_import, division, print_function
 from math import exp
 import pytest
 from scitbx import sparse
-from libtbx.test_utils import approx_equal
 from dials.array_family import flex
 from dials.algorithms.scaling.model.components.scale_components import (
     SHScaleComponent,
@@ -166,11 +165,11 @@ def test_SmoothScaleFactor1D():
     s, d = SF.calculate_scales_and_derivatives()
     s2 = SF.calculate_scales()
     assert list(s) == list(s2)
-    assert approx_equal(list(s), [1.1, 1.1, 1.1, 1.1])
-    assert approx_equal(d[0, 0] / d[0, 1], exp(-1.0) / exp(0.0))
+    assert list(s) == pytest.approx([1.1, 1.1, 1.1, 1.1])
+    assert d[0, 0] / d[0, 1] == pytest.approx(exp(-1.0) / exp(0.0))
     sumexp = exp(-1.0 / 1.0) + exp(-0.0 / 1.0) + exp(-1.0 / 1.0)  # only averages 3 when
     # normalised position is exactly on a smoother position.
-    assert approx_equal(d[0, 1], (exp(0.0) / sumexp))
+    assert d[0, 1] == pytest.approx((exp(0.0) / sumexp))
     T = d.transpose()
     assert sum(list(T[:, 0].as_dense_vector())) == 1.0  # should always be 1.0
     assert sum(list(T[:, 1].as_dense_vector())) == 1.0
@@ -209,12 +208,12 @@ def test_SmoothBScaleFactor1D():
     s, d = SF.calculate_scales_and_derivatives()
     s2 = SF.calculate_scales()
     assert list(s) == list(s2)
-    assert approx_equal(list(s), [1.0, 1.0, 1.0, 1.0])
-    assert approx_equal(
-        d[0, 0] / d[0, 1], exp(-1.0) / exp(0.0)
+    assert list(s) == pytest.approx([1.0, 1.0, 1.0, 1.0])
+    assert d[0, 0] / d[0, 1] == pytest.approx(
+        exp(-1.0) / exp(0.0)
     )  # derivative ratio of two adjacent params (at +-0.5)
     sumexp = exp(-1.0 / 1.0) + exp(-0.0 / 1.0) + exp(-1.0 / 1.0)
-    assert approx_equal(d[0, 1], ((exp(0.0) / sumexp) * s[1] / 2.0))
+    assert d[0, 1] == pytest.approx((exp(0.0) / sumexp) * s[1] / 2.0)
     T = d.transpose()
     assert sum(list(T[:, 0].as_dense_vector())) == 0.5  # value depends on d
     assert sum(list(T[:, 1].as_dense_vector())) == 0.5
@@ -258,9 +257,9 @@ def test_SmoothScaleFactor2D():
     assert list(SF.smoother.x_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5]
     assert list(SF.smoother.y_positions()) == [-0.5, 0.5, 1.5, 2.5, 3.5]
     s, d = SF.calculate_scales_and_derivatives()
-    assert approx_equal(list(s), [1.1] * 30)
+    assert list(s) == pytest.approx([1.1] * 30)
     sumexp = exp(0.0) + (4.0 * exp(-1.0 / 1.0)) + (4.0 * exp(-2.0 / 1.0))
-    assert approx_equal(d[1, 7], (exp(-0.0) / sumexp))
+    assert d[1, 7] == pytest.approx(exp(-0.0) / sumexp)
 
     # Test again with a small number of params to check different behaviour.
     SF = SmoothScaleComponent2D(flex.double(6, 1.1), shape=(3, 2))
@@ -280,7 +279,7 @@ def test_SmoothScaleFactor2D():
     s2 = SF.calculate_scales()
     assert list(s) == list(s2)
     sumexp = (4.0 * exp(-0.5 / 1.0)) + (2.0 * exp(-2.5 / 1.0))
-    assert approx_equal(d[1, 1], (exp(-0.5) / sumexp))
+    assert d[1, 1] == pytest.approx(exp(-0.5) / sumexp)
 
     # Test that if one or none in block, then doesn't fail but returns sensible value
     SF._normalised_x_values = [flex.double([0.5])]
@@ -333,14 +332,14 @@ def test_SmoothScaleFactor3D():
     s, d = SF.calculate_scales_and_derivatives()
     s2 = SF.calculate_scales()
     assert list(s) == list(s2)
-    assert approx_equal(list(s), [1.1] * 150)
+    assert list(s) == pytest.approx([1.1] * 150)
     sumexp = (
         exp(-0.0)
         + (6.0 * exp(-1.0 / 1.0))
         + (8.0 * exp(-3.0 / 1.0))
         + (12.0 * exp(-2.0 / 1.0))
     )
-    assert approx_equal(d[1, 7], exp(-1.0) / sumexp)  # Just check one
+    assert d[1, 7] == pytest.approx(exp(-1.0) / sumexp)  # Just check one
 
     # Test that if one or none in block, then doesn't fail but returns sensible value
     SF._normalised_x_values = [flex.double([0.5])]

@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import pytest
-from libtbx.test_utils import approx_equal
 from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.Ih_table import IhTable
@@ -198,7 +197,9 @@ def test_errormodel(large_reflection_table, test_sg):
         * ((block.variances + ((x1 * block.intensities) ** 2)) ** 0.5)
         / block.inverse_scale_factors
     )
-    assert list(error_model.sigmaprime) == cal_sigpr[4:7] + cal_sigpr[-2:]
+    assert list(error_model.sigmaprime) == pytest.approx(
+        cal_sigpr[4:7] + cal_sigpr[-2:]
+    )
 
     # Test calc delta_hl
     error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])  # Reset
@@ -213,7 +214,7 @@ def test_errormodel(large_reflection_table, test_sg):
         -0.117647058824,
         0.124783549621,
     ]
-    assert approx_equal(list(error_model.delta_hl), expected_deltas)
+    assert list(error_model.delta_hl) == pytest.approx(expected_deltas)
 
 
 def test_error_model_target(large_reflection_table, test_sg):
@@ -232,15 +233,15 @@ def test_error_model_target(large_reflection_table, test_sg):
     # Test gradient calculation against finite differences.
     gradients = target.calculate_gradients()
     gradient_fd = calculate_gradient_fd(target)
-    assert approx_equal(list(gradients), list(gradient_fd))
+    assert list(gradients) == pytest.approx(list(gradient_fd))
 
     # Test the method calls
     r, g = target.compute_functional_gradients()
     assert r == residuals
-    assert list(gradients) == list(g)
+    assert list(gradients) == pytest.approx(list(g))
     r, g = target.compute_functional_gradients()
     assert r == residuals
-    assert list(gradients) == list(g)
+    assert list(gradients) == pytest.approx(list(g))
 
 
 def calculate_gradient_fd(target):

@@ -3,7 +3,6 @@ import pytest
 from mock import Mock, MagicMock
 from scitbx import sparse
 from libtbx import phil
-from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
@@ -589,10 +588,10 @@ def test_SingleScaler_update_for_minimisation():
     bf = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 0)
     assert list(Ih_table.inverse_scale_factors) == list(bf[0])
     assert list(Ih_table.Ih_values) != [1.0, 10.0]
-    assert approx_equal(list(Ih_table.Ih_values), list(Ih_table.intensities / bf[0]))
+    assert list(Ih_table.Ih_values) == pytest.approx(list(Ih_table.intensities / bf[0]))
     for i in range(Ih_table.derivatives.n_rows):
         for j in range(Ih_table.derivatives.n_cols):
-            assert approx_equal(Ih_table.derivatives[i, j], bf[1][i, j])
+            assert Ih_table.derivatives[i, j] == pytest.approx(bf[1][i, j])
     assert Ih_table.derivatives.non_zeroes == bf[1].non_zeroes
 
 
@@ -695,13 +694,12 @@ def test_sf_variance_calculation():
     var_cov[1, 0] = c
     var_cov[1, 1] = b
     variances = calc_sf_variances(components, var_cov)
-    assert approx_equal(
-        list(variances),
+    assert list(variances) == pytest.approx(
         [
             b / (4.0 * (d1 ** 4.0)) + c / (d1 ** 2.0) + a,
             b / (4.0 * (d2 ** 4.0)) + c / (d2 ** 2.0) + a,
             b / (4.0 * (d3 ** 4.0)) + c / (d3 ** 2.0) + a,
-        ],
+        ]
     )
 
 
