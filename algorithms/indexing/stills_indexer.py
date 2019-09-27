@@ -395,7 +395,7 @@ class StillsIndexer(Indexer):
             ):
                 # Experimental geometry may have changed - re-map centroids to
                 # reciprocal space
-                self.reflections = self._map_centroids_to_reciprocal_space(
+                self.reflections = self.map_centroids_to_reciprocal_space(
                     self.experiments, self.reflections
                 )
 

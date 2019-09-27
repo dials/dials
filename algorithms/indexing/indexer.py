@@ -491,7 +491,7 @@ class Indexer(object):
         if len(self.reflections) == 0:
             raise DialsIndexError("No reflections left to index!")
 
-        self.reflections = self._map_centroids_to_reciprocal_space(
+        self.reflections = self.map_centroids_to_reciprocal_space(
             self.experiments, self.reflections
         )
         self.reflections.calculate_entering_flags(self.experiments)
@@ -512,10 +512,11 @@ class Indexer(object):
 
         self.reflections["id"] = flex.int(len(self.reflections), -1)
 
-    def _map_centroids_to_reciprocal_space(self, experiments, reflections):
+    @staticmethod
+    def map_centroids_to_reciprocal_space(experiments, reflections):
         spots_mm = reflections
         reflections = flex.reflection_table()
-        for i, expt in enumerate(self.experiments):
+        for i, expt in enumerate(experiments):
             spots_sel = spots_mm.select(spots_mm["imageset_id"] == i)
             spots_sel.map_centroids_to_reciprocal_space(
                 expt.detector, expt.beam, expt.goniometer
@@ -696,7 +697,7 @@ class Indexer(object):
                 ):
                     # Experimental geometry may have changed - re-map centroids to
                     # reciprocal space
-                    self.reflections = self._map_centroids_to_reciprocal_space(
+                    self.reflections = self.map_centroids_to_reciprocal_space(
                         self.experiments, self.reflections
                     )
 

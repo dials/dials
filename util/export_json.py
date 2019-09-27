@@ -2,27 +2,15 @@ from __future__ import absolute_import, division, print_function
 
 import json
 
-from dials.array_family import flex
+from dials.algorithms.indexing.indexer import Indexer
 
 
 class ReciprocalLatticeJson(object):
     def __init__(self, experiments, reflections):
         self.experiments = experiments
-        self.reflections = self._map_centroids_to_reciprocal_space(
+        self.reflections = Indexer.map_centroids_to_reciprocal_space(
             experiments, reflections
         )
-
-    def _map_centroids_to_reciprocal_space(self, experiments, reflections):
-        refl = reflections
-        reflections = flex.reflection_table()
-        for i, expt in enumerate(self.experiments):
-            refl_sel = refl.select(refl["imageset_id"] == i)
-            refl_sel.centroid_px_to_mm(expt.detector, expt.scan)
-            refl_sel.map_centroids_to_reciprocal_space(
-                expt.detector, expt.beam, expt.goniometer
-            )
-            reflections.extend(refl_sel)
-        return reflections
 
     def as_dict(self, n_digits=None):
         rlp = self.reflections["rlp"]
