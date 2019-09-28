@@ -421,11 +421,6 @@ public:
         break;
       }
 
-      int max_index = index;
-
-      /* We would like to 'test' the spot at its centre */
-      max_index = focus_on_maximum(image, mask, index);
-
       double score;
       score = blob_like_spot_score(image, mask, index);
       result[index] = score;
@@ -443,11 +438,6 @@ public:
       if (index < 0) {
         break;
       }
-
-      int max_index = index;
-
-      /* We would like to 'test' the spot at its centre */
-      max_index = focus_on_maximum(image, mask, index);
 
       double score;
       score = blob_like_spot_score(image, mask, index);
