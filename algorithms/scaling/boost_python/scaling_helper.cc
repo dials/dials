@@ -88,9 +88,11 @@ namespace dials_scaling { namespace boost_python {
       .def("spacing", &GaussianSmootherFirstFixed::spacing)
       .def("positions", &GaussianSmootherFirstFixed::positions)
       .def("value_weight", &GaussianSmootherFirstFixed::value_weight)
-      .def("value_weight_first_fixed", &GaussianSmootherFirstFixed::value_weight_first_fixed)
+      .def("value_weight_first_fixed",
+           &GaussianSmootherFirstFixed::value_weight_first_fixed)
       .def("multi_value_weight", &GaussianSmootherFirstFixed::multi_value_weight)
-      .def("multi_value_weight_first_fixed", &GaussianSmootherFirstFixed::multi_value_weight_first_fixed);
+      .def("multi_value_weight_first_fixed",
+           &GaussianSmootherFirstFixed::multi_value_weight_first_fixed);
   }
 
 }}  // namespace dials_scaling::boost_python
