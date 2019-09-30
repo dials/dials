@@ -32,7 +32,9 @@ from dials.algorithms.scaling.scaling_refiner import (
 )
 from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
-from dials.algorithms.scaling.parameter_handler import create_apm_factory
+from dials.algorithms.scaling.parameter_handler import (
+    create_parameter_manager_generator,
+)
 from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
     DialsMergingStatisticsError,
@@ -171,9 +173,8 @@ class ScalerBase(Subject):
         tolerance=None,
     ):
         """Minimise the scaling model."""
-        apm_factory = create_apm_factory(self)
-        for _ in range(apm_factory.n_cycles):
-            apm = apm_factory.make_next_apm()
+        pmg = create_parameter_manager_generator(self)
+        for apm in pmg.parameter_managers():
             if not engine:
                 engine = self.params.scaling_refinery.engine
             if not max_iterations:
@@ -190,7 +191,7 @@ class ScalerBase(Subject):
                 refinery.set_tolerance(tolerance)
             try:
                 refinery.run()
-            except Exception as e:
+            except RuntimeError as e:
                 logger.error(e, exc_info=True)
             ft = time.time()
             logger.info("Time taken for refinement %s", (ft - st))

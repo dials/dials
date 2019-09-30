@@ -137,6 +137,8 @@ class ScalingModelBase(object):
 
     def __init__(self, configdict, is_scaled=False):
         """Initialise the model with no components and a :obj:`configdict`."""
+        if not configdict["corrections"]:
+            raise ValueError("No model components created.")
         self._components = OrderedDict()
         self._configdict = configdict
         self._is_scaled = is_scaled
@@ -208,7 +210,7 @@ class ScalingModelBase(object):
         """:obj:`list`: a nested list of component names.
 
         This list indicates to the scaler the order to perform scaling in
-        consecutive scaling mode (command line option concurrent=0).
+        consecutive scaling mode.
         e.g. [['scale', 'decay'], ['absorption']] would cause the first cycle to
         refine scale and decay, and then absorption in a subsequent cycle.
         """

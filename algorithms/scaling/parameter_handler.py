@@ -7,8 +7,7 @@ from __future__ import absolute_import, division, print_function
 import six
 from dials.algorithms.scaling.active_parameter_managers import (
     active_parameter_manager,
-    ConcurrentAPMFactory,
-    ConsecutiveAPMFactory,
+    ParameterManagerGenerator,
 )
 
 
@@ -28,7 +27,7 @@ class scaling_active_parameter_manager(active_parameter_manager):
                     for n in range(n_blocks):
                         self.constant_g_values[n] = obj.calculate_scales(n)
                 else:
-                    for i in range(n_blocks):
+                    for n in range(n_blocks):
                         self.constant_g_values[n] *= obj.calculate_scales(n)
         super(scaling_active_parameter_manager, self).__init__(
             components, selection_list
@@ -46,18 +45,21 @@ class scaling_active_parameter_manager(active_parameter_manager):
         self.n_obs = n_obs[0]  # list of length n_blocks
 
 
-def create_apm_factory(scaler):
-    """Create and return the appropriate apm factory for the scaler.
-
-    Supported cases - single dataset and multi/target datasets - concurrent or
-    consecutive scaling, where the consecutive order is defined by
-    scaler.consecutive_refinement_order."""
+def create_parameter_manager_generator(scaler):
+    """Create and return the appropriate manager generator for the scaler."""
+    allowed = ["concurrent", "consecutive"]
+    mode = scaler.params.scaling_refinery.refinement_order
+    if mode not in allowed:
+        raise ValueError(
+            "Bad value for refinement_order: %s, expected %s"
+            % (mode, " or ".join(allowed))
+        )
     if scaler.id_ == "single":
         data_managers = [scaler]
     elif scaler.id_ == "target" or scaler.id_ == "multi":
         data_managers = scaler.active_scalers
     else:
         assert 0, "unrecognised scaler id_"
-    if scaler.params.scaling_options.concurrent:
-        return ConcurrentAPMFactory(data_managers, scaling_active_parameter_manager)
-    return ConsecutiveAPMFactory(data_managers, scaling_active_parameter_manager)
+    return ParameterManagerGenerator(
+        data_managers, scaling_active_parameter_manager, mode
+    )

@@ -316,7 +316,7 @@ def test_scale_physical(dials_regression, tmpdir):
         "unmerged_mtz=unmerged.mtz",
         "use_free_set=1",
         "outlier_rejection=standard",
-        "concurrent=False",
+        "refinement_order=consecutive",
         "intensity_choice=combine",
     ]
     run_one_scaling(tmpdir, [refl_1, expt_1] + extra_args)

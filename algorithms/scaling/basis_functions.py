@@ -31,7 +31,7 @@ class RefinerCalculator(object):
         """Calculate the overall scale factor for each reflection from individual
         components."""
         if not scales:
-            return None
+            return apm.constant_g_values[block_id]  # needs to return to set in Ih_table
         multiplied_scale_factors = flex.double(scales[0].size(), 1.0)
         for s in scales:
             multiplied_scale_factors *= s
@@ -43,7 +43,7 @@ class RefinerCalculator(object):
     def _calculate_derivatives(apm, block_id, scales, derivatives_list):
         """Calculate the derivatives matrix."""
         if not scales:
-            return None
+            return sparse.matrix(0, 0)
         if len(scales) == 1:
             # only one active parameter, so don't need to chain rule any derivatives
             # for block_id in range(len(apm.n_obs)):

@@ -10,7 +10,9 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import RefinerCalculator
-from dials.algorithms.scaling.parameter_handler import create_apm_factory
+from dials.algorithms.scaling.parameter_handler import (
+    create_parameter_manager_generator,
+)
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.scaler import (
     SingleScaler,
@@ -575,9 +577,9 @@ def test_SingleScaler_update_for_minimisation():
     exp = create_scaling_model(p, e, r)
     p.reflection_selection.method = "use_all"
     single_scaler = SingleScaler(p, exp[0], r)
-    apm_fac = create_apm_factory(single_scaler)
+    apm_fac = create_parameter_manager_generator(single_scaler)
     single_scaler.components["scale"].parameters /= 2.0
-    apm = apm_fac.make_next_apm()
+    apm = apm_fac.parameter_managers()[0]
 
     Ih_table = single_scaler.Ih_table.blocked_data_list[0]
     Ih_table.calc_Ih()
@@ -722,10 +724,10 @@ def test_multiscaler_update_for_minimisation():
 
     multiscaler = MultiScaler(p, exp, [singlescaler1, singlescaler2])
 
-    apm_fac = create_apm_factory(multiscaler)
+    apm_fac = create_parameter_manager_generator(multiscaler)
     multiscaler.single_scalers[0].components["scale"].parameters /= 2.0
     multiscaler.single_scalers[1].components["scale"].parameters *= 1.5
-    apm = apm_fac.make_next_apm()
+    apm = apm_fac.parameter_managers()[0]
     multiscaler.update_for_minimisation(apm, 0)
     multiscaler.update_for_minimisation(apm, 1)
     # bf[0], bf[1] should be list of scales and derivatives

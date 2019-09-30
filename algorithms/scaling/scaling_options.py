@@ -190,12 +190,6 @@ phil_scope = iotbx.phil.parse(
       .type = str
       .help = "Option to specify space group for scaling (deprecated)"
       .expert_level = 1
-    concurrent = True
-      .type = bool
-      .help = "Option to allow consecutive scaling if concurrent is
-               set to False. The consecutive order is defined (and fixed)
-               for each scaling model."
-      .expert_level = 2
     full_matrix = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

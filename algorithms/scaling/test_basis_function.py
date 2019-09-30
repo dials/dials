@@ -107,6 +107,4 @@ def test_RefinerCalculator(small_reflection_table):
     # Test for no components
     apm = scaling_active_parameter_manager(components, [])
     _, d = RefinerCalculator.calculate_scales_and_derivatives(apm, 0)
-    assert d is None
-    _, d = RefinerCalculator.calculate_scales_and_derivatives(apm, 0)
-    assert d is None
+    assert d.n_cols == 0 and d.n_rows == 0

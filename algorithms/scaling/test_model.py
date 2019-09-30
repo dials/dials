@@ -96,13 +96,14 @@ def generated_param():
 def test_ScalingModelBase(mock_errormodel):
     """Test for base scaling model class"""
 
-    SM_base = ScalingModelBase(configdict={})
+    configdict = {"corrections": ["1"]}
+    SM_base = ScalingModelBase(configdict)
     assert not SM_base.is_scaled
     SM_base.set_scaling_model_as_scaled()
     assert SM_base.is_scaled
     SM_base.set_scaling_model_as_unscaled()
     assert not SM_base.is_scaled
-    assert SM_base.configdict == {}
+    assert SM_base.configdict == configdict
     assert not SM_base.components
     _ = SM_base.to_dict()
     SM_base.set_error_model(mock_errormodel)

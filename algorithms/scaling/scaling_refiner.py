@@ -35,6 +35,11 @@ scaling_refinery
   engine = *SimpleLBFGS GaussNewton LevMar
     .help = "The minimisation engine to use for the main scaling algorithm"
     .type = choice
+  refinement_order = *concurrent consecutive
+    .type = choice
+    .help = "Choice of whether to refine all model components concurrently, or"
+             "in a consecutive order as allowed/defined by the scaling model."
+    .expert_level = 2
   max_iterations = None
     .help = "Maximum number of iterations in refinement before termination."
             "None implies the engine supplies its own default."
