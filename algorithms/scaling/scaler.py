@@ -205,6 +205,7 @@ class ScalerBase(Subject):
         Ih_table.calc_Ih()
         error_model = get_error_model(self.params.weighting.error_model.error_model)
         try:
+            logger.info("Performing a round of error model refinement.")
             refinery = error_model_refinery(
                 engine="SimpleLBFGS",
                 target=ErrorModelTarget(
@@ -223,7 +224,7 @@ class ScalerBase(Subject):
         else:
             error_model = refinery.return_error_model()
             logger.info(error_model)
-            error_model.minimisation_summary()
+            logger.info(error_model.minimisation_summary())
             self.update_error_model(error_model, update_Ih=update_Ih)
         return error_model
 
@@ -489,38 +490,34 @@ class SingleScaler(ScalerBase):
             self.global_Ih_table.update_error_model(error_model)
         self.experiment.scaling_model.set_error_model(error_model)
 
-    def adjust_variances(self, caller=None):
+    def adjust_variances(self, print_output=True):
         """Apply an aimless-like error model to the variances."""
         error_model = self.experiment.scaling_model.error_model
-        if error_model and self.params.weighting.output_optimised_vars:
+        if error_model:
             # Note : this action has overwritten the variances, so no further
             # error model adjustment should take place, without reinitialising from
             # the input variances (i.e. intensity.prf.variance).
-            new_var = error_model.update_variances(
+            self.reflection_table["variance"] = error_model.update_variances(
                 self.reflection_table["variance"], self.reflection_table["intensity"]
             )
-            self.reflection_table["variance"] = new_var
-            if caller is None:
-                msg = (
-                    "The error model has been used to adjust the variances for dataset {0}. \n"
-                ).format(self.reflection_table["id"][0])
-                logger.info(msg)
         # now increase the errors slightly to take into account the uncertainty in the
         # inverse scale factors
-        fractional_error = (
-            self.reflection_table["inverse_scale_factor_variance"] ** 0.5
-            / self.reflection_table["inverse_scale_factor"]
-        )
-        variance_scaling = (
-            flex.double(self.reflection_table.size(), 1.0) + fractional_error
-        )
-        self.reflection_table["variance"] *= variance_scaling
-        if caller is None:
-            msg = (
-                "The variances have been adjusted to account for the uncertainty \n"
-                "in the scaling model for dataset {0}. \n"
-            ).format(self.reflection_table["id"][0])
-            logger.info(msg)
+        if self.var_cov_matrix.non_zeroes > 0:  # parameters errors have been determined
+            fractional_error = (
+                self.reflection_table["inverse_scale_factor_variance"] ** 0.5
+                / self.reflection_table["inverse_scale_factor"]
+            )
+            variance_scaling = (
+                flex.double(self.reflection_table.size(), 1.0) + fractional_error
+            )
+            self.reflection_table["variance"] *= variance_scaling
+            if print_output:
+                logger.info(
+                    """
+The reflection table variances have been adjusted to account for the
+uncertainty in the scaling model.
+"""
+                )
 
     def _select_reflections_for_scaling(self):
         """Select a subset of reflections to use in minimisation."""
@@ -728,18 +725,12 @@ class MultiScalerBase(ScalerBase):
     def adjust_variances(self):
         """Update variances of individual reflection tables."""
         for scaler in self.active_scalers:
-            scaler.adjust_variances(caller=self)
-        if (
-            self.single_scalers[0].experiment.scaling_model.error_model
-            and self.params.weighting.output_optimised_vars
-        ):
-            logger.info(
-                "The error model has been used to adjust the variances for all \n"
-                "applicable datasets. \n"
-            )
+            scaler.adjust_variances(print_output=False)
         logger.info(
-            "The variances have been adjusted to account for the uncertainty \n"
-            "in the scaling model for all datasets. \n"
+            """
+The reflection table variances have been adjusted to account for the
+uncertainty in the scaling model for all datasets.
+"""
         )
 
     def clean_reflection_tables(self):

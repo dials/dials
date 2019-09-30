@@ -100,17 +100,12 @@ phil_scope = iotbx.phil.parse(
               during minimisation, which may be unstable for certain minimisation
               engines (LBFGS)."
       .expert_level = 2
-    optimise_errors = True
-      .type = bool
-      .help = "Option to allow optimisation of weights for scaling. Performs
-               and additional scale factor minimisation after adjusting weights."
-      .expert_level = 0
     error_model {
-      error_model = *basic
+      error_model = *basic None
         .type = choice
-        .help = "The name of the error model to use, if optimise_errors is True."
+        .help = "The error model to use."
         .expert_level = 1
-      min_Ih = 10.0
+      min_Ih = 25.0
         .type = float
         .help = "Reflections with expected intensity above this value are to."
                 "be used in error model minimisation."
@@ -120,17 +115,6 @@ phil_scope = iotbx.phil.parse(
         .help = "The number of intensity bins to use for the error model optimisation."
         .expert_level = 2
     }
-    output_optimised_vars = True
-      .type = bool
-      .help = "If True, the error model determined will be applied to the
-              intensity variances in the output files. This may result in
-              a significant increase or decrease in the variances. The default
-              is True as with the default inverse variance weighting scheme,
-              the modified variances have been used as weights in scaling and
-              therefore should be used as the variances when calculating merged
-              intensities downstream. If this is distorting the data too much,
-              then it is likely that the chosen error model is inappropriate."
-      .expert_level = 2
   }
   cut_data {
     d_min = None

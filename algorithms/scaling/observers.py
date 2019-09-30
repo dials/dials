@@ -9,7 +9,11 @@ from collections import OrderedDict
 import six
 from cctbx import uctbx
 from dials.util.observer import Observer, singleton
-from dials.algorithms.scaling.plots import plot_outliers, normal_probability_plot
+from dials.algorithms.scaling.plots import (
+    plot_outliers,
+    normal_probability_plot,
+    error_model_variance_plot,
+)
 from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
@@ -320,6 +324,9 @@ class ErrorModelObserver(Observer):
                 scaler.experiment.scaling_model.error_model.sigmaprime
                 * self.data["inv_scale"]
             )
+            self.data[
+                "binning_info"
+            ] = scaler.experiment.scaling_model.error_model.binning_info
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -329,6 +336,7 @@ class ErrorModelObserver(Observer):
             d["error_model_plots"].update(
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
+            d["error_model_plots"].update(error_model_variance_plot(self.data))
         return d
 
 

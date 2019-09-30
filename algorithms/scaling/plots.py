@@ -365,6 +365,64 @@ def plot_outliers(data):
     return d
 
 
+def error_model_variance_plot(data):
+    bin_variances = data["binning_info"]["bin_variances"]
+    initial_variances = data["binning_info"]["initial_variances"]
+    xs = data["binning_info"]["bin_boundaries"]
+    x = range(1, 11)
+    x_labels = [
+        str(round(xs[i], 1)) + " - " + str(round(xs[i + 1], 1)) for i in range(10)
+    ]
+    d = {
+        "error_model_variances": {
+            "data": [
+                {
+                    "x": x,
+                    "y": list(initial_variances)[::-1],
+                    "type": "scatter",
+                    "mode": "markers",
+                    "xaxis": "x",
+                    "yaxis": "y",
+                    "name": "Uncorrected variances",
+                },
+                {
+                    "x": x,
+                    "y": list(bin_variances)[::-1],
+                    "type": "scatter",
+                    "mode": "markers",
+                    "xaxis": "x",
+                    "yaxis": "y",
+                    "name": "Corrected variances",
+                },
+                {
+                    "x": [1, 10],
+                    "y": [1, 1],
+                    "type": "line",
+                    "name": "Ideal normal distribution",
+                },
+            ],
+            "layout": {
+                "title": "Error model variances of normalised deviations",
+                "xaxis": {
+                    "anchor": "y",
+                    "title": "Intensity range, expected unscaled intensity (counts)",
+                    "tickvals": x,
+                    "ticktext": x_labels[::-1],
+                },
+                "yaxis": {"anchor": "x", "title": "Variance of normalised deviations"},
+            },
+            "help": """\
+This plot shows the variance of the normalised deviations for a given intensity
+range for the error model minimisation. The expectation is that after a successful
+error model correction, the variance will be one across the intensity range
+measured i.e. the intensities are normally distributed about the symmetry group
+best estimate, with a variance of one sigma.
+""",
+        }
+    }
+    return d
+
+
 def normal_probability_plot(data):
     """Plot the distribution of normal probabilities of errors."""
     norm = distributions.normal_distribution()

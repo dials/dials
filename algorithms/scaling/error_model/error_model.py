@@ -2,13 +2,10 @@
 Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
-import logging
 from math import log, exp
 from dials.array_family import flex
 from scitbx import sparse
 from libtbx.table_utils import simple_table
-
-logger = logging.getLogger("dials.scale")
 
 
 def get_error_model(error_model_type):
@@ -27,22 +24,28 @@ class BasicErrorModel(object):
     min_reflections_required = 250
 
     def __init__(self, Ih_table, n_bins=10, min_Ih=25.0, min_partiality=0.95):
-        logger.info("Initialising an error model for refinement.")
         self.Ih_table = Ih_table
         self.n_bins = n_bins
-        self.binning_info = {}
+        self.binning_info = {
+            "initial_variances": [],
+            "bin_boundaries": [],
+            "bin_variances": [],
+            "refl_per_bin": [],
+            "n_reflections": None,
+        }
         # First select on initial delta
         self.filter_unsuitable_reflections(
             cutoff=12.0, min_Ih=min_Ih, min_partiality=min_partiality
         )
         self.n_h = self.Ih_table.calc_nh()
-        self.sigmaprime = None
-        self.delta_hl = None
+        self.sigmaprime = self.calc_sigmaprime([1.0, 0.0])
         self.bin_variances = None
         self._summation_matrix = self.create_summation_matrix()
-        self._bin_counts = flex.double(self.Ih_table.size, 1.0) * self.summation_matrix
-        self.weights = self._bin_counts ** 0.5
+        self.weights = self.binning_info["refl_per_bin"] ** 0.5
         self.refined_parameters = [1.0, 0.0]
+        self.delta_hl = self.calc_deltahl()
+        self.calculate_bin_variances()
+        self.binning_info["initial_variances"] = self.binning_info["bin_variances"]
 
     def __str__(self):
         a = abs(self.refined_parameters[0])
@@ -69,29 +72,38 @@ class BasicErrorModel(object):
         )
 
     def minimisation_summary(self):
-        """Output a summary of model minimisation to the logger."""
-        header = ["Intensity range (<Ih>)", "n_refl", "variance(norm_dev)"]
+        """Generate a summary of the model minimisation for output."""
+        header = [
+            "Intensity range (<Ih>)",
+            "n_refl",
+            "Uncorrected variance",
+            "Corrected variance",
+        ]
         rows = []
         bin_bounds = ["%.2f" % i for i in self.binning_info["bin_boundaries"]]
-        for i, (bin_var, n_refl) in enumerate(
-            zip(self.binning_info["bin_variances"], self.binning_info["refl_per_bin"])
+        for i, (initial_var, bin_var, n_refl) in enumerate(
+            zip(
+                self.binning_info["initial_variances"],
+                self.binning_info["bin_variances"],
+                self.binning_info["refl_per_bin"],
+            )
         ):
             rows.append(
                 [
                     bin_bounds[i] + " - " + bin_bounds[i + 1],
-                    str(n_refl),
+                    str(int(n_refl)),
+                    str(round(initial_var, 3)),
                     str(round(bin_var, 3)),
                 ]
             )
         st = simple_table(rows, header)
-        logger.info(
-            "\n".join(
-                (
-                    "Intensity bins used during error model refinement:",
-                    st.format(),
-                    "variance(norm_dev) expected to be ~ 1 for each bin.",
-                    "",
-                )
+        return "\n".join(
+            (
+                "Results of error model refinement. Uncorrected and corrected variances",
+                "of normalised intensity deviations for given intensity ranges. Variances",
+                "are expected to be ~1.0 for reliable errors (sigmas).",
+                st.format(),
+                "",
             )
         )
 
@@ -103,7 +115,7 @@ class BasicErrorModel(object):
     @property
     def bin_counts(self):
         """An array of the number of intensities assigned to each bin."""
-        return self._bin_counts
+        return self.binning_info["refl_per_bin"]
 
     def filter_unsuitable_reflections(self, cutoff, min_Ih, min_partiality):
         """Do a first pass to calculate delta_hl and filter out the largest
@@ -201,7 +213,7 @@ class BasicErrorModel(object):
         ]
         boundaries[-1] = min(Ih) - 0.01
         self.binning_info["bin_boundaries"] = boundaries
-        self.binning_info["refl_per_bin"] = []
+        self.binning_info["refl_per_bin"] = flex.double()
 
         n_cumul = 0
         if Ih.size() > 100 * self.min_reflections_required:
@@ -234,12 +246,17 @@ class BasicErrorModel(object):
             if col.non_zeroes < min_per_bin - 5:
                 cols_to_del.append(i)
         n_new_cols = summation_matrix.n_cols - len(cols_to_del)
+        if n_new_cols == self.n_bins:
+            return summation_matrix
         new_sum_matrix = sparse.matrix(summation_matrix.n_rows, n_new_cols)
         next_col = 0
+        refl_per_bin = flex.double()
         for i, col in enumerate(summation_matrix.cols()):
             if i not in cols_to_del:
                 new_sum_matrix[:, next_col] = col
                 next_col += 1
+                refl_per_bin.append(self.binning_info["refl_per_bin"][i])
+        self.binning_info["refl_per_bin"] = refl_per_bin
         return new_sum_matrix
 
     def calculate_bin_variances(self):

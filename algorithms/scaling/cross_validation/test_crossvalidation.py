@@ -171,8 +171,10 @@ def test_dialsscalecrossvalidator():
     assert params.physical.decay_interval == 50.0
     params = crossvalidator.set_parameter(params, "physical.lmax", 10)
     assert params.physical.lmax == 10
-    params = crossvalidator.set_parameter(params, "weighting.optimise_errors", False)
-    assert params.weighting.optimise_errors is False
+    params = crossvalidator.set_parameter(
+        params, "weighting.error_model.error_model", None
+    )
+    assert params.weighting.error_model.error_model is None
     params = crossvalidator.set_parameter(params, "cut_data.d_min", 1.8)
     assert params.cut_data.d_min == 1.8
     params = crossvalidator.set_parameter(params, "scaling_options.outlier_zmax", 7.53)

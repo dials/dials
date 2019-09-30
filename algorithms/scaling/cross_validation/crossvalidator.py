@@ -187,7 +187,7 @@ is provided. For example, physical.decay_correction rather than decay_correction
             )
         ]
         phil_branches = [
-            params.weighting,
+            params.weighting.error_model,
             params.cut_data,
             params.scaling_options,
             params.reflection_selection,
