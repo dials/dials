@@ -545,6 +545,10 @@ class ArrayScalingModel(ScalingModelBase):
     def __init__(self, parameters_dict, configdict, is_scaled=False):
         """Create the array scaling model components."""
         super(ArrayScalingModel, self).__init__(configdict, is_scaled)
+        if not any(i in configdict["corrections"] for i in ["decay", "absorption"]):
+            raise ValueError(
+                "Array model must have at least one of decay or absorption corrections"
+            )
         if "decay" in configdict["corrections"]:
             decay_setup = parameters_dict["decay"]
             self._components["decay"] = SmoothScaleComponent2D(
@@ -632,10 +636,19 @@ class ArrayScalingModel(ScalingModelBase):
         n_param, time_norm_fac, time_rot_int = initialise_smooth_input(
             new_osc_range, one_osc, conf["time_rot_interval"]
         )
-        n_old_time_params = int(
-            len(self.components["decay"].parameters)
-            / self.components["decay"].n_x_params
-        )
+        if "decay" in self.components:
+            n_old_time_params = int(
+                len(self.components["decay"].parameters)
+                / self.components["decay"].n_x_params
+            )
+        else:
+            n_old_time_params = int(
+                len(self.components["absorption"].parameters)
+                / (
+                    self.components["absorption"].n_x_params
+                    * self.components["absorption"].n_y_params
+                )
+            )
         offset = calculate_new_offset(
             current_image_range[0],
             new_image_range[0],
