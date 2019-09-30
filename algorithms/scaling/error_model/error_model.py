@@ -110,7 +110,7 @@ class BasicErrorModel(object):
         deviants, so that the error model is not misled by these and instead
         operates on the central ~90% of the data. Also choose reflection groups
         with n_h > 1, as these have deltas of zero by definition and will bias
-        the variance calculations. Also, only use groups where <Ih> > 2.0, as
+        the variance calculations. Also, only use groups where <Ih> > 25.0, as
         the assumptions of normally distributed deltas will not hold for low
         <Ih>."""
         self.n_h = self.Ih_table.calc_nh()

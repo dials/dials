@@ -3,24 +3,11 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 from __future__ import absolute_import, division, print_function
-from collections import OrderedDict
 import math as pymath
 import numpy as np
 from scitbx import math as scitbxmath
 from scitbx.math import distributions
 from dials.array_family import flex
-from dials.algorithms.scaling.model.model import PhysicalScalingModel
-
-
-def plot_scaling_models(scaling_model_dict):
-    d = OrderedDict()
-    if scaling_model_dict["__id__"] == "physical":
-        model = PhysicalScalingModel.from_dict(scaling_model_dict)
-        d.update(_plot_smooth_scales(model))
-        if "absorption" in model.components:
-            d.update(plot_absorption_parameters(model))
-            d.update(plot_absorption_surface(model))
-    return d
 
 
 def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
@@ -87,7 +74,7 @@ gi = Ci * Ri * Si
 """
 
 
-def _plot_smooth_scales(physical_model):
+def plot_smooth_scales(physical_model):
     """Plot smooth scale factors for the physical model."""
 
     d = {

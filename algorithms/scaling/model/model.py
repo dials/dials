@@ -24,6 +24,11 @@ from dials.algorithms.scaling.model.components.smooth_scale_components import (
     SmoothScaleComponent3D,
 )
 from dials.algorithms.scaling.scaling_utilities import sph_harm_table
+from dials.algorithms.scaling.plots import (
+    plot_absorption_parameters,
+    plot_absorption_surface,
+    plot_smooth_scales,
+)
 from dials_scaling_ext import (
     calc_theta_phi,
     calc_lookup_index,
@@ -165,6 +170,10 @@ class ScalingModelBase(object):
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
         raise NotImplementedError()
+
+    def plot_model_components(self):
+        """Return a dict of plots for plotting model components with plotly."""
+        return {}
 
     @classmethod
     def from_data(cls, params, experiment, reflection_table):
@@ -514,6 +523,14 @@ class PhysicalScalingModel(ScalingModelBase):
         }
 
         return cls(parameters_dict, configdict, is_scaled)
+
+    def plot_model_components(self):
+        d = OrderedDict()
+        d.update(plot_smooth_scales(self))
+        if "absorption" in self.components:
+            d.update(plot_absorption_parameters(self))
+            d.update(plot_absorption_surface(self))
+        return d
 
 
 class ArrayScalingModel(ScalingModelBase):
@@ -953,3 +970,14 @@ for entry_point in itertools.chain(
     ext_phil_scope = ext_phil_scope[0]
     ext_phil_scope.adopt_scope(entry_point.load().phil_scope)
     model_phil_scope.adopt_scope(ext_master_scope)
+
+
+def plot_scaling_models(model_dict):
+    """Return a dict of component plots for the model for plotting with plotly."""
+    for entry_point in itertools.chain(
+        pkg_resources.iter_entry_points("dxtbx.scaling_model_ext")
+    ):
+        if model_dict["__id__"] == entry_point.name:
+            model = entry_point.load().from_dict(model_dict)
+            return model.plot_model_components()
+    return OrderedDict()

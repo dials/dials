@@ -15,7 +15,7 @@ from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
 )
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
-from dials.algorithms.scaling.plots import plot_scaling_models
+from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
     ResolutionPlotsAndStats,
@@ -2073,8 +2073,8 @@ class ScalingModelAnalyser(object):
             for i, exp in enumerate(experiments):
                 model = exp.scaling_model
                 if model is not None:
-                    if model.id_ == "physical":
-                        scaling_model_plots = plot_scaling_models(model.to_dict())
+                    scaling_model_plots = plot_scaling_models(model.to_dict())
+                    if scaling_model_plots:
                         for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})
         return {"scaling_model": d}

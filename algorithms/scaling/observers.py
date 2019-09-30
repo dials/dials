@@ -9,11 +9,8 @@ from collections import OrderedDict
 import six
 from cctbx import uctbx
 from dials.util.observer import Observer, singleton
-from dials.algorithms.scaling.plots import (
-    plot_scaling_models,
-    plot_outliers,
-    normal_probability_plot,
-)
+from dials.algorithms.scaling.plots import plot_outliers, normal_probability_plot
+from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
