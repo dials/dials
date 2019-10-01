@@ -12,6 +12,8 @@ from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
 
+from dxtbx.serialize import load
+
 
 def test_symmetry(dials_regression, tmpdir):
     """Simple test to check that dials.symmetry completes"""
@@ -64,3 +66,26 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     )
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
+
+
+def test_symmetry_with_absences(dials_regression, tmpdir):
+    """Simple test to check that dials.symmetry, with absences, completes"""
+
+    result = procrunner.run(
+        [
+            "dials.symmetry",
+            "check_absences=True",
+            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
+            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
+            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
+            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("symmetrized.refl").check()
+    assert tmpdir.join("symmetrized.expt").check()
+    expts = load.experiment_list(
+        tmpdir.join("symmetrized.expt").strpath, check_format=False
+    )
+    assert str(expts[0].crystal.get_space_group().info()) == "P 21 21 21"

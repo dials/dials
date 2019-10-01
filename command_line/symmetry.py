@@ -5,6 +5,7 @@ import logging
 import random
 
 from cctbx import sgtbx
+from libtbx import Auto
 import iotbx.phil
 
 from dials.array_family import flex
@@ -16,6 +17,10 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry.determine_space_group import determine_space_group
+from dials.command_line.space_group import (
+    _prepare_merged_reflection_table,
+    run_sys_abs_checks,
+)
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
@@ -54,6 +59,16 @@ absolute_angle_tolerance = 2
 partiality_threshold = 0.99
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
+
+absences {
+  check_absences=False
+    .type = bool
+    .help = "Option to run systematic absences checks to suggest full space group"
+  significance_level = *0.95 0.975 0.99
+    .type = choice
+    .help = "Signficance to use when testing whether axial reflections are "
+            "different to zero (absences and reflections in reflecting condition)"
+}
 
 output {
   log = dials.symmetry.log
@@ -104,9 +119,37 @@ input data and filtering settings e.g partiality_threshold"""
         if params.output.json is not None:
             result.as_json(filename=params.output.json)
 
-        self._export_experiments_reflections(experiments, reflections, result)
+        reindexed_experiments, reindexed_reflections = self._reindex_experiments_reflections(
+            experiments, reflections, result
+        )
 
-    def _export_experiments_reflections(self, experiments, reflections, result):
+        if self._params.absences.check_absences:
+            if self._params.d_min is Auto:
+                d_min = result.intensities.resolution_range()[1]
+            else:
+                d_min = self._params.d_min
+            merged_reflections = _prepare_merged_reflection_table(
+                reindexed_experiments, [reindexed_reflections], d_min
+            )
+
+            run_sys_abs_checks(
+                reindexed_experiments,
+                merged_reflections,
+                float(params.absences.significance_level),
+            )
+
+        logger.info(
+            "Saving reindexed experiments to %s", self._params.output.experiments
+        )
+        reindexed_experiments.as_file(self._params.output.experiments)
+        logger.info(
+            "Saving %s reindexed reflections to %s",
+            len(reindexed_reflections),
+            self._params.output.reflections,
+        )
+        reindexed_reflections.as_file(self._params.output.reflections)
+
+    def _reindex_experiments_reflections(self, experiments, reflections, result):
         from rstbx.symmetry.constraints import parameter_reduction
 
         reindexed_experiments = copy.deepcopy(experiments)
@@ -135,16 +178,8 @@ input data and filtering settings e.g partiality_threshold"""
                 reindexed_refl["miller_index"]
             )
             reindexed_reflections.extend(reindexed_refl)
-        logger.info(
-            "Saving reindexed experiments to %s", self._params.output.experiments
-        )
-        reindexed_experiments.as_file(self._params.output.experiments)
-        logger.info(
-            "Saving %s reindexed reflections to %s",
-            len(reindexed_reflections),
-            self._params.output.reflections,
-        )
-        reindexed_reflections.as_file(self._params.output.reflections)
+
+        return reindexed_experiments, reindexed_reflections
 
 
 help_message = """
