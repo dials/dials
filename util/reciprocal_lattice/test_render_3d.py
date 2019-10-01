@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import random
 
-import pytest
 import six
 from dials.array_family import flex
 from dials.util.reciprocal_lattice import Render3d
@@ -64,12 +63,7 @@ def test_Render3d(mocker, multi_sweep_data):
     render.settings.reverse_phi = True
     mocker.spy(flex.reflection_table, "map_centroids_to_reciprocal_space")
     render.load_models(experiments, reflections)
-    assert flex.reflection_table.map_centroids_to_reciprocal_space.call_count == len(
-        experiments
-    )
-    assert flex.reflection_table.map_centroids_to_reciprocal_space.call_args[0][
-        3
-    ].get_rotation_axis() == pytest.approx((-1.0, 0.0, 0.0))
+    assert flex.reflection_table.map_centroids_to_reciprocal_space.call_count == 1
 
 
 def test_Render3d_integrated(mocker, centroid_test_data):
