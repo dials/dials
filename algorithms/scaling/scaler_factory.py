@@ -211,7 +211,7 @@ class MultiScalerFactory(object):
         assert n_exp == n_ss, (n_exp, n_ss)
         assert n_exp == n_refl, (n_exp, n_refl)
         determine_reflection_selection_parameters(params, experiments, reflections)
-        return MultiScaler(params, experiments, single_scalers)
+        return MultiScaler(single_scalers)
 
     @classmethod
     def create_from_targetscaler(cls, targetscaler):
@@ -220,9 +220,7 @@ class MultiScalerFactory(object):
         for scaler in targetscaler.unscaled_scalers:
             single_scalers.append(scaler)
         single_scalers.extend(targetscaler.single_scalers)
-        multiscaler = MultiScaler(
-            targetscaler.params, [targetscaler.experiment], single_scalers
-        )
+        multiscaler = MultiScaler(single_scalers)
         multiscaler.observers = targetscaler.observers
         return multiscaler
 
@@ -233,7 +231,6 @@ class TargetScalerFactory(object):
     @classmethod
     def create_for_target_against_reference(cls, params, experiments, reflections):
         """Create TargetScaler for case where have a target_mtz or target_model."""
-        scaled_experiments = []
         scaled_scalers = []
         unscaled_scalers = []
         idx_to_remove = []
@@ -257,16 +254,13 @@ class TargetScalerFactory(object):
         scaled_scalers = [
             NullScalerFactory.create(params, experiments[-1], reflections[-1])
         ]
-        scaled_experiments = [experiments[-1]]
 
         n_exp, n_refl = (len(experiments), len(reflections))
         n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
         determine_reflection_selection_parameters(params, experiments, reflections)
-        return TargetScaler(
-            params, scaled_experiments, scaled_scalers, unscaled_scalers
-        )
+        return TargetScaler(scaled_scalers, unscaled_scalers)
 
     @classmethod
     def create(cls, params, experiments, reflections):
@@ -302,6 +296,4 @@ class TargetScalerFactory(object):
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
         determine_reflection_selection_parameters(params, experiments, reflections)
-        return TargetScaler(
-            params, scaled_experiments, scaled_scalers, unscaled_scalers
-        )
+        return TargetScaler(scaled_scalers, unscaled_scalers)

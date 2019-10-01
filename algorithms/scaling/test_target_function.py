@@ -195,7 +195,6 @@ def physical_param():
     return generated_param(model="physical")
 
 
-@pytest.fixture
 def mock_single_Ih_table():
     """Mock Ih table to use for testing the target function."""
     Ih_table = Mock()
@@ -217,20 +216,19 @@ def mock_single_Ih_table():
     return Ih_table
 
 
-@pytest.fixture()
-def mock_Ih_table(mock_single_Ih_table):
+def mock_Ih_table():
     """A mock Ih table for testing a target function."""
     Ih_table = MagicMock()
-    Ih_table.blocked_data_list = [mock_single_Ih_table]
+    Ih_table.blocked_data_list = [mock_single_Ih_table()]
     Ih_table.free_Ih_table = None
     return Ih_table
 
 
 @pytest.fixture()
-def mock_Ih_table_workfree(mock_single_Ih_table):
+def mock_Ih_table_workfree():
     """A mock Ih table with a free set for testing a target function."""
     Ih_table = MagicMock()
-    Ih_table.blocked_data_list = [mock_single_Ih_table, mock_single_Ih_table]
+    Ih_table.blocked_data_list = [mock_single_Ih_table(), mock_single_Ih_table()]
     Ih_table.free_Ih_table = True
     return Ih_table
 
@@ -323,9 +321,7 @@ def mock_multi_apm_withoutrestraints(mock_parameter_manager_withoutrestraints):
 
 
 def test_target_function(
-    mock_single_Ih_table,
-    mock_multi_apm_withrestraints,
-    mock_multi_apm_withoutrestraints,
+    mock_multi_apm_withrestraints, mock_multi_apm_withoutrestraints
 ):
     """Test for the ScalingTarget class."""
 
@@ -334,14 +330,14 @@ def test_target_function(
     apm_restr = mock_multi_apm_withrestraints
     apm_norestr = mock_multi_apm_withoutrestraints
     # Below methods needed for refinement engine calls
-    r, w = target.compute_residuals(mock_single_Ih_table)
+    r, w = target.compute_residuals(mock_single_Ih_table())
     assert r.size() == w.size()
 
-    f, g = target.compute_functional_gradients(mock_single_Ih_table)
+    f, g = target.compute_functional_gradients(mock_single_Ih_table())
     assert isinstance(f, float)
     assert g.size() == 1  # Number of parameters as determined by deriv matrix cols
 
-    r, j, w = target.compute_residuals_and_gradients(mock_single_Ih_table)
+    r, j, w = target.compute_residuals_and_gradients(mock_single_Ih_table())
     assert r.size() == w.size()
     assert j.n_cols == 1  # Number of parameters as determined by jacob matrix.
     assert j.n_rows == r.size()
@@ -369,7 +365,6 @@ def test_target_function(
 
 
 def test_target_rmsd_calculation(
-    mock_Ih_table,
     mock_Ih_table_workfree,
     mock_multi_apm_withrestraints,
     mock_multi_apm_withoutrestraints,
@@ -383,7 +378,7 @@ def test_target_rmsd_calculation(
     assert target.param_restraints is True
     # with input, expect residuals of [-1, 0, 1], weights of [1, 1, 1],
     # restraints of [1, 2, 3], so expect residual of sqrt((2+6)/3)
-    rmsds = target.rmsds(mock_Ih_table, mock_multi_apm_withrestraints)
+    rmsds = target.rmsds(mock_Ih_table(), mock_multi_apm_withrestraints)
     assert len(rmsds) == 1
     assert target.param_restraints is True
 
@@ -396,7 +391,7 @@ def test_target_rmsd_calculation(
     assert len(target.rmsd_names) == 3
     assert len(target.rmsd_units) == 3
 
-    rmsds = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
+    rmsds = target.rmsds(mock_Ih_table(), mock_multi_apm_withoutrestraints)
     assert len(rmsds) == 1
     assert rmsds[0] == pytest.approx((2.0 / 3.0) ** 0.5, abs=1e-6)
     assert target.param_restraints is False
@@ -404,11 +399,11 @@ def test_target_rmsd_calculation(
     assert len(target.rmsd_units) == 1
 
 
-def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
+def test_target_fixedIh(mock_multi_apm_withoutrestraints):
     """Test the target function for targeted scaling (where Ih is fixed)."""
 
     target = ScalingTargetFixedIH()
-    Ih_table = mock_Ih_table.blocked_data_list[0]
+    Ih_table = mock_Ih_table().blocked_data_list[0]
     R, _ = target.compute_residuals(Ih_table)
     expected_residuals = flex.double([-1.0, 0.0, 1.0])
     assert list(R) == pytest.approx(list(expected_residuals))
@@ -416,6 +411,7 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
     assert list(G) == pytest.approx([-44.0])
     # Add in finite difference check
 
+    Ih_table = mock_Ih_table().blocked_data_list[0]
     J = target.calculate_jacobian(Ih_table)
     assert J.n_cols == 1
     assert J.n_rows == 3
@@ -426,7 +422,7 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
 
     expected_rmsd = (flex.sum(expected_residuals ** 2) / len(expected_residuals)) ** 0.5
     assert target._rmsds is None
-    assert target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
+    assert target.rmsds(mock_Ih_table(), mock_multi_apm_withoutrestraints)
     assert target._rmsds == pytest.approx([expected_rmsd])
 
 

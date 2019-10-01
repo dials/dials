@@ -150,7 +150,6 @@ def test_combine_intensities(test_exp_P1):
     scaler.suitable_refl_for_scaling_sel = flex.bool(reflections.size(), True)
     scaler.outliers = flex.bool(reflections.size(), False)
     scaler.experiment = test_exp_P1
-    scaler.space_group = test_exp_P1.crystal.get_space_group()
     scaler.params.reflection_selection.combine.Imid = None
 
     combiner = SingleDatasetIntensityCombiner(scaler)
@@ -230,11 +229,9 @@ def test_combine_intensities_multi_dataset(test_exp_P1):
     scaler1.suitable_refl_for_scaling_sel = flex.bool(r1.size(), True)
     scaler1.outliers = flex.bool(r1.size(), False)
     scaler1.experiment = test_exp_P1
-    scaler1.space_group = test_exp_P1.crystal.get_space_group()
     scaler1.params.reflection_selection.combine.Imid = None
     scaler2 = Mock()
     scaler2.reflection_table = r2
-    scaler2.space_group = test_exp_P1.crystal.get_space_group()
     scaler2.suitable_refl_for_scaling_sel = flex.bool(r2.size(), True)
     scaler2.outliers = flex.bool(r2.size(), False)
     scaler2.experiment = test_exp_P1
@@ -243,11 +240,9 @@ def test_combine_intensities_multi_dataset(test_exp_P1):
     multiscaler = Mock()
     multiscaler.active_scalers = [scaler1, scaler2]
     multiscaler.experiment = test_exp_P1
-    # multiscaler.space_group = test_exp_P1.crystal.get_space_group()
     multiscaler.params.reflection_selection.combine.Imid = None
 
     combiner = MultiDatasetIntensityCombiner(multiscaler)
     Imid = combiner.max_key
 
-    # Imid = optimise_intensity_combination([r1, r2], test_exp_P1)
     assert pytest.approx(Imid) == 1200.0

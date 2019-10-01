@@ -192,11 +192,11 @@ def test_ErrorModelObserver():
     delta_hl = flex.double(range(10))
 
     scaler = mock.Mock()
-    scaler.experiment.scaling_model.error_model.delta_hl = delta_hl
-    scaler.experiment.scaling_model.error_model.intensities = delta_hl
-    scaler.experiment.scaling_model.error_model.inverse_scale_factors = delta_hl
-    scaler.experiment.scaling_model.error_model.sigmaprime = delta_hl
-    scaler.experiment.scaling_model.error_model.binning_info = {}
+    scaler.error_model.delta_hl = delta_hl
+    scaler.error_model.intensities = delta_hl
+    scaler.error_model.inverse_scale_factors = delta_hl
+    scaler.error_model.sigmaprime = delta_hl
+    scaler.error_model.binning_info = {}
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()

@@ -69,7 +69,7 @@ def _make_reflection_table_from_scaler(scaler):
     not_outliers.set_selected(outlier_isel, False)
     reflections = reflections.select(sel & not_outliers)
     reflections["miller_index"] = map_indices_to_asu(
-        reflections["miller_index"], scaler.space_group
+        reflections["miller_index"], scaler.experiment.crystal.get_space_group()
     )
     logger.debug("Reflection table size for combining: %s", reflections.size())
     return reflections
@@ -223,7 +223,6 @@ class MultiDatasetIntensityCombiner(object):
 
     def __init__(self, multiscaler):
         self.active_scalers = multiscaler.active_scalers
-        self.experiment = multiscaler.experiment
         self.Imids = multiscaler.params.reflection_selection.combine.Imid
         # first copy across relevant data that's needed
         self.good_datasets = []
@@ -306,7 +305,9 @@ class MultiDatasetIntensityCombiner(object):
                 combined_indices.extend(dataset["miller_index"])
             # apply scale factor before determining merging stats
             miller_set = miller.set(
-                crystal_symmetry=self.experiment.crystal.get_crystal_symmetry(),
+                crystal_symmetry=self.active_scalers[
+                    0
+                ].experiment.crystal.get_crystal_symmetry(),
                 indices=combined_indices,
                 anomalous_flag=False,
             )

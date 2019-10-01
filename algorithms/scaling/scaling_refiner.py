@@ -13,8 +13,6 @@ from dials.algorithms.refinement.engine import (
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
-from scitbx.array_family import flex
-from iotbx import merging_statistics
 
 logger = logging.getLogger("dials")
 
@@ -170,6 +168,9 @@ class ErrorModelRefinery(object):
     def __init__(self, error_model_target):
         self.error_model_target = error_model_target
 
+    def print_step_table(self):
+        print_step_table(self)
+
     def return_error_model(self):
         """Set error manager parameters and return error manager."""
         print_step_table(self)
@@ -195,6 +196,9 @@ class ScalingRefinery(object):
         self._scaler = scaler
         self._rmsd_tolerance = scaler.params.scaling_refinery.rmsd_tolerance
         self._parameters = prediction_parameterisation
+
+    def print_step_table(self):
+        print_step_table(self)
 
     @property
     def rmsd_tolerance(self):
@@ -250,107 +254,6 @@ class ScalingRefinery(object):
             self.history.set_last_cell("gradient", self._g)
         return
 
-    def return_scaler(self):
-        """return scaler method"""
-
-        print_step_table(self)
-
-        if self._scaler.id_ == "single":
-            if self._parameters.apm_list[0].var_cov_matrix:
-                self._scaler.update_var_cov(self._parameters.apm_list[0])
-                self._scaler.experiment.scaling_model.set_scaling_model_as_scaled()
-        elif self._scaler.id_ == "multi" or self._scaler.id_ == "target":
-            if self._parameters.apm_list[0].var_cov_matrix:  # test if has been set
-                for i, scaler in enumerate(self._scaler.active_scalers):
-                    scaler.update_var_cov(self._parameters.apm_list[i])
-                    scaler.experiment.scaling_model.set_scaling_model_as_scaled()
-
-        logger.debug("\n" + str(self._scaler.experiment.scaling_model))
-
-        if self._scaler.Ih_table.free_Ih_table:
-            i_obs = self._scaler.Ih_table.as_miller_array(
-                self._scaler.experiment.crystal.get_unit_cell(),
-                return_free_set_data=True,
-            )
-            res = merging_statistics.dataset_statistics(
-                i_obs=i_obs,
-                n_bins=20,
-                anomalous=False,
-                sigma_filtering=None,
-                use_internal_variance=False,
-                eliminate_sys_absent=False,
-                cc_one_half_method="sigma_tau",
-            )
-            free_rpim = res.overall.r_pim
-            free_cc12 = res.overall.cc_one_half
-            ccs = flex.double([b.cc_one_half for b in res.bins])
-            n_refl = flex.double([b.n_obs for b in res.bins])
-            n_tot = sum(n_refl)
-            free_wcc12 = sum(ccs * n_refl / n_tot)
-
-            i_obs = self._scaler.Ih_table.as_miller_array(
-                self._scaler.experiment.crystal.get_unit_cell()
-            )
-            res = merging_statistics.dataset_statistics(
-                i_obs=i_obs,
-                n_bins=20,
-                anomalous=False,
-                sigma_filtering=None,
-                use_internal_variance=False,
-                eliminate_sys_absent=False,
-                cc_one_half_method="sigma_tau",
-            )
-            work_rpim = res.overall.r_pim
-            work_cc12 = res.overall.cc_one_half
-            ccs = flex.double([b.cc_one_half for b in res.bins])
-            n_refl = flex.double([b.n_obs for b in res.bins])
-            n_tot = sum(n_refl)
-            work_wcc12 = sum(ccs * n_refl / n_tot)
-
-            rpim_gap = free_rpim - work_rpim
-            cc12_gap = work_cc12 - free_cc12
-            wcc12_gap = work_wcc12 - free_wcc12
-            self._scaler.final_rmsds = [
-                work_rpim,
-                free_rpim,
-                rpim_gap,
-                work_cc12,
-                free_cc12,
-                cc12_gap,
-                work_wcc12,
-                free_wcc12,
-                wcc12_gap,
-            ]
-            header = ["", "Work", "Free", "Gap"]
-            rows = [
-                [
-                    "Rpim",
-                    str(round(work_rpim, 5)),
-                    str(round(free_rpim, 5)),
-                    str(round(rpim_gap, 5)),
-                ],
-                [
-                    "CC1/2",
-                    str(round(work_cc12, 5)),
-                    str(round(free_cc12, 5)),
-                    str(round(cc12_gap, 5)),
-                ],
-                [
-                    "CC1/2 (weighted-avg)",
-                    str(round(work_wcc12, 5)),
-                    str(round(free_wcc12, 5)),
-                    str(round(wcc12_gap, 5)),
-                ],
-            ]
-            logger.info(
-                """\nWork/Free set quality indicators:
-(CC1/2 calculated using the sigma-tau method, weighted-avg is the
-average CC1/2 over resolution bins, weighted by n_obs per bin.)
-Gaps are defined as Rfree-Rwork and CCWork-CCfree."""
-            )
-            st = simple_table(rows, header)
-            logger.info(st.format())
-
 
 class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
     """Adapt Refinery for L-BFGS minimiser"""
@@ -364,45 +267,29 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         """overwrite method to avoid calls to 'blocks' methods of target"""
         self.prepare_for_step()
 
-        if self._scaler.Ih_table.free_Ih_table:
-            blocks = self._scaler.Ih_table.blocked_data_list[:-1]
-            free_block_id = len(self._scaler.Ih_table.blocked_data_list) - 1
-            self._scaler.update_for_minimisation(self._parameters, free_block_id)
-            self._scaler.clear_memory_from_derivs(free_block_id)
-        else:
-            blocks = self._scaler.Ih_table.blocked_data_list
+        self._scaler.update_free_block(self._parameters)
+        work_blocks = self._scaler.get_blocks_for_minimisation()
 
-        # if self._scaler.params.scaling_options.nproc > 1:
         f = []
         gi = []
-        for block_id, block in enumerate(blocks):
+        for block_id, block in enumerate(work_blocks):
             self._scaler.update_for_minimisation(self._parameters, block_id)
             fb, gb = self._target.compute_functional_gradients(block)
             f.append(fb)
             gi.append(gb)
-            self._scaler.clear_memory_from_derivs(block_id)
         """task_results = easy_mp.parallel_map(
-      func=self._target.compute_functional_gradients,
-      iterable=blocks,
-      processes=self._scaler.params.scaling_options.nproc,
-      method="multiprocessing",
-      preserve_exception_message=True
-      )
-    f, gi = zip(*task_results)"""
+            func=self._target.compute_functional_gradients,
+            iterable=blocks,
+            processes=self._scaler.params.scaling_options.nproc,
+            method="multiprocessing",
+            preserve_exception_message=True
+        )
+        f, gi = zip(*task_results)"""
+
         f = sum(f)
         g = gi[0]
         for i in range(1, len(gi)):
             g += gi[i]
-        """else:
-      f = 0.0
-      g = None
-      for block in blocks:
-        fi, gi = self._target.compute_functional_gradients(block)
-        f += fi
-        if g:
-          g += gi
-        else:
-          g = gi"""
 
         restraints = self._target.compute_restraints_functional_gradients(
             self._parameters
@@ -411,8 +298,8 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         if restraints:
             f += restraints[0]
             g += restraints[1]
-        logger.debug("Functional : %s" % f)
-        logger.debug("Gradients : %s" % list(g))
+        logger.debug("Functional : %s", f)
+        logger.debug("Gradients : %s", list(g))
         log_memory_usage()
         logger.debug("\n")
         return f, g, None
@@ -453,39 +340,31 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         # Reset the state to construction time, i.e. no equations accumulated
         self.reset()
 
-        if self._scaler.Ih_table.free_Ih_table:
-            blocks = self._scaler.Ih_table.blocked_data_list[:-1]
-            free_block_id = len(self._scaler.Ih_table.blocked_data_list) - 1
-            self._scaler.update_for_minimisation(self._parameters, free_block_id)
-            self._scaler.clear_memory_from_derivs(free_block_id)
-        else:
-            blocks = self._scaler.Ih_table.blocked_data_list
+        self._scaler.update_free_block(self._parameters)
+        work_blocks = self._scaler.get_blocks_for_minimisation()
 
         # observation terms
         if objective_only:
-            # if self._scaler.params.scaling_options.nproc > 1: #no mp option yet
-            for block_id, block in enumerate(blocks):
+            for block_id, block in enumerate(work_blocks):
                 self._scaler.update_for_minimisation(self._parameters, block_id)
                 residuals, weights = self._target.compute_residuals(block)
                 self.add_residuals(residuals, weights)
         else:
-            # if self._scaler.params.scaling_options.nproc: #no mp option yet
-
             self._jacobian = None
 
-            for block_id, block in enumerate(blocks):
+            for block_id, block in enumerate(work_blocks):
                 self._scaler.update_for_minimisation(self._parameters, block_id)
                 residuals, jacobian, weights = self._target.compute_residuals_and_gradients(
                     block
                 )
                 self.add_equations(residuals, jacobian, weights)
             """task_results = easy_mp.pool_map(
-        fixed_func=self._target.compute_residuals_and_gradients,
-        iterable=blocks,
-        processes=self._scaler.params.scaling_options.nproc
-        )
-      for result in task_results:
-        self.add_equations(result[0], result[1], result[2])"""
+                fixed_func=self._target.compute_residuals_and_gradients,
+                iterable=blocks,
+                processes=self._scaler.params.scaling_options.nproc
+            )
+            for result in task_results:
+                self.add_equations(result[0], result[1], result[2])"""
 
         restraints = self._target.compute_restraints_residuals_and_gradients(
             self._parameters
