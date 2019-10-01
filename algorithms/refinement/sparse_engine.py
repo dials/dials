@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 #
 #  Copyright (C) (2016) Lawrence Berkeley National Laboratory
 #
@@ -8,6 +6,8 @@ from __future__ import absolute_import, division, print_function
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 #
+from __future__ import absolute_import, division, print_function
+
 import libtbx
 from dials.algorithms.refinement import DialsRefineConfigError
 from scitbx.array_family import flex
