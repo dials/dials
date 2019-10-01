@@ -14,6 +14,8 @@ import dials_array_family_flex_ext
 import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
+from dials.algorithms.centroid import centroid_px_to_mm_panel
+
 from dials.util import Sorry
 from scitbx import matrix
 
@@ -1333,7 +1335,7 @@ Found %s"""
             self["id"].set_selected(sel_exp, i_exp)
             self.experiment_identifiers()[i_exp] = exp_id
 
-    def centroid_px_to_mm(self, detector, scan=None):
+    def centroid_px_to_mm(self, experiments):
         """
         Map spot centroids from pixel/image number to mm/radian.
 
@@ -1342,12 +1344,8 @@ Found %s"""
         refinement.
 
         Args:
-          detector(dxtbx.model.detector.Detector): a dxtbx detector object
-          scan (dxtbx.model.scan.Scan): a dxtbx scan object. May be None, e.g. for
-            a still image.
+          experiments (dxtbx.model.ExperimentList): A list of experiments.
         """
-
-        from dials.algorithms.centroid import centroid_px_to_mm_panel
 
         self["xyzobs.mm.value"] = cctbx.array_family.flex.vec3_double(len(self))
         self["xyzobs.mm.variance"] = cctbx.array_family.flex.vec3_double(len(self))
@@ -1358,21 +1356,25 @@ Found %s"""
                 len(self), (1, 1, 1)
             )
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
-        for i_panel in range(len(detector)):
-            sel = panel_numbers == i_panel
-            centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-                detector[i_panel],
-                scan,
-                self["xyzobs.px.value"].select(sel),
-                self["xyzobs.px.variance"].select(sel),
-                cctbx.array_family.flex.vec3_double(sel.count(True), (1, 1, 1)),
-            )
-            self["xyzobs.mm.value"].set_selected(sel, centroid_position)
-            self["xyzobs.mm.variance"].set_selected(sel, centroid_variance)
 
-    def map_centroids_to_reciprocal_space(
-        self, detector, beam, goniometer=None, calculated=False
-    ):
+        for i, expt in enumerate(experiments):
+            if "imageset_id" in self:
+                sel_expt = self["imageset_id"] == i
+            else:
+                sel_expt = self["id"] == i
+            for i_panel in range(len(expt.detector)):
+                sel = sel_expt & (panel_numbers == i_panel)
+                centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+                    expt.detector[i_panel],
+                    expt.scan,
+                    self["xyzobs.px.value"].select(sel),
+                    self["xyzobs.px.variance"].select(sel),
+                    cctbx.array_family.flex.vec3_double(sel.count(True), (1, 1, 1)),
+                )
+                self["xyzobs.mm.value"].set_selected(sel, centroid_position)
+                self["xyzobs.mm.variance"].set_selected(sel, centroid_variance)
+
+    def map_centroids_to_reciprocal_space(self, experiments, calculated=False):
         """Map mm/radian spot centroids to reciprocal space.
 
         Used to convert spot centroids provided in mm/radian units to reciprocal space
@@ -1380,43 +1382,49 @@ Found %s"""
         contains a :py:class:`.flex.vec3_double` array of the reciprocal lattice vectors.
 
         Args:
-          detector (dxtbx.model.detector.Detector): A dxtbx detector object.
-          beam(dxtbx.model.beam.Beam): A dxtbx beam object.
-          goniometer(dxtbx.model.goniometer.Goniometer): A dxtbx goniometer object.
-            May be None, e.g. for a still image.
+          experiments (dxtbx.model.ExperimentList): A list of experiments.
         """
 
         self["s1"] = cctbx.array_family.flex.vec3_double(len(self))
         self["rlp"] = cctbx.array_family.flex.vec3_double(len(self))
         panel_numbers = cctbx.array_family.flex.size_t(self["panel"])
-        for i_panel in range(len(detector)):
-            sel = panel_numbers == i_panel
-            if calculated:
-                x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
+
+        for i, expt in enumerate(experiments):
+            if "imageset_id" in self:
+                sel_expt = self["imageset_id"] == i
             else:
-                x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
-            s1 = detector[i_panel].get_lab_coord(
-                cctbx.array_family.flex.vec2_double(x, y)
-            )
-            s1 = s1 / s1.norms() * (1 / beam.get_wavelength())
-            self["s1"].set_selected(sel, s1)
-            S = s1 - beam.get_s0()
-            if goniometer is not None:
-                setting_rotation = matrix.sqr(goniometer.get_setting_rotation())
-                rotation_axis = goniometer.get_rotation_axis_datum()
-                fixed_rotation = matrix.sqr(goniometer.get_fixed_rotation())
-                self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
-                self["rlp"].set_selected(
-                    sel,
-                    self["rlp"]
-                    .select(sel)
-                    .rotate_around_origin(rotation_axis, -rot_angle),
+                sel_expt = self["id"] == i
+
+            for i_panel in range(len(expt.detector)):
+                sel = sel_expt & (panel_numbers == i_panel)
+                if calculated:
+                    x, y, rot_angle = self["xyzcal.mm"].select(sel).parts()
+                else:
+                    x, y, rot_angle = self["xyzobs.mm.value"].select(sel).parts()
+                s1 = expt.detector[i_panel].get_lab_coord(
+                    cctbx.array_family.flex.vec2_double(x, y)
                 )
-                self["rlp"].set_selected(
-                    sel, tuple(fixed_rotation.inverse()) * self["rlp"].select(sel)
-                )
-            else:
-                self["rlp"].set_selected(sel, S)
+                s1 = s1 / s1.norms() * (1 / expt.beam.get_wavelength())
+                self["s1"].set_selected(sel, s1)
+                S = s1 - expt.beam.get_s0()
+                if expt.goniometer is not None:
+                    setting_rotation = matrix.sqr(
+                        expt.goniometer.get_setting_rotation()
+                    )
+                    rotation_axis = expt.goniometer.get_rotation_axis_datum()
+                    fixed_rotation = matrix.sqr(expt.goniometer.get_fixed_rotation())
+                    self["rlp"].set_selected(sel, tuple(setting_rotation.inverse()) * S)
+                    self["rlp"].set_selected(
+                        sel,
+                        self["rlp"]
+                        .select(sel)
+                        .rotate_around_origin(rotation_axis, -rot_angle),
+                    )
+                    self["rlp"].set_selected(
+                        sel, tuple(fixed_rotation.inverse()) * self["rlp"].select(sel)
+                    )
+                else:
+                    self["rlp"].set_selected(sel, S)
 
     def calculate_entering_flags(self, experiments):
         """Calculate the entering flags for the reflections.

@@ -207,14 +207,8 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     input_reflections = input_reflections.select(
         input_reflections["xyzobs.px.value"].parts()[2] < 100
     )
-    input_reflections.centroid_px_to_mm(
-        input_experiments[0].detector, scan=input_experiments[0].scan
-    )
-    input_reflections.map_centroids_to_reciprocal_space(
-        input_experiments[0].detector,
-        input_experiments[0].beam,
-        goniometer=input_experiments[0].goniometer,
-    )
+    input_reflections.centroid_px_to_mm(input_experiments)
+    input_reflections.map_centroids_to_reciprocal_space(input_experiments)
     input_reflections["imageset_id"] = flex.size_t(input_reflections.size(), 0)
     input_reflections["id"] = flex.int(input_reflections.size(), -1)
 

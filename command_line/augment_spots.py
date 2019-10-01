@@ -50,22 +50,12 @@ def add_resolution_to_reflections(reflections, experiments):
     # will assume everything from the first detector at the moment - clearly this
     # could be incorrect, will have to do something a little smarter, later
 
-    imageset = experiments.imagesets()[0]
-
     if "imageset_id" not in reflections:
         reflections["imageset_id"] = reflections["id"]
 
-    reflections.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
-
-    reflections.map_centroids_to_reciprocal_space(
-        detector=imageset.get_detector(),
-        beam=imageset.get_beam(),
-        goniometer=imageset.get_goniometer(),
-    )
-
-    d_spacings = 1 / reflections["rlp"].norms()
-
-    reflections["d"] = d_spacings
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    reflections["d"] = 1 / reflections["rlp"].norms()
 
 
 def augment_reflections(reflections, params, experiments=None):

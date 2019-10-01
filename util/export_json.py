@@ -2,15 +2,13 @@ from __future__ import absolute_import, division, print_function
 
 import json
 
-from dials.algorithms.indexing.indexer import Indexer
-
 
 class ReciprocalLatticeJson(object):
     def __init__(self, experiments, reflections):
         self.experiments = experiments
-        self.reflections = Indexer.map_centroids_to_reciprocal_space(
-            experiments, reflections
-        )
+        self.reflections = reflections
+        self.reflections.centroid_px_to_mm(experiments)
+        self.reflections.map_centroids_to_reciprocal_space(experiments)
 
     def as_dict(self, n_digits=None):
         rlp = self.reflections["rlp"]
