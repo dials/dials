@@ -1,5 +1,3 @@
-"""Lattice search strategies."""
-
 from __future__ import absolute_import, division, print_function
 
 import copy
@@ -7,48 +5,19 @@ import logging
 import math
 import operator
 
-import cctbx.miller
+import libtbx.phil
+from cctbx import miller
 from dials.array_family import flex
 from dxtbx.model import Crystal
-from libtbx import phil
 from scitbx import matrix
-from scitbx.math import superpose, least_squares_plane
+from scitbx.math import least_squares_plane, superpose
 
-TWO_PI = 2.0 * math.pi
-FIVE_DEG = TWO_PI * 5.0 / 360.0
+from .strategy import Strategy
 
 logger = logging.getLogger(__name__)
 
-
-class Strategy(object):
-    """A base class for lattice search strategies."""
-
-    phil_scope = None
-
-    def __init__(self, params=None, *args, **kwargs):
-        """Construct the strategy.
-
-        Args:
-            params: an extracted PHIL scope containing the parameters
-        """
-        self._params = params
-        if self._params is None and self.phil_scope is not None:
-            self._params = self.phil_scope.extract()
-
-    def find_crystal_models(self, reflections, experiments):
-        """Find a list of likely crystal models.
-
-        Args:
-            reflections (dials.array_family.flex.reflection_table):
-                The found spots centroids and associated data
-
-            experiments (dxtbx.model.experiment_list.ExperimentList):
-                The experimental geometry models
-
-        Returns:
-            A list of candidate crystal models.
-        """
-        raise NotImplementedError()
+TWO_PI = 2.0 * math.pi
+FIVE_DEG = TWO_PI * 5.0 / 360.0
 
 
 class CompleteGraph(object):
@@ -150,7 +119,7 @@ class LowResSpotMatch(Strategy):
     based on resolution and reciprocal space distance between observed spots.
     """
 
-    phil_scope = phil.parse(low_res_spot_match_phil_str)
+    phil_scope = libtbx.phil.parse(low_res_spot_match_phil_str)
 
     def __init__(
         self, target_symmetry_primitive, max_lattices, params=None, *args, **kwargs
@@ -255,7 +224,7 @@ class LowResSpotMatch(Strategy):
 
     def _calc_candidate_hkls(self):
         # First a list of indices that fill 1 ASU
-        hkl_list = cctbx.miller.build_set(
+        hkl_list = miller.build_set(
             self._target_symmetry_primitive,
             anomalous_flag=False,
             d_min=self._params.candidate_spots.d_min,
@@ -267,7 +236,7 @@ class LowResSpotMatch(Strategy):
         self.candidate_hkls = rt
 
         # Now P1 indices with separate Friedel pairs
-        hkl_list = cctbx.miller.build_set(
+        hkl_list = miller.build_set(
             self._target_symmetry_primitive,
             anomalous_flag=True,
             d_min=self._params.candidate_spots.d_min,
