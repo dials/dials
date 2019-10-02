@@ -119,7 +119,7 @@ def test_assign_indices(space_group_symbol, experiment, crystal_factory):
     predicted_reflections["xyzobs.mm.value"] = predicted_reflections["xyzcal.mm"]
     predicted_reflections["id"] = flex.int(len(predicted_reflections), 0)
     predicted_reflections.map_centroids_to_reciprocal_space(
-        experiment.detector, experiment.beam, experiment.goniometer
+        ExperimentList([experiment])
     )
 
     # check that local and global indexing worked equally well in absence of errors
@@ -234,12 +234,8 @@ def test_index_reflections(dials_regression):
             dials_regression, "indexing_test_data", "i04_weak_data", "full.pickle"
         )
     )
-    reflections.centroid_px_to_mm(experiments[0].detector, scan=experiments[0].scan)
-    reflections.map_centroids_to_reciprocal_space(
-        experiments[0].detector,
-        experiments[0].beam,
-        goniometer=experiments[0].goniometer,
-    )
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
     reflections["imageset_id"] = flex.int(len(reflections), 0)
     reflections["id"] = flex.int(len(reflections), -1)
     with pytest.deprecated_call():

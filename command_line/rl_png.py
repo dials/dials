@@ -162,14 +162,11 @@ def run():
 
     reflections = reflections[0]
 
-    imagesets = experiments.imagesets()
-
     f = ReciprocalLatticePng(settings=params)
     f.load_models(experiments, reflections)
 
-    imageset = imagesets[0]
-    rotation_axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
-    s0 = matrix.col(imageset.get_beam().get_s0())
+    rotation_axis = matrix.col(experiments[0].goniometer.get_rotation_axis())
+    s0 = matrix.col(experiments[0].beam.get_s0())
 
     e1 = rotation_axis.normalize()
     e2 = s0.normalize()
@@ -207,13 +204,9 @@ def run():
         if "imageset_id" not in reflections:
             reflections["imageset_id"] = reflections["id"]
 
-        reflections.centroid_px_to_mm(imageset.get_detector(), scan=imageset.get_scan())
+        reflections.centroid_px_to_mm(experiments)
 
-        reflections.map_centroids_to_reciprocal_space(
-            detector=imageset.get_detector(),
-            beam=imageset.get_beam(),
-            goniometer=imageset.get_goniometer(),
-        )
+        reflections.map_centroids_to_reciprocal_space(experiments)
 
         if params.d_min is not None:
             d_spacings = 1 / reflections["rlp"].norms()
@@ -228,7 +221,9 @@ def run():
             reflections, max_cell_multiplier=1.3, step_size=45
         ).max_cell
 
-        result = run_dps((imageset, reflections, max_cell, hardcoded_phil))
+        result = run_dps(
+            (experiments[0].imageset, reflections, max_cell, hardcoded_phil)
+        )
         solutions = [matrix.col(v) for v in result["solutions"]]
         for i in range(min(n_solutions, len(solutions))):
             v = solutions[i]

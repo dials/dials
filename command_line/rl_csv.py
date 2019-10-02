@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments, flatten_reflections
+from dxtbx.model import ExperimentList
 
 phil_scope = iotbx.phil.parse(
     """
@@ -43,8 +44,6 @@ def run(args):
         parser.print_help()
         exit(0)
 
-    imagesets = experiments.imagesets()
-
     spots = []
 
     for reflection in reflections:
@@ -54,7 +53,7 @@ def run(args):
         if not reflection:  # If there are no reflections then export an empty list
             spots.append(reflection)
 
-    assert len(imagesets) == len(spots)
+    assert len(experiments) == len(spots)
 
     if params.output.compress:
         import gzip
@@ -74,17 +73,12 @@ def run(args):
 
     print("Using format:", fmt.strip())
 
-    for k, (imageset, refl) in enumerate(zip(imagesets, spots)):
+    for k, (expt, refl) in enumerate(zip(experiments, spots)):
         if "imageset_id" not in refl:
             refl["imageset_id"] = refl["id"]
 
-        refl.centroid_px_to_mm(imageset.get_detector(), scan=imageset.get_scan())
-        refl.map_centroids_to_reciprocal_space(
-            detector=imageset.get_detector(),
-            beam=imageset.get_beam(),
-            goniometer=imageset.get_goniometer(),
-        )
-
+        refl.centroid_px_to_mm(ExperimentList([expt]))
+        refl.map_centroids_to_reciprocal_space(ExperimentList([expt]))
         rlp = refl["rlp"]
 
         for _rlp in rlp:

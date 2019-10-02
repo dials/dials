@@ -9,6 +9,7 @@ from dials.array_family import flex
 from libtbx import group_args, table_utils
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
+from dxtbx.model import Experiment, ExperimentList
 
 
 class slot(object):
@@ -71,18 +72,6 @@ class binner_d_star_cubed(object):
             ds3_min = d_star_cubed_sorted[0] + (i + 1) * bin_step
             self.bins.append(slot(1 / ds3_min ** (1 / 3), 1 / ds3_max ** (1 / 3)))
             ds3_max = ds3_min
-
-
-def map_to_reciprocal_space(reflections, imageset):
-    detector = imageset.get_detector()
-    scan = imageset.get_scan()
-    goniometer = imageset.get_goniometer()
-    beam = imageset.get_beam()
-
-    reflections.centroid_px_to_mm(detector, scan)
-    reflections.map_centroids_to_reciprocal_space(detector, beam, goniometer)
-
-    return reflections
 
 
 def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
@@ -624,7 +613,19 @@ def stats_single_image(
     filter_ice=True,
     ice_rings_width=0.004,
 ):
-    reflections = map_to_reciprocal_space(reflections, imageset)
+    expts = ExperimentList(
+        [
+            Experiment(
+                detector=imageset.get_detector(),
+                beam=imageset.get_beam(),
+                scan=imageset.get_scan(),
+                goniometer=imageset.get_goniometer(),
+            )
+        ]
+    )
+    reflections.centroid_px_to_mm(expts)
+    reflections.map_centroids_to_reciprocal_space(expts)
+
     if plot and i is not None:
         filename = "i_over_sigi_vs_resolution_%d.png" % (i + 1)
         hist_filename = "spot_count_vs_resolution_%d.png" % (i + 1)

@@ -122,46 +122,21 @@ class SpotFrame(XrayFrame):
             self.reflections = self.predict()
 
         if self.params.d_min is not None and len(self.reflections):
-            reflections = [
-                flex.reflection_table() for i in range(len(self.reflections))
-            ]
-            for i_ref_list in range(len(self.reflections)):
-                if "rlp" in self.reflections[i_ref_list]:
-                    reflections[i_ref_list] = self.reflections[i_ref_list]
-                else:
-                    for i, imageset in enumerate(self.imagesets):
-                        if "imageset_id" in self.reflections[i_ref_list]:
-                            sel = self.reflections[i_ref_list]["imageset_id"] == i
-                        else:
-                            sel = self.reflections[i_ref_list]["id"] == i
-                        if "xyzobs.mm.value" in self.reflections[i_ref_list]:
-                            refl = self.reflections[i_ref_list]
-                        else:
-                            if "xyzobs.px.value" not in self.reflections[i_ref_list]:
-                                self.reflections[i_ref_list][
-                                    "xyzobs.px.value"
-                                ] = self.reflections[i_ref_list]["xyzcal.px"]
-                                self.reflections[i_ref_list][
-                                    "xyzobs.px.variance"
-                                ] = flex.vec3_double(
-                                    len(self.reflections[i_ref_list]), (1, 1, 1)
-                                )
-                            refl = self.reflections[i_ref_list].select(sel)
-                            refl.centroid_px_to_mm(
-                                imageset.get_detector(), imageset.get_scan()
+            reflections = []
+            for expt, refl in zip(self.experiments, self.reflections):
+                if "rlp" not in refl:
+                    if "xyzobs.mm.value" not in refl:
+                        if "xyzobs.px.value" not in refl:
+                            refl["xyzobs.px.value"] = refl["xyzcal.px"]
+                            refl["xyzobs.px.variance"] = flex.vec3_double(
+                                len(refl), (1, 1, 1)
                             )
+                        refl.centroid_px_to_mm(ExperimentList([expt]))
+                        refl.map_centroids_to_reciprocal_space(ExperimentList([expt]))
 
-                        refl.map_centroids_to_reciprocal_space(
-                            imageset.get_detector(),
-                            imageset.get_beam(),
-                            imageset.get_goniometer(),
-                        )
-                        reflections[i_ref_list].extend(refl)
-
-                d_spacings = 1 / reflections[i_ref_list]["rlp"].norms()
-                reflections[i_ref_list] = reflections[i_ref_list].select(
-                    d_spacings > self.params.d_min
-                )
+                d_spacings = 1 / refl["rlp"].norms()
+                refl = refl.select(d_spacings > self.params.d_min)
+                reflections.append(refl)
             self.reflections = reflections
         self.Bind(EVT_LOADIMG, self.load_file_event)
 

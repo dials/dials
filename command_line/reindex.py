@@ -258,26 +258,15 @@ experiments file must also be specified with the option: reference= """
             assert len(reflections) == 1
 
             # always re-map reflections to reciprocal space
-            refl_copy = flex.reflection_table()
-            for i, imageset in enumerate(experiments.imagesets()):
-                if "imageset_id" in reflections[0]:
-                    sel = reflections[0]["imageset_id"] == i
-                else:
-                    sel = reflections[0]["id"] == i
-                refl = reflections[0].select(sel)
-                refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
-                refl.map_centroids_to_reciprocal_space(
-                    imageset.get_detector(),
-                    imageset.get_beam(),
-                    imageset.get_goniometer(),
-                )
-                refl_copy.extend(refl)
+            refl = reflections.deep_copy()
+            refl.centroid_px_to_mm(experiments)
+            refl.map_centroids_to_reciprocal_space(experiments)
 
             # index the reflection list using the input experiments list
-            refl_copy["id"] = flex.int(len(refl_copy), -1)
+            refl["id"] = flex.int(len(refl), -1)
             index = AssignIndicesGlobal(tolerance=0.2)
-            index(refl_copy, experiments)
-            hkl_expt = refl_copy["miller_index"]
+            index(refl, experiments)
+            hkl_expt = refl["miller_index"]
             hkl_input = reflections[0]["miller_index"]
 
             change_of_basis_op = derive_change_of_basis_op(hkl_input, hkl_expt)

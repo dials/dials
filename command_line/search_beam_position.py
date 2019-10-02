@@ -20,6 +20,7 @@ import iotbx.phil
 from rstbx.indexing_api import dps_extended
 from rstbx.indexing_api.lattice import DPS_primitive_lattice
 from rstbx.dps_core import Direction, Directional_FFT
+from dxtbx.model import Experiment, ExperimentList
 
 from dials.algorithms.indexing.indexer import find_max_cell
 from dials.util import log
@@ -288,7 +289,15 @@ class better_experimental_model_discovery(object):
         gonio = copy.deepcopy(imageset.get_goniometer())
         gonio.set_fixed_rotation((1, 0, 0, 0, 1, 0, 0, 0, 1))
         spots_mm.map_centroids_to_reciprocal_space(
-            trial_detector, imageset.get_beam(), gonio
+            ExperimentList(
+                [
+                    Experiment(
+                        beam=imageset.get_beam(),
+                        detector=trial_detector,
+                        goniometer=gonio,
+                    )
+                ]
+            )
         )
 
         return self.sum_score_detail(spots_mm["rlp"], solutions, amax=amax)
@@ -409,17 +418,20 @@ def discover_better_experimental_model(
         raise Sorry("input beam does not intersect detector")
 
     for imageset, spots in zip(imagesets, spot_lists):
-        if "imageset_id" not in spots:
-            spots["imageset_id"] = spots["id"]
-
         spots_mm = copy.deepcopy(spots)
-        spots_mm.centroid_px_to_mm(imageset.get_detector(), scan=imageset.get_scan())
-
-        spots_mm.map_centroids_to_reciprocal_space(
-            detector=imageset.get_detector(),
-            beam=imageset.get_beam(),
-            goniometer=imageset.get_goniometer(),
+        spots_mm["imageset_id"] = flex.int(len(spots), 0)
+        expts = ExperimentList(
+            [
+                Experiment(
+                    detector=imageset.get_detector(),
+                    beam=imageset.get_beam(),
+                    goniometer=imageset.get_goniometer(),
+                    scan=imageset.get_scan(),
+                )
+            ]
         )
+        spots_mm.centroid_px_to_mm(expts)
+        spots_mm.map_centroids_to_reciprocal_space(expts)
 
         if dps_params.d_min is not None:
             d_spacings = 1 / spots_mm["rlp"].norms()

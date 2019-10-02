@@ -480,20 +480,13 @@ class Indexer(object):
         return
 
     def setup_indexing(self):
-        reflections_input = self.reflections
-        self.reflections = flex.reflection_table()
-        for i, expt in enumerate(self.experiments):
-            if "imageset_id" not in reflections_input:
-                reflections_input["imageset_id"] = reflections_input["id"]
-            refl = reflections_input.select(reflections_input["imageset_id"] == i)
-            refl.centroid_px_to_mm(expt.detector, expt.scan)
-            self.reflections.extend(refl)
         if len(self.reflections) == 0:
             raise DialsIndexError("No reflections left to index!")
 
-        self.reflections = self.map_centroids_to_reciprocal_space(
-            self.experiments, self.reflections
-        )
+        if "imageset_id" not in self.reflections:
+            self.reflections["imageset_id"] = self.reflections["id"]
+        self.reflections.centroid_px_to_mm(self.experiments)
+        self.reflections.map_centroids_to_reciprocal_space(self.experiments)
         self.reflections.calculate_entering_flags(self.experiments)
 
         self.find_max_cell()
@@ -512,20 +505,7 @@ class Indexer(object):
 
         self.reflections["id"] = flex.int(len(self.reflections), -1)
 
-    @staticmethod
-    def map_centroids_to_reciprocal_space(experiments, reflections):
-        spots_mm = reflections
-        reflections = flex.reflection_table()
-        for i, expt in enumerate(experiments):
-            spots_sel = spots_mm.select(spots_mm["imageset_id"] == i)
-            spots_sel.map_centroids_to_reciprocal_space(
-                expt.detector, expt.beam, expt.goniometer
-            )
-            reflections.extend(spots_sel)
-        return reflections
-
     def index(self):
-
         experiments = ExperimentList()
 
         had_refinement_error = False
@@ -697,9 +677,7 @@ class Indexer(object):
                 ):
                     # Experimental geometry may have changed - re-map centroids to
                     # reciprocal space
-                    self.reflections = self.map_centroids_to_reciprocal_space(
-                        self.experiments, self.reflections
-                    )
+                    self.reflections.map_centroids_to_reciprocal_space(self.experiments)
 
                 # update for next cycle
                 experiments = refined_experiments

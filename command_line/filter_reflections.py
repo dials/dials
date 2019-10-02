@@ -13,7 +13,6 @@ from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensit
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.array_family import flex
 from dials.algorithms.integration import filtering
-from dials.algorithms.spot_finding.per_image_analysis import map_to_reciprocal_space
 from libtbx.phil import parse
 from libtbx.table_utils import simple_table
 
@@ -316,9 +315,7 @@ def run_filtering(params, experiments, reflections):
             d_spacings = reflections["d"]
         else:
             if "rlp" not in reflections:
-                imageset = experiments.imagesets()[0]
-                assert imageset is not None
-                reflections = map_to_reciprocal_space(reflections, imageset)
+                reflections.map_centroids_to_reciprocal_space(experiments)
             d_star_sq = flex.pow2(reflections["rlp"].norms())
             d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 

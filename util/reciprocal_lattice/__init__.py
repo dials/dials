@@ -91,32 +91,23 @@ class Render3d(object):
         self.set_points()
 
     def map_points_to_reciprocal_space(self):
-        reflections = flex.reflection_table()
-        for i, expt in enumerate(self.experiments):
-            if "imageset_id" in self.reflections_input:
-                sel = self.reflections_input["imageset_id"] == i
-            else:
-                sel = self.reflections_input["id"] == i
-            if isinstance(self.reflections_input["id"], flex.size_t):
-                self.reflections_input["id"] = self.reflections_input["id"].as_int()
+        # 155 handle data from predictions *only* if that is what we have
+        calculated = "xyzobs.px.value" not in self.reflections_input
+        self.reflections = copy.deepcopy(self.reflections_input)
+        experiments = copy.deepcopy(self.experiments)
 
-            # 155 handle data from predictions *only* if that is what we have
-            calculated = "xyzobs.px.value" not in self.reflections_input
-            refl = self.reflections_input.select(sel)
-            if not calculated:
-                refl.centroid_px_to_mm(expt.detector, expt.scan)
+        if not calculated:
+            self.reflections.centroid_px_to_mm(experiments)
 
-            goniometer = copy.deepcopy(expt.goniometer)
-            if self.settings.reverse_phi:
-                goniometer.set_rotation_axis(
-                    [-i for i in goniometer.get_rotation_axis()]
+        if self.settings.reverse_phi:
+            for expt in experiments:
+                expt.goniometer.set_rotation_axis(
+                    [-i for i in expt.goniometer.get_rotation_axis()]
                 )
-            refl.map_centroids_to_reciprocal_space(
-                expt.detector, expt.beam, goniometer, calculated=calculated
-            )
 
-            reflections.extend(refl)
-            self.reflections = reflections
+        self.reflections.map_centroids_to_reciprocal_space(
+            experiments, calculated=calculated
+        )
 
     def set_points(self):
         reflections = self.reflections
