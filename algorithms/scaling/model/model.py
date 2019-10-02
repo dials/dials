@@ -28,6 +28,9 @@ from dials.algorithms.scaling.plots import (
     plot_absorption_parameters,
     plot_absorption_surface,
     plot_smooth_scales,
+    plot_array_decay_plot,
+    plot_array_modulation_plot,
+    plot_array_absorption_plot,
 )
 from dials_scaling_ext import (
     calc_theta_phi,
@@ -713,8 +716,8 @@ class ArrayScalingModel(ScalingModelBase):
 
         if params.decay_correction:
             configdict["corrections"].append("decay")
-            resmax = (1.0 / (flex.min(reflections["d"]) ** 2)) + 0.001
-            resmin = (1.0 / (flex.max(reflections["d"]) ** 2)) - 0.001
+            resmax = (1.0 / (flex.min(reflections["d"]) ** 2)) + 1e-6
+            resmin = (1.0 / (flex.max(reflections["d"]) ** 2)) - 1e-6
             n_res_bins = params.n_resolution_bins
             n_res_param, res_bin_width = calc_n_param_from_bins(
                 resmin, resmax, n_res_bins
@@ -808,6 +811,16 @@ class ArrayScalingModel(ScalingModelBase):
         }
 
         return cls(parameters_dict, configdict, is_scaled)
+
+    def plot_model_components(self):
+        d = OrderedDict()
+        if "absorption" in self.components:
+            d.update(plot_array_absorption_plot(self))
+        if "decay" in self.components:
+            d.update(plot_array_decay_plot(self))
+        if "modulation" in self.components:
+            d.update(plot_array_modulation_plot(self))
+        return d
 
 
 class KBScalingModel(ScalingModelBase):

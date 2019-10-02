@@ -519,3 +519,202 @@ model. A true normal distribution is indicated.
 """,
         },
     }
+
+
+def _smooth_params_to_bins(n_param):
+    if n_param > 4:
+        return n_param - 2
+    return n_param - 1
+
+
+def plot_array_modulation_plot(array_model):
+    modulation_comp = array_model.components["modulation"]
+    configdict = array_model.configdict
+    nxbins = _smooth_params_to_bins(configdict["n_x_mod_param"])
+    nybins = _smooth_params_to_bins(configdict["n_y_mod_param"])
+    sample_x_values = flex.double(
+        np.linspace(0, nxbins, (nxbins * 10 + 1), endpoint=True)
+    )
+    sample_y_values = flex.double(
+        np.linspace(0, nybins, (nybins * 10) + 1, endpoint=True)
+    )
+    x_vals = flex.double(np.tile(sample_x_values, len(sample_y_values)))
+    y_vals = flex.double(np.repeat(sample_y_values, len(sample_x_values)))
+    modulation_comp.data = {"x": x_vals, "y": y_vals}
+    modulation_comp.update_reflection_data()
+    z = modulation_comp.calculate_scales()
+
+    xtickvals = flex.double(range(nxbins + 1))
+    ytickvals = flex.double(range(nybins + 1))
+    xticks = (xtickvals * configdict["x_det_bin_width"]) + configdict["xmin"]
+    yticks = (ytickvals * configdict["y_det_bin_width"]) + configdict["ymin"]
+    xticktext = [str(int(i)) for i in xticks]
+    yticktext = [str(int(i)) for i in yticks]
+
+    return {
+        "array_modulation_plot": {
+            "data": [
+                {
+                    "x": list(x_vals),
+                    "y": list(y_vals),
+                    "z": list(z),
+                    "type": "heatmap",
+                    "colorscale": "Viridis",
+                }
+            ],
+            "layout": {
+                "title": "Array model modulation correction",
+                "xaxis": {
+                    "title": "detector x-position (px)",
+                    "showgrid": False,
+                    "tickvals": list(xtickvals),
+                    "ticktext": xticktext,
+                },
+                "yaxis": {
+                    "title": "detector y-position (px)",
+                    "anchor": "x",
+                    "showgrid": False,
+                    "tickvals": list(ytickvals),
+                    "ticktext": yticktext,
+                },
+                "width": 500,
+                "height": 450,
+            },
+        }
+    }
+
+
+def plot_array_absorption_plot(array_model):
+    absorption_comp = array_model.components["absorption"]
+    configdict = array_model.configdict
+    nxbins = _smooth_params_to_bins(configdict["n_x_param"])
+    nybins = _smooth_params_to_bins(configdict["n_y_param"])
+    ntimebins = _smooth_params_to_bins(configdict["n_time_param"])
+
+    sample_x_values = flex.double(np.linspace(0, nxbins, nxbins + 1, endpoint=True))
+    sample_y_values = flex.double(np.linspace(0, nybins, nybins + 1, endpoint=True))
+    sample_time_values = flex.double(
+        np.linspace(0, ntimebins, ntimebins + 1, endpoint=True)
+    )
+    # the x-y values at one timepoint
+    x_vals = np.tile(sample_x_values, len(sample_y_values))
+    y_vals = np.repeat(sample_y_values, len(sample_x_values))
+    # now tile this for n_time_vals
+    x_vals = np.tile(x_vals, len(sample_time_values))
+    y_vals = np.tile(y_vals, len(sample_time_values))
+
+    z_vals = flex.double(
+        np.repeat(sample_time_values, len(sample_x_values) * len(sample_y_values))
+    )
+
+    absorption_comp.data = {
+        "x": flex.double(x_vals),
+        "y": flex.double(y_vals),
+        "z": flex.double(z_vals),
+    }
+    absorption_comp.update_reflection_data()
+    z = absorption_comp.calculate_scales()
+
+    xs = np.repeat(
+        np.array(
+            sample_time_values * configdict["time_rot_interval"]
+            + configdict["valid_osc_range"][0]
+        ),
+        len(sample_x_values) * len(sample_y_values),
+    )
+    ys = np.tile(
+        range(len(sample_x_values) * len(sample_y_values)), len((sample_time_values))
+    )
+
+    return {
+        "array_absorption_plot": {
+            "data": [
+                {
+                    "x": list(xs),
+                    "y": list(ys),
+                    "z": list(z),
+                    "type": "heatmap",
+                    "colorscale": "Viridis",
+                }
+            ],
+            "layout": {
+                "title": "Array model absorption correction",
+                "xaxis": {"title": "rotation angle (degrees)", "showgrid": False},
+                "yaxis": {
+                    "title": "detector x-y positional index",
+                    "anchor": "x",
+                    "showgrid": False,
+                },
+                "width": 500,
+                "height": 450,
+            },
+            "help": """\
+This plot shows a representation of the 3D absorption correction unwrapped into
+2D. For each value of rotation (separated by ~decay_interval), the y-axis shows
+the correction at the corners of a grid of n_absorption_bins x n_absorption_bins.
+e.g. if n_absorption_bins = 3, there are 16 corners of the grid that spans the
+detector surface, so the positional indices are the points (0, 0), (0, 1), (0, 2),
+(0, 3), (1, 0), (1, 1) etc. on this grid. Although the plot is granular, the
+correction applied during scaling is smoothly interpolated between the parameters
+in 3D.
+""",
+        }
+    }
+
+
+def plot_array_decay_plot(array_model):
+
+    decay_comp = array_model.components["decay"]
+    configdict = array_model.configdict
+
+    valid_osc = configdict["valid_osc_range"]
+    n_points = max(valid_osc[1] - valid_osc[0], 50)
+    sample_x_values = flex.double(
+        np.linspace(valid_osc[0], valid_osc[1], n_points + 1, endpoint=True)
+    )
+    n_y_bins = _smooth_params_to_bins(configdict["n_res_param"])
+    sample_y_values = np.linspace(0, n_y_bins, int(n_y_bins / 0.1) + 1, endpoint=True)
+
+    norm_x_vals = (
+        flex.double(np.tile(sample_x_values, len(sample_y_values)))
+        / configdict["time_rot_interval"]
+    )
+    norm_y_vals = flex.double(np.repeat(sample_y_values, len(sample_x_values)))
+    decay_comp.data = {"x": norm_y_vals, "y": norm_x_vals}
+    decay_comp.update_reflection_data()
+    z = decay_comp.calculate_scales()
+    x = norm_x_vals * configdict["time_rot_interval"]
+    y = norm_y_vals
+
+    tickvals = flex.double(range(n_y_bins + 1))
+    resmin = configdict["resmin"] + 1e6
+    resmin = (tickvals * configdict["res_bin_width"]) + configdict["resmin"]
+    d = 1.0 / ((tickvals * configdict["res_bin_width"]) + resmin) ** 0.5
+    ticktext = ["%.3f" % i for i in d]
+
+    return {
+        "array_decay_plot": {
+            "data": [
+                {
+                    "x": list(x),
+                    "y": list(y),
+                    "z": list(z),
+                    "type": "heatmap",
+                    "colorscale": "Viridis",
+                }
+            ],
+            "layout": {
+                "title": "Array model decay correction",
+                "xaxis": {"title": "rotation angle (degrees)", "showgrid": False},
+                "yaxis": {
+                    "title": "resolution/d-value (Angstrom)",
+                    "anchor": "x",
+                    "showgrid": False,
+                    "tickvals": list(tickvals),
+                    "ticktext": ticktext,
+                },
+                "width": 500,
+                "height": 450,
+            },
+        }
+    }
