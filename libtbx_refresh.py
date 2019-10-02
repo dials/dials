@@ -19,7 +19,7 @@ libtbx.pkg_utils.define_entry_points(
             "real_space_grid_search = dials.algorithms.indexing.basis_vector_search:RealSpaceGridSearch",
         ],
         "dials.index.lattice_search": [
-            "low_res_spot_match = dials.algorithms.indexing.lattice_search_strategies:LowResSpotMatch"
+            "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch"
         ],
     }
 )
