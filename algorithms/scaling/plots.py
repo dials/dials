@@ -369,7 +369,7 @@ def error_model_variance_plot(data):
     bin_variances = data["binning_info"]["bin_variances"]
     initial_variances = data["binning_info"]["initial_variances"]
     xs = data["binning_info"]["bin_boundaries"]
-    x = range(1, 11)
+    x = list(range(1, 11))
     x_labels = [
         str(round(xs[i], 1)) + " - " + str(round(xs[i + 1], 1)) for i in range(10)
     ]
