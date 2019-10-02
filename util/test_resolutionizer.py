@@ -60,3 +60,24 @@ Resolution Mn(I)/Mn(sig):    1.50"""
     ]
     for png in expected_png:
         assert tmpdir.join(png).check()
+
+
+def test_resolutionizer_multi_sweep_with_batch_range(dials_data, tmpdir):
+
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    refls = location.join("scaled_20_25.refl")
+    expts = location.join("scaled_20_25.expt")
+
+    result = procrunner.run(
+        ["dials.resolutionizer", "batch_range=1900,3600", refls.strpath, expts.strpath],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    print(result.stdout)
+
+    expected_output = """\
+Resolution cc_half:      0.59
+Resolution I/sig:        0.59
+Resolution Mn(I/sig):    0.59"""
+    for line in expected_output.encode("latin-1").splitlines():
+        assert line in result.stdout

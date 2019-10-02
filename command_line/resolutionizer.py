@@ -10,6 +10,7 @@ from dials.util import log
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 from dials.util.version import dials_version
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 
 logger = logging.getLogger("dials.resolutionizer")
 
@@ -69,6 +70,7 @@ def run(args):
             scaled_unmerged, params.resolutionizer
         )
     else:
+        reflections = parse_multiple_datasets(reflections)
         m = resolutionizer.Resolutionizer.from_reflections_and_experiments(
             reflections, experiments, params.resolutionizer
         )
