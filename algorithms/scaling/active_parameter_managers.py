@@ -197,14 +197,14 @@ class ParameterManagerGenerator(object):
             # data_man has components ['a'], return [["a"]]
             # data_man has components ['a', 'c'], return [["a"], ["c"]]
             for i, data_manager in enumerate(self.data_managers):
-                self.param_lists[i] = [
-                    v
-                    for v in map(
-                        lambda y: filter(lambda x: x in data_manager.components, y),
-                        data_manager.consecutive_refinement_order,
-                    )
-                    if v
-                ]
+                ind_param_list = []
+                for cycle in data_manager.consecutive_refinement_order:
+                    corrlist = [
+                        corr for corr in cycle if corr in data_manager.components
+                    ]
+                    if corrlist:
+                        ind_param_list.append(corrlist)
+                self.param_lists[i] = ind_param_list
 
     def parameter_managers(self):
         """Generate the parameter managers for each cycle of refinement."""

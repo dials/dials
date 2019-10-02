@@ -246,12 +246,14 @@ def test_ParameterManagerGenerator_consecutive():
     # Test multi dataset case with different number of cycles for each data_manager.
     components_2 = {"1": mock_component()}
     data_manager_2 = mock_data_manager(components_2)
-    data_manager_2.consecutive_refinement_order = [["1"]]
+    data_manager_2.consecutive_refinement_order = [["1"], ["2"]]
     pmg = ParameterManagerGenerator(
         [data_manager, data_manager_2],
         apm_type=active_parameter_manager,
         mode="consecutive",
     )
+    assert pmg.param_lists[0] == [["scale", "decay"], ["absorption"]]
+    assert pmg.param_lists[1] == [["1"]]
     apms = list(pmg.parameter_managers())
     assert len(apms) == 2
     multi_apm = apms[0]
