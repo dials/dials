@@ -4,7 +4,7 @@ Installation
 
 .. include:: installation.stable_release
 
-Sneak Preview: DIALS 2.0 (Alpha 1, 2019-09-15)
+Sneak Preview: DIALS 2.0 (Alpha 2, 2019-10-03)
 ==============================================
 
 We are currently preparing for the release of DIALS 2.0. If you want to help
