@@ -18,6 +18,9 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
     n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
 
     # XXX should avoid relying on matplotlib here to determine colours
+    import matplotlib
+
+    matplotlib.use("Agg")
     from matplotlib import pyplot as plt
     import numpy
 
