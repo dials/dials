@@ -22,7 +22,7 @@ h5py
 hdf5
 jinja2
 jpeg
-matplotlib>=3.0.2,<3.1
+matplotlib-base>=3.0.2,<3.1
 mock
 nomkl
 numpy>=1.15,<1.16
