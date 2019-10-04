@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.integrate.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -38,7 +27,6 @@ Examples::
   dials.integrate models.expt refined.refl profile.fitting=False
 
   dials.integrate models.expt refined.refl background.algorithm=glm
-
 """
 
 # Create the phil scope
@@ -63,10 +51,6 @@ phil_scope = parse(
     log = 'dials.integrate.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.integrate.debug.log'
-      .type = str
-      .help = "The debug log filename"
 
     report = None
       .type = str
@@ -126,7 +110,6 @@ phil_scope = parse(
   include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
   include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   include scope dials.algorithms.integration.kapton_correction.absorption_phil_scope
-
 """,
     process_includes=True,
 )
@@ -185,11 +168,7 @@ class Script(object):
 
         if __name__ == "__main__":
             # Configure logging
-            log.config(
-                verbosity=options.verbose,
-                info=params.output.log,
-                debug=params.output.debug_log,
-            )
+            log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 
@@ -492,7 +471,6 @@ class Script(object):
     def filter_reference_pixels(self, reference, experiments):
         """
         Set any pixel closer to other reflections to background
-
         """
         modified_count = 0
         for experiment, indices in reference.iterate_experiments_and_indices(

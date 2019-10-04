@@ -8,7 +8,6 @@ import pytest
 from mock import Mock, MagicMock
 from scitbx import sparse
 from libtbx import phil
-from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
@@ -169,6 +168,7 @@ def generated_param(model="KB"):
     """Generate the scaling phil param scope."""
     phil_scope = phil.parse(
         """
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_options.phil_scope
   """,
         process_includes=True,
@@ -178,8 +178,8 @@ def generated_param(model="KB"):
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.__inject__("model", model)
-    parameters.parameterisation.absorption_term = False
+    parameters.model = model
+    parameters.physical.absorption_correction = False
     return parameters
 
 
@@ -346,17 +346,12 @@ def test_target_function(
     assert j.n_cols == 1  # Number of parameters as determined by jacob matrix.
     assert j.n_rows == r.size()
 
-    with pytest.raises(AssertionError):
-        _ = target.compute_functional_gradients_and_curvatures(mock_single_Ih_table)
-
     restraints = target.compute_restraints_residuals_and_gradients(apm_restr)
     assert len(restraints) == 3
     assert target.param_restraints is True
 
-    restraints = target.compute_restraints_functional_gradients_and_curvatures(
-        apm_restr
-    )
-    assert len(restraints) == 3
+    restraints = target.compute_restraints_functional_gradients(apm_restr)
+    assert len(restraints) == 2
 
     achieved = target.achieved()
     assert isinstance(achieved, bool)
@@ -368,9 +363,7 @@ def test_target_function(
     target = ScalingTarget()  # Need to make new instance or won't calc restr as
     # param_restraints is set to False
     assert target.param_restraints is True
-    restraints = target.compute_restraints_functional_gradients_and_curvatures(
-        apm_norestr
-    )
+    restraints = target.compute_restraints_functional_gradients(apm_norestr)
     assert restraints is None
     assert target.param_restraints is False
 
@@ -418,22 +411,22 @@ def test_target_fixedIh(mock_multi_apm_withoutrestraints, mock_Ih_table):
     Ih_table = mock_Ih_table.blocked_data_list[0]
     R, _ = target.compute_residuals(Ih_table)
     expected_residuals = flex.double([-1.0, 0.0, 1.0])
-    assert list(R) == list(expected_residuals)
+    assert list(R) == pytest.approx(list(expected_residuals))
     _, G = target.compute_functional_gradients(Ih_table)
-    assert list(G) == [-44.0]
+    assert list(G) == pytest.approx([-44.0])
     # Add in finite difference check
 
     J = target.calculate_jacobian(Ih_table)
     assert J.n_cols == 1
     assert J.n_rows == 3
     assert J.non_zeroes == 3
-    assert J[0, 0] == -11.0
-    assert J[1, 0] == -22.0
-    assert J[2, 0] == -33.0
+    assert J[0, 0] == pytest.approx(-11.0)
+    assert J[1, 0] == pytest.approx(-22.0)
+    assert J[2, 0] == pytest.approx(-33.0)
 
     expected_rmsd = (flex.sum(expected_residuals ** 2) / len(expected_residuals)) ** 0.5
     assert target._rmsds is None
-    rmsd = target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
+    assert target.rmsds(mock_Ih_table, mock_multi_apm_withoutrestraints)
     assert target._rmsds == pytest.approx([expected_rmsd])
 
 
@@ -479,7 +472,7 @@ def test_target_gradient_calculation_finite_difference(
     f_d_grad = calculate_gradient_fd(target, scaler, apm)
     print(list(f_d_grad))
     print(list(grad))
-    assert approx_equal(list(grad), list(f_d_grad))
+    assert list(grad) == pytest.approx(list(f_d_grad))
 
     sel = f_d_grad > 1e-8
     assert sel, """assert sel has some elements, as finite difference grad should
@@ -492,7 +485,7 @@ def test_target_jacobian_calculation_finite_difference(
 ):
     """Test the calculated jacobian against a finite difference calculation."""
     test_params, exp, test_refl = physical_param, single_exp, large_reflection_table
-    test_params.parameterisation.decay_term = False
+    test_params.physical.decay_correction = False
     test_params.model = "physical"
     experiments = create_scaling_model(test_params, exp, test_refl)
     assert experiments[0].scaling_model.id_ == "physical"

@@ -2,7 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from dials_algorithms_background_modeller_ext import *
+from dials_algorithms_background_modeller_ext import (
+    BackgroundStatistics,
+    MultiPanelBackgroundStatistics,
+)
+
+__all__ = [
+    "BackgroundModeller",
+    "BackgroundModellerExecutor",
+    "BackgroundModellerResult",
+    "BackgroundStatistics",
+    "FinalizeModel",
+    "MultiPanelBackgroundStatistics",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +22,6 @@ logger = logging.getLogger(__name__)
 class FinalizeModel(object):
     """
     A class to finalize the background model
-
     """
 
     def __init__(self, experiments, filter_type="median", kernel_size=10, niter=100):
@@ -20,7 +31,6 @@ class FinalizeModel(object):
         :param experiments: The experiment list
         :param kernel_size: The median filter kernel size
         :param niter: The number of iterations for filling holes
-
         """
         from dials.algorithms.background.gmodel import PolarTransform
 
@@ -48,7 +58,6 @@ class FinalizeModel(object):
 
         :param data: The data array
         :param mask: The mask array
-
         """
         from dials.algorithms.image.filter import median_filter, mean_filter
         from dials.algorithms.image.fill_holes import diffusion_fill
@@ -141,7 +150,6 @@ class FinalizeModel(object):
 class BackgroundModellerResult(object):
     """
     A class to contain the modelling result
-
     """
 
     def __init__(
@@ -157,7 +165,6 @@ class BackgroundModellerResult(object):
     ):
         """
         Init the result
-
         """
         self.mean = mean
         self.variance = variance
@@ -256,7 +263,6 @@ class BackgroundModellerExecutor(object):
 class BackgroundModeller(object):
     """
     A class to help with background modelling
-
     """
 
     def __init__(self, experiments, reflections, params):
@@ -266,7 +272,6 @@ class BackgroundModeller(object):
         :param experiments: The experiment list
         :param reflections: The reflections to process
         :param params: The parameters to use
-
         """
         # Check all reflections have same imageset and get it
         imageset = experiments[0].imageset
@@ -282,7 +287,6 @@ class BackgroundModeller(object):
     def compute(self):
         """
         Integrate the data
-
         """
         from dials.algorithms.integration.image_integrator import ProcessorImage
         from dials.util.command_line import heading

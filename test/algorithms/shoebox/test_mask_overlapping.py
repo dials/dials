@@ -53,10 +53,7 @@ def test(dials_data):
     )
 
     # Get models from the sweep
-    beam = sweep.get_beam()
     detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
 
     # Get the reflections and overlaps
     reflections, adjacency_list = predict_reflections(sweep, crystal)

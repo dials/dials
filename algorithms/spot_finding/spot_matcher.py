@@ -113,7 +113,6 @@ class SpotMatcher(object):
         :param dist: The distances
 
         :returns: A reduced list of nearest neighbours
-
         """
         seen = {}
         for i in index:

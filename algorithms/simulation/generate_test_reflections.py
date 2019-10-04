@@ -225,10 +225,8 @@ def simple_gaussian_spots(params):
             xyz0 = (x0, y0, z0)
             isxyz = (1.0 / sx, 1.0 / sy, 1.0 / sz)
             dxyz = sum(
-                [
-                    (x * isx) ** 2
-                    for x, isx in zip(((xyz - xyz0) * rotation).parts(), isxyz)
-                ]
+                (x * isx) ** 2
+                for x, isx in zip(((xyz - xyz0) * rotation).parts(), isxyz)
             )
 
             # Set the mask values

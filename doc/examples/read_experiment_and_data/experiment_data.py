@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-#
+# coding: utf-8
 # Example code for how to load experiments and reflections in the DIALS
-# framework
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,7 +10,6 @@ from libtbx.phil import parse
 help_message = """
 
 pass experiment.expt indexed.refl
-
 """
 
 phil_scope = parse(

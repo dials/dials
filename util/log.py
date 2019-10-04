@@ -71,7 +71,6 @@ def config_simple_stdout(name="dials"):
         DeprecationWarning,
         stacklevel=2,
     )
-
     """
     Configure the logging to just go to stdout
     """

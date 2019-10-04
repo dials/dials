@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# analyse_output.py
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import copy
@@ -40,7 +29,6 @@ Examples::
   dials.analyse_output refined.refl
 
   dials.analyse_output integrated.refl
-
 """
 
 # Create the phil parameters
@@ -1386,7 +1374,6 @@ def analyse(rlist, directory, grid_size=None, pixels_per_bin=10, centroid_diff_m
             directory, grid_size=grid_size, pixels_per_bin=pixels_per_bin
         ),
     ]
-
     """ Do all the analysis. """
     for a in analysers:
         a(copy.deepcopy(rlist))

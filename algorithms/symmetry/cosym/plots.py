@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 from __future__ import absolute_import, division, print_function
 
 from scitbx.array_family import flex
@@ -18,6 +18,9 @@ def plot_coords(coords, labels=None, key="cosym_coordinates"):
     n_clusters = max(len(unique_labels) - (1 if -1 in unique_labels else 0), 1)
 
     # XXX should avoid relying on matplotlib here to determine colours
+    import matplotlib
+
+    matplotlib.use("Agg")
     from matplotlib import pyplot as plt
     import numpy
 
@@ -62,7 +65,6 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
   Args:
     plot_name (str): The file name to save the plot to.
       If this is not defined then the plot is displayed in interactive mode.
-
   """
     rij = rij_matrix.as_1d()
     rij = rij.select(rij != 0)

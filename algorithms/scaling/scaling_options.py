@@ -10,70 +10,6 @@ phil_scope = iotbx.phil.parse(
     .type = bool
     .help = "If True, create new scaling models for all datasets"
     .expert_level = 0
-  parameterisation {
-    scale_term = True
-      .type = bool
-      .help = "Option to turn off scale correction (for physical/KB
-               default models)."
-      .expert_level = 2
-    scale_interval = 15.0
-      .type = float(value_min=1.0)
-      .help = "Rotation (phi) interval between model parameters for the scale
-               component (physical model)."
-      .expert_level = 1
-    decay_term = True
-      .type = bool
-      .help = "Option to turn off decay correction (for physical/array/KB
-               default models)."
-      .expert_level = 1
-    decay_interval = 20.0
-      .type = float(value_min=1.0)
-      .help = "Rotation (phi) interval between model parameters for the decay
-               component (physical/array default models)."
-      .expert_level = 1
-    n_resolution_bins = 10
-      .type = int(value_min=1)
-      .help = "Number of resolution bins to use for the decay term in the
-               array-based model."
-      .expert_level = 1
-    decay_restraint = 1e-1
-      .type = float(value_min=0.0)
-      .help = "Weight to weakly restrain B-values to 0 for physical model."
-      .expert_level = 2
-    absorption_term = True
-      .type = bool
-      .help = "Option to turn off absorption correction (for physical/array
-               default models)."
-      .expert_level = 1
-    lmax = 4
-      .type = int(value_min=2)
-      .help = "Number of spherical harmonics to include for absorption
-              correction (for physical default model), recommended to be no
-              more than 6."
-      .expert_level = 1
-    surface_weight = 1e6
-      .type = float(value_min=0.0)
-      .help = "Restraint weight applied to spherical harmonic terms in the
-               physical model absorption correction."
-      .expert_level = 1
-    modulation_term = False
-      .type = bool
-      .help = "Option to turn on a detector correction for the array default
-               model."
-      .expert_level = 2
-    n_modulation_bins = 20
-      .type = int(value_min=1)
-      .help = "Number of bins in each dimension (applied to both x and y) for
-              binning the detector position for the modulation term of the
-              array model."
-      .expert_level = 2
-    n_absorption_bins = 3
-      .type = int(value_min=1)
-      .help = "Number of bins in each dimension (applied to both x and y) for
-              binning the detector position for the absorption term of the
-              array model."
-      .expert_level = 1
-  }
   reflection_selection {
     method = *auto quasi_random intensity_ranges use_all
       .type = choice
@@ -164,17 +100,12 @@ phil_scope = iotbx.phil.parse(
               during minimisation, which may be unstable for certain minimisation
               engines (LBFGS)."
       .expert_level = 2
-    optimise_errors = True
-      .type = bool
-      .help = "Option to allow optimisation of weights for scaling. Performs
-               and additional scale factor minimisation after adjusting weights."
-      .expert_level = 0
     error_model {
-      error_model = *basic
+      error_model = *basic None
         .type = choice
-        .help = "The name of the error model to use, if optimise_errors is True."
+        .help = "The error model to use."
         .expert_level = 1
-      min_Ih = 10.0
+      min_Ih = 25.0
         .type = float
         .help = "Reflections with expected intensity above this value are to."
                 "be used in error model minimisation."
@@ -184,17 +115,6 @@ phil_scope = iotbx.phil.parse(
         .help = "The number of intensity bins to use for the error model optimisation."
         .expert_level = 2
     }
-    output_optimised_vars = True
-      .type = bool
-      .help = "If True, the error model determined will be applied to the
-              intensity variances in the output files. This may result in
-              a significant increase or decrease in the variances. The default
-              is True as with the default inverse variance weighting scheme,
-              the modified variances have been used as weights in scaling and
-              therefore should be used as the variances when calculating merged
-              intensities downstream. If this is distorting the data too much,
-              then it is likely that the chosen error model is inappropriate."
-      .expert_level = 2
   }
   cut_data {
     d_min = None
@@ -270,12 +190,6 @@ phil_scope = iotbx.phil.parse(
       .type = str
       .help = "Option to specify space group for scaling (deprecated)"
       .expert_level = 1
-    concurrent = True
-      .type = bool
-      .help = "Option to allow consecutive scaling if concurrent is
-               set to False. The consecutive order is defined (and fixed)
-               for each scaling model."
-      .expert_level = 2
     full_matrix = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

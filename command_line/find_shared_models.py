@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.find_shared_models.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -27,7 +15,6 @@ Examples::
   dials.find_shared_models models.expt
 
   dials.find_shared_models experiments1.expt experiments2.expt
-
 """
 
 # Set the phil scope
@@ -39,12 +26,7 @@ phil_scope = parse(
     log = 'dials.find_shared_models.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.find_shared_models.debug.log'
-      .type = str
-      .help = "The debug log filename"
   }
-
 """,
     process_includes=True,
 )
@@ -83,11 +65,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=False)
 
         # Configure the logging
-        log.config(
-            verbosity=options.verbose,
-            info=params.output.log,
-            debug=params.output.debug_log,
-        )
+        log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 

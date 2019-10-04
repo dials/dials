@@ -1,5 +1,5 @@
 """Algorithms for determination of Laue group symmetry."""
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import json
 import logging
@@ -24,7 +24,6 @@ class determine_space_group(symmetry_base):
       <https://doi.org/10.1107/S0907444905036693>`_ and
       `Evans, P. R. (2011). Acta Cryst. D67, 282-292
       <https://doi.org/10.1107/S090744491003982X>`_.
-
     """
 
     def __init__(
@@ -60,7 +59,6 @@ class determine_space_group(symmetry_base):
             consistency of input unit cells against the median unit cell.
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
-
         """
         super(determine_space_group, self).__init__(
             intensities,
@@ -242,7 +240,6 @@ class determine_space_group(symmetry_base):
 
         Returns:
           str:
-
         """
         output = []
         output.append("Input crystal symmetry:")
@@ -349,7 +346,6 @@ class determine_space_group(symmetry_base):
 
         Returns:
           dict
-
         """
         d = {
             "input_symmetry": {
@@ -387,7 +383,6 @@ class determine_space_group(symmetry_base):
 
         Returns:
           str:
-
         """
         json_str = json.dumps(self.as_dict(), indent=indent)
         if filename:
@@ -565,7 +560,6 @@ class ScoreSymmetryElement(object):
 
         Returns:
           dict:
-
         """
         return {
             "likelihood": self.likelihood,
@@ -589,7 +583,6 @@ class ScoreSubGroup(object):
 
     See appendix A2 of `Evans, P. R. (2011). Acta Cryst. D67, 282-292.
     <https://doi.org/10.1107/S090744491003982X>`_
-
     """
 
     def __init__(self, subgroup, sym_op_scores):
@@ -705,7 +698,6 @@ class CorrelationCoefficientAccumulator(object):
 
     Uses the single-pass formula for Pearson correlation coefficient:
       https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#For_a_sample
-
     """
 
     def __init__(self, x=None, y=None):
@@ -730,7 +722,6 @@ class CorrelationCoefficientAccumulator(object):
         Args:
           x (list): The list of `x` values to accumulate.
           y (list): The list of `y` values to accumulate.
-
         """
         assert x.size() == y.size()
         self._n += x.size()
@@ -745,7 +736,6 @@ class CorrelationCoefficientAccumulator(object):
 
         Returns:
           float: The correlation coefficient.
-
         """
         if self._n == 0:
             return 0
@@ -756,7 +746,6 @@ class CorrelationCoefficientAccumulator(object):
 
         Returns:
           n (int)
-
         """
         return self._n
 
@@ -767,7 +756,6 @@ class CorrelationCoefficientAccumulator(object):
 
         Returns:
           float: The value of the numerator.
-
         """
         return self._n * self._sum_xy - self._sum_x * self._sum_y
 
@@ -778,7 +766,6 @@ class CorrelationCoefficientAccumulator(object):
 
         Returns:
           float: The value of the denominator.
-
         """
         return math.sqrt(self._n * self._sum_x_sq - self._sum_x ** 2) * math.sqrt(
             self._n * self._sum_y_sq - self._sum_y ** 2
@@ -793,7 +780,6 @@ class CorrelationCoefficientAccumulator(object):
 
         Returns:
           self (CorrelationCoefficientAccumulator): The current object.
-
         """
         self._n += other._n
         self._sum_x += other._sum_x
@@ -816,7 +802,6 @@ def trunccauchy_pdf(x, a, b, loc=0, scale=1):
 
     Returns:
       float: The value of the probability density function.
-
     """
     assert b > a
     rv = scipy.stats.cauchy(loc=loc, scale=scale)

@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# merge_reflection_lists.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 # LIBTBX_SET_DISPATCHER_NAME dev.dials.merge_reflection_lists
 
 from __future__ import absolute_import, division, print_function
@@ -26,7 +15,6 @@ help_message = """
   "A" and "B", the result would have length = len("A") + len("B")). Or values
   in one table can be overwritten with values from the other table. Any columns
   present in "A" but not present in "B" (or vice versa) will be preserved.
-
 """
 
 # Create the phil parameters
@@ -40,7 +28,6 @@ phil_scope = parse(
   method = *update extend
     .type = choice
     .help = "The method of merging"
-
 """
 )
 

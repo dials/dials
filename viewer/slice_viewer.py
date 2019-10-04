@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-#  slice_viewer.py
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 import wx
 from dials.viewer.viewer_low_level_util import (
@@ -19,7 +9,6 @@ from dials.viewer.viewer_low_level_util import (
 
 
 class show_3d(object):
-
     """
 
     This is a useful class for developers to view 3D flex array(s) at low level code
@@ -75,7 +64,6 @@ class show_3d(object):
 
     #to see data and mask from a set shoeboxes
     show_3d(flex_dat_frst_lst, flex_dat_seg_lst)
-
     """
 
     def __init__(self, flex_arr_one, flex_arr_two=None):

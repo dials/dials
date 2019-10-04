@@ -1,26 +1,13 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 from __future__ import absolute_import, division, print_function
-from collections import OrderedDict
 import math as pymath
 import numpy as np
 from scitbx import math as scitbxmath
 from scitbx.math import distributions
 from dials.array_family import flex
-from dials.algorithms.scaling.model.model import PhysicalScalingModel
-
-
-def plot_scaling_models(scaling_model_dict):
-    d = OrderedDict()
-    if scaling_model_dict["__id__"] == "physical":
-        model = PhysicalScalingModel.from_dict(scaling_model_dict)
-        d.update(_plot_smooth_scales(model))
-        if "absorption" in model.components:
-            d.update(plot_absorption_parameters(model))
-            d.update(plot_absorption_surface(model))
-    return d
 
 
 def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
@@ -87,7 +74,7 @@ gi = Ci * Ri * Si
 """
 
 
-def _plot_smooth_scales(physical_model):
+def plot_smooth_scales(physical_model):
     """Plot smooth scale factors for the physical model."""
 
     d = {
@@ -375,6 +362,64 @@ def plot_outliers(data):
         },
     }
 
+    return d
+
+
+def error_model_variance_plot(data):
+    bin_variances = data["binning_info"]["bin_variances"]
+    initial_variances = data["binning_info"]["initial_variances"]
+    xs = data["binning_info"]["bin_boundaries"]
+    x = list(range(1, 11))
+    x_labels = [
+        str(round(xs[i], 1)) + " - " + str(round(xs[i + 1], 1)) for i in range(10)
+    ]
+    d = {
+        "error_model_variances": {
+            "data": [
+                {
+                    "x": x,
+                    "y": list(initial_variances)[::-1],
+                    "type": "scatter",
+                    "mode": "markers",
+                    "xaxis": "x",
+                    "yaxis": "y",
+                    "name": "Uncorrected variances",
+                },
+                {
+                    "x": x,
+                    "y": list(bin_variances)[::-1],
+                    "type": "scatter",
+                    "mode": "markers",
+                    "xaxis": "x",
+                    "yaxis": "y",
+                    "name": "Corrected variances",
+                },
+                {
+                    "x": [1, 10],
+                    "y": [1, 1],
+                    "type": "line",
+                    "name": "Ideal normal distribution",
+                },
+            ],
+            "layout": {
+                "title": "Error model variances of normalised deviations",
+                "xaxis": {
+                    "anchor": "y",
+                    "title": "Intensity range, expected unscaled intensity (counts)",
+                    "tickvals": x,
+                    "ticktext": x_labels[::-1],
+                },
+                "yaxis": {"anchor": "x", "title": "Variance of normalised deviations"},
+            },
+            "help": """\
+This plot shows the variance of the normalised deviations for a given intensity
+range for the error model minimisation. The expectation is that after a successful
+error model correction, the variance will be one across the intensity range
+measured i.e. the intensities are normally distributed about the symmetry group
+best estimate, with a variance of one sigma.
+""",
+        }
+    }
     return d
 
 

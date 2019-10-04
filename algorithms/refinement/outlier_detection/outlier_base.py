@@ -401,7 +401,6 @@ outlier
       .multiple = False
   }
 }
-
 """
 
 phil_scope = parse(phil_str)

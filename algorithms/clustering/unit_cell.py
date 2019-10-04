@@ -22,24 +22,27 @@ class UnitCellCluster(Cluster):
         labels="default",
     ):
         """
-    Hierarchical clustering using the unit cell dimentions.
+        Hierarchical clustering using the unit cell dimentions.
 
-    :param threshold: the threshold to use for prunning the tree into clusters.
-    :param method: which clustering method from scipy to use when creating the tree (see scipy.cluster.hierarchy)
-    :param linkage_method: which linkage method from scipy to use when creating the linkages. x (see scipy.cluster.hierarchy)
-    :param log: if True, use log scale on y axis.
-    :param ax: if a matplotlib axes object is provided, plot to this. Otherwise, create a new axes object and display on screen.
-    :param write_file_lists: if True, write out the files that make up each cluster.
-    :param schnell: if True, use simple euclidian distance, otherwise, use Andrews-Berstein distance from Andrews & Bernstein J Appl Cryst 47:346 (2014) on the Niggli cells.
-    :param doplot: Boolean flag for if the plotting should be done at all.
-    Runs faster if switched off.
-    :param labels: 'default' will not display any labels for more than 100 images, but will display file names for fewer. This can be manually overidden with a boolean flag.
-    :return: A list of Clusters ordered by largest Cluster to smallest
+        :param threshold: the threshold to use for prunning the tree into clusters.
+        :param method: which clustering method from scipy to use when creating the tree (see scipy.cluster.hierarchy)
+        :param linkage_method: which linkage method from scipy to use when creating the linkages. x (see scipy.cluster.hierarchy)
+        :param log: if True, use log scale on y axis.
+        :param ax: if a matplotlib axes object is provided, plot to this.
+                   Otherwise, create a new axes object and display on screen.
+        :param write_file_lists: if True, write out the files that make up each cluster.
+        :param schnell: if True, use simple euclidian distance, otherwise, use Andrews-Bernstein
+                        distance from Andrews & Bernstein J Appl Cryst 47:346 (2014) on the Niggli cells.
+        :param doplot: Boolean flag for if the plotting should be done at all.
+                       Runs faster if switched off.
+        :param labels: 'default' will not display any labels for more than 100 images, but will display
+                       file names for fewer. This can be manually overidden with a boolean flag.
+        :return: A list of Clusters ordered by largest Cluster to smallest
 
-    .. note::
-      Use 'schnell' option with caution, since it can cause strange behaviour
-      around symmetry boundaries.
-    """
+        .. note::
+          Use 'schnell' option with caution, since it can cause strange behaviour
+          around symmetry boundaries.
+        """
 
         import numpy as np
         from xfel.clustering.singleframe import SingleFrame
@@ -55,15 +58,14 @@ class UnitCellCluster(Cluster):
         # 2. Do hierarchichal clustering, using the find_distance method above.
         if schnell:
             logger.info("Using Euclidean distance")
-            pair_distances = dist.pdist(g6_cells, metric="euclidean")
             metric = "euclidean"
         else:
             logger.info(
                 "Using Andrews-Bernstein distance from Andrews & Bernstein "
                 "J Appl Cryst 47:346 (2014)"
             )
-            pair_distances = dist.pdist(g6_cells, metric=lambda a, b: NCDist(a, b))
-            metric = lambda a, b: NCDist(a, b)
+            metric = NCDist
+        pair_distances = dist.pdist(g6_cells, metric=metric)
         if len(pair_distances) > 0:
             logger.info("Distances have been calculated")
             this_linkage = hcluster.linkage(

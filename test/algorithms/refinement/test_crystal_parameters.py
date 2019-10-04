@@ -1,12 +1,3 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 
 from dxtbx.model import Crystal
@@ -60,7 +51,6 @@ def test():
 
     # random initial orientations with a random parameter shift at each
     attempts = 100
-    failures = 0
     for i in range(attempts):
 
         # make a random P1 crystal and parameterise it

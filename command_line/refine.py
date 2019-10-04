@@ -1,17 +1,4 @@
-#!/usr/bin/env python
-#
-# dials.refine.py
-#
-#  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
-#  Laboratory, UK.
-#
-#  Author: James Parkhurst and David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
-
 """
 Refine the diffraction geometry of input experiments against the input indexed
 reflections. For rotation scans, the model may be either static (the same for
@@ -25,7 +12,6 @@ Examples::
   dials.refine indexed.expt indexed.refl
 
   dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
-
 """
 
 from __future__ import absolute_import, division, print_function

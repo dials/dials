@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-
 from __future__ import absolute_import, division, print_function
 
 import binascii
+import sys
 
 import iotbx.phil
 
@@ -19,7 +18,6 @@ Examples::
   dials.merge_cbf image_*.cbf
 
   dials.merge_cbf image_*.cbf merge_n_images=10
-
 """
 
 phil_scope = iotbx.phil.parse(
@@ -85,6 +83,8 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
 
     n_output_images = len(imageset) // n_images
 
+    n_digits = len(str(n_output_images))
+
     for i_out in range(n_output_images):
         data_out = None
 
@@ -110,7 +110,9 @@ def merge_cbf(imageset, n_images, out_prefix="sum_", get_raw_data_from_imageset=
                 data_in.set_selected(data_special, 0)
                 data_out += data_in
 
-        out_image = "%s%04i.cbf" % (out_prefix, i_out + 1)
+        out_image = "{prefix}{number:0{digits}d}.cbf".format(
+            prefix=out_prefix, number=i_out + 1, digits=n_digits
+        )
 
         start_tag = binascii.unhexlify("0c1a04d5")
 
@@ -237,7 +239,7 @@ def run():
         return
 
     if len(experiments) > 1:
-        raise Sorry("Only one experiment can be processed at a time")
+        sys.exit("Only one experiment can be processed at a time")
     else:
         imagesets = experiments.imagesets()
         assert len(imagesets) == 1

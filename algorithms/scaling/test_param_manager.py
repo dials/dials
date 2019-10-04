@@ -9,22 +9,21 @@ from dials.array_family import flex
 from dials.algorithms.scaling.active_parameter_managers import (
     multi_active_parameter_manager,
     active_parameter_manager,
-    ConcurrentAPMFactory,
-    ConsecutiveAPMFactory,
+    ParameterManagerGenerator,
 )
 from dials.algorithms.scaling.parameter_handler import (
     scaling_active_parameter_manager,
-    create_apm_factory,
+    create_parameter_manager_generator,
 )
 
 
 def mock_component():
     """Return a mock component of a general model."""
     component = Mock()
-    component.parameters = flex.double([1.0])
+    component.free_parameters = flex.double([1.0])
+    component.free_parameter_esds = None
     component.n_params = 1
     component.var_cov_matrix = sparse.matrix(1, 1)
-    component.parameter_esds = None
     return component
 
 
@@ -40,8 +39,6 @@ def mock_data_manager(components):
     """Return a mock data manager of a general model."""
     dm = Mock()
     dm.components = components
-    # dm.consecutive_refinement_order = None
-    # dm.id_ = 'single'
     return dm
 
 
@@ -81,8 +78,8 @@ def test_general_apm():
     apm.set_param_vals(flex.double([2.0, 1.5]))
     assert apm.get_param_vals() == flex.double([2.0, 1.5])
     # Test params were updated in components
-    assert list(components["scale"].parameters) == [2.0]
-    assert list(components["decay"].parameters) == [1.5]
+    assert list(components["scale"].free_parameters) == [2.0]
+    assert list(components["decay"].free_parameters) == [1.5]
     # Test selection of parameters
     decay_params = apm.select_parameters("decay")
     assert len(decay_params) == 1
@@ -97,12 +94,11 @@ def test_general_apm():
 
     # Test set param esds.
     apm.set_param_esds(flex.double([0.1, 0.2]))
-    assert components["scale"].parameter_esds == flex.double([0.1])
-    assert components["decay"].parameter_esds == flex.double([0.2])
+    assert components["scale"].free_parameter_esds == flex.double([0.1])
+    assert components["decay"].free_parameter_esds == flex.double([0.2])
 
 
 def test_multi_apm():
-
     """Test for the general multi_active_parameter_manage class."""
 
     components_1 = {
@@ -135,9 +131,9 @@ def test_multi_apm():
 
     # Test setting parameter esds.
     multi_apm.set_param_esds(flex.double([0.1, 0.2, 0.3]))
-    assert components_1["scale"].parameter_esds == flex.double([0.1])
-    assert components_1["decay"].parameter_esds == flex.double([0.2])
-    assert components_2["scale"].parameter_esds == flex.double([0.3])
+    assert components_1["scale"].free_parameter_esds == flex.double([0.1])
+    assert components_1["decay"].free_parameter_esds == flex.double([0.2])
+    assert components_2["scale"].free_parameter_esds == flex.double([0.3])
 
     # Test setting var_cov matrices for each component.
     var_cov = flex.double([1.0, 0.5, 0.5, 0.5, 2.0, 0.5, 0.5, 0.5, 3.0])
@@ -148,7 +144,7 @@ def test_multi_apm():
     assert components_2["scale"].var_cov_matrix[0, 0] == 3.0
 
 
-def test_concurrent_apm_factory():
+def test_ParameterManagerGenerator_concurrent():
     """Test the apm factory for concurrent refinement."""
     components_1 = {
         "scale": mock_component(),
@@ -157,34 +153,16 @@ def test_concurrent_apm_factory():
     }
     data_manager = mock_data_manager(components_1)
 
-    apm_factory = ConcurrentAPMFactory(
-        [data_manager], apm_type=active_parameter_manager
+    pmg = ParameterManagerGenerator(
+        [data_manager], apm_type=active_parameter_manager, mode="concurrent"
     )
-    apm = apm_factory.make_next_apm()
+    apms = pmg.parameter_managers()
+    assert len(apms) == 1
+    apm = apms[0]
     assert isinstance(apm, multi_active_parameter_manager)
     assert "scale" in apm.components_list
     assert "decay" in apm.components_list
     assert "absorption" in apm.components_list
-
-    # Test the multi-mode=False option
-    apm_factory = ConcurrentAPMFactory(
-        [data_manager], apm_type=active_parameter_manager, multi_mode=False
-    )
-    apm = apm_factory.make_next_apm()
-    assert isinstance(apm, active_parameter_manager)
-    assert "scale" in apm.components_list
-    assert "decay" in apm.components_list
-    assert "absorption" in apm.components_list
-
-    data_manager = mock_data_manager({})
-    with pytest.raises(ValueError):
-        apm_factory = ConcurrentAPMFactory(
-            [data_manager], apm_type=active_parameter_manager
-        )
-    with pytest.raises(ValueError):
-        apm_factory = ConcurrentAPMFactory(
-            [data_manager], apm_type=active_parameter_manager, multi_mode=False
-        )
 
     components_1 = {
         "scale": mock_component(),
@@ -195,11 +173,14 @@ def test_concurrent_apm_factory():
     data_manager_1 = mock_data_manager(components_1)
     data_manager_2 = mock_data_manager(components_2)
 
-    apm_factory = ConcurrentAPMFactory(
-        [data_manager_1, data_manager_2], apm_type=active_parameter_manager
+    pmg = ParameterManagerGenerator(
+        [data_manager_1, data_manager_2],
+        apm_type=active_parameter_manager,
+        mode="concurrent",
     )
-    assert apm_factory.n_cycles == 1
-    multi_apm = apm_factory.make_next_apm()
+    multi_apms = pmg.parameter_managers()
+    assert len(multi_apms) == 1
+    multi_apm = multi_apms[0]
     assert isinstance(multi_apm, multi_active_parameter_manager)
     for apm in multi_apm.apm_list:
         assert isinstance(apm, active_parameter_manager)
@@ -210,7 +191,7 @@ def test_concurrent_apm_factory():
     assert "2" in multi_apm.apm_list[1].components_list
 
 
-def test_consecutive_apm_factory():
+def test_ParameterManagerGenerator_consecutive():
     """Test the apm factory for consecutive refinement."""
     components_1 = {
         "scale": mock_component(),
@@ -222,32 +203,18 @@ def test_consecutive_apm_factory():
     data_manager.consecutive_refinement_order = [["scale", "decay"], ["absorption"]]
 
     # Test single dataset case.
-    apm_factory = ConsecutiveAPMFactory(
-        [data_manager], apm_type=active_parameter_manager
+    pmg = ParameterManagerGenerator(
+        [data_manager], apm_type=active_parameter_manager, mode="consecutive"
     )
-    assert apm_factory.n_cycles == 2
-    apm = apm_factory.make_next_apm()
+    apms = list(pmg.parameter_managers())
+    assert len(apms) == 2
+    apm = apms[0]
     assert isinstance(apm, multi_active_parameter_manager)
     assert "scale" in apm.components_list
     assert "decay" in apm.components_list
     assert "absorption" not in apm.components_list
-    apm = apm_factory.make_next_apm()
+    apm = apms[1]
     assert isinstance(apm, multi_active_parameter_manager)
-    assert "scale" not in apm.components_list
-    assert "decay" not in apm.components_list
-    assert "absorption" in apm.components_list
-
-    # Test the multi-mode=False option
-    apm_factory = ConsecutiveAPMFactory(
-        [data_manager], apm_type=active_parameter_manager, multi_mode=False
-    )
-    apm = apm_factory.make_next_apm()
-    assert isinstance(apm, active_parameter_manager)
-    assert "scale" in apm.components_list
-    assert "decay" in apm.components_list
-    assert "absorption" not in apm.components_list
-    apm = apm_factory.make_next_apm()
-    assert isinstance(apm, active_parameter_manager)
     assert "scale" not in apm.components_list
     assert "decay" not in apm.components_list
     assert "absorption" in apm.components_list
@@ -257,18 +224,21 @@ def test_consecutive_apm_factory():
     data_manager_2 = mock_data_manager(components_2)
     data_manager_2.consecutive_refinement_order = [["1"], ["2"]]
 
-    apm_factory = ConsecutiveAPMFactory(
-        [data_manager, data_manager_2], apm_type=active_parameter_manager
+    pmg = ParameterManagerGenerator(
+        [data_manager, data_manager_2],
+        apm_type=active_parameter_manager,
+        mode="consecutive",
     )
-    assert apm_factory.n_cycles == 2
-    multi_apm = apm_factory.make_next_apm()
+    apms = list(pmg.parameter_managers())
+    assert len(apms) == 2
+    multi_apm = apms[0]
     assert isinstance(multi_apm, multi_active_parameter_manager)
     apm_1 = multi_apm.apm_list[0]
     assert "scale" in apm_1.components_list
     assert "decay" in apm_1.components_list
     assert "absorption" not in apm_1.components_list
     assert multi_apm.apm_list[1].components_list == ["1"]
-    multi_apm = apm_factory.make_next_apm()
+    multi_apm = apms[1]
     assert isinstance(multi_apm, multi_active_parameter_manager)
     assert multi_apm.apm_list[0].components_list == ["absorption"]
     assert multi_apm.apm_list[1].components_list == ["2"]
@@ -276,19 +246,24 @@ def test_consecutive_apm_factory():
     # Test multi dataset case with different number of cycles for each data_manager.
     components_2 = {"1": mock_component()}
     data_manager_2 = mock_data_manager(components_2)
-    data_manager_2.consecutive_refinement_order = [["1"]]
-    apm_factory = ConsecutiveAPMFactory(
-        [data_manager, data_manager_2], apm_type=active_parameter_manager
+    data_manager_2.consecutive_refinement_order = [["1"], ["2"]]
+    pmg = ParameterManagerGenerator(
+        [data_manager, data_manager_2],
+        apm_type=active_parameter_manager,
+        mode="consecutive",
     )
-    assert apm_factory.n_cycles == 2
-    multi_apm = apm_factory.make_next_apm()
+    assert pmg.param_lists[0] == [["scale", "decay"], ["absorption"]]
+    assert pmg.param_lists[1] == [["1"]]
+    apms = list(pmg.parameter_managers())
+    assert len(apms) == 2
+    multi_apm = apms[0]
     assert isinstance(multi_apm, multi_active_parameter_manager)
     apm_1 = multi_apm.apm_list[0]
     assert "scale" in apm_1.components_list
     assert "decay" in apm_1.components_list
     assert "absorption" not in apm_1.components_list
     assert multi_apm.apm_list[1].components_list == ["1"]
-    multi_apm = apm_factory.make_next_apm()
+    multi_apm = apms[1]
     assert isinstance(multi_apm, multi_active_parameter_manager)
     assert multi_apm.apm_list[0].components_list == ["absorption"]
     # Only change relative to previous test case.
@@ -319,25 +294,25 @@ def test_scaling_active_parameter_manager():
         scaling_apm = scaling_active_parameter_manager(components_2, ["1"])
 
 
-def test_create_apm_factory():
-    """Test that the create_apm_factory function correctly interprets the scaler.id
-    and concurrent/consecutive option to give the correct APMFactory class."""
+def test_create_parameter_manager_generator():
+    """Test that the create_parameter_manager_generator function correctly
+    interprets the scaler.id and concurrent/consecutive option to give
+    the correct mode of ParameterManagerGenerator."""
 
     # Concurrent single apm
     components_2 = {"1": mock_scaling_component(2), "2": mock_scaling_component(2)}
     scaler = mock_data_manager(components_2)
     scaler.id_ = "single"
-    scaler.params.scaling_options.concurrent = True
-    apm_factory = create_apm_factory(scaler)
-    assert isinstance(apm_factory.apm, multi_active_parameter_manager)
-    assert isinstance(apm_factory, ConcurrentAPMFactory)
+    scaler.params.scaling_refinery.refinement_order = "concurrent"
+    pmg = create_parameter_manager_generator(scaler)
+    assert isinstance(pmg.parameter_managers()[0], multi_active_parameter_manager)
+    assert pmg.mode == "concurrent"
 
     # Consecutive single apm
-    scaler.params.scaling_options.concurrent = False
+    scaler.params.scaling_refinery.refinement_order = "consecutive"
     scaler.consecutive_refinement_order = [["1"], ["2"]]
-    apm_factory = create_apm_factory(scaler)
-    # assert apm_factory.multi_mode is False
-    assert isinstance(apm_factory, ConsecutiveAPMFactory)
+    pmg = create_parameter_manager_generator(scaler)
+    assert pmg.mode == "consecutive"
 
     # Concurrent multi apm
     components_1 = {"1": mock_scaling_component(3), "2": mock_scaling_component(3)}
@@ -350,15 +325,9 @@ def test_create_apm_factory():
 
     for i in ["multi", "target"]:
         multiscaler.id_ = i
-        multiscaler.params.scaling_options.concurrent = True
-        apm_factory = create_apm_factory(multiscaler)
-        assert apm_factory.multi_mode is True
-        assert isinstance(apm_factory.apm, multi_active_parameter_manager)
-        assert isinstance(apm_factory, ConcurrentAPMFactory)
-        multiscaler.params.scaling_options.concurrent = False
-        apm_factory = create_apm_factory(multiscaler)
-        assert apm_factory.multi_mode is True
-        assert isinstance(apm_factory, ConsecutiveAPMFactory)
+        multiscaler.params.scaling_refinery.refinement_order = "concurrent"
+        pmg = create_parameter_manager_generator(multiscaler)
+        assert isinstance(pmg.parameter_managers()[0], multi_active_parameter_manager)
+    multiscaler.id_ = "1"
     with pytest.raises(AssertionError):
-        multiscaler.id_ = "1"
-        apm_factory = create_apm_factory(multiscaler)
+        _ = create_parameter_manager_generator(multiscaler)

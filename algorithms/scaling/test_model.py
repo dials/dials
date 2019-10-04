@@ -66,13 +66,12 @@ def mock_errormodel():
 def mock_physical_params():
     """Return a mock params object for a physical model."""
     params = Mock()
-    params.parameterisation.scale_term = True
-    params.parameterisation.scale_interval = 10.0
-    params.parameterisation.decay_term = True
-    params.parameterisation.decay_interval = 15.0
-    params.parameterisation.absorption_term = True
-    params.parameterisation.lmax = 4
-    params.parameterisation.decay_restraint = 1e-1
+    params.physical.scale_interval = 10.0
+    params.physical.decay_correction = True
+    params.physical.decay_interval = 15.0
+    params.physical.absorption_correction = True
+    params.physical.lmax = 4
+    params.physical.decay_restraint = 1e-1
     return params
 
 
@@ -81,6 +80,7 @@ def generated_param():
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
   """,
         process_includes=True,
     )
@@ -89,20 +89,21 @@ def generated_param():
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.parameterisation.modulation_term = True
+    parameters.array.modulation_correction = True
     return parameters
 
 
 def test_ScalingModelBase(mock_errormodel):
     """Test for base scaling model class"""
 
-    SM_base = ScalingModelBase(configdict={})
+    configdict = {"corrections": ["1"]}
+    SM_base = ScalingModelBase(configdict)
     assert not SM_base.is_scaled
     SM_base.set_scaling_model_as_scaled()
     assert SM_base.is_scaled
     SM_base.set_scaling_model_as_unscaled()
     assert not SM_base.is_scaled
-    assert SM_base.configdict == {}
+    assert SM_base.configdict == configdict
     assert not SM_base.components
     _ = SM_base.to_dict()
     SM_base.set_error_model(mock_errormodel)
@@ -214,9 +215,7 @@ def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflectio
     physicalmodel = PhysicalScalingModel.from_data(
         mock_physical_params, mock_exp, test_reflections
     )
-    assert physicalmodel.configdict["lmax"] == (
-        mock_physical_params.parameterisation.lmax
-    )
+    assert physicalmodel.configdict["lmax"] == (mock_physical_params.physical.lmax)
     assert physicalmodel.components["absorption"].n_params == 24
     assert list(physicalmodel.components["absorption"].parameters) == [0.0] * 24
 
@@ -256,17 +255,8 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
 
     # Test configure reflection table
     mock_params = Mock()
-    mock_params.parameterisation.decay_restraint = 0.0
+    mock_params.physical.decay_restraint = 0.0
     physicalmodel.configure_components(test_reflections, mock_exp, mock_params)
-    # Test normalise components.
-    physicalmodel.components["scale"].update_reflection_data()
-    physicalmodel.components["scale"].calculate_scales_and_derivatives()
-    physicalmodel.components["decay"].update_reflection_data()
-    physicalmodel.components["decay"].calculate_scales_and_derivatives()
-    physicalmodel.normalise_components()
-    assert list(physicalmodel.components["scale"].parameters) == pytest.approx(
-        [1.0091065, 0.925014], 1e-4
-    )
 
     # Test from_dict initialisation method.
     physical_dict = {

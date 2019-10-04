@@ -8,7 +8,6 @@ from __future__ import absolute_import, division, print_function
 from math import log
 import pytest
 from libtbx import phil
-from libtbx.test_utils import approx_equal
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dials.array_family import flex
 from dials.util.options import OptionParser
@@ -83,6 +82,7 @@ def KB_test_param():
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_str
   """,
         process_includes=True,
@@ -92,7 +92,7 @@ def KB_test_param():
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.__inject__("model", "KB")
+    parameters.model = "KB"
     return parameters
 
 
@@ -112,9 +112,8 @@ def test_scale_against_target(KB_test_param):
     scaled_reflections = scale_against_target(
         reflections, experiments, target_reflections, target_experiments
     )
-    assert approx_equal(
-        list(scaled_reflections["inverse_scale_factor"]),
-        [2.0, 0.5, 2.0, 2.0 * (4.0 ** (-1.0 / 3.0))],
+    assert list(scaled_reflections["inverse_scale_factor"]) == pytest.approx(
+        [2.0, 0.5, 2.0, 2.0 * (4.0 ** (-1.0 / 3.0))]
     )
 
     experiments = test_exp()
@@ -129,11 +128,9 @@ def test_scale_against_target(KB_test_param):
         KB_test_param, experiments, [target_reflections, reflections], [True, False]
     )
     targetscaler.perform_scaling()
-    assert approx_equal(
-        list(targetscaler.unscaled_scalers[0].components["scale"].parameters),
-        [(4.0 ** (-1.0 / 3.0)) / 2.0],
-    )
-    assert approx_equal(
-        list(targetscaler.unscaled_scalers[0].components["decay"].parameters),
-        [(log(4.0) * 8.0 / 3.0)],
-    )
+    assert list(
+        targetscaler.unscaled_scalers[0].components["scale"].parameters
+    ) == pytest.approx([(4.0 ** (-1.0 / 3.0)) / 2.0])
+    assert list(
+        targetscaler.unscaled_scalers[0].components["decay"].parameters
+    ) == pytest.approx([(log(4.0) * 8.0 / 3.0)])

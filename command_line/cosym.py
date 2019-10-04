@@ -49,8 +49,6 @@ output {
     .type = str
   log = dials.cosym.log
     .type = str
-  debug_log = dials.cosym.debug.log
-    .type = str
   experiments = "symmetrized.expt"
     .type = path
   reflections = "symmetrized.refl"
@@ -60,7 +58,6 @@ output {
   html = dials.cosym.html
     .type = path
 }
-
 """,
     process_includes=True,
 )
@@ -295,7 +292,6 @@ Examples::
   dials.cosym models.expt observations.refl space_group=I23
 
   dials.cosym models.expt observations.refl space_group=I23 lattice_group=I23
-
 """
 
 
@@ -319,9 +315,7 @@ def run(args):
     )
 
     # Configure the logging
-    log.config(
-        verbosity=options.verbose, info=params.output.log, debug=params.output.debug_log
-    )
+    log.config(verbosity=options.verbose, logfile=params.output.log)
 
     from dials.util.version import dials_version
 

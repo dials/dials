@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # LIBTBX_SET_DISPATCHER_NAME dials.stills_process_mpi
 
 from __future__ import absolute_import, division, print_function
@@ -49,7 +47,6 @@ class Script(base_script):
         self.parser = OptionParser(usage=usage, phil=phil_scope, epilog=help_message)
 
     def assign_work(self):
-
         """Execute the script."""
 
         if self.rank == 0:
@@ -83,7 +80,7 @@ class Script(base_script):
         all_paths = transmitted_info["a"]
 
         # Configure logging
-        log.config(verbosity=self.options.verbose, info=None, debug=None)
+        log.config(verbosity=self.options.verbose)
 
         for abs_params in self.params.integration.absorption_correction:
             if abs_params.apply:

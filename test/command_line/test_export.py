@@ -37,6 +37,39 @@ def test_mtz(dials_data, tmpdir):
     run_export("mtz", dials_data, tmpdir)
 
 
+def test_multi_sweep_integrated_mtz(dials_data, tmpdir):
+    """Test dials.export on multi-sweep integrated data."""
+    # first combine two integrated files
+    result = procrunner.run(
+        [
+            "dials.combine_experiments",
+            dials_data("multi_crystal_proteinase_k").join("experiments_1.json"),
+            dials_data("multi_crystal_proteinase_k").join("reflections_1.pickle"),
+            dials_data("multi_crystal_proteinase_k").join("experiments_2.json"),
+            dials_data("multi_crystal_proteinase_k").join("reflections_2.pickle"),
+        ],
+        working_directory=tmpdir,
+    )
+
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("combined.refl").check(file=1)
+    assert tmpdir.join("combined.expt").check(file=1)
+
+    # now export
+    result = procrunner.run(
+        [
+            "dials.export",
+            "format=mtz",
+            "mtz.hklout=integrated.mtz",
+            tmpdir.join("combined.refl").strpath,
+            tmpdir.join("combined.expt").strpath,
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("integrated.mtz").check(file=1)
+
+
 def test_mtz_multi_wavelength(dials_data, run_in_tmpdir):
     """Test multi-wavelength mtz export"""
     # First make suitable input - multi datasets experiment list and reflection

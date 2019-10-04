@@ -1,6 +1,6 @@
+from __future__ import absolute_import, division, print_function
+
 import copy
-import glob
-import os
 
 from dxtbx.model import Experiment, ExperimentList
 from dxtbx.model import Scan
@@ -21,16 +21,14 @@ def test_slice_experiments():
     copy.deepcopy(sliced_experiments)
 
 
-def test_slice_experiments_centroid_test_data(dials_regression):
-    filenames = sorted(
-        glob.glob(os.path.join(dials_regression, "centroid_test_data", "*.cbf"))
-    )
-    experiments = ExperimentListFactory.from_filenames(filenames)
+def test_slice_experiments_centroid_test_data(dials_data):
+    files = dials_data("centroid_test_data").listdir("*.cbf", sort=True)
+    experiments = ExperimentListFactory.from_filenames(f.strpath for f in files)
     sliced_image_range = [(1, 3)]
     sliced_experiments = slice_experiments(experiments, sliced_image_range)
     assert sliced_experiments[0].scan.get_image_range() == sliced_image_range[0]
     # for some reason the sliced_experiments is not copyable
-    copy.deepcopy(sliced_experiments)
+    assert copy.deepcopy(sliced_experiments)
 
 
 def test_slice_reflections():

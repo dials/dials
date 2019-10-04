@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
@@ -19,7 +19,6 @@ def uc_params_from_experiments(experiments):
 
 @singleton
 class UnitCellAnalysisObserver(Observer):
-
     """
     Observer to record unit cell clustering data and make plots.
     """

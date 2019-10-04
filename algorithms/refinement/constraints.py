@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-#  constraints.py
-#
-#  Copyright (C) 2017 Diamond Light Source and STFC Rutherford Appleton
-#                     Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -45,7 +33,6 @@ constraints
             "'Detector1' will be ignored as parameterisations are already"
             "identified by experiment id"
 }
-
 """
 
 phil_scope = parse(phil_str)
@@ -276,9 +263,7 @@ class ConstraintManagerFactory(object):
         cell_c = options.crystal.unit_cell.constraints
 
         # quit early if there are no constraints to apply
-        n_constraints = sum(
-            [len(e) for e in [detector_c, beam_c, orientation_c, cell_c]]
-        )
+        n_constraints = sum(len(e) for e in [detector_c, beam_c, orientation_c, cell_c])
         if n_constraints == 0:
             return None
 

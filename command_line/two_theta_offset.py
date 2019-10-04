@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.two_theta_offset.py
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 from dials.util import show_mail_on_error
@@ -17,7 +6,6 @@ from libtbx.phil import parse
 help_message = """
 
 dials.two_theta_offset experiment_one.expt experiment_two.expt
-
 """
 
 phil_scope = parse(

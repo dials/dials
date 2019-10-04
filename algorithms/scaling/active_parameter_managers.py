@@ -30,7 +30,6 @@ class active_parameter_manager(object):
         self.x = flex.double([])
         self.components = OrderedDict()
         self.derivatives = None
-        self.curvatures = None
         self.var_cov_matrix = None
         self.components_list = []  # just a list of the component names
         n_cumul_params = 0
@@ -40,8 +39,8 @@ class active_parameter_manager(object):
                     obj, "parameters"
                 ), """component object must have the
           attribute 'parameters' for access to the component parameters."""
-                self.x.extend(obj.parameters)
-                n_params = len(obj.parameters)
+                self.x.extend(obj.free_parameters)
+                n_params = len(obj.free_parameters)
                 self.components.update(
                     {
                         component: {
@@ -56,8 +55,6 @@ class active_parameter_manager(object):
         self.n_active_params = len(self.x)
         for comp in self.components:
             self.components_list.extend([comp])
-        # logger.info('Components to be refined in this cycle: %s \n',
-        #  ''.join(str(i)+', ' for i in self.components_list).rstrip(', '))
 
     def select_parameters(self, component):
         """Select the subset of self.x corresponding to the component (a string)."""
@@ -70,7 +67,7 @@ class active_parameter_manager(object):
         self.x = x
         for component in self.components:
             component_obj = self.components[component]["object"]
-            component_obj.parameters = self.select_parameters(component)
+            component_obj.free_parameters = self.select_parameters(component)
 
     def get_param_vals(self):
         """Get method for refinement engine access."""
@@ -92,7 +89,7 @@ class active_parameter_manager(object):
         for component in self.components.values():
             start_idx = component["start_idx"]
             end_idx = component["end_idx"]
-            component["object"].parameter_esds = esds[start_idx:end_idx]
+            component["object"].free_parameter_esds = esds[start_idx:end_idx]
 
 
 class multi_active_parameter_manager(object):
@@ -107,7 +104,6 @@ class multi_active_parameter_manager(object):
     def __init__(self, components_list, selection_lists, apm_class):
         self.x = flex.double([])
         self.derivatives = None
-        self.curvatures = None
         self.components_list = []  # A list of the component names.
         self.apm_list = []
         self.apm_data = OrderedDict()
@@ -126,7 +122,7 @@ class multi_active_parameter_manager(object):
                 logger.info(
                     "Components to be refined in this cycle for datasest %s: %s",
                     j,
-                    "".join(str(i) + ", " for i in components).rstrip(", "),
+                    ",".join(i for i in self.apm_list[j].components_list),
                 )
         n_cumul_params = 0
         for i, apm in enumerate(self.apm_list):
@@ -141,9 +137,6 @@ class multi_active_parameter_manager(object):
         for apm in self.apm_list:
             for comp in apm.components:
                 self.components_list.extend([comp])
-        logger.info(
-            "\nConfigured a parameter manager for %s datasets.\n", len(self.apm_list)
-        )
 
     def select_parameters(self, apm_number):
         """Select the subset of self.x corresponding to the apm number."""
@@ -177,7 +170,7 @@ class multi_active_parameter_manager(object):
             i += n
 
 
-class ConcurrentAPMFactory(object):
+class ParameterManagerGenerator(object):
     """
     Factory to correctly set up a single/multi active parameter manager for
     concurrent scaling of all model components of a general data_manager
@@ -189,128 +182,49 @@ class ConcurrentAPMFactory(object):
     Data managers is a list of objects which have a components attribute.
     """
 
-    def __init__(self, data_managers, apm_type, multi_mode=True):
-        # One can optionally set multi_mode=False to force a single_apm to be created
-        # for only one dataset - however all scaling methods are designed to iterate
-        # over a multi_apm with an apm_list property.
+    def __init__(self, data_managers, apm_type, mode="concurrent"):
+        assert mode in ["concurrent", "consecutive"], mode
         self.data_managers = data_managers
-        self.apm = None
-        self.multi_mode = multi_mode
-        if len(data_managers) > 1:
-            self.multi_mode = True
-        self.param_lists = []
-        self.create_active_list(apm_type)
-        self.n_cycles = 1
-
-    def create_active_list(self, apm_type):
-        """Return a list indicating the names of active parameters."""
-
-        if not self.multi_mode:
-            param_name = []
-            for param in self.data_managers[0].components:
-                param_name.append(str(param))
-            if not param_name:
-                raise ValueError(
-                    "No model components have been chosen, aborting process."
-                )
-            self.param_lists = param_name
-            self.apm = apm_type(self.data_managers[0].components, self.param_lists)
-
-        else:
-            for data_manager in self.data_managers:
-                param_name = []
-                for param in data_manager.components:
-                    param_name.append(str(param))
-                if not param_name:
-                    raise ValueError(
-                        "No model components have been chosen, aborting process."
-                    )
-                self.param_lists.append(param_name)
-            components = [i.components for i in self.data_managers]
-            self.apm = multi_active_parameter_manager(
-                components, self.param_lists, apm_type
-            )
-
-    def make_next_apm(self):
-        """Method to call to return the apm."""
-        return self.apm
-
-
-class ConsecutiveAPMFactory(object):
-    """
-    Factory to correctly set up a nested list structure to pass to
-    single/multi active parameter managers for consecutive scaling of the
-    model components of a general data_manager (or multiple data managers).
-
-    Upon calling make_next_apm, the first list element for each dataset is used to
-    initialise the apm_type specified (e.g a subclass of active_parameter_manager)
-    and then removed from the list structure.
-    make_next_apm can be called n_cycles times.
-    mode=single/multi returns a single/mutli active parameter manager.
-    """
-
-    def __init__(self, data_managers, apm_type, multi_mode=True):
-        # One can optionally set multi_mode=False to force a single_apm to be created
-        # for only one dataset - however all scaling methods are designed to iterate
-        # over a multi_apm with an apm_list property.
-        self.data_managers = data_managers
-        self.multi_mode = multi_mode
-        if len(data_managers) > 1:
-            self.multi_mode = True
         self.apm_type = apm_type
-        self.param_lists = []
-        self.n_cycles = None
-        self.create_consecutive_list()
-
-    def create_consecutive_list(self):
-        """Return a list indicating the names of active parameters."""
-
-        if not self.multi_mode:
-            for cycle in self.data_managers[0].consecutive_refinement_order:
-                corrlist = []
-                for corr in cycle:
-                    if corr in self.data_managers[0].components:
-                        corrlist.append(corr)
-                self.param_lists.append(corrlist)
-            self.n_cycles = sum([1 for i in self.param_lists if i])
-
-        else:
-            for data_manager in self.data_managers:
+        self.mode = mode
+        self.param_lists = [None] * len(data_managers)
+        if self.mode == "concurrent":
+            for i, data_manager in enumerate(self.data_managers):
+                self.param_lists[i] = [param for param in data_manager.components]
+        else:  # mode=consecutive
+            # Generate nested list indicating the names of active parameters
+            # e.g consecutive_order for class is [["a", "b"], ["c"]],
+            # data_man has components ['a'], return [["a"]]
+            # data_man has components ['a', 'c'], return [["a"], ["c"]]
+            for i, data_manager in enumerate(self.data_managers):
                 ind_param_list = []
                 for cycle in data_manager.consecutive_refinement_order:
-                    corrlist = []
-                    for corr in cycle:
-                        if corr in data_manager.components:
-                            corrlist.append(corr)
-                    ind_param_list.append(corrlist)
-                self.param_lists.append(ind_param_list)
-            # now need to calculate the max number of cycles needed across all data_managers
-            is_cycle_active = []
-            for p_list in self.param_lists:
-                for i, cycle in enumerate(p_list):
-                    if cycle:
-                        is_cycle_active.append(i)
-            self.n_cycles = len(set(is_cycle_active))
-            # now make sure all lists are same length
-            max_len = max([len(i) for i in self.param_lists])
-            for p_list in self.param_lists:
-                for _ in range(max_len - len(p_list)):
-                    p_list.append([])
+                    corrlist = [
+                        corr for corr in cycle if corr in data_manager.components
+                    ]
+                    if corrlist:
+                        ind_param_list.append(corrlist)
+                self.param_lists[i] = ind_param_list
 
-    def make_next_apm(self):
-        """Generate a valid apm for minimisation (contains some active parameters,
-        but not necessarily for all datasets)."""
+    def parameter_managers(self):
+        """Generate the parameter managers for each cycle of refinement."""
+        if self.mode == "concurrent":
+            return self._parameter_managers_concurrent()
+        return self._parameter_managers_consecutive()
 
-        if not self.multi_mode:
-            apm = self.apm_type(self.data_managers[0].components, self.param_lists[0])
-            self.param_lists = self.param_lists[1:]
-        else:
+    def _parameter_managers_concurrent(self):
+        components = [s.components for s in self.data_managers]
+        return [
+            multi_active_parameter_manager(components, self.param_lists, self.apm_type)
+        ]
+
+    def _parameter_managers_consecutive(self):
+        components = [s.components for s in self.data_managers]
+        while any(self.param_lists[i] for i, _ in enumerate(self.data_managers)):
             params = []
-            for i in range(0, len(self.param_lists)):
-                params.append(self.param_lists[i][0])
-                self.param_lists[i] = self.param_lists[i][1:]  # remove first element
-            components = [i.components for i in self.data_managers]
-            apm = multi_active_parameter_manager(components, params, self.apm_type)
-        if not apm.components_list:  # no active parameters, so iterate
-            apm = self.make_next_apm()
-        return apm
+            for param_list in self.param_lists:
+                try:
+                    params.append(param_list.pop(0))
+                except IndexError:
+                    params.append([])
+            yield multi_active_parameter_manager(components, params, self.apm_type)

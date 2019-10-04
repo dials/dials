@@ -62,7 +62,6 @@ class IhTable(object):
         asu_index_dict (dict): A dictionary, key: asu_miller_index, value tuple
             containing group_id and block_id (where group id is the group index
             within its block).
-
     """
 
     id_ = "IhTable"
@@ -157,8 +156,8 @@ class IhTable(object):
     def size(self):
         """Sum the sizes of all work blocks to give the total number of reflections."""
         if self.free_Ih_table:
-            return sum([block.size for block in self.Ih_table_blocks[:-1]])
-        return sum([block.size for block in self.Ih_table_blocks])
+            return sum(block.size for block in self.Ih_table_blocks[:-1])
+        return sum(block.size for block in self.Ih_table_blocks)
 
     def generate_block_selections(self):
         """Generate and set an updated blocked_selection_list."""
@@ -428,7 +427,6 @@ class IhTableBlock(object):
             array of values for symmetry groups into an array of size n_refl.
         derivatives: A matrix of derivatives of the reflections wrt the model
             parameters.
-
     """
 
     def __init__(self, n_groups, n_refl, n_datasets=1):

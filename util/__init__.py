@@ -98,7 +98,7 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
             call_process = multiprocessing.current_process().name
             call_thread = threading.currentThread().getName()
             self.log("Exit %s:%s" % (call_process, call_thread))
-            z = self._ocm.__exit__(*args, **kwargs)
+            self._ocm.__exit__(*args, **kwargs)
             self.log("Left %s:%s" % (call_process, call_thread))
 
     return DCM(name, log_func)

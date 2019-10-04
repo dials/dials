@@ -137,13 +137,11 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     assert m.as_miller_arrays()[5].info().wavelength == pytest.approx(0.6889)
 
 
-@pytest.mark.skip(reason="Test broken, https://github.com/dials/dials/issues/910")
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         "dials.merge",
-        "output.experiments=symmetrized.expt",
         location.join("experiments_0.json"),
         location.join("reflections_0.pickle"),
     ]
@@ -151,10 +149,14 @@ def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     # unscaled data
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
-    assert result.stderr.startswith(b"Sorry")
+    assert (
+        result.stderr
+        == b"""Sorry: intensity.scale.value not found in the reflection table.
+Only scaled data can be processed with dials.merge
+"""
+    )
 
 
-@pytest.mark.skip(reason="Test broken, https://github.com/dials/dials/issues/910")
 def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     dials_data, tmpdir
 ):
@@ -162,7 +164,6 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
 
     command = [
         "dials.merge",
-        "output.experiments=symmetrized.expt",
         location.join("experiments_0.json"),
         location.join("reflections_0.pickle"),
         location.join("experiments_1.json"),
@@ -172,4 +173,9 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     # more than one reflection table.
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
-    assert result.stderr.startswith(b"Sorry")
+    assert (
+        result.stderr
+        == b"""Sorry: Only data scaled together as a single reflection dataset
+can be processed with dials.merge
+"""
+    )

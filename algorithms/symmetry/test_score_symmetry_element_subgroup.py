@@ -59,7 +59,6 @@ def test_score_correlation_coefficient():
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"][:])
 def test_score_symmetry_element_subgroup(space_group):
     sgi = sgtbx.space_group_info(symbol=space_group)
-    sg = sgi.group()
     cs = sgi.any_compatible_crystal_symmetry(volume=10000)
     cs = cs.best_cell()
     cs = cs.minimum_cell()

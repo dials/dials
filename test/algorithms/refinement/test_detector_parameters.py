@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 from math import sin, cos, pi, sqrt
 import random
+import textwrap
 
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
@@ -232,9 +233,6 @@ def test():
         )
         dp.set_param_vals(p_vals)
 
-        # obtain current sensor state
-        # state = dp.get_state()
-
         # compare analytical and finite difference derivatives.
         an_ds_dp = dp.get_ds_dp(multi_state_elt=0)
         fd_ds_dp = get_fd_gradients(dp, [1.0e-6] * 3 + [1.0e-4 * pi / 180] * 3)
@@ -326,9 +324,6 @@ def test():
             p_vals, [10, 10, 10, 1000.0 * pi / 18, 1000.0 * pi / 18, 1000.0 * pi / 18]
         )
         dp.set_param_vals(p_vals)
-
-        # obtain current state of the 1st panel
-        state = dp.get_state()
 
         # compare analytical and finite difference derivatives
         # get_fd_gradients will implicitly only get gradients for the

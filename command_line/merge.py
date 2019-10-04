@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 """
 Command line script to allow merging and truncating of a dials dataset.
@@ -144,7 +143,7 @@ def run(args=None):
 
     if len(reflections) != 1:
         raise Sorry(
-            """Only data scaled together in a single reflection data
+            """Only data scaled together as a single reflection dataset
 can be processed with dials.merge"""
         )
 
@@ -155,8 +154,8 @@ can be processed with dials.merge"""
     ]:
         if k not in reflections[0]:
             raise Sorry(
-                """%s not found in the reflection table. Only scaled data can be processed
-with dials.merge"""
+                """%s not found in the reflection table.
+Only scaled data can be processed with dials.merge"""
                 % k
             )
 

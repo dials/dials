@@ -19,7 +19,6 @@ noise being identified as diffraction spots.
 Examples::
 
   dials.estimate_gain models.expt
-
 """
 
 phil_scope = iotbx.phil.parse(

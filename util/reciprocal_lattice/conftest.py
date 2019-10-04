@@ -25,12 +25,12 @@ def multi_sweep_data(dials_regression):
 
 
 @pytest.fixture
-def centroid_test_data(dials_regression):
+def centroid_test_data(dials_data):
     experiments = load.experiment_list(
-        os.path.join(dials_regression, "centroid_test_data", "experiments.json"),
+        dials_data("centroid_test_data").join("experiments.json").strpath,
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
-        os.path.join(dials_regression, "centroid_test_data", "integrated.pickle")
+        dials_data("centroid_test_data").join("integrated.pickle").strpath
     )
     return {"reflections": reflections, "experiments": experiments}

@@ -134,6 +134,69 @@ namespace dials { namespace algorithms { namespace boost_python {
     }
   };
 
+  struct ThreadSafeEmpiricalProfileModellerPickleSuite : boost::python::pickle_suite {
+    static boost::python::tuple getinitargs(
+      const ThreadSafeEmpiricalProfileModeller &obj) {
+      return boost::python::make_tuple(obj.size(), obj.datasize(), obj.threshold());
+    }
+    static boost::python::tuple getstate(
+      const ThreadSafeEmpiricalProfileModeller &obj) {
+      typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
+      typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
+      boost::python::list data_list;
+      boost::python::list mask_list;
+      boost::python::list nref_list;
+      for (std::size_t i = 0; i < obj.size(); ++i) {
+        nref_list.append(obj.n_reflections(i));
+        try {
+          data_list.append(obj.data(i));
+          mask_list.append(obj.mask(i));
+        } catch (dials::error) {
+          data_list.append(data_type());
+          mask_list.append(mask_type());
+        }
+      }
+      return boost::python::make_tuple(
+        data_list, mask_list, nref_list, obj.finalized());
+    }
+
+    static void setstate(ThreadSafeEmpiricalProfileModeller &obj,
+                         boost::python::tuple state) {
+      typedef ThreadSafeEmpiricalProfileModeller::data_type data_type;
+      typedef ThreadSafeEmpiricalProfileModeller::mask_type mask_type;
+      DIALS_ASSERT(boost::python::len(state) == 4);
+      boost::python::list data_list = extract<boost::python::list>(state[0]);
+      boost::python::list mask_list = extract<boost::python::list>(state[1]);
+      boost::python::list nref_list = extract<boost::python::list>(state[2]);
+      bool finalized = extract<bool>(state[3]);
+      DIALS_ASSERT(boost::python::len(data_list) == boost::python::len(mask_list));
+      DIALS_ASSERT(boost::python::len(data_list) == obj.size());
+      DIALS_ASSERT(boost::python::len(nref_list) == obj.size());
+      for (std::size_t i = 0; i < obj.size(); ++i) {
+        af::flex_double d = boost::python::extract<af::flex_double>(data_list[i]);
+        af::flex_bool m = boost::python::extract<af::flex_bool>(mask_list[i]);
+        DIALS_ASSERT(d.accessor().all().size() == 3);
+        DIALS_ASSERT(m.accessor().all().size() == 3);
+        obj.set_data(i, data_type(d.handle(), af::c_grid<3>(d.accessor())));
+        obj.set_mask(i, mask_type(m.handle(), af::c_grid<3>(m.accessor())));
+        obj.set_n_reflections(i, boost::python::extract<std::size_t>(nref_list[i]));
+      }
+      obj.set_finalized(finalized);
+    }
+  };
+
+  struct GaussianRSReferenceCalculatorPickleSuite : boost::python::pickle_suite {
+    static boost::python::tuple getinitargs(const GaussianRSReferenceCalculator &obj) {
+      boost::python::list spec_list;
+      boost::python::list modeller_list;
+      for (std::size_t i = 0; i < obj.spec().size(); ++i) {
+        spec_list.append(obj.spec()[i]);
+        modeller_list.append(obj.modeller()[i]);
+      }
+      return boost::python::make_tuple(obj.sampler(), spec_list, modeller_list);
+    }
+  };
+
   /**
    * Define the call operator of the IntensityCalculatorIface class
    * @param self The interface object
@@ -164,6 +227,22 @@ namespace dials { namespace algorithms { namespace boost_python {
       spec_list.push_back(boost::python::extract<TransformSpec>(spec[i])());
     }
     return new GaussianRSReferenceCalculator(sampler, spec_list.const_ref());
+  }
+
+  GaussianRSReferenceCalculator *GaussianRSReferenceCalculator_init2(
+    boost::shared_ptr<SamplerIface> sampler,
+    boost::python::list spec,
+    boost::python::list modeller) {
+    DIALS_ASSERT(boost::python::len(spec) == boost::python::len(modeller));
+    af::shared<ThreadSafeEmpiricalProfileModeller> modeller_list;
+    af::shared<TransformSpec> spec_list;
+    for (std::size_t i = 0; i < boost::python::len(spec); ++i) {
+      spec_list.push_back(boost::python::extract<TransformSpec>(spec[i])());
+      modeller_list.push_back(
+        boost::python::extract<ThreadSafeEmpiricalProfileModeller>(modeller[i])());
+    }
+    return new GaussianRSReferenceCalculator(
+      sampler, spec_list.const_ref(), modeller_list.const_ref());
   }
 
   /**
@@ -270,14 +349,26 @@ namespace dials { namespace algorithms { namespace boost_python {
       "GaussianRSIntensityCalculator", no_init)
       .def(init<const GaussianRSMultiCrystalReferenceProfileData &, bool, bool>());
 
+    // Export ThreadSafeEmpiricalProfileModeller
+    class_<ThreadSafeEmpiricalProfileModeller, bases<EmpiricalProfileModeller> >(
+      "ThreadSafeEmpiricalProfileModeller", no_init)
+      .def(init<std::size_t, int3, double>())
+      .def("add_single", &ThreadSafeEmpiricalProfileModeller::add_single)
+      .def_pickle(ThreadSafeEmpiricalProfileModellerPickleSuite());
+
     // Export GaussianRSReferenceCalculator
     class_<GaussianRSReferenceCalculator, bases<ReferenceCalculatorIface> >(
       "GaussianRSReferenceCalculator", no_init)
       .def(
         init<boost::shared_ptr<SamplerIface>, const af::const_ref<TransformSpec> &>())
+      .def(init<boost::shared_ptr<SamplerIface>,
+                const af::const_ref<TransformSpec> &,
+                const af::const_ref<ThreadSafeEmpiricalProfileModeller> &>())
       .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init))
+      .def("__init__", make_constructor(&GaussianRSReferenceCalculator_init2))
       .def("accumulate", &GaussianRSReferenceCalculator::accumulate)
-      .def("reference_profiles", &GaussianRSReferenceCalculator::reference_profiles);
+      .def("reference_profiles", &GaussianRSReferenceCalculator::reference_profiles)
+      .def_pickle(GaussianRSReferenceCalculatorPickleSuite());
   }
 
   /**

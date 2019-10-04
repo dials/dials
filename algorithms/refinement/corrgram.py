@@ -96,9 +96,9 @@ def corrgram(corrmat, labels):
     ax.set_yticks(ytickslocs)
     ax.set_yticklabels(labels, fontsize="small")
 
-    xtickslocs = [e + 0.5 for e in xtickslocs]
+    xtickslocs = [loc + 0.5 for loc in xtickslocs]
     ax.set_xticks(xtickslocs, minor=True)
-    ytickslocs = [e + 0.5 for e in ytickslocs]
+    ytickslocs = [loc + 0.5 for loc in ytickslocs]
     ax.set_yticks(ytickslocs, minor=True)
     plt.grid(color="0.8", which="minor", linestyle="-")
 

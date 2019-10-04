@@ -9,7 +9,8 @@ import wx
 from cctbx import crystal, uctbx
 from cctbx.miller import index_generator
 from dials.algorithms.image.threshold import (
-    DispersionExtendedThresholdDebug as DispersionThresholdDebug,
+    DispersionExtendedThresholdDebug,
+    DispersionThresholdDebug,
 )
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
@@ -124,46 +125,21 @@ class SpotFrame(XrayFrame):
             self.reflections = self.predict()
 
         if self.params.d_min is not None and len(self.reflections):
-            reflections = [
-                flex.reflection_table() for i in range(len(self.reflections))
-            ]
-            for i_ref_list in range(len(self.reflections)):
-                if "rlp" in self.reflections[i_ref_list]:
-                    reflections[i_ref_list] = self.reflections[i_ref_list]
-                else:
-                    for i, imageset in enumerate(self.imagesets):
-                        if "imageset_id" in self.reflections[i_ref_list]:
-                            sel = self.reflections[i_ref_list]["imageset_id"] == i
-                        else:
-                            sel = self.reflections[i_ref_list]["id"] == i
-                        if "xyzobs.mm.value" in self.reflections[i_ref_list]:
-                            refl = self.reflections[i_ref_list]
-                        else:
-                            if "xyzobs.px.value" not in self.reflections[i_ref_list]:
-                                self.reflections[i_ref_list][
-                                    "xyzobs.px.value"
-                                ] = self.reflections[i_ref_list]["xyzcal.px"]
-                                self.reflections[i_ref_list][
-                                    "xyzobs.px.variance"
-                                ] = flex.vec3_double(
-                                    len(self.reflections[i_ref_list]), (1, 1, 1)
-                                )
-                            refl = self.reflections[i_ref_list].select(sel)
-                            refl.centroid_px_to_mm(
-                                imageset.get_detector(), imageset.get_scan()
+            reflections = []
+            for expt, refl in zip(self.experiments, self.reflections):
+                if "rlp" not in refl:
+                    if "xyzobs.mm.value" not in refl:
+                        if "xyzobs.px.value" not in refl:
+                            refl["xyzobs.px.value"] = refl["xyzcal.px"]
+                            refl["xyzobs.px.variance"] = flex.vec3_double(
+                                len(refl), (1, 1, 1)
                             )
+                        refl.centroid_px_to_mm(ExperimentList([expt]))
+                        refl.map_centroids_to_reciprocal_space(ExperimentList([expt]))
 
-                        refl.map_centroids_to_reciprocal_space(
-                            imageset.get_detector(),
-                            imageset.get_beam(),
-                            imageset.get_goniometer(),
-                        )
-                        reflections[i_ref_list].extend(refl)
-
-                d_spacings = 1 / reflections[i_ref_list]["rlp"].norms()
-                reflections[i_ref_list] = reflections[i_ref_list].select(
-                    d_spacings > self.params.d_min
-                )
+                d_spacings = 1 / refl["rlp"].norms()
+                refl = refl.select(d_spacings > self.params.d_min)
+                reflections.append(refl)
             self.reflections = reflections
         self.Bind(EVT_LOADIMG, self.load_file_event)
 
@@ -951,9 +927,13 @@ class SpotFrame(XrayFrame):
             min_local = self.settings.min_local
             size = self.settings.kernel_size
             kabsch_debug_list = []
+            if self.settings.dispersion_extended:
+                algorithm = DispersionExtendedThresholdDebug
+            else:
+                algorithm = DispersionThresholdDebug
             for i_panel in range(len(detector)):
                 kabsch_debug_list.append(
-                    DispersionThresholdDebug(
+                    algorithm(
                         raw_data[i_panel].as_double(),
                         image_mask[i_panel],
                         gain_map[i_panel],
@@ -1749,6 +1729,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.display = self.params.display
         if self.settings.display == "global_threshold":
             self.settings.display = "global"
+        self.settings.dispersion_extended = True
         self.settings.nsigma_b = self.params.nsigma_b
         self.settings.nsigma_s = self.params.nsigma_s
         self.settings.global_threshold = self.params.global_threshold
@@ -1890,7 +1871,15 @@ class SpotSettingsPanel(wx.Panel):
         # s.Add(box)
 
         # DispersionThreshold thresholding parameters
-        grid1 = wx.FlexGridSizer(cols=2, rows=7, vgap=0, hgap=0)
+        grid = wx.FlexGridSizer(cols=1, rows=1, vgap=0, hgap=0)
+        self.threshold_algorithm = wx.CheckBox(
+            self, -1, "Use dispersion extended algorithm"
+        )
+        self.threshold_algorithm.SetValue(self.settings.dispersion_extended)
+        grid.Add(self.threshold_algorithm, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        s.Add(grid)
+
+        grid1 = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid1)
 
         txt1 = wx.StaticText(self, -1, "Sigma background")
@@ -1940,6 +1929,11 @@ class SpotSettingsPanel(wx.Panel):
         self.kernel_size_ctrl.SetMin(1)
         grid1.Add(self.kernel_size_ctrl, 0, wx.ALL, 5)
 
+        self.Bind(
+            wx.EVT_CHECKBOX,
+            self.OnUpdateDispersionThresholdDebug,
+            self.threshold_algorithm,
+        )
         self.Bind(
             EVT_PHIL_CONTROL, self.OnUpdateDispersionThresholdDebug, self.nsigma_b_ctrl
         )
@@ -2038,7 +2032,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
             self.settings.zoom_level = self.levels[self.zoom_ctrl.GetSelection()]
 
-            # Brightness has it's own handler, so just make sure the controls are synced
+            # Brightness has its own handler, so just make sure the controls are synced
             if self.brightness_txt_ctrl.GetValue() != self.settings.brightness:
                 try:
                     self.brightness_txt_ctrl.ChangeValue(self.settings.brightness)
@@ -2058,6 +2052,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_miller_indices = self.miller_indices.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
+            self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
             self.settings.color_scheme = self.color_ctrl.GetSelection()
             self.settings.nsigma_b = self.nsigma_b_ctrl.GetPhilValue()
             self.settings.nsigma_s = self.nsigma_s_ctrl.GetPhilValue()
@@ -2131,7 +2126,12 @@ class SpotSettingsPanel(wx.Panel):
 
     def OnSaveFindSpotsParams(self, event):
         params = find_spots_phil_scope.extract()
-        dispersion = params.spotfinder.threshold.dispersion
+        threshold = params.spotfinder.threshold
+        if self.settings.dispersion_extended:
+            threshold.algorithm = "dispersion_extended"
+        else:
+            threshold.algorithm = "dispersion"
+        dispersion = threshold.dispersion
         dispersion.gain = self.settings.gain
         dispersion.global_threshold = self.settings.global_threshold
         dispersion.kernel_size = self.settings.kernel_size
@@ -2146,7 +2146,8 @@ class SpotSettingsPanel(wx.Panel):
 
     def OnUpdateDispersionThresholdDebug(self, event):
         if (
-            self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue()
+            self.settings.dispersion_extended != self.threshold_algorithm.GetValue()
+            or self.settings.nsigma_b != self.nsigma_b_ctrl.GetPhilValue()
             or self.settings.nsigma_s != self.nsigma_s_ctrl.GetPhilValue()
             or self.settings.global_threshold
             != self.global_threshold_ctrl.GetPhilValue()

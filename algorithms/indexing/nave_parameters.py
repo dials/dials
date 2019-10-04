@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
 
@@ -12,7 +10,6 @@ from scitbx.matrix import col, sqr
 from dials.algorithms.indexing import DialsIndexError
 
 logger = logging.getLogger(__name__)
-
 """
 Class to determine mosaicity and effective domain size for a crystal given a set of indexed reflections
 """

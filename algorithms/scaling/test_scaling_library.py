@@ -143,6 +143,7 @@ def generated_param(absorption_term=False):
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   """,
         process_includes=True,
@@ -151,8 +152,9 @@ def generated_param(absorption_term=False):
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.parameterisation.absorption_term = absorption_term
-    parameters.parameterisation.n_resolution_bins = 1  # to stop example dataset
+    parameters.physical.absorption_correction = absorption_term
+    parameters.array.absorption_correction = absorption_term
+    parameters.array.n_resolution_bins = 1  # to stop example dataset
     # being overparameterised for array model refinement.
     return parameters
 
@@ -185,7 +187,7 @@ def test_create_scaling_model():
         params = generated_param()
         exp = generated_exp()
         rt = generated_refl()
-        params.__inject__("model", m)
+        params.model = m
         new_exp = create_scaling_model(params, exp, [rt])
         assert new_exp[0].scaling_model.id_ == m
 
@@ -195,7 +197,7 @@ def test_create_scaling_model():
     rt = generated_refl()
     exp[0].scaling_model = PhysicalScalingModel.from_data(params, exp[0], rt)
     old_scaling_model = exp[0].scaling_model
-    params.__inject__("model", "KB")
+    params.model = "KB"
     new_exp = create_scaling_model(params, exp, [rt])
     new_scaling_model = new_exp[0].scaling_model
     assert new_scaling_model is old_scaling_model  # Should not modify original.
@@ -207,7 +209,7 @@ def test_create_scaling_model():
     rt_2 = generated_refl()
     rt_3 = generated_refl()
     exp[0].scaling_model = PhysicalScalingModel.from_data(params, exp[0], rt)
-    params.__inject__("model", "KB")
+    params.model = "KB"
     new_exp = create_scaling_model(params, exp, [rt, rt_2, rt_3])
     assert new_exp[0].scaling_model is exp[0].scaling_model
     assert isinstance(new_exp[1].scaling_model, KBScalingModel)
@@ -308,13 +310,13 @@ def test_auto_scaling_model():
     params = generated_param()
     exp = generated_exp(scan=False)
     rt = generated_refl()
-    params.__inject__("model", "auto")
+    params.model = "auto"
     new_exp = create_auto_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "KB"
 
     params = generated_param(absorption_term=True)
     exp = generated_exp(image_range=[1, 5])  # 5 degree wedge
-    params.__inject__("model", "auto")
+    params.model = "auto"
     new_exp = create_auto_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 5
@@ -323,7 +325,7 @@ def test_auto_scaling_model():
 
     params = generated_param(absorption_term=True)
     exp = generated_exp(image_range=[1, 20])  # 20 degree wedge
-    params.__inject__("model", "auto")
+    params.model = "auto"
     new_exp = create_auto_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 7
@@ -332,7 +334,7 @@ def test_auto_scaling_model():
 
     params = generated_param(absorption_term=True)
     exp = generated_exp(image_range=[1, 75])  # 20 degree wedge
-    params.__inject__("model", "auto")
+    params.model = "auto"
     new_exp = create_auto_scaling_model(params, exp, [rt])
     assert new_exp[0].scaling_model.id_ == "physical"
     assert len(new_exp[0].scaling_model.components["scale"].parameters) == 12

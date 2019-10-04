@@ -3,18 +3,25 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
+
 import pkg_resources
+from six.moves import cStringIO as StringIO
 
 import libtbx.phil
 import scitbx.matrix
 from dials.algorithms.indexing import indexer
-from dials.algorithms.indexing.basis_vector_search import optimise
-from dials.algorithms.indexing.basis_vector_search import combinations
+from dials.algorithms.indexing.basis_vector_search import combinations, optimise
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from scitbx.array_family import flex
-from six.moves import cStringIO as StringIO
+
+from .low_res_spot_match import LowResSpotMatch
+from .strategy import Strategy
+
+__all__ = ["Strategy", "LowResSpotMatch"]
+
 
 logger = logging.getLogger(__name__)
+
 
 basis_vector_search_phil_str = """\
 basis_vector_combinations
@@ -66,7 +73,6 @@ method = None
 optimise_initial_basis_vectors = False
     .type = bool
     .expert_level = 2
-
 """
 
 basis_vector_search_phil_scope = libtbx.phil.parse(basis_vector_search_phil_str)

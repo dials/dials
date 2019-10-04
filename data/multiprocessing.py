@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-# multiprocessing.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 from libtbx.phil import parse
 
@@ -27,6 +17,5 @@ mp {
     .type = int(value_min=1)
     .help = "The number of local threads to use for openmp."
 }
-
 """
 )

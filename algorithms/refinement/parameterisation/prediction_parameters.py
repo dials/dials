@@ -1,12 +1,3 @@
-#
-#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 
 from dials.array_family import flex
@@ -54,7 +45,6 @@ class PredictionParameterisation(object):
     object directly, which takes the list of parameters, and indirectly via a
     Target function object, which takes the list of derivatives and composes the
     derivatives of a Target function from them.
-
     """
 
     def __init__(

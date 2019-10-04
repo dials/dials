@@ -17,6 +17,7 @@ namespace dials_scaling { namespace boost_python {
   void export_calculate_harmonic_tables_from_selections();
   void export_calc_lookup_index();
   void export_create_sph_harm_lookup_table();
+  void export_gaussian_smoother_first_fixed();
 
   BOOST_PYTHON_MODULE(dials_scaling_ext) {
     export_elementwise_square();
@@ -31,6 +32,7 @@ namespace dials_scaling { namespace boost_python {
     export_calculate_harmonic_tables_from_selections();
     export_calc_lookup_index();
     export_create_sph_harm_lookup_table();
+    export_gaussian_smoother_first_fixed();
   }
 
 }}  // namespace dials_scaling::boost_python

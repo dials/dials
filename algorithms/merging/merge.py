@@ -1,4 +1,5 @@
 """Merging functions for experiment lists and reflection tables."""
+from __future__ import absolute_import, division, print_function
 import logging
 
 from dials.array_family import flex

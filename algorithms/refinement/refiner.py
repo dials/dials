@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.algorithms.refinement.refiner.py
-#
-#  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
-#                     Laboratory, UK.
-#
-#  Authors: James Parkhurst, David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 """Refiner is the refinement module public interface. RefinerFactory is
 what should usually be used to construct a Refiner."""
 
@@ -462,10 +450,10 @@ class RefinerFactory(object):
         """
 
         if not any(
-            [
+            (
                 params.crystal.unit_cell.restraints.tie_to_target,
                 params.crystal.unit_cell.restraints.tie_to_group,
-            ]
+            )
         ):
             return None
         if params.scan_varying:
@@ -639,7 +627,6 @@ class Refiner(object):
       * get_matches exposes the function of the same name from the privately
         stored reflection manager
       * The return value of selection_used_for_refinement is a flex.bool
-
     """
 
     def __init__(
@@ -653,7 +640,6 @@ class Refiner(object):
           refman - A ReflectionManager object
           target - An object derived from the Target class
           refinery - An object derived from the Refinery class
-
         """
 
         # the experimental models

@@ -1,29 +1,29 @@
 from __future__ import absolute_import, division, print_function
 
+import math
 import random
+
+from dials.algorithms.polygon import clip
+from scitbx.array_family import flex
 
 
 def point_in_polygon(point, poly):
     inside = False
     j = len(poly) - 1
-    for i in range(len(poly)):
-        if ((poly[i][1] > point[1]) != (poly[j][1] > point[1])) and (
+    polyj = poly[j]
+    for polyi in poly:
+        if ((polyi[1] > point[1]) != (polyj[1] > point[1])) and (
             point[0]
-            < (poly[j][0] - poly[i][0])
-            * (point[1] - poly[i][1])
-            / (poly[j][1] - poly[i][1])
-            + poly[i][0]
+            < (polyj[0] - polyi[0]) * (point[1] - polyi[1]) / (polyj[1] - polyi[1])
+            + polyi[0]
         ):
             inside = not inside
     return inside
 
 
-def generate_intersecting(subject_size=None, target_size=None):
+def generate_intersecting(subject_size=None, target_size=4):
     if subject_size is None:
         subject_size = random.randint(3, 10)
-
-    if target_size is None:
-        target_size = 4
 
     bbox = (0.0, 10.0, 0.0, 10.0)
     subject = generate_polygon(subject_size, bbox)
@@ -32,12 +32,9 @@ def generate_intersecting(subject_size=None, target_size=None):
     return subject, clip
 
 
-def generate_non_intersecting(subject_size=None, target_size=None):
+def generate_non_intersecting(subject_size=None, target_size=4):
     if subject_size is None:
         subject_size = random.randint(3, 10)
-
-    if target_size is None:
-        target_size = 4
 
     bbox = (0.0, 10.0, 0.0, 10.0)
     subject = generate_polygon(subject_size, bbox)
@@ -59,252 +56,180 @@ def generate_non_intersecting(subject_size=None, target_size=None):
 
 
 def generate_polygon(nvert, box):
-    from math import pi, sin, cos
-
     xc = (box[0] + box[1]) / 2
     yc = (box[2] + box[3]) / 2
     maxr = min([xc, yc])
     minr = 0.1 * maxr
     v = []
-    angle = 2 * pi
-    dt = 2 * pi / nvert
+    angle = 2 * math.pi
+    dt = 2 * math.pi / nvert
     for i in range(nvert):
         r = random.uniform(minr, maxr)
-        x = r * cos(angle)
-        y = r * sin(angle)
+        x = r * math.cos(angle)
+        y = r * math.sin(angle)
         v.append((x, y))
         angle = angle + dt
 
     return v
 
 
-class TestSimpleWithConvex(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
-        from scitbx.array_family import flex
+def test_SimpleWithConvex_intersecting():
+    for i in range(10000):
 
-        for i in range(10000):
+        # Generate intersecting polygons
+        subject, target = generate_intersecting()
 
-            # Generate intersecting polygons
-            subject, target = generate_intersecting()
+        # Do the clipping
+        result = clip.simple_with_convex(
+            flex.vec2_double(subject), flex.vec2_double(target)
+        )
 
-            # Do the clipping
-            result = clip.simple_with_convex(
-                flex.vec2_double(subject), flex.vec2_double(target)
-            )
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), len(target)])
 
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), len(target)])
 
-    #            for v in result:
-    #                assert(point_in_polygon(v, clip))
+def test_SimpleWithConvex_non_intersecting():
+    for i in range(10000):
 
-    def test_non_intersecting(self):
-        from dials.algorithms.polygon import clip
-        from scitbx.array_family import flex
+        # Generate nonintersecting polygons
+        subject, target = generate_non_intersecting()
 
-        for i in range(10000):
+        # Do the clipping
+        result = clip.simple_with_convex(
+            flex.vec2_double(subject), flex.vec2_double(target)
+        )
 
-            # Generate nonintersecting polygons
-            subject, target = generate_non_intersecting()
+        # Ensure we no vertices
+        assert len(result) == 0
 
-            # Do the clipping
-            result = clip.simple_with_convex(
-                flex.vec2_double(subject), flex.vec2_double(target)
-            )
 
-            # Ensure we no vertices
-            assert len(result) == 0
+def test_SimpleWithRect_intersecting():
+    for i in range(10000):
 
+        # Generate intersecting polygons
+        subject, target = generate_intersecting(target_size=2)
+        rect = ((0, 0), (10, 10))
 
-class TestSimpleWithRect(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
-        from scitbx.array_family import flex
+        # Do the clipping
+        result = clip.simple_with_rect(flex.vec2_double(subject), rect)
 
-        for i in range(10000):
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), 4])
 
-            # Generate intersecting polygons
-            subject, target = generate_intersecting(target_size=2)
-            rect = ((0, 0), (10, 10))
 
-            # Do the clipping
-            result = clip.simple_with_rect(flex.vec2_double(subject), rect)
+def test_TriangleWithTriangle_intersecting():
+    for i in range(10000):
 
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), 4])
+        # Generate intersecting polygons
+        subject, target = generate_intersecting(3, 3)
 
+        # Do the clipping
+        result = clip.triangle_with_triangle(subject, target)
 
-#            for v in result:
-#                assert(point_in_polygon(v, clip))
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), len(target)])
 
 
-#    def tst_non_intersecting(self):
-#        from dials.algorithms.polygon import clip
-#        from scitbx.array_family import flex
+def test_TriangleWithTriangle_non_intersecting():
+    for i in range(10000):
 
-#        for i in range(10000):
+        # Generate nonintersecting polygons
+        subject, target = generate_non_intersecting(3, 3)
 
-#            # Generate nonintersecting polygons
-#            subject, target = generate_non_intersecting(target_size=2)
-#            rect = ((0, 0), (10, 10))
+        # Do the clipping
+        result = clip.triangle_with_triangle(subject, target)
 
+        # Ensure we no vertices
+        assert len(result) == 0
 
-#            # Do the clipping
-#            result = clip.simple_with_rect(
-#                flex.vec2_double(subject), rect)
 
-#            print list(result)
+def test_TriangleWithConvexQuad_intersecting():
+    for i in range(10000):
 
-#            # Ensure we no vertices
-#            assert(len(result) == 0)
+        # Generate intersecting polygons
+        subject, target = generate_intersecting(3, 4)
 
-#        print 'OK'
+        # Do the clipping
+        result = clip.triangle_with_convex_quad(subject, target)
 
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), len(target)])
 
-class TestTriangleWithTriangle(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
 
-        for i in range(10000):
+def test_TriangleWithConvexQuad_non_intersecting():
+    for i in range(10000):
 
-            # Generate intersecting polygons
-            subject, target = generate_intersecting(3, 3)
+        # Generate nonintersecting polygons
+        subject, target = generate_non_intersecting(3, 4)
 
-            # Do the clipping
-            result = clip.triangle_with_triangle(subject, target)
+        # Do the clipping
+        result = clip.triangle_with_convex_quad(subject, target)
 
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), len(target)])
+        # Ensure we no vertices
+        assert len(result) == 0
 
-    #            for v in result:
-    #                assert(point_in_polygon(v, clip))
 
-    def test_non_intersecting(self):
-        from dials.algorithms.polygon import clip
+def test_QuadWithTriangle_intersecting():
+    for i in range(10000):
 
-        for i in range(10000):
+        # Generate intersecting polygons
+        subject, target = generate_intersecting(4, 3)
 
-            # Generate nonintersecting polygons
-            subject, target = generate_non_intersecting(3, 3)
+        # Do the clipping
+        result = clip.quad_with_triangle(subject, target)
 
-            # Do the clipping
-            result = clip.triangle_with_triangle(subject, target)
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), len(target)])
 
-            # Ensure we no vertices
-            assert len(result) == 0
 
+def test_QuadWithTriangle_non_intersecting():
+    for i in range(10000):
 
-class TestTriangleWithConvexQuad(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
+        # Generate nonintersecting polygons
+        subject, target = generate_non_intersecting(4, 3)
 
-        for i in range(10000):
+        # Do the clipping
+        result = clip.quad_with_triangle(subject, target)
 
-            # Generate intersecting polygons
-            subject, target = generate_intersecting(3, 4)
+        # Ensure we no vertices
+        assert len(result) == 0
 
-            # Do the clipping
-            result = clip.triangle_with_convex_quad(subject, target)
 
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), len(target)])
+def test_QuadWithConvexQuad_intersecting():
+    for i in range(10000):
 
-    #            for v in result:
-    #                assert(point_in_polygon(v, clip))
+        # Generate intersecting polygons
+        subject, target = generate_intersecting(4, 4)
 
-    def test_non_intersecting(self):
-        from dials.algorithms.polygon import clip
+        # Do the clipping
+        result = clip.quad_with_convex_quad(subject, target)
 
-        for i in range(10000):
+        # Ensure we have roughly valid number of vertices
+        assert len(result) >= 3
+        assert len(result) >= min([len(subject), len(target)])
 
-            # Generate nonintersecting polygons
-            subject, target = generate_non_intersecting(3, 4)
 
-            # Do the clipping
-            result = clip.triangle_with_convex_quad(subject, target)
+def test_QuadWithConvexQuad_non_intersecting():
+    for i in range(10000):
 
-            # Ensure we no vertices
-            assert len(result) == 0
+        # Generate nonintersecting polygons
+        subject, target = generate_non_intersecting(4, 4)
 
+        # Do the clipping
+        result = clip.quad_with_convex_quad(subject, target)
 
-class TestQuadWithTriangle(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
-
-        for i in range(10000):
-
-            # Generate intersecting polygons
-            subject, target = generate_intersecting(4, 3)
-
-            # Do the clipping
-            result = clip.quad_with_triangle(subject, target)
-
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), len(target)])
-
-    #            for v in result:
-    #                assert(point_in_polygon(v, clip))
-
-    def test_non_intersecting(self):
-        from dials.algorithms.polygon import clip
-
-        for i in range(10000):
-
-            # Generate nonintersecting polygons
-            subject, target = generate_non_intersecting(4, 3)
-
-            # Do the clipping
-            result = clip.quad_with_triangle(subject, target)
-
-            # Ensure we no vertices
-            assert len(result) == 0
-
-
-class TestQuadWithConvexQuad(object):
-    def test_intersecting(self):
-        from dials.algorithms.polygon import clip
-
-        for i in range(10000):
-
-            # Generate intersecting polygons
-            subject, target = generate_intersecting(4, 4)
-
-            # Do the clipping
-            result = clip.quad_with_convex_quad(subject, target)
-
-            # Ensure we have roughly valid number of vertices
-            assert len(result) >= 3
-            assert len(result) >= min([len(subject), len(target)])
-
-    #            for v in result:
-    #                assert(point_in_polygon(v, clip))
-
-    def test_non_intersecting(self):
-        from dials.algorithms.polygon import clip
-
-        for i in range(10000):
-
-            # Generate nonintersecting polygons
-            subject, target = generate_non_intersecting(4, 4)
-
-            # Do the clipping
-            result = clip.quad_with_convex_quad(subject, target)
-
-            # Ensure we no vertices
-            assert len(result) == 0
+        # Ensure we no vertices
+        assert len(result) == 0
 
 
 class TestLineWithRect(object):
     def test(self):
         self.box = ((-10, -10), (10, 10))
-        from dials.algorithms.polygon import clip
-
         for i in range(1000):
             point1 = random.uniform(-20, 20), random.uniform(-20, 20)
             point2 = random.uniform(-20, 20), random.uniform(-20, 20)
@@ -313,9 +238,10 @@ class TestLineWithRect(object):
             if self.intersects(point1, point2):
                 assert status
             else:
-                assert status == False
+                assert status is False
 
-    def inbetween(self, x, x0, x1):
+    @staticmethod
+    def inbetween(x, x0, x1):
         x00 = min([x0, x1])
         x11 = max([x0, x1])
         return x >= x00 and x <= x11

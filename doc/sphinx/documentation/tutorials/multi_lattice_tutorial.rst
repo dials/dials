@@ -1,3 +1,10 @@
+.. raw:: html
+
+  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/multi_lattice_tutorial.html" class="new-documentation">
+  This tutorial requires a DIALS 2.0 installation.<br/>
+  Please click here to go to the tutorial for DIALS 1.14.
+  </a>
+
 Multi-lattice Tutorial
 ======================
 

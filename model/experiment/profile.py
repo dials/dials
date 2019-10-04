@@ -1,20 +1,9 @@
-#
-# profile.py
-#
-#  Copyright (C) 2015 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
 class ProfileModelExt(object):
     """
     The definition for a profile model.
-
     """
 
     @classmethod
@@ -32,7 +21,6 @@ class ProfileModelExt(object):
         :param goniometer: The goniometer model
         :param scan: The scan model
         :return: An instance of the profile model
-
         """
         return None
 
@@ -48,7 +36,6 @@ class ProfileModelExt(object):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         pass
 
@@ -65,7 +52,6 @@ class ProfileModelExt(object):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         pass
 
@@ -81,7 +67,6 @@ class ProfileModelExt(object):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         pass
 
@@ -98,7 +83,6 @@ class ProfileModelExt(object):
         :param detector: The detector model
         :param goniometer: The goniometer model
         :param scan: The scan model
-
         """
         pass
 
@@ -107,6 +91,5 @@ class ProfileModelExt(object):
         Get the profile fitting algorithm associated with this profile model
 
         :return: The profile fitting class
-
         """
         return None

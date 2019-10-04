@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.find_spots.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
 from __future__ import absolute_import, division, print_function
@@ -44,7 +33,6 @@ Examples::
   dials.find_spots models.expt
 
   dials.find_spots models.expt output.reflections=strong.refl
-
 """
 
 # Set the phil scope
@@ -70,10 +58,6 @@ phil_scope = parse(
     log = 'dials.find_spots.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.find_spots.debug.log'
-      .type = str
-      .help = "The debug log filename"
   }
 
   per_image_statistics = False
@@ -81,7 +65,6 @@ phil_scope = parse(
     .help = "Whether or not to print a table of per-image statistics."
 
   include scope dials.algorithms.spot_finding.factory.phil_scope
-
 """,
     process_includes=True,
 )
@@ -124,11 +107,7 @@ class Script(object):
 
         if __name__ == "__main__":
             # Configure the logging
-            log.config(
-                verbosity=options.verbose,
-                info=params.output.log,
-                debug=params.output.debug_log,
-            )
+            log.config(verbosity=options.verbose, logfile=params.output.log)
 
         from dials.util.version import dials_version
 

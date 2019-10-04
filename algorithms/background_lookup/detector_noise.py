@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# detector_noise.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -27,7 +16,6 @@ class ComputeDetectorNoise(object):
 
         Params:
             image The image to use
-
         """
         # Get size of the image
         height, width = image.all()
@@ -43,7 +31,6 @@ class ComputeDetectorNoise(object):
 
         Returns:
             The array of pixel intensities
-
         """
         return self._pixels
 
@@ -52,7 +39,6 @@ class ComputeDetectorNoise(object):
 
         Returns:
             The calculated detector noise
-
         """
         from scitbx.array_family import flex
 

@@ -16,6 +16,7 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         env_etc.libtbx_include,
         env_etc.scitbx_include,
         env_etc.cctbx_include,
+        env_etc.ccp4io_include,
         env_etc.rstbx_include,
         env_etc.boost_include,
         env_etc.boost_adaptbx_include,

@@ -1,10 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_pychef_ext import *
-
+from dials_pychef_ext import ChefStatistics, Observations
 from cctbx.array_family import flex
 from iotbx.data_plots import table_data
 from libtbx import phil
+
+__all__ = [
+    "ChefStatistics",
+    "Observations",
+    "Statistics",
+    "batches_to_dose",
+    "dose_phil_str",
+    "phil_scope",
+    "remove_batch_gaps",
+    "resolution_limit",
+    "run",
+    "table_data",
+]
 
 dose_phil_str = """\
 dose {
@@ -209,21 +221,19 @@ class Statistics(object):
 
         return table_completeness.format_loggraph()
 
-    def rcp_vs_dose_str(self):
-        title = "Cumulative radiation damage analysis:"
+    def _thing_vs_dose_shells_str(self, title, thing, value_bins, values):
         column_labels = (
             ["Dose"]
             + [
                 "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
                 for i in range(self.n_bins)
             ]
-            + ["Rcp(d)"]
+            + [thing]
         )
         column_formats = ["%8.1f"] + ["%7.4f" for i in range(self.n_bins + 1)]
-        graph_names = ["Rcp(d)", "Rcp(d), in resolution shells"]
+        graph_names = [thing, thing + ", in resolution shells"]
         graph_columns = [[0, self.n_bins + 1], list(range(self.n_bins + 1))]
-
-        table_rcp = table_data(
+        table = table_data(
             title=title,
             column_labels=column_labels,
             column_formats=column_formats,
@@ -233,46 +243,23 @@ class Statistics(object):
         for i in range(self.n_steps):
             row = (
                 [i * self.range_width + self.range_min]
-                + [self.rcp_bins[j, i] for j in range(self.binner.n_bins_used())]
-                + [self.rcp[i]]
+                + [value_bins[j, i] for j in range(self.binner.n_bins_used())]
+                + [values[i]]
             )
-            table_rcp.add_row(row)
+            table.add_row(row)
+        return table.format_loggraph()
 
-        return table_rcp.format_loggraph()
+    def rcp_vs_dose_str(self):
+        return self._thing_vs_dose_shells_str(
+            "Cumulative radiation damage analysis:", "Rcp(d)", self.rcp_bins, self.rcp
+        )
 
     def scp_vs_dose_str(self):
-        title = "Normalised radiation damage analysis:"
-        column_labels = (
-            ["Dose"]
-            + [
-                "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
-                for i in range(self.n_bins)
-            ]
-            + ["Rcp(d)"]
+        return self._thing_vs_dose_shells_str(
+            "Normalised radiation damage analysis:", "Scp(d)", self.scp_bins, self.scp
         )
-        column_formats = ["%8.1f"] + ["%7.4f" for i in range(self.n_bins + 1)]
-        graph_names = ["Scp(d)", "Scp(d), in resolution shells"]
-        graph_columns = [[0, self.n_bins + 1], list(range(self.n_bins + 1))]
-
-        table_scp = table_data(
-            title=title,
-            column_labels=column_labels,
-            column_formats=column_formats,
-            graph_names=graph_names,
-            graph_columns=graph_columns,
-        )
-        for i in range(self.n_steps):
-            row = (
-                [i * self.range_width + self.range_min]
-                + [self.scp_bins[j, i] for j in range(self.binner.n_bins_used())]
-                + [self.scp[i]]
-            )
-            table_scp.add_row(row)
-
-        return table_scp.format_loggraph()
 
     def rd_vs_dose_str(self):
-
         title = "R vs. BATCH difference:"
         column_labels = ["BATCH", "Rd"]
         column_formats = ["%8.1f", "%5.3f"]
@@ -444,7 +431,9 @@ def run(args):
 
     reader = any_reflection_file(args[0])
     assert reader.file_type() == "ccp4_mtz"
-    arrays = reader.as_miller_arrays(merge_equivalents=False)
+    arrays = reader.as_miller_arrays(
+        merge_equivalents=False, anomalous=params.anomalous
+    )
     for ma in arrays:
         if ma.info().labels == ["BATCH"]:
             batches = ma
@@ -540,9 +529,9 @@ def remove_batch_gaps(batches):
 
 
 def resolution_limit(mtz_file, min_completeness, n_bins):
-    from xia2.Modules.Resolutionizer import resolutionizer, phil_defaults
+    from dials.util.resolutionizer import Resolutionizer, phil_defaults
 
     params = phil_defaults.extract().resolutionizer
     params.nbins = n_bins
-    r = resolutionizer(mtz_file, params)
+    r = Resolutionizer(mtz_file, params)
     return r.resolution_completeness(limit=min_completeness)

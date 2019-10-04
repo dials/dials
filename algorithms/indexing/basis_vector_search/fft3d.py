@@ -53,7 +53,6 @@ class FFT3D(Strategy):
     See:
         Bricogne, G. (1986). Proceedings of the EEC Cooperative Workshop on Position-Sensitive Detector Software (Phase III), p. 28. Paris: LURE.
         Campbell, J. W. (1998). J. Appl. Cryst. 31, 407-413.
-
     """
 
     phil_scope = phil.parse(fft3d_phil_str)
@@ -97,7 +96,6 @@ class FFT3D(Strategy):
         Returns:
             A tuple containing the list of basis vectors and a flex.bool array
             identifying which reflections were used in indexing.
-
         """
         if self._params.reciprocal_space_grid.d_min is libtbx.Auto:
             # rough calculation of suitable d_min based on max cell

@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 from math import sqrt, pi
 import os
-
+from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
 import numpy as np
 import pytest
 from dxtbx.model import Experiment, Crystal
@@ -25,7 +25,6 @@ from dials_scaling_ext import (
     create_sph_harm_table,
     calc_lookup_index,
 )
-from libtbx.test_utils import approx_equal
 from mock import Mock
 
 
@@ -163,26 +162,16 @@ def test_calc_crystal_frame_vectors(test_reflection_table, mock_exp):
     assert list(reflection_table["s0"]) == list(
         flex.vec3_double([s0_vec, s0_vec, s0_vec])
     )
-    assert approx_equal(
-        list(reflection_table["s0c"]),
-        list(
-            flex.vec3_double(
-                [s0_vec, (1.0 / sqrt(2.0), -1.0 / sqrt(2.0), 0.0), (0.0, -1.0, 0.0)]
-            )
-        ),
-    )
-    assert approx_equal(
-        list(reflection_table["s1c"]),
-        list(
-            flex.vec3_double(
-                [
-                    s1_vec,
-                    (1.0 / 2.0, -1.0 / 2.0, 1.0 / sqrt(2.0)),
-                    (0.0, -1.0 / sqrt(2.0), 1.0 / sqrt(2.0)),
-                ]
-            )
-        ),
-    )
+    expected = [s0_vec, (1.0 / sqrt(2.0), -1.0 / sqrt(2.0), 0.0), (0.0, -1.0, 0.0)]
+    for v1, v2 in zip(reflection_table["s0c"], expected):
+        assert v1 == pytest.approx(v2)
+    expected = [
+        s1_vec,
+        (1.0 / 2.0, -1.0 / 2.0, 1.0 / sqrt(2.0)),
+        (0.0, -1.0 / sqrt(2.0), 1.0 / sqrt(2.0)),
+    ]
+    for v1, v2 in zip(reflection_table["s1c"], expected):
+        assert v1 == pytest.approx(v2)
 
 
 def test_align_rotation_axis_along_z():
@@ -194,14 +183,9 @@ def test_align_rotation_axis_along_z():
         [(1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 1.0)]
     )
     rotated_vectors = align_rotation_axis_along_z(rot_axis, vectors)
-    assert approx_equal(
-        list(rotated_vectors),
-        list(
-            flex.vec3_double(
-                [(0.0, 0.0, 1.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)]
-            )
-        ),
-    )
+    expected = [(0.0, 0.0, 1.0), (0.0, 1.0, 0.0), (-1.0, 0.0, 0.0), (-1.0, 0.0, 1.0)]
+    for v1, v2 in zip(rotated_vectors, expected):
+        assert v1 == pytest.approx(v2)
 
 
 def test_create_sph_harm_table(test_reflection_table, mock_exp):
@@ -212,24 +196,30 @@ def test_create_sph_harm_table(test_reflection_table, mock_exp):
     rt, exp = test_reflection_table, mock_exp
     reflection_table = calc_crystal_frame_vectors(rt, exp)
     theta_phi = calc_theta_phi(reflection_table["s0c"])
-    assert approx_equal(
-        list(theta_phi),
-        [(pi / 2.0, 0.0), (pi / 2.0, -1.0 * pi / 4.0), (pi / 2.0, -1.0 * pi / 2.0)],
-    )
+    expected = [
+        (pi / 2.0, 0.0),
+        (pi / 2.0, -1.0 * pi / 4.0),
+        (pi / 2.0, -1.0 * pi / 2.0),
+    ]
+    for v1, v2 in zip(theta_phi, expected):
+        assert v1 == pytest.approx(v2)
     theta_phi_2 = calc_theta_phi(reflection_table["s1c"])
-    assert approx_equal(
-        list(theta_phi_2),
-        [(pi / 4.0, 0.0), (pi / 4.0, -1.0 * pi / 4.0), (pi / 4.0, -1.0 * pi / 2.0)],
-    )
+    expected = [
+        (pi / 4.0, 0.0),
+        (pi / 4.0, -1.0 * pi / 4.0),
+        (pi / 4.0, -1.0 * pi / 2.0),
+    ]
+    for v1, v2 in zip(theta_phi_2, expected):
+        assert v1 == pytest.approx(v2)
     sph_h_t = create_sph_harm_table(theta_phi, theta_phi_2, 2)
     Y10 = ((3.0 / (8.0 * pi)) ** 0.5) / 2.0
     Y20 = -1.0 * ((5.0 / (256.0 * pi)) ** 0.5)
-    assert approx_equal(sph_h_t[1, 0], Y10)
-    assert approx_equal(sph_h_t[1, 1], Y10)
-    assert approx_equal(sph_h_t[1, 2], Y10)
-    assert approx_equal(sph_h_t[5, 0], Y20)
-    assert approx_equal(sph_h_t[5, 1], Y20)
-    assert approx_equal(sph_h_t[5, 2], Y20)
+    assert sph_h_t[1, 0] == pytest.approx(Y10)
+    assert sph_h_t[1, 1] == pytest.approx(Y10)
+    assert sph_h_t[1, 2] == pytest.approx(Y10)
+    assert sph_h_t[5, 0] == pytest.approx(Y20)
+    assert sph_h_t[5, 1] == pytest.approx(Y20)
+    assert sph_h_t[5, 2] == pytest.approx(Y20)
     # Now test that you get the same by just calling the function.
 
 
@@ -324,7 +314,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     params, _ = optionparser.parse_args(args=[], quick_parse=True)
     params.model = "physical"
     lmax = 2
-    params.parameterisation.lmax = lmax
+    params.physical.lmax = lmax
 
     reflection_table = flex.reflection_table.from_file(pickle_path)
     experiments = load.experiment_list(sweep_path, check_format=False)

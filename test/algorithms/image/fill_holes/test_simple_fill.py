@@ -19,6 +19,6 @@ def test():
 
     result = simple_fill(data, mask)
     known = data.as_1d().select(mask.as_1d())
-    filled = result.as_1d().select(mask.as_1d() == False)
+    filled = result.as_1d().select(~mask.as_1d())
     assert flex.max(filled) <= flex.max(known)
     assert flex.min(filled) >= flex.min(known)

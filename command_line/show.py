@@ -19,7 +19,6 @@ Examples::
   dials.show image_*.cbf
 
   dials.show observations.refl
-
 """
 
 phil_scope = iotbx.phil.parse(

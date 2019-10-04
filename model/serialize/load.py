@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-# Import to give access from here
+import six.moves.cPickle as pickle
 from dxtbx.serialize.load import imageset as sweep  # exported symbol
 
-import six.moves.cPickle as pickle
+__all__ = ["reference", "reflections", "sweep"]
 
 
 def reflections(infile):

@@ -20,7 +20,6 @@ Examples::
 dials.goniometer_calibration space_group=P422 \
   experiments_o0_k0_p0.expt experiments_o0_k0_p48.expt \
   experiments_o0_k48_p48.expt experiments_o48_k48_p48.expt
-
 """
 
 

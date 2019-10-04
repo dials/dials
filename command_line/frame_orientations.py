@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Print a table of the orientation for every image of a dataset. The
 orientation is expressed as a zone axis (a direction referenced to the direct
@@ -9,7 +7,7 @@ Take into account any scan-varying models.
 Usage: dials.frame_orientations refined.expt
 """
 
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 
 import sys
 

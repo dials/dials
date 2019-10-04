@@ -6,6 +6,7 @@ import logging
 import time
 from collections import OrderedDict, Counter
 
+import dials.util.ext
 from dials.array_family import flex
 from dials.util.version import dials_version
 from dials.util.filter_reflections import filter_reflection_table
@@ -14,8 +15,10 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
     get_image_ranges,
 )
-
-from dials.util.ext import dials_u_to_mosflm
+from dials.util.multi_dataset_handling import (
+    assign_unique_identifiers,
+    parse_multiple_datasets,
+)
 from iotbx import mtz
 from scitbx import matrix
 from libtbx import env, Auto
@@ -32,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 class MTZWriter(object):
-
     """Class to help with adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
@@ -78,7 +80,6 @@ class MTZWriter(object):
 
 
 class MergedMTZWriter(MTZWriter):
-
     """Mtz writer for merged data."""
 
     def add_dataset(
@@ -104,7 +105,6 @@ class MergedMTZWriter(MTZWriter):
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
-
     """Mtz writer for multi-wavelength merged data."""
 
     def add_dataset(
@@ -128,29 +128,23 @@ class MADMergedMTZWriter(MergedMTZWriter):
         )
 
 
-def _add_batch(
+def _add_batch_list(
+    image_range,
     mtz,
     experiment,
     wavelength,
     dataset_id,
-    batch_number,
-    image_number,
+    batch_offset,
     force_static_model,
 ):
-    """Add a single image's metadata to an mtz file.
-
-    Returns the batch object.
-    """
-    assert batch_number > 0
+    """Add batch metadata to an mtz file."""
 
     # Recalculate useful numbers and references here
-    # We ignore panels beyond the first one, at the moment
-    panel = experiment.detector[0]
-
-    if experiment.goniometer:
-        axis = matrix.col(experiment.goniometer.get_rotation_axis())
-    else:
-        axis = 0.0, 0.0, 0.0
+    n_batches = image_range[1] - image_range[0] + 1
+    phi_start = flex.float(n_batches, 0)
+    phi_range = flex.float(n_batches, 0)
+    umat_array = flex.float(flex.grid(n_batches, 9))
+    cell_array = flex.float(flex.grid(n_batches, 6))
 
     U = matrix.sqr(experiment.crystal.get_U())
     if experiment.goniometer is not None:
@@ -158,105 +152,82 @@ def _add_batch(
     else:
         F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
-    # Create the batch object and start configuring it
-    o = mtz.add_batch().set_num(batch_number).set_nbsetid(dataset_id).set_ncryst(1)
-    o.set_time1(0.0).set_time2(0.0).set_title("Batch {}".format(batch_number))
-    o.set_ndet(1).set_theta(flex.float((0.0, 0.0))).set_lbmflg(0)
-    o.set_alambd(wavelength).set_delamb(0.0).set_delcor(0.0)
-    o.set_divhd(0.0).set_divvd(0.0)
+    i0 = image_range[0]
+    for i in range(n_batches):
+        if experiment.scan:
+            phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
-    # FIXME hard-coded assumption on indealized beam vector below... this may be
-    # broken when we come to process data from a non-imgCIF frame
-    s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
-    o.set_so(flex.float(s0n)).set_source(flex.float((0, 0, -1)))
+        # unit cell (this is fine) and the what-was-refined-flags hardcoded
+        # take time-varying parameters from the *end of the frame* unlikely to
+        # be much different at the end - however only exist if scan-varying
+        # refinement was used
+        if not force_static_model and experiment.crystal.num_scan_points > 0:
+            # Get the index of the image in the sequence e.g. first => 0, second => 1
+            image_index = i + i0 - experiment.scan.get_image_range()[0]
+            _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
+            _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+        else:
+            _unit_cell = experiment.crystal.get_unit_cell()
+            _U = U
 
-    # these are probably 0, 1 respectively, also flags for how many are set, sd
-    o.set_bbfac(0.0).set_bscale(1.0)
-    o.set_sdbfac(0.0).set_sdbscale(0.0).set_nbscal(0)
+        # apply the fixed rotation to this to unify matrix definitions - F * U
+        # was what was used in the actual prediction: U appears to be stored
+        # as the transpose?! At least is for Mosflm...
+        #
+        # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
+        # the U.B. matrix assuming that the axis is equal to S * axis_datum but
+        # here we are just giving the effective axis so at scan angle 0 this will
+        # not be correct... FIXME 2 not even sure we can express the stack of
+        # matrices S * R * F * U * B in MTZ format?... see [=A=] below
+        _U = matrix.sqr(dials.util.ext.dials_u_to_mosflm(F * _U, _unit_cell))
 
-    # unit cell (this is fine) and the what-was-refined-flags FIXME hardcoded
+        # FIXME need to get what was refined and what was constrained from the
+        # crystal model - see https://github.com/dials/dials/issues/355
+        _unit_cell_params = _unit_cell.parameters()
+        for j in range(6):
+            cell_array[i, j] = _unit_cell_params[j]
+        _U_t_elements = _U.transpose().elems
+        for j in range(9):
+            umat_array[i, j] = _U_t_elements[j]
 
-    # take time-varying parameters from the *end of the frame* unlikely to
-    # be much different at the end - however only exist if scan-varying
-    # refinement was used
-    if not force_static_model and experiment.crystal.num_scan_points > 0:
-        # Get the index of the image in the sequence e.g. first => 0, second => 1
-        image_index = image_number - experiment.scan.get_image_range()[0]
-        _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
-        _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+    # We ignore panels beyond the first one, at the moment
+    panel = experiment.detector[0]
+    panel_size = panel.get_image_size()
+    panel_distance = panel.get_directed_distance()
+
+    if experiment.goniometer:
+        axis = flex.float(experiment.goniometer.get_rotation_axis())
     else:
-        _unit_cell = experiment.crystal.get_unit_cell()
-        _U = U
+        axis = flex.float((0.0, 0.0, 0.0))
 
-    # apply the fixed rotation to this to unify matrix definitions - F * U
-    # was what was used in the actual prediction: U appears to be stored
-    # as the transpose?! At least is for Mosflm...
-    #
-    # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
-    # the U.B. matrix assuming that the axis is equal to S * axis_datum but
-    # here we are just giving the effective axis so at scan angle 0 this will
-    # not be correct... FIXME 2 not even sure we can express the stack of
-    # matrices S * R * F * U * B in MTZ format?... see [=A=] below
-    _U = matrix.sqr(dials_u_to_mosflm(F * _U, _unit_cell))
-
-    # FIXME need to get what was refined and what was constrained from the
-    # crystal model - see https://github.com/dials/dials/issues/355
-    o.set_cell(flex.float(_unit_cell.parameters()))
-    o.set_lbcell(flex.int((-1, -1, -1, -1, -1, -1)))
-    o.set_umat(flex.float(_U.transpose().elems))
+    # FIXME hard-coded assumption on idealized beam vector below... this may be
+    # broken when we come to process data from a non-imgCIF frame
+    s0n = flex.float(matrix.col(experiment.beam.get_s0()).normalize().elems)
 
     # get the mosaic spread though today it may not actually be set - should
     # this be in the BATCH headers?
     try:
         mosaic = experiment.crystal.get_mosaicity()
     except AttributeError:
-        mosaic = 0
-    o.set_crydat(
-        flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        mosaic = 0.0
+
+    # Jump into C++ to do the rest of the work
+    dials.util.ext.add_dials_batches(
+        mtz,
+        dataset_id,
+        image_range,
+        batch_offset,
+        wavelength,
+        mosaic,
+        phi_start,
+        phi_range,
+        cell_array,
+        umat_array,
+        panel_size,
+        panel_distance,
+        axis,
+        s0n,
     )
-
-    o.set_lcrflg(0)
-    o.set_datum(flex.float((0.0, 0.0, 0.0)))
-
-    # detector size, distance
-    o.set_detlm(
-        flex.float(
-            [0.0, panel.get_image_size()[0], 0.0, panel.get_image_size()[1], 0, 0, 0, 0]
-        )
-    )
-    o.set_dx(flex.float([panel.get_directed_distance(), 0.0]))
-
-    # goniometer axes and names, and scan axis number, and num axes, missets
-    # [=A=] should we be using this to unroll the setting matrix etc?
-    o.set_e1(flex.float(axis))
-    o.set_e2(flex.float((0.0, 0.0, 0.0)))
-    o.set_e3(flex.float((0.0, 0.0, 0.0)))
-    o.set_gonlab(flex.std_string(("AXIS", "", "")))
-    o.set_jsaxs(1)
-    o.set_ngonax(1)
-    o.set_phixyz(flex.float((0.0, 0.0, 0.0, 0.0, 0.0, 0.0)))
-
-    # scan ranges, axis
-    if experiment.scan:
-        phi_start, phi_range = experiment.scan.get_image_oscillation(image_number)
-    else:
-        phi_start, phi_range = 0.0, 0.0
-
-    o.set_phistt(phi_start)
-    o.set_phirange(phi_range)
-    o.set_phiend(phi_start + phi_range)
-    o.set_scanax(flex.float(axis))
-
-    # number of misorientation angles
-    o.set_misflg(0)
-
-    # crystal axis closest to rotation axis (why do I want this?)
-    o.set_jumpax(0)
-
-    # type of data - 1; 2D, 2; 3D, 3; Laue
-    o.set_ldtype(2)
-
-    return o
 
 
 def _write_columns(mtz_file, dataset, integrated_data):
@@ -428,10 +399,9 @@ def export_mtz(integrated_data, experiment_list, params):
     # First get the experiment identifier information out of the data
     expids_in_table = integrated_data.experiment_identifiers()
     if not list(expids_in_table.keys()):
-        from dials.util.multi_dataset_handling import assign_unique_identifiers
-
+        reflection_tables = parse_multiple_datasets([integrated_data])
         experiment_list, refl_list = assign_unique_identifiers(
-            experiment_list, [integrated_data]
+            experiment_list, reflection_tables
         )
         integrated_data = flex.reflection_table()
         for reflections in refl_list:
@@ -557,16 +527,15 @@ def export_mtz(integrated_data, experiment_list, params):
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
         logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
 
-        for i in range(image_range[0], image_range[1] + 1):
-            _add_batch(
-                mtz_writer.mtz_file,
-                experiment,
-                wavelength,
-                dataset_id,
-                batch_number=i + batch_offset,
-                image_number=i,
-                force_static_model=params.mtz.force_static_model,
-            )
+        _add_batch_list(
+            image_range,
+            mtz_writer.mtz_file,
+            experiment,
+            wavelength,
+            dataset_id,
+            batch_offset=batch_offset,
+            force_static_model=params.mtz.force_static_model,
+        )
 
         # Create the batch offset array. This gives us an experiment (id)-dependent
         # batch offset to calculate the correct batch from image number.

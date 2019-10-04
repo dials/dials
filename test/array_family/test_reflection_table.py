@@ -1377,20 +1377,15 @@ def test_as_miller_array():
 def test_map_centroids_to_reciprocal_space(dials_regression):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "datablock_orig.json")
+    expts_path = os.path.join(data_dir, "experiments_import.json")
 
     refl = flex.reflection_table.from_file(pickle_path)
-    datablock = load.datablock(sweep_path, check_format=False)[0]
-    imageset = datablock.extract_imagesets()[0]
-    detector = imageset.get_detector()
-    scan = imageset.get_scan()
-    beam = imageset.get_beam()
-    goniometer = imageset.get_goniometer()
+    expts = load.experiment_list(expts_path, check_format=False)
 
     # check mm values not in
     assert "xyzobs.mm.value" not in refl
 
-    refl.centroid_px_to_mm(detector, scan=scan)
+    refl.centroid_px_to_mm(expts)
 
     for k in ("xyzobs.mm.value", "xyzobs.mm.variance"):
         assert k in refl
@@ -1402,7 +1397,7 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
         (0.0035346345381526106, 0.0029881028112449803, 5.711576621000785e-07)
     )
 
-    refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
+    refl.map_centroids_to_reciprocal_space(expts)
 
     for k in ("s1", "rlp"):
         assert k in refl
@@ -1420,8 +1415,10 @@ def test_map_centroids_to_reciprocal_space(dials_regression):
     del refl1["xyzobs.mm.value"], refl1["xyzobs.mm.variance"], refl1["s1"], refl1["rlp"]
 
     # pretend this is a still and hence no scan or goniometer
-    refl1.centroid_px_to_mm(detector, scan=None)
-    refl1.map_centroids_to_reciprocal_space(detector, beam, goniometer=None)
+    expts[0].goniometer = None
+    expts[0].scan = None
+    refl1.centroid_px_to_mm(expts)
+    refl1.map_centroids_to_reciprocal_space(expts)
 
     assert refl1["s1"][0] == pytest.approx(
         (-0.035321308540942425, 0.6030297672949761, -0.8272574664632307)
@@ -1441,14 +1438,9 @@ def test_calculate_entering_flags(dials_regression):
 
     refl = flex.reflection_table.from_pickle(pickle_path)
     experiments = load.experiment_list(experiments_path, check_format=False)
-    experiment = experiments[0]
-    detector = experiment.detector
-    scan = experiment.scan
-    beam = experiment.beam
-    goniometer = experiment.goniometer
 
-    refl.centroid_px_to_mm(detector, scan=scan)
-    refl.map_centroids_to_reciprocal_space(detector, beam, goniometer=goniometer)
+    refl.centroid_px_to_mm(experiments)
+    refl.map_centroids_to_reciprocal_space(experiments)
     refl.calculate_entering_flags(experiments)
     assert "entering" in refl
     flags = refl["entering"]

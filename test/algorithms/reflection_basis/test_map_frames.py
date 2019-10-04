@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 
+from scitbx import matrix
+
 
 def test_map_frames_forward(dials_data):
     from dials.model.serialize import load
@@ -42,7 +44,6 @@ def test_map_frames_forward(dials_data):
         beam, detector, gonio, scan, delta_divergence, delta_mosaicity
     )
 
-    from scitbx import matrix
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
 
@@ -65,9 +66,6 @@ def test_map_frames_forward(dials_data):
 
         # Calculate the bounding box
         bbox = calculate_bbox(s1, z, panel)
-        x1, x2 = bbox[0], bbox[1]
-        y1, y2 = bbox[2], bbox[3]
-        z1, z2 = bbox[4], bbox[5]
 
         # Create the XDS coordinate system
         xcs = CoordinateSystem(m2, s0, s1, phi)
@@ -95,7 +93,7 @@ def test_map_frames_forward(dials_data):
             rev = False
             for i in range(1, len(f)):
                 curr = f[1]
-                if rev == False:
+                if rev is False:
                     if curr < last:
                         rev = True
                 else:
@@ -141,7 +139,6 @@ def test_map_frames_reverse(dials_data):
         beam, detector, gonio, scan, delta_divergence, delta_mosaicity
     )
 
-    from scitbx import matrix
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
     from scitbx.array_family import flex
 
@@ -197,7 +194,7 @@ def test_map_frames_reverse(dials_data):
             rev = False
             for i in range(1, len(f)):
                 curr = f[1]
-                if rev == False:
+                if rev is False:
                     if curr < last:
                         rev = True
                 else:
@@ -254,7 +251,6 @@ def test_map_forward_reverse(dials_data):
         beam, detector, gonio, scan, delta_divergence, delta_mosaicity
     )
 
-    from scitbx import matrix
     from dials.algorithms.profile_model.gaussian_rs import CoordinateSystem
 
     s0 = beam.get_s0()
@@ -275,9 +271,6 @@ def test_map_forward_reverse(dials_data):
 
         # Calculate the bounding box
         bbox = calculate_bbox(s1, phi, panel)
-        x1, x2 = bbox[0], bbox[1]
-        y1, y2 = bbox[2], bbox[3]
-        z1, z2 = bbox[4], bbox[5]
 
         # Create the XDS coordinate system
         xcs = CoordinateSystem(m2, s0, s1, phi)

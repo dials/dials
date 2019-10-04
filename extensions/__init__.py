@@ -12,7 +12,6 @@ class _Extension(object):
 
         :param name: The name of the extension
         :returns: The extension class
-
         """
         for e in cls.extensions():
             if e.name == name:
@@ -23,7 +22,6 @@ class _Extension(object):
         """Get the phil scope for the interface or extension.
 
         :returns: The phil scope for the interface or extension
-
         """
         from libtbx.phil import parse
 
@@ -109,7 +107,6 @@ class SpotFinderThreshold(_Extension):
 class ProfileModel(_Extension):
     """
     The interface definition for a profile model.
-
     """
 
     scope = "profile"

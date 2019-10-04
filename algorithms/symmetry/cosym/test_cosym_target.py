@@ -30,7 +30,6 @@ def test_cosym_target(space_group):
         assert t.dim == m
         assert t.rij_matrix.all() == (n * m, n * m)
         x = flex.random_double(n * m * t.dim)
-        x_orig = x.deep_copy()
         f0, g = t.compute_functional_and_gradients(x)
         g_fd = t.compute_gradients_fd(x)
         for n, value in enumerate(zip(g, g_fd)):
@@ -40,7 +39,7 @@ def test_cosym_target(space_group):
         c_fd = t.curvatures_fd(x, eps=1e-3)
         assert list(c) == pytest.approx(c_fd, rel=0.8e-1)
 
-        M = engine.lbfgs_with_curvs(target=t, coords=x)
+        assert engine.lbfgs_with_curvs(target=t, coords=x)
         t.compute_functional(x)
         # check functional has decreased and gradients are approximately zero
         f, g = t.compute_functional_and_gradients(x)

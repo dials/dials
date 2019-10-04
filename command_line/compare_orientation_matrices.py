@@ -18,7 +18,6 @@ Examples::
   dials.compare_orientation_matrices models_1.expt models_2.expt
 
   dials.compare_orientation_matrices models_1.expt models_2.expt hkl=1,0,0
-
 """
 
 

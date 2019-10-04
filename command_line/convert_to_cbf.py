@@ -1,13 +1,6 @@
-#!/usr/bin/env python
-# convert_to_cbf.py
-#
-#   Copyright (C) 2018 Diamond Light Source, Graeme Winter
-#
-#   This code is distributed under the BSD license, a copy of which is
-#   included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
+
+import sys
 
 import iotbx.phil
 
@@ -19,7 +12,6 @@ with ersatz miniCBF header. Can be used e.g. with HDF5 format data.
 Examples::
 
   dials.convert_to_cbf models.expt prefix=data_as_cbf
-
 """
 
 phil_scope = iotbx.phil.parse(
@@ -47,16 +39,12 @@ def convert_to_cbf(imageset, template):
             template % (i + 1),
         )
 
-    return
-
 
 def run():
-    import libtbx.load_env
-
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
 
-    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "dials.convert_to_cbf [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -78,7 +66,7 @@ def run():
         return
 
     if len(experiments) > 1:
-        raise Sorry("Only one experiment can be processed at a time")
+        sys.exit("Only one experiment can be processed at a time")
     else:
         imagesets = experiments.imagesets()
         assert len(imagesets) == 1, len(imagesets)

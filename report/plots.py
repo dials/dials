@@ -1,10 +1,12 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 """
 This module defines a number of general plots, which may be relevant to
 for reports of several programs.
 """
 from __future__ import absolute_import, division, print_function
+
 from collections import OrderedDict
+
 import numpy as np
 from cctbx import uctbx
 from scitbx.array_family import flex
@@ -106,15 +108,6 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
     z[:] = np.NAN
     z[nonzeros] = H[nonzeros]
 
-    y2 = intensities / (sigmas ** 2)
-    H2, x2edges, y2edges = np.histogram2d(
-        x.as_numpy_array(), y2.as_numpy_array(), bins=(200, 200)
-    )
-    nonzeros = np.nonzero(H2)
-    z2 = np.empty(H2.shape)
-    z2[:] = np.NAN
-    z2[nonzeros] = H2[nonzeros]
-
     return {
         "i_over_sig_i_vs_i": {
             "data": [
@@ -145,33 +138,11 @@ data are strong enough.
 [1] Diederichs, K. (2010). Acta Cryst. D, 66(6), 733-740.
 https://doi.org/10.1107/S0907444910014836
 """,
-        },
-        "i_over_sig_isq_vs_i": {
-            "data": [
-                {
-                    "x": x2edges.tolist(),
-                    "y": y2edges.tolist(),
-                    "z": z2.transpose().tolist(),
-                    "type": "heatmap",
-                    "name": "Isigma2 distribution",
-                    "colorbar": {
-                        "title": "Number of reflections",
-                        "titleside": "right",
-                    },
-                    "colorscale": "Jet",
-                }
-            ],
-            "layout": {
-                "title": "I/sig(I)^2 vs I",
-                "xaxis": {"title": "log I"},
-                "yaxis": {"title": "I/sig(I)^2"},
-            },
-        },
+        }
     }
 
 
 class ResolutionPlotterMixin(object):
-
     """Define additional helper methods for plotting"""
 
     @staticmethod
@@ -184,7 +155,6 @@ class ResolutionPlotterMixin(object):
 
 
 class IntensityStatisticsPlots(ResolutionPlotterMixin):
-
     """Generate plots for intensity-derived statistics."""
 
     def __init__(
@@ -268,7 +238,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
                     "xaxis": {"title": "Multiplicity"},
                     "yaxis": {
                         "title": "Frequency",
-                        #'rangemode': 'tozero'
+                        # 'rangemode': 'tozero'
                     },
                     "bargap": 0,
                     "barmode": "overlay",
@@ -483,7 +453,6 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
 
 
 class ResolutionPlotsAndStats(ResolutionPlotterMixin):
-
     """
     Use iotbx dataset statistics objects to make plots and tables for reports.
 

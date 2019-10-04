@@ -1,38 +1,14 @@
-#!/usr/bin/env python
-#
-# export_json.py
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 import json
-
-from dials.array_family import flex
 
 
 class ReciprocalLatticeJson(object):
     def __init__(self, experiments, reflections):
         self.experiments = experiments
-        self.reflections = self._map_centroids_to_reciprocal_space(
-            experiments, reflections
-        )
-
-    def _map_centroids_to_reciprocal_space(self, experiments, reflections):
-        refl = reflections
-        reflections = flex.reflection_table()
-        for i, expt in enumerate(self.experiments):
-            refl_sel = refl.select(refl["imageset_id"] == i)
-            refl_sel.centroid_px_to_mm(expt.detector, expt.scan)
-            refl_sel.map_centroids_to_reciprocal_space(
-                expt.detector, expt.beam, expt.goniometer
-            )
-            reflections.extend(refl_sel)
-        return reflections
+        self.reflections = reflections
+        self.reflections.centroid_px_to_mm(experiments)
+        self.reflections.map_centroids_to_reciprocal_space(experiments)
 
     def as_dict(self, n_digits=None):
         rlp = self.reflections["rlp"]

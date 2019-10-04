@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-#  two_theta_refine.py
-#
-#  Copyright (C) 2016 Diamond Light Source and STFC Rutherford Appleton
-#  Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import datetime
@@ -22,6 +10,8 @@ from dials.util import log
 from dials.util.version import dials_version
 from dials.util import show_mail_on_error, Sorry
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.algorithms.refinement.corrgram import create_correlation_plots
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.utils import format_float_with_standard_uncertainty
@@ -54,9 +44,6 @@ phil_scope = parse(
       .help = "The filename for experimental models including refined cells"
 
     log = dials.two_theta_refine.log
-      .type = str
-
-    debug_log = dials.two_theta_refine.debug.log
       .type = str
 
     cif = None
@@ -453,28 +440,16 @@ class Script(object):
         # Parse the command line
         params, _ = self.parser.parse_args(show_diff_phil=False)
 
-        # set up global experiments and reflections lists
-
+        # set up global reflections list
         reflections = flex.reflection_table()
-        global_id = 0
-
-        experiments = ExperimentList()
 
         # loop through the input, building up the global lists
-        nrefs_per_exp = []
-        for ref_wrapper, exp_wrapper in zip(
-            params.input.reflections, params.input.experiments
-        ):
-            refs = ref_wrapper.data
-            exps = exp_wrapper.data
-            for i, exp in enumerate(exps):
-                sel = refs["id"] == i
-                sub_ref = refs.select(sel)
-                nrefs_per_exp.append(len(sub_ref))
-                sub_ref["id"] = flex.int(len(sub_ref), global_id)
-                reflections.extend(sub_ref)
-                experiments.append(exp)
-                global_id += 1
+        reflections_list = flatten_reflections(params.input.reflections)
+        experiments = flatten_experiments(params.input.experiments)
+
+        reflections_list = parse_multiple_datasets(reflections_list)
+        for refs in reflections_list:
+            reflections.extend(refs)
 
         # Try to load the models and data
         nexp = len(experiments)
@@ -490,7 +465,7 @@ class Script(object):
         self.check_input(reflections)
 
         # Configure the logging
-        log.config(info=params.output.log, debug=params.output.debug_log)
+        log.config(logfile=params.output.log)
         logger.info(dials_version())
 
         # Log the diff phil

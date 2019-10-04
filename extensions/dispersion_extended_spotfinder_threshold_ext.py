@@ -1,5 +1,4 @@
-from __future__ import absolute_import, division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -30,7 +29,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
         Initialise the algorithm.
 
         :param params: The input parameters
-
         """
         self.params = params
 
@@ -41,7 +39,6 @@ class DispersionExtendedSpotFinderThresholdExt(object):
         :param image: The image to process
         :param mask: The pixel mask on the image
         :returns: A boolean mask showing foreground/background pixels
-
         """
 
         params = self.params

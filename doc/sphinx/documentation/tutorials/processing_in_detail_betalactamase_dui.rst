@@ -1,3 +1,10 @@
+.. raw:: html
+
+  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/processing_in_detail_betalactamase_dui.html" class="new-documentation">
+  This tutorial requires a DIALS 2.0 installation.<br/>
+  Please click here to go to the tutorial for DIALS 1.14.
+  </a>
+
 Processing in Detail with DUI
 =============================
 
@@ -169,7 +176,7 @@ understand what the indexing program has done. Inspecting the beginning of the
 log shows that the indexing step is done at a resolution lower than the full
 dataset; 1.84 Å:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log
+.. dials_tutorial_include:: betalactamase/dials.index.log
     :start-at: Found max_cell
     :lines: 1-3
 
@@ -190,7 +197,7 @@ reflections for every degree of the 360° scan.
 We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log
+.. dials_tutorial_include:: betalactamase/dials.index.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
 
@@ -215,7 +222,7 @@ More about this is discussed below in :ref:`detailbetal-sec-refinement`.
 It's also worth checking the total number of reflections that were unable to
 be assigned an index:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log.extract_unindexed
+.. dials_tutorial_include:: betalactamase/dials.index.log.extract_unindexed
    :start-after: [START_EXTRACT]
    :end-before:  [END_EXTRACT]
 
@@ -314,7 +321,7 @@ again to start the job.
 
 The log output shows a decrease in each dimension, but especially in Y.
 
-.. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
+.. dials_tutorial_include:: betalactamase/dials.sv_refine.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
 
@@ -528,7 +535,7 @@ bottom under "Analysis of scaling model".
 .. image:: /figures/process_detail_betalactamase_dui/report_scaling_plots.png
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
-and troughs 90° apart. This indicates that the illumated volume was changing
+and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as twice as
 intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.

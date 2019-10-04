@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 """
 Command line script to assess the space group symmetry (for MX datasets)
@@ -230,7 +229,7 @@ def run(args=None):
 
     if params.output.experiments:
         logger.info("\nWriting experiments to %s", params.output.experiments)
-        experiments.as_file(params.output.experiments, split=True)
+        experiments.as_file(params.output.experiments)
 
 
 if __name__ == "__main__":

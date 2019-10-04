@@ -36,7 +36,6 @@ def batch_dependent_properties(batches, intensities, scales=None):
     Raises:
         AssertionError: Raised if sigmas not present in intensities, or if
             arrays sizes do not match.
-
     """
     assert intensities.size() == batches.size()
     if scales:

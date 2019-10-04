@@ -17,7 +17,9 @@ Two different modes are currently supported, controlled by cross_validation_mode
 1) cross_validation_mode=single
    dials.scale is run nfolds times for the user specified dials.scale options
 2) cross_validation_mode=multi
-   optimise a dials.scale parameter, specified by parameter= .
+   optimise a dials.scale parameter, specified by parameter= .The full phil path
+   to the parameter must be specified, e.g. physical.decay_correction. The phil
+   structure can be seen by running dials.scale -ce2
    parameter_values must also be specified as a string of space separated values,
    unless the dials.scale parameter type is bool.
 
@@ -25,12 +27,12 @@ Therefore one must choose:
   cross_validation_mode= (single or multi)
   parameter=             (a supported command line option of the script run by
                           CrossValidator, optional if cross_validation_mode=single)
-  parameter_values=      (values to test, only optional if parameter= selectes a
+  parameter_values=      (values to test, only optional if parameter= selects a
                           boolean command-line parameter)
 
 For example
-cross_validation_mode=multi parameter=absorption_term
-cross_validation_mode=multi parameter=decay_interval parameter_values="5.0 10.0 15.0"
+cross_validation_mode=multi parameter=physical.absorption_correction
+cross_validation_mode=multi parameter=physical.decay_interval parameter_values="5.0 10.0 15.0"
 cross_validation_mode=multi parameter=model parameter_values="array physical"
 """
 
@@ -59,8 +61,10 @@ phil_scope = phil.parse(
       .expert_level = 2
     parameter = None
       .type = str
-      .help = "Optimise a command-line parameter. parameter_values must also be"
-              "specified, unless the parameter is a True/False option."
+      .help = "Optimise a command-line parameter. The full phil path must be":
+              "specified e.g. physical.absorption_correction. The option"
+              "parameter_values must also be specified, unless the parameter is"
+              "a True/False option."
       .expert_level = 2
     parameter_values = None
       .type = strings

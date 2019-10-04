@@ -1,16 +1,7 @@
-#!/usr/bin/env dials.python
-#
-# dials.algorithms.symmetry.origin
-#
-#  Copyright (C) 2016 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-# Analysis of the origin of the diffraction pattern based on indexed and
-# measured intensities.
+"""
+Analysis of the origin of the diffraction pattern based on indexed and
+measured intensities.
+"""
 
 from __future__ import absolute_import, division, print_function
 
@@ -58,7 +49,6 @@ def compute_miller_set_correlation(
     Returns:
       tuple[int, float]: A tuple of the number of observations and the correlation
       coefficient.
-
     """
     if map_to_asu:
         # not obvious that this will help for the reasons stated below

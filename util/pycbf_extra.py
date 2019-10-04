@@ -17,7 +17,6 @@ def print_info(cbf_path):
     - The type of each element in each row/column element.
 
     :param cbf_path: The path to the cbf file
-
     """
     # Read the CBF file
     cbf_handle = pycbf.cbf_handle_struct()
@@ -30,12 +29,12 @@ def print_info(cbf_path):
 
     # Count the number of categories and loop through them
     num_categories = cbf_handle.count_categories()
-    for i in range(num_categories):
+    for category in range(num_categories):
 
         # Select the ith category and print its name
-        cbf_handle.select_category(i)
+        cbf_handle.select_category(category)
         category_name = cbf_handle.category_name()
-        print("Category:", i, category_name)
+        print("Category:", category, category_name)
 
         # Count the number of rows and columns in the category
         # and print them
@@ -45,19 +44,19 @@ def print_info(cbf_path):
 
         # Rewind the columns and print the name of each
         cbf_handle.rewind_column()
-        for i in range(num_cols):
-            cbf_handle.select_column(i)
+        for column in range(num_cols):
+            cbf_handle.select_column(column)
             column_name = cbf_handle.column_name()
-            print("\tColumn:", i, column_name)
+            print("\tColumn:", column, column_name)
 
         # Loop through all rows and columns and print the
         # type of the data stored in that table element
-        for j in range(num_rows):
-            cbf_handle.select_row(j)
+        for row in range(num_rows):
+            cbf_handle.select_row(row)
             cbf_handle.rewind_column()
-            print("\t\tRow:", j, cbf_handle.get_value())
-            for i in range(num_cols):
-                cbf_handle.select_column(i)
+            print("\t\tRow:", row, cbf_handle.get_value())
+            for column in range(num_cols):
+                cbf_handle.select_column(column)
                 type_of_value = cbf_handle.get_typeofvalue()
                 if type_of_value.find("dblq") > -1:
                     value = cbf_handle.get_value()
@@ -70,7 +69,7 @@ def print_info(cbf_path):
                     value = cbf_handle.get_value()
                 else:
                     value = "..."
-                print("\t\tColumn", i, "Type:", type_of_value, value)
+                print("\t\tColumn", column, "Type:", type_of_value, value)
 
 
 def get_beam_direction(cbf_handle):
@@ -78,7 +77,6 @@ def get_beam_direction(cbf_handle):
 
     :param cbf_handle: The cbf file handle
     :returns: The beam vector
-
     """
     cbf_handle.find_category("axis")
     cbf_handle.find_column("equipment")
@@ -97,7 +95,6 @@ def compute_central_rotation_matrix(gonio):
 
     :param gonio: The goniometer struct
     :returns: The central rotation matrix
-
     """
     x = gonio.rotate_vector(0.5, 1, 0, 0)
     y = gonio.rotate_vector(0.5, 0, 1, 0)
@@ -119,7 +116,6 @@ def get_image(cbf_handle, category="array_data", column="data", row=0, element=0
     :param row: Row in which image is contained
     :param element: Element in which image is contained
     :returns: An array of image data
-
     """
     # Find the given category, column and row
     cbf_handle.find_category(category)
@@ -157,7 +153,6 @@ def get_image_volume(cbf_paths):
     :param width The width (xsize) of the volume
     :param height The height (ysize) of the volume
     :returns: The 3D volume array
-
     """
     # Read the first image and get the size
     cbf_handle = pycbf.cbf_handle_struct()
@@ -188,7 +183,6 @@ def search_for_image_volume(search_path):
 
     Returns:
         The image volume
-
     """
     from glob import glob
 

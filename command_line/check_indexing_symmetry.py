@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.command_line.check_indexing_symmetry.py
-#
-#  Copyright (C) 2015 Diamond Light Source
-#
-#  Author: Graeme Winter
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import math
@@ -48,7 +37,6 @@ Examples::
 
   dials.check_indexing_symmetry indexed.expt indexed.refl \\
     grid_l=3 symop_threshold=0.7
-
 """
 
 phil_scope = iotbx.phil.parse(
@@ -89,8 +77,6 @@ reference = None
   .help = "Correctly indexed reference set for comparison"
 output {
   log = dials.check_indexing_symmetry.log
-    .type = str
-  debug_log = dials.check_indexing_symmetry.debug.log
     .type = str
 }
 """,
@@ -335,7 +321,7 @@ def run(args):
     params, options = parser.parse_args(show_diff_phil=True)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(logfile=params.output.log)
     logger.info(dials_version())
 
     reflections = flatten_reflections(params.input.reflections)

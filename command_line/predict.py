@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.predict.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 from dials.util import show_mail_on_error
@@ -26,7 +15,6 @@ Examples::
   dials.predict models.expt force_static=True
 
   dials.predict models.expt d_min=2.0
-
 """
 
 phil_scope = parse(

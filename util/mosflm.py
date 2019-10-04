@@ -13,7 +13,6 @@ def dump(experiments, directory):
 
     :param experiments: The experiments to dump
     :param directory: The directory to write to
-
     """
     for i, experiment in enumerate(experiments):
         suffix = ""

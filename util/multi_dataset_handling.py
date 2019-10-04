@@ -43,7 +43,6 @@ def parse_multiple_datasets(reflections):
 
     Returns:
         (list): a list of reflection tables corresponding to single datasets
-
     """
     single_reflection_tables = []
     dataset_id_list = []
@@ -56,7 +55,7 @@ def parse_multiple_datasets(reflections):
                 "containing %s datasets. \n",
                 len(dataset_ids),
             )
-            ##FIXME fix split_by_experiment_id so that don't need to filter
+            # FIXME fix split_by_experiment_id so that don't need to filter
             # unindxeded reflections here to get rid of id = -1
             if -1 in refl_table["id"]:
                 refl_table = refl_table.select(refl_table["id"] != -1)
@@ -91,7 +90,6 @@ def get_next_unique_id(unique_id, used_ids):
 
     Returns:
         (int): The lowest int >= unique_id for which str(int) is not in used_ids
-
     """
     while str(unique_id) in used_ids:
         unique_id += 1

@@ -1,13 +1,57 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.profile_model import modeller  # import dependency
-from dials_algorithms_profile_model_gaussian_rs_ext import *
-
+import dials.algorithms.profile_model.modeller  # noqa: F401; lgtm; true import dependency
+from dials_algorithms_profile_model_gaussian_rs_ext import (
+    BBoxCalculator2D,
+    BBoxCalculator3D,
+    BBoxCalculatorIface,
+    BBoxMultiCalculator,
+    CoordinateSystem,
+    CoordinateSystem2d,
+    GaussianRSProfileModeller,
+    MaskCalculator2D,
+    MaskCalculator3D,
+    MaskCalculatorIface,
+    MaskMultiCalculator,
+    PartialityCalculator2D,
+    PartialityCalculator3D,
+    PartialityCalculatorIface,
+    PartialityMultiCalculator,
+    ideal_profile_double,
+    ideal_profile_float,
+    zeta_factor,
+)
 from dials.algorithms.profile_model.gaussian_rs.model import phil_scope, Model
+
+__all__ = [
+    "BBoxCalculator",
+    "BBoxCalculator2D",
+    "BBoxCalculator3D",
+    "BBoxCalculatorIface",
+    "BBoxMultiCalculator",
+    "CoordinateSystem",
+    "CoordinateSystem2d",
+    "GaussianRSProfileModeller",
+    "MaskCalculator",
+    "MaskCalculator2D",
+    "MaskCalculator3D",
+    "MaskCalculatorIface",
+    "MaskMultiCalculator",
+    "Model",
+    "PartialityCalculator",
+    "PartialityCalculator2D",
+    "PartialityCalculator3D",
+    "PartialityCalculatorIface",
+    "PartialityMultiCalculator",
+    "ideal_profile_double",
+    "ideal_profile_float",
+    "phil_scope",
+    "zeta_factor",
+]
 
 
 def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
-    """ Return the relavent bbox calculator. """
+    """Return the relevant bbox calculator."""
     if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
         algorithm = BBoxCalculator2D(beam, detector, delta_b, delta_m)
     else:
@@ -16,7 +60,7 @@ def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
 
 
 def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
-    """ Return the relavent partiality calculator. """
+    """Return the relevant partiality calculator."""
     if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
         algorithm = PartialityCalculator2D(beam, sigma_m)
     else:
@@ -25,7 +69,7 @@ def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
 
 
 def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
-    """ Return the relavent partiality calculator. """
+    """Return the relevant partiality calculator."""
     if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
         algorithm = MaskCalculator2D(beam, detector, delta_b, delta_m)
     else:

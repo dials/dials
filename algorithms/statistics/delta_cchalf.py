@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# delta_cchalf.py
-#
-#  Copyright (C) 2018 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -27,7 +15,6 @@ logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 class ResolutionBinner(object):
     """
     A class to bin the data by resolution
-
     """
 
     def __init__(self, unit_cell, dmin, dmax, nbins, output=True):
@@ -38,7 +25,6 @@ class ResolutionBinner(object):
         :param dmin: The maximum resolution
         :param dmax: The minimum resolution
         :param nbins: The number of bins
-
         """
         if output:
             logger.info("Resolution bins")
@@ -65,7 +51,6 @@ class ResolutionBinner(object):
     def nbins(self):
         """
         :returns: The number of bins
-
         """
         return self._nbins
 
@@ -75,7 +60,6 @@ class ResolutionBinner(object):
 
         :param h: The miller index
         :returns: The bin index
-
         """
         d = self._unit_cell.d(h)
         d2 = 1 / d ** 2
@@ -90,7 +74,6 @@ class ResolutionBinner(object):
 class ReflectionSum(object):
     """
     A helper class to store sums of X and X**2
-
     """
 
     def __init__(self, sum_x=0, sum_x2=0, n=0):
@@ -102,7 +85,6 @@ class ReflectionSum(object):
 class BinData(object):
     """
     A helper class to store mean and variance
-
     """
 
     def __init__(self):
@@ -117,13 +99,12 @@ def compute_cchalf(mean, var):
     :param mean: The list of mean intensities
     :param var: The list of variances on the half set of mean intensities
     :returns: The CC 1/2
-
     """
     assert len(mean) == len(var)
     n = len(mean)
     mean_of_means = sum(mean) / n
     sigma_e = sum(var) / n
-    sigma_y = sum([(m - mean_of_means) ** 2 for m in mean]) / (n - 1)
+    sigma_y = sum((m - mean_of_means) ** 2 for m in mean) / (n - 1)
     cchalf = (sigma_y - sigma_e) / (sigma_y + sigma_e)
     return cchalf
 
@@ -134,7 +115,6 @@ def compute_mean_cchalf_in_bins(bin_data):
 
     :param bin_data: The mean and variance in each bin
     :returns: The mean CC 1/2
-
     """
     mean_cchalf = 0
     count = 0
@@ -153,7 +133,6 @@ def compute_mean_cchalf_in_bins(bin_data):
 class PerImageCChalfStatistics(object):
     """
     A class to compute per image CC 1/2 statistics
-
     """
 
     def __init__(
@@ -184,7 +163,6 @@ class PerImageCChalfStatistics(object):
         :param nbins: The number of bins
         :param dmin: The maximum resolution
         :param dmax: The minimum resolution
-
         """
 
         assert len(set(dataset)) == len(unit_cell)
@@ -272,10 +250,10 @@ class PerImageCChalfStatistics(object):
         # Compute the Overall Sum(X) and Sum(X^2) for each unique reflection
         reflection_sums = defaultdict(ReflectionSum)
         for h in index_lookup:
-            I = [intensity[i] for i in index_lookup[h]]
-            n = len(I)
-            sum_x = sum(I)
-            sum_x2 = sum(II ** 2 for II in I)
+            intensities = [intensity[i] for i in index_lookup[h]]
+            n = len(intensities)
+            sum_x = sum(intensities)
+            sum_x2 = sum(i ** 2 for i in intensities)
             reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
 
         # Compute some numbers
@@ -331,7 +309,6 @@ class PerImageCChalfStatistics(object):
         """
         Compute the CC 1/2 by computing the CC 1/2 in resolution bins and then
         computing the weighted mean of the binned CC 1/2 values
-
         """
         # Compute Mean and variance of reflection intensities
         bin_data = [BinData() for _ in range(binner.nbins())]
@@ -359,7 +336,6 @@ class PerImageCChalfStatistics(object):
 
         For each image, update the sums by removing the contribution from the image
         and then compute the CC 1/2 of the remaining data
-
         """
 
         # Create a lookup table for each reflection by dataset
@@ -400,41 +376,35 @@ class PerImageCChalfStatistics(object):
     def num_datasets(self):
         """
         Return the number of datasets
-
         """
         return len(self._cchalf)
 
     def num_reflections(self):
         """
         Return the number of reflections
-
         """
         return self._num_reflections
 
     def num_unique(self):
         """
         Return the number of unique reflections
-
         """
         return self._num_unique
 
     def mean_cchalf(self):
         """
         Return the mean CC 1/2
-
         """
         return self._cchalf_mean
 
     def cchalf_i(self):
         """
         Return the CC 1/2 for each image excluded
-
         """
         return self._cchalf
 
     def delta_cchalf_i(self):
         """
         Return the Delta CC 1/2 for each image excluded
-
         """
         return {k: self._cchalf_mean - v for k, v in six.iteritems(self._cchalf)}

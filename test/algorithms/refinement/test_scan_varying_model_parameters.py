@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
+
 import math
 import random
+import textwrap
 
 import pytest
 
@@ -278,7 +280,6 @@ def test_ScanVaryingCrystalOrientationParameterisation_intervals(
     # compare analytical and finite difference derivatives at image 50
     an_ds_dp = xl_op.get_ds_dp()
     fd_ds_dp = get_fd_gradients(xl_op, [1.0e-6 * math.pi / 180] * num_param)
-    param_names = xl_op.get_param_names()
 
     null_mat = matrix.sqr((0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
     for e, f in zip(an_ds_dp, fd_ds_dp):
@@ -303,15 +304,6 @@ def test_ScanVaryingCrystalOrientationParameterisation_intervals(
         xl_op.set_time_point(t)
         an_ds_dp = xl_op.get_ds_dp()
         fd_ds_dp = get_fd_gradients(xl_op, [1.0e-6 * math.pi / 180] * num_param)
-        # print t
-        # print "Gradients:"
-        # for s, a, f in zip(param_names, an_ds_dp, fd_ds_dp):
-        #    print s
-        #    print a
-        #    print f
-        #    print "diff:", a-f
-        #    print
-        #
         for e, f in zip(an_ds_dp, fd_ds_dp):
             assert approx_equal((e - f), null_mat, eps=1.0e-6)
 
@@ -349,7 +341,6 @@ def test_ScanVaryingCrystalOrientationParameterisation_random(plots=False):
     vmp = _TestScanVaryingModelParameterisation()
 
     attempts = 100
-    failures = 0
     null_mat = matrix.sqr((0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     for i in range(attempts):
@@ -438,7 +429,6 @@ def test_ScanVaryingCrystalUnitCellParameterisation_intervals(nintervals, plots=
     # compare analytical and finite difference derivatives at image 50
     an_ds_dp = xl_ucp.get_ds_dp()
     fd_ds_dp = get_fd_gradients(xl_ucp, [1.0e-7] * num_param)
-    param_names = xl_ucp.get_param_names()
 
     for e, f in zip(an_ds_dp, fd_ds_dp):
         assert approx_equal((e - f), null_mat, eps=1.0e-6)
@@ -473,7 +463,6 @@ def test_ScanVaryingBeamParameterisation(nintervals, plots=False):
     # compare analytical and finite difference derivatives at image 50
     an_ds_dp = beam_p.get_ds_dp()
     fd_ds_dp = get_fd_gradients(beam_p, [1.0e-7] * num_param)
-    param_names = beam_p.get_param_names()
 
     for e, f in zip(an_ds_dp, fd_ds_dp):
         assert approx_equal((e - f), null_vec, eps=1.0e-6)
@@ -508,33 +497,6 @@ def test_ScanVaryingDetectorParameterisation(nintervals, plots=False):
     # compare analytical and finite difference derivatives at image 50
     an_ds_dp = det_p.get_ds_dp()
     fd_ds_dp = get_fd_gradients(det_p, [1.0e-7] * num_param)
-    param_names = det_p.get_param_names()
 
     for e, f in zip(an_ds_dp, fd_ds_dp):
         assert approx_equal((e - f), null_mat, eps=1.0e-6)
-
-
-if __name__ == "__main__":
-    print("Testing the GaussianSmoother and ScanVaryingParameterSet")
-    test_gaussian_smoother(plots=False)
-
-    print("Testing the ScanVaryingCrystalOrientationParameterisation")
-    for intervals in (1, 2, 3, 4, 5, 6, 7):
-        test_ScanVaryingCrystalOrientationParameterisation_intervals(
-            intervals, plots=False
-        )
-    test_ScanVaryingCrystalOrientationParameterisation_random(plots=False)
-
-    print("Testing the ScanVaryingCrystalUnitCellParameterisation")
-    for intervals in (1, 2, 3, 4, 5, 6, 7):
-        test_ScanVaryingCrystalUnitCellParameterisation_intervals(
-            intervals, plots=False
-        )
-
-    print("Testing the ScanVaryingBeamParameterisation")
-    for intervals in (1, 2, 3, 4, 5, 6, 7):
-        test_ScanVaryingBeamParameterisation(intervals, plots=False)
-
-    print("Testing the ScanVaryingDetectorParameterisationSinglePanel")
-    for intervals in (1, 2, 3, 4, 5, 6, 7):
-        test_ScanVaryingDetectorParameterisation(intervals, plots=False)

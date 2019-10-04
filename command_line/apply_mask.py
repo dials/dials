@@ -20,7 +20,6 @@ Examples::
     dials.apply_mask models.expt input.mask=pixels.mask
 
     dials.apply_mask models.expt input.mask=pixels1.mask input.mask=pixels2.mask
-
 """
 
 phil_scope = parse(

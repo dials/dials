@@ -1,5 +1,4 @@
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 from __future__ import absolute_import, division, print_function
 
@@ -21,7 +20,6 @@ Examples::
   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
   dials.reciprocal_lattice_viewer indexed.expt indexed.refl
-
 """
 
 

@@ -1,12 +1,3 @@
-#
-#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Contains classes used to construct a target function for refinement,
 principally Target and ReflectionManager."""
 
@@ -67,7 +58,6 @@ class TargetFactory(object):
         do_stills=False,
         do_sparse=False,
     ):
-
         """Given a set of parameters, configure a factory to build a
         target function
 
@@ -381,18 +371,6 @@ class Target(object):
         curvs = [sparse.weighted_dot(col, weights, col) for col in jacobian.cols()]
 
         return (L, dL_dp, curvs)
-
-    # def curvatures(self):
-    #  """First order approximation to the diagonal of the Hessian based on the
-    #  least squares form of the target"""
-    #
-    #  # relies on compute_functional_and_gradients being called first to set
-    #  # self._curv
-    #
-    #  # Curvatures of zero will cause a crash, because their inverse is taken.
-    #  assert all([c > 0.0 for c in self._curv])
-    #
-    #  return self._curv
 
     def compute_residuals(self):
         """return the vector of residuals plus their weights"""

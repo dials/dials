@@ -1,14 +1,3 @@
-#!/usr/bin/env cctbx.python
-
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 from __future__ import absolute_import, division, print_function
 import logging
 
@@ -162,7 +151,7 @@ class CrystalUnitCellMixin(object):
 
         # get the derivatives of state wrt metrical matrix parameters on the
         # adjusted sale
-        dB_dval = [matrix.sqr(e) * 1.0e-5 for e in S.forward_gradients()]
+        dB_dval = [matrix.sqr(g) * 1.0e-5 for g in S.forward_gradients()]
 
         return newB, dB_dval
 

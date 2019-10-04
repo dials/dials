@@ -1,4 +1,3 @@
-#!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
 
 import functools
@@ -22,7 +21,6 @@ required.
 Example::
 
   dials.split_experiments combined.expt combined.refl
-
 """
 
 

@@ -1,3 +1,10 @@
+.. raw:: html
+
+  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/processing_in_detail_betalactamase.html" class="new-documentation">
+  This tutorial requires a DIALS 2.0 installation.<br/>
+  Please click here to go to the tutorial for DIALS 1.14.
+  </a>
+
 Processing in Detail
 ====================
 
@@ -46,7 +53,7 @@ describing their contents (:ref:`datablock.expt <datablock-json>`) is written::
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 720 images:
 
-.. literalinclude:: logs_detail_betalactamase/dials.import.log
+.. dials_tutorial_include:: betalactamase/dials.import.log
 
 Now is a good point to take a first look at the data using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
@@ -74,7 +81,7 @@ Since this is looking for spots on every image in the dataset, this process
 can take some time, so we request multiple processors (:samp:`nproc=4`) to
 speed this up:
 
-.. literalinclude:: logs_detail_betalactamase/dials.find_spots.cmd
+.. dials_tutorial_include:: betalactamase/dials.find_spots.cmd
 
 .. container:: toggle
 
@@ -82,7 +89,7 @@ speed this up:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_detail_betalactamase/dials.find_spots.log
+    .. dials_tutorial_include:: betalactamase/dials.find_spots.log
         :linenos:
 
 Once this has completed, a new :ref:`reflection file <reflection_pickle>`
@@ -142,7 +149,7 @@ The next step will be indexing of the strong spots by
 parameter :samp:`indexing.method=fft1d`). We pass in all the strong
 spots found in the dataset:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.cmd
+.. dials_tutorial_include:: betalactamase/dials.index.cmd
 
 If known, the space group and unit cell can be provided at this stage
 using the :samp:`space_group` and :samp:`unit_cell` parameters, and will
@@ -156,7 +163,7 @@ using space group P1.
 
         **Show/Hide Log**
 
-    ..  literalinclude:: logs_detail_betalactamase/dials.index.log
+    ..  dials_tutorial_include:: betalactamase/dials.index.log
         :linenos:
 
 If successful, ``dials.index`` writes two output data files - an
@@ -173,7 +180,7 @@ helpful if something has gone wrong and you are trying to track down why.
 Inspecting the beginning of the log shows that the indexing step is done
 at a resolution lower than the full dataset; 1.84 Å:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log
+.. dials_tutorial_include:: betalactamase/dials.index.log
     :start-at: Found max_cell
     :lines: 1-3
     :lineno-match:
@@ -196,7 +203,7 @@ reflections for every degree of the 360° scan.
 We see that the first macrocycle of refinement makes a big improvement in
 the positional RMSDs:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log
+.. dials_tutorial_include:: betalactamase/dials.index.log
    :start-after: Refinement steps
    :end-before: RMSD no longer decreasing
    :lineno-match:
@@ -223,7 +230,7 @@ More about this is discussed below in :ref:`detailbetal-sec-refinement`.
 It's also worth checking the total number of reflections that were unable to
 be assigned an index:
 
-.. literalinclude:: logs_detail_betalactamase/dials.index.log.extract_unindexed
+.. dials_tutorial_include:: betalactamase/dials.index.log.extract_unindexed
    :start-after: [START_EXTRACT]
    :end-before:  [END_EXTRACT]
    :lineno-match:
@@ -257,12 +264,12 @@ to determine likely candidates. This takes the results of the P1
 autoindexing and runs refinement with all of the possible Bravais
 settings applied, allowing you to choose your preferred solution:
 
-.. literalinclude:: logs_detail_betalactamase/dials.refine_bravais_settings.cmd
+.. dials_tutorial_include:: betalactamase/dials.refine_bravais_settings.cmd
 
 giving a table containing scoring data and unit cell for each Bravais
 setting:
 
-.. literalinclude:: logs_detail_betalactamase/dials.refine_bravais_settings.log
+.. dials_tutorial_include:: betalactamase/dials.refine_bravais_settings.log
     :start-at: Chiral space groups
     :end-before: usr+sys
 
@@ -289,7 +296,7 @@ chosen solution is :samp:`a+b,-a+b,c`, so it is necessary to reindex the
 :ref:`indexed.refl <reflection_pickle>` file output by using
 :doc:`dials.reindex<../programs/dials_reindex>`:
 
-.. literalinclude:: logs_detail_betalactamase/dials.reindex.cmd
+.. dials_tutorial_include:: betalactamase/dials.reindex.cmd
 
 This outputs the file :file:`reindexed.refl` which we now
 use as input to downstream programs, in place of the original
@@ -316,7 +323,7 @@ to list available options.
 To refine a static model including the monoclinic constraints
 from ``dials.refine_bravais_settings`` run:
 
-.. literalinclude:: logs_detail_betalactamase/dials.refine.cmd
+.. dials_tutorial_include:: betalactamase/dials.refine.cmd
 
 .. container:: toggle
 
@@ -324,7 +331,7 @@ from ``dials.refine_bravais_settings`` run:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_detail_betalactamase/dials.refine.log
+    .. dials_tutorial_include:: betalactamase/dials.refine.log
         :linenos:
 
 
@@ -343,7 +350,7 @@ of these effects we can extend our parameterisation to obtain a smoothed
 running a further refinement job starting from the output of the
 previous job:
 
-.. literalinclude:: logs_detail_betalactamase/dials.sv_refine.cmd
+.. dials_tutorial_include:: betalactamase/dials.sv_refine.cmd
 
 .. container:: toggle
 
@@ -351,7 +358,7 @@ previous job:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_detail_betalactamase/dials.sv_refine.log
+    .. dials_tutorial_include:: betalactamase/dials.sv_refine.log
         :linenos:
 
 which writes over the ``refined.expt`` and
@@ -380,7 +387,7 @@ XDS-like 3D profile fitting while using a generalized linear model in order
 to fit a Poisson-distributed background model. We will also increase the
 number of processors used to speed the job up.
 
-.. literalinclude:: logs_detail_betalactamase/dials.integrate.cmd
+.. dials_tutorial_include:: betalactamase/dials.integrate.cmd
 
 .. container:: toggle
 
@@ -388,7 +395,7 @@ number of processors used to speed the job up.
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs_detail_betalactamase/dials.integrate.log
+    .. dials_tutorial_include:: betalactamase/dials.integrate.log
         :linenos:
 
 Checking the log output, we see that after loading in the reference
@@ -513,7 +520,7 @@ a html report called :samp:`scaling.html`. This can be opened in your browser -
 nativigate to the section "scaling model plots" and take a look.
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
-and troughs 90° apart. This indicates that the illumated volume was changing
+and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as almost
 twice as intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.
@@ -556,7 +563,7 @@ This is run simply with::
 
   dials.report scaled.expt scaled.refl
 
-which produces the file :download:`dials-report.html <logs_detail_betalactamase/dials-report.html>`.
+which produces the file :download:`dials-report.html <betalactamase-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation
 and unit cell parameters. The latter of these is useful to check that
@@ -608,7 +615,7 @@ The final step of dials processing is to either 1) export the integrated results
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_.
 
-.. literalinclude:: logs_detail_betalactamase/dials.export.cmd
+.. dials_tutorial_include:: betalactamase/dials.export.cmd
 
 2) export the scaled intensities for further downstream processing, making sure to
 include the :samp:`intensity=scale` option::
@@ -617,7 +624,7 @@ include the :samp:`intensity=scale` option::
 
 Here is the output for exporting after integration, showing the reflection file statistics.
 
-.. literalinclude:: logs_detail_betalactamase/dials.export.log
+.. dials_tutorial_include:: betalactamase/dials.export.log
     :linenos:
 
 Alternative processing with pointless and aimless

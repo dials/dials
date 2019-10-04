@@ -5,6 +5,7 @@ import time
 
 import six
 import six.moves.cPickle as pickle
+from dials.array_family import flex
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,6 @@ def generate_phil_scope():
         .help = "When chunksize is auto, this is the minimum chunksize"
     }
   }
-
   """,
         process_includes=True,
     )
@@ -141,7 +141,6 @@ phil_scope = generate_phil_scope()
 class FilterRunner(object):
     """
     A class to run multiple filters in succession.
-
     """
 
     def __init__(self, filters=None):
@@ -149,7 +148,6 @@ class FilterRunner(object):
         Initialise with a list of filters.
 
         :param filters: The list of filters
-
         """
         if filters is None:
             self.filters = []
@@ -162,7 +160,6 @@ class FilterRunner(object):
 
         :param flags: The input flags
         :returns: The filtered flags
-
         """
         flags = self.check_flags(flags, **kwargs)
         for f in self.filters:
@@ -181,9 +178,7 @@ class FilterRunner(object):
         :param observations: The observations
         :param shoeboxes: The shoeboxes
         :return: The filtered flags
-
         """
-        from scitbx.array_family import flex
 
         # If flags are not set then create a list of Trues
         if flags is None:
@@ -214,14 +209,12 @@ class PeakCentroidDistanceFilter(object):
         Initialise
 
         :param maxd: The maximum distance allowed
-
         """
         self.maxd = maxd
 
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
         """
         Run the filtering.
-
         """
 
         # Get the peak locations and the centroids and return the flags of
@@ -249,7 +242,6 @@ class BackgroundGradientFilter(object):
         self.gradient_cutoff = gradient_cutoff
 
     def run(self, flags, sweep=None, shoeboxes=None, **kwargs):
-        from dials.array_family import flex
         from dials.algorithms.background.simple import Linear2dModeller
 
         modeller = Linear2dModeller()
@@ -352,16 +344,14 @@ class SpotDensityFilter(object):
             obs_x.as_numpy_array(), obs_y.as_numpy_array(), bins=self.nbins
         )
 
-        from scitbx.array_family import flex
-
         H_flex = flex.double(H.flatten().astype(np.float64))
         n_slots = min(int(flex.max(H_flex)), 30)
         hist = flex.histogram(H_flex, n_slots=n_slots)
 
         slots = hist.slots()
         cumulative_hist = flex.long(len(slots))
-        for i in range(len(slots)):
-            cumulative_hist[i] = slots[i]
+        for i, slot in enumerate(slots):
+            cumulative_hist[i] = slot
             if i > 0:
                 cumulative_hist[i] += cumulative_hist[i - 1]
 
@@ -396,40 +386,6 @@ class SpotDensityFilter(object):
                 False,
             )
 
-        if 0:
-            from matplotlib import pyplot
-
-            fig, ax1 = pyplot.subplots()
-            extent = [yedges[0], yedges[-1], xedges[0], xedges[-1]]
-            plot1 = ax1.imshow(H, extent=extent, interpolation="nearest")
-            pyplot.xlim((0, pyplot.xlim()[1]))
-            pyplot.ylim((0, pyplot.ylim()[1]))
-            pyplot.gca().invert_yaxis()
-            pyplot.colorbar(plot1)
-            pyplot.axes().set_aspect("equal")
-            pyplot.show()
-
-            fig, ax1 = pyplot.subplots()
-            ax2 = ax1.twinx()
-            ax1.scatter(hist.slot_centers() - 0.5 * hist.slot_width(), cumulative_hist)
-            ax1.set_ylim(0, 1)
-            ax2.plot(hist.slot_centers()[:-1] - 0.5 * hist.slot_width(), gradients)
-            ymin, ymax = pyplot.ylim()
-            pyplot.vlines(cutoff, ymin, ymax, color="r")
-            pyplot.show()
-
-            H2 = H.copy()
-            if cutoff is not None:
-                H2[np.where(H2 >= cutoff)] = 0
-            fig, ax1 = pyplot.subplots()
-            plot1 = ax1.pcolormesh(xedges, yedges, H2)
-            pyplot.xlim((0, pyplot.xlim()[1]))
-            pyplot.ylim((0, pyplot.ylim()[1]))
-            pyplot.gca().invert_yaxis()
-            pyplot.colorbar(plot1)
-            pyplot.axes().set_aspect("equal")
-            pyplot.show()
-
         return flags
 
     def __call__(self, flags, **kwargs):
@@ -446,7 +402,6 @@ class SpotDensityFilter(object):
 class SpotFinderFactory(object):
     """
     Factory class to create spot finders
-
     """
 
     @staticmethod
@@ -456,7 +411,6 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :returns: The spot finder instance
-
         """
         from dials.util.masking import MaskGenerator
         from dials.algorithms.spot_finding.finder import SpotFinder
@@ -526,11 +480,10 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :return: The threshold algorithm
-
         """
         import dials.extensions
 
-        # Configure the algotihm
+        # Configure the algorithm
         Algorithm = dials.extensions.SpotFinderThreshold.load(
             params.spotfinder.threshold.algorithm
         )
@@ -543,7 +496,6 @@ class SpotFinderFactory(object):
 
         :param params: The input parameters
         :return: The filter algorithm
-
         """
         # Initialise an empty list of filters
         filters = []
@@ -576,7 +528,6 @@ class SpotFinderFactory(object):
 
         :param filename_or_data: The input filename (or data)
         :return: The image or None
-
         """
         # If no filename is set then return None
         if not filename_or_data:

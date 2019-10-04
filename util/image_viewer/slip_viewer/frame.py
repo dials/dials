@@ -1,22 +1,24 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
+# coding: utf-8
 #
 # Known issues: Recentering on resize and when switching between
 # different image types.  Ring centre on image switch.
-#
-# $Id$
+
 
 from __future__ import absolute_import, division, print_function
-from six.moves import range
 
+import imp
+import math
 import os
 import wx
 
+from . import pyslip
+from . import tile_generation
 from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
 
-from .slip_display import AppFrame
+pyslip._Tiles = tile_generation._Tiles
 
 
 class chooser_wrapper(object):
@@ -60,15 +62,16 @@ class chooser_wrapper(object):
         return self.image_set.get_detectorbase(self.index).show_header()
 
 
-class XrayFrame(AppFrame, XFBaseClass):
+class XrayFrame(XFBaseClass):
+    def set_pyslip(self, parent):
+        self.pyslip = pyslip.PySlip(parent, tile_dir=None, min_level=0)
+
     def __init__(self, *args, **kwds):
         self.params = kwds.get("params", None)
         if "params" in kwds:
             del kwds["params"]  # otherwise wx complains
 
         ### Collect any plugins
-        import imp
-
         slip_viewer_dir = os.path.join(os.path.dirname(__file__))
         contents = os.listdir(slip_viewer_dir)
         plugin_names = [
@@ -163,7 +166,6 @@ class XrayFrame(AppFrame, XFBaseClass):
         self.Bind(wx.EVT_MENU, self.OnSaveAs, btn)
 
     # using StaticBox creates a horizontal white bar in Linux
-    # replaces make_gui in slip_display.py
     def make_gui(self, parent):
         parent.sizer = wx.BoxSizer(wx.HORIZONTAL)
         parent.SetSizer(parent.sizer)
@@ -177,12 +179,80 @@ class XrayFrame(AppFrame, XFBaseClass):
         # build the GUI
         self.make_gui(self.viewer)
 
-        from . import pyslip
-
-        # finally, bind events to handlers
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
+        # finally, bind event to handler
         self.pyslip.Bind(pyslip.EVT_PYSLIP_POSITION, self.handle_position_event)
-        self.pyslip.Bind(pyslip.EVT_PYSLIP_LEVEL, self.handle_level_change)
+
+    def handle_position_event(self, event):
+        """Handle a pySlip POSITION event."""
+
+        posn_str = ""
+        if event.position:
+            (lon, lat) = event.position
+            fast_picture, slow_picture = self.pyslip.tiles.lon_lat_to_picture_fast_slow(
+                lon, lat
+            )
+
+            posn_str = "Picture:  slow=%.3f / fast=%.3f pixels." % (
+                slow_picture,
+                fast_picture,
+            )
+            coords = self.pyslip.tiles.get_flex_pixel_coordinates(lon, lat)
+            if len(coords) >= 2:
+                if len(coords) == 3:
+                    readout = int(round(coords[2]))
+                else:
+                    readout = -1
+
+                coords_str = "slow=%.3f / fast=%.3f pixels" % (coords[0], coords[1])
+                if len(coords) == 2:
+                    posn_str += " Readout: " + coords_str + "."
+                elif readout >= 0:
+                    posn_str += " Readout %d: %s." % (readout, coords_str)
+
+                possible_intensity = None
+                fi = self.pyslip.tiles.raw_image
+                detector = fi.get_detector()
+                ifs = (int(coords[1]), int(coords[0]))  # int fast slow
+                isf = (int(coords[0]), int(coords[1]))  # int slow fast
+                raw_data = fi.get_raw_data()
+                if not isinstance(raw_data, tuple):
+                    raw_data = (raw_data,)
+                if len(detector) > 1:
+                    if readout >= 0:
+                        if detector[readout].is_coord_valid(ifs):
+                            possible_intensity = raw_data[readout][isf]
+                else:
+                    if detector[0].is_coord_valid(ifs):
+                        possible_intensity = raw_data[0][isf]
+
+                if possible_intensity is not None:
+                    if possible_intensity == 0:
+                        format_str = " I=%6.4f"
+                    else:
+                        yaya = int(math.ceil(math.log10(abs(possible_intensity))))
+                        format_str = " I=%%6.%df" % (max(0, 5 - yaya))
+                    posn_str += format_str % possible_intensity
+
+                if (
+                    len(coords) > 2 and readout >= 0
+                ):  # indicates it's a tiled image in a valid region
+                    reso = self.pyslip.tiles.get_resolution(
+                        coords[1], coords[0], readout
+                    )
+                else:
+                    reso = self.pyslip.tiles.get_resolution(coords[1], coords[0])
+
+                if reso is not None:
+                    posn_str += " Resolution: %.3f" % (reso)
+
+            self.statusbar.SetStatusText(posn_str)
+        else:
+            self.statusbar.SetStatusText(
+                "Click and drag to pan; "
+                + "middle-click and drag to plot intensity profile, right-click to zoom"
+            )
+            # print "event with no position",event
+        return
 
     def init_pyslip_postsizer(self):
         self.pyslip.ZoomToLevel(-2)  # tiles.zoom_level
@@ -674,8 +744,6 @@ class XrayFrame(AppFrame, XFBaseClass):
 
         self.update_statusbar("Writing " + file_name + "...")
         if dialog.GetFilterIndex() == 0:
-            from six.moves import cStringIO as StringIO
-
             # XXX Copied from tile_generation.py; all its disclaimers
             # apply.
             raw_img = self.pyslip.tiles.raw_image
@@ -764,14 +832,12 @@ class XrayFrame(AppFrame, XFBaseClass):
 
                 # Map > View - determine layout in X direction
                 x_offset = x1
-                import math
-
                 start_x_tile = int(math.floor(x_offset / self.pyslip.tile_size_x))
                 stop_x_tile = (
                     x2 + self.pyslip.tile_size_x - 1
                 ) / self.pyslip.tile_size_x
                 stop_x_tile = int(stop_x_tile)
-                col_list = list(range(start_x_tile, stop_x_tile))
+                col_list = range(start_x_tile, stop_x_tile)
                 x_pix = start_x_tile * self.pyslip.tile_size_y - x_offset
 
                 y_offset = y1
@@ -780,7 +846,7 @@ class XrayFrame(AppFrame, XFBaseClass):
                     y2 + self.pyslip.tile_size_y - 1
                 ) / self.pyslip.tile_size_y
                 stop_y_tile = int(stop_y_tile)
-                row_list = list(range(start_y_tile, stop_y_tile))
+                row_list = range(start_y_tile, stop_y_tile)
                 y_pix_start = start_y_tile * self.pyslip.tile_size_y - y_offset
 
                 bitmap = wx.EmptyBitmap(x2 - x1, y2 - y1)
@@ -815,9 +881,8 @@ class XrayFrame(AppFrame, XFBaseClass):
                     "RGB", (flex_img.ex_size2(), flex_img.ex_size1()), data_string
                 )
 
-            out = StringIO()
-            imageout.save(out, "PNG")
-            open(file_name, "wb").write(out.getvalue())
+            with open(file_name, "wb") as fh:
+                imageout.save(fh, "PNG")
 
         elif dialog.GetFilterIndex() == 1:
             from reportlab.lib.units import inch
@@ -878,9 +943,6 @@ class XrayFrame(AppFrame, XFBaseClass):
                 # way (via a wx.Pen object) to extract RGB values from the
                 # colour parameter.
                 if layer.type == self.pyslip.TypeEllipse:
-                    from math import atan2, degrees, hypot
-                    from scitbx.matrix import col
-
                     for (
                         p,
                         place,
@@ -895,9 +957,9 @@ class XrayFrame(AppFrame, XFBaseClass):
                     ) in layer.data:
                         if layer.map_rel:
                             pp = []
-                            for i in range(len(p)):
+                            for pelement in p:
                                 fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    p[i][0], p[i][1]
+                                    pelement[0], pelement[1]
                                 )
                                 pp.append(
                                     (
@@ -905,9 +967,15 @@ class XrayFrame(AppFrame, XFBaseClass):
                                         pdf_size[1] - fs[1] * inch / DPI,
                                     )
                                 )
-                            ellipse_center = col(pp[0])
-                            major = col(pp[1]) - ellipse_center
-                            minor = col(pp[2]) - ellipse_center
+                            ellipse_center = (pp[0][0], pp[0][1])
+                            major = (
+                                pp[1][0] - ellipse_center[0],
+                                pp[1][1] - ellipse_center[1],
+                            )
+                            minor = (
+                                pp[2][0] - ellipse_center[0],
+                                pp[2][1] - ellipse_center[1],
+                            )
                         else:
                             raise NotImplementedError(
                                 "PDF output in view-relative coordinates not implemented"
@@ -921,16 +989,16 @@ class XrayFrame(AppFrame, XFBaseClass):
                             pen.Colour.Blue() / 255,
                         )
 
-                        angle = atan2(major.elems[1], major.elems[0])
-                        r_major = hypot(major.elems[0], major.elems[1])
-                        r_minor = hypot(minor.elems[0], minor.elems[1])
+                        angle = math.atan2(major.elems[1], major.elems[0])
+                        r_major = math.hypot(major.elems[0], major.elems[1])
+                        r_minor = math.hypot(minor.elems[0], minor.elems[1])
 
                         pdf_canvas.saveState()
                         pdf_canvas.translate(
                             ellipse_center.elems[0], ellipse_center.elems[1]
                         )
 
-                        pdf_canvas.rotate(degrees(angle))
+                        pdf_canvas.rotate(math.degrees(angle))
                         pdf_canvas.ellipse(-r_major, -r_minor, r_major, r_minor)
                         pdf_canvas.restoreState()
 
@@ -983,10 +1051,10 @@ class XrayFrame(AppFrame, XFBaseClass):
                         pdata,
                     ) in layer.data:
                         path = pdf_canvas.beginPath()
-                        for i in range(len(p)):
+                        for i, pp in enumerate(p):
                             if layer.map_rel:
                                 fs = self.pyslip.tiles.map_relative_to_picture_fast_slow(
-                                    p[i][0], p[i][1]
+                                    pp[0], pp[1]
                                 )
                             else:
                                 raise NotImplementedError(

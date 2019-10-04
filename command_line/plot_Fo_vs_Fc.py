@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-
 # LIBTBX_SET_DISPATCHER_NAME dials.plot_Fo_vs_Fc
-
 """
 Create a plot of Fo vs Fc similar to that shown by Figure 6 in
 https://doi.org/10.1107/S2059798317010348
@@ -9,7 +6,7 @@ https://doi.org/10.1107/S2059798317010348
 Usage: dials.plot_Fo_vs_Fc hklin=refined.mtz
 """
 
-from __future__ import division, print_function, absolute_import
+from __future__ import absolute_import, division, print_function
 import sys
 from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser
@@ -201,7 +198,7 @@ class Script(object):
         """Execute the script."""
 
         # Parse the command line
-        self.params, options = self.parser.parse_args(show_diff_phil=True)
+        self.params, _ = self.parser.parse_args(show_diff_phil=True)
 
         if self.params.hklin is None:
             self.parser.print_help()

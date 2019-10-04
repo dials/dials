@@ -4,11 +4,10 @@ from math import pi
 import random
 
 import pytest
+from scitbx import matrix
 
 
 def test_beam_parameters():
-    from scitbx import matrix
-
     from dxtbx.model import BeamFactory
     from dials.algorithms.refinement.parameterisation.beam_parameters import (
         BeamParameterisation,
@@ -32,7 +31,6 @@ def test_beam_parameters():
 
     # random initial orientations and wavelengths with a random parameter shifts
     attempts = 1000
-    failures = 0
     for i in range(attempts):
 
         # make a random beam vector and parameterise it

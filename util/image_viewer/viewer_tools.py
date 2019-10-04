@@ -1,5 +1,4 @@
 # coding: utf-8
-
 """
 Various tools/controls used by the image viewer
 """

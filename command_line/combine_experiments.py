@@ -1,4 +1,3 @@
-#!/usr/bin/env dials.python
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -29,7 +28,6 @@ Examples::
     reflections_0.refl reflections_1.refl \\
     reference_from_experiment.beam=0 \\
     reference_from_experiment.detector=0
-
 """
 
 # The phil scope

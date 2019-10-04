@@ -11,7 +11,6 @@ class NullBackgroundExt(object):
 
         :param params: The input phil parameters
         :param experiments: The experiment list
-
         """
         pass
 
@@ -20,7 +19,6 @@ class NullBackgroundExt(object):
         Compute the background.
 
         :param reflections: The list of reflections
-
         """
         from dials.algorithms.background import set_shoebox_background_value
         from dials.array_family import flex

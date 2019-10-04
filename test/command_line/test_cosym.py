@@ -152,7 +152,6 @@ def test_synthetic(
     assert tmpdir.join("symmetrized.expt").check(file=1)
     assert tmpdir.join("cosym.html").check(file=1)
     assert tmpdir.join("cosym.json").check(file=1)
-
     """experiments, reflections = assign_unique_identifiers(experiments, reflections)
     cosym_instance = cosym(experiments, reflections, params=params)
     register_default_cosym_observers(cosym_instance)

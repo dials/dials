@@ -1,15 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.slice_sweep.py
-#
-#  Copyright (C) 2014 Diamond Light Source and STFC Rutherford Appleton
-#  Laboratory, UK.
-#
-#  Author: David Waterman
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 from os.path import basename, splitext
@@ -37,7 +25,6 @@ Examples::
   # two experiments and reflections with IDs '0' and '1'
   dials.slice_sweep models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
-
 """
 
 # The phil scope
@@ -74,7 +61,6 @@ phil_scope = parse(
     .help = "Overrides image_range if present. This option splits each sweep"
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
-
 """
 )
 
@@ -143,7 +129,7 @@ class Script(object):
         slice_refs = len(reflections) > 0
 
         # Catch case of nothing to do
-        if not any([slice_exps, slice_refs]):
+        if not slice_exps and not slice_refs:
             print("No suitable input provided")
             self.parser.print_help()
             return

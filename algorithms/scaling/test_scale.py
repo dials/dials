@@ -24,6 +24,7 @@ def run_one_scaling(working_directory, argument_list):
     command = ["dials.scale"] + argument_list
     print(command)
     result = procrunner.run(command, working_directory=working_directory)
+    print(result.stderr)
     assert not result.returncode and not result.stderr
     assert working_directory.join("scaled.expt").check()
     assert working_directory.join("scaled.refl").check()
@@ -276,7 +277,7 @@ def test_scale_physical(dials_regression, tmpdir):
     extra_args = [
         "model=physical",
         "merged_mtz=merged.mtz",
-        "optimise_errors=False",
+        "error_model=None",
         "intensity_choice=profile",
         "unmerged_mtz=unmerged.mtz",
         "use_free_set=1",
@@ -315,7 +316,7 @@ def test_scale_physical(dials_regression, tmpdir):
         "unmerged_mtz=unmerged.mtz",
         "use_free_set=1",
         "outlier_rejection=standard",
-        "concurrent=False",
+        "refinement_order=consecutive",
         "intensity_choice=combine",
     ]
     run_one_scaling(tmpdir, [refl_1, expt_1] + extra_args)
@@ -330,18 +331,6 @@ def test_scale_physical(dials_regression, tmpdir):
         result.overall.cc_one_half > 0.995
     )  # at 07/01/19, value was 0.99568, at 30/01/19 was 0.9961
     assert result.overall.n_obs > 2300  # at 07/01/19, was 2336, at 22/05/19 was 2311
-    # test the 'stats_only' option
-    extra_args = ["stats_only=True"]
-    run_one_scaling(tmpdir, ["scaled.refl", "scaled.expt"] + extra_args)
-    # test the 'export_mtz_only' option
-    extra_args = [
-        "export_mtz_only=True",
-        "unmerged_mtz=test_1.mtz",
-        "merged_mtz=test_2.mtz",
-    ]
-    run_one_scaling(tmpdir, ["scaled.refl", "scaled.expt"] + extra_args)
-    assert tmpdir.join("test_1.mtz").check()
-    assert tmpdir.join("test_2.mtz").check()
 
 
 def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
@@ -358,7 +347,7 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         "group_size=5",
         "unmerged_mtz=unmerged.mtz",
         "scale_and_filter_results=analysis_results.json",
-        "optimise_errors=False",
+        "error_model=None",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
@@ -400,7 +389,7 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
         "output.reflections=filtered.refl",
         "scale_and_filter_results=analysis_results.json",
         "unmerged_mtz=unmerged.mtz",
-        "optimise_errors=False",
+        "error_model=None",
     ]
     for i in [1, 2, 3, 4, 5, 7, 10]:
         command.append(location.join("experiments_" + str(i) + ".json").strpath)
@@ -421,7 +410,7 @@ def test_scale_optimise_errors(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "xia2-28")
     refl = os.path.join(data_dir, "20_integrated.pickle")
     expt = os.path.join(data_dir, "20_integrated_experiments.json")
-    extra_args = ["model=physical", "optimise_errors=True"]
+    extra_args = ["model=physical", "error_model=basic"]
     run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
 
@@ -433,7 +422,7 @@ def test_scale_array(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "xia2-28")
     refl = os.path.join(data_dir, "20_integrated.pickle")
     expt = os.path.join(data_dir, "20_integrated_experiments.json")
-    extra_args = ["model=array", "absorption_term=0", "full_matrix=0"]
+    extra_args = ["model=array", "array.absorption_correction=0", "full_matrix=0"]
 
     run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
@@ -448,7 +437,7 @@ def test_multi_scale(dials_regression, tmpdir):
     expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
     extra_args = [
         "unmerged_mtz=unmerged.mtz",
-        "optimise_errors=False",
+        "error_model=None",
         "intensity_choice=profile",
         "outlier_rejection=simple",
     ]
@@ -467,7 +456,7 @@ def test_multi_scale(dials_regression, tmpdir):
 
     # run again, optimising errors, and continuing from where last run left off.
     extra_args = [
-        "optimise_errors=True",
+        "error_model=basic",
         "unmerged_mtz=unmerged.mtz",
         "check_consistent_indexing=True",
     ]
@@ -494,7 +483,7 @@ def test_multi_scale_exclude_images(dials_regression, tmpdir):
     # Expect this dataset to be given batches 1-1800 and 1901-3600
     # Try excluding last two hundred batches
     extra_args = [
-        "optimise_errors=False",
+        "error_model=None",
         "intensity_choice=profile",
         "outlier_rejection=simple",
         "exclude_images=0:1601:1800",
@@ -513,7 +502,7 @@ def test_multi_scale_exclude_images(dials_regression, tmpdir):
 
     # Run again, excluding some more from one run.
     extra_args = [
-        "optimise_errors=False",
+        "error_model=None",
         "intensity_choice=profile",
         "outlier_rejection=simple",
         "exclude_images=0:1401:1600",
@@ -603,7 +592,7 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     ("mode", "parameter", "parameter_values"),
     [
         ("single", None, None),
-        ("multi", "absorption_term", None),
+        ("multi", "physical.absorption_correction", None),
         ("multi", "model", "physical array"),
     ],
 )
@@ -618,7 +607,7 @@ def test_scale_cross_validate(
         "cross_validation_mode=%s" % mode,
         "nfolds=2",
         "full_matrix=0",
-        "optimise_errors=0",
+        "error_model=None",
     ]
     if parameter:
         extra_args += ["parameter=%s" % parameter]

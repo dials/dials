@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-# simple_background_ext.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 
@@ -103,7 +93,6 @@ class SimpleBackgroundExt(object):
       min_pixels = 10
         .type = int(value_min=1)
         .help = "The minimum number of pixels to compute the background"
-
     """
         )
         return phil
@@ -114,7 +103,6 @@ class SimpleBackgroundExt(object):
 
         :param params: The input parameters
         :param experiments: The list of experiments
-
         """
         from libtbx.phil import parse
         from dials.algorithms.background.simple import BackgroundAlgorithm
@@ -158,7 +146,6 @@ class SimpleBackgroundExt(object):
         Compute the background.
 
         :param reflections: The list of reflections
-
         """
         return self._algorithm.compute_background(
             reflections, image_volume=image_volume

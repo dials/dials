@@ -19,7 +19,7 @@ def index_reflections(reflections, experiments, d_min=None, tolerance=0.3):
     from dials.algorithms.indexing import assign_indices
 
     warnings.warn(
-        "index_reflections is deprectated, use "
+        "index_reflections is deprecated, use "
         "dials.algorithms.indexing.assign_indices.AssignIndicesGlobal instead",
         DeprecationWarning,
         stacklevel=2,

@@ -3,11 +3,8 @@ Tests for the dials.algorithms.scaling.plots module
 """
 from __future__ import absolute_import, division, print_function
 
-from dials.algorithms.scaling.plots import (
-    plot_scaling_models,
-    plot_outliers,
-    normal_probability_plot,
-)
+from dials.algorithms.scaling.model.model import plot_scaling_models
+from dials.algorithms.scaling.plots import plot_outliers, normal_probability_plot
 
 
 def test_plot_scaling_models():

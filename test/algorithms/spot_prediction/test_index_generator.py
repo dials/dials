@@ -9,7 +9,6 @@ def test(dials_regression):
     from dials.algorithms.spot_prediction import IndexGenerator
     import numpy
     from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
-    from scitbx import matrix
 
     # The XDS files to read from
     integrate_filename = os.path.join(
@@ -27,12 +26,7 @@ def test(dials_regression):
     d_min = 1.6
     space_group_type = ioutil.get_space_group_type_from_xparm(gxparm_handle)
     cfc = coordinate_frame_converter(gxparm_filename)
-    a_vec = cfc.get("real_space_a")
-    b_vec = cfc.get("real_space_b")
-    c_vec = cfc.get("real_space_c")
     unit_cell = cfc.get_unit_cell()
-    UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
-    ub_matrix = UB
 
     # Generate the indices
     index_generator = IndexGenerator(unit_cell, space_group_type, d_min)

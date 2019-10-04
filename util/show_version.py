@@ -2,7 +2,6 @@
 #
 # this is used by the build scripts - it should not normally need to be
 # called in a full DIALS installation (although this will probably work too)
-
 """
 Echo the current DIALS version and build number.
 """

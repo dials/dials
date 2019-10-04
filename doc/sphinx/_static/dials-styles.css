@@ -22,10 +22,10 @@ div.document {
 div.logoheader {
   width: auto;
   margin: 0 auto 0 auto;
-  background-color: #061679;
+  background-color: #010e7a;
   border: medium solid black;
-  /* This makes the borders rounded on Mozilla, which pleases me */
-  -moz-border-radius: 8px;
+  /* This makes the borders rounded, which pleases me */
+  border-radius: 8px;
   padding: 0;
 }
 
@@ -45,9 +45,33 @@ div.embedpdf {
   height: 1132px;
 }
 
+a.old-documentation {
+  display: block;
+  padding: 1em 1em;
+  margin-bottom: 1em;
+  font-size: 120%;
+  background-color: #EEE;
+  border: medium solid red;
+  border-radius: 8px;
+}
+a.old-documentation:hover {
+  background-color: #FCC;
+}
+
+a.new-documentation {
+  display: inline-block;
+  padding: 1em 1em;
+  margin-bottom: 1em;
+  background-color: #EEE;
+  border: medium solid green;
+  border-radius: 8px;
+}
+a.new-documentation:hover {
+  background-color: #CFC;
+  color: #000;
+}
 
 @media screen and (max-width: 870px) {
-
   body {
     margin-left: auto;
     margin-right: auto;
@@ -57,7 +81,6 @@ div.embedpdf {
     width: 100%;
     margin: 15px auto 0 auto;
   }
-
 }
 
 .toggle .header {
@@ -73,3 +96,48 @@ div.embedpdf {
     content: " ▲";
 }
 
+a.button span {
+  -moz-box-shadow:inset 0px 1px 0px 0px #061679;
+  -webkit-box-shadow:inset 0px 1px 0px 0px #061679;
+  box-shadow:inset 0px 1px 0px 0px #061679;
+  background-color:#061679;
+  -moz-border-radius:3px;
+  -webkit-border-radius:3px;
+  border-radius:3px;
+  display:inline-block;
+  cursor:pointer;
+  color:#ffffff;
+  font-family:arial;
+  font-size:15px;
+  padding:10px 30px;
+  text-decoration:none;
+  text-shadow:0px 1px 0px #154682;
+  margin:2px 5px;
+}
+a.button span:hover {
+  background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0921B5), color-stop(1, #061679));
+  background:-moz-linear-gradient(top, #0921B5 5%, #061679 100%);
+  background:-webkit-linear-gradient(top, #0921B5 5%, #061679 100%);
+  background:-o-linear-gradient(top, #0921B5 5%, #061679 100%);
+  background:-ms-linear-gradient(top, #0921B5 5%, #061679 100%);
+  background:linear-gradient(to bottom, #0921B5 5%, #061679 100%);
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0921B5', endColorstr='#061679',GradientType=0);
+  background-color:#0921B5;
+}
+a.button span:active {
+  position:relative;
+  top:1px;
+}
+
+.download-link-text {
+  font-size:15px;
+  color:#ffffff;
+}
+
+a.button {
+  text-decoration:none;
+}
+
+a.button:hover {
+  text-decoration:none;
+}

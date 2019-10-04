@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-import os
 import sys
 
 from libtbx.phil import parse
@@ -67,13 +66,12 @@ Examples::
   dials.export indexed.pickle format=xds
   dials.export models.expt format=xds
   dials.export models.expt indexed.pickle format=xds
-
 """
 
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds best xds_ascii json
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json
     .type = choice
     .help = "The output file format"
 
@@ -187,23 +185,6 @@ phil_scope = parse(
 
   }
 
-  best {
-
-    prefix = best
-      .type = str
-      .help = "The prefix for the output file names for best"
-              "(.hkl, .dat and .par files)"
-
-    n_bins = 100
-      .type = int(value_min=1)
-      .help = "Number of resolution bins for background estimation"
-
-    min_partiality = 0.1
-      .type = float(value_min=0, value_max=1)
-      .help = "Minimum partiality of reflections to export"
-
-  }
-
   json {
     filename = rlp.json
       .type = path
@@ -216,44 +197,17 @@ phil_scope = parse(
   }
 
   output {
-
     log = dials.export.log
       .type = path
       .help = "The log filename"
-
-    debug_log = dials.export.debug.log
-      .type = path
-      .help = "The debug log filename"
-
   }
 """
 )
 
 
-class BaseExporter(object):
-    """
-    A base class for export reflections - though do we need a class here
-    - could just have entry points registered?
-    """
-
-    def __init__(self, params, experiments, reflections):
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-
-    def check(self):
-        """Check the input provided was sane."""
-        raise NotImplementedError("Function check() must be overloaded")
-
-    def export(self):
-        """Export the data in the desired format."""
-        raise NotImplementedError("Function export() must be overloaded")
-
-
 class MTZExporter(object):
     """
     A class to export reflections in MTZ format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -263,7 +217,6 @@ class MTZExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -280,7 +233,6 @@ class MTZExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.export_mtz import export_mtz
 
@@ -299,7 +251,6 @@ class MTZExporter(object):
 class SadabsExporter(object):
     """
     A class to export data in HKL format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -309,7 +260,6 @@ class SadabsExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -348,7 +298,6 @@ columns in reflection table."""
 class XDSASCIIExporter(object):
     """
     A class to export data in XDS_ASCII format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -358,7 +307,6 @@ class XDSASCIIExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -397,7 +345,6 @@ columns in reflection table."""
 class NexusExporter(object):
     """
     A class to export data in Nexus format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -407,7 +354,6 @@ class NexusExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -424,7 +370,6 @@ class NexusExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.nexus import dump
 
@@ -434,7 +379,6 @@ class NexusExporter(object):
 class MMCIFExporter(object):
     """
     A class to export data in CIF format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -444,7 +388,6 @@ class MMCIFExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -461,7 +404,6 @@ class MMCIFExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.export_mmcif import MMCIFOutputFile
 
@@ -475,7 +417,6 @@ class MMCIFExporter(object):
 class MosflmExporter(object):
     """
     A class to export stuff in mosflm format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -485,7 +426,6 @@ class MosflmExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -501,7 +441,6 @@ class MosflmExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.mosflm import dump
 
@@ -511,7 +450,6 @@ class MosflmExporter(object):
 class XDSExporter(object):
     """
     A class to export stuff in xds format
-
     """
 
     def __init__(self, params, experiments, reflections):
@@ -521,7 +459,6 @@ class XDSExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
         self.reflections = None
 
@@ -539,78 +476,15 @@ class XDSExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util.xds import dump
 
         dump(self.experiments, self.reflections, self.params.xds.directory)
 
 
-class BestExporter(object):
-    """
-    A class to export stuff in BEST format
-
-    """
-
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
-
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-
-        """
-
-        # Check the input
-        if not experiments:
-            raise Sorry("BEST exporter requires an experiment list")
-        if not reflections:
-            raise Sorry("BEST exporter require a reflection table")
-
-        # Save the stuff
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-
-    def export(self):
-        """
-        Export the files
-
-        """
-        from dials.util import best
-
-        experiment = self.experiments[0]
-        reflections = self.reflections[0]
-        partiality = reflections["partiality"]
-        sel = partiality >= self.params.best.min_partiality
-        logger.info(
-            "Selecting %s/%s reflections with partiality >= %s",
-            sel.count(True),
-            sel.size(),
-            self.params.best.min_partiality,
-        )
-        if sel.count(True) == 0:
-            raise Sorry(
-                "No reflections remaining after filtering for minimum partiality (min_partiality=%f)"
-                % (self.params.best.min_partiality)
-            )
-        reflections = reflections.select(sel)
-
-        imageset = experiment.imageset
-        prefix = self.params.best.prefix
-
-        best.write_background_file(
-            "%s.dat" % prefix, imageset, n_bins=self.params.best.n_bins
-        )
-        best.write_integrated_hkl(prefix, reflections)
-        best.write_par_file("%s.par" % prefix, experiment)
-
-
 class JsonExporter(object):
     """
     A class to export reflections in json format
-
     """
 
     def __init__(self, params, reflections, experiments=None):
@@ -620,7 +494,6 @@ class JsonExporter(object):
         :param params: The phil parameters
         :param experiments: The experiment list
         :param reflections: The reflection tables
-
         """
 
         # Check the input
@@ -637,7 +510,6 @@ class JsonExporter(object):
     def export(self):
         """
         Export the files
-
         """
         from dials.util import export_json
         from scitbx.array_family import flex
@@ -678,34 +550,23 @@ if __name__ == "__main__":
     usage = "dials.export models.expt reflections.pickle [options]"
 
     # Create the option parser
-    if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):
-        parser = OptionParser(
-            usage=usage,
-            read_experiments=True,
-            read_reflections=True,
-            check_format=False,
-            phil=phil_scope,
-            epilog=help_message,
-        )
-    else:
-        parser = OptionParser(
-            usage=usage,
-            read_experiments=True,
-            read_reflections=True,
-            phil=phil_scope,
-            epilog=help_message,
-        )
+    parser = OptionParser(
+        usage=usage,
+        read_experiments=True,
+        read_reflections=True,
+        check_format=False,
+        phil=phil_scope,
+        epilog=help_message,
+    )
 
     # Get the parameters
     params, options = parser.parse_args(show_diff_phil=False)
 
     # Configure the logging
-    log.config(info=params.output.log, debug=params.output.debug_log)
+    log.config(logfile=params.output.log)
 
     # Print the version number
     logger.info(dials_version())
-    if os.getenv("DIALS_EXPORT_DO_NOT_CHECK_FORMAT"):
-        logger.info("(format checks disabled due to environment variable)")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
@@ -749,8 +610,6 @@ if __name__ == "__main__":
         exporter = MosflmExporter(params, experiments, reflections)
     elif params.format == "xds":
         exporter = XDSExporter(params, experiments, reflections)
-    elif params.format == "best":
-        exporter = BestExporter(params, experiments, reflections)
     elif params.format == "json":
         exporter = JsonExporter(params, reflections, experiments=experiments)
     else:

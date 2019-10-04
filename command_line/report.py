@@ -1,16 +1,4 @@
-# -*- coding: utf-8 -*-
-#!/usr/bin/env python
-#
-# report.py
-#
-#  Copyright (C) 2015 Diamond Light Source
-#
-#  Author: James Parkhurst, Richard Gildea
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
 
@@ -27,7 +15,7 @@ from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
 )
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
-from dials.algorithms.scaling.plots import plot_scaling_models
+from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import combined_table_to_batch_dependent_properties
 from dials.report.plots import (
     ResolutionPlotsAndStats,
@@ -62,7 +50,6 @@ Examples::
   dials.report refined.expt
 
   dials.report integrated.refl integrated.expt
-
 """
 
 import libtbx.phil
@@ -980,7 +967,7 @@ class CentroidAnalyser(object):
                 "layout": {
                     "title": "Difference between observed and calculated centroids vs phi",
                     "yaxis3": {"domain": [0, 0.266]},
-                    #'legend': {'traceorder': 'reversed'},
+                    # 'legend': {'traceorder': 'reversed'},
                     "xaxis3": {"anchor": "y3"},
                     "xaxis2": {"anchor": "y2"},
                     "yaxis2": {"domain": [0.366, 0.633]},
@@ -1015,7 +1002,7 @@ class CentroidAnalyser(object):
                 "layout": {
                     "title": "RMSD between observed and calculated centroids vs phi",
                     "yaxis3": {"domain": [0, 0.266], "rangemode": "tozero"},
-                    #'legend': {'traceorder': 'reversed'},
+                    # 'legend': {'traceorder': 'reversed'},
                     "xaxis3": {"anchor": "y3"},
                     "xaxis2": {"anchor": "y2"},
                     "yaxis2": {"domain": [0.366, 0.633], "rangemode": "tozero"},
@@ -1095,23 +1082,23 @@ class CentroidAnalyser(object):
         d["residuals_xy"] = {
             "data": [
                 # {
-                #'x': list(dx),
-                #'y': list(dy),
-                #'mode': 'markers',
-                #'name': 'points',
-                #'marker': {
-                #'color': 'rgb(102,0,0)',
-                #'size': 2,
-                #'opacity': 0.4
+                # 'x': list(dx),
+                # 'y': list(dy),
+                # 'mode': 'markers',
+                # 'name': 'points',
+                # 'marker': {
+                # 'color': 'rgb(102,0,0)',
+                # 'size': 2,
+                # 'opacity': 0.4
                 # },
-                #'type': 'scatter',
+                # 'type': 'scatter',
                 # },
                 {
                     "x": xedges.tolist(),
                     "y": yedges.tolist(),
                     "z": Hxy.transpose().tolist(),
                     "name": "density",
-                    #'ncontours': 20,
+                    # 'ncontours': 20,
                     "colorscale": "Hot",
                     "reversescale": True,
                     "showscale": False,
@@ -1145,23 +1132,23 @@ class CentroidAnalyser(object):
             d["residuals_zy"] = {
                 "data": [
                     # {
-                    #'x': list(dz),
-                    #'y': list(dy),
-                    #'mode': 'markers',
-                    #'name': 'points',
-                    #'marker': {
-                    #'color': 'rgb(102,0,0)',
-                    #'size': 2,
-                    #'opacity': 0.4
+                    # 'x': list(dz),
+                    # 'y': list(dy),
+                    # 'mode': 'markers',
+                    # 'name': 'points',
+                    # 'marker': {
+                    # 'color': 'rgb(102,0,0)',
+                    # 'size': 2,
+                    # 'opacity': 0.4
                     # },
-                    #'type': 'scatter',
+                    # 'type': 'scatter',
                     # },
                     {
                         "x": zedges.tolist(),
                         "y": yedges.tolist(),
                         "z": Hzy.transpose().tolist(),
                         "name": "density",
-                        #'ncontours': 20,
+                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,
@@ -1194,23 +1181,23 @@ class CentroidAnalyser(object):
             d["residuals_xz"] = {
                 "data": [
                     # {
-                    #'x': list(dx),
-                    #'y': list(dz),
-                    #'mode': 'markers',
-                    #'name': 'points',
-                    #'marker': {
-                    #'color': 'rgb(102,0,0)',
-                    #'size': 2,
-                    #'opacity': 0.4
+                    # 'x': list(dx),
+                    # 'y': list(dz),
+                    # 'mode': 'markers',
+                    # 'name': 'points',
+                    # 'marker': {
+                    # 'color': 'rgb(102,0,0)',
+                    # 'size': 2,
+                    # 'opacity': 0.4
                     # },
-                    #'type': 'scatter',
+                    # 'type': 'scatter',
                     # },
                     {
                         "x": xedges.tolist(),
                         "y": zedges.tolist(),
                         "z": Hxz.transpose().tolist(),
                         "name": "density",
-                        #'ncontours': 20,
+                        # 'ncontours': 20,
                         "colorscale": "Hot",
                         "reversescale": True,
                         "showscale": False,
@@ -2086,8 +2073,8 @@ class ScalingModelAnalyser(object):
             for i, exp in enumerate(experiments):
                 model = exp.scaling_model
                 if model is not None:
-                    if model.id_ == "physical":
-                        scaling_model_plots = plot_scaling_models(model.to_dict())
+                    scaling_model_plots = plot_scaling_models(model.to_dict())
+                    if scaling_model_plots:
                         for name, plot in scaling_model_plots.items():
                             d.update({name + "_" + str(i): plot})
         return {"scaling_model": d}

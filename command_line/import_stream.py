@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-# import_stream.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is` distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -19,8 +9,6 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 logger = logging.getLogger("dials.command_line.import_stream")
 
 help_message = """
-
-
 """
 
 # Create the phil parameters
@@ -37,10 +25,6 @@ phil_scope = parse(
     log = 'dials.import_stream.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.import_stream.debug.log'
-      .type = str
-      .help = "The debug log filename"
 
     compact = False
       .type = bool
@@ -67,7 +51,6 @@ phil_scope = parse(
       .help = "The input port"
 
   }
-
 """
 )
 
@@ -100,11 +83,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=False, quick_parse=True)
 
         # Configure logging
-        log.config(
-            verbosity=options.verbose,
-            info=params.output.log,
-            debug=params.output.debug_log,
-        )
+        log.config(verbosity=options.verbose, logfile=params.output.log)
         from dials.util.version import dials_version
 
         logger.info(dials_version())
@@ -180,7 +159,6 @@ class Script(object):
     def write_experiments(self, experiments, params):
         """
         Output the experiments to file.
-
         """
         if params.output.experiments:
             logger.info("-" * 80)

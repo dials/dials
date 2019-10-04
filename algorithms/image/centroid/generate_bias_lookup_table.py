@@ -11,7 +11,6 @@ def sum_of_erf(mu, sigma, N=1000):
     :param mu: The Gaussian mean
     :param sigma: The Gaussian sigma
     :param N: The number of iterations in the sum
-
     """
     from math import sqrt, erf
 
@@ -30,7 +29,6 @@ def compute_normal_bias_sq(sigma, N1=1000, N2=1000):
     :param sigma: The Gaussian sigma
     :param N1: The number of iterations for the sum_of_erf
     :param N2: The number of divisions for the integral
-
     """
 
     # If sigma is zero then we know the bias is 1/12.0
@@ -58,7 +56,6 @@ def compute_lookup_table(max_sigma=0.5, N1=1000, N2=1000, N3=50):
     :param N1: The number of iterations for the sum_of_erf
     :param N2: The number of division for the integral
     :param N3: The number of elements in the table
-
     """
     sigma = []
     bias_sq = []

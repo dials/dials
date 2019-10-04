@@ -2,7 +2,7 @@
 
 This module provides a base class for symmetry determination algorithms.
 """
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import logging
 
@@ -57,7 +57,6 @@ class symmetry_base(object):
             consistency of input unit cells against the median unit cell.
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
-
         """
         self.input_intensities = intensities
 
@@ -179,7 +178,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         normalisation = absolute_scaling.kernel_normalisation(
             intensities, auto_kernel=True
@@ -195,7 +193,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         # handle negative reflections to minimise effect on mean I values.
         intensities.data().set_selected(intensities.data() < 0.0, 0.0)
@@ -226,7 +223,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         return symmetry_base._ml_normalisation(intensities, aniso=True)
 
@@ -239,7 +235,6 @@ class symmetry_base(object):
 
         Returns:
           cctbx.miller.array: The normalised intensities.
-
         """
         return symmetry_base._ml_normalisation(intensities, aniso=False)
 
@@ -307,12 +302,12 @@ class symmetry_base(object):
         if d_min is libtbx.Auto and (
             min_i_mean_over_sigma_mean is not None or min_cc_half is not None
         ):
-            from dials.util import Resolutionizer
+            from dials.util.resolutionizer import Resolutionizer, phil_defaults
 
-            rparams = Resolutionizer.phil_defaults.extract().resolutionizer
+            rparams = phil_defaults.extract().resolutionizer
             rparams.nbins = 20
             rparams.plot = False
-            resolutionizer = Resolutionizer.resolutionizer(self.intensities, rparams)
+            resolutionizer = Resolutionizer(self.intensities, rparams)
             d_min_isigi = 0
             d_min_cc_half = 0
             if min_i_mean_over_sigma_mean is not None:

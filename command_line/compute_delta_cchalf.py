@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.compute_delta_cchalf
-#
-#  Copyright (C) 2018 Diamond Light Source
-#
-#  Authors: James Parkhurst, James Beilsten-Edmands
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 from __future__ import absolute_import, division, print_function
 import collections
 import logging
@@ -31,7 +20,6 @@ logger = logging.getLogger("dials.command_line.compute_delta_cchalf")
 help_message = """
 
 This program computes the delta cchalf excluding images
-
 """
 
 # Set the phil scope
@@ -87,14 +75,9 @@ phil_scope = parse(
     .help = "Datasets with a delta cc half below (mean - stdcutoff*std) are removed"
 
   output {
-
     log = 'dials.compute_delta_cchalf.log'
       .type = str
       .help = "The log filename"
-
-    debug_log = 'dials.compute_delta_cchalf.debug.log'
-      .type = str
-      .help = "The debug log filename"
   }
 """
 )
@@ -224,7 +207,6 @@ class Script(object):
     def read_experiments(self, experiments, reflections):
         """
         Get information from experiments and reflections
-
         """
 
         # Get space group and unit cell
@@ -285,7 +267,6 @@ class Script(object):
     def read_mtzfile(self, filename):
         """
         Read the mtz file
-
         """
         # Read the mtz file
         reader = any_reflection_file(filename)
@@ -432,6 +413,22 @@ class Script(object):
         reflection_list, experiments = exclude_image_ranges_for_scaling(
             reflection_list, experiments, exclude_images
         )
+
+        # check if any image groups were all outliers and missed by the analysis
+        # This catches an edge case where there is an image group full of
+        # outliers, which gets filtered out before the analysis but should
+        # be set as not a valid image range.
+        for exp in experiments:
+            if len(exp.scan.get_valid_image_ranges(exp.identifier)) > 1:
+                exp.scan.set_valid_image_ranges(
+                    exp.identifier, [exp.scan.get_valid_image_ranges(exp.identifier)[0]]
+                )
+                logger.info(
+                    "Limited image range for %s to %s due to scaling outlier group",
+                    exp.identifier,
+                    exp.scan.get_valid_image_ranges(exp.identifier),
+                )
+
         # if a whole experiment has been excluded: need to remove it here
 
         for exp in experiments:
@@ -549,7 +546,7 @@ def run(args=None, phil=phil_scope):
 
     params, _ = parser.parse_args(args=args, show_diff_phil=False)
 
-    dials.util.log.config(info=params.output.log, debug=params.output.debug_log)
+    dials.util.log.config(logfile=params.output.log)
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)

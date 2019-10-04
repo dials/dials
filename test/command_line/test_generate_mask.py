@@ -143,7 +143,7 @@ def test_generate_mask_function_with_untrusted_rectangle(input_experiment_list, 
     generate_mask(input_experiment_list, params)
 
     assert tmpdir.join("pixels4.mask").check() or all(
-        [tmpdir.join("pixels4_{:d}.mask".format(i + 1)).check() for i in range(4)]
+        tmpdir.join("pixels4_{:d}.mask".format(i + 1)).check() for i in range(4)
     )
     assert tmpdir.join("masked.expt").check()
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 from __future__ import absolute_import, division, print_function
 import time
@@ -51,7 +50,6 @@ from dials.algorithms.scaling.observers import (
     register_scaler_observers,
 )
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
-from dials.report.analysis import make_merging_statistics_summary
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
 from dials.command_line.compute_delta_cchalf import Script as deltaccscript
@@ -93,25 +91,13 @@ Incremental scaling (with different options per dataset)::
   dials.scale integrated.refl integrated.expt scale_interval=10.0
 
   dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt scale_interval=15.0
-
 """
 
 
 logger = logging.getLogger("dials")
 phil_scope = phil.parse(
     """
-  model = physical array KB
-    .type = choice
-    .help = "Set scaling model to be applied to input datasets without
-            an existing model. "
-    .expert_level = 0
-  stats_only = False
-    .type = bool
-    .help = "Only read input files and output merging stats."
-  export_mtz_only = False
-    .type = bool
-    .help = "Only read input scaled input files and make mtz files if"
-            "user specified unmerged_mtz, merged_mtz."
+  include scope dials.algorithms.scaling.model.model.model_phil_scope
   output {
     log = dials.scale.log
       .type = str
@@ -204,7 +190,7 @@ class Script(Subject):
         """Run the scaling script."""
         start_time = time.time()
         self.scale()
-        self.remove_unwanted_datasets()
+        self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -225,7 +211,7 @@ class Script(Subject):
         self.scaler.params.scaling_options.full_matrix = False
         self.scaler = scaling_algorithm(self.scaler)
         self.scaler.params.scaling_options.full_matrix = initial_full_matrix
-        self.remove_unwanted_datasets()
+        self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
             self.reflections, self.experiments, anomalous_flag=False
         )
@@ -492,7 +478,7 @@ prepare the data in the correct space group.\n"""
         # or MultiScaler (not TargetScaler).
         self.scaler = scaling_algorithm(self.scaler)
 
-    def remove_unwanted_datasets(self):
+    def remove_bad_data(self):
         """Remove any target model/mtz data and any datasets which were removed
         from the scaler during scaling."""
         # first remove target refl/exps
@@ -515,35 +501,13 @@ prepare the data in the correct space group.\n"""
             self.experiments, self.reflections = select_datasets_on_ids(
                 self.experiments, self.reflections, exclude_datasets=removed_ids
             )
-
-    @staticmethod
-    def stats_only(reflections, experiments, params):
-        """Calculate and print merging stats."""
-        best_unit_cell = params.reflection_selection.best_unit_cell
-        if not params.reflection_selection.best_unit_cell:
-            best_unit_cell = determine_best_unit_cell(experiments)
-        scaled_miller_array = scaled_data_as_miller_array(
-            reflections, experiments, best_unit_cell=best_unit_cell
-        )
-        try:
-            res, _ = merging_stats_from_scaled_array(
-                scaled_miller_array,
-                params.output.merging.nbins,
-                params.output.use_internal_variance,
-            )
-            logger.info(make_merging_statistics_summary(res))
-        except DialsMergingStatisticsError as e:
-            logger.info(e)
-
-    @staticmethod
-    def export_mtz_only(reflections, experiments, params):
-        """Export data in mtz format."""
-        assert len(reflections) == 1, "Need a combined reflection table from scaling."
-        if params.output.unmerged_mtz:
-            _export_unmerged_mtz(params, experiments, reflections[0])
-
-        if params.output.merged_mtz:
-            _export_merged_mtz(params, experiments, reflections[0])
+        # also remove negative scales (or scales below 0.001)
+        n = 0
+        for table in self.reflections:
+            bad_sf = table["inverse_scale_factor"] < 0.001
+            n += bad_sf.count(True)
+            table.set_flags(bad_sf, table.flags.outlier_in_scaling)
+        logger.info("%s reflections set as outliers: scale factor < 0.001", n)
 
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
@@ -583,14 +547,14 @@ prepare the data in the correct space group.\n"""
             self.reflections[i] = 0
             gc.collect()
 
-        # remove reflections with neg sigma
-        sel = joint_table["inverse_scale_factor"] <= 0.0
+        # remove reflections with very low scale factors
+        sel = joint_table["inverse_scale_factor"] <= 0.001
         good_sel = ~joint_table.get_flags(joint_table.flags.bad_for_scaling, all=False)
         n_neg = (good_sel & sel).count(True)
         if n_neg > 0:
             logger.warning(
                 """
-Warning: %s non-excluded reflections were assigned negative scale factors
+Warning: %s non-excluded reflections were assigned scale factors < 0.001
 during scaling. These will be set as outliers in the reflection table. It
 may be best to rerun scaling from this point for an improved model.""",
                 n_neg,
@@ -648,13 +612,6 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
 
 def run_scaling(params, experiments, reflections):
     """Run scaling algorithms; stats only, cross validation or standard."""
-    if params.stats_only:
-        Script.stats_only(reflections, experiments, params)
-        sys.exit()
-
-    if params.export_mtz_only:
-        Script.export_mtz_only(reflections, experiments, params)
-        sys.exit()
 
     if params.output.delete_integration_shoeboxes:
         for r in reflections:

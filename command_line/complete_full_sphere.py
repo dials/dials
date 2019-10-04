@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # LIBTBX_SET_DISPATCHER_NAME dials.complete_full_sphere
 
 from __future__ import absolute_import, division, print_function
@@ -16,7 +15,6 @@ logger = logging.getLogger("dials.command_line.complete_full_sphere")
 help_message = """
 
 dials.complete_full_sphere [resolution=1.6] models.expt
-
 """
 
 phil_scope = parse(
@@ -27,7 +25,6 @@ resolution = 0.0
 shadow = True
   .type = bool
   .help = "Consider shadowing in calculating overall completeness"
-
 """
 )
 
@@ -56,10 +53,7 @@ class Script(object):
         params, options = self.parser.parse_args(show_diff_phil=True)
         from dials.util import log
 
-        log.config(
-            info="dials.complete_full_sphere.log",
-            debug="dials.complete_full_sphere.debug.log",
-        )
+        log.config(logfile="dials.complete_full_sphere.log")
 
         import math
         from scitbx import matrix

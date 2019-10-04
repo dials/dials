@@ -1,19 +1,9 @@
-#
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Managed reflection prediction for refinement.
 
 * ScansRayPredictor adapts DIALS prediction for use in refinement, by keeping
   up to date with the current model geometry
 * StillsRayPredictor predicts reflections without a goniometer, under
   the naive assumption that the relp is already in reflecting position
-
 """
 
 from __future__ import absolute_import, division, print_function

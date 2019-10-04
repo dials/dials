@@ -1,14 +1,3 @@
-#!/usr/bin/env cctbx.python
-
-#
-#  Copyright (C) (2015) STFC Rutherford Appleton Laboratory, UK.
-#
-#  Author: David Waterman.
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
-
 """Test decomposition of rotation matrices around arbitrary axes"""
 
 from __future__ import absolute_import, division, print_function

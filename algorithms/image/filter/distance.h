@@ -75,15 +75,15 @@ namespace dials { namespace algorithms {
 
     // Go north and east
     for (std::size_t j = 0; j < height; ++j) {
-      for (std::size_t i = 1; i < width; ++i) {
+      for (std::size_t i = 0; i < width; ++i) {
         OutputType N = (j > 0) ? dst(j - 1, i) : max_distance;
-        OutputType E = (i > 0) ? dst(j, i - 1) : max_distance;
-        OutputType NE = (j > 0 && i > 0) ? dst(j - 1, i - 1) : max_distance;
-        OutputType NW = (j > 0 && i < width - 1) ? dst(j - 1, i + 1) : max_distance;
+        OutputType W = (i > 0) ? dst(j, i - 1) : max_distance;
+        OutputType NW = (j > 0 && i > 0) ? dst(j - 1, i - 1) : max_distance;
+        OutputType NE = (j > 0 && i < width - 1) ? dst(j - 1, i + 1) : max_distance;
         if (src(j, i) == value) {
           dst(j, i) = 0;
         } else {
-          dst(j, i) = 1 + std::min(std::min(N, E), std::min(NE, NW));
+          dst(j, i) = 1 + std::min(std::min(N, W), std::min(NE, NW));
         }
       }
     }
@@ -92,10 +92,10 @@ namespace dials { namespace algorithms {
     for (std::size_t j = height; j > 0; --j) {
       for (std::size_t i = width; i > 0; --i) {
         OutputType S = (j < height) ? dst(j, i - 1) : max_distance;
-        OutputType W = (i < width) ? dst(j - 1, i) : max_distance;
-        OutputType SE = (j < height && i > 1) ? dst(j, i - 2) : max_distance;
-        OutputType SW = (j < height && i < width) ? dst(j, i) : max_distance;
-        OutputType other = std::min(std::min(S, W), std::min(SE, SW));
+        OutputType E = (i < width) ? dst(j - 1, i) : max_distance;
+        OutputType SW = (j < height && i > 1) ? dst(j, i - 2) : max_distance;
+        OutputType SE = (j < height && i < width) ? dst(j, i) : max_distance;
+        OutputType other = std::min(std::min(S, E), std::min(SE, SW));
         if (other < dst(j - 1, i - 1)) {
           dst(j - 1, i - 1) = 1 + other;
         }

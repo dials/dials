@@ -8,8 +8,8 @@ import os
 import time
 
 import gltbx.util
-from gltbx.gl import *
-from gltbx.glu import *
+import gltbx.gl as gl
+import gltbx.glu as glu
 import gltbx.gl_managed
 import gltbx.fonts
 import gltbx.images
@@ -108,8 +108,12 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
         try:
             if hasattr(wx.glcanvas, "WX_GL_SAMPLE_BUFFERS"):
-                if self.IsDisplaySupported([wx.glcanvas.WX_GL_SAMPLE_BUFFERS, GL_TRUE]):
-                    kw["attribList"].extend([wx.glcanvas.WX_GL_SAMPLE_BUFFERS, GL_TRUE])
+                if self.IsDisplaySupported(
+                    [wx.glcanvas.WX_GL_SAMPLE_BUFFERS, gl.GL_TRUE]
+                ):
+                    kw["attribList"].extend(
+                        [wx.glcanvas.WX_GL_SAMPLE_BUFFERS, gl.GL_TRUE]
+                    )
             if hasattr(wx.glcanvas, "WX_GL_SAMPLES"):
                 if self.IsDisplaySupported([wx.glcanvas.WX_GL_SAMPLES, 4]):
                     kw["attribList"].extend([wx.glcanvas.WX_GL_SAMPLES, 4])
@@ -187,7 +191,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
                     self.SetCurrent(self.context)
                 else:
                     self.SetCurrent()
-            glViewport(0, 0, self.w, self.h)
+            gl.glViewport(0, 0, self.w, self.h)
 
     def OnIdle(self, event):
         pass
@@ -290,8 +294,8 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
     def setup_viewing_volume(self):
         aspect = self.w / max(1, self.h)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
         near, far = self.get_clipping_distances()
         if self.orthographic:
             s = self.minimum_covering_sphere
@@ -309,9 +313,9 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
             else:
                 left *= aspect
                 right *= aspect
-            glOrtho(left, right, bottom, top, near, far)
+            gl.glOrtho(left, right, bottom, top, near, far)
         else:
-            gluPerspective(self.field_of_view_y, aspect, near, far)
+            glu.gluPerspective(self.field_of_view_y, aspect, near, far)
         self.set_lights()
         self.setup_fog()
 
@@ -328,40 +332,40 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
 
     def setup_lighting(self):
         if self.flag_use_lights:
-            glEnable(GL_LIGHTING)
-            glEnable(GL_LIGHT0)
-            glEnable(GL_BLEND)
-            # glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glBlendFunc(GL_SRC_ALPHA, GL_ZERO)
-            glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE)
-            glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1, 1, 1, 1])
-            glLightfv(GL_LIGHT0, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_LIGHT0)
+            gl.glEnable(gl.GL_BLEND)
+            # gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ZERO)
+            gl.glLightModeli(gl.GL_LIGHT_MODEL_TWO_SIDE, gl.GL_TRUE)
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, [1, 1, 1, 1])
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
 
     def set_lights(self):
         if self.flag_use_lights:
-            glMatrixMode(GL_MODELVIEW)
-            glPushMatrix()
-            glLoadIdentity()
-            glEnable(GL_LIGHTING)
-            glEnable(GL_LIGHT0)
-            glLightfv(GL_LIGHT0, GL_POSITION, self.light0_position)
-            glPopMatrix()
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glPushMatrix()
+            gl.glLoadIdentity()
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_LIGHT0)
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, self.light0_position)
+            gl.glPopMatrix()
 
     def setup_fog(self):
         if self.flag_show_fog:
             near, far = self.get_clipping_distances()
             fog_start = near + self.fog_scale_factor * (far - near)
             fog_end = max(fog_start + 5, far)
-            glMatrixMode(GL_MODELVIEW)
-            glEnable(GL_FOG)
-            glFogi(GL_FOG_MODE, GL_LINEAR)
-            glFogf(GL_FOG_START, fog_start)
-            glFogf(GL_FOG_END, fog_end)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glEnable(gl.GL_FOG)
+            gl.glFogi(gl.GL_FOG_MODE, gl.GL_LINEAR)
+            gl.glFogf(gl.GL_FOG_START, fog_start)
+            gl.glFogf(gl.GL_FOG_END, fog_end)
             b = self.background_rgb
-            glFogfv(GL_FOG_COLOR, [b[0], b[1], b[2], 1.0])
+            gl.glFogfv(gl.GL_FOG_COLOR, [b[0], b[1], b[2], 1.0])
         else:
-            glDisable(GL_FOG)
+            gl.glDisable(gl.GL_FOG)
 
     def set_minimum_covering_sphere(self, atoms=None):
         if atoms is None:
@@ -391,12 +395,12 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         return x, y, z
 
     def initialize_modelview(self, eye_vector=None, angle=None):
-        glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
         self.setup_lighting()
-        gluLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0)
+        glu.gluLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0)
         translation = self.compute_home_translation()
-        glTranslated(*translation)
+        gl.glTranslated(*translation)
         rc = self.minimum_covering_sphere.center()
         self.rotation_center = rc
         if eye_vector is None:
@@ -430,10 +434,10 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         for f in animation_stepper(
             time_move=self.animation_time, move_factor=move_factor
         ):
-            glMatrixMode(GL_MODELVIEW)
-            glLoadIdentity()
-            glTranslated(f * dx, f * dy, f * dz)
-            glMultMatrixd(mvm)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+            gl.glTranslated(f * dx, f * dy, f * dz)
+            gl.glMultMatrixd(mvm)
             self.OnRedraw()
 
     def mark_rotation(self):
@@ -457,8 +461,8 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         for f in animation_stepper(
             time_move=self.animation_time, move_factor=self.rotation_move_factor(angle)
         ):
-            glMatrixMode(GL_MODELVIEW)
-            glLoadMatrixd(mvm)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadMatrixd(mvm)
             gltbx.util.rotate_object_about_eye_vector(
                 xcenter=rc[0],
                 ycenter=rc[1],
@@ -480,10 +484,10 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         for f in animation_stepper(
             time_move=self.animation_time, move_factor=move_factor
         ):
-            glMatrixMode(GL_MODELVIEW)
-            glLoadIdentity()
-            glTranslated(f * dx, f * dy, 0)
-            glMultMatrixd(mvm)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+            gl.glTranslated(f * dx, f * dy, 0)
+            gl.glMultMatrixd(mvm)
             self.OnRedraw()
 
     def ZoomOnSelection(self, xyzs):
@@ -545,7 +549,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
     def do_AutoSpin(self):
         spin_factor = 0.05
         rc = self.rotation_center
-        glMatrixMode(GL_MODELVIEW)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
         gltbx.util.rotate_object_about_eye_x_and_y(
             spin_factor, rc[0], rc[1], rc[2], self.yspin, self.xspin, 0, 0
         )
@@ -600,12 +604,12 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         winz = []
         rc = self.rotation_center
         rc_eye = gltbx.util.object_as_eye_coordinates(rc)
-        assert gluProject(rc[0], rc[1], rc[2], model, proj, view, winx, winy, winz)
+        assert glu.gluProject(rc[0], rc[1], rc[2], model, proj, view, winx, winy, winz)
         objx = []
         objy = []
         objz = []
         win_height = max(1, self.w)
-        assert gluUnProject(
+        assert glu.gluUnProject(
             winx[0],
             winy[0] + 0.5 * win_height,
             winz[0],
@@ -635,7 +639,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
             objx = []
             objy = []
             objz = []
-            ok = gluUnProject(
+            ok = glu.gluUnProject(
                 mouse_xy[0],
                 self.h - mouse_xy[1],
                 winz,
@@ -658,7 +662,7 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         else:
             self.SetCurrent()
         if self.GL_uninitialised:
-            glViewport(0, 0, self.w, self.h)
+            gl.glViewport(0, 0, self.w, self.h)
             self.InitGL()
             self.GL_uninitialised = 0
         self.OnRedrawGL(event)
@@ -686,12 +690,12 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         self.setup_distances()
         self.setup_viewing_volume()
         gltbx.util.handle_error()
-        glClear(GL_COLOR_BUFFER_BIT)
-        glClear(GL_DEPTH_BUFFER_BIT)
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
         _ = gltbx.util.get_gl_modelview_matrix()
         self.DrawGL()
         gltbx.util.handle_error()
-        glFlush()
+        gl.glFlush()
         self.SwapBuffers()
         if event is not None:
             event.Skip()
@@ -700,9 +704,9 @@ class wxGLWindow(wx.glcanvas.GLCanvas):
         mv_depth = [0]
         pr_depth = [0]
         tx_depth = [0]
-        glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, mv_depth)
-        glGetIntegerv(GL_PROJECTION_STACK_DEPTH, pr_depth)
-        glGetIntegerv(GL_TEXTURE_STACK_DEPTH, tx_depth)
+        gl.glGetIntegerv(gl.GL_MODELVIEW_STACK_DEPTH, mv_depth)
+        gl.glGetIntegerv(gl.GL_PROJECTION_STACK_DEPTH, pr_depth)
+        gl.glGetIntegerv(gl.GL_TEXTURE_STACK_DEPTH, tx_depth)
         print(
             "Modelview: %d  Projection: %d  Texture: %d"
             % (mv_depth[0], pr_depth[0], tx_depth[0])
@@ -838,7 +842,7 @@ class show_points_and_lines_mixin(wxGLWindow):
     def InitGL(self):
         gltbx.util.handle_error()
         b = self.background_rgb
-        glClearColor(b[0], b[1], b[2], 0.0)
+        gl.glClearColor(b[0], b[1], b[2], 0.0)
         self.minimum_covering_sphere_display_list = None
         self.initialize_modelview()
         gltbx.util.handle_error()
@@ -865,14 +869,14 @@ class show_points_and_lines_mixin(wxGLWindow):
             c = s.center()
             r = s.radius()
             gray = 0.3
-            glColor3f(gray, gray, gray)
-            glBegin(GL_POLYGON)
+            gl.glColor3f(gray, gray, gray)
+            gl.glBegin(gl.GL_POLYGON)
             for i in range(360):
                 a = i * math.pi / 180
                 rs = r * math.sin(a)
                 rc = r * math.cos(a)
-                glVertex3f(c[0], c[1] + rs, c[2] + rc)
-            glEnd()
+                gl.glVertex3f(c[0], c[1] + rs, c[2] + rc)
+            gl.glEnd()
             self.draw_cross_at(c, color=(1, 0, 0))
             self.minimum_covering_sphere_display_list.end()
         self.minimum_covering_sphere_display_list.call()
@@ -881,7 +885,7 @@ class show_points_and_lines_mixin(wxGLWindow):
         if self.points_display_list is None:
             self.points_display_list = gltbx.gl_managed.display_list()
             self.points_display_list.compile()
-            glLineWidth(1)
+            gl.glLineWidth(1)
             for point in self.points:
                 self.draw_cross_at(point)
             self.points_display_list.end()
@@ -898,12 +902,12 @@ class show_points_and_lines_mixin(wxGLWindow):
                     color = self.line_colors.get(tuple(reversed(i_seqs)))
                     if color is None:
                         color = (1, 0, 1)
-                glColor3f(*color)
-                glLineWidth(self.line_width)
-                glBegin(GL_LINES)
-                glVertex3f(*self.points[i_seqs[0]])
-                glVertex3f(*self.points[i_seqs[1]])
-                glEnd()
+                gl.glColor3f(*color)
+                gl.glLineWidth(self.line_width)
+                gl.glBegin(gl.GL_LINES)
+                gl.glVertex3f(*self.points[i_seqs[0]])
+                gl.glVertex3f(*self.points[i_seqs[1]])
+                gl.glEnd()
             self.lines_display_list.end()
         self.lines_display_list.call()
 
@@ -913,54 +917,54 @@ class show_points_and_lines_mixin(wxGLWindow):
             font.setup_call_lists()
             self.labels_display_list = gltbx.gl_managed.display_list()
             self.labels_display_list.compile()
-            glColor3f(*color)
+            gl.glColor3f(*color)
             for label, point in zip(self.labels, self.points):
-                glRasterPos3f(*point)
+                gl.glRasterPos3f(*point)
                 font.render_string(label)
             self.labels_display_list.end()
         self.labels_display_list.call()
 
     def draw_cross_at(self, position_tuple, color=(1, 1, 1), f=0.1):
         (x, y, z) = position_tuple
-        glBegin(GL_LINES)
-        glColor3f(*color)
-        glVertex3f(x - f, y, z)
-        glVertex3f(x + f, y, z)
-        glVertex3f(x, y - f, z)
-        glVertex3f(x, y + f, z)
-        glVertex3f(x, y, z - f)
-        glVertex3f(x, y, z + f)
-        glEnd()
+        gl.glBegin(gl.GL_LINES)
+        gl.glColor3f(*color)
+        gl.glVertex3f(x - f, y, z)
+        gl.glVertex3f(x + f, y, z)
+        gl.glVertex3f(x, y - f, z)
+        gl.glVertex3f(x, y + f, z)
+        gl.glVertex3f(x, y, z - f)
+        gl.glVertex3f(x, y, z + f)
+        gl.glEnd()
 
     def draw_rotation_center(self):
         self.draw_cross_at(self.rotation_center, color=(0, 1, 0))
 
     def draw_spheres(self, solid=False):
-        glMatrixMode(GL_MODELVIEW)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
         gray = 0.3
-        glColor3f(gray, gray, gray)
+        gl.glColor3f(gray, gray, gray)
         if solid:
-            glEnable(GL_LIGHTING)
-            glEnable(GL_LIGHT0)
-            glLightfv(GL_LIGHT0, GL_AMBIENT, [1, 1, 1, 1])
-            glLightfv(GL_LIGHT0, GL_POSITION, [0, 0, 1, 0])
-            glEnable(GL_BLEND)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, [1, 1, 1, 0.5])
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_LIGHT0)
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, [1, 1, 1, 1])
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, [0, 0, 1, 0])
+            gl.glEnable(gl.GL_BLEND)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            gl.glMaterialfv(gl.GL_FRONT, gl.GL_DIFFUSE, [1, 1, 1, 0.5])
             sphere = gltbx.util.SolidSphere
             grid = 50
         else:
             sphere = gltbx.util.WireSphere
             grid = 20
         for i, (x, r) in enumerate(self.spheres):
-            glPushMatrix()
-            glTranslated(*(x))
+            gl.glPushMatrix()
+            gl.glTranslated(*(x))
             sphere(radius=r, slices=grid, stacks=grid)
-            glPopMatrix()
+            gl.glPopMatrix()
         if solid:
-            glDisable(GL_LIGHTING)
-            glDisable(GL_LIGHT0)
-            glDisable(GL_BLEND)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glDisable(gl.GL_LIGHT0)
+            gl.glDisable(gl.GL_BLEND)
 
     def process_pick_points(self):
         line = scitbx.math.line_given_points(self.pick_points)

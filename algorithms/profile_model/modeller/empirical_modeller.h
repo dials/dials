@@ -228,6 +228,20 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @return The accessor
+     */
+    int3 datasize() const {
+      return int3(accessor_[0], accessor_[1], accessor_[2]);
+    }
+
+    /**
+     * @return The threshold
+     */
+    double threshold() const {
+      return threshold_;
+    }
+
+    /**
      * @return Is the profile valid
      */
     bool valid(std::size_t index) const {

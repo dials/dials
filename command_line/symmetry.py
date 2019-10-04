@@ -1,4 +1,4 @@
-from __future__ import division, absolute_import, print_function
+from __future__ import absolute_import, division, print_function
 
 import copy
 import logging
@@ -55,8 +55,6 @@ partiality_threshold = 0.99
 output {
   log = dials.symmetry.log
     .type = str
-  debug_log = dials.symmetry.debug.log
-    .type = str
   experiments = "symmetrized.expt"
     .type = path
   reflections = "symmetrized.refl"
@@ -64,7 +62,6 @@ output {
   json = dials.symmetry.json
     .type = path
 }
-
 """,
     process_includes=True,
 )
@@ -159,7 +156,6 @@ reflections.
 Examples::
 
   dials.symmetry models.expt observations.refl
-
 """
 
 
@@ -180,9 +176,7 @@ def run(args):
     )
 
     # Configure the logging
-    log.config(
-        verbosity=options.verbose, info=params.output.log, debug=params.output.debug_log
-    )
+    log.config(verbosity=options.verbose, logfile=params.output.log)
 
     from dials.util.version import dials_version
 

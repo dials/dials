@@ -10,10 +10,11 @@ import six
 from cctbx import uctbx
 from dials.util.observer import Observer, singleton
 from dials.algorithms.scaling.plots import (
-    plot_scaling_models,
     plot_outliers,
     normal_probability_plot,
+    error_model_variance_plot,
 )
+from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
@@ -159,7 +160,6 @@ were considered for use when refining the scaling model.
 
 @singleton
 class ScalingHTMLGenerator(Observer):
-
     """
     Observer to make a html report
     """
@@ -201,7 +201,6 @@ class ScalingHTMLGenerator(Observer):
 
 @singleton
 class ScalingModelObserver(Observer):
-
     """
     Observer to record scaling model data and make model plots.
     """
@@ -306,7 +305,6 @@ class ScalingOutlierObserver(Observer):
 
 @singleton
 class ErrorModelObserver(Observer):
-
     """
     Observer to record scaling error model data and make a plot.
     """
@@ -326,6 +324,9 @@ class ErrorModelObserver(Observer):
                 scaler.experiment.scaling_model.error_model.sigmaprime
                 * self.data["inv_scale"]
             )
+            self.data[
+                "binning_info"
+            ] = scaler.experiment.scaling_model.error_model.binning_info
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -335,12 +336,12 @@ class ErrorModelObserver(Observer):
             d["error_model_plots"].update(
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
+            d["error_model_plots"].update(error_model_variance_plot(self.data))
         return d
 
 
 @singleton
 class FilteringObserver(Observer):
-
     """
     Observer to record data from the scaling and filtering algorithm.
     """

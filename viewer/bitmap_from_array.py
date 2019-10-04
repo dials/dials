@@ -1,18 +1,7 @@
-#!/usr/bin/env python
-#
-#  bitmap_from_array.py
-#
-#  Copyright (C) 2014 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
-import wx
-import numpy as np
 
+import numpy as np
+import wx
 from dials.array_family import flex
 from dials_viewer_ext import rgb_img
 
@@ -40,9 +29,6 @@ class wxbmp_from_np_array(object):
                 if lst_data_mask_in is not None:
                     data_3d_in_mask = lst_data_mask_in[lst_pos]
 
-                log_msg = """
-        print "len(data_3d_in) =", len(data_3d_in)
-        """
                 self.vl_max = float(np.amax(data_3d_in))
                 self.vl_min = float(np.amin(data_3d_in))
                 tmp_data2d = np.zeros((xmax, ymax), "double")
@@ -69,7 +55,6 @@ class wxbmp_from_np_array(object):
         if self._ini_wx_bmp_lst is None:
 
             NewW = 350
-            NewH = 50
 
             wx_image = wx.EmptyImage(NewW, NewW)
             wxBitmap = wx_image.ConvertToBitmap()
@@ -112,15 +97,6 @@ class wxbmp_from_np_array(object):
         flex_data_in = flex.double(transposed_data)
         flex_mask_in = flex.double(transposed_mask)
 
-        err_code = self.wx_bmp_arr.set_min_max(self.vl_min, self.vl_max)
-
-        test_log = """
-    print "self.vl_min, self.vl_max = ", self.vl_min, self.vl_max
-    print "err_code =", err_code
-    print "before crash"
-    print "palette =", palette
-    """
-
         if palette == "black2white":
             palette_num = 1
         elif palette == "white2black":
@@ -160,9 +136,5 @@ class wxbmp_from_np_array(object):
         to_become_bmp = to_become_bmp.Scale(NewW, NewH, wx.IMAGE_QUALITY_NORMAL)
 
         wxBitmap = to_become_bmp.ConvertToBitmap()
-
-        imported_from_blog_n_to_consider = """
-    c1 = wx.BitmapButton(self, -1, wx.Bitmap('/home/full/path/to/A.png'))
-    """
 
         return wxBitmap

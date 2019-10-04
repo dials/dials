@@ -21,7 +21,6 @@ def test_register_scaling_observers():
     """Test the registering of the standard scaling observers."""
 
     class Scaler(Subject):
-
         """Test scaler class"""
 
         def __init__(self):
@@ -34,7 +33,6 @@ def test_register_scaling_observers():
             )
 
     class TestScript(Subject):
-
         """Test script class"""
 
         def __init__(self):
@@ -196,6 +194,7 @@ def test_ErrorModelObserver():
     scaler.experiment.scaling_model.error_model.intensities = delta_hl
     scaler.experiment.scaling_model.error_model.inverse_scale_factors = delta_hl
     scaler.experiment.scaling_model.error_model.sigmaprime = delta_hl
+    scaler.experiment.scaling_model.error_model.binning_info = {}
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()
@@ -205,6 +204,8 @@ def test_ErrorModelObserver():
     mock_func.return_value = {"norm_plot": {}}
     mock_func2 = mock.Mock()
     mock_func2.return_value = {"isigi_plot": {}}
+    mock_func3 = mock.Mock()
+    mock_func3.return_value = {"variance_plot": {}}
 
     with mock.patch(
         "dials.algorithms.scaling.observers.normal_probability_plot", new=mock_func
@@ -212,11 +213,17 @@ def test_ErrorModelObserver():
         with mock.patch(
             "dials.algorithms.scaling.observers.i_over_sig_i_vs_i_plot", new=mock_func2
         ):
-            r = observer.make_plots()
-            assert mock_func.call_count == 1
-            assert mock_func2.call_count == 1
-            assert mock_func.call_args_list == [mock.call(observer.data)]
-            assert "error_model_plots" in r
+            with mock.patch(
+                "dials.algorithms.scaling.observers.error_model_variance_plot",
+                new=mock_func3,
+            ):
+                r = observer.make_plots()
+                assert mock_func.call_count == 1
+                assert mock_func2.call_count == 1
+                assert mock_func3.call_count == 1
+                assert mock_func.call_args_list == [mock.call(observer.data)]
+                assert mock_func3.call_args_list == [mock.call(observer.data)]
+                assert "error_model_plots" in r
 
 
 def example_refls():
@@ -273,7 +280,6 @@ def test_MergingStatisticsObserver():
     assert "scale_vs_batch" in observer.data
 
     class MockResolution(object):
-
         """A Mock class for ResolutionPlotsAndStats and IntensityStatisticsPlots."""
 
         def __init__(self, *_, **__):

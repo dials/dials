@@ -77,4 +77,22 @@ namespace dials_scaling { namespace boost_python {
         (arg("s0_selection"), arg("s1_selection"), arg("coefficients_list")));
   }
 
+  void export_gaussian_smoother_first_fixed() {
+    class_<GaussianSmootherFirstFixed>("GaussianSmootherFirstFixed", no_init)
+      .def(init<vec2<double>, std::size_t>((arg("x_range"), arg("num_intervals"))))
+      .def("set_smoothing", &GaussianSmootherFirstFixed::set_smoothing)
+      .def("num_values", &GaussianSmootherFirstFixed::num_values)
+      .def("num_samples", &GaussianSmootherFirstFixed::num_samples)
+      .def("num_average", &GaussianSmootherFirstFixed::num_average)
+      .def("sigma", &GaussianSmootherFirstFixed::sigma)
+      .def("spacing", &GaussianSmootherFirstFixed::spacing)
+      .def("positions", &GaussianSmootherFirstFixed::positions)
+      .def("value_weight", &GaussianSmootherFirstFixed::value_weight)
+      .def("value_weight_first_fixed",
+           &GaussianSmootherFirstFixed::value_weight_first_fixed)
+      .def("multi_value_weight", &GaussianSmootherFirstFixed::multi_value_weight)
+      .def("multi_value_weight_first_fixed",
+           &GaussianSmootherFirstFixed::multi_value_weight_first_fixed);
+  }
+
 }}  // namespace dials_scaling::boost_python

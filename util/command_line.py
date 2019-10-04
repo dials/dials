@@ -1,13 +1,3 @@
-#
-# command_line.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import time
@@ -166,7 +156,6 @@ class ProgressBar:
             self._title = string
         else:
             string = ""
-
         """ Print the 'end of comand' string."""
         if self._estimate_time:
             # Get the time string

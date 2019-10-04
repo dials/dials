@@ -6,15 +6,16 @@ from __future__ import absolute_import, division, print_function
 
 import itertools
 from copy import deepcopy
+import pkg_resources
 
 from dials.algorithms.scaling.observers import register_merging_stats_observers
 from libtbx.table_utils import simple_table
+from libtbx import phil
 from scitbx.array_family import flex
 import six
 
 
 class CrossValidator(object):
-
     """Abstract class defining common methods for cross validation and methods
     that must be implemented for concrete implementations"""
 
@@ -128,7 +129,6 @@ class CrossValidator(object):
 
 
 class DialsScaleCrossValidator(CrossValidator):
-
     """An implementation of the CrossValidator for running dials.scale"""
 
     results_metadata = {  # metadata used when constructing the results table
@@ -161,75 +161,54 @@ class DialsScaleCrossValidator(CrossValidator):
         return result
 
     def get_parameter_type(self, name):
-        """Find the parameter type for a discreet phil option - bool or choice."""
-        # Note - ideally could inspect the phil_scope?
-        if name in ["outlier_rejection", "model"]:
-            return "choice"
-        elif name in [
-            "absorption_term",
-            "decay_term",
-            "scale_term",
-            "modulation_term",
-            "optimise_errors",
-            "full_matrix",
-            "concurrent",
-            "target_cycle",
-        ]:
-            return "bool"
-        elif name in [
-            "lmax",
-            "n_modulation_bins",
-            "n_resolution_bins",
-            "n_absorption_bins",
-        ]:
-            return "int"
-        elif name in [
-            "surface_weight",
-            "scale_interval",
-            "decay_interval",
-            "d_min",
-            "d_max",
-            "outlier_zmax",
-        ]:
-            return "float"
+        """Find the parameter type for a scaling phil option."""
+        phil_scope = phil.parse(
+            """include scope dials.command_line.scale.phil_scope""",
+            process_includes=True,
+        )
+        obj = phil.find_scope(phil_scope, name)
+        if not obj:
+            raise ValueError(
+                """Unable to resolve %s in the phil scope, make sure full phil path
+is provided. For example, physical.decay_correction rather than decay_correction"""
+                % name
+            )
+        return obj.type.phil_type  # a str: "int", "bool" etc
 
     def set_parameter(self, params, name, val):
         """Find the name in the params scope extract and set it to the val"""
-        # Note: must be a better way to do this?
-        if name in [
-            "lmax",
-            "n_modulation_bins",
-            "n_resolution_bins",
-            "n_absorption_bins",
-        ]:
-            params.parameterisation.__setattr__(name, int(val))  # convert float to int
-        elif name in [
-            "scale_term",
-            "scale_interval",
-            "decay_term",
-            "decay_interval",
-            "absorption_term",
-            "surface_weight",
-            "modulation_term",
-        ]:
-            params.parameterisation.__setattr__(name, val)
-        elif name in ["optimise_errors"]:
-            params.weighting.__setattr__(name, val)
-        elif name in ["d_min", "d_max"]:  # But what about biasing by n_refl?
-            params.cut_data.__setattr__(name, val)
-        elif name in [
-            "target_cycle",
-            "concurrent",
-            "full_matrix",
-            "outlier_zmax",
-            "outlier_rejection",
-        ]:
-            params.scaling_options.__setattr__(name, val)
-        elif name in ["model"]:
-            params.__setattr__(name, val)
-        else:
-            assert 0, "Unable to set chosen attribute " + str(name) + "=" + str(val)
-        return params
+        if name == "model":
+            params.model = val
+            return params
+        available_models = [
+            entry_point.name
+            for entry_point in pkg_resources.iter_entry_points(
+                "dxtbx.scaling_model_ext"
+            )
+        ]
+        phil_branches = [
+            params.weighting.error_model,
+            params.cut_data,
+            params.scaling_options,
+            params.reflection_selection,
+        ]
+        if params.model:
+            phil_branches.append(params.__getattribute__(str(params.model)))
+        elif ("." in name) and (name.split(".")[0] in available_models):
+            # if the user hasnt specified the model, but have done
+            # e.g physical.parameter = *, then set model=physical
+            params.model = name.split(".")[0]
+            phil_branches.append(params.__getattribute__(str(params.model)))
+        if "." in name:  # handle e.g physical.absorption_correction
+            name = name.split(".")[-1]
+        for branch in phil_branches:
+            try:
+                branch.__setattr__(name, val)
+                return params
+            except AttributeError:
+                pass
+        # if get here, haven't found what we're trying to set
+        raise ValueError("Unable to set chosen attribute " + str(name) + "=" + str(val))
 
     def set_free_set_offset(self, params, n):
         """Set the free set offset in the correct place in the scope"""

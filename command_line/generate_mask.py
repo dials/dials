@@ -1,15 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# generate_mask.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
+# coding: utf-8
 """
 Mask images to remove unwanted pixels.
 
@@ -27,7 +16,6 @@ Examples::
     untrusted.circle=200,200,100
 
   dials.generate_mask models.expt resolution.d_max=2.00
-
 """
 
 from __future__ import absolute_import, division, print_function
@@ -73,7 +61,6 @@ phil_scope = phil.parse(
     }
 
     include scope dials.util.masking.phil_scope
-
     """,
     process_includes=True,
 )
@@ -173,7 +160,7 @@ def run(phil=phil_scope, args=None):
     experiments = flatten_experiments(params.input.experiments)
 
     # Configure logging
-    dials.util.log.config(options.verbose, info=params.output.log)
+    dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
     # Check number of args
     if len(experiments) == 0:

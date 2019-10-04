@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# algorithm.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -20,7 +9,6 @@ class BackgroundAlgorithm(object):
         Initialise the algorithm.
 
         :param experiments: The list of experiments
-
         """
         pass
 
@@ -29,7 +17,6 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
         from dials.algorithms.background.median import create
         from dials.array_family import flex
@@ -42,5 +29,5 @@ class BackgroundAlgorithm(object):
             )
         else:
             success = create(reflections, image_volume)
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success

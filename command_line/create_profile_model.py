@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# dials.create_profile_model.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -28,7 +17,6 @@ occasions it may be desirable to compute the profile model independently.
 Examples::
 
   dials.create_profile_model models.expt observations.refl
-
 """
 
 phil_scope = parse(
@@ -212,7 +200,6 @@ class Script(object):
     def filter_reference_pixels(self, reference, experiments):
         """
         Set any pixel closer to other reflections to background
-
         """
         modified_count = 0
         for experiment, indices in reference.iterate_experiments_and_indices(

@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# general.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
@@ -22,7 +11,6 @@ class BackgroundAlgorithm(object):
         :param experiments: The list of experiments
         :param outlier: The outlier rejection algorithm
         :param model: The background model algorithm
-
         """
         from dials.algorithms.background.simple import Creator
         from dials.algorithms.background.simple import TruncatedOutlierRejector
@@ -81,7 +69,6 @@ class BackgroundAlgorithm(object):
         Compute the backgrond.
 
         :param reflections: The list of reflections
-
         """
         from dials.array_family import flex
 
@@ -97,7 +84,7 @@ class BackgroundAlgorithm(object):
             reflections["background.mean"] = reflections["shoebox"].mean_background()
         else:
             success = self._creator(reflections, image_volume)
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success
 
 
@@ -112,7 +99,6 @@ class SimpleBackgroundCalculatorFactory(object):
         :param experiments: The list of experiments
         :param outlier: The outlier rejection algorithm
         :param model: The background model algorithm
-
         """
         from dials.algorithms.integration.parallel_integrator import (
             SimpleBackgroundCalculator,

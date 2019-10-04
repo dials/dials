@@ -1,12 +1,3 @@
-#
-# factory.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
 from __future__ import absolute_import, division, print_function
 
 
@@ -15,7 +6,6 @@ def generate_phil_scope():
     Generate the phil scope for profile model
 
     :return: The phil scope
-
     """
     import dials.extensions
 
@@ -29,7 +19,6 @@ phil_scope = generate_phil_scope()
 class ProfileModelFactory(object):
     """
     Factory for creating profile models
-
     """
 
     @classmethod
@@ -41,7 +30,6 @@ class ProfileModelFactory(object):
         :param experiments: The experiment list
         :param reflections: The reflection table
         :return: The profile model
-
         """
         import dials.extensions
 

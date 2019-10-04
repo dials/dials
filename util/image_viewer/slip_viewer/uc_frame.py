@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-# -*- Mode: Python; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 8 -*-
-#
-# $Id
+import math
 
-import wx, math
+import wx
 
 
 class UCSettingsFrame(wx.MiniFrame):
@@ -383,7 +381,6 @@ class UCSettingsPanel(wx.Panel):
             print(d)
 
         detector = self._pyslip.tiles.raw_image.get_detector()
-        beam = self._pyslip.tiles.raw_image.get_beam()
 
         wavelength = float(self.wavelength_ctrl.GetValue())
         distance = float(self.distance_ctrl.GetValue())

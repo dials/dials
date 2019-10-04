@@ -9,7 +9,6 @@ from dials.algorithms.refinement.engine import (
     SimpleLBFGS,
     GaussNewtonIterations,
     LevenbergMarquardtIterations,
-    LBFGScurvs,
 )
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
@@ -36,6 +35,11 @@ scaling_refinery
   engine = *SimpleLBFGS GaussNewton LevMar
     .help = "The minimisation engine to use for the main scaling algorithm"
     .type = choice
+  refinement_order = *concurrent consecutive
+    .type = choice
+    .help = "Choice of whether to refine all model components concurrently, or"
+             "in a consecutive order as allowed/defined by the scaling model."
+    .expert_level = 2
   max_iterations = None
     .help = "Maximum number of iterations in refinement before termination."
             "None implies the engine supplies its own default."
@@ -107,13 +111,6 @@ def scaling_refinery(
             prediction_parameterisation=prediction_parameterisation,
             max_iterations=max_iterations,
         )
-    elif engine == "LBFGScurvs":
-        return ScalingLBFGScurvs(
-            scaler,
-            target=target,
-            prediction_parameterisation=prediction_parameterisation,
-            max_iterations=max_iterations,
-        )
     elif engine == "GaussNewton":
         return ScalingGaussNewtonIterations(
             scaler,
@@ -143,16 +140,6 @@ def error_model_refinery(engine, target, max_iterations):
             prediction_parameterisation=target,
             max_iterations=max_iterations,
         )
-    """elif engine == 'LBFGScurvs':
-    assert 0, 'LBFGS with curvatures not yet implemented'
-  elif engine == 'GaussNewton':
-    return ScalingGaussNewtonIterations(target=target,
-      prediction_parameterisation=prediction_parameterisation,
-      max_iterations=max_iterations)
-  elif engine == 'LevMar':
-    return ScalingLevenbergMarquardtIterations(target=target,
-      prediction_parameterisation=prediction_parameterisation,
-      max_iterations=max_iterations)"""
 
 
 def print_step_table(refinery):
@@ -209,6 +196,14 @@ class ScalingRefinery(object):
         self._rmsd_tolerance = scaler.params.scaling_refinery.rmsd_tolerance
         self._parameters = prediction_parameterisation
 
+    @property
+    def rmsd_tolerance(self):
+        return self._rmsd_tolerance
+
+    def set_tolerance(self, tolerance):
+        """Set a tolerance."""
+        self._rmsd_tolerance = tolerance
+
     def test_rmsd_convergence(self):
         """Test for convergence of RMSDs"""
 
@@ -257,7 +252,6 @@ class ScalingRefinery(object):
 
     def return_scaler(self):
         """return scaler method"""
-        from dials.algorithms.scaling.scaler import MultiScalerBase
 
         print_step_table(self)
 
@@ -270,9 +264,6 @@ class ScalingRefinery(object):
                 for i, scaler in enumerate(self._scaler.active_scalers):
                     scaler.update_var_cov(self._parameters.apm_list[i])
                     scaler.experiment.scaling_model.set_scaling_model_as_scaled()
-
-        if not isinstance(self._scaler, MultiScalerBase):
-            self._scaler.experiment.scaling_model.normalise_components()
 
         logger.debug("\n" + str(self._scaler.experiment.scaling_model))
 
@@ -413,7 +404,7 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         else:
           g = gi"""
 
-        restraints = self._target.compute_restraints_functional_gradients_and_curvatures(
+        restraints = self._target.compute_restraints_functional_gradients(
             self._parameters
         )
 
@@ -425,34 +416,6 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         log_memory_usage()
         logger.debug("\n")
         return f, g, None
-
-
-class ScalingLBFGScurvs(ScalingRefinery, LBFGScurvs):
-    """Adapt Refinery for L-BFGS minimiser"""
-
-    def __init__(self, scaler, *args, **kwargs):
-        logger.info("Performing a round of scaling with an LBFGS minimizer. \n")
-        LBFGScurvs.__init__(self, *args, **kwargs)
-        ScalingRefinery.__init__(self, scaler, *args, **kwargs)
-        self._target.curvatures = True
-
-    def compute_functional_gradients_and_curvatures(self):
-        """overwrite method to avoid calls to 'blocks' methods of target"""
-
-        self.prepare_for_step()
-
-        f, g, curv = self._target.compute_functional_gradients_and_curvatures()
-
-        # restraints terms
-        restraints = (
-            self._target.compute_restraints_functional_gradients_and_curvatures()
-        )
-
-        if restraints:
-            f += restraints[0]
-            g += restraints[1]
-
-        return f, g, curv
 
 
 class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
@@ -467,12 +430,10 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
         logger.debug("Current parameters %s" % ["%.6f" % i for i in self.x])
         self.prepare_for_step()
 
-        f, g, _ = self._target.compute_functional_gradients_and_curvatures()
+        f, g = self._target.compute_functional_gradients()
 
         # restraints terms
-        restraints = (
-            self._target.compute_restraints_functional_gradients_and_curvatures()
-        )
+        restraints = self._target.compute_restraints_functional_gradients()
 
         if restraints:
             f += restraints[0]

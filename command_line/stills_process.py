@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import absolute_import, division, print_function
 
 import copy
@@ -12,6 +10,7 @@ import six.moves.cPickle as pickle
 from six.moves import StringIO
 
 import dials.util
+from dials.util import log
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentList
@@ -296,7 +295,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        from dials.util import log
         from libtbx import easy_mp
 
         # Parse the command line
@@ -326,11 +324,7 @@ class Script(object):
         st = time.time()
 
         # Configure logging
-        log.config(
-            verbosity=options.verbose,
-            info="dials.process.log",
-            debug="dials.process.debug.log",
-        )
+        log.config(verbosity=options.verbose, logfile="dials.process.log")
 
         bad_phils = [f for f in all_paths if os.path.splitext(f)[1] == ".phil"]
         if len(bad_phils) > 0:
@@ -520,8 +514,7 @@ class Script(object):
 
             # Configure the logging
             if params.output.logging_dir is None:
-                info_path = ""
-                debug_path = ""
+                logfile = None
             else:
                 log_path = os.path.join(
                     params.output.logging_dir, "log_rank%04d.out" % rank
@@ -535,16 +528,11 @@ class Script(object):
                 sys.stderr = open(error_path, "a", buffering=0)
                 print("Should be redirected now")
 
-                info_path = os.path.join(
+                logfile = os.path.join(
                     params.output.logging_dir, "info_rank%04d.out" % rank
                 )
-                debug_path = os.path.join(
-                    params.output.logging_dir, "debug_rank%04d.out" % rank
-                )
 
-            from dials.util import log
-
-            log.config(verbosity=options.verbose, info=info_path, debug=debug_path)
+            log.config(verbosity=options.verbose, logfile=logfile)
 
             if size <= 2:  # client/server only makes sense for n>2
                 subset = [
@@ -1231,9 +1219,9 @@ class Processor(object):
         logger.info("Processing reference reflections")
         logger.info(" read %d strong spots" % len(reference))
         mask = reference.get_flags(reference.flags.indexed)
-        rubbish = reference.select(mask == False)
+        rubbish = reference.select(~mask)
         if mask.count(False) > 0:
-            reference.del_selected(mask == False)
+            reference.del_selected(~mask)
             logger.info(" removing %d unindexed reflections" % mask.count(True))
         if len(reference) == 0:
             raise Sorry(

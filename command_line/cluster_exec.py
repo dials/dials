@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# cluster.dials.exec
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-#
 # LIBTBX_SET_DISPATCHER_NAME cluster.dials.exec
 
 from __future__ import absolute_import, division, print_function
@@ -17,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 def get_cwd():
     """
     Get the current working directory
-
     """
     import sys
 
@@ -27,7 +15,6 @@ def get_cwd():
 def get_tid():
     """
     Get the task id
-
     """
     import os
 

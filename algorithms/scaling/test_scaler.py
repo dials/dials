@@ -3,15 +3,16 @@ import pytest
 from mock import Mock, MagicMock
 from scitbx import sparse
 from libtbx import phil
-from libtbx.test_utils import approx_equal
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
-from dials.algorithms.scaling.basis_functions import basis_function
-from dials.algorithms.scaling.parameter_handler import create_apm_factory
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
+from dials.algorithms.scaling.parameter_handler import (
+    create_parameter_manager_generator,
+)
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.scaler import (
     SingleScaler,
@@ -92,6 +93,7 @@ def generated_param():
     phil_scope = phil.parse(
         """
       include scope dials.algorithms.scaling.scaling_options.phil_scope
+      include scope dials.algorithms.scaling.model.model.model_phil_scope
       include scope dials.algorithms.scaling.scaling_refiner.scaling_refinery_phil_scope
   """,
         process_includes=True,
@@ -100,7 +102,7 @@ def generated_param():
     parameters, _ = optionparser.parse_args(
         args=[], quick_parse=True, show_diff_phil=False
     )
-    parameters.__inject__("model", "KB")
+    parameters.model = "KB"
     return parameters
 
 
@@ -243,7 +245,6 @@ def mock_apm():
     apm.var_cov_matrix.reshape(flex.grid(1, 1))
     apm.n_active_params = 1
     apm.n_obs = [2]
-    apm.curvatures = []
     apm.derivatives = [sparse.matrix(1, 1)]
     apm.components_list = ["scale"]
     apm.components = {
@@ -576,9 +577,9 @@ def test_SingleScaler_update_for_minimisation():
     exp = create_scaling_model(p, e, r)
     p.reflection_selection.method = "use_all"
     single_scaler = SingleScaler(p, exp[0], r)
-    apm_fac = create_apm_factory(single_scaler)
+    apm_fac = create_parameter_manager_generator(single_scaler)
     single_scaler.components["scale"].parameters /= 2.0
-    apm = apm_fac.make_next_apm()
+    apm = apm_fac.parameter_managers()[0]
 
     Ih_table = single_scaler.Ih_table.blocked_data_list[0]
     Ih_table.calc_Ih()
@@ -586,13 +587,13 @@ def test_SingleScaler_update_for_minimisation():
     assert list(Ih_table.Ih_values) == [10.0, 1.0]
     single_scaler.update_for_minimisation(apm, 0)
     # Should set new scale factors, and calculate Ih and weights.
-    bf = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 0)
+    bf = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 0)
     assert list(Ih_table.inverse_scale_factors) == list(bf[0])
     assert list(Ih_table.Ih_values) != [1.0, 10.0]
-    assert approx_equal(list(Ih_table.Ih_values), list(Ih_table.intensities / bf[0]))
+    assert list(Ih_table.Ih_values) == pytest.approx(list(Ih_table.intensities / bf[0]))
     for i in range(Ih_table.derivatives.n_rows):
         for j in range(Ih_table.derivatives.n_cols):
-            assert approx_equal(Ih_table.derivatives[i, j], bf[1][i, j])
+            assert Ih_table.derivatives[i, j] == pytest.approx(bf[1][i, j])
     assert Ih_table.derivatives.non_zeroes == bf[1].non_zeroes
 
 
@@ -695,13 +696,12 @@ def test_sf_variance_calculation():
     var_cov[1, 0] = c
     var_cov[1, 1] = b
     variances = calc_sf_variances(components, var_cov)
-    assert approx_equal(
-        list(variances),
+    assert list(variances) == pytest.approx(
         [
             b / (4.0 * (d1 ** 4.0)) + c / (d1 ** 2.0) + a,
             b / (4.0 * (d2 ** 4.0)) + c / (d2 ** 2.0) + a,
             b / (4.0 * (d3 ** 4.0)) + c / (d3 ** 2.0) + a,
-        ],
+        ]
     )
 
 
@@ -724,17 +724,17 @@ def test_multiscaler_update_for_minimisation():
 
     multiscaler = MultiScaler(p, exp, [singlescaler1, singlescaler2])
 
-    apm_fac = create_apm_factory(multiscaler)
+    apm_fac = create_parameter_manager_generator(multiscaler)
     multiscaler.single_scalers[0].components["scale"].parameters /= 2.0
     multiscaler.single_scalers[1].components["scale"].parameters *= 1.5
-    apm = apm_fac.make_next_apm()
+    apm = apm_fac.parameter_managers()[0]
     multiscaler.update_for_minimisation(apm, 0)
     multiscaler.update_for_minimisation(apm, 1)
     # bf[0], bf[1] should be list of scales and derivatives
-    s1, d1 = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 0)
-    s2, d2 = basis_function().calculate_scales_and_derivatives(apm.apm_list[1], 0)
-    s3, d3 = basis_function().calculate_scales_and_derivatives(apm.apm_list[0], 1)
-    s4, d4 = basis_function().calculate_scales_and_derivatives(apm.apm_list[1], 1)
+    s1, d1 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 0)
+    s2, d2 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[1], 0)
+    s3, d3 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[0], 1)
+    s4, d4 = RefinerCalculator.calculate_scales_and_derivatives(apm.apm_list[1], 1)
     expected_scales_for_block_1 = s1
     expected_scales_for_block_1.extend(s2)
     expected_scales_for_block_2 = s3

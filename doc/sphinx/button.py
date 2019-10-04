@@ -1,15 +1,12 @@
 from __future__ import absolute_import, division, print_function
-from docutils import nodes
+
 import jinja2
+from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.parsers.rst.directives import unchanged
 
 BUTTON_TEMPLATE = jinja2.Template(
-    u"""
-<a href="{{ link }}">
-                                  <span class="button">{{ text }}</span>
-</a>
-"""
+    u'<a href="{{ link }}" class="button"><span>{{ text }}</span></a>'
 )
 
 # placeholder node for document graph
@@ -26,11 +23,6 @@ class ButtonDirective(Directive):
     # it will insert a button_node into the document that will
     # get visisted during the build phase
     def run(self):
-        env = self.state.document.settings.env
-        app = env.app
-
-        app.add_stylesheet("button.css")
-
         node = button_node()
         node["text"] = self.options["text"]
         node["link"] = self.options["link"]
@@ -50,3 +42,4 @@ def html_visit_button_node(self, node):
 def setup(app):
     app.add_node(button_node, html=(html_visit_button_node, None))
     app.add_directive("button", ButtonDirective)
+    return {"parallel_read_safe": True}

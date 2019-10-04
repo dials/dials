@@ -220,7 +220,7 @@ def run(args):
         exit(0)
 
     # Configure the logging
-    log.config(info="dials.detect_blanks.log")
+    log.config(logfile="dials.detect_blanks.log")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()

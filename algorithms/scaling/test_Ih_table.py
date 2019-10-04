@@ -178,9 +178,9 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert list(block.weights) == list(1.0 / large_reflection_table["variance"])
     assert "Ih_values" not in block.Ih_table
     block.calc_Ih()
-    assert list(block.Ih_values) == [
-        x / 2.0 for x in [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]
-    ]
+    assert list(block.Ih_values) == pytest.approx(
+        [x / 2.0 for x in [90.0, 100.0, 90.0, 60.0, 30.0, 50.0, 50.0]]
+    )
 
     with pytest.raises(AssertionError):
         block.add_data(0, group_ids, large_reflection_table)
@@ -189,15 +189,9 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
 
     # Test update error model
     block.update_error_model(mock_error_model())
-    assert list(block.weights) == [
-        1.0,
-        1.0 / 2.0,
-        1.0 / 3.0,
-        1.0 / 4.0,
-        1.0 / 5.0,
-        1.0 / 6.0,
-        1.0 / 7.0,
-    ]
+    assert list(block.weights) == pytest.approx(
+        [1.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 4.0, 1.0 / 5.0, 1.0 / 6.0, 1.0 / 7.0]
+    )
 
     # Test select method
     new_block = block.select(flex.bool([True, False, True, False, True, False, False]))
@@ -218,7 +212,9 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert new_block.h_expand_matrix[0, 1] == 1
     assert new_block.h_expand_matrix[1, 2] == 1
 
-    assert list(new_block.Ih_values) == [x / 2.0 for x in [90.0, 90.0, 30.0]]
+    assert list(new_block.Ih_values) == pytest.approx(
+        [x / 2.0 for x in [90.0, 90.0, 30.0]]
+    )
 
     # test setter methods
     new_block.inverse_scale_factors = flex.double([1.0, 2.0, 3.0])
@@ -248,7 +244,9 @@ def test_IhTableblock_onedataset(large_reflection_table, test_sg):
     assert new_block.h_expand_matrix[0, 1] == 1
     assert new_block.h_expand_matrix[1, 2] == 1
 
-    assert list(new_block.Ih_values) == [x / 2.0 for x in [90.0, 90.0, 30.0]]
+    assert list(new_block.Ih_values) == pytest.approx(
+        [x / 2.0 for x in [90.0, 90.0, 30.0]]
+    )
 
 
 def test_IhTableblock_twodatasets(large_reflection_table, test_sg):
@@ -502,7 +500,7 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
 
     Ih_table.update_error_model(em)
     for block in Ih_table.Ih_table_blocks:
-        assert list(block.weights) == [2.0] * block.size
+        assert list(block.weights) == pytest.approx([2.0] * block.size)
     Ih_table.reset_error_model()
     for block in Ih_table.Ih_table_blocks:
         assert list(block.weights) != [2.0] * block.size
@@ -562,16 +560,22 @@ def test_IhTable_freework(large_reflection_table, small_reflection_table, test_s
         (0, 4, 0),
         (10, 0, 0),
     ]
-    assert list(arr.data()) == [x / 2.0 for x in [100.0, 60.0, 30.0, 30.0, 10.0]]
-    assert list(arr.sigmas()) == [
-        (x / 4.0) ** 0.5 for x in [100.0, 60.0, 30.0, 30.0, 10.0]
-    ]
+    assert list(arr.data()) == pytest.approx(
+        [x / 2.0 for x in [100.0, 60.0, 30.0, 30.0, 10.0]]
+    )
+    assert list(arr.sigmas()) == pytest.approx(
+        [(x / 4.0) ** 0.5 for x in [100.0, 60.0, 30.0, 30.0, 10.0]]
+    )
 
     arr = Ih_table.as_miller_array(unit_cell, return_free_set_data=True)
     assert arr.size() == 4
     assert list(arr.indices()) == [(0, 0, 2), (1, 0, 0), (1, 0, 0), (1, 0, 0)]
-    assert list(arr.data()) == [x / 2.0 for x in [40.0, 100.0, 80.0, 60.0]]
-    assert list(arr.sigmas()) == [(x / 4.0) ** 0.5 for x in [50.0, 90.0, 90.0, 60.0]]
+    assert list(arr.data()) == pytest.approx(
+        [x / 2.0 for x in [40.0, 100.0, 80.0, 60.0]]
+    )
+    assert list(arr.sigmas()) == pytest.approx(
+        [(x / 4.0) ** 0.5 for x in [50.0, 90.0, 90.0, 60.0]]
+    )
 
 
 def test_set_Ih_values_to_target(test_sg):
@@ -585,21 +589,12 @@ def test_set_Ih_values_to_target(test_sg):
     Ih_table.calc_Ih()
     # First check that values are set up correctly.
     block_list = Ih_table.blocked_data_list
-    assert list(block_list[0].Ih_values) == [
-        6.0,
-        17.0 / 3.0,
-        17.0 / 3.0,
-        6.0,
-        17.0 / 3.0,
-    ]
-    assert list(block_list[1].Ih_values) == [
-        16.0 / 3.0,
-        16.0 / 3.0,
-        7.0,
-        16.0 / 3.0,
-        7.0,
-        7.0,
-    ]
+    assert list(block_list[0].Ih_values) == pytest.approx(
+        [6.0, 17.0 / 3.0, 17.0 / 3.0, 6.0, 17.0 / 3.0]
+    )
+    assert list(block_list[1].Ih_values) == pytest.approx(
+        [16.0 / 3.0, 16.0 / 3.0, 7.0, 16.0 / 3.0, 7.0, 7.0]
+    )
 
     target = IhTable(
         [generated_refl_for_splitting_1(), generated_refl_for_splitting_2()],

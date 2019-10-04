@@ -18,7 +18,6 @@ Examples::
   dials.spot_counts_per_image imported.expt strong.refl
 
   dials.spot_counts_per_image imported.expt strong.refl plot=per_image.png
-
 """
 
 phil_scope = iotbx.phil.parse(
@@ -57,7 +56,7 @@ def run(args):
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
 
-    if not any([reflections, experiments]):
+    if not reflections and not experiments:
         parser.print_help()
         return
 

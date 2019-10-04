@@ -1,9 +1,8 @@
-# -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
-#
-# $Id$
+# coding: utf-8
 
 from __future__ import absolute_import, division, print_function
-from six.moves import range
+
+import os
 
 import wx
 from scitbx.matrix import col
@@ -117,10 +116,9 @@ class SBSettingsPanel(wx.Panel):
 
     def OnRestoreMetrology(self, event):
         print("Not implemented")
-        return
 
     def OnSaveMetrology(self, event):
-        import pycbf, os
+        import pycbf
 
         dialog = wx.FileDialog(
             self,

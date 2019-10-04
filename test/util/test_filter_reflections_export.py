@@ -186,15 +186,13 @@ def test_IntensityReducer_instantiations():
     methods) and have an intensities list with at least one str values"""
     allowed_intensities = FilterForExportAlgorithm.allowed_intensities
     SumIntensityReducer()
-    assert all([i in allowed_intensities for i in SumIntensityReducer.intensities])
+    assert all(i in allowed_intensities for i in SumIntensityReducer.intensities)
     PrfIntensityReducer()
-    assert all([i in allowed_intensities for i in PrfIntensityReducer.intensities])
+    assert all(i in allowed_intensities for i in PrfIntensityReducer.intensities)
     SumAndPrfIntensityReducer()
-    assert all(
-        [i in allowed_intensities for i in SumAndPrfIntensityReducer.intensities]
-    )
+    assert all(i in allowed_intensities for i in SumAndPrfIntensityReducer.intensities)
     ScaleIntensityReducer()
-    assert all([i in allowed_intensities for i in ScaleIntensityReducer.intensities])
+    assert all(i in allowed_intensities for i in ScaleIntensityReducer.intensities)
 
 
 def test_FilteringReductionMethods():

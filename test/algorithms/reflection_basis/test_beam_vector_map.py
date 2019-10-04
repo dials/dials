@@ -2,9 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import random
 
-from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
-
 import pytest
+from dials.algorithms.profile_model.gaussian_rs.transform import beam_vector_map
+from scitbx import matrix
 
 
 @pytest.fixture
@@ -30,8 +30,6 @@ def sweep_and_model(dials_data):
 
 
 def test_at_corners(sweep_and_model):
-    from scitbx import matrix
-
     assert len(sweep_and_model.detector) == 1
 
     # The detector beam vectors
@@ -40,8 +38,6 @@ def test_at_corners(sweep_and_model):
     expected_size = tuple([e + 1 for e in expected_size])
     assert ds1.all() == expected_size
 
-    s0 = sweep_and_model.beam.get_s0()
-    m2 = sweep_and_model.gonio.get_rotation_axis()
     s0_length = matrix.col(sweep_and_model.beam.get_s0()).length()
 
     # Ensure a few random points are correct
@@ -58,8 +54,6 @@ def test_at_corners(sweep_and_model):
 
 
 def test_sub_division_at_corners(sweep_and_model):
-    from scitbx import matrix
-
     sweep_and_model.n_div = 2
 
     # The detector beam vectors
@@ -70,8 +64,6 @@ def test_sub_division_at_corners(sweep_and_model):
     expected_size = tuple([e * sweep_and_model.n_div + 1 for e in expected_size])
     assert ds1.all() == expected_size
 
-    s0 = sweep_and_model.beam.get_s0()
-    m2 = sweep_and_model.gonio.get_rotation_axis()
     s0_length = matrix.col(sweep_and_model.beam.get_s0()).length()
 
     # Ensure a few random points are correct
@@ -88,8 +80,6 @@ def test_sub_division_at_corners(sweep_and_model):
 
 
 def test_sub_division_at_centres(sweep_and_model):
-    from scitbx import matrix
-
     sweep_and_model.n_div = 2
 
     # The detector beam vectors
@@ -100,8 +90,6 @@ def test_sub_division_at_centres(sweep_and_model):
     expected_size = tuple([e * sweep_and_model.n_div for e in expected_size])
     assert ds1.all() == expected_size
 
-    s0 = sweep_and_model.beam.get_s0()
-    m2 = sweep_and_model.gonio.get_rotation_axis()
     s0_length = matrix.col(sweep_and_model.beam.get_s0()).length()
 
     # Ensure a few random points are correct

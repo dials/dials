@@ -1,0 +1,3 @@
+Moved `dials.export format=best` to `dials.export_best` as that one needed 
+access to the format object, the rest do not, and having `dials.export` work
+in the general case seems like a better idea...

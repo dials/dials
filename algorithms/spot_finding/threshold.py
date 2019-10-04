@@ -1,33 +1,20 @@
-#
-# threshold.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 
 class ThresholdStrategy(object):
     """
     Base class for spot finder threshold strategies.
-
     """
 
     def __init__(self, **kwargs):
         """
         Initialise with key word arguments.
-
         """
         pass
 
     def __call__(self, image):
         """
         Threshold the image.
-
         """
         raise RuntimeError("Overload Me!")
 
@@ -35,13 +22,11 @@ class ThresholdStrategy(object):
 class UnimodalThresholdStrategy(ThresholdStrategy):
     """
     Unimodal histogram thresholding strategy.
-
     """
 
     def __init__(self, **kwargs):
         """
         Initialise the threshold.
-
         """
 
         # Initialise the base class
@@ -59,7 +44,6 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
 
         :param image: The image to process
         :return: The thresholded image
-
         """
         from dials.algorithms.image.threshold import maximum_deviation
         from dials.algorithms.image.threshold import probability_distribution
@@ -77,13 +61,11 @@ class UnimodalThresholdStrategy(ThresholdStrategy):
 class DispersionThresholdStrategy(ThresholdStrategy):
     """
     A class implementing a 'gain' threshold.
-
     """
 
     def __init__(self, **kwargs):
         """
         Set the threshold algorithm up
-
         """
 
         # Initialise the base class
@@ -110,7 +92,6 @@ class DispersionThresholdStrategy(ThresholdStrategy):
         :param image: The image to process
         :param mask: The mask to use
         :return: The thresholded image
-
         """
         from dials.algorithms.image import threshold
         from dials.array_family import flex
@@ -149,13 +130,11 @@ class DispersionThresholdStrategy(ThresholdStrategy):
 class DispersionExtendedThresholdStrategy(ThresholdStrategy):
     """
     A class implementing a 'gain' threshold.
-
     """
 
     def __init__(self, **kwargs):
         """
         Set the threshold algorithm up
-
         """
 
         # Initialise the base class
@@ -182,7 +161,6 @@ class DispersionExtendedThresholdStrategy(ThresholdStrategy):
         :param image: The image to process
         :param mask: The mask to use
         :return: The thresholded image
-
         """
         from dials.algorithms.image import threshold
         from dials.array_family import flex

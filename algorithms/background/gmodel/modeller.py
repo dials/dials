@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-#
-# algorithm.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: James Parkhurst
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -35,7 +24,6 @@ phil_scope = parse(
 
   niter = 10
     .type = int
-
 """
 )
 
@@ -151,5 +139,5 @@ class Creator(object):
         )
         reflections["background.mean"] = mean
         reflections["background.scale"] = scale
-        reflections.set_flags(success != True, reflections.flags.dont_integrate)
+        reflections.set_flags(~success, reflections.flags.dont_integrate)
         return success

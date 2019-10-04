@@ -2,7 +2,7 @@
 This module defines classes which implement the stages of the scaling algorithm.
 
 These 'scalers' act to initialise and connect various parts of the scaling
-algorithm and datastructures such as the Ih_table, basis_function etc, and
+algorithm and datastructures such as the Ih_table etc, and
 present a united interface to the main scaling algorithm for single, multi
 and targeted scaling.
 
@@ -22,7 +22,7 @@ from cctbx import crystal, sgtbx
 from dials_scaling_ext import row_multiply
 from dials_scaling_ext import calc_sigmasq as cpp_calc_sigmasq
 from dials.array_family import flex
-from dials.algorithms.scaling.basis_functions import basis_function
+from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
@@ -32,7 +32,9 @@ from dials.algorithms.scaling.scaling_refiner import (
 )
 from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
-from dials.algorithms.scaling.parameter_handler import create_apm_factory
+from dials.algorithms.scaling.parameter_handler import (
+    create_parameter_manager_generator,
+)
 from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
     DialsMergingStatisticsError,
@@ -75,7 +77,6 @@ class ScalerBase(Subject):
         self._Ih_table = None
         self._global_Ih_table = None
         self._initial_keys = []
-        self._basis_function = basis_function()
         self._final_rmsds = []
         self._removed_datasets = []
         self.error_model = None
@@ -165,12 +166,15 @@ class ScalerBase(Subject):
 
     @Subject.notify_event(event="performed_scaling")
     def perform_scaling(
-        self, target_type=ScalingTarget, engine=None, max_iterations=None
+        self,
+        target_type=ScalingTarget,
+        engine=None,
+        max_iterations=None,
+        tolerance=None,
     ):
         """Minimise the scaling model."""
-        apm_factory = create_apm_factory(self)
-        for _ in range(apm_factory.n_cycles):
-            apm = apm_factory.make_next_apm()
+        pmg = create_parameter_manager_generator(self)
+        for apm in pmg.parameter_managers():
             if not engine:
                 engine = self.params.scaling_refinery.engine
             if not max_iterations:
@@ -183,9 +187,11 @@ class ScalerBase(Subject):
                 prediction_parameterisation=apm,
                 max_iterations=max_iterations,
             )
+            if tolerance:
+                refinery.set_tolerance(tolerance)
             try:
                 refinery.run()
-            except Exception as e:
+            except RuntimeError as e:
                 logger.error(e, exc_info=True)
             ft = time.time()
             logger.info("Time taken for refinement %s", (ft - st))
@@ -200,6 +206,7 @@ class ScalerBase(Subject):
         Ih_table.calc_Ih()
         error_model = get_error_model(self.params.weighting.error_model.error_model)
         try:
+            logger.info("Performing a round of error model refinement.")
             refinery = error_model_refinery(
                 engine="SimpleLBFGS",
                 target=ErrorModelTarget(
@@ -218,7 +225,7 @@ class ScalerBase(Subject):
         else:
             error_model = refinery.return_error_model()
             logger.info(error_model)
-            error_model.minimisation_summary()
+            logger.info(error_model.minimisation_summary())
             self.update_error_model(error_model, update_Ih=update_Ih)
         return error_model
 
@@ -229,6 +236,9 @@ class ScalerBase(Subject):
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""
         self._Ih_table = []
+
+    def fix_initial_parameter(self):
+        return False
 
 
 class SingleScaler(ScalerBase):
@@ -290,6 +300,10 @@ class SingleScaler(ScalerBase):
             "\n" + "=" * 80 + "\n"
         )
         log_memory_usage()
+
+    def fix_initial_parameter(self):
+        fixed = self.experiment.scaling_model.fix_initial_parameter(self.params)
+        return fixed
 
     @staticmethod
     def get_suitable_for_scaling_sel(reflections):
@@ -357,11 +371,11 @@ class SingleScaler(ScalerBase):
     def update_for_minimisation(self, apm, block_id):
         """Update the scale factors and Ih for the next minimisation iteration."""
         apm_i = apm.apm_list[0]
-        basis_fn = self._basis_function.calculate_scales_and_derivatives(
+        scales_i, derivs_i = RefinerCalculator.calculate_scales_and_derivatives(
             apm_i, block_id
         )
-        self.Ih_table.set_derivatives(basis_fn[1], block_id)
-        self.Ih_table.set_inverse_scale_factors(basis_fn[0], block_id)
+        self.Ih_table.set_derivatives(derivs_i, block_id)
+        self.Ih_table.set_inverse_scale_factors(scales_i, block_id)
         self.Ih_table.update_weights(block_id)
         self.Ih_table.calc_Ih(block_id)
 
@@ -477,38 +491,34 @@ class SingleScaler(ScalerBase):
             self.global_Ih_table.update_error_model(error_model)
         self.experiment.scaling_model.set_error_model(error_model)
 
-    def adjust_variances(self, caller=None):
+    def adjust_variances(self, print_output=True):
         """Apply an aimless-like error model to the variances."""
         error_model = self.experiment.scaling_model.error_model
-        if error_model and self.params.weighting.output_optimised_vars:
+        if error_model:
             # Note : this action has overwritten the variances, so no further
             # error model adjustment should take place, without reinitialising from
             # the input variances (i.e. intensity.prf.variance).
-            new_var = error_model.update_variances(
+            self.reflection_table["variance"] = error_model.update_variances(
                 self.reflection_table["variance"], self.reflection_table["intensity"]
             )
-            self.reflection_table["variance"] = new_var
-            if caller is None:
-                msg = (
-                    "The error model has been used to adjust the variances for dataset {0}. \n"
-                ).format(self.reflection_table["id"][0])
-                logger.info(msg)
         # now increase the errors slightly to take into account the uncertainty in the
         # inverse scale factors
-        fractional_error = (
-            self.reflection_table["inverse_scale_factor_variance"] ** 0.5
-            / self.reflection_table["inverse_scale_factor"]
-        )
-        variance_scaling = (
-            flex.double(self.reflection_table.size(), 1.0) + fractional_error
-        )
-        self.reflection_table["variance"] *= variance_scaling
-        if caller is None:
-            msg = (
-                "The variances have been adjusted to account for the uncertainty \n"
-                "in the scaling model for dataset {0}. \n"
-            ).format(self.reflection_table["id"][0])
-            logger.info(msg)
+        if self.var_cov_matrix.non_zeroes > 0:  # parameters errors have been determined
+            fractional_error = (
+                self.reflection_table["inverse_scale_factor_variance"] ** 0.5
+                / self.reflection_table["inverse_scale_factor"]
+            )
+            variance_scaling = (
+                flex.double(self.reflection_table.size(), 1.0) + fractional_error
+            )
+            self.reflection_table["variance"] *= variance_scaling
+            if print_output:
+                logger.info(
+                    """
+The reflection table variances have been adjusted to account for the
+uncertainty in the scaling model.
+"""
+                )
 
     def _select_reflections_for_scaling(self):
         """Select a subset of reflections to use in minimisation."""
@@ -716,18 +726,12 @@ class MultiScalerBase(ScalerBase):
     def adjust_variances(self):
         """Update variances of individual reflection tables."""
         for scaler in self.active_scalers:
-            scaler.adjust_variances(caller=self)
-        if (
-            self.single_scalers[0].experiment.scaling_model.error_model
-            and self.params.weighting.output_optimised_vars
-        ):
-            logger.info(
-                "The error model has been used to adjust the variances for all \n"
-                "applicable datasets. \n"
-            )
+            scaler.adjust_variances(print_output=False)
         logger.info(
-            "The variances have been adjusted to account for the uncertainty \n"
-            "in the scaling model for all datasets. \n"
+            """
+The reflection table variances have been adjusted to account for the
+uncertainty in the scaling model for all datasets.
+"""
         )
 
     def clean_reflection_tables(self):
@@ -740,11 +744,11 @@ class MultiScalerBase(ScalerBase):
         scales = flex.double([])
         derivs = []
         for apm_i in apm.apm_list:
-            basis_fn = self._basis_function.calculate_scales_and_derivatives(
+            scales_i, derivs_i = RefinerCalculator.calculate_scales_and_derivatives(
                 apm_i, block_id
             )
-            scales.extend(basis_fn[0])
-            derivs.append(basis_fn[1])
+            scales.extend(scales_i)
+            derivs.append(derivs_i)
         deriv_matrix = sparse.matrix(scales.size(), apm.n_active_params)
         start_row_no = 0
         for j, deriv in enumerate(derivs):
@@ -758,7 +762,7 @@ class MultiScalerBase(ScalerBase):
         # The parallelisation below would work if sparse matrices were
         # pickleable (I think!) - with more benefit for larger number of datasets.'''
         """def task_wrapper(block):
-      bf = basis_function(block)
+      bf = RefinerCalculator(block)
       s, d = bf.calculate_scales_and_derivatives()
       return s, d
     blocks = apm.apm_list
@@ -981,6 +985,12 @@ class MultiScaler(MultiScalerBase):
         self._update_model_data()
         logger.info("Completed configuration of MultiScaler. \n\n" + "=" * 80 + "\n")
         log_memory_usage()
+
+    def fix_initial_parameter(self):
+        for scaler in self.active_scalers:
+            fixed = scaler.experiment.scaling_model.fix_initial_parameter(self.params)
+            if fixed:
+                return fixed
 
     def combine_intensities(self):
         """Combine reflection intensities, either jointly or separately."""

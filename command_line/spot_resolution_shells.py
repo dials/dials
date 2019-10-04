@@ -9,7 +9,6 @@ Compute resolution-wise distribution of spots
 Examples::
 
   dials.spot_resolution_shells models.expt strong.refl
-
 """
 
 phil_scope = libtbx.phil.parse(
@@ -24,24 +23,11 @@ def settings():
     return phil_scope.fetch().extract()
 
 
-def spot_resolution_shells(imagesets, reflections, params):
+def spot_resolution_shells(experiments, reflections, params):
     from dials.array_family import flex
 
-    mapped_reflections = flex.reflection_table()
-    for i, imageset in enumerate(imagesets):
-        if "imageset_id" in reflections:
-            sel = reflections["imageset_id"] == i
-        else:
-            sel = reflections["id"] == i
-        if isinstance(reflections["id"], flex.size_t):
-            reflections["id"] = reflections["id"].as_int()
-        refl = reflections.select(sel)
-        refl.centroid_px_to_mm(imageset.get_detector(), imageset.get_scan())
-        refl.map_centroids_to_reciprocal_space(
-            imageset.get_detector(), imageset.get_beam(), imageset.get_goniometer()
-        )
-        mapped_reflections.extend(refl)
-    reflections = mapped_reflections
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
     two_theta_array = reflections["rlp"].norms()
     h0 = flex.weighted_histogram(two_theta_array ** 2, n_slots=params.shells)
     n = h0.slots()
@@ -77,9 +63,7 @@ def run(args):
 
     reflections = reflections[0]
 
-    imagesets = experiments.imagesets()
-
-    spot_resolution_shells(imagesets, reflections, params)
+    spot_resolution_shells(experiments, reflections, params)
 
 
 if __name__ == "__main__":

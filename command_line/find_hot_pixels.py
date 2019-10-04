@@ -13,7 +13,6 @@ output {
   mask = hot_pixels.pickle
     .type = path
 }
-
 """,
     process_includes=True,
 )
@@ -35,7 +34,6 @@ help_message = """
 
   Examples::
     dials.find_hot_pixels models.expt strong.refl
-
 """
 
 
@@ -60,11 +58,7 @@ def run(args):
     params, options = parser.parse_args(show_diff_phil=False)
 
     # Configure the log
-    log.config(
-        verbosity=options.verbose,
-        info="dials.find_hot_pixels.log",
-        debug="dials.find_hot_pixels.debug.log",
-    )
+    log.config(verbosity=options.verbose, logfile="dials.find_hot_pixels.log")
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()

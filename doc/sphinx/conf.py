@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 from __future__ import absolute_import, division, print_function
 
 # DIALS documentation build configuration file, created by
@@ -31,16 +31,17 @@ import os
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "button",
+    "dials_tutorial_include",
+    "libtbx.sphinx.phil",
+    "libtbx.sphinx.pubmed",
+    "libtbx.sphinx.python_string",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "libtbx.sphinx.phil",
-    "libtbx.sphinx.python_string",
-    "libtbx.sphinx.pubmed",
-    "button",
 ]
 
 # Add CDN path for mathjax script, converting Latex to readable text on the fly.
@@ -89,7 +90,7 @@ release = ""
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["_build", "scipy-sphinx-theme"]
+exclude_patterns = ["_build"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -127,15 +128,15 @@ extensions.append("alabaster")
 html_theme = "alabaster"
 html_sidebars = {
     "**": [
-        #'about.html',
+        # 'about.html',
         "navigation.html",
-        #'searchbox.html',
-        #'donate.html',
+        # 'searchbox.html',
+        # 'donate.html',
     ]
 }
 
 html_theme_options = {
-    #'logo': 'dials_icon.png',
+    # 'logo': 'dials_icon.png',
     "github_button": False,
     "show_powered_by": False,
     "description": "Diffraction Integration for Advanced Light Sources",
@@ -216,11 +217,11 @@ htmlhelp_basename = "DIALSdoc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

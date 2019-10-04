@@ -18,7 +18,6 @@ Examples::
   dials.shadow_plot models.expt
 
   dials.shadow_plot models.expt mode=2d
-
 """
 
 phil_scope = libtbx.phil.parse(

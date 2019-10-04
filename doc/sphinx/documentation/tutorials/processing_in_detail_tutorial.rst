@@ -1,3 +1,10 @@
+.. raw:: html
+
+  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/processing_in_detail_tutorial.html" class="new-documentation">
+  This tutorial requires a DIALS 2.0 installation.<br/>
+  Please click here to go to the tutorial for DIALS 1.14.
+  </a>
+
 Processing in Detail (Thaumatin)
 ================================
 
@@ -36,7 +43,7 @@ their contents (:ref:`datablock.expt <datablock-json>`) is written.
 The output just describes what the software understands of the images it was
 passed, in this case one sweep of data containing 540 images.
 
-.. literalinclude:: logs/dials.import.log
+.. dials_tutorial_include:: thaumatin/dials.import.log
 
 Find Spots
 ^^^^^^^^^^
@@ -47,7 +54,7 @@ It still takes a little while because we are finding spots on every image in the
 dataset. This reflects the modular philosophy of the DIALS toolkit and will
 enable us to do global refinement later on.
 
-.. literalinclude:: logs/dials.find_spots.cmd
+.. dials_tutorial_include:: thaumatin/dials.find_spots.cmd
 
 .. container:: toggle
 
@@ -55,7 +62,7 @@ enable us to do global refinement later on.
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs/dials.find_spots.log
+    .. dials_tutorial_include:: thaumatin/dials.find_spots.log
 
 The default parameters for :doc:`dials.find_spots<../programs/dials_find_spots>`
 usually do a good job for Pilatus images, such as these. However they may
@@ -117,7 +124,7 @@ parameter :samp:`indexing.method=fft1d`. We will pass in all the strong
 spots found in the dataset - so no need to select subsets of images widely
 separated in :math:`\phi`.
 
-.. literalinclude:: logs/dials.index.cmd
+.. dials_tutorial_include:: thaumatin/dials.index.cmd
 
 If known, the space group and unit cell can be
 provided at this stage using the :samp:`space_group` and :samp:`unit_cell`
@@ -130,7 +137,7 @@ primitive lattice using space group P1.
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs/dials.index.log
+    .. dials_tutorial_include:: thaumatin/dials.index.log
 
 It is worth reading through this output to understand what the indexing
 program has done. Note that this log is automatically captured in the file
@@ -191,7 +198,7 @@ which will take the results of the P1 autoindexing and run refinement with
 all of the possible Bravais settings applied - after which you may select
 the preferred solution.
 
-.. literalinclude:: logs/dials.refine_bravais_settings.cmd
+.. dials_tutorial_include:: thaumatin/dials.refine_bravais_settings.cmd
 
 gives a table containing scoring data and unit cell for
 each Bravais setting. The scores include the metric fit (in degrees),
@@ -202,7 +209,7 @@ spot-finding procedure (uncorrected and unscaled) but provides a very
 useful check to see if the data does appear to adhere to the proposed
 symmetry operators.
 
-.. literalinclude:: logs/dials.refine_bravais_settings.log
+.. dials_tutorial_include:: thaumatin/dials.refine_bravais_settings.log
 
 In this example we would continue processing (i.e. proceed to the refinement
 step, perhaps) with :samp:`bravais_setting_9.expt`. Sometimes (that is, when
@@ -213,7 +220,7 @@ In this case as the change of basis operator to the chosen setting
 is the identity operator (:samp:`a,b,c`) this step is not needed. We run it
 anyway to demonstrate its use.
 
-.. literalinclude:: logs/dials.reindex.cmd
+.. dials_tutorial_include:: thaumatin/dials.reindex.cmd
 
 This outputs the file :file:`reindexed.refl` which should be
 used as input to downstream programs in place of :file:`indexed.refl`.
@@ -236,7 +243,7 @@ use this command::
 Equivalent command-line options exist for all the main DIALS programs. To
 refine a static model including the tetragonal constraints we just do:
 
-.. literalinclude:: logs/dials.refine.cmd
+.. dials_tutorial_include:: thaumatin/dials.refine.cmd
 
 This used all reflections in refinement rather than a subset and provided a
 small reduction in RMSDs. However, the refined model is still static over
@@ -250,7 +257,7 @@ of these effects we can extend our parameterisation to obtain a smoothed
 running a further refinement job starting from the output of the
 previous job:
 
-.. literalinclude:: logs/dials.sv_refine.cmd
+.. dials_tutorial_include:: thaumatin/dials.sv_refine.cmd
 
 .. container:: toggle
 
@@ -258,7 +265,7 @@ previous job:
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs/dials.sv_refine.log
+    .. dials_tutorial_include:: thaumatin/dials.sv_refine.log
 
 In this case we didn't alter the default choices that affect scan-varying
 refinement, the most important of which is the number of intervals into which
@@ -282,7 +289,7 @@ XDS-like 3D profile fitting while using a generalized linear model in order
 to fit a Poisson-distributed background model. We will also increase the
 number of processors used to speed the job up.
 
-.. literalinclude:: logs/dials.integrate.cmd
+.. dials_tutorial_include:: thaumatin/dials.integrate.cmd
 
 .. container:: toggle
 
@@ -290,7 +297,7 @@ number of processors used to speed the job up.
 
         **Show/Hide Log**
 
-    .. literalinclude:: logs/dials.integrate.log
+    .. dials_tutorial_include:: thaumatin/dials.integrate.log
 
 Checking the log output, we see that after loading in the reference
 reflections from :file:`refined.refl`, new predictions are made up to the
@@ -333,9 +340,9 @@ within an HTML report generated using the program
 :doc:`dials.report <../programs/dials_report>`.
 This is run simply with:
 
-.. literalinclude:: logs/dials.report.cmd
+.. dials_tutorial_include:: thaumatin/dials.report.cmd
 
-which produces the file :download:`dials-report.html <logs/dials-report.html>`.
+which produces the file :download:`dials-report.html <thaumatin-report.html>`.
 
 This report includes plots showing the scan-varying crystal orientation and
 unit cell parameters. The latter of these
@@ -391,11 +398,11 @@ The final step of dials processing is to export the integrated results to mtz
 format, suitable for input to downstream processing programs such as pointless_
 and aimless_.
 
-.. literalinclude:: logs/dials.export.cmd
+.. dials_tutorial_include:: thaumatin/dials.export.cmd
 
 And this is the output, showing the reflection file statistics.
 
-.. literalinclude:: logs/dials.export.log
+.. dials_tutorial_include:: thaumatin/dials.export.log
 
 What to do Next
 ---------------

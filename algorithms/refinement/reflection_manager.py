@@ -219,7 +219,6 @@ class ReflectionManagerFactory(object):
     def from_parameters_reflections_experiments(
         params, reflections, experiments, do_stills=False
     ):
-
         """Given a set of parameters and models, build a reflection manager
 
         Params:
@@ -664,7 +663,6 @@ class ReflectionManager(object):
 
         The earliest entries in the return list may be those that are
         causing problems in refinement.
-
         """
         sort_obs = copy.deepcopy(obs)
         if angular:

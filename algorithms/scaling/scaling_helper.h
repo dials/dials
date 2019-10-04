@@ -6,12 +6,100 @@
 #include <scitbx/math/zernike.h>
 #include <dials/error.h>
 #include <math.h>
+#include <dials/algorithms/refinement/gaussian_smoother.h>
 
 typedef scitbx::sparse::matrix<double>::column_type col_type;
 
 namespace dials_scaling {
 
 using namespace boost::python;
+using namespace dials::refinement;
+
+class GaussianSmootherFirstFixed : public dials::refinement::GaussianSmoother {
+public:
+  GaussianSmootherFirstFixed(vec2<double> x_range, std::size_t num_intervals)
+      : GaussianSmoother(x_range, num_intervals) {}
+
+  dials::refinement::SingleValueWeights value_weight_first_fixed(
+    double x,
+    const scitbx::af::const_ref<double> values) {
+    // use sparse storage as only naverage (default 3) values are non-zero
+    vector<double> weight(nvalues - 1);
+
+    // normalised coordinate
+    double z = (x - x0) / spacing_;
+    double sumwv = 0.0;
+    double sumweight = 0.0;
+
+    vec2<int> irange = idx_range(z);
+
+    for (int i = irange[0]; i < irange[1]; ++i) {
+      double ds = (z - positions_[i]) / sigma_;
+      double w = exp(-ds * ds);
+      if (i > 0) {
+        weight[i - 1] = w;
+      }
+      weight[i] = w;
+      sumwv += w * values[i];
+      sumweight += w;
+    }
+
+    double value;
+    if (sumweight > 0.0) {
+      value = sumwv / sumweight;
+    } else {
+      value = 0.0;
+    }
+
+    return SingleValueWeights(value, weight, sumweight);
+  }
+
+  dials::refinement::MultiValueWeights multi_value_weight_first_fixed(
+    const scitbx::af::const_ref<double> x,
+    const scitbx::af::const_ref<double> values) {
+    // Use sparse storage as only naverage (default 3) values per row are
+    // non-zero
+    std::size_t npoints = x.size();  //# data
+    DIALS_ASSERT(npoints > 1);
+    matrix<double> weight(npoints, nvalues - 1);
+
+    // Allocate space for the interpolated values and sumweights, with raw
+    // refs for fastest access (See Michael Hohn's notes)
+    scitbx::af::shared<double> value(npoints, scitbx::af::init_functor_null<double>());
+    scitbx::af::ref<double> value_ref = value.ref();
+    scitbx::af::shared<double> sumweight(npoints,
+                                         scitbx::af::init_functor_null<double>());
+    scitbx::af::ref<double> sumweight_ref = sumweight.ref();
+
+    for (std::size_t irow = 0; irow < npoints; ++irow) {
+      // normalised coordinate
+      double z = (x[irow] - x0) / spacing_;
+      double sumw = 0.0;
+      double sumwv = 0.0;
+
+      vec2<int> irange = idx_range(z);
+
+      for (int icol = irange[0]; icol < irange[1]; ++icol) {
+        double ds = (z - positions_[icol]) / sigma_;
+        double w = exp(-ds * ds);
+        if (icol > 0) {
+          weight(irow, icol - 1) = w;
+        }
+        sumw += w;
+        sumwv += w * values[icol];
+      }
+      sumweight_ref[irow] = sumw;
+
+      if (sumw > 0.0) {
+        value_ref[irow] = sumwv / sumw;
+      } else {
+        value_ref[irow] = 0.0;
+      }
+    }
+
+    return MultiValueWeights(value, weight, sumweight);
+  }
+};
 
 /**
  * Elementwise squaring of a matrix
