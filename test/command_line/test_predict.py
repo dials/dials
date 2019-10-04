@@ -13,7 +13,7 @@ def plausible(table):
     assert "s1" in table
     assert "xyzcal.px" in table
     assert "xyzcal.mm" in table
-    for row in table:
+    for row in table.rows():
         assert row["id"] == 0
     return True
 

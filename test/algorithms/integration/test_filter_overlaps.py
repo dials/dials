@@ -56,7 +56,7 @@ def test_for_overlaps(dials_regression):
         det = expt.detector
         size_fast, size_slow = det[0].get_image_size()
         mask_array = flex.size_t(size_fast * size_slow)
-        for obs in refl:
+        for obs in refl.rows():
             shoebox = obs["shoebox"]
             fast_coords = range(shoebox.xsize())
             slow_coords = range(shoebox.ysize())

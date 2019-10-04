@@ -144,7 +144,7 @@ def test_per_width_and_per_image_are_equivalent():
 
     # Check reflections and experiments are as expected
     assert len(reflections100) == len(reflections)
-    for a, b in zip(reflections, reflections100):
+    for a, b in zip(reflections.rows(), reflections100.rows()):
         assert a["xyzcal.mm"] == b["xyzcal.mm"]
     assert experiments[0].scan.get_oscillation(deg=False)[1] == im_width
     reflections = reflections100

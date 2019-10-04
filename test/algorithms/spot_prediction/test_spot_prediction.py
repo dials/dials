@@ -4,6 +4,8 @@ import os
 import math
 import pytest
 
+from scitbx import matrix
+
 
 class SpotPredictor:
     def __init__(self, dials_regression):
@@ -14,7 +16,6 @@ class SpotPredictor:
         from dials.util import ioutil
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
-        from scitbx import matrix
 
         # The XDS files to read from
         integrate_filename = os.path.join(
@@ -102,7 +103,7 @@ def test_dmin(spotpredictor):
 def test_miller_index_set(spotpredictor):
     """Ensure we have the whole set of miller indices"""
     gen_hkl = {}
-    for r in spotpredictor.reflections:
+    for r in spotpredictor.reflections.rows():
         gen_hkl[r["miller_index"]] = True
     for hkl in spotpredictor.integrate_handle.hkl:
         assert gen_hkl[hkl]
@@ -113,7 +114,7 @@ def test_rotation_angles(spotpredictor):
 
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
-    for r in spotpredictor.reflections:
+    for r in spotpredictor.reflections.rows():
         hkl = r["miller_index"]
         phi = r["phi"]
         try:
@@ -151,10 +152,8 @@ def test_rotation_angles(spotpredictor):
 
 def test_beam_vectors(spotpredictor):
     """Ensure |s1| == |s0|"""
-    from scitbx import matrix
-
     s0_length = matrix.col(spotpredictor.beam.get_s0()).length()
-    for r in spotpredictor.reflections:
+    for r in spotpredictor.reflections.rows():
         s1 = r["s1"]
         s1_length = matrix.col(s1).length()
         assert s0_length == pytest.approx(s1_length, abs=1e-7)
@@ -162,11 +161,9 @@ def test_beam_vectors(spotpredictor):
 
 def test_image_coordinates(spotpredictor):
     """Ensure the image coordinates agree with XDS"""
-    from scitbx import matrix
-
     # Create a dict of lists of xy for each hkl
     gen_xy = {}
-    for r in spotpredictor.reflections:
+    for r in spotpredictor.reflections.rows():
         hkl = r["miller_index"]
         xy = r["xyzcal.mm"][0:2]
         xy = spotpredictor.detector[0].millimeter_to_pixel(xy)

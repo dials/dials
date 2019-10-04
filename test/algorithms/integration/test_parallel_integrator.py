@@ -413,7 +413,7 @@ def test_reflection_manager(data):
 
         j0, j1 = jobs[index]
 
-        for rr in r1:
+        for rr in r1.rows():
             z0, z1 = rr["bbox"][4:6]
             zc = int(math.floor((z0 + z1) / 2.0))
             j = jobs.block_index(zc)

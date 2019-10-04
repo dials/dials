@@ -96,7 +96,7 @@ def raypredictor(dials_regression):
 
 def test_miller_index_set(raypredictor):
     """Ensure we have the whole set of miller indices"""
-    gen_hkl = {r["miller_index"] for r in raypredictor.reflections}
+    gen_hkl = {r["miller_index"] for r in raypredictor.reflections.rows()}
     missing = []
     for hkl in raypredictor.integrate_handle.hkl:
         if hkl not in gen_hkl:
@@ -113,7 +113,7 @@ def test_rotation_angles(raypredictor):
 
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
-    for r in raypredictor.reflections:
+    for r in raypredictor.reflections.rows():
         hkl = r["miller_index"]
         phi = r["phi"]
         try:
@@ -155,7 +155,7 @@ def test_rotation_angles(raypredictor):
 def test_beam_vectors(raypredictor):
     """Ensure |s1| == |s0|"""
     s0_length = matrix.col(raypredictor.beam.get_s0()).length()
-    for r in raypredictor.reflections:
+    for r in raypredictor.reflections.rows():
         s1 = r["s1"]
         s1_length = matrix.col(s1).length()
         assert s0_length == pytest.approx(s1_length, abs=1e-7)
@@ -191,7 +191,7 @@ def test_new(raypredictor):
                 raypredictor.reflections2.append(ray)
 
     assert len(raypredictor.reflections) == len(raypredictor.reflections2)
-    for r1, r2 in zip(raypredictor.reflections, raypredictor.reflections2):
+    for r1, r2 in zip(raypredictor.reflections.rows(), raypredictor.reflections2):
         assert all(a == pytest.approx(b, abs=1e-7) for a, b in zip(r1["s1"], r2.s1))
         assert r1["phi"] == pytest.approx(r2.angle, abs=1e-7)
         assert r1["entering"] == r2.entering
@@ -222,12 +222,12 @@ def test_new_from_array(raypredictor):
     h = raypredictor.generate_indices.to_array()
     reflections = raypredictor.predict_rays(h, UB)
     raypredictor.reflections3 = []
-    for r in reflections:
+    for r in reflections.rows():
         if r["phi"] >= dphi[0] and r["phi"] <= dphi[1]:
             raypredictor.reflections3.append(r)
 
     assert len(raypredictor.reflections) == len(raypredictor.reflections3)
-    for r1, r2 in zip(raypredictor.reflections, raypredictor.reflections3):
+    for r1, r2 in zip(raypredictor.reflections.rows(), raypredictor.reflections3):
         assert all(a == pytest.approx(b, abs=1e-7) for a, b in zip(r1["s1"], r2["s1"]))
         assert r1["phi"] == pytest.approx(r2["phi"], abs=1e-7)
         assert r1["entering"] == r2["entering"]

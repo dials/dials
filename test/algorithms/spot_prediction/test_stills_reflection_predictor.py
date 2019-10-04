@@ -127,7 +127,7 @@ def test(nave_model):
     # compare with delpsical.rad
     from libtbx.test_utils import approx_equal
 
-    for ref in model.reflections:
+    for ref in model.reflections.rows():
         r = matrix.col(ref["s1"]) - s0
         q = UB * matrix.col(ref["miller_index"])
         tst_radius = (s0 + q).length()
@@ -154,7 +154,7 @@ def test_spherical_relps():
     # to the formula in stills_prediction_nave3.pdf and compare
     from libtbx.test_utils import approx_equal
 
-    for ref in model.reflections:
+    for ref in model.reflections.rows():
         q = UB * matrix.col(ref["miller_index"])
         radicand = q.length_sq() + 2.0 * q.dot(s0) + s0.length_sq()
         assert radicand > 0.0

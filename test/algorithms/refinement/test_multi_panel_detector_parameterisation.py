@@ -256,7 +256,7 @@ def test(args=[]):
     # get two sets of identical reflections
     obs_refs = ref_predictor(indices)
     obs_refs2 = ref_predictor(indices)
-    for r1, r2 in zip(obs_refs, obs_refs2):
+    for r1, r2 in zip(obs_refs.rows(), obs_refs2.rows()):
         assert r1["s1"] == r2["s1"]
 
     # get the panel intersections

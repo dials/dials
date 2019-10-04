@@ -30,7 +30,7 @@ def test2(dials_data, tmpdir):
     assert len(table) == 1996
     assert mask.count(True) == 1666
     assert "id" in table
-    for row in table:
+    for row in table.rows():
         assert row["id"] == 0
 
     originaltable = table
@@ -245,7 +245,7 @@ def test_output_rubbish(dials_data, tmpdir):
         table = pickle.load(fh)
 
     assert "id" in table
-    for row in table:
+    for row in table.rows():
         assert row["id"] == 0
 
 

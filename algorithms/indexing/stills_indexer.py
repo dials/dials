@@ -686,7 +686,7 @@ class StillsIndexer(Indexer):
             pass
 
         matches = []
-        for item in RR:
+        for item in RR.rows():
             m = Match()
             m.x_obs = item["xyzobs.px.value"][0] * px_sz[0]
             m.y_obs = item["xyzobs.px.value"][1] * px_sz[1]

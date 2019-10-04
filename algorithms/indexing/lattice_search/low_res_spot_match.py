@@ -350,12 +350,12 @@ class LowResSpotMatch(Strategy):
 
         # First the 'seeds' (in 1 ASU)
         self.seeds = []
-        for i, spot in enumerate(self.spots):
+        for i, spot in enumerate(self.spots.rows()):
             sel = (self.candidate_hkls["d_star"] <= spot["d_star_outer"]) & (
                 self.candidate_hkls["d_star"] >= spot["d_star_inner"]
             )
             cands = self.candidate_hkls.select(sel)
-            for c in cands:
+            for c in cands.rows():
                 r_dst = abs(c["d_star"] - spot["d_star"])
                 self.seeds.append(
                     {
@@ -371,12 +371,12 @@ class LowResSpotMatch(Strategy):
 
         # Now the 'stems' to use in second search level, using all indices in P 1
         self.stems = []
-        for i, spot in enumerate(self.spots):
+        for i, spot in enumerate(self.spots.rows()):
             sel = (self.candidate_hkls_p1["d_star"] <= spot["d_star_outer"]) & (
                 self.candidate_hkls_p1["d_star"] >= spot["d_star_inner"]
             )
             cands = self.candidate_hkls_p1.select(sel)
-            for c in cands:
+            for c in cands.rows():
                 r_dst = abs(c["d_star"] - spot["d_star"])
                 self.stems.append(
                     {
@@ -391,7 +391,6 @@ class LowResSpotMatch(Strategy):
         self.stems.sort(key=operator.itemgetter("residual_d_star"))
 
     def _pairs_with_seed(self, seed):
-
         seed_rlp = matrix.col(self.spots[seed["spot_id"]]["rlp"])
 
         result = []
