@@ -7,7 +7,7 @@ from dials.array_family import flex
 
 
 def spot_counts_per_image_plot(reflections, **kwargs):
-    if len(reflections.rows()) == 0:
+    if reflections.size() == 0:
         return "\n"
 
     x, y, z = reflections["xyzobs.px.value"].parts()
