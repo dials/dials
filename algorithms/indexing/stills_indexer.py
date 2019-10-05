@@ -670,6 +670,14 @@ class StillsIndexer(Indexer):
             if best.rmsd > params.indexing.stills.rmsd_min_px:
                 raise DialsIndexError("RMSD too high, %f" % best.rmsd)
 
+            if (
+                best.ewald_proximal_volume
+                > params.indexing.stills.ewald_proximal_volume_max
+            ):
+                raise DialsIndexError(
+                    "Ewald proximity volume too high, %f" % best.ewald_proximal_volume
+                )
+
             if len(candidates) > 1:
                 for i in range(len(candidates)):
                     if i == flex.min_index(results):
