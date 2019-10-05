@@ -1,10 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+import json
+
 import six
+from dials.array_family import flex
 
 
 def spot_counts_per_image_plot(reflections, **kwargs):
-    if len(reflections) == 0:
+    if len(reflections.rows()) == 0:
         return "\n"
 
     x, y, z = reflections["xyzobs.px.value"].parts()
@@ -12,21 +15,15 @@ def spot_counts_per_image_plot(reflections, **kwargs):
 
 
 def histogram_from_json(filename):
-    from dials.array_family import flex
-    import json
-
     with open(filename, "r") as fh:
         z = json.load(fh)
     return flex_histogram(flex.double(z))
 
 
 def flex_histogram(z, char="*", width=60, height=10):
-    from dials.array_family import flex
-
     assert isinstance(char, six.string_types)
     assert len(char) == 1
 
-    # import json
     # with open('list.json', 'w') as fh:
     #   json.dump(sorted(list(z)), fh)
 
@@ -69,11 +66,10 @@ def flex_histogram(z, char="*", width=60, height=10):
     counts *= height / max_count
     counts = counts.iround()
 
-    rows = []
-    rows.append(
+    rows = [
         "%i spots found on %i images (max %i / bin)"
         % (total_counts, image_count, max_count)
-    )
+    ]
 
     for i in range(height, 0, -1):
         row = []
