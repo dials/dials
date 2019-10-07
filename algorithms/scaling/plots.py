@@ -450,8 +450,8 @@ def normal_probability_plot(data):
     n = y.size()
     width = histy.slot_centers()[1] - histy.slot_centers()[0]
     gaussian = [
-        n * width * math.exp(-(x ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
-        for x in histy.slot_centers()
+        n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
+        for sc in histy.slot_centers()
     ]
 
     return {
