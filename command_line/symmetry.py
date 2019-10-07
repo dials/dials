@@ -3,23 +3,28 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import random
+import sys
 
 from cctbx import sgtbx
 from libtbx import Auto
 import iotbx.phil
+from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
-from dials.util import log, Sorry
+from dials.util import log, Sorry, show_mail_on_error
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
 )
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
 from dials.algorithms.symmetry.determine_space_group import determine_space_group
-from dials.command_line.space_group import (
-    _prepare_merged_reflection_table,
-    run_sys_abs_checks,
+from dials.algorithms.merging.merge import prepare_merged_reflection_table
+from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
+from dials.algorithms.symmetry.absences.run_absences_checks import (
+    run_systematic_absences_checks,
 )
 
 logger = logging.getLogger("dials.command_line.symmetry")
@@ -60,10 +65,15 @@ partiality_threshold = 0.99
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
 
+mode = *laue_plus_absences laue_only absences_only
+  .type = choice
+  .help = "Choice of mode of symmetry analysis:"
+          "laue_plus_absences: analyse laue group and perform systematic absences"
+          "  check to determine full space group."
+          "laue_only: only analyse point group of the crystal"
+          "absences_only: check systematic absences for the current laue group"
+
 absences {
-  check_absences=False
-    .type = bool
-    .help = "Option to run systematic absences checks to suggest full space group"
   significance_level = *0.95 0.975 0.99
     .type = choice
     .help = "Signficance to use when testing whether axial reflections are "
@@ -79,107 +89,124 @@ output {
     .type = path
   json = dials.symmetry.json
     .type = path
+  html = "dials-symmetry.html"
+    .type = path
+    .help = "Filename for html report."
 }
 """,
     process_includes=True,
 )
 
 
-class symmetry(object):
-    def __init__(self, experiments, reflections, params=None):
-        if params is None:
-            params = phil_scope.extract()
-        self._params = params
+def symmetry(experiments, reflection_tables, params=None):
+    """
+    Run symmetry analysis
 
+    Args:
+        experiments: An experiment list.
+        reflection_tables: A list of reflection tables.
+        params: The dials.symmetry phil scope.
+    """
+    result = None
+    if params is None:
+        params = phil_scope.extract()
+
+    if params.mode != "absences_only":
         # transform models into miller arrays
         n_datasets = len(experiments)
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
-            reflections,
+            reflection_tables,
             outlier_rejection_after_filter=True,
             partiality_threshold=params.partiality_threshold,
         )
         if len(datasets) != n_datasets:
             raise ValueError(
                 """Some datasets have no reflection after prefiltering, please check
-input data and filtering settings e.g partiality_threshold"""
+    input data and filtering settings e.g partiality_threshold"""
             )
 
         result = determine_space_group(
             datasets,
-            normalisation=self._params.normalisation,
-            d_min=self._params.d_min,
-            min_i_mean_over_sigma_mean=self._params.min_i_mean_over_sigma_mean,
-            lattice_symmetry_max_delta=self._params.lattice_symmetry_max_delta,
-            relative_length_tolerance=self._params.relative_length_tolerance,
-            absolute_angle_tolerance=self._params.absolute_angle_tolerance,
+            normalisation=params.normalisation,
+            d_min=params.d_min,
+            min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
+            lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
+            relative_length_tolerance=params.relative_length_tolerance,
+            absolute_angle_tolerance=params.absolute_angle_tolerance,
         )
         logger.info(result)
 
         if params.output.json is not None:
             result.as_json(filename=params.output.json)
 
-        reindexed_experiments, reindexed_reflections = self._reindex_experiments_reflections(
-            experiments, reflections, result
+        experiments, reflection_tables = _reindex_experiments_reflections(
+            experiments, reflection_tables, result
         )
 
-        if self._params.absences.check_absences:
-            if self._params.d_min is Auto:
-                d_min = result.intensities.resolution_range()[1]
-            else:
-                d_min = self._params.d_min
-            merged_reflections = _prepare_merged_reflection_table(
-                reindexed_experiments, [reindexed_reflections], d_min
+    if params.mode != "laue_only":
+        if (params.d_min is Auto) and (result is not None):
+            d_min = result.intensities.resolution_range()[1]
+        elif params.d_min is Auto:
+            d_min = resolution_filter_from_reflections_experiments(
+                reflection_tables,
+                experiments,
+                params.min_i_mean_over_sigma_mean,
+                params.min_cc_half,
             )
-
-            run_sys_abs_checks(
-                reindexed_experiments,
-                merged_reflections,
-                float(params.absences.significance_level),
-            )
-
-        logger.info(
-            "Saving reindexed experiments to %s", self._params.output.experiments
+        else:
+            d_min = params.d_min
+        merged_reflections = prepare_merged_reflection_table(
+            experiments, reflection_tables, d_min
         )
-        reindexed_experiments.as_file(self._params.output.experiments)
+
+        run_systematic_absences_checks(
+            experiments, merged_reflections, float(params.absences.significance_level)
+        )
+
+    logger.info("Saving reindexed experiments to %s", params.output.experiments)
+    experiments.as_file(params.output.experiments)
+    if params.mode != "absences_only":
         logger.info(
             "Saving %s reindexed reflections to %s",
-            len(reindexed_reflections),
-            self._params.output.reflections,
+            len(reflection_tables[0]),
+            params.output.reflections,
         )
-        reindexed_reflections.as_file(self._params.output.reflections)
+        reflection_tables[0].as_file(params.output.reflections)
 
-    def _reindex_experiments_reflections(self, experiments, reflections, result):
-        from rstbx.symmetry.constraints import parameter_reduction
+    if params.output.html and (params.mode != "laue_only"):
+        ScrewAxisObserver().generate_html_report(params.output.html)
 
-        reindexed_experiments = copy.deepcopy(experiments)
-        reindexed_reflections = flex.reflection_table()
-        # Change of basis operator from input unit cell to best unit cell
-        cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
-        # Get the best space group.
-        best_subsym = result.best_solution.subgroup["best_subsym"]
-        best_space_group = best_subsym.space_group().build_derived_acentric_group()
-        for i, expt in enumerate(reindexed_experiments):
-            # Set the space group to the best symmetry and change basis accordingly.
-            # Setting the basis to one incompatible with the initial space group is
-            # forbidden, so we must first change the space group to P1 to be safe`.
-            expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-            expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
-            expt.crystal.set_space_group(best_space_group)
+def _reindex_experiments_reflections(experiments, reflections, result):
+    """Use the determine_space_group result to reindex the input data."""
+    reindexed_experiments = copy.deepcopy(experiments)
+    reindexed_reflections = flex.reflection_table()
+    # Change of basis operator from input unit cell to best unit cell
+    cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
+    # Get the best space group.
+    best_subsym = result.best_solution.subgroup["best_subsym"]
+    best_space_group = best_subsym.space_group().build_derived_acentric_group()
+    for i, expt in enumerate(reindexed_experiments):
+        # Set the space group to the best symmetry and change basis accordingly.
+        # Setting the basis to one incompatible with the initial space group is
+        # forbidden, so we must first change the space group to P1 to be safe`.
+        expt.crystal.set_space_group(sgtbx.space_group("P 1"))
+        expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
+        expt.crystal.set_space_group(best_space_group)
 
-            S = parameter_reduction.symmetrize_reduce_enlarge(
-                expt.crystal.get_space_group()
-            )
-            S.set_orientation(expt.crystal.get_B())
-            S.symmetrize()
-            expt.crystal.set_B(S.orientation.reciprocal_matrix())
-            reindexed_refl = copy.deepcopy(reflections[i])
-            reindexed_refl["miller_index"] = cb_op_inp_best.apply(
-                reindexed_refl["miller_index"]
-            )
-            reindexed_reflections.extend(reindexed_refl)
+        S = parameter_reduction.symmetrize_reduce_enlarge(
+            expt.crystal.get_space_group()
+        )
+        S.set_orientation(expt.crystal.get_B())
+        S.symmetrize()
+        expt.crystal.set_B(S.orientation.reciprocal_matrix())
+        reindexed_refl = copy.deepcopy(reflections[i])
+        reindexed_refl["miller_index"] = cb_op_inp_best.apply(
+            reindexed_refl["miller_index"]
+        )
+        reindexed_reflections.extend(reindexed_refl)
 
-        return reindexed_experiments, reindexed_reflections
+    return reindexed_experiments, [reindexed_reflections]
 
 
 help_message = """
@@ -198,7 +225,8 @@ Examples::
 """
 
 
-def run(args):
+def run(args=None):
+    """Run symmetry analysis from the command-line."""
     usage = "dials.symmetry [options] models.expt observations.refl"
 
     parser = OptionParser(
@@ -216,8 +244,6 @@ def run(args):
 
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
-
-    from dials.util.version import dials_version
 
     logger.info(dials_version())
 
@@ -252,6 +278,5 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
-    run(sys.argv[1:])
+    with show_mail_on_error():
+        run()

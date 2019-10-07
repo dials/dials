@@ -15,7 +15,7 @@ from dials.algorithms.symmetry.cosym._generate_test_data import (
 from dxtbx.serialize import load
 
 
-def test_symmetry(dials_regression, tmpdir):
+def test_symmetry_laue_only(dials_regression, tmpdir):
     """Simple test to check that dials.symmetry completes"""
 
     result = procrunner.run(
@@ -25,12 +25,17 @@ def test_symmetry(dials_regression, tmpdir):
             os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
             os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
             os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            "mode=laue_only",
         ],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check()
     assert tmpdir.join("symmetrized.expt").check()
+    exps = load.experiment_list(
+        tmpdir.join("symmetrized.expt").strpath, check_format=False
+    )
+    assert str(exps[0].crystal.get_space_group().info()) == "P 2 2 2"
 
 
 def test_symmetry_basis_changes_for_C2(tmpdir):
@@ -74,7 +79,7 @@ def test_symmetry_with_absences(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.symmetry",
-            "check_absences=True",
+            "mode=laue_plus_absences",
             os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
             os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
             os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
@@ -89,3 +94,30 @@ def test_symmetry_with_absences(dials_regression, tmpdir):
         tmpdir.join("symmetrized.expt").strpath, check_format=False
     )
     assert str(expts[0].crystal.get_space_group().info()) == "P 21 21 21"
+
+
+def test_symmetry_absences_only(dials_data, tmpdir):
+    """Test the command line script with real data. Proteinase K in P41"""
+    location = dials_data("vmxi_proteinase_k_sweeps")
+
+    command = ["dials.symmetry", "mode=absences_only"]
+    command.append(location.join("experiments_0.json").strpath)
+    command.append(location.join("reflections_0.pickle").strpath)
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("dials-symmetry.html").check()
+    assert tmpdir.join("symmetrized.expt").check()
+    exps = load.experiment_list(
+        tmpdir.join("symmetrized.expt").strpath, check_format=False
+    )
+    assert str(exps[0].crystal.get_space_group().info()) == "P 41"
+
+    # Now try with a d_min
+    command += ["d_min=4.0"]
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    exps = load.experiment_list(
+        tmpdir.join("symmetrized.expt").strpath, check_format=False
+    )
+    assert str(exps[0].crystal.get_space_group().info()) == "P 41"

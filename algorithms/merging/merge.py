@@ -8,6 +8,10 @@ from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
     merging_stats_from_scaled_array,
 )
+from dials.algorithms.scaling.Ih_table import (
+    _reflection_table_to_iobs,
+    map_indices_to_asu,
+)
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
 from dials.report.analysis import make_merging_statistics_summary
@@ -16,6 +20,48 @@ from mmtbx.scaling import data_statistics
 from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials")
+
+
+def prepare_merged_reflection_table(experiments, reflections, d_min=None):
+    """Filter the data and prepare a reflection table with merged data."""
+    if (
+        "inverse_scale_factor" in reflections[0]
+        and "intensity.scale.value" in reflections[0]
+    ):
+        logger.info("Attempting to perform absence checks on scaled data")
+        reflections = filter_reflection_table(
+            reflections[0], intensity_choice=["scale"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.scale.value"]
+        reflections["variance"] = reflections["intensity.scale.variance"]
+    else:
+        logger.info(
+            "Attempting to perform absence checks on unscaled profile-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflections[0], intensity_choice=["profile"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.prf.value"]
+        reflections["variance"] = reflections["intensity.prf.variance"]
+
+    # now merge
+    space_group = experiments[0].crystal.get_space_group()
+    reflections["asu_miller_index"] = map_indices_to_asu(
+        reflections["miller_index"], space_group
+    )
+    reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
+    merged = (
+        _reflection_table_to_iobs(
+            reflections, experiments[0].crystal.get_unit_cell(), space_group
+        )
+        .merge_equivalents(use_internal_variance=False)
+        .array()
+    )
+    merged_reflections = flex.reflection_table()
+    merged_reflections["intensity"] = merged.data()
+    merged_reflections["variance"] = merged.sigmas() ** 2
+    merged_reflections["miller_index"] = merged.indices()
+    return merged_reflections
 
 
 def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
