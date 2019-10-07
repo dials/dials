@@ -60,9 +60,8 @@ def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
         mtz_writer.add_crystal(
             crystal_name=cname, project_name=params.output.project_name
         )
-        mtz_writer.add_dataset(
-            wavelength, merged, anom, amplitudes, anom_amp, name=dname
-        )
+        mtz_writer.add_empty_dataset(wavelength, name=dname)
+        mtz_writer.add_dataset(merged, anom, amplitudes, anom_amp)
 
     return mtz_writer.mtz_file
 
@@ -84,13 +83,9 @@ def make_merged_mtz_file(
         crystal_name=params.output.crystal_names[0],
         project_name=params.output.project_name,
     )
+    mtz_writer.add_empty_dataset(wavelength, name=params.output.dataset_names[0])
     mtz_writer.add_dataset(
-        merged_array,
-        merged_anomalous_array,
-        amplitudes,
-        anomalous_amplitudes,
-        wavelength,
-        params.output.dataset_names[0],
+        merged_array, merged_anomalous_array, amplitudes, anomalous_amplitudes
     )
 
     return mtz_writer.mtz_file

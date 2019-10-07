@@ -34,8 +34,8 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class MTZWriter(object):
-    """Class to help with adding metadata, crystals and datasets to an mtz file object."""
+class MTZWriterBase(object):
+    """Helper for adding metadata, crystals and datasets to an mtz file object."""
 
     def __init__(self, space_group, unit_cell=None):
         """If a unit cell is provided, will be used as default unless specified
@@ -54,7 +54,6 @@ class MTZWriter(object):
         self.current_dataset = None
         self.n_crystals = 0
         self.n_datasets = 0
-        self._suffix = ""
 
     def add_crystal(self, crystal_name=None, project_name=None, unit_cell=None):
         """Add a crystal to the mtz file object."""
@@ -72,36 +71,49 @@ class MTZWriter(object):
         )
         self.n_crystals += 1
 
-    def add_dataset(self, wavelength, name=None):
+    def add_empty_dataset(self, wavelength, name=None):
+        """Add an empty dataset object to the mtz file."""
         if not name:
             name = "FROMDIALS"
         self.current_dataset = self.current_crystal.add_dataset(name, wavelength)
         self.n_datasets += 1
 
 
-class MergedMTZWriter(MTZWriter):
+class MergedMTZWriter(MTZWriterBase):
     """Mtz writer for merged data."""
 
     def add_dataset(
-        self, merged, anom=None, amplitudes=None, anom_amp=None, wavelength=1, name=None
+        self,
+        merged_array,
+        anom_array=None,
+        amplitudes=None,
+        anom_amplitudes=None,
+        suffix=None,
     ):
-        """Add a merged dataset to the most recent crystal."""
-        if not name:
-            name = "FROMDIALS"
-        self.current_dataset = self.current_crystal.add_dataset(name, wavelength)
-        self.current_dataset.add_miller_array(merged, "IMEAN" + self._suffix)
-        if anom:
-            self.current_dataset.add_miller_array(anom, "I" + self._suffix)
+        """Add merged data to the most recent dataset.
+
+        Args:
+            merged_array: A merged miller array of IMEAN intensities
+            wavelength: The wavelength of the dataset
+            anom_array (Optional): An anomalous merged miller array
+            amplitudes (Optional): A merged miller array of amplitudes
+            anom_amplitudes (Optional): An anomalous merged array of amplitudes
+            suffix (Optional[str]): Column name suffix to use for this dataset.
+        """
+        if not suffix:
+            suffix = ""
+        self.current_dataset.add_miller_array(merged_array, "IMEAN" + suffix)
+        if anom_array:
+            self.current_dataset.add_miller_array(anom_array, "I" + suffix)
             self.current_dataset.add_miller_array(
-                anom.multiplicities(),
-                column_root_label="N" + self._suffix,
+                anom_array.multiplicities(),
+                column_root_label="N" + suffix,
                 column_types="I",
             )
         if amplitudes:
-            self.current_dataset.add_miller_array(amplitudes, "F" + self._suffix)
-        if anom_amp:
-            self.current_dataset.add_miller_array(anom_amp, "F" + self._suffix)
-        self.n_datasets += 1
+            self.current_dataset.add_miller_array(amplitudes, "F" + suffix)
+        if anom_amplitudes:
+            self.current_dataset.add_miller_array(anom_amplitudes, "F" + suffix)
 
 
 class MADMergedMTZWriter(MergedMTZWriter):
@@ -109,272 +121,271 @@ class MADMergedMTZWriter(MergedMTZWriter):
 
     def add_dataset(
         self,
-        wavelength,
-        merged,
-        anom=None,
+        merged_array,
+        anom_array=None,
         amplitudes=None,
-        anom_amp=None,
+        anom_amplitudes=None,
         suffix=None,
-        name=None,
     ):
-        """Add a merged dataset to the most recent crystal.
-
-        Need to provide or generate a suffix so that don't have the same column
-        names in different datasets."""
         if not suffix:
-            self._suffix = "_WAVE%s" % str(self.n_datasets + 1)
+            suffix = "_WAVE%s" % str(self.n_datasets)
         super(MADMergedMTZWriter, self).add_dataset(
-            merged, anom, amplitudes, anom_amp, wavelength, name=name
+            merged_array, anom_array, amplitudes, anom_amplitudes, suffix
         )
 
 
-def _add_batch_list(
-    image_range,
-    mtz,
-    experiment,
-    wavelength,
-    dataset_id,
-    batch_offset,
-    force_static_model,
-):
-    """Add batch metadata to an mtz file."""
-
-    # Recalculate useful numbers and references here
-    n_batches = image_range[1] - image_range[0] + 1
-    phi_start = flex.float(n_batches, 0)
-    phi_range = flex.float(n_batches, 0)
-    umat_array = flex.float(flex.grid(n_batches, 9))
-    cell_array = flex.float(flex.grid(n_batches, 6))
-
-    U = matrix.sqr(experiment.crystal.get_U())
-    if experiment.goniometer is not None:
-        F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
-    else:
-        F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
-
-    i0 = image_range[0]
-    for i in range(n_batches):
-        if experiment.scan:
-            phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
-
-        # unit cell (this is fine) and the what-was-refined-flags hardcoded
-        # take time-varying parameters from the *end of the frame* unlikely to
-        # be much different at the end - however only exist if scan-varying
-        # refinement was used
-        if not force_static_model and experiment.crystal.num_scan_points > 0:
-            # Get the index of the image in the sequence e.g. first => 0, second => 1
-            image_index = i + i0 - experiment.scan.get_image_range()[0]
-            _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
-            _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
-        else:
-            _unit_cell = experiment.crystal.get_unit_cell()
-            _U = U
-
-        # apply the fixed rotation to this to unify matrix definitions - F * U
-        # was what was used in the actual prediction: U appears to be stored
-        # as the transpose?! At least is for Mosflm...
-        #
-        # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
-        # the U.B. matrix assuming that the axis is equal to S * axis_datum but
-        # here we are just giving the effective axis so at scan angle 0 this will
-        # not be correct... FIXME 2 not even sure we can express the stack of
-        # matrices S * R * F * U * B in MTZ format?... see [=A=] below
-        _U = matrix.sqr(dials.util.ext.dials_u_to_mosflm(F * _U, _unit_cell))
-
-        # FIXME need to get what was refined and what was constrained from the
-        # crystal model - see https://github.com/dials/dials/issues/355
-        _unit_cell_params = _unit_cell.parameters()
-        for j in range(6):
-            cell_array[i, j] = _unit_cell_params[j]
-        _U_t_elements = _U.transpose().elems
-        for j in range(9):
-            umat_array[i, j] = _U_t_elements[j]
-
-    # We ignore panels beyond the first one, at the moment
-    panel = experiment.detector[0]
-    panel_size = panel.get_image_size()
-    panel_distance = panel.get_directed_distance()
-
-    if experiment.goniometer:
-        axis = flex.float(experiment.goniometer.get_rotation_axis())
-    else:
-        axis = flex.float((0.0, 0.0, 0.0))
-
-    # FIXME hard-coded assumption on idealized beam vector below... this may be
-    # broken when we come to process data from a non-imgCIF frame
-    s0n = flex.float(matrix.col(experiment.beam.get_s0()).normalize().elems)
-
-    # get the mosaic spread though today it may not actually be set - should
-    # this be in the BATCH headers?
-    try:
-        mosaic = experiment.crystal.get_mosaicity()
-    except AttributeError:
-        mosaic = 0.0
-
-    # Jump into C++ to do the rest of the work
-    dials.util.ext.add_dials_batches(
-        mtz,
-        dataset_id,
+class UnmergedMTZWriter(MTZWriterBase):
+    def add_batch_list(
+        self,
         image_range,
-        batch_offset,
+        experiment,
         wavelength,
-        mosaic,
-        phi_start,
-        phi_range,
-        cell_array,
-        umat_array,
-        panel_size,
-        panel_distance,
-        axis,
-        s0n,
-    )
-
-
-def _write_columns(mtz_file, dataset, integrated_data):
-    """Write the column definitions AND data for a single dataset."""
-
-    # now create the actual data structures - first keep a track of the columns
-
-    # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
-    # LP MPART FLAG BGPKRATIOS
-
-    # gather the required information for the reflection file
-
-    nref = len(integrated_data["miller_index"])
-    assert nref
-    xdet, ydet, zdet = [
-        flex.double(x) for x in integrated_data["xyzobs.px.value"].parts()
-    ]
-
-    # now add column information...
-
-    # FIXME add DIALS_FLAG which can include e.g. was partial etc.
-
-    type_table = {
-        "H": "H",
-        "K": "H",
-        "L": "H",
-        "I": "J",
-        "SIGI": "Q",
-        "IPR": "J",
-        "SIGIPR": "Q",
-        "BG": "R",
-        "SIGBG": "R",
-        "XDET": "R",
-        "YDET": "R",
-        "BATCH": "B",
-        "BGPKRATIOS": "R",
-        "WIDTH": "R",
-        "MPART": "I",
-        "M_ISYM": "Y",
-        "FLAG": "I",
-        "LP": "R",
-        "FRACTIONCALC": "R",
-        "ROT": "R",
-        "QE": "R",
-    }
-
-    # derive index columns from original indices with
-    #
-    # from m.replace_original_index_miller_indices
-    #
-    # so all that is needed now is to make space for the reflections - fill with
-    # zeros...
-
-    mtz_file.adjust_column_array_sizes(nref)
-    mtz_file.set_n_reflections(nref)
-
-    # assign H, K, L, M_ISYM space
-    for column in "H", "K", "L", "M_ISYM":
-        dataset.add_column(column, type_table[column]).set_values(
-            flex.double(nref, 0.0).as_float()
-        )
-
-    mtz_file.replace_original_index_miller_indices(
-        integrated_data["miller_index_rebase"]
-    )
-
-    dataset.add_column("BATCH", type_table["BATCH"]).set_values(
-        integrated_data["batch"].as_double().as_float()
-    )
-
-    # if intensity values used in scaling exist, then just export these as I, SIGI
-    if "intensity.scale.value" in integrated_data:
-        I_scaling = integrated_data["intensity.scale.value"]
-        V_scaling = integrated_data["intensity.scale.variance"]
-        # Trap negative variances
-        assert V_scaling.all_gt(0)
-        dataset.add_column("I", type_table["I"]).set_values(I_scaling.as_float())
-        dataset.add_column("SIGI", type_table["SIGI"]).set_values(
-            flex.sqrt(V_scaling).as_float()
-        )
-        dataset.add_column("SCALEUSED", "R").set_values(
-            integrated_data["inverse_scale_factor"].as_float()
-        )
-        dataset.add_column("SIGSCALEUSED", "R").set_values(
-            flex.sqrt(integrated_data["inverse_scale_factor_variance"]).as_float()
-        )
-    else:
-        if "intensity.prf.value" in integrated_data:
-            if "intensity.sum.value" in integrated_data:
-                col_names = ("IPR", "SIGIPR")
-            else:
-                col_names = ("I", "SIGI")
-            I_profile = integrated_data["intensity.prf.value"]
-            V_profile = integrated_data["intensity.prf.variance"]
-            # Trap negative variances
-            assert V_profile.all_gt(0)
-            dataset.add_column(col_names[0], type_table["I"]).set_values(
-                I_profile.as_float()
-            )
-            dataset.add_column(col_names[1], type_table["SIGI"]).set_values(
-                flex.sqrt(V_profile).as_float()
-            )
-        if "intensity.sum.value" in integrated_data:
-            I_sum = integrated_data["intensity.sum.value"]
-            V_sum = integrated_data["intensity.sum.variance"]
-            # Trap negative variances
-            assert V_sum.all_gt(0)
-            dataset.add_column("I", type_table["I"]).set_values(I_sum.as_float())
-            dataset.add_column("SIGI", type_table["SIGI"]).set_values(
-                flex.sqrt(V_sum).as_float()
-            )
-    if (
-        "background.sum.value" in integrated_data
-        and "background.sum.variance" in integrated_data
+        dataset_id,
+        batch_offset,
+        force_static_model,
     ):
-        bg = integrated_data["background.sum.value"]
-        varbg = integrated_data["background.sum.variance"]
-        assert (varbg >= 0).count(False) == 0
-        sigbg = flex.sqrt(varbg)
-        dataset.add_column("BG", type_table["BG"]).set_values(bg.as_float())
-        dataset.add_column("SIGBG", type_table["SIGBG"]).set_values(sigbg.as_float())
+        """Add batch metadata to the mtz file."""
 
-    dataset.add_column("FRACTIONCALC", type_table["FRACTIONCALC"]).set_values(
-        integrated_data["fractioncalc"].as_float()
-    )
+        # Recalculate useful numbers and references here
+        n_batches = image_range[1] - image_range[0] + 1
+        phi_start = flex.float(n_batches, 0)
+        phi_range = flex.float(n_batches, 0)
+        umat_array = flex.float(flex.grid(n_batches, 9))
+        cell_array = flex.float(flex.grid(n_batches, 6))
 
-    dataset.add_column("XDET", type_table["XDET"]).set_values(xdet.as_float())
-    dataset.add_column("YDET", type_table["YDET"]).set_values(ydet.as_float())
-    dataset.add_column("ROT", type_table["ROT"]).set_values(
-        integrated_data["ROT"].as_float()
-    )
-    if "lp" in integrated_data:
-        dataset.add_column("LP", type_table["LP"]).set_values(
-            integrated_data["lp"].as_float()
+        U = matrix.sqr(experiment.crystal.get_U())
+        if experiment.goniometer is not None:
+            F = matrix.sqr(experiment.goniometer.get_fixed_rotation())
+        else:
+            F = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
+
+        i0 = image_range[0]
+        for i in range(n_batches):
+            if experiment.scan:
+                phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(
+                    i + i0
+                )
+
+            # unit cell (this is fine) and the what-was-refined-flags hardcoded
+            # take time-varying parameters from the *end of the frame* unlikely to
+            # be much different at the end - however only exist if scan-varying
+            # refinement was used
+            if not force_static_model and experiment.crystal.num_scan_points > 0:
+                # Get the index of the image in the sequence e.g. first => 0, second => 1
+                image_index = i + i0 - experiment.scan.get_image_range()[0]
+                _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(image_index)
+                _U = matrix.sqr(experiment.crystal.get_U_at_scan_point(image_index))
+            else:
+                _unit_cell = experiment.crystal.get_unit_cell()
+                _U = U
+
+            # apply the fixed rotation to this to unify matrix definitions - F * U
+            # was what was used in the actual prediction: U appears to be stored
+            # as the transpose?! At least is for Mosflm...
+            #
+            # FIXME Do we need to apply the setting rotation here somehow? i.e. we have
+            # the U.B. matrix assuming that the axis is equal to S * axis_datum but
+            # here we are just giving the effective axis so at scan angle 0 this will
+            # not be correct... FIXME 2 not even sure we can express the stack of
+            # matrices S * R * F * U * B in MTZ format?... see [=A=] below
+            _U = matrix.sqr(dials.util.ext.dials_u_to_mosflm(F * _U, _unit_cell))
+
+            # FIXME need to get what was refined and what was constrained from the
+            # crystal model - see https://github.com/dials/dials/issues/355
+            _unit_cell_params = _unit_cell.parameters()
+            for j in range(6):
+                cell_array[i, j] = _unit_cell_params[j]
+            _U_t_elements = _U.transpose().elems
+            for j in range(9):
+                umat_array[i, j] = _U_t_elements[j]
+
+        # We ignore panels beyond the first one, at the moment
+        panel = experiment.detector[0]
+        panel_size = panel.get_image_size()
+        panel_distance = panel.get_directed_distance()
+
+        if experiment.goniometer:
+            axis = flex.float(experiment.goniometer.get_rotation_axis())
+        else:
+            axis = flex.float((0.0, 0.0, 0.0))
+
+        # FIXME hard-coded assumption on idealized beam vector below... this may be
+        # broken when we come to process data from a non-imgCIF frame
+        s0n = flex.float(matrix.col(experiment.beam.get_s0()).normalize().elems)
+
+        # get the mosaic spread though today it may not actually be set - should
+        # this be in the BATCH headers?
+        try:
+            mosaic = experiment.crystal.get_mosaicity()
+        except AttributeError:
+            mosaic = 0.0
+
+        # Jump into C++ to do the rest of the work
+        dials.util.ext.add_dials_batches(
+            self.mtz_file,
+            dataset_id,
+            image_range,
+            batch_offset,
+            wavelength,
+            mosaic,
+            phi_start,
+            phi_range,
+            cell_array,
+            umat_array,
+            panel_size,
+            panel_distance,
+            axis,
+            s0n,
         )
-    if "qe" in integrated_data:
-        dataset.add_column("QE", type_table["QE"]).set_values(
-            integrated_data["qe"].as_float()
+
+    def write_columns(self, integrated_data):
+        """Write the column definitions AND data to the current dataset."""
+
+        # now create the actual data structures - first keep a track of the columns
+
+        # H K L M/ISYM BATCH I SIGI IPR SIGIPR FRACTIONCALC XDET YDET ROT WIDTH
+        # LP MPART FLAG BGPKRATIOS
+
+        # gather the required information for the reflection file
+
+        nref = len(integrated_data["miller_index"])
+        assert nref
+        xdet, ydet, _ = [
+            flex.double(x) for x in integrated_data["xyzobs.px.value"].parts()
+        ]
+
+        # now add column information...
+
+        # FIXME add DIALS_FLAG which can include e.g. was partial etc.
+
+        type_table = {
+            "H": "H",
+            "K": "H",
+            "L": "H",
+            "I": "J",
+            "SIGI": "Q",
+            "IPR": "J",
+            "SIGIPR": "Q",
+            "BG": "R",
+            "SIGBG": "R",
+            "XDET": "R",
+            "YDET": "R",
+            "BATCH": "B",
+            "BGPKRATIOS": "R",
+            "WIDTH": "R",
+            "MPART": "I",
+            "M_ISYM": "Y",
+            "FLAG": "I",
+            "LP": "R",
+            "FRACTIONCALC": "R",
+            "ROT": "R",
+            "QE": "R",
+        }
+
+        # derive index columns from original indices with
+        #
+        # from m.replace_original_index_miller_indices
+        #
+        # so all that is needed now is to make space for the reflections - fill with
+        # zeros...
+
+        self.mtz_file.adjust_column_array_sizes(nref)
+        self.mtz_file.set_n_reflections(nref)
+        dataset = self.current_dataset
+
+        # assign H, K, L, M_ISYM space
+        for column in "H", "K", "L", "M_ISYM":
+            dataset.add_column(column, type_table[column]).set_values(
+                flex.double(nref, 0.0).as_float()
+            )
+
+        self.mtz_file.replace_original_index_miller_indices(
+            integrated_data["miller_index_rebase"]
         )
-    elif "dqe" in integrated_data:
-        dataset.add_column("QE", type_table["QE"]).set_values(
-            integrated_data["dqe"].as_float()
+
+        dataset.add_column("BATCH", type_table["BATCH"]).set_values(
+            integrated_data["batch"].as_double().as_float()
         )
-    else:
-        dataset.add_column("QE", type_table["QE"]).set_values(
-            flex.double(nref, 1.0).as_float()
+
+        # if intensity values used in scaling exist, then just export these as I, SIGI
+        if "intensity.scale.value" in integrated_data:
+            I_scaling = integrated_data["intensity.scale.value"]
+            V_scaling = integrated_data["intensity.scale.variance"]
+            # Trap negative variances
+            assert V_scaling.all_gt(0)
+            dataset.add_column("I", type_table["I"]).set_values(I_scaling.as_float())
+            dataset.add_column("SIGI", type_table["SIGI"]).set_values(
+                flex.sqrt(V_scaling).as_float()
+            )
+            dataset.add_column("SCALEUSED", "R").set_values(
+                integrated_data["inverse_scale_factor"].as_float()
+            )
+            dataset.add_column("SIGSCALEUSED", "R").set_values(
+                flex.sqrt(integrated_data["inverse_scale_factor_variance"]).as_float()
+            )
+        else:
+            if "intensity.prf.value" in integrated_data:
+                if "intensity.sum.value" in integrated_data:
+                    col_names = ("IPR", "SIGIPR")
+                else:
+                    col_names = ("I", "SIGI")
+                I_profile = integrated_data["intensity.prf.value"]
+                V_profile = integrated_data["intensity.prf.variance"]
+                # Trap negative variances
+                assert V_profile.all_gt(0)
+                dataset.add_column(col_names[0], type_table["I"]).set_values(
+                    I_profile.as_float()
+                )
+                dataset.add_column(col_names[1], type_table["SIGI"]).set_values(
+                    flex.sqrt(V_profile).as_float()
+                )
+            if "intensity.sum.value" in integrated_data:
+                I_sum = integrated_data["intensity.sum.value"]
+                V_sum = integrated_data["intensity.sum.variance"]
+                # Trap negative variances
+                assert V_sum.all_gt(0)
+                dataset.add_column("I", type_table["I"]).set_values(I_sum.as_float())
+                dataset.add_column("SIGI", type_table["SIGI"]).set_values(
+                    flex.sqrt(V_sum).as_float()
+                )
+        if (
+            "background.sum.value" in integrated_data
+            and "background.sum.variance" in integrated_data
+        ):
+            bg = integrated_data["background.sum.value"]
+            varbg = integrated_data["background.sum.variance"]
+            assert (varbg >= 0).count(False) == 0
+            sigbg = flex.sqrt(varbg)
+            dataset.add_column("BG", type_table["BG"]).set_values(bg.as_float())
+            dataset.add_column("SIGBG", type_table["SIGBG"]).set_values(
+                sigbg.as_float()
+            )
+
+        dataset.add_column("FRACTIONCALC", type_table["FRACTIONCALC"]).set_values(
+            integrated_data["fractioncalc"].as_float()
         )
+
+        dataset.add_column("XDET", type_table["XDET"]).set_values(xdet.as_float())
+        dataset.add_column("YDET", type_table["YDET"]).set_values(ydet.as_float())
+        dataset.add_column("ROT", type_table["ROT"]).set_values(
+            integrated_data["ROT"].as_float()
+        )
+        if "lp" in integrated_data:
+            dataset.add_column("LP", type_table["LP"]).set_values(
+                integrated_data["lp"].as_float()
+            )
+        if "qe" in integrated_data:
+            dataset.add_column("QE", type_table["QE"]).set_values(
+                integrated_data["qe"].as_float()
+            )
+        elif "dqe" in integrated_data:
+            dataset.add_column("QE", type_table["QE"]).set_values(
+                integrated_data["dqe"].as_float()
+            )
+        else:
+            dataset.add_column("QE", type_table["QE"]).set_values(
+                flex.double(nref, 1.0).as_float()
+            )
 
 
 def export_mtz(integrated_data, experiment_list, params):
@@ -482,7 +493,7 @@ def export_mtz(integrated_data, experiment_list, params):
         )
 
     # Create the mtz file
-    mtz_writer = MTZWriter(experiment_list[0].crystal.get_space_group())
+    mtz_writer = UnmergedMTZWriter(experiment_list[0].crystal.get_space_group())
 
     # FIXME TODO for more than one experiment into an MTZ file:
     #
@@ -527,9 +538,8 @@ def export_mtz(integrated_data, experiment_list, params):
         s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
         logger.debug("Beam vector: %.4f %.4f %.4f" % s0n)
 
-        _add_batch_list(
+        mtz_writer.add_batch_list(
             image_range,
-            mtz_writer.mtz_file,
             experiment,
             wavelength,
             dataset_id,
@@ -553,8 +563,11 @@ def export_mtz(integrated_data, experiment_list, params):
     mtz_writer.add_crystal(
         params.mtz.crystal_name, unit_cell=experiment_list[0].crystal.get_unit_cell()
     )  # Note: add unit cell here as may have changed basis since creating mtz.
+    # For multi-wave unmerged mtz, we add an empty dataset for each wavelength,
+    # but only write the data into the final dataset (for unmerged the batches
+    # link the unmerged data to the individual wavelengths).
     for wavelength in wavelengths:
-        mtz_writer.add_dataset(wavelength)
+        mtz_writer.add_empty_dataset(wavelength)
 
     # Combine all of the experiment data columns before writing
     combined_data = {k: v.deep_copy() for k, v in experiment_list[0].data.items()}
@@ -568,7 +581,7 @@ def export_mtz(integrated_data, experiment_list, params):
     ), "Lost rows in split/combine"
 
     # Write all the data and columns to the mtz file
-    _write_columns(mtz_writer.mtz_file, mtz_writer.current_dataset, combined_data)
+    mtz_writer.write_columns(combined_data)
 
     logger.info(
         "Saving {} integrated reflections to {}".format(
