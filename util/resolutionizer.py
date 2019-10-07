@@ -569,12 +569,30 @@ class Resolutionizer(object):
 
         if limit is None:
             limit = self._params.isigma
+        return self._resolution_sigma(
+            limit,
+            get_mean=lambda b: b.unmerged_i_over_sigma_mean,
+            label="Unmerged I/sigma",
+            fig_filename="isigma.png",
+        )
 
-        isigma_s = flex.double(
-            [b.unmerged_i_over_sigma_mean for b in self._merging_statistics.bins]
-        ).reversed()
+    def resolution_merged_isigma(self, limit=None):
+        """Compute a resolution limit where either Mn(I/sigma) = 1.0 (limit if
+        set) or the full extent of the data."""
+
+        if limit is None:
+            limit = self._params.misigma
+        return self._resolution_sigma(
+            limit,
+            get_mean=lambda b: b.i_over_sigma_mean,
+            label="Merged I/sigma",
+            fig_filename="misigma.png",
+        )
+
+    def _resolution_sigma(self, limit, get_mean, label, fig_filename):
+        isigma_s = flex.double(map(get_mean, self._merging_statistics.bins)).reversed()
         s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
+            1 / b.d_min ** 2 for b in self._merging_statistics.bins
         ).reversed()
 
         sel = isigma_s > 0
@@ -599,59 +617,14 @@ class Resolutionizer(object):
                 r_isigma = 1.0 / math.sqrt(flex.max(s_s))
 
         if self._params.plot:
-            plot = resolution_plot(ylabel="Unmerged I/sigma")
+            plot = resolution_plot(ylabel=label)
             if isigma_f is not None:
                 plot.plot(s_s, isigma_f, label="fit")
-            plot.plot(s_s, isigma_s, label="Unmerged I/sigma")
+            plot.plot(s_s, isigma_s, label=label)
             plot.plot_resolution_limit(r_isigma)
-            plot.savefig("isigma.png")
+            plot.savefig(fig_filename)
 
         return r_isigma
-
-    def resolution_merged_isigma(self, limit=None):
-        """Compute a resolution limit where either Mn(I/sigma) = 1.0 (limit if
-        set) or the full extent of the data."""
-
-        if limit is None:
-            limit = self._params.misigma
-
-        misigma_s = flex.double(
-            [b.i_over_sigma_mean for b in self._merging_statistics.bins]
-        ).reversed()
-        s_s = flex.double(
-            [1 / b.d_min ** 2 for b in self._merging_statistics.bins]
-        ).reversed()
-
-        sel = misigma_s > 0
-        misigma_s = misigma_s.select(sel)
-        s_s = s_s.select(sel)
-
-        if flex.min(misigma_s) > limit:
-            r_misigma = 1.0 / math.sqrt(flex.max(s_s))
-            misigma_f = None
-
-        else:
-            misigma_f = log_fit(s_s, misigma_s, 6)
-
-            for j, s in enumerate(s_s):
-                logger.debug(
-                    "%f %f %f %f\n", s, 1.0 / math.sqrt(s), misigma_s[j], misigma_f[j]
-                )
-
-            try:
-                r_misigma = 1.0 / math.sqrt(interpolate_value(s_s, misigma_f, limit))
-            except Exception:
-                r_misigma = 1.0 / math.sqrt(flex.max(s_s))
-
-        if self._params.plot:
-            plot = resolution_plot(ylabel="Merged I/sigma")
-            if misigma_f is not None:
-                plot.plot(s_s, misigma_f, label="fit")
-            plot.plot(s_s, misigma_s, label="Merged I/sigma")
-            plot.plot_resolution_limit(r_misigma)
-            plot.savefig("misigma.png")
-
-        return r_misigma
 
     def resolution_completeness(self, limit=None):
         """Compute a resolution limit where completeness < 0.5 (limit if
