@@ -248,6 +248,10 @@ class MTZExporter(object):
         logger.info(summary.getvalue())
 
 
+def export_mtz(params, experiments, reflections):
+    MTZExporter(params, experiments, reflections).export()
+
+
 class SadabsExporter(object):
     """
     A class to export data in HKL format
@@ -293,6 +297,10 @@ columns in reflection table."""
             export_sadabs(self.reflections, self.experiments, self.params)
         except ValueError as e:
             raise Sorry(e)
+
+
+def export_sadabs(params, experiments, reflections):
+    SadabsExporter(params, experiments, reflections).export()
 
 
 class XDSASCIIExporter(object):
@@ -342,6 +350,10 @@ columns in reflection table."""
             raise Sorry(e)
 
 
+def export_xdsascii(params, experiments, reflections):
+    XDSASCIIExporter(params, experiments, reflections).export()
+
+
 class NexusExporter(object):
     """
     A class to export data in Nexus format
@@ -374,6 +386,10 @@ class NexusExporter(object):
         from dials.util.nexus import dump
 
         dump(self.experiments, self.reflections, self.params.nxs.hklout)
+
+
+def export_nexus(params, experiments, reflections):
+    NexusExporter(params, experiments, reflections).export()
 
 
 class MMCIFExporter(object):
@@ -414,6 +430,10 @@ class MMCIFExporter(object):
             raise Sorry(e)
 
 
+def export_mmcif(params, experiments, reflections):
+    MMCIFExporter(params, experiments, reflections).export()
+
+
 class MosflmExporter(object):
     """
     A class to export stuff in mosflm format
@@ -445,6 +465,10 @@ class MosflmExporter(object):
         from dials.util.mosflm import dump
 
         dump(self.experiments, self.params.mosflm.directory)
+
+
+def export_mosflm(params, experiments, reflections):
+    MosflmExporter(params, experiments, reflections).export()
 
 
 class XDSExporter(object):
@@ -480,6 +504,10 @@ class XDSExporter(object):
         from dials.util.xds import dump
 
         dump(self.experiments, self.reflections, self.params.xds.directory)
+
+
+def export_xds(params, experiments, reflections):
+    XDSExporter(params, experiments, reflections).export()
 
 
 class JsonExporter(object):
@@ -535,6 +563,10 @@ class JsonExporter(object):
             n_digits=params.json.n_digits,
             experiments=self.experiments,
         )
+
+
+def export_json(params, experiments, reflections):
+    JsonExporter(params, reflections, experiments).export()
 
 
 if __name__ == "__main__":
@@ -596,24 +628,18 @@ if __name__ == "__main__":
             logger.info("Data appears to be unscaled, setting intensity = profile+sum")
 
     # Choose the exporter
-    if params.format == "mtz":
-        exporter = MTZExporter(params, experiments, reflections)
-    elif params.format == "sadabs":
-        exporter = SadabsExporter(params, experiments, reflections)
-    elif params.format == "xds_ascii":
-        exporter = XDSASCIIExporter(params, experiments, reflections)
-    elif params.format == "nxs":
-        exporter = NexusExporter(params, experiments, reflections)
-    elif params.format == "mmcif":
-        exporter = MMCIFExporter(params, experiments, reflections)
-    elif params.format == "mosflm":
-        exporter = MosflmExporter(params, experiments, reflections)
-    elif params.format == "xds":
-        exporter = XDSExporter(params, experiments, reflections)
-    elif params.format == "json":
-        exporter = JsonExporter(params, reflections, experiments=experiments)
-    else:
+    exporter = {
+        "mtz": export_mtz,
+        "sadabs": export_sadabs,
+        "xds_ascii": export_xdsascii,
+        "nxs": export_nexus,
+        "mmcif": export_mmcif,
+        "mosflm": export_mosflm,
+        "xds": export_xds,
+        "json": export_json,
+    }.get(params.format)
+    if not exporter:
         raise Sorry("Unknown format: %s" % params.format)
 
     # Export the data
-    exporter.export()
+    exporter(params, experiments, reflections)
