@@ -3,11 +3,13 @@
 Make plotly plots for html output by dials.scale, dials.report or xia2.report.
 """
 from __future__ import absolute_import, division, print_function
-import math as pymath
+
+import math
+
 import numpy as np
+from dials.array_family import flex
 from scitbx import math as scitbxmath
 from scitbx.math import distributions
-from dials.array_family import flex
 
 
 def _get_smooth_plotting_data_from_model(physical_model, component="scale"):
@@ -276,7 +278,7 @@ def plot_absorption_surface(physical_model):
     lmax = int(-1.0 + ((1.0 + len(params)) ** 0.5))
     Intensity = np.ones(THETA.shape)
     counter = 0
-    sqrt2 = pymath.sqrt(2)
+    sqrt2 = math.sqrt(2)
     nsssphe = scitbxmath.nss_spherical_harmonics(order, 50000, lfg)
     for l in range(1, lmax + 1):
         for m in range(-l, l + 1):
@@ -447,11 +449,10 @@ def normal_probability_plot(data):
     # make a gaussian for reference also
     n = y.size()
     width = histy.slot_centers()[1] - histy.slot_centers()[0]
-    gaussian = []
-    from math import exp, pi
-
-    for x in histy.slot_centers():
-        gaussian.append(n * width * exp(-(x ** 2) / 2.0) / ((2.0 * pi) ** 0.5))
+    gaussian = [
+        n * width * math.exp(-(sc ** 2) / 2.0) / ((2.0 * math.pi) ** 0.5)
+        for sc in histy.slot_centers()
+    ]
 
     return {
         "normal_distribution_plot": {
@@ -687,7 +688,6 @@ def plot_array_decay_plot(array_model):
     y = norm_y_vals
 
     tickvals = flex.double(range(n_y_bins + 1))
-    resmin = configdict["resmin"] + 1e6
     resmin = (tickvals * configdict["res_bin_width"]) + configdict["resmin"]
     d = 1.0 / ((tickvals * configdict["res_bin_width"]) + resmin) ** 0.5
     ticktext = ["%.3f" % i for i in d]
