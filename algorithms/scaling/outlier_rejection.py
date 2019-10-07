@@ -93,23 +93,20 @@ def determine_outlier_index_arrays(Ih_table, method="standard", zmax=6.0, target
     Raises:
         ValueError: if an invalid choice is made for the method.
     """
+    outlier_rej = None
     if method == "standard":
-        outlier_index_arrays = NormDevOutlierRejection(
-            Ih_table, zmax
-        ).final_outlier_arrays
+        outlier_rej = NormDevOutlierRejection(Ih_table, zmax)
     elif method == "simple":
-        outlier_index_arrays = SimpleNormDevOutlierRejection(
-            Ih_table, zmax
-        ).final_outlier_arrays
+        outlier_rej = SimpleNormDevOutlierRejection(Ih_table, zmax)
     elif method == "target":
         assert target is not None
-        outlier_index_arrays = TargetedOutlierRejection(
-            Ih_table, zmax, target
-        ).final_outlier_arrays
-    elif method is None:
-        return [flex.size_t([]) for _ in range(Ih_table.n_datasets)]
-    else:
+        outlier_rej = TargetedOutlierRejection(Ih_table, zmax, target)
+    elif method is not None:
         raise ValueError("Invalid choice of outlier rejection method: %s" % method)
+    if not outlier_rej:
+        return [flex.size_t([]) for _ in range(Ih_table.n_datasets)]
+    outlier_rej.run()
+    outlier_index_arrays = outlier_rej.final_outlier_arrays
     if Ih_table.n_datasets > 1:
         msg = (
             "Combined outlier rejection has been performed across multiple datasets, \n"
@@ -150,6 +147,10 @@ Outlier rejection algorithms require an Ih_table with nblocks = 1"""
         self._ids = self._Ih_table_block.Ih_table["dataset_id"]
         self._zmax = zmax
         self._outlier_indices = flex.size_t([])
+        self.final_outlier_arrays = None
+
+    def run(self):
+        """Run the outlier rejection algorithm, implemented by a subclass."""
         self._do_outlier_rejection()
         self.final_outlier_arrays = self._determine_outlier_indices()
 

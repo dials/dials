@@ -227,12 +227,16 @@ def test_multi_dataset_outlier_rejection(test_sg):
     rt2.set_flags(flex.bool(3, False), rt2.flags.user_excluded_in_scaling)
     Ih_table = IhTable([rt1, rt2], test_sg, nblocks=1)
     zmax = 6.0
-    outliers = SimpleNormDevOutlierRejection(Ih_table, zmax).final_outlier_arrays
+    outlier_rej = SimpleNormDevOutlierRejection(Ih_table, zmax)
+    outlier_rej.run()
+    outliers = outlier_rej.final_outlier_arrays
     assert len(outliers) == 2
     assert list(outliers[0]) == [4, 5, 6, 7]
     assert list(outliers[1]) == [1, 2]
 
-    outliers = NormDevOutlierRejection(Ih_table, zmax).final_outlier_arrays
+    outlier_rej = NormDevOutlierRejection(Ih_table, zmax)
+    outlier_rej.run()
+    outliers = outlier_rej.final_outlier_arrays
     assert len(outliers) == 2
     assert list(outliers[0]) == [7, 6]
     assert list(outliers[1]) == [1, 2]
@@ -242,6 +246,7 @@ def test_standard_outlier_rejection(generated_Ih_table):
     """Test the standard outlier rejection algorithm."""
     zmax = 6.0
     OutlierRej = NormDevOutlierRejection(generated_Ih_table, zmax)
+    OutlierRej.run()
     outliers = OutlierRej.final_outlier_arrays
     assert len(outliers) == 1
     assert list(outliers[0]) == [4, 9, 8, 7]
@@ -252,9 +257,11 @@ def test_targeted_outlier_rejection(generated_Ih_table, outlier_target_table):
     that exist in both the target and the reflecton table should be tested
     based on their normalised deviation."""
     zmax = 6.0
-    outliers = TargetedOutlierRejection(
+    outlier_rej = TargetedOutlierRejection(
         generated_Ih_table, zmax, outlier_target_table
-    ).final_outlier_arrays
+    )
+    outlier_rej.run()
+    outliers = outlier_rej.final_outlier_arrays
     assert len(outliers) == 1
     assert list(outliers[0]) == [5, 6, 7, 8]
 
@@ -262,9 +269,9 @@ def test_targeted_outlier_rejection(generated_Ih_table, outlier_target_table):
 def test_simple_outlier_rejection(generated_Ih_table):
     """Test the simple outlier rejection algorithm."""
     zmax = 6.0
-    outliers = SimpleNormDevOutlierRejection(
-        generated_Ih_table, zmax
-    ).final_outlier_arrays
+    outlier_rej = SimpleNormDevOutlierRejection(generated_Ih_table, zmax)
+    outlier_rej.run()
+    outliers = outlier_rej.final_outlier_arrays
     assert len(outliers) == 1
     assert list(outliers[0]) == [4, 5, 6, 7, 8, 9]
 
