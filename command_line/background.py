@@ -18,6 +18,8 @@ help_message = """
 Examples::
 
   dials.background image_*.cbf
+
+  dials.background imported.expt
 """
 
 phil_scope = iotbx.phil.parse(
@@ -58,7 +60,7 @@ def run(args):
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
         parser.print_help()
-        sys.exit("Please pass an experiment list")
+        return
 
     imagesets = experiments.imagesets()
 

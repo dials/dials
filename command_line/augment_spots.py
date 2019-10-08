@@ -106,7 +106,8 @@ def run(args):
     reflections = flatten_reflections(params.input.reflections)
 
     if len(reflections) != 1:
-        raise Sorry("Exactly one reflection file needed")
+        parser.print_help()
+        return
     if len(experiments) > 1:
         raise Sorry("0, 1 experiments required")
 

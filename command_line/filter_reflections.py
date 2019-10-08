@@ -435,9 +435,8 @@ def run():
 
     if not reflections:
         parser.print_help()
-        raise Sorry("No valid reflection file given")
+        return
     if len(reflections) != 1:
-        parser.print_help()
         raise Sorry("Exactly 1 reflection file must be specified")
     reflections = reflections[0]
 

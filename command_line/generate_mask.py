@@ -22,7 +22,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os.path
-import sys
 
 import six.moves.cPickle as pickle
 
@@ -165,7 +164,7 @@ def run(phil=phil_scope, args=None):
     # Check number of args
     if len(experiments) == 0:
         parser.print_help()
-        sys.exit(1)
+        return
 
     # Run the script
     generate_mask(experiments, params)

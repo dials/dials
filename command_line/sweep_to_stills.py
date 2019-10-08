@@ -9,7 +9,6 @@ Example:
 from __future__ import absolute_import, division, print_function
 
 import logging
-import sys
 
 from libtbx.phil import parse
 from scitbx import matrix
@@ -214,11 +213,9 @@ def run(args=None, phil=phil_scope):
     params, options = parser.parse_args(args=args, show_diff_phil=True)
 
     # Try to load the models and data
-    if not params.input.experiments:
-        sys.exit("No Experiments found in the input\n" + usage)
-
-    if not params.input.reflections:
-        sys.exit("No Reflections found in the input\n" + usage)
+    if not params.input.experiments or not params.input.reflections:
+        parser.print_help()
+        return
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
