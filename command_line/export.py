@@ -205,6 +205,27 @@ phil_scope = parse(
 )
 
 
+def _check_input(experiments, reflections, params=None, check_intensities=False):
+    if not experiments:
+        sys.exit("export requires an experiment list")
+    if len(reflections) != 1:
+        sys.exit("export requires 1 reflection table")
+    if check_intensities:
+        if not params:
+            sys.exit("No parameters given")
+        if "profile" not in params.intensity and "sum" not in params.intensity:
+            sys.exit(
+                "Only intensity options containing sum or profile can be exported in this format"
+            )
+        if (
+            "intensity.sum.value" not in reflections[0]
+            and "intensity.prf.value" not in reflections[0]
+        ):
+            sys.exit(
+                "Unable to find 'intensity.sum.value' or 'intensity.prf.value' columns in reflection table."
+            )
+
+
 def export_mtz(params, experiments, reflections):
     """
     Export reflections in MTZ format
@@ -214,18 +235,14 @@ def export_mtz(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("MTZ export requires an experiment list")
-    if len(reflections) != 1:
-        raise Sorry("MTZ export requires 1 reflection table")
+    _check_input(experiments, reflections)
 
     from dials.util.export_mtz import export_mtz
 
     try:
         m = export_mtz(reflections[0], experiments, params)
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
     from six.moves import cStringIO as StringIO
 
     summary = StringIO()
@@ -243,30 +260,14 @@ def export_sadabs(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("SADABS export requires an experiment list")
-    if len(reflections) != 1:
-        raise Sorry("SADABS export requires 1 reflection table")
+    _check_input(experiments, reflections, params=params, check_intensities=True)
 
     from dials.util.export_sadabs import export_sadabs
 
-    if "profile" not in params.intensity and "sum" not in params.intensity:
-        raise Sorry(
-            """Only intensity options containing sum or profile are compatible with
-export to sadabs format."""
-        )
-    if not any(
-        i in reflections[0] for i in ["intensity.sum.value", "intensity.prf.value"]
-    ):
-        raise Sorry(
-            """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
-columns in reflection table."""
-        )
     try:
         export_sadabs(reflections[0], experiments, params)
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
 
 def export_xdsascii(params, experiments, reflections):
@@ -278,30 +279,14 @@ def export_xdsascii(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("XDS_ASCII exporter requires an experiment list")
-    if len(reflections) != 1:
-        raise Sorry("XDS_ASCII exporter requires 1 reflection table")
+    _check_input(experiments, reflections, params=params, check_intensities=True)
 
     from dials.util.export_xds_ascii import export_xds_ascii
 
-    if "profile" not in params.intensity and "sum" not in params.intensity:
-        raise Sorry(
-            """Only intensity options containing sum or profile are compatible with
-export to xds_ascii format."""
-        )
-    if not any(
-        i in reflections[0] for i in ["intensity.sum.value", "intensity.prf.value"]
-    ):
-        raise Sorry(
-            """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
-columns in reflection table."""
-        )
     try:
         export_xds_ascii(reflections[0], experiments, params)
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
 
 def export_nexus(params, experiments, reflections):
@@ -313,11 +298,7 @@ def export_nexus(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("Nexus exporter requires an experiment list")
-    if len(reflections) != 1:
-        raise Sorry("Nexus exporter requires 1 reflection table")
+    _check_input(experiments, reflections)
 
     from dials.util.nexus import dump
 
@@ -333,11 +314,7 @@ def export_mmcif(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("CIF exporter requires an experiment list")
-    if len(reflections) != 1:
-        raise Sorry("CIF exporter requires 1 reflection table")
+    _check_input(experiments, reflections)
 
     from dials.util.export_mmcif import MMCIFOutputFile
 
@@ -345,7 +322,7 @@ def export_mmcif(params, experiments, reflections):
     try:
         outfile.write(experiments, reflections[0])
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
 
 def export_mosflm(params, experiments, reflections):
@@ -357,11 +334,10 @@ def export_mosflm(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    # Check the input
-    if not experiments:
-        raise Sorry("Mosflm exporter requires an experiment list")
+    _check_input(experiments, [None])
+
     if reflections:
-        raise Sorry("Mosflm exporter does not need a reflection table")
+        sys.exit("Mosflm exporter does not need a reflection table")
 
     from dials.util.mosflm import dump
 
@@ -379,7 +355,7 @@ def export_xds(params, experiments, reflections):
 
     # Check the input
     if len(reflections) > 1:
-        raise Sorry("XDS exporter requires 0 or 1 reflection table")
+        sys.exit("XDS exporter requires 0 or 1 reflection table")
 
     if reflections:
         reflections = reflections[0]
@@ -399,17 +375,20 @@ def export_json(params, experiments, reflections):
     """
 
     # Check the input
-    if experiments is None:
-        raise Sorry("json exporter requires an experiment list")
+    _check_input(experiments, [None])
     if not reflections:
-        raise Sorry("json exporter require a reflection table")
+        sys.exit("json exporter requires a reflection table")
 
     from dials.util import export_json
     from scitbx.array_family import flex
 
     imagesets = [expt.imageset for expt in experiments]
 
-    assert len(reflections) == len(imagesets), (len(reflections), len(imagesets))
+    if len(reflections) != len(imagesets):
+        sys.exit(
+            "Mismatch between %d reflections lists and %d imagesets"
+            % (len(reflections), len(imagesets))
+        )
     selected_reflections = None
     for i, refl in enumerate(reflections):
         refl["imageset_id"] = flex.size_t(refl.size(), i)
@@ -435,7 +414,6 @@ if __name__ == "__main__":
     )
     from dials.util.version import dials_version
     from dials.util import log
-    from dials.util import Sorry
 
     usage = "dials.export models.expt reflections.pickle [options]"
 
@@ -497,7 +475,7 @@ if __name__ == "__main__":
         "json": export_json,
     }.get(params.format)
     if not exporter:
-        raise Sorry("Unknown format: %s" % params.format)
+        sys.exit("Unknown format: %s" % params.format)
 
     # Export the data
     exporter(params, experiments, reflections)
