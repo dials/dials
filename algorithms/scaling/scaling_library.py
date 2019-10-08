@@ -154,9 +154,8 @@ def scale_against_target(
     reflections = [reflection_table, target_reflection_table]
     experiment.append(target_experiment[0])
     experiments = create_scaling_model(params, experiment, reflections)
-    scaler = TargetScalerFactory.create(
-        params, experiments, reflections, is_scaled_list=[False, True]
-    )
+    experiments[-1].scaling_model.set_scaling_model_as_scaled()
+    scaler = TargetScalerFactory.create(params, experiments, reflections)
     scaler.perform_scaling()
     scaler.expand_scales_to_all_reflections(calc_cov=True)
     return scaler.unscaled_scalers[0].reflection_table

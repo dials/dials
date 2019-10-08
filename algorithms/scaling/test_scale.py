@@ -243,7 +243,6 @@ def test_scale_script_prepare_input():
     ]
 
 
-@pytest.mark.skip(reason="Fix for targeted scaling not yet implemented")
 def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     """Test targeted scaling against an mtz generated with dials.scale."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
@@ -266,6 +265,8 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("scaled.refl").check()
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    assert len(expts) == 1
 
 
 def test_scale_physical(dials_regression, tmpdir):

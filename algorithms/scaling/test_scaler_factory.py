@@ -208,7 +208,7 @@ def test_SingleScalerFactory(generated_param, refl_to_filter, mock_scaling_compo
     )
 
     # Test reflection filtering
-    rt, reasons = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
+    rt, _ = SingleScalerFactory.filter_bad_reflections(refl_to_filter)
     assert list(rt.get_flags(rt.flags.excluded_for_scaling)) == [
         False,
         True,
@@ -226,9 +226,9 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
 
     # Test standard initialisation.
     assert generated_param.scaling_options.use_free_set is False  # just to check
-    target = TargetScalerFactory.create(
-        generated_param, explist, refl_list, is_scaled_list=[True, True, False]
-    )
+    explist[0].scaling_model.is_scaled = True
+    explist[1].scaling_model.is_scaled = True
+    target = TargetScalerFactory.create(generated_param, explist, refl_list)
     assert isinstance(target, TargetScaler)
     assert len(target.single_scalers) == 2
     assert len(target.unscaled_scalers) == 1
@@ -236,13 +236,12 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     assert set(target.single_scalers[1].reflection_table["id"]) == {1}
     assert set(target.unscaled_scalers[0].reflection_table["id"]) == {2}
 
-    # Test for correct initialisation hen scaling against a target model.
+    # Test for correct initialisation when scaling against a target model.
     generated_param.scaling_options.target_model = True
-    target = TargetScalerFactory.create(
-        generated_param, explist, refl_list, is_scaled_list=[True, True, False]
+    target = TargetScalerFactory.create_for_target_against_reference(
+        generated_param, explist, refl_list
     )
     assert isinstance(target.single_scalers[0], NullScaler)
-    assert isinstance(target.single_scalers[1], NullScaler)
 
     # Now test converting targetscaler to multiscaler
     multiscaler = MultiScalerFactory.create_from_targetscaler(target)
@@ -253,9 +252,8 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
     generated_param.scaling_options.target_model = False
     refl_list[1]["d"] = flex.double([-0.1, -0.1, -0.1, -0.1])
-    target = TargetScalerFactory.create(
-        generated_param, explist, refl_list, is_scaled_list=[True, False, False]
-    )
+    explist[0].scaling_model.is_scaled = True
+    target = TargetScalerFactory.create(generated_param, explist, refl_list)
     assert isinstance(target, TargetScaler)
     assert len(target.single_scalers) == 1
     assert len(target.unscaled_scalers) == 1
@@ -264,9 +262,9 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
 
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
     refl_list[0]["d"] = flex.double([-0.1, -0.1, -0.1, -0.1])
-    target = TargetScalerFactory.create(
-        generated_param, explist, refl_list, is_scaled_list=[True, True, False]
-    )
+    explist[0].scaling_model.is_scaled = True
+    explist[1].scaling_model.is_scaled = True
+    target = TargetScalerFactory.create(generated_param, explist, refl_list)
     assert isinstance(target, TargetScaler)
     assert len(target.single_scalers) == 1
     assert len(target.unscaled_scalers) == 1
