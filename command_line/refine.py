@@ -346,10 +346,9 @@ def run(args=None, phil=working_phil):
 
     # Try to load the models and data
     nexp = len(experiments)
-    if nexp == 0:
-        sys.exit("No Experiments found in the input")
-    if len(reflections) == 0:
-        sys.exit("No reflection data found in the input")
+    if nexp == 0 or len(reflections) == 0:
+        parser.print_help()
+        return
     if len(reflections) > 1:
         sys.exit("Only one reflections list can be imported at present")
     reflections = reflections[0]
