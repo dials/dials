@@ -1513,7 +1513,9 @@ class SpotFrame(XrayFrame):
                     frame_predictions_sel = (frame_numbers >= (i_frame - n)) & (
                         frame_numbers < (i_frame + 1 + n)
                     )
-                    for reflection in ref_list.select(frame_predictions_sel & expt_sel):
+
+                    selected = ref_list.select(frame_predictions_sel & expt_sel)
+                    for reflection in selected.rows():
                         if (
                             self.settings.show_predictions
                             or self.settings.show_miller_indices
