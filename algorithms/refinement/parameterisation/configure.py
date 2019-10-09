@@ -214,7 +214,7 @@ phil_str = (
         .type = int(value_min=0)
         .expert_level = 1
 
-      fix = all position orientation
+      fix = all position orientation distance
         .help = "Fix detector parameters. The translational parameters"
                 "(position) may be set separately to the orientation."
         .type = choice
@@ -685,6 +685,8 @@ def _parameterise_detectors(options, experiments, analysis):
                 fix_list.extend(["Dist", "Shift1", "Shift2"])
             elif options.detector.fix == "orientation":
                 fix_list.extend(["Tau"])
+            elif options.detector.fix == "distance":
+                fix_list.extend(["Dist"])
             else:  # can only get here if refinement.phil is broken
                 raise RuntimeError("detector.fix value not recognised")
 
