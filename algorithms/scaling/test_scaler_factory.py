@@ -12,7 +12,6 @@ from dials.algorithms.scaling.scaler_factory import (
     SingleScalerFactory,
     TargetScalerFactory,
     MultiScalerFactory,
-    is_scaled,
     create_scaler,
 )
 from dials.algorithms.scaling.scaler import (
@@ -305,10 +304,6 @@ def test_scaler_factory_helper_functions(
     """Test the helper functions."""
 
     test_refl, exp = test_refl_and_exp(mock_scaling_component)
-
-    # Test is_scaled function
-    scaled_list = is_scaled(mock_experimentlist)
-    assert scaled_list == [True, True, False, True, False]
 
     # Test create_scaler
     # Test case for single refl and exp
