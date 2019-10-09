@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import procrunner
+import pytest
 from dials.array_family import flex
 
 
-def test_filter_reflections(run_in_tmpdir):
+@pytest.fixture(scope="session")
+def reflections(tmpdir_factory):
     # Make a dummy reflection table for the test setting some values and flags
     rt = flex.reflection_table.empty_standard(6)
     rt["iobs"] = flex.size_t_range(len(rt))
@@ -15,50 +17,64 @@ def test_filter_reflections(run_in_tmpdir):
     mask2 = flex.bool([True, False] * 3)
     rt.set_flags(mask1, rt.flags.integrated)
     rt.set_flags(mask2, rt.flags.reference_spot)
-    rt_name = "test_refs.refl"
-    rt.as_file(rt_name)
+    tmpdir = tmpdir_factory.mktemp("filter_reflections")
+    rt_name = tmpdir.join("test_refs.refl")
+    rt.as_file(rt_name.strpath)
+    return rt_name
 
-    # Test flag expression
-    cmd = [
-        "dials.filter_reflections",
-        rt_name,
-        "flag_expression='integrated & ~reference_spot'",
-    ]
-    result = procrunner.run(cmd)
+
+def test_filter_reflections_flag_expression(reflections, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.filter_reflections",
+            reflections,
+            "flag_expression='integrated & ~reference_spot'",
+        ],
+        working_directory=tmpdir,
+    )
     assert not result.returncode and not result.stderr
-    ref = flex.reflection_table.from_file("filtered.refl")
+    ref = flex.reflection_table.from_file(tmpdir.join("filtered.refl").strpath)
     # The test selects only the 2nd reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [1]
 
-    # Test filter by experiment id
-    cmd = ["dials.filter_reflections", rt_name, "id=0"]
-    result = procrunner.run(cmd)
+
+def test_filter_reflections_by_experiment_id(reflections, tmpdir):
+    result = procrunner.run(
+        ["dials.filter_reflections", reflections, "id=0"], working_directory=tmpdir
+    )
     assert not result.returncode and not result.stderr
-    ref = flex.reflection_table.from_file("filtered.refl")
+    ref = flex.reflection_table.from_file(tmpdir.join("filtered.refl").strpath)
     # The test selects only the first five reflections
     assert len(ref) == 5
     assert list(ref["iobs"]) == [0, 1, 2, 3, 4]
 
-    # Test filter by panel
-    cmd = ["dials.filter_reflections", rt_name, "panel=5"]
-    result = procrunner.run(cmd)
+
+def test_filter_reflections_by_panel(reflections, tmpdir):
+    result = procrunner.run(
+        ["dials.filter_reflections", reflections, "panel=5"], working_directory=tmpdir
+    )
     assert not result.returncode and not result.stderr
-    ref = flex.reflection_table.from_file("filtered.refl")
+    ref = flex.reflection_table.from_file(tmpdir.join("filtered.refl").strpath)
     # The test selects only the last reflection
     assert len(ref) == 1
     assert list(ref["iobs"]) == [5]
 
-    # Test filter by resolution
-    cmd = ["dials.filter_reflections", rt_name, "d_max=3.0", "d_min=2.0"]
-    result = procrunner.run(cmd)
+
+def test_filter_reflections_by_resolution(reflections, tmpdir):
+    result = procrunner.run(
+        ["dials.filter_reflections", reflections, "d_max=3.0", "d_min=2.0"],
+        working_directory=tmpdir,
+    )
     assert not result.returncode and not result.stderr
-    ref = flex.reflection_table.from_file("filtered.refl")
+    ref = flex.reflection_table.from_file(tmpdir.join("filtered.refl").strpath)
     # The test selects only the 3rd, 4th and 5th reflections
     assert len(ref) == 3
     assert list(ref["iobs"]) == [2, 3, 4]
 
-    # Test printing analysis
-    cmd = ["dials.filter_reflections", rt_name]
-    result = procrunner.run(cmd)
+
+def test_filter_reflections_printing_analysis(reflections, tmpdir):
+    result = procrunner.run(
+        ["dials.filter_reflections", reflections], working_directory=tmpdir
+    )
     assert not result.returncode and not result.stderr
