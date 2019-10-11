@@ -20,6 +20,7 @@ def generate_experiments_reflections(
     sample_size=100,
     map_to_p1=False,
     twin_fractions=None,
+    map_to_minimum=True,
 ):
     datasets, reindexing_ops = generate_test_data(
         space_group,
@@ -32,6 +33,7 @@ def generate_experiments_reflections(
         sample_size=sample_size,
         map_to_p1=map_to_p1,
         twin_fractions=twin_fractions,
+        map_to_minimum=map_to_minimum,
     )
 
     expts = ExperimentList()
@@ -67,6 +69,7 @@ def generate_test_data(
     sample_size=100,
     map_to_p1=False,
     twin_fractions=None,
+    map_to_minimum=True,
 ):
 
     import random
@@ -90,7 +93,8 @@ def generate_test_data(
     else:
         cs = sgi.any_compatible_crystal_symmetry(volume=unit_cell_volume)
 
-    cs = cs.minimum_cell()
+    if map_to_minimum:
+        cs = cs.minimum_cell()
     intensities = generate_intensities(cs, d_min=d_min)
     intensities.show_summary()
 
