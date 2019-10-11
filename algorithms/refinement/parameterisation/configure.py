@@ -686,7 +686,7 @@ def _parameterise_detectors(options, experiments, analysis):
             elif options.detector.fix == "orientation":
                 fix_list.extend(["Tau"])
             elif options.detector.fix == "distance":
-                fix_list.extend(["Dist"])
+                fix_list.extend(["Dist", "Tau2", "Tau3"])
             else:  # can only get here if refinement.phil is broken
                 raise RuntimeError("detector.fix value not recognised")
 
