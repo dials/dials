@@ -5,8 +5,12 @@ import os
 import procrunner
 import pytest
 from cctbx import sgtbx
+from dxtbx.serialize import load
 
 from dials.array_family import flex
+from dials.algorithms.symmetry.cosym._generate_test_data import (
+    generate_experiments_reflections,
+)
 
 
 def test_symmetry(dials_regression, tmpdir):
@@ -27,16 +31,14 @@ def test_symmetry(dials_regression, tmpdir):
     assert tmpdir.join("symmetrized.expt").check()
 
 
-from dials.algorithms.symmetry.cosym._generate_test_data import (
-    generate_experiments_reflections,
-)
+def test_symmetry_basis_changes_for_C2(tmpdir):
+    """Test the correctness of change of basis operations in dials.symmetry
 
-
-def test_symmetry_R3m_I2m(tmpdir):
+    Supply the unit cell of beta-lactamase, which triggers a change of
+    basis from input to minimum during symmetry analysis."""
     os.chdir(tmpdir.strpath)
-    space_group = "C 2"
     unit_cell = (53.173, 61.245, 69.292, 90.0, 93.04675, 90.0)
-    space_group = sgtbx.space_group_info(space_group).group()
+    space_group = sgtbx.space_group_info("C 2").group()
     experiments, reflections, _ = generate_experiments_reflections(
         space_group=space_group,
         unit_cell=unit_cell,
@@ -51,15 +53,11 @@ def test_symmetry_R3m_I2m(tmpdir):
     joint_table.as_pickle("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
-    # okay so generated in C 1 m 1, but lattice looks like R-3m, s*o reindex
-    # to this first
-
     command = ["dials.symmetry", expt_file, refl_file]
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
     assert tmpdir.join("symmetrized.expt").check(file=1)
-    from dxtbx.serialize import load
 
     expts = load.experiment_list(
         tmpdir.join("symmetrized.expt").strpath, check_format=False
