@@ -756,7 +756,7 @@ class IntegrationManager(object):
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sweeps():
+        elif self.experiments.all_sequences():
             rows = [
                 [
                     "#",
@@ -775,7 +775,7 @@ class IntegrationManager(object):
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(f0), str(f1), str(p0), str(p1), str(n)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
+            raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
         task_table = table(rows, has_header=True, justify="right", prefix=" ")
@@ -1234,7 +1234,7 @@ class ReferenceCalculatorManager(object):
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sweeps():
+        elif self.experiments.all_sequences():
             rows = [
                 [
                     "#",
@@ -1253,7 +1253,7 @@ class ReferenceCalculatorManager(object):
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(f0), str(f1), str(p0), str(p1), str(n)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
+            raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
         task_table = table(rows, has_header=True, justify="right", prefix=" ")

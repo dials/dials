@@ -58,7 +58,7 @@ def test_refine_bravais_settings(dials_regression, tmpdir):
 
 
 def test_refine_bravais_settings_2(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sequence")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
     result = procrunner.run(

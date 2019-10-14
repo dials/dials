@@ -37,7 +37,7 @@ def generate_phil_scope():
     scan_range = None
       .help = "The range of images to use in finding spots. The ranges are"
               "inclusive (e.g. j0 <= j < j1)."
-              "For sweeps the scan range is interpreted as the literal scan"
+              "For sequences the scan range is interpreted as the literal scan"
               "range. Whereas for imagesets the scan range is interpreted as"
               "the image number in the imageset. Multiple ranges can be"
               "specified by repeating the scan_range= parameter."
@@ -241,11 +241,11 @@ class BackgroundGradientFilter(object):
         self.background_size = background_size
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sweep=None, shoeboxes=None, **kwargs):
+    def run(self, flags, sequence=None, shoeboxes=None, **kwargs):
         from dials.algorithms.background.simple import Linear2dModeller
 
         modeller = Linear2dModeller()
-        detector = sweep.get_detector()
+        detector = sequence.get_detector()
 
         # sort shoeboxes by centroid z
         frame = shoeboxes.centroid_all().position_frame()
@@ -283,7 +283,7 @@ class BackgroundGradientFilter(object):
         rlist["panel"] = shoeboxes.panels()
         rlist["bbox"] = shoeboxes.bounding_boxes()
 
-        rlist.extract_shoeboxes(sweep)
+        rlist.extract_shoeboxes(sequence)
 
         shoeboxes = rlist["shoebox"]
         shoeboxes.flatten()
@@ -335,7 +335,7 @@ class SpotDensityFilter(object):
         self.nbins = nbins
         self.gradient_cutoff = gradient_cutoff
 
-    def run(self, flags, sweep=None, observations=None, **kwargs):
+    def run(self, flags, sequence=None, observations=None, **kwargs):
         obs_x, obs_y = observations.centroids().px_position_xy().parts()
 
         import numpy as np
@@ -415,7 +415,7 @@ class SpotFinderFactory(object):
         from dials.util.masking import MaskGenerator
         from dials.algorithms.spot_finding.finder import SpotFinder
         from libtbx.phil import parse
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         if params is None:
             params = phil_scope.fetch(source=parse("")).extract()
@@ -426,7 +426,7 @@ class SpotFinderFactory(object):
             no_shoeboxes_2d = False
             all_stills = True
             for experiment in experiments:
-                if isinstance(experiment.imageset, ImageSweep):
+                if isinstance(experiment.imageset, ImageSequence):
                     all_stills = False
                     break
             if all_stills:

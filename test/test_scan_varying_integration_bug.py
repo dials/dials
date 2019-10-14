@@ -11,7 +11,7 @@ def test_1(dials_data, tmpdir):
 
     commands = [
         ["dials.import"] + g,
-        ["dials.slice_sweep", "imported.expt", "image_range=80,90"],
+        ["dials.slice_sequence", "imported.expt", "image_range=80,90"],
         ["dials.find_spots", "imported_80_90.expt"],
         ["dials.index", "imported_80_90.expt", "strong.refl", "space_group=P41212"],
         ["dials.refine", "indexed.expt", "indexed.refl", "scan_varying=True"],

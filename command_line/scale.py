@@ -78,7 +78,7 @@ The scaling models determined by this program can be plotted with::
 
 Example use cases
 
-Regular single-sweep scaling, with no absorption correction::
+Regular single-sequence scaling, with no absorption correction::
 
   dials.scale integrated.refl integrated.expt absorption_term=False
 

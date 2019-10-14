@@ -251,7 +251,7 @@ def test():
     mycrystal = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 3 degree sweep
+    # Build a mock scan for a 3 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -262,7 +262,7 @@ def test():
         epochs=list(range(1)),
         deg=True,
     )
-    sweep_range = myscan.get_oscillation_range(deg=False)
+    sequence_range = myscan.get_oscillation_range(deg=False)
 
     # Create parameterisations of these models
     det_param = DetectorParameterisationSinglePanel(mydetector)
@@ -290,7 +290,7 @@ def test():
     )
 
     # Generate rays - only to work out which hkls are predicted
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     resolution = 2.0
     index_generator = IndexGenerator(
         mycrystal.get_unit_cell(),

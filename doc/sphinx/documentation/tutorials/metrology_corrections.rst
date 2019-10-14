@@ -63,7 +63,7 @@ However, the dataset is at such low dose that it can be difficult to find the
 spots. It might be helpful to us a more mature image viewer such as ADXV or
 Albula for this.
 
-We have to run spot finding throughout the dataset. It is a 360 degree sweep
+We have to run spot finding throughout the dataset. It is a 360 degree sequence
 so this will take a few minutes. We can use more processes to move a little
 quicker::
 

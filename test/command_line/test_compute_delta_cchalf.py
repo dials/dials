@@ -11,7 +11,7 @@ from iotbx.reflection_file_reader import any_reflection_file
 
 def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
     """Test dials.compute_delta_cchalf on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath
 

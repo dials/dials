@@ -27,8 +27,8 @@ def test(dials_regression, run_in_tmpdir):
 
     phil_input = "\n".join(
         (
-            "  input.experiments={0}/data/sweep_%03d/experiments.json\n"
-            + "  input.reflections={0}/data/sweep_%03d/reflections.pickle"
+            "  input.experiments={0}/data/sequence_%03d/experiments.json\n"
+            + "  input.reflections={0}/data/sequence_%03d/reflections.pickle"
         )
         % (i, i)
         for i in input_range
@@ -205,7 +205,7 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
         "refinement_test_data",
         "multi_narrow_wedges",
         "data",
-        "sweep_{:03d}",
+        "sequence_{:03d}",
         "{}",
     )
     files = [

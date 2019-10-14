@@ -75,7 +75,7 @@ within xia2_. You can use xia2_ just as before, simply replacing
    XIA2 0.4.0.0
    DIALS 1.0-pre-210-gdd8f759
    Command line: xia2 -dials /dls/mx-scratch/dials_tutorial/i04_thaumatin/
-   ------------------- Autoindexing SWEEP1 --------------------
+   ------------------- Autoindexing SEQUENCE1 --------------------
    All possible indexing solutions:
    tP  57.79  57.79 150.01  90.00  90.00  90.00
    oC  81.72  81.74 150.02  90.00  90.00  90.00
@@ -85,7 +85,7 @@ within xia2_. You can use xia2_ just as before, simply replacing
    aP  57.81  57.78 150.03  90.01  89.99  89.99
    Indexing solution:
    tP  57.79  57.79 150.01  90.00  90.00  90.00
-   -------------------- Integrating SWEEP1 --------------------
+   -------------------- Integrating SEQUENCE1 --------------------
    Processed batches 1 to 540
    Standard Deviation in pixel range: 0.370000 0.450000
    Integration status per image (60/record):
@@ -108,9 +108,9 @@ within xia2_. You can use xia2_ just as before, simply replacing
    P 43 21 2
    Reindexing to first spacegroup setting: P 41 21 2 (h,k,l)
    --------------------- Scaling DEFAULT ----------------------
-   Resolution limit for NATIVE/SWEEP1:  1.36
+   Resolution limit for NATIVE/SEQUENCE1:  1.36
    --------------------- Scaling DEFAULT ----------------------
-   Resolution limit for NATIVE/SWEEP1:  1.36
+   Resolution limit for NATIVE/SEQUENCE1:  1.36
    Overall twinning score: 2.02
    Your data do not appear twinned
    Project: AUTOMATIC
@@ -118,12 +118,12 @@ within xia2_. You can use xia2_ just as before, simply replacing
    Sequence:
    Wavelength name: NATIVE
    Wavelength 0.97625
-   Sweeps:
-   SWEEP SWEEP1 [WAVELENGTH NATIVE]
+   Sequences:
+   SEQUENCE SEQUENCE1 [WAVELENGTH NATIVE]
    TEMPLATE th_8_2_####.cbf
    DIRECTORY /dls/mx-scratch/dials_tutorial/i04_thaumatin
    IMAGES (USER) 1 to 540
-   MTZ file: /dls/mx-scratch/rjgildea/tmp/insulin/DEFAULT/NATIVE/SWEEP1/integrate/dials_integrated.mtz
+   MTZ file: /dls/mx-scratch/rjgildea/tmp/insulin/DEFAULT/NATIVE/SEQUENCE1/integrate/dials_integrated.mtz
    For AUTOMATIC/DEFAULT/NATIVE
    High resolution limit                   	  1.36	  6.08	  1.36
    Low resolution limit                    	 50.00	 50.00	  1.40

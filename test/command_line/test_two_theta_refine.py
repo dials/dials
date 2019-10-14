@@ -60,7 +60,7 @@ def test(dials_regression, tmpdir):
 
 def test_two_theta_refine_scaled_data(dials_data, tmpdir):
     """Test two theta refine on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
 
     refls = location.join("scaled_20_25.refl").strpath
     expts = location.join("scaled_20_25.expt").strpath

@@ -7,7 +7,7 @@ from dxtbx.serialize import load
 
 def test_systematic_absences_script(dials_data, run_in_tmpdir):
     """Test the command line script with real data. Proteinase K in P41"""
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sequences")
 
     command = ["dials.space_group", "output.experiments=symmetrized.expt"]
     command.append(location.join("experiments_0.json").strpath)

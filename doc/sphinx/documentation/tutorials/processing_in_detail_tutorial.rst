@@ -41,7 +41,7 @@ their contents (:ref:`datablock.expt <datablock-json>`) is written.
 
 
 The output just describes what the software understands of the images it was
-passed, in this case one sweep of data containing 540 images.
+passed, in this case one sequence of data containing 540 images.
 
 .. dials_tutorial_include:: thaumatin/dials.import.log
 

@@ -45,7 +45,7 @@ def get_valid_image_ranges(experiments):
 def set_initial_valid_image_ranges(experiments):
     """Set the valid_image_range for each experiment to be the scan image range.
     Kept separate from dxtbx.scan object as requires experiment indentifiers.
-    Also this function can be called for a mix of sweeps and scanless experiments.
+    Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
         if exp.scan:

@@ -120,11 +120,11 @@ be included in future scaling or data export, and further image exclusion
 can be performed in subsequent scaling jobs.
 
 Note that it is recommended to only exclude data at the beginning or end of a
-sweep. One can use it to exclude data in the middle of a sweep, however care
+sequence. One can use it to exclude data in the middle of a sequence, however care
 must be taken that only a short image range is excluded. If the interior
 excluded range is of the order of the scaling model parameter spacing, this can
 cause the scaling model minimisation to fail. In this case it would be better to
-split the experiment with :samp:`dials.slice_sweep` and then proceed with
+split the experiment with :samp:`dials.slice_sequence` and then proceed with
 excluding images at the edge of the new experiments.
 
 Choosing reflections to use for minimisation

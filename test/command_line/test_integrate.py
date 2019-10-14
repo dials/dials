@@ -132,20 +132,20 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     assert len(table) == 500
 
 
-def test_multi_sweep(dials_regression, run_in_tmpdir):
+def test_multi_sequence(dials_regression, run_in_tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
             os.path.join(
                 dials_regression,
                 "integration_test_data",
-                "multi_sweep",
+                "multi_sequence",
                 "experiments.json",
             ),
             os.path.join(
                 dials_regression,
                 "integration_test_data",
-                "multi_sweep",
+                "multi_sequence",
                 "indexed.pickle",
             ),
             "prediction.padding=0",

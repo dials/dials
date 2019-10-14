@@ -379,9 +379,9 @@ def _set_n_intervals(smoother_params, analysis, scan, exp_ids):
     if deg_per_interval is None:
         deg_per_interval = 36.0
 
-    sweep_range_deg = scan.get_oscillation_range(deg=True)
+    sequence_range_deg = scan.get_oscillation_range(deg=True)
     n_intervals = max(
-        int(abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1
+        int(abs(sequence_range_deg[1] - sequence_range_deg[0]) / deg_per_interval), 1
     )
     return n_intervals
 

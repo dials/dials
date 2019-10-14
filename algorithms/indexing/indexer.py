@@ -229,10 +229,10 @@ indexing {
     }
   }
   stills {
-    indexer = *Auto stills sweeps
+    indexer = *Auto stills sequences
       .type = choice
-      .help = Use the stills or sweeps indexer.  Auto: choose based on the input \
-              imagesets (stills or sweeps).
+      .help = Use the stills or sequences indexer.  Auto: choose based on the input \
+              imagesets (stills or sequences).
       .expert_level = 1
     ewald_proximity_resolution_cutoff = 2.0
       .type = float
@@ -376,25 +376,25 @@ class Indexer(object):
             )
         else:
             has_stills = False
-            has_sweeps = False
+            has_sequences = False
             for expt in experiments:
                 if (
                     expt.goniometer is None
                     or expt.scan is None
                     or expt.scan.get_oscillation()[1] == 0
                 ):
-                    if has_sweeps:
+                    if has_sequences:
                         raise Sorry(
-                            "Please provide only stills or only sweeps, not both"
+                            "Please provide only stills or only sequences, not both"
                         )
                     has_stills = True
                 else:
                     if has_stills:
                         raise Sorry(
-                            "Please provide only stills or only sweeps, not both"
+                            "Please provide only stills or only sequences, not both"
                         )
-                    has_sweeps = True
-            assert not (has_stills and has_sweeps)
+                    has_sequences = True
+            assert not (has_stills and has_sequences)
             use_stills_indexer = has_stills
 
             if not (
@@ -403,7 +403,7 @@ class Indexer(object):
             ):
                 if params.indexing.stills.indexer == "stills":
                     use_stills_indexer = True
-                elif params.indexing.stills.indexer == "sweeps":
+                elif params.indexing.stills.indexer == "sequences":
                     use_stills_indexer = False
                 else:
                     assert False
@@ -423,10 +423,10 @@ class Indexer(object):
                         experiment.imageset.data(), experiment.imageset.indices()
                     )
                     # if isinstance(imageset, MemImageSet):
-                    #   imageset = MemImageSet(imagesweep._images, imagesweep.indices())
+                    #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
                     # else:
-                    #   imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
-                    #   imageset._models = imagesweep._models
+                    #   imageset = ImageSet(imagesequence.reader(), imagesequence.indices())
+                    #   imageset._models = imagesequence._models
                     experiment.imageset.set_scan(None)
                     experiment.imageset.set_goniometer(None)
                     experiment.scan = None

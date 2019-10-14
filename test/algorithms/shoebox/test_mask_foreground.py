@@ -11,15 +11,17 @@ def test(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
     from dxtbx.model.experiment_list import Experiment, ExperimentList
 
-    sweep = load.imageset(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.imageset(
+        dials_data("centroid_test_data").join("sequence.json").strpath
+    )
     crystal = load.crystal(
         dials_data("centroid_test_data").join("crystal.json").strpath
     )
 
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    goniometer = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    goniometer = sequence.get_goniometer()
+    scan = sequence.get_scan()
     delta_d = 3 * beam.get_sigma_divergence(deg=False)
     try:
         mosaicity = crystal.get_mosaicity(deg=False)
@@ -31,7 +33,7 @@ def test(dials_data):
     experiment = ExperimentList()
     experiment.append(
         Experiment(
-            imageset=sweep,
+            imageset=sequence,
             beam=beam,
             detector=detector,
             goniometer=goniometer,

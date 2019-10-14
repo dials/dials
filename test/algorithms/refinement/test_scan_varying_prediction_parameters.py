@@ -95,7 +95,7 @@ geometry.parameters.crystal.c.length.range = 10 50"""
         from cctbx.sgtbx import space_group, space_group_symbols
         from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 
-        sweep_range = self.scan.get_oscillation_range(deg=False)
+        sequence_range = self.scan.get_oscillation_range(deg=False)
         resolution = 2.0
         index_generator = IndexGenerator(
             self.crystal.get_unit_cell(),
@@ -104,8 +104,8 @@ geometry.parameters.crystal.c.length.range = 10 50"""
         )
         indices = index_generator.to_array()
 
-        # Predict rays within the sweep range
-        ray_predictor = ScansRayPredictor(self.experiments, sweep_range)
+        # Predict rays within the sequence range
+        ray_predictor = ScansRayPredictor(self.experiments, sequence_range)
         obs_refs = ray_predictor(indices)
 
         # Take only those rays that intersect the detector

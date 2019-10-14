@@ -18,7 +18,7 @@ from dxtbx.serialize import load
             ),
         ),
     ],
-    ids=["One sweep", "Four sweeps"],
+    ids=["One sequence", "Four sequences"],
 )
 def input_experiment_list(request, dials_data):
     filename = (dials_data(request.param) / "imported_experiments.json").strpath

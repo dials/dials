@@ -245,7 +245,7 @@ def test_scale_script_prepare_input():
 
 def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     """Test targeted scaling against an mtz generated with dials.scale."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refl = location.join("scaled_35.refl").strpath
     expt = location.join("scaled_35.expt").strpath
     command = ["dials.scale", refl, expt, "unmerged_mtz=unmerged.mtz"]
@@ -520,7 +520,7 @@ def test_multi_scale_exclude_images(dials_regression, tmpdir):
 
 def test_targeted_scaling(dials_regression, tmpdir, dials_data):
     """Test the targeted scaling workflow."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     target_refl = location.join("scaled_35.refl").strpath
     target_expt = location.join("scaled_35.expt").strpath
 

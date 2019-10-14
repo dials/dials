@@ -41,7 +41,7 @@ likewise the scaled dataset will be saved to scaled.refl and scaled.expt.
 General considerations for suitable options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A common use case for scaling against a reference is to scale thin-wedge
-datasets against a high quality full-sweep dataset. To give the best scaling, it
+datasets against a high quality full-sequence dataset. To give the best scaling, it
 may be necessary to manually set the scaling model parameters: for more details
 see the *In-depth guide to scaling options in DIALS*.
 In the case of very thin wedge/stills datasets, or depending on the scientific question under investigation, it may be

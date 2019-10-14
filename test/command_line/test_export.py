@@ -37,8 +37,8 @@ def test_mtz(dials_data, tmpdir):
     run_export("mtz", dials_data, tmpdir)
 
 
-def test_multi_sweep_integrated_mtz(dials_data, tmpdir):
-    """Test dials.export on multi-sweep integrated data."""
+def test_multi_sequence_integrated_mtz(dials_data, tmpdir):
+    """Test dials.export on multi-sequence integrated data."""
     # first combine two integrated files
     result = procrunner.run(
         [

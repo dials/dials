@@ -15,7 +15,7 @@ from dials.algorithms.indexing.assign_indices import (
 )
 from dials.array_family import flex
 from dxtbx.format import Format
-from dxtbx.imageset import ImageSetData, ImageSweep
+from dxtbx.imageset import ImageSetData, ImageSequence
 from dxtbx.model import (
     BeamFactory,
     Crystal,
@@ -95,7 +95,7 @@ def experiment():
     )
 
     isetdata = ImageSetData(reader=Format.Reader(["path"] * len(scan)), masker=None)
-    iset = ImageSweep(
+    iset = ImageSequence(
         isetdata, beam=beam, detector=detector, goniometer=goniometer, scan=scan
     )
 

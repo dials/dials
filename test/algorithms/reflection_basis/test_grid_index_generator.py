@@ -10,12 +10,14 @@ def test_run(dials_data):
     from scitbx import matrix
     from dials.model.serialize import load
 
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sequence.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
     assert len(detector) == 1
 
     # Get some stuff

@@ -35,7 +35,7 @@ def test_merge(dials_data, tmpdir, anomalous, truncate):
     amp_labels = ["F", "SIGF"]
     anom_amp_labels = ["F(+)", "SIGF(+)", "F(-)", "SIGF(-)"]
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 
@@ -94,7 +94,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
         for sgn in ["+", "-"]
     ]
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refl1 = location.join("scaled_30.refl").strpath
     expt1 = location.join("scaled_30.expt").strpath
     refl2 = location.join("scaled_35.refl").strpath
@@ -138,7 +138,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
 
 
 def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sequences")
 
     command = [
         "dials.merge",
@@ -160,7 +160,7 @@ Only scaled data can be processed with dials.merge
 def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     dials_data, tmpdir
 ):
-    location = dials_data("vmxi_proteinase_k_sweeps")
+    location = dials_data("vmxi_proteinase_k_sequences")
 
     command = [
         "dials.merge",

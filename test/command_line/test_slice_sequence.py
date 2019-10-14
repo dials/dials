@@ -8,7 +8,7 @@ import pytest
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
-def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir):
+def test_slice_sequence_and_compare_with_expected_results(dials_regression, tmpdir):
     # use the i04_weak_data for this test
     data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -18,7 +18,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir)
         assert os.path.exists(pth)
 
     result = procrunner.run(
-        ["dials.slice_sweep", experiments_path, pickle_path, "image_range=1 20"],
+        ["dials.slice_sequence", experiments_path, pickle_path, "image_range=1 20"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
@@ -35,7 +35,7 @@ def test_slice_sweep_and_compare_with_expected_results(dials_regression, tmpdir)
     assert len(sliced_refs) == 3670
 
 
-def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
+def test_slice_sequence_with_first_images_missing(dials_regression, tmpdir):
     """Test slicing where scan image range does not start at 1, exercising
     a case that exposed a bug"""
 
@@ -45,14 +45,14 @@ def test_slice_sweep_with_first_images_missing(dials_regression, tmpdir):
 
     # first slice
     result = procrunner.run(
-        ["dials.slice_sweep", experiments_path, "image_range=5,20"],
+        ["dials.slice_sequence", experiments_path, "image_range=5,20"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
 
     # second slice
     result = procrunner.run(
-        ["dials.slice_sweep", "experiments_5_20.expt", "image_range=10,20"],
+        ["dials.slice_sequence", "experiments_5_20.expt", "image_range=10,20"],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr

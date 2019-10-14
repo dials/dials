@@ -62,8 +62,8 @@ def test():
     mycrystal = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 72 degree sweep
-    sweep_range = (0.0, math.pi / 5.0)
+    # Build a mock scan for a 72 degree sequence
+    sequence_range = (0.0, math.pi / 5.0)
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -116,8 +116,8 @@ def test():
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    # Predict rays within the sequence range
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     # Take only those rays that intersect the detector

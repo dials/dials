@@ -12,15 +12,17 @@ def setup(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
     from dials.model.serialize import load
 
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sequence.json").strpath
+    )
 
     fixture = {}
 
     # Get the models
-    fixture["beam"] = sweep.get_beam()
-    fixture["detector"] = sweep.get_detector()
-    fixture["gonio"] = sweep.get_goniometer()
-    fixture["scan"] = sweep.get_scan()
+    fixture["beam"] = sequence.get_beam()
+    fixture["detector"] = sequence.get_detector()
+    fixture["gonio"] = sequence.get_goniometer()
+    fixture["scan"] = sequence.get_scan()
 
     # Set the delta_divergence/mosaicity
     n_sigma = 5

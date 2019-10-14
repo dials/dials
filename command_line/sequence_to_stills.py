@@ -1,9 +1,9 @@
 """
-Split a sweep into a set of stills.
+Split a sequence into a set of stills.
 
 Example:
 
-  dials.sweep_to_stills sweep.expt sweep.refl
+  dials.sequence_to_stills sequence.expt sequence.refl
 """
 
 from __future__ import absolute_import, division, print_function
@@ -24,7 +24,7 @@ from dials.model.data import Shoebox
 from dials.util import show_mail_on_error
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
-logger = logging.getLogger("dials.command_line.sweep_to_stills")
+logger = logging.getLogger("dials.command_line.sequence_to_stills")
 
 # The phil scope
 phil_scope = parse(
@@ -53,7 +53,7 @@ max_scan_points = None
 )
 
 
-def sweep_to_stills(experiments, reflections, params):
+def sequence_to_stills(experiments, reflections, params):
     assert len(reflections) == 1
     reflections = reflections[0]
 
@@ -192,14 +192,14 @@ def sweep_to_stills(experiments, reflections, params):
 
 def run(args=None, phil=phil_scope):
     """
-    Validate the arguments and load experiments/reflections for sweep_to_stills
+    Validate the arguments and load experiments/reflections for sequence_to_stills
 
     Arguments:
         args: The command line arguments to use. Defaults to sys.argv[1:]
         phil: The phil_scope. Defaults to the master phil_scope for this program
     """
     # The script usage
-    usage = "usage: dials.sweep_to_stills [options] [param.phil] models.expt reflections.refl"
+    usage = "usage: dials.sequence_to_stills [options] [param.phil] models.expt reflections.refl"
 
     # Create the parser
     parser = OptionParser(
@@ -220,7 +220,7 @@ def run(args=None, phil=phil_scope):
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
 
-    (new_experiments, new_reflections) = sweep_to_stills(
+    (new_experiments, new_reflections) = sequence_to_stills(
         experiments, reflections, params
     )
     # Write out the output experiments, reflections

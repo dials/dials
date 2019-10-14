@@ -172,7 +172,7 @@ def run_single(experiments1, filename):
         "multiple_unrelated",
         "multi_crystal",
         "two_colour",
-        "multiple_sweeps",
+        "multiple_sequences",
         "stills",
     ],
 )

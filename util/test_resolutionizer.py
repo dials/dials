@@ -62,9 +62,9 @@ Resolution Mn(I)/Mn(sig):    1.50"""
         assert tmpdir.join(png).check()
 
 
-def test_resolutionizer_multi_sweep_with_batch_range(dials_data, tmpdir):
+def test_resolutionizer_multi_sequence_with_batch_range(dials_data, tmpdir):
 
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refls = location.join("scaled_20_25.refl")
     expts = location.join("scaled_20_25.expt")
 

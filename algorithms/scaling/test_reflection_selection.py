@@ -155,9 +155,9 @@ def test_reflection_selection(dials_regression):
     """Use a real dataset to test the selection algorithm."""
     data_dir = os.path.join(dials_regression, "xia2-28")
     pickle_path = os.path.join(data_dir, "20_integrated.pickle")
-    sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+    sequence_path = os.path.join(data_dir, "20_integrated_experiments.json")
     reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiment = load.experiment_list(sweep_path, check_format=False)[0]
+    experiment = load.experiment_list(sequence_path, check_format=False)[0]
 
     reflection_table["intensity"] = reflection_table["intensity.sum.value"]
     reflection_table["variance"] = reflection_table["intensity.sum.variance"]

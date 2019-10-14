@@ -1,15 +1,15 @@
-dials.slice_sweep
+dials.slice_sequence
 =================
 
 Introduction
 ------------
 
-.. python_string:: dials.command_line.slice_sweep.help_message
+.. python_string:: dials.command_line.slice_sequence.help_message
 
 Basic parameters
 ----------------
 
-.. phil:: dials.command_line.slice_sweep.phil_scope
+.. phil:: dials.command_line.slice_sequence.phil_scope
    :expert-level: 0
    :attributes-level: 0
 
@@ -17,6 +17,6 @@ Basic parameters
 Full parameter definitions
 --------------------------
 
-.. phil:: dials.command_line.slice_sweep.phil_scope
+.. phil:: dials.command_line.slice_sequence.phil_scope
    :expert-level: 2
    :attributes-level: 2

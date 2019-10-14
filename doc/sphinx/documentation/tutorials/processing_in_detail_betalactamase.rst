@@ -51,7 +51,7 @@ describing their contents (:ref:`datablock.expt <datablock-json>`) is written::
     dials.import tutorial-data/summed/C2sum_1*.cbf.gz
 
 The output just describes what the software understands of the images it was
-passed, in this case one sweep of data containing 720 images:
+passed, in this case one sequence of data containing 720 images:
 
 .. dials_tutorial_include:: betalactamase/dials.import.log
 

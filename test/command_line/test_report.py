@@ -22,7 +22,7 @@ def test_report_integrated_data(dials_regression, tmpdir):
 
 def test_report_scaled_data(dials_data, tmpdir):
     """Test that dials.report works on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled")
+    location = dials_data("l_cysteine_4_sequences_scaled")
     refl = location.join("scaled_30.refl").strpath
     expt = location.join("scaled_30.expt").strpath
 

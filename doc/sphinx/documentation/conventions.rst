@@ -174,7 +174,7 @@ with the same scale, it is clear that :math:`\mathbf{U}` must be a pure rotation
 matrix. Its elements are clearly dependent on the mutual orientation of these
 frames.
 
-It is usual to think of the orientation as a fixed property of the "sweep".  In
+It is usual to think of the orientation as a fixed property of the "sequence".  In
 practice the orientation is parameterised such that it becomes a function of
 time, to account for crystal slippage (the true degree of this is unknown but
 expected to be small; Mosflm uses crystal orientation parameters to account for
