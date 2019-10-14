@@ -37,7 +37,7 @@ def gaussian(size, a, x0, sx):
 
 def test_forward(dials_data):
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     # Get the models
@@ -231,7 +231,7 @@ def test_forward(dials_data):
 
 def test_forward_no_model(dials_data):
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     # Get the models

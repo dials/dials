@@ -13,7 +13,7 @@ def setup(dials_data):
     from dials.model.serialize import load
 
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     fixture = {}

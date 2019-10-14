@@ -12,7 +12,7 @@ def test_map_frames_forward(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     # Get the models
@@ -109,7 +109,7 @@ def test_map_frames_reverse(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     # Get the models
@@ -213,7 +213,7 @@ def test_map_forward_reverse(dials_data):
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
     sequence = load.sequence(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
 
     # Get the models

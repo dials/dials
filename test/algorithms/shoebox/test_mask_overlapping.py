@@ -48,7 +48,7 @@ def test(dials_data):
 
     # Load the sequence and crystal
     sequence = load.imageset(
-        dials_data("centroid_test_data").join("sequence.json").strpath
+        dials_data("centroid_test_data").join("sweep.json").strpath
     )
     crystal = load.crystal(
         dials_data("centroid_test_data").join("crystal.json").strpath
