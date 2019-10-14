@@ -139,13 +139,13 @@ def test_multi_sequence(dials_regression, run_in_tmpdir):
             os.path.join(
                 dials_regression,
                 "integration_test_data",
-                "multi_sequence",
+                "multi_sweep",
                 "experiments.json",
             ),
             os.path.join(
                 dials_regression,
                 "integration_test_data",
-                "multi_sequence",
+                "multi_sweep",
                 "indexed.pickle",
             ),
             "prediction.padding=0",

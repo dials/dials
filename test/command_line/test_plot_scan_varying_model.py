@@ -13,7 +13,7 @@ def test(dials_regression, run_in_tmpdir):
                 "refinement_test_data",
                 "multi_sequence_one_sample",
                 "glucose_isomerase",
-                "SEQUENCE1",
+                "SWEEP1",
                 "index",
                 "sv_refined_experiments.json",
             ),

@@ -12,13 +12,13 @@ from dials.array_family import flex
 def multi_sequence_data(dials_regression):
     experiments = load.experiment_list(
         os.path.join(
-            dials_regression, "indexing_test_data", "multi_sequence", "experiments.json"
+            dials_regression, "indexing_test_data", "multi_sweep", "experiments.json"
         ),
         check_format=False,
     )
     reflections = flex.reflection_table.from_file(
         os.path.join(
-            dials_regression, "indexing_test_data", "multi_sequence", "indexed.pickle"
+            dials_regression, "indexing_test_data", "multi_sweep", "indexed.pickle"
         )
     )
     return {"reflections": reflections, "experiments": experiments}

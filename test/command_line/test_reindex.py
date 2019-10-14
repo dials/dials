@@ -102,7 +102,7 @@ def test_reindex(dials_regression, tmpdir):
 
 
 def test_reindex_multi_sequence(dials_regression, tmpdir):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sequence")
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
     commands = [

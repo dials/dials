@@ -661,16 +661,16 @@ def test_index_4rotation(dials_regression, tmpdir):
 def test_index_small_molecule_multi_sequence_4(dials_regression, tmpdir):
     # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sequence")
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_paths = [
         glob.glob(
-            os.path.join(data_dir, "SEQUENCE%i" % (i + 1), "index", "*_strong.pickle")
+            os.path.join(data_dir, "SWEEP%i" % (i + 1), "index", "*_strong.pickle")
         )[0]
         for i in range(4)
     ]
     sequence_paths = [
         glob.glob(
-            os.path.join(data_dir, "SEQUENCE%i" % (i + 1), "index", "experiments.json")
+            os.path.join(data_dir, "SWEEP%i" % (i + 1), "index", "experiments.json")
         )[0]
         for i in range(4)
     ]
@@ -696,11 +696,11 @@ def test_index_small_molecule_multi_sequence_3(dials_regression, tmpdir):
     # of goniometer setting rotation (i.e. phi scans)
     data_dir = os.path.join(dials_regression, "dials-191")
     pickle_paths = [
-        glob.glob(os.path.join(data_dir, "*SEQUENCE%i*_strong.pickle" % (i + 1)))[0]
+        glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" % (i + 1)))[0]
         for i in range(3)
     ]
     sequence_paths = [
-        glob.glob(os.path.join(data_dir, "*SEQUENCE%i*_experiments.json" % (i + 1)))[0]
+        glob.glob(os.path.join(data_dir, "*SWEEP%i*_experiments.json" % (i + 1)))[0]
         for i in range(3)
     ]
     extra_args = ["filter_ice=False"]
@@ -729,8 +729,8 @@ def test_index_small_molecule_ice_max_cell(dials_regression, tmpdir):
     # test for small molecule indexing: presence of ice rings makes max-cell
     # estimation tricky
     data_dir = os.path.join(dials_regression, "indexing_test_data", "MXSW-904")
-    pickle_path = os.path.join(data_dir, "1_SEQUENCE1_strong.pickle")
-    experiments = os.path.join(data_dir, "1_SEQUENCE1_experiments.json")
+    pickle_path = os.path.join(data_dir, "1_SWEEP1_strong.pickle")
+    experiments = os.path.join(data_dir, "1_SWEEP1_experiments.json")
     extra_args = ["filter_ice=False"]
     expected_unit_cell = uctbx.unit_cell((11.72, 11.72, 11.74, 109.08, 109.24, 108.99))
     expected_rmsds = (0.06, 0.05, 0.04)
