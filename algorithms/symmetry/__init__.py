@@ -153,7 +153,6 @@ class symmetry_base(object):
                 normalised_intensities = normalised_intensities.concatenate(
                     normalise(intensities)
                 )
-        x = 1
         self.intensities = normalised_intensities.set_info(
             self.intensities.info()
         ).set_observation_type_xray_intensity()
