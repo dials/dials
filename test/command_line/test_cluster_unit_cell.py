@@ -14,7 +14,7 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     )
     import glob
 
-    experiments = glob.glob(os.path.join(data_dir, "data/sequence_*/experiments.json"))
+    experiments = glob.glob(os.path.join(data_dir, "data/sweep_*/experiments.json"))
 
     import procrunner
 

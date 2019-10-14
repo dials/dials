@@ -30,11 +30,11 @@ def test(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={}/data/sequence_%03d/experiments.json".format(data_dir) % n
+            "experiments={}/data/sweep_%03d/experiments.json".format(data_dir) % n
             for n in selection
         ]
         + [
-            "reflections={}/data/sequence_%03d/reflections.pickle".format(data_dir) % n
+            "reflections={}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
             for n in selection
         ]
     )
@@ -94,11 +94,11 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sequence_%03d/experiments.json".format(data_dir) % n
+            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
             for n in selection1
         ]
         + [
-            "reflections={0}/data/sequence_%03d/reflections.pickle".format(data_dir) % n
+            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
             for n in selection1
         ]
     )
@@ -126,11 +126,11 @@ def test_order_invariance(dials_regression, run_in_tmpdir):
             "reference_from_experiment.detector=0",
         ]
         + [
-            "experiments={0}/data/sequence_%03d/experiments.json".format(data_dir) % n
+            "experiments={0}/data/sweep_%03d/experiments.json".format(data_dir) % n
             for n in selection2
         ]
         + [
-            "reflections={0}/data/sequence_%03d/reflections.pickle".format(data_dir) % n
+            "reflections={0}/data/sweep_%03d/reflections.pickle".format(data_dir) % n
             for n in selection2
         ]
     )
