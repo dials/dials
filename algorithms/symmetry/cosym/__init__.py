@@ -49,6 +49,9 @@ lattice_group = None
 space_group = None
   .type = space_group
 
+lattice_symmetry_max_delta = 5.0
+  .type = float(value_min=0)
+
 dimensions = Auto
   .type = int(value_min=2)
 
@@ -128,7 +131,7 @@ class CosymAnalysis(symmetry_base, Subject):
         super(CosymAnalysis, self).__init__(
             intensities,
             normalisation=params.normalisation,
-            lattice_symmetry_max_delta=5.0,
+            lattice_symmetry_max_delta=params.lattice_symmetry_max_delta,
             d_min=params.d_min,
             min_i_mean_over_sigma_mean=params.min_i_mean_over_sigma_mean,
             min_cc_half=params.min_cc_half,
