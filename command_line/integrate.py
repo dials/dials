@@ -79,7 +79,7 @@ phil_scope = parse(
   {
 
     reflections_per_degree = 50
-      .help = "The number of predicted reflections per degree of the sweep "
+      .help = "The number of predicted reflections per degree of the sequence "
               "to integrate."
       .type = float(value_min=0.)
 
@@ -532,11 +532,11 @@ class Script(object):
 
             # set sample size according to nref_per_degree (per experiment)
             if exp.scan and nref_per_degree:
-                sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-                width = abs(sweep_range_rad[1] - sweep_range_rad[0]) * RAD2DEG
+                sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
+                width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
                 sample_size = int(nref_per_degree * width)
             else:
-                sweep_range_rad = None
+                sequence_range_rad = None
 
             # adjust sample size if below the chosen limit
             sample_size = max(sample_size, min_sample_size)

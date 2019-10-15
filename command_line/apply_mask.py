@@ -13,7 +13,7 @@ user.  Its only function is to input the mask file paths to the experiments JSON
 but means that the user does not have to edit the experiments file by hand.
 
 Crucially, the mask files must be provided in the same order as their corresponding
-imagesets (sweeps) appear in the experiments JSON file.
+imagesets (sequences) appear in the experiments JSON file.
 
 Examples::
 
@@ -74,7 +74,7 @@ class Script(object):
         if n_expts != n_masks:
             raise Sorry(
                 "The number of masks provided must match the number of imagesets "
-                "(sweeps).\n"
+                "(sequences).\n"
                 "You have provided an experiment list containing {} imageset(s).\n"
                 "You have provided {} mask file(s).".format(n_expts, n_masks)
             )

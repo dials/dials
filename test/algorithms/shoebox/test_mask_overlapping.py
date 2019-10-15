@@ -1,18 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
 
-def predict_reflections(sweep, crystal):
+def predict_reflections(sequence, crystal):
     from dials.algorithms import shoebox
     from dials.array_family import flex
     from dxtbx.model.experiment_list import ExperimentList
     from dxtbx.model.experiment_list import Experiment
     from dials.algorithms.profile_model.gaussian_rs import Model
 
-    # Get models from the sweep
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    # Get models from the sequence
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
 
     sigma_b = beam.get_sigma_divergence(deg=True)
     sigma_m = crystal.get_mosaicity(deg=True)
@@ -20,7 +20,7 @@ def predict_reflections(sweep, crystal):
     exlist = ExperimentList()
     exlist.append(
         Experiment(
-            imageset=sweep,
+            imageset=sequence,
             beam=beam,
             detector=detector,
             goniometer=gonio,
@@ -46,17 +46,19 @@ def test(dials_data):
     from dials.algorithms import shoebox
     from dials.array_family import flex
 
-    # Load the sweep and crystal
-    sweep = load.imageset(dials_data("centroid_test_data").join("sweep.json").strpath)
+    # Load the sequence and crystal
+    sequence = load.imageset(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
     crystal = load.crystal(
         dials_data("centroid_test_data").join("crystal.json").strpath
     )
 
-    # Get models from the sweep
-    detector = sweep.get_detector()
+    # Get models from the sequence
+    detector = sequence.get_detector()
 
     # Get the reflections and overlaps
-    reflections, adjacency_list = predict_reflections(sweep, crystal)
+    reflections, adjacency_list = predict_reflections(sequence, crystal)
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
     reflections["shoebox"].allocate_with_value(shoebox.MaskCode.Valid)
 

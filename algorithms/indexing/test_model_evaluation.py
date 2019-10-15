@@ -199,10 +199,10 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
 
     input_reflections = flex.reflection_table.from_file(pickle_path)
-    input_experiments = load.experiment_list(sweep_path, check_format=False)
+    input_experiments = load.experiment_list(sequence_path, check_format=False)
 
     input_reflections = input_reflections.select(
         input_reflections["xyzobs.px.value"].parts()[2] < 100

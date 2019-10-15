@@ -57,7 +57,8 @@ class Script(object):
         # The script usage
         usage = (
             "usage: %s [options] [param.phil] "
-            "{sweep.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "{sequence.expt | image1.file [image2.file ...]}"
+            % libtbx.env.dispatcher_name
         )
 
         # Create the parser

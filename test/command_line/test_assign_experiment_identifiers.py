@@ -10,11 +10,11 @@ from dials.array_family import flex
 from dxtbx.serialize import load
 
 
-def run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args):
+def run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args):
     command = (
         ["dials.assign_experiment_identifiers"]
         + pickle_path_list
-        + sweep_path_list
+        + sequence_path_list
         + extra_args
     )
     print(command)
@@ -26,15 +26,15 @@ def run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args):
 def test_assign_identifiers(dials_regression, run_in_tmpdir):
     """Test for dials.assign_experiment_identifiers"""
     pickle_path_list = []
-    sweep_path_list = []
+    sequence_path_list = []
     data_dir = os.path.join(dials_regression, "xia2-28")
     for i in [20, 25]:
         pickle_path_list.append(os.path.join(data_dir, str(i) + "_integrated.pickle"))
-        sweep_path_list.append(
+        sequence_path_list.append(
             os.path.join(data_dir, str(i) + "_integrated_experiments.json")
         )
 
-    run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
+    run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args=[])
 
     r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
@@ -45,8 +45,8 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
 
     # now run again, with already assigned data
     pickle_path_list = ["assigned.refl"]
-    sweep_path_list = ["assigned.expt"]
-    run_assign_identifiers(pickle_path_list, sweep_path_list, extra_args=[])
+    sequence_path_list = ["assigned.expt"]
+    run_assign_identifiers(pickle_path_list, sequence_path_list, extra_args=[])
 
     r = flex.reflection_table.from_file("assigned.refl")
     e = load.experiment_list("assigned.expt", check_format=False)
@@ -57,15 +57,15 @@ def test_assign_identifiers(dials_regression, run_in_tmpdir):
 
     # now run again, with adding more data
     pickle_path_list = ["assigned.refl"]
-    sweep_path_list = ["assigned.expt"]
+    sequence_path_list = ["assigned.expt"]
     for i in [30, 35]:
         pickle_path_list.append(os.path.join(data_dir, str(i) + "_integrated.pickle"))
-        sweep_path_list.append(
+        sequence_path_list.append(
             os.path.join(data_dir, str(i) + "_integrated_experiments.json")
         )
 
     run_assign_identifiers(
-        pickle_path_list, sweep_path_list, extra_args=["identifiers=0 5 10 15"]
+        pickle_path_list, sequence_path_list, extra_args=["identifiers=0 5 10 15"]
     )
 
     r = flex.reflection_table.from_file("assigned.refl")

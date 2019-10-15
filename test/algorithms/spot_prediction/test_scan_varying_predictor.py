@@ -46,7 +46,7 @@ def setup_models(args):
     crystal = models.crystal
     beam = models.beam
 
-    # Build a mock scan for a 180 degree sweep
+    # Build a mock scan for a 180 degree sequence
     sf = ScanFactory()
     scan = sf.make_scan(
         image_range=(1, 180),
@@ -55,9 +55,9 @@ def setup_models(args):
         epochs=list(range(180)),
         deg=True,
     )
-    sweep_range = scan.get_oscillation_range(deg=False)
+    sequence_range = scan.get_oscillation_range(deg=False)
     im_width = scan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, math.pi)
+    assert sequence_range == (0.0, math.pi)
     assert approx_equal(im_width, 1.0 * math.pi / 180.0)
 
     experiments = ExperimentList()
@@ -90,9 +90,9 @@ def ref_gen_static(experiments):
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    # Predict rays within the sequence range
+    sequence_range = scan.get_oscillation_range(deg=False)
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     refs = ray_predictor(indices)
 
     # Take only those rays that intersect the detector

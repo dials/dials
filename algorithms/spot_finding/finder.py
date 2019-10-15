@@ -79,7 +79,7 @@ class ExtractPixelsFromImage(object):
         :param index: The index of the image
         """
         from dials.model.data import PixelList
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # Parallel reading of HDF5 from the same handle is not allowed. Python
         # multiprocessing is a bit messed up and used fork on linux so need to
@@ -90,7 +90,7 @@ class ExtractPixelsFromImage(object):
             self.first = False
 
         # Get the frame number
-        if isinstance(self.imageset, ImageSweep):
+        if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
         else:
             ind = self.imageset.indices()
@@ -295,13 +295,13 @@ class PixelListToShoeboxes(object):
         """
         Convert the pixel list to shoeboxes
         """
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # Extract the pixel lists into a list of reflections
         shoeboxes = flex.shoebox()
         spotsizes = flex.size_t()
         hotpixels = tuple(flex.size_t() for i in range(len(imageset.get_detector())))
-        if isinstance(imageset, ImageSweep):
+        if isinstance(imageset, ImageSequence):
             twod = False
         else:
             twod = True
@@ -367,7 +367,7 @@ class ShoeboxesToReflectionTable(object):
 
         # Filter the reflections and select only the desired spots
         flags = self.filter_spots(
-            None, sweep=imageset, observations=observed, shoeboxes=shoeboxes
+            None, sequence=imageset, observations=observed, shoeboxes=shoeboxes
         )
         observed = observed.select(flags)
         shoeboxes = shoeboxes.select(flags)
@@ -747,7 +747,7 @@ class SpotFinder(object):
 
             imageset = experiment.imageset
 
-            # Find the strong spots in the sweep
+            # Find the strong spots in the sequence
             logger.info("-" * 80)
             logger.info("Finding strong spots in imageset %d" % i)
             logger.info("-" * 80)
@@ -791,7 +791,7 @@ class SpotFinder(object):
         :param imageset: The imageset to process
         :return: The observed spots
         """
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # The input mask
         mask = self.mask_generator.generate(imageset)
@@ -818,7 +818,7 @@ class SpotFinder(object):
         )
 
         # Get the max scan range
-        if isinstance(imageset, ImageSweep):
+        if isinstance(imageset, ImageSequence):
             max_scan_range = imageset.get_array_range()
         else:
             max_scan_range = (0, len(imageset))
@@ -845,7 +845,7 @@ class SpotFinder(object):
 
             logger.info("\nFinding spots in image {0} to {1}...".format(j0, j1))
             j0 -= 1
-            if isinstance(imageset, ImageSweep):
+            if isinstance(imageset, ImageSequence):
                 j0 -= imageset.get_array_range()[0]
                 j1 -= imageset.get_array_range()[0]
             r, h = extract_spots(imageset[j0:j1])

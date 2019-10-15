@@ -401,7 +401,7 @@ class Script(object):
             exp_id, image_range = image_group_to_expid_and_range[id_]
             identifier = reflections.experiment_identifiers()[exp_id]
             logger.info(
-                """Image range %s from experiment %s is below the cutoff, but not at the end of a sweep.""",
+                """Image range %s from experiment %s is below the cutoff, but not at the end of a sequence.""",
                 image_range,
                 identifier,
             )

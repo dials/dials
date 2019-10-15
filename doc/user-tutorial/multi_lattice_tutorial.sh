@@ -3,7 +3,7 @@
 ############################################################################
 
 # first import the data - this reads the image headers and creates a file which
-# describes the sweeps found therein. here there should only be one sweep found
+# describes the sequences found therein. here there should only be one sequence found
 # data should be passed on the command-line e.g. ./tutorial.sh /path/to/data
 # or linked to the directory where the script is run as "data"
 # https://zenodo.org/record/10820/files/semisynthetic_multilattice_data_2.tar.bz2

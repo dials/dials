@@ -12,7 +12,7 @@ from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
-from dxtbx.imageset import ImageSweep
+from dxtbx.imageset import ImageSequence
 from dials.util.options import flatten_experiments
 from libtbx.phil import parse
 
@@ -33,7 +33,7 @@ within dials. The program looks at the metadata for each image along with the
 filenames to determine the relationship between sets of images. Once all the
 images have been analysed, a experiments object is written to file which specifies
 the relationship between files. For example if two sets of images which belong
-to two rotation scans have been given, two image sweeps will be saved. Images to
+to two rotation scans have been given, two image sequences will be saved. Images to
 be processed are specified as command line arguments. Sometimes, there is a
 maximum number of arguments that can be given on the command line and the number
 of files may exceed this. In this case image filenames can be input on stdin
@@ -98,7 +98,7 @@ phil_scope = parse(
 
     template = None
       .type = str
-      .help = "The image sweep template"
+      .help = "The image sequence template"
       .multiple = True
 
     directory = None
@@ -118,9 +118,9 @@ phil_scope = parse(
       .help = "If True, assert the reference geometry is similar to"
               "the image geometry"
 
-    allow_multiple_sweeps = False
+    allow_multiple_sequences = False
       .type = bool
-      .help = "If False, raise an error if multiple sweeps are found"
+      .help = "If False, raise an error if multiple sequences are found"
 
     as_grid_scan = False
       .type = bool
@@ -309,19 +309,19 @@ class ManualGeometryUpdater(object):
         """
         Override the parameters
         """
-        from dxtbx.imageset import ImageSweep, ImageSetFactory
+        from dxtbx.imageset import ImageSequence, ImageSetFactory
         from dxtbx.model import BeamFactory
         from dxtbx.model import DetectorFactory
         from dxtbx.model import GoniometerFactory
         from dxtbx.model import ScanFactory
         from copy import deepcopy
 
-        if self.params.geometry.convert_sweeps_to_stills:
+        if self.params.geometry.convert_sequences_to_stills:
             imageset = ImageSetFactory.imageset_from_anyset(imageset)
-        if not isinstance(imageset, ImageSweep):
-            if self.params.geometry.convert_stills_to_sweeps:
-                imageset = self.convert_stills_to_sweep(imageset)
-        if isinstance(imageset, ImageSweep):
+        if not isinstance(imageset, ImageSequence):
+            if self.params.geometry.convert_stills_to_sequences:
+                imageset = self.convert_stills_to_sequence(imageset)
+        if isinstance(imageset, ImageSequence):
             beam = BeamFactory.from_phil(self.params.geometry, imageset.get_beam())
             detector = DetectorFactory.from_phil(
                 self.params.geometry, imageset.get_detector(), beam
@@ -369,7 +369,7 @@ class ManualGeometryUpdater(object):
         from dxtbx.imageset import ImageSetFactory
 
         first, last = scan.get_image_range()
-        sweep = ImageSetFactory.make_sweep(
+        sequence = ImageSetFactory.make_sequence(
             template=imageset.get_template(),
             indices=list(range(first, last + 1)),
             format_class=imageset.get_format_class(),
@@ -379,9 +379,9 @@ class ManualGeometryUpdater(object):
             scan=scan,
             format_kwargs=imageset.params(),
         )
-        return sweep
+        return sequence
 
-    def convert_stills_to_sweep(self, imageset):
+    def convert_stills_to_sequence(self, imageset):
         from dxtbx.model import Scan
 
         assert self.params.geometry.scan.oscillation is not None
@@ -412,7 +412,7 @@ class ManualGeometryUpdater(object):
                 setting_rotation_tolerance=self.params.input.tolerance.goniometer.setting_rotation,
             )
         oscillation = self.params.geometry.scan.oscillation
-        from dxtbx.sweep_filenames import template_regex_from_list
+        from dxtbx.sequence_filenames import template_regex_from_list
         from dxtbx.imageset import ImageSetFactory
 
         template, indices = template_regex_from_list(imageset.paths())
@@ -423,7 +423,7 @@ class ManualGeometryUpdater(object):
             paths = [imageset.get_path(i) for i in range(len(imageset))]
             assert len(set(paths)) == 1
             template = paths[0]
-        new_sweep = ImageSetFactory.make_sweep(
+        new_sequence = ImageSetFactory.make_sequence(
             template=template,
             indices=indices,
             format_class=imageset.reader().get_format_class(),
@@ -432,7 +432,7 @@ class ManualGeometryUpdater(object):
             goniometer=goniometer,
             scan=scan,
         )
-        return new_sweep
+        return new_sequence
 
 
 class MetaDataUpdater(object):
@@ -527,7 +527,7 @@ class MetaDataUpdater(object):
                 )
 
             # Append to new imageset list
-            if isinstance(imageset, ImageSweep):
+            if isinstance(imageset, ImageSequence):
                 experiments.append(
                     Experiment(
                         imageset=imageset,
@@ -751,12 +751,12 @@ class Script(object):
         experiments = metadata_updater(imageset_importer())
 
         # Compute some numbers
-        num_sweeps = 0
+        num_sequences = 0
         num_stills = 0
         num_images = 0
         for e in experiments:
-            if isinstance(e.imageset, ImageSweep):
-                num_sweeps += 1
+            if isinstance(e.imageset, ImageSequence):
+                num_sequences += 1
             else:
                 num_stills += 1
             num_images += len(e.imageset)
@@ -767,7 +767,7 @@ class Script(object):
         for f in format_list:
             logger.info("  format: %s" % f)
         logger.info("  num images: %d" % num_images)
-        logger.info("  num sweeps: %d" % num_sweeps)
+        logger.info("  num sequences: %d" % num_sequences)
         logger.info("  num stills: %d" % num_stills)
 
         # Print out info for all experiments
@@ -776,8 +776,8 @@ class Script(object):
             # Print some experiment info - override the output of image range
             # if appropriate
             image_range = params.geometry.scan.image_range
-            if isinstance(experiment.imageset, ImageSweep):
-                imageset_type = "sweep"
+            if isinstance(experiment.imageset, ImageSequence):
+                imageset_type = "sequence"
             else:
                 imageset_type = "stills"
 
@@ -797,9 +797,9 @@ class Script(object):
             logger.debug(experiment.imageset.get_detector())
             logger.debug(experiment.imageset.get_scan())
 
-        # Only allow a single sweep
-        if params.input.allow_multiple_sweeps is False:
-            self.assert_single_sweep(experiments, params)
+        # Only allow a single sequence
+        if params.input.allow_multiple_sequences is False:
+            self.assert_single_sequence(experiments, params)
 
         # Write the experiments to file
         self.write_experiments(experiments, params)
@@ -815,55 +815,57 @@ class Script(object):
                 params.output.experiments, compact=params.output.compact
             )
 
-    def assert_single_sweep(self, experiments, params):
+    def assert_single_sequence(self, experiments, params):
         """
-        Print an error message if more than 1 sweep
+        Print an error message if more than 1 sequence
         """
-        sweeps = [e.imageset for e in experiments if isinstance(e.imageset, ImageSweep)]
+        sequences = [
+            e.imageset for e in experiments if isinstance(e.imageset, ImageSequence)
+        ]
 
-        if len(sweeps) > 1:
+        if len(sequences) > 1:
 
-            # Print some info about multiple sweeps
-            self.diagnose_multiple_sweeps(sweeps, params)
+            # Print some info about multiple sequences
+            self.diagnose_multiple_sequences(sequences, params)
 
             # Raise exception
             raise Sorry(
                 """
-        More than 1 sweep was found. Two things may be happening here:
+        More than 1 sequence was found. Two things may be happening here:
 
-        1. There really is more than 1 sweep. If you expected this to be the
-           case, set the parameter allow_multiple_sweeps=True. If you don't
+        1. There really is more than 1 sequence. If you expected this to be the
+           case, set the parameter allow_multiple_sequences=True. If you don't
            expect this, then check the input to dials.import.
 
         2. There may be something wrong with your image headers (for example,
            the rotation ranges of each image may not match up). You should
            investigate what went wrong, but you can force dials.import to treat
-           your images as a single sweep by using the template=image_####.cbf
+           your images as a single sequence by using the template=image_####.cbf
            parameter (see help).
       """
             )
 
-    def diagnose_multiple_sweeps(self, sweeps, params):
+    def diagnose_multiple_sequences(self, sequences, params):
         """
-        Print a diff between sweeps.
+        Print a diff between sequences.
         """
         logger.info("")
-        for i in range(1, len(sweeps)):
+        for i in range(1, len(sequences)):
             logger.info("=" * 80)
-            logger.info("Diff between sweep %d and %d" % (i - 1, i))
+            logger.info("Diff between sequence %d and %d" % (i - 1, i))
             logger.info("")
-            self.print_sweep_diff(sweeps[i - 1], sweeps[i], params)
+            self.print_sequence_diff(sequences[i - 1], sequences[i], params)
         logger.info("=" * 80)
         logger.info("")
 
-    def print_sweep_diff(self, sweep1, sweep2, params):
+    def print_sequence_diff(self, sequence1, sequence2, params):
         """
-        Print a diff between sweeps.
+        Print a diff between sequences.
         """
-        from dxtbx.model.experiment_list import SweepDiff
+        from dxtbx.model.experiment_list import SequenceDiff
 
-        diff = SweepDiff(params.input.tolerance)
-        text = diff(sweep1, sweep2)
+        diff = SequenceDiff(params.input.tolerance)
+        text = diff(sequence1, sequence2)
         logger.info("\n".join(text))
 
 

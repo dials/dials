@@ -163,7 +163,7 @@ namespace dials { namespace algorithms {
 
   /**
    * A class to combine strong spot lists (i.e. perform the connected component
-   * labelling at the boundary of two spot lists from the same sweep.
+   * labelling at the boundary of two spot lists from the same sequence.
    */
   class StrongSpotCombiner {
   public:

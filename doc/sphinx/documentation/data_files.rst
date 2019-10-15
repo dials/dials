@@ -49,8 +49,8 @@ The datablock file is stored as a JSON file in ascii format. Whilst being human
 readable (and editable), it is generally recommended to let dials.import
 generate the datablock file. The file contains the location of any imported
 imagesets and the initial experimental models (i.e. beam, detector, goniometer
-and scan) for the sets of sweeps or still images. It also encodes the
-relationship between models if multiple sweeps or sets of stills are imported.
+and scan) for the sets of sequences or still images. It also encodes the
+relationship between models if multiple sequences or sets of stills are imported.
 An example of a short file is shown below.
 
 .. code-block:: js
@@ -60,7 +60,7 @@ An example of a short file is shown below.
       "__id__": "DataBlock",
       "imageset": [
         {
-          "__id__": "ImageSweep",
+          "__id__": "ImageSequence",
           "template": "image_####.cbf",
           "beam": 0,
           "detector": 0,
@@ -216,7 +216,7 @@ An example of a short file is shown below.
     ],
     "imageset": [
       {
-        "__id__": "ImageSweep",
+        "__id__": "ImageSequence",
         "template": "centroid_####.cbf"
       }
     ],

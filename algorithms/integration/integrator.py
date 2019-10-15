@@ -1283,7 +1283,7 @@ class Integrator(object):
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sweeps():
+        elif self._experiments.all_sequences():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
@@ -1295,7 +1295,7 @@ class Integrator(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
+            raise RuntimeError("Experiments must be all sequences or all stills")
         return table(rows, has_header=True, justify="right", prefix=" ")
 
 
@@ -1532,7 +1532,7 @@ class Integrator3DThreaded(object):
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sweeps():
+        elif self._experiments.all_sequences():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
@@ -1544,7 +1544,7 @@ class Integrator3DThreaded(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
+            raise RuntimeError("Experiments must be all sequences or all stills")
         return table(rows, has_header=True, justify="right", prefix=" ")
 
 

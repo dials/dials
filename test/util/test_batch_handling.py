@@ -2,7 +2,7 @@
 Test for the functions in dials.util.batch_handling.
 
 These functions are designed to handle reflection/experiment lists that
-include both sweep experiments and single image datasets, which do not
+include both sequence experiments and single image datasets, which do not
 have a scan object.
 """
 from __future__ import absolute_import, division, print_function

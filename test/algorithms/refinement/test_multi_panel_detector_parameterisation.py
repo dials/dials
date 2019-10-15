@@ -127,7 +127,7 @@ def test(args=[]):
             new_panel = make_panel_in_array((x, y), single_panel_detector[0])
             multi_panel_detector.add_panel(new_panel)
 
-    # Build a mock scan for a 180 degree sweep
+    # Build a mock scan for a 180 degree sequence
     sf = ScanFactory()
     myscan = sf.make_scan(
         image_range=(1, 1800),
@@ -136,9 +136,9 @@ def test(args=[]):
         epochs=list(range(1800)),
         deg=True,
     )
-    sweep_range = myscan.get_oscillation_range(deg=False)
+    sequence_range = myscan.get_oscillation_range(deg=False)
     im_width = myscan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, pi)
+    assert sequence_range == (0.0, pi)
     assert approx_equal(im_width, 0.1 * pi / 180.0)
 
     # Build ExperimentLists
@@ -251,7 +251,7 @@ def test(args=[]):
 
     # for the reflection predictor, it doesn't matter which experiment list is
     # passed, as the detector is not used
-    ref_predictor = ScansRayPredictor(experiments_single_panel, sweep_range)
+    ref_predictor = ScansRayPredictor(experiments_single_panel, sequence_range)
 
     # get two sets of identical reflections
     obs_refs = ref_predictor(indices)

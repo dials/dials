@@ -38,7 +38,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Panel;
   using dxtbx::model::Scan;
 
-  using dxtbx::ImageSweep;
+  using dxtbx::ImageSequence;
   using dxtbx::format::Image;
   using dxtbx::format::ImageTile;
 
@@ -1067,7 +1067,7 @@ namespace dials { namespace algorithms {
      * @param debug Add debug output
      */
     ParallelIntegrator(af::reflection_table reflections,
-                       ImageSweep imageset,
+                       ImageSequence imageset,
                        const MaskCalculatorIface &compute_mask,
                        const BackgroundCalculatorIface &compute_background,
                        const IntensityCalculatorIface &compute_intensity,
@@ -1178,7 +1178,7 @@ namespace dials { namespace algorithms {
      * Static method to get the memory in bytes needed
      * @param imageset the imageset class
      */
-    static std::size_t compute_required_memory(ImageSweep imageset,
+    static std::size_t compute_required_memory(ImageSequence imageset,
                                                std::size_t block_size) {
       DIALS_ASSERT(imageset.get_detector() != NULL);
       DIALS_ASSERT(imageset.get_scan() != NULL);
@@ -1201,7 +1201,7 @@ namespace dials { namespace algorithms {
      * @param imageset the imageset class
      * @param max_memory_usage The maximum memory usage
      */
-    static std::size_t compute_max_block_size(ImageSweep imageset,
+    static std::size_t compute_max_block_size(ImageSequence imageset,
                                               std::size_t max_memory_usage) {
       DIALS_ASSERT(max_memory_usage > 0);
       DIALS_ASSERT(imageset.get_detector() != NULL);
@@ -1244,7 +1244,7 @@ namespace dials { namespace algorithms {
                  Buffer &buffer,
                  af::ref<af::Reflection> reflections,
                  const AdjacencyList &overlaps,
-                 ImageSweep imageset,
+                 ImageSequence imageset,
                  af::const_ref<int6> bbox,
                  af::const_ref<std::size_t> flags,
                  std::size_t nthreads,

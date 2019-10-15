@@ -53,7 +53,7 @@ def test_single_crystal_restraints_gradients():
     mycrystal = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 72 degree sweep
+    # Build a mock scan for a 72 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -193,7 +193,7 @@ def test_two_triclinic_crystals():
     mycrystal2 = deepcopy(mycrystal)
     mybeam = models.beam
 
-    # Build a mock scan for a 72 degree sweep
+    # Build a mock scan for a 72 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()

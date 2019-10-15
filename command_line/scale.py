@@ -75,7 +75,7 @@ statistics and scaling model plots.
 
 Example use cases
 
-Regular single-sweep scaling, with no absorption correction::
+Regular single-sequence scaling, with no absorption correction::
 
   dials.scale integrated.refl integrated.expt physical.absorption_correction=False
 

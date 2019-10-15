@@ -34,7 +34,7 @@ def create_experiments(image_start=1):
     crystal = models.crystal
     beam = models.beam
 
-    # Build a mock scan for a 72 degree sweep
+    # Build a mock scan for a 72 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -87,10 +87,10 @@ def generate_reflections(experiments):
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
+    # Predict rays within the sequence range
     scan = experiments[0].scan
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    sequence_range = scan.get_oscillation_range(deg=False)
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     # Take only those rays that intersect the detector

@@ -29,10 +29,10 @@ def generate_reflections(experiments):
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
+    # Predict rays within the sequence range
     scan = experiments[0].scan
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    sequence_range = scan.get_oscillation_range(deg=False)
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     # Take only those rays that intersect the detector
@@ -86,7 +86,7 @@ def test1(dials_regression):
 
     goniometer = GoniometerFactory.known_axis((1.0, 0.0, 0.0))
 
-    # Build a mock scan for a 180 degree sweep
+    # Build a mock scan for a 180 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -97,9 +97,9 @@ def test1(dials_regression):
         epochs=list(range(1800)),
         deg=True,
     )
-    sweep_range = scan.get_oscillation_range(deg=False)
+    sequence_range = scan.get_oscillation_range(deg=False)
     im_width = scan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, math.pi)
+    assert sequence_range == (0.0, math.pi)
     assert im_width == pytest.approx(0.1 * math.pi / 180.0)
 
     from dxtbx.model.experiment_list import ExperimentList, Experiment
