@@ -62,11 +62,13 @@ def test_ScalingHTMLGenerator(run_in_tmpdir):
     """Test the scaling html generator."""
     script = mock.Mock()
     script.params.output.html = "test.html"
+    script.params.output.json = "test.json"
 
     # Test that ScalingHTMLGenerator works if all data is empty.
     observer = ScalingHTMLGenerator()
     observer.make_scaling_html(script)
     assert os.path.exists("test.html")
+    assert os.path.exists("test.json")
 
 
 def test_ScalingModelObserver():
