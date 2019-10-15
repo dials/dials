@@ -11,7 +11,7 @@ phil_scope = iotbx.phil.parse(
     .help = "If True, create new scaling models for all datasets"
     .expert_level = 0
   reflection_selection {
-    method = *auto quasi_random intensity_ranges use_all
+    method = *auto quasi_random intensity_ranges use_all random
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
               "minimisation. auto (default) will choose use_all for small datasets"
@@ -48,6 +48,9 @@ phil_scope = iotbx.phil.parse(
                   "for reflections used during minimisation."
       }
     }
+    n_random = 50000
+      .type = int
+      .help = "Number of randomly chosen reflections to use"
     best_unit_cell = None
       .type = floats(size=6)
       .help = "Best unit cell value, to use when performing resolution cutting

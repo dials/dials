@@ -680,11 +680,28 @@ class SingleScaler(ScalerBase):
             )
             if self._free_Ih_table:
                 self.scaling_selection.set_selected(self.free_set_selection, False)
-        elif self.params.reflection_selection.method == "use_all":
+        elif self.params.reflection_selection.method == "use_all" or (
+            self.params.reflection_selection.method == "random"
+            and (self.params.reflection_selection.n_random >= self.global_Ih_table.size)
+        ):
             if self._free_Ih_table:
                 self.scaling_selection = ~self.free_set_selection
             else:
                 self.scaling_selection = flex.bool(self.n_suitable_refl, True)
+        elif self.params.reflection_selection.method == "random":
+            n = self.params.reflection_selection.n_random
+            if self._free_Ih_table:
+                isel = flex.random_selection(self.global_Ih_table.size, n)
+                sel = flex.bool(self.global_Ih_table.size, False)
+                sel.set_selected(isel, True)
+                sel_Ih = self.global_Ih_table.Ih_table_blocks[0].select(sel)
+                loc_indices = sel_Ih.Ih_table["loc_indices"]
+                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
+                self.scaling_selection.set_selected(loc_indices, True)
+            else:
+                isel = flex.random_selection(self.n_suitable_refl, n)
+                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
+                self.scaling_selection.set_selected(isel, True)
         else:
             raise ValueError("Invalid choice for 'reflection_selection.method'.")
         self.scaling_subset_sel = copy.deepcopy(self.scaling_selection)
@@ -1127,12 +1144,29 @@ class MultiScalerBase(ScalerBase):
                     )
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
-        elif self.params.reflection_selection.method == "use_all":
+        elif self.params.reflection_selection.method == "use_all" or (
+            self.params.reflection_selection.method == "random"
+            and (self.params.reflection_selection.n_random >= self.global_Ih_table.size)
+        ):
             for scaler in self.active_scalers:
                 if self._free_Ih_table:
                     scaler.scaling_selection = ~scaler.free_set_selection
                 else:
                     scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, True)
+                scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
+                scaler.scaling_selection &= ~scaler.outliers
+        elif self.params.reflection_selection.method == "random":
+            n = self.params.reflection_selection.n_random
+            isel = flex.random_selection(self.global_Ih_table.size, n)
+            sel = flex.bool(self.global_Ih_table.size, False)
+            sel.set_selected(isel, True)
+            sel_Ih = self.global_Ih_table.Ih_table_blocks[0].select(sel)
+            for i, scaler in enumerate(self.active_scalers):
+                sel = sel_Ih.Ih_table["dataset_id"] == i
+                indiv_block = sel_Ih.select(sel)
+                loc_indices = indiv_block.Ih_table["loc_indices"]
+                scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
+                scaler.scaling_selection.set_selected(loc_indices, True)
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
         else:
