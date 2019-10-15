@@ -65,19 +65,25 @@ partiality_threshold = 0.99
   .type = float
   .help = "Use only reflections with a partiality above this threshold."
 
-mode = *laue_plus_absences laue_only absences_only
-  .type = choice
-  .help = "Choice of mode of symmetry analysis:"
-          "laue_plus_absences: analyse laue group and perform systematic absences"
-          "  check to determine full space group."
-          "laue_only: only analyse point group of the crystal"
-          "absences_only: check systematic absences for the current laue group"
+laue_group = auto
+  .type = space_group
+  .help = "Optionally specify the Laue group. If set to auto, then test all possible "
+          "Laue groups. If set to None, then take the Laue group from the input file."
 
-absences {
+change_of_basis_op = None
+  .type = str
+
+systematic_absences {
+
+  check = True
+    .type = bool
+    .help = "Check systematic absences for the current laue group."
+
   significance_level = *0.95 0.975 0.99
     .type = choice
     .help = "Signficance to use when testing whether axial reflections are "
-            "different to zero (absences and reflections in reflecting condition)"
+            "different to zero (absences and reflections in reflecting condition)."
+
 }
 
 output {
@@ -111,7 +117,7 @@ def symmetry(experiments, reflection_tables, params=None):
     if params is None:
         params = phil_scope.extract()
 
-    if params.mode != "absences_only":
+    if params.laue_group is Auto:
         # transform models into miller arrays
         n_datasets = len(experiments)
         datasets = filtered_arrays_from_experiments_reflections(
@@ -140,11 +146,27 @@ def symmetry(experiments, reflection_tables, params=None):
         if params.output.json is not None:
             result.as_json(filename=params.output.json)
 
+        # Change of basis operator from input unit cell to best unit cell
+        cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
+        # Get the best space group.
+        best_subsym = result.best_solution.subgroup["best_subsym"]
+        best_space_group = best_subsym.space_group().build_derived_acentric_group()
+        # Reindex the input data
         experiments, reflection_tables = _reindex_experiments_reflections(
-            experiments, reflection_tables, result
+            experiments, reflection_tables, best_space_group, cb_op_inp_best
         )
 
-    if params.mode != "laue_only":
+    elif params.laue_group is not None:
+        if params.change_of_basis_op is not None:
+            cb_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
+        else:
+            cb_op = sgtbx.change_of_basis_op()
+        # Reindex the input data
+        experiments, reflection_tables = _reindex_experiments_reflections(
+            experiments, reflection_tables, params.laue_group.group(), cb_op
+        )
+
+    if params.systematic_absences.check:
         if (params.d_min is Auto) and (result is not None):
             d_min = result.intensities.resolution_range()[1]
         elif params.d_min is Auto:
@@ -161,12 +183,14 @@ def symmetry(experiments, reflection_tables, params=None):
         )
 
         run_systematic_absences_checks(
-            experiments, merged_reflections, float(params.absences.significance_level)
+            experiments,
+            merged_reflections,
+            float(params.systematic_absences.significance_level),
         )
 
     logger.info("Saving reindexed experiments to %s", params.output.experiments)
     experiments.as_file(params.output.experiments)
-    if params.mode != "absences_only":
+    if params.laue_group is not None:
         logger.info(
             "Saving %s reindexed reflections to %s",
             len(reflection_tables[0]),
@@ -174,25 +198,21 @@ def symmetry(experiments, reflection_tables, params=None):
         )
         reflection_tables[0].as_file(params.output.reflections)
 
-    if params.output.html and (params.mode != "laue_only"):
+    if params.output.html and params.systematic_absences.check:
         ScrewAxisObserver().generate_html_report(params.output.html)
 
-def _reindex_experiments_reflections(experiments, reflections, result):
-    """Use the determine_space_group result to reindex the input data."""
+
+def _reindex_experiments_reflections(experiments, reflections, space_group, cb_op):
+    """Reindex the input data."""
     reindexed_experiments = copy.deepcopy(experiments)
     reindexed_reflections = flex.reflection_table()
-    # Change of basis operator from input unit cell to best unit cell
-    cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
-    # Get the best space group.
-    best_subsym = result.best_solution.subgroup["best_subsym"]
-    best_space_group = best_subsym.space_group().build_derived_acentric_group()
     for i, expt in enumerate(reindexed_experiments):
         # Set the space group to the best symmetry and change basis accordingly.
         # Setting the basis to one incompatible with the initial space group is
         # forbidden, so we must first change the space group to P1 to be safe`.
         expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-        expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
-        expt.crystal.set_space_group(best_space_group)
+        expt.crystal = expt.crystal.change_basis(cb_op)
+        expt.crystal.set_space_group(space_group)
 
         S = parameter_reduction.symmetrize_reduce_enlarge(
             expt.crystal.get_space_group()
@@ -201,9 +221,7 @@ def _reindex_experiments_reflections(experiments, reflections, result):
         S.symmetrize()
         expt.crystal.set_B(S.orientation.reciprocal_matrix())
         reindexed_refl = copy.deepcopy(reflections[i])
-        reindexed_refl["miller_index"] = cb_op_inp_best.apply(
-            reindexed_refl["miller_index"]
-        )
+        reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])
         reindexed_reflections.extend(reindexed_refl)
 
     return reindexed_experiments, [reindexed_reflections]
