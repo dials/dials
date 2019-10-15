@@ -147,7 +147,8 @@ class symmetry_base(object):
             normalise = self.ml_aniso_normalisation
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
-            logger.info("Normalising intensities for dataset %i" % (i + 1))
+            logger.info("\n" + "-" * 80 + "\n")
+            logger.info("Normalising intensities for dataset %i\n" % (i + 1))
             intensities = self.intensities.select(self.dataset_ids == i)
             if i == 0:
                 normalised_intensities = normalise(intensities)
@@ -301,6 +302,8 @@ class symmetry_base(object):
         )
 
     def _resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
+        logger.info("\n" + "-" * 80 + "\n")
+        logger.info("Estimation of resolution for Laue group analysis\n")
         if d_min is libtbx.Auto and (
             min_i_mean_over_sigma_mean is not None or min_cc_half is not None
         ):

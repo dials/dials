@@ -243,15 +243,19 @@ class determine_space_group(symmetry_base):
         """
         output = []
         output.append("Input crystal symmetry:")
-        output.append(str(self.input_intensities[0].space_group_info()))
-        output.append(str(self.median_unit_cell))
+        output.append(
+            str(
+                self.input_intensities[0]
+                .crystal_symmetry()
+                .customized_copy(unit_cell=self.median_unit_cell)
+            )
+        )
         output.append("Change of basis op to minimum cell: %s" % self.cb_op_inp_min)
         output.append("Crystal symmetry in minimum cell:")
-        output.append(str(self.intensities.space_group_info()))
-        output.append(str(self.intensities.unit_cell()))
+        output.append(str(self.intensities.crystal_symmetry()))
         output.append("Lattice point group: %s" % self.lattice_group.info())
         output.append(
-            "Overall CC for %i unrelated pairs: %.3f"
+            "\nOverall CC for %i unrelated pairs: %.3f"
             % (self.corr_unrelated.n(), self.corr_unrelated.coefficient())
         )
         output.append(
@@ -285,7 +289,8 @@ class determine_space_group(symmetry_base):
                     "%s" % score.sym_op.r().info(),
                 )
             )
-        output.append("Scoring individual symmetry elements")
+        output.append("\n" + "-" * 80 + "\n")
+        output.append("Scoring individual symmetry elements\n")
         output.append(table_utils.format(rows, has_header=True, delim="  "))
 
         header = (
@@ -324,11 +329,12 @@ class determine_space_group(symmetry_base):
                     "%s" % (score.subgroup["cb_op_inp_best"]),
                 )
             )
-        output.append("Scoring all possible sub-groups")
+        output.append("\n" + "-" * 80 + "\n")
+        output.append("Scoring all possible sub-groups\n")
         output.append(table_utils.format(rows, has_header=True, delim="  "))
 
         output.append(
-            "Best solution: %s"
+            "\nBest solution: %s"
             % self.best_solution.subgroup["best_subsym"].space_group_info()
         )
         output.append(
@@ -338,7 +344,7 @@ class determine_space_group(symmetry_base):
             "Reindex operator: %s" % (self.best_solution.subgroup["cb_op_inp_best"])
         )
         output.append("Laue group probability: %.3f" % self.best_solution.likelihood)
-        output.append("Laue group confidence: %.3f" % self.best_solution.confidence)
+        output.append("Laue group confidence: %.3f\n" % self.best_solution.confidence)
         return "\n".join(output)
 
     def as_dict(self):

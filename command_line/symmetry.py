@@ -118,6 +118,11 @@ def symmetry(experiments, reflection_tables, params=None):
         params = phil_scope.extract()
 
     if params.laue_group is Auto:
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info("Performing Laue group analysis")
+        logger.info("")
+
         # transform models into miller arrays
         n_datasets = len(experiments)
         datasets = filtered_arrays_from_experiments_reflections(
@@ -141,6 +146,7 @@ def symmetry(experiments, reflection_tables, params=None):
             relative_length_tolerance=params.relative_length_tolerance,
             absolute_angle_tolerance=params.absolute_angle_tolerance,
         )
+        logger.info("")
         logger.info(result)
 
         if params.output.json is not None:
@@ -167,6 +173,11 @@ def symmetry(experiments, reflection_tables, params=None):
         )
 
     if params.systematic_absences.check:
+        logger.info("=" * 80)
+        logger.info("")
+        logger.info("Analysing systematic absences")
+        logger.info("")
+
         if (params.d_min is Auto) and (result is not None):
             d_min = result.intensities.resolution_range()[1]
         elif params.d_min is Auto:
