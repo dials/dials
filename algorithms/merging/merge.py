@@ -36,7 +36,7 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
         )
         reflections["intensity"] = reflections["intensity.scale.value"]
         reflections["variance"] = reflections["intensity.scale.variance"]
-    else:
+    elif "intensity.prf.value" in reflections[0]:
         logger.info(
             "Attempting to perform absence checks on unscaled profile-integrated data"
         )
@@ -45,6 +45,15 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
         )
         reflections["intensity"] = reflections["intensity.prf.value"]
         reflections["variance"] = reflections["intensity.prf.variance"]
+    else:
+        logger.info(
+            "Attempting to perform absence checks on unscaled summation-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflections[0], intensity_choice=["sum"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.sum.value"]
+        reflections["variance"] = reflections["intensity.sum.variance"]
 
     # now merge
     space_group = experiments[0].crystal.get_space_group()
