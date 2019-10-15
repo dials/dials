@@ -30,7 +30,7 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
         "inverse_scale_factor" in reflections[0]
         and "intensity.scale.value" in reflections[0]
     ):
-        logger.info("Attempting to perform absence checks on scaled data")
+        logger.info("Performing systematic absence checks on scaled data")
         reflections = filter_reflection_table(
             reflections[0], intensity_choice=["scale"], d_min=d_min
         )
@@ -38,7 +38,7 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
         reflections["variance"] = reflections["intensity.scale.variance"]
     elif "intensity.prf.value" in reflections[0]:
         logger.info(
-            "Attempting to perform absence checks on unscaled profile-integrated data"
+            "Performing systematic absence checks on unscaled profile-integrated data"
         )
         reflections = filter_reflection_table(
             reflections[0], intensity_choice=["profile"], d_min=d_min
@@ -47,7 +47,7 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
         reflections["variance"] = reflections["intensity.prf.variance"]
     else:
         logger.info(
-            "Attempting to perform absence checks on unscaled summation-integrated data"
+            "Performing systematic absence checks on unscaled summation-integrated data"
         )
         reflections = filter_reflection_table(
             reflections[0], intensity_choice=["sum"], d_min=d_min
