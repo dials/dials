@@ -141,7 +141,7 @@ class ScalingTarget(object):
         residuals = cls.calculate_residuals(Ih_table)
         jacobian = cls.calculate_jacobian(Ih_table)
         weights = Ih_table.weights
-        del Ih_table.derivatives
+        Ih_table.derivatives = None
         return residuals, jacobian, weights
 
     def compute_restraints_residuals_and_gradients(self, apm):
