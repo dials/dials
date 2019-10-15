@@ -26,7 +26,7 @@ def exclude_image_ranges_from_scans(experiments, exclude_images):
     experiment in the scan (if it exists). Requires experiment identifiers to be
     set already."""
     experiments = set_initial_valid_image_ranges(experiments)
-    ranges_to_remove = _parse_exclude_images_commands(exclude_images)
+    ranges_to_remove = _parse_exclude_images_commands(exclude_images, experiments)
     experiments = _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove)
     return experiments
 
@@ -73,16 +73,30 @@ def get_selection_for_valid_image_ranges(reflection_table, experiment):
     return flex.bool(reflection_table.size(), True)  # else say all valid
 
 
-def _parse_exclude_images_commands(commands):
+def _parse_exclude_images_commands(commands, experiments):
     """Parse a list of list of command line options.
+
     e.g. commands = [['1:101:200'], ['0:201:300']]
+    or commands = [[101:200]] allowable for a single experiment.
     builds and returns a list of tuples (exp_id, (start, stop))"""
     ranges_to_remove = []
     for com in commands:
         vals = com[0].split(":")
-        if len(vals) != 3:
-            raise ValueError("Exclude images must be input in the form exp:start:stop ")
-        ranges_to_remove.append((vals[0], (int(vals[1]), int(vals[2]))))
+        if len(vals) == 2:
+            if len(experiments) > 1:
+                raise ValueError(
+                    "Exclude images must be in the form exp:start:stop for multiple experiments"
+                )
+            else:
+                ranges_to_remove.append(
+                    (experiments[0].identifier, (int(vals[0]), int(vals[1])))
+                )
+        else:
+            if len(vals) != 3:
+                raise ValueError(
+                    "Exclude images must be input in the form exp:start:stop, or start:stop for a single experiment"
+                )
+            ranges_to_remove.append((vals[0], (int(vals[1]), int(vals[2]))))
     return ranges_to_remove
 
 

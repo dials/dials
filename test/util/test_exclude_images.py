@@ -4,6 +4,7 @@ tests for functions in dials.util.exclude_images.py
 from __future__ import absolute_import, division, print_function
 import copy
 import pytest
+from mock import Mock
 from dxtbx.model import Experiment, Scan, ExperimentList
 from dials.array_family import flex
 from dials.util.exclude_images import (
@@ -29,14 +30,20 @@ def make_scanless_experiment(expid="1"):
 def test_parse_exclude_images_commands():
     """Test for namesake function"""
     commands = [["1:101:200"], ["0:201:300"]]
-    ranges = _parse_exclude_images_commands(commands)
+    ranges = _parse_exclude_images_commands(commands, [])
     assert ranges == [("1", (101, 200)), ("0", (201, 300))]
+    experiments = ["1", "2"]
+    short_command = [["101:200"]]
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands([["1:101-200"]])
+        _ = _parse_exclude_images_commands(short_command, experiments)
+    mock_exp = Mock()
+    mock_exp.identifier = "1"
+    ranges = _parse_exclude_images_commands(short_command, [mock_exp])
+    assert ranges == [("1", (101, 200))]
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands([["1:101"]])
+        _ = _parse_exclude_images_commands([["1:101-200"]], [mock_exp])
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands([["1:101:a"]])
+        _ = _parse_exclude_images_commands([["1:101:a"]], [])
 
 
 def test_set_get_initial_valid_image_ranges():

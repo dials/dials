@@ -3,6 +3,7 @@ Observers for the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 from collections import OrderedDict
 
@@ -166,37 +167,43 @@ class ScalingHTMLGenerator(Observer):
 
     def make_scaling_html(self, scaling_script):
         """Collect data from the individual observers and write the html."""
-        if not scaling_script.params.output.html:
+        html_file = scaling_script.params.output.html
+        json_file = scaling_script.params.output.json
+        if not (html_file or json_file):
             return
         self.data.update(ScalingModelObserver().make_plots())
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
         self.data.update(FilteringObserver().make_plots())
-        filename = scaling_script.params.output.html
-        logger.info("Writing html report to: %s", filename)
-        loader = ChoiceLoader(
-            [
-                PackageLoader("dials", "templates"),
-                PackageLoader("dials", "static", encoding="utf-8"),
-            ]
-        )
-        env = Environment(loader=loader)
-        template = env.get_template("scaling_report.html")
-        html = template.render(
-            page_title="DIALS scaling report",
-            scaling_model_graphs=self.data["scaling_model"],
-            scaling_tables=self.data["scaling_tables"],
-            resolution_plots=self.data["resolution_plots"],
-            scaling_outlier_graphs=self.data["outlier_plots"],
-            error_model_plots=self.data["error_model_plots"],
-            anom_plots=self.data["anom_plots"],
-            batch_plots=self.data["batch_plots"],
-            misc_plots=self.data["misc_plots"],
-            filter_plots=self.data["filter_plots"],
-        )
-        with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+        if html_file:
+            logger.info("Writing html report to: %s", html_file)
+            loader = ChoiceLoader(
+                [
+                    PackageLoader("dials", "templates"),
+                    PackageLoader("dials", "static", encoding="utf-8"),
+                ]
+            )
+            env = Environment(loader=loader)
+            template = env.get_template("scaling_report.html")
+            html = template.render(
+                page_title="DIALS scaling report",
+                scaling_model_graphs=self.data["scaling_model"],
+                scaling_tables=self.data["scaling_tables"],
+                resolution_plots=self.data["resolution_plots"],
+                scaling_outlier_graphs=self.data["outlier_plots"],
+                error_model_plots=self.data["error_model_plots"],
+                anom_plots=self.data["anom_plots"],
+                batch_plots=self.data["batch_plots"],
+                misc_plots=self.data["misc_plots"],
+                filter_plots=self.data["filter_plots"],
+            )
+            with open(html_file, "wb") as f:
+                f.write(html.encode("ascii", "xmlcharrefreplace"))
+        if json_file:
+            logger.info("Writing html report data to: %s", json_file)
+            with open(json_file, "w") as outfile:
+                json.dump(self.data, outfile)
 
 
 @singleton

@@ -42,6 +42,9 @@ lattice_group = None
 seed = 230
   .type = int(value_min=0)
 
+lattice_symmetry_max_delta = 2.0
+  .type = float(value_min=0)
+
 relative_length_tolerance = 0.05
   .type = float(value_min=0)
 
@@ -92,6 +95,7 @@ input data and filtering settings e.g partiality_threshold"""
             normalisation=self._params.normalisation,
             d_min=self._params.d_min,
             min_i_mean_over_sigma_mean=self._params.min_i_mean_over_sigma_mean,
+            lattice_symmetry_max_delta=self._params.lattice_symmetry_max_delta,
             relative_length_tolerance=self._params.relative_length_tolerance,
             absolute_angle_tolerance=self._params.absolute_angle_tolerance,
         )

@@ -283,10 +283,12 @@ def test_scale_physical(dials_regression, tmpdir):
         "unmerged_mtz=unmerged.mtz",
         "use_free_set=1",
         "outlier_rejection=simple",
+        "json=scaling.json",
     ]
     run_one_scaling(tmpdir, [refl_1, expt_1] + extra_args)
     assert tmpdir.join("unmerged.mtz").check()
     assert tmpdir.join("merged.mtz").check()
+    assert tmpdir.join("scaling.json").check()
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
