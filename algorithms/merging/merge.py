@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dials.array_family import flex
-from dials.command_line.space_group import run_sys_abs_checks
 from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
     merging_stats_from_scaled_array,
@@ -11,6 +10,9 @@ from dials.algorithms.scaling.scaling_library import (
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
     map_indices_to_asu,
+)
+from dials.algorithms.symmetry.absences.run_absences_checks import (
+    run_systematic_absences_checks,
 )
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
@@ -173,7 +175,7 @@ def merge_and_truncate(params, experiments, reflections):
         merged_reflections["variance"] = merged.sigmas() ** 2
         merged_reflections["miller_index"] = merged.indices()
         logger.info("Running systematic absences check")
-        run_sys_abs_checks(experiments, merged_reflections)
+        run_systematic_absences_checks(experiments, merged_reflections)
 
     # Run the stats on truncating on anomalous or non anomalous?
     if params.anomalous:
