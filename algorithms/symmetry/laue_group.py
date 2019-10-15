@@ -16,7 +16,7 @@ from scitbx.math import five_number_summary
 logger = logging.getLogger(__name__)
 
 
-class determine_space_group(symmetry_base):
+class LaueGroupAnalysis(symmetry_base):
     """Determination of Laue group symmetry using algorithms similar to POINTLESS.
 
     See also:
@@ -37,7 +37,7 @@ class determine_space_group(symmetry_base):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
     ):
-        """Intialise a determine_space_group object.
+        """Intialise a LaueGroupAnalysis object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -60,7 +60,7 @@ class determine_space_group(symmetry_base):
           absolute_angle_tolerance (float): Absolute angle tolerance in checking
             consistency of input unit cells against the median unit cell.
         """
-        super(determine_space_group, self).__init__(
+        super(LaueGroupAnalysis, self).__init__(
             intensities,
             normalisation=normalisation,
             lattice_symmetry_max_delta=lattice_symmetry_max_delta,

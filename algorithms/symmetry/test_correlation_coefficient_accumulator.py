@@ -3,9 +3,7 @@ from __future__ import absolute_import, division, print_function
 import pytest
 
 from scitbx.array_family import flex
-from dials.algorithms.symmetry.determine_space_group import (
-    CorrelationCoefficientAccumulator,
-)
+from dials.algorithms.symmetry.laue_group import CorrelationCoefficientAccumulator
 
 
 def test_correlation_coefficient_accumulator():

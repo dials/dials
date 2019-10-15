@@ -20,7 +20,7 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
 from dials.algorithms.symmetry import resolution_filter_from_reflections_experiments
-from dials.algorithms.symmetry.determine_space_group import determine_space_group
+from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.absences.run_absences_checks import (
@@ -137,7 +137,7 @@ def symmetry(experiments, reflection_tables, params=None):
     input data and filtering settings e.g partiality_threshold"""
             )
 
-        result = determine_space_group(
+        result = LaueGroupAnalysis(
             datasets,
             normalisation=params.normalisation,
             d_min=params.d_min,
