@@ -6,7 +6,6 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from __future__ import absolute_import, division, print_function
-from copy import copy
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_restraints import ScalingRestraintsCalculator
 from dials_scaling_ext import row_multiply, calc_dIh_by_dpi, calc_jacobian
@@ -23,7 +22,6 @@ class ScalingTarget(object):
     rmsd_units = ["a.u"]
 
     def __init__(self):
-        self._restr = None
         self.rmsd_names = ["RMSD_I"]
         self.rmsd_units = ["a.u"]
         # Quantities to cache each step
@@ -36,19 +34,9 @@ class ScalingTarget(object):
         """Calculate RMSDs for the matches. Also calculate R-factors."""
         R = flex.double([])
         n = 0
-        if Ih_table.free_Ih_table:
-            work_blocks = Ih_table.blocked_data_list[:-1]
-            free_block = Ih_table.blocked_data_list[-1]
-            self.rmsd_names = ["RMSD_I", "RMSD_I (no restraints)", "Free RMSD_I"]
-            self.rmsd_units = ["a.u", "a.u", "a.u"]
-        else:
-            work_blocks = Ih_table.blocked_data_list
-            self.rmsd_names = ["RMSD_I"]
-            self.rmsd_units = ["a.u"]
-        for block in work_blocks:
+        for block in Ih_table.blocked_data_list:
             R.extend((self.calculate_residuals(block) ** 2) * block.weights)
             n += block.size
-        unrestr_R = copy(R)
         if self.param_restraints:
             restraints = ScalingRestraintsCalculator.calculate_restraints(apm)
             if restraints:
@@ -56,10 +44,6 @@ class ScalingTarget(object):
             else:
                 self.param_restraints = False
         self._rmsds = [(flex.sum(R) / n) ** 0.5]
-        if Ih_table.free_Ih_table:
-            self._rmsds.append((flex.sum(unrestr_R) / n) ** 0.5)
-            Rmsdfree = (self.calculate_residuals(free_block) ** 2) * free_block.weights
-            self._rmsds.append((flex.sum(Rmsdfree) / free_block.size) ** 0.5)
         return self._rmsds
 
     @staticmethod

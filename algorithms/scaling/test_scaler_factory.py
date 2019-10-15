@@ -235,17 +235,17 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     assert set(target.single_scalers[1].reflection_table["id"]) == {1}
     assert set(target.unscaled_scalers[0].reflection_table["id"]) == {2}
 
+    # Now test converting targetscaler to multiscaler
+    multiscaler = MultiScalerFactory.create_from_targetscaler(target)
+    assert isinstance(multiscaler, MultiScaler)
+    assert len(multiscaler.single_scalers) == 3
+
     # Test for correct initialisation when scaling against a target model.
     generated_param.scaling_options.target_model = True
     target = TargetScalerFactory.create_for_target_against_reference(
         generated_param, explist, refl_list
     )
     assert isinstance(target.single_scalers[0], NullScaler)
-
-    # Now test converting targetscaler to multiscaler
-    multiscaler = MultiScalerFactory.create_from_targetscaler(target)
-    assert isinstance(multiscaler, MultiScaler)
-    assert len(multiscaler.single_scalers) == 3
 
     # This time make one dataset bad, and check it gets removed
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)

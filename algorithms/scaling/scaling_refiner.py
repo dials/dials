@@ -267,7 +267,6 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         """overwrite method to avoid calls to 'blocks' methods of target"""
         self.prepare_for_step()
 
-        self._scaler.update_free_block(self._parameters)
         work_blocks = self._scaler.get_blocks_for_minimisation()
 
         f = []
@@ -340,7 +339,6 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
         # Reset the state to construction time, i.e. no equations accumulated
         self.reset()
 
-        self._scaler.update_free_block(self._parameters)
         work_blocks = self._scaler.get_blocks_for_minimisation()
 
         # observation terms

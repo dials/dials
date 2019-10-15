@@ -389,7 +389,7 @@ def determine_best_unit_cell(experiments):
 
 
 def merging_stats_from_scaled_array(
-    scaled_miller_array, n_bins=20, use_internal_variance=False
+    scaled_miller_array, n_bins=20, use_internal_variance=False, anomalous=True
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -407,20 +407,22 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=0.01,
         )
-
-        intensities_anom = scaled_miller_array.as_anomalous_array()
-        intensities_anom = intensities_anom.map_to_asu().customized_copy(
-            info=scaled_miller_array.info()
-        )
-        anom_result = iotbx.merging_statistics.dataset_statistics(
-            i_obs=intensities_anom,
-            n_bins=n_bins,
-            anomalous=True,
-            sigma_filtering=None,
-            cc_one_half_significance_level=0.01,
-            eliminate_sys_absent=False,
-            use_internal_variance=use_internal_variance,
-        )
+        if anomalous:
+            intensities_anom = scaled_miller_array.as_anomalous_array()
+            intensities_anom = intensities_anom.map_to_asu().customized_copy(
+                info=scaled_miller_array.info()
+            )
+            anom_result = iotbx.merging_statistics.dataset_statistics(
+                i_obs=intensities_anom,
+                n_bins=n_bins,
+                anomalous=True,
+                sigma_filtering=None,
+                cc_one_half_significance_level=0.01,
+                eliminate_sys_absent=False,
+                use_internal_variance=use_internal_variance,
+            )
+        else:
+            anom_result = False
     except RuntimeError:
         raise DialsMergingStatisticsError(
             "Failure during merging statistics calculation"

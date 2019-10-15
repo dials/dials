@@ -224,15 +224,6 @@ def mock_Ih_table():
     return Ih_table
 
 
-@pytest.fixture()
-def mock_Ih_table_workfree():
-    """A mock Ih table with a free set for testing a target function."""
-    Ih_table = MagicMock()
-    Ih_table.blocked_data_list = [mock_single_Ih_table(), mock_single_Ih_table()]
-    Ih_table.free_Ih_table = True
-    return Ih_table
-
-
 @pytest.fixture
 def mock_restrained_component():
     """Mock a component with restraints."""
@@ -365,12 +356,10 @@ def test_target_function(
 
 
 def test_target_rmsd_calculation(
-    mock_Ih_table_workfree,
-    mock_multi_apm_withrestraints,
-    mock_multi_apm_withoutrestraints,
+    mock_multi_apm_withrestraints, mock_multi_apm_withoutrestraints
 ):
-    """Test the RMSD calculation for various scenarios - including an Ih
-    table split into a work and free set and components with/without restraints.
+    """Test the RMSD calculation for various scenarios - components
+    with/without restraints.
     """
     target = ScalingTarget()
     assert len(target.rmsd_names) == 1
@@ -380,16 +369,8 @@ def test_target_rmsd_calculation(
     # restraints of [1, 2, 3], so expect residual of sqrt((2+6)/3)
     rmsds = target.rmsds(mock_Ih_table(), mock_multi_apm_withrestraints)
     assert len(rmsds) == 1
-    assert target.param_restraints is True
-
-    rmsds = target.rmsds(mock_Ih_table_workfree, mock_multi_apm_withrestraints)
-    assert len(rmsds) == 3
     assert rmsds[0] == pytest.approx((8.0 / 3.0) ** 0.5, abs=1e-6)
-    assert rmsds[1] == pytest.approx((2.0 / 3.0) ** 0.5, abs=1e-6)
-    assert rmsds[2] == pytest.approx((2.0 / 3.0) ** 0.5, abs=1e-6)
     assert target.param_restraints is True
-    assert len(target.rmsd_names) == 3
-    assert len(target.rmsd_units) == 3
 
     rmsds = target.rmsds(mock_Ih_table(), mock_multi_apm_withoutrestraints)
     assert len(rmsds) == 1
