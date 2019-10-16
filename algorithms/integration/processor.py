@@ -5,6 +5,8 @@ import logging
 import math
 from time import time
 
+import psutil
+
 import boost.python
 import dials.algorithms.integration
 import libtbx
@@ -381,7 +383,6 @@ class Task(object):
         """
         from dials.array_family import flex
         from dials.model.data import make_image
-        from libtbx.introspection import machine_memory_info
 
         # Get the start time
         start_time = time()
@@ -441,40 +442,35 @@ class Task(object):
             self.params.debug.output,
         )
 
-        # Compute percentage of max available. The function is not portable to
-        # windows so need to add a check if the function fails. On windows no
-        # warning will be printed
-        memory_info = machine_memory_info()
-        total_memory = memory_info.memory_total()
+        # Compute expected memory usage and warn if not enough
+        total_memory = psutil.virtual_memory().total
         sbox_memory = processor.compute_max_memory_usage()
-        if total_memory is not None:
-            assert total_memory > 0, "Your system appears to have no memory!"
-            assert (
-                self.params.block.max_memory_usage > 0.0
-            ), "maximum memory usage must be > 0"
-            assert (
-                self.params.block.max_memory_usage <= 1.0
-            ), "maximum memory usage must be <= 1"
-            limit_memory = total_memory * self.params.block.max_memory_usage
-            if sbox_memory > limit_memory:
-                raise RuntimeError(
-                    """
-        There was a problem allocating memory for shoeboxes. Possible solutions
-        include increasing the percentage of memory allowed for shoeboxes or
-        decreasing the block size. This could also be caused by a highly mosaic
-        crystal model - is your crystal really this mosaic?
-          Total system memory: %g GB
-          Limit shoebox memory: %g GB
-          Required shoebox memory: %g GB
-        """
-                    % (total_memory / 1e9, limit_memory / 1e9, sbox_memory / 1e9)
-                )
-            else:
-                logger.info(" Memory usage:")
-                logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
-                logger.info("  Limit shoebox memory: %g GB" % (limit_memory / 1e9))
-                logger.info("  Required shoebox memory: %g GB" % (sbox_memory / 1e9))
-                logger.info("")
+        assert (
+            self.params.block.max_memory_usage > 0.0
+        ), "maximum memory usage must be > 0"
+        assert (
+            self.params.block.max_memory_usage <= 1.0
+        ), "maximum memory usage must be <= 1"
+        limit_memory = total_memory * self.params.block.max_memory_usage
+        if sbox_memory > limit_memory:
+            raise RuntimeError(
+                """
+    There was a problem allocating memory for shoeboxes. Possible solutions
+    include increasing the percentage of memory allowed for shoeboxes or
+    decreasing the block size. This could also be caused by a highly mosaic
+    crystal model - is your crystal really this mosaic?
+        Total system memory: %g GB
+        Limit shoebox memory: %g GB
+        Required shoebox memory: %g GB
+    """
+                % (total_memory / 1e9, limit_memory / 1e9, sbox_memory / 1e9)
+            )
+        else:
+            logger.info(" Memory usage:")
+            logger.info("  Total system memory: %g GB" % (total_memory / 1e9))
+            logger.info("  Limit shoebox memory: %g GB" % (limit_memory / 1e9))
+            logger.info("  Required shoebox memory: %g GB" % (sbox_memory / 1e9))
+            logger.info("")
 
         # Loop through the imageset, extract pixels and process reflections
         read_time = 0.0
@@ -765,7 +761,6 @@ class Manager(object):
         """
         Compute the number of processors
         """
-        from libtbx.introspection import machine_memory_info
         from dials.array_family import flex
 
         # Set the memory usage per processor
@@ -776,30 +771,28 @@ class Manager(object):
                 self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
             )
 
-            # Compute percentage of max available. The function is not portable to
-            # windows so need to add a check if the function fails. On windows no
-            # warning will be printed
-            memory_info = machine_memory_info()
-            total_memory = memory_info.memory_total()
-            if total_memory is not None:
-                assert total_memory > 0, "Your system appears to have no memory!"
-                limit_memory = total_memory * self.params.block.max_memory_usage
-                njobs = int(math.floor(limit_memory / max_memory))
-                if njobs < 1:
-                    raise RuntimeError(
-                        """
-            No enough memory to run integration jobs. Possible solutions
-            include increasing the percentage of memory allowed for shoeboxes or
-            decreasing the block size.
-              Total system memory: %g GB
-              Limit shoebox memory: %g GB
-              Max shoebox memory: %g GB
-          """
-                        % (total_memory / 1e9, limit_memory / 1e9, max_memory / 1e9)
-                    )
-                else:
-                    self.params.mp.nproc = min(self.params.mp.nproc, njobs)
-                    self.params.block.max_memory_usage /= self.params.mp.nproc
+            # Compute expected memory usage and warn if not enough
+            total_memory = psutil.virtual_memory().total
+            assert (
+                total_memory is not None and total_memory > 0
+            ), "psutil call appears to have given unexpected output"
+            limit_memory = total_memory * self.params.block.max_memory_usage
+            njobs = int(math.floor(limit_memory / max_memory))
+            if njobs < 1:
+                raise RuntimeError(
+                    """
+        No enough memory to run integration jobs. Possible solutions
+        include increasing the percentage of memory allowed for shoeboxes or
+        decreasing the block size.
+            Total system memory: %g GB
+            Limit shoebox memory: %g GB
+            Max shoebox memory: %g GB
+        """
+                    % (total_memory / 1e9, limit_memory / 1e9, max_memory / 1e9)
+                )
+            else:
+                self.params.mp.nproc = min(self.params.mp.nproc, njobs)
+                self.params.block.max_memory_usage /= self.params.mp.nproc
 
     def summary(self):
         """

@@ -1,11 +1,16 @@
 from __future__ import absolute_import, division, print_function
+
+import logging
+from math import ceil, floor
+
+import psutil
+
+from libtbx import Auto
+import libtbx.table_utils
+
 from dials.array_family import flex
 from dials.algorithms.integration.processor import ExecuteParallelTask
 from dials.util.mp import multi_node_parallel_map
-
-import logging
-
-from math import ceil
 
 from dials_algorithms_integration_parallel_integrator_ext import (
     Logger,
@@ -281,16 +286,7 @@ def assert_enough_memory(required_memory, max_memory_usage):
     :param required_memory: The required number of bytes
     :param max_memory_usage: The maximum memory usage allowed
     """
-    from libtbx.introspection import machine_memory_info
-
-    # Compute percentage of max available. The function is not portable to
-    # windows so need to add a check if the function fails. On windows no
-    # warning will be printed
-    memory_info = machine_memory_info()
-    total_memory = memory_info.memory_total()
-    if total_memory is None:
-        raise RuntimeError("Inspection of system memory failed")
-    assert total_memory > 0, "Your system appears to have no memory!"
+    total_memory = psutil.virtual_memory().total
     assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
     assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
     limit_memory = total_memory * max_memory_usage
@@ -664,15 +660,8 @@ class IntegrationManager(object):
         """
         Compute the required memory
         """
-        from libtbx.introspection import machine_memory_info
-        from math import floor
-
-        memory_info = machine_memory_info()
-        total_memory = memory_info.memory_total()
+        total_memory = psutil.virtual_memory().total
         max_memory_usage = self.params.integration.block.max_memory_usage
-        if total_memory is None:
-            raise RuntimeError("Inspection of system memory failed")
-        assert total_memory > 0, "Your system appears to have no memory!"
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
         limit_memory = int(floor(total_memory * max_memory_usage))
@@ -684,12 +673,9 @@ class IntegrationManager(object):
         """
         Compute the processing block size.
         """
-        import libtbx
-        from math import ceil
-
         block = self.params.integration.block
         max_block_size = self.compute_max_block_size()
-        if block.size in [libtbx.Auto, "auto", "Auto"]:
+        if block.size in [Auto, "auto", "Auto"]:
             assert block.threshold > 0, "Threshold must be > 0"
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
@@ -745,8 +731,6 @@ class IntegrationManager(object):
         """
         Get a summary of the processing
         """
-        from libtbx.table_utils import format as table
-
         # Compute the task table
         if self.experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To", "# Reflections"]]
@@ -778,7 +762,9 @@ class IntegrationManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        task_table = libtbx.table_utils.format(
+            rows, has_header=True, justify="right", prefix=" "
+        )
 
         # The format string
         if self.params.integration.block.size is None:
@@ -1145,15 +1131,8 @@ class ReferenceCalculatorManager(object):
         """
         Compute the required memory
         """
-        from libtbx.introspection import machine_memory_info
-        from math import floor
-
-        memory_info = machine_memory_info()
-        total_memory = memory_info.memory_total()
+        total_memory = psutil.virtual_memory().total
         max_memory_usage = self.params.integration.block.max_memory_usage
-        if total_memory is None:
-            raise RuntimeError("Inspection of system memory failed")
-        assert total_memory > 0, "Your system appears to have no memory!"
         assert max_memory_usage > 0.0, "maximum memory usage must be > 0"
         assert max_memory_usage <= 1.0, "maximum memory usage must be <= 1"
         limit_memory = int(floor(total_memory * max_memory_usage))
@@ -1165,12 +1144,9 @@ class ReferenceCalculatorManager(object):
         """
         Compute the processing block size.
         """
-        import libtbx
-        from math import ceil
-
         block = self.params.integration.block
         max_block_size = self.compute_max_block_size()
-        if block.size in [libtbx.Auto, "auto", "Auto"]:
+        if block.size in [Auto, "auto", "Auto"]:
             assert block.threshold > 0, "Threshold must be > 0"
             assert block.threshold <= 1.0, "Threshold must be < 1"
             nframes = sorted([b[5] - b[4] for b in self.reflections["bbox"]])
@@ -1223,8 +1199,6 @@ class ReferenceCalculatorManager(object):
         """
         Get a summary of the processing
         """
-        from libtbx.table_utils import format as table
-
         # Compute the task table
         if self.experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To", "# Reflections"]]
@@ -1256,7 +1230,9 @@ class ReferenceCalculatorManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        task_table = libtbx.table_utils.format(
+            rows, has_header=True, justify="right", prefix=" "
+        )
 
         # The format string
         if self.params.integration.block.size is None:

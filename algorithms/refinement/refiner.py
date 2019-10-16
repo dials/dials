@@ -7,13 +7,14 @@ import copy
 import logging
 import math
 
+import psutil
+
 from dxtbx.model.experiment_list import ExperimentList
 from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
 import libtbx
-from libtbx.introspection import machine_memory_info
 
 # The include scope directive does not work here. For example:
 #
@@ -360,7 +361,7 @@ class RefinerFactory(object):
             dense_jacobian_gigabytes = (
                 nparam * nref * ndim * flex.double.element_size()
             ) / 1e9
-            tot_memory_gigabytes = machine_memory_info().memory_total() / 1e9
+            tot_memory_gigabytes = psutil.virtual_memory().total / 1e9
             # Report if the Jacobian requires a large amount of storage
             if (
                 dense_jacobian_gigabytes > 0.2 * tot_memory_gigabytes

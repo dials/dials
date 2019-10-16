@@ -11,6 +11,7 @@
         "msgpack",
         "orderedset",
         "procrunner>=1.0.2",
+        "psutil",
         "pytest>=4.5,<5.0",
         "scikit_learn[alldeps]<0.21",
         "scipy",
