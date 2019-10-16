@@ -763,11 +763,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
         return dpv_dp, dphi_dp
 
-    def _xl_orientation_derivatives(
-        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
-    ):
-        """helper function to extend the derivatives lists by derivatives of the
-        crystal orientation parameterisations"""
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        """helper function to extend the derivatives lists by derivatives of
+        generic parameterisations."""
 
         # Get required data
         axis = self._axis.select(isel)
@@ -778,13 +776,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         s1 = self._s1.select(isel)
         e_X_r = self._e_X_r.select(isel)
         e_r_s0 = self._e_r_s0.select(isel)
-        B = self._B.select(isel)
+        if b_matrix:
+            B = self._B.select(isel)
+        else:
+            U = self._U.select(isel)
         D = self._D.select(isel)
 
-        if dU_dxlo_p is None:
-
-            # get derivatives of the U matrix wrt the parameters
-            dU_dxlo_p = [
+        if derivatives is None:
+            # get derivatives of the B/U matrix wrt the parameters
+            derivatives = [
                 None if der is None else flex.mat3_double(len(isel), der.elems)
                 for der in parameterisation.get_ds_dp(use_none_as_null=True)
             ]
@@ -793,16 +793,17 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         dpv_dp = []
 
         # loop through the parameters
-        for der in dU_dxlo_p:
-
+        for der in derivatives:
             if der is None:
                 dphi_dp.append(None)
                 dpv_dp.append(None)
                 continue
 
             # calculate the derivative of r for this parameter
-            # FIXME COULD DO THIS BETTER WITH __rmul__?!
-            tmp = fixed_rotation * (der * B * h)
+            if b_matrix:
+                tmp = fixed_rotation * (der * B * h)
+            else:
+                tmp = fixed_rotation * (U * der * h)
             dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
 
             # calculate the derivative of phi for this parameter
@@ -813,56 +814,24 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
             dpv_dp.append(D * (dr + e_X_r * dphi))
 
         return dpv_dp, dphi_dp
+
+    def _xl_orientation_derivatives(
+        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        crystal orientation parameterisations"""
+        return self._xl_derivatives(
+            isel, dU_dxlo_p, b_matrix=True, parameterisation=parameterisation
+        )
 
     def _xl_unit_cell_derivatives(
         self, isel, parameterisation=None, dB_dxluc_p=None, reflections=None
     ):
         """helper function to extend the derivatives lists by
         derivatives of the crystal unit cell parameterisations"""
-
-        # Get required data
-        axis = self._axis.select(isel)
-        fixed_rotation = self._fixed_rotation.select(isel)
-        setting_rotation = self._setting_rotation.select(isel)
-        phi_calc = self._phi_calc.select(isel)
-        h = self._h.select(isel)
-        s1 = self._s1.select(isel)
-        e_X_r = self._e_X_r.select(isel)
-        e_r_s0 = self._e_r_s0.select(isel)
-        U = self._U.select(isel)
-        D = self._D.select(isel)
-
-        if dB_dxluc_p is None:
-
-            # get derivatives of the B matrix wrt the parameters
-            dB_dxluc_p = [
-                None if der is None else flex.mat3_double(len(isel), der.elems)
-                for der in parameterisation.get_ds_dp(use_none_as_null=True)
-            ]
-
-        dphi_dp = []
-        dpv_dp = []
-
-        # loop through the parameters
-        for der in dB_dxluc_p:
-
-            if der is None:
-                dphi_dp.append(None)
-                dpv_dp.append(None)
-                continue
-
-            # calculate the derivative of r for this parameter
-            tmp = fixed_rotation * (U * der * h)
-            dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
-
-            # calculate the derivative of phi for this parameter
-            dphi = -1.0 * dr.dot(s1) / e_r_s0
-            dphi_dp.append(dphi)
-
-            # calculate the derivative of pv for this parameter
-            dpv_dp.append(D * (dr + e_X_r * dphi))
-
-        return dpv_dp, dphi_dp
+        return self._xl_derivatives(
+            isel, dB_dxluc_p, b_matrix=False, parameterisation=parameterisation
+        )
 
     def _goniometer_derivatives(
         self, isel, parameterisation=None, dS_dgon_p=None, reflections=None
