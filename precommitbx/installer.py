@@ -9,7 +9,6 @@ import time
 from distutils.version import LooseVersion as parse_version
 
 import dials.precommitbx._precommitbx
-import libtbx.introspection
 import libtbx.load_env
 import procrunner
 import py
