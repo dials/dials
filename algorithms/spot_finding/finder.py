@@ -302,7 +302,11 @@ class PixelListToShoeboxes(object):
         spotsizes = flex.size_t()
         hotpixels = tuple(flex.size_t() for i in range(len(imageset.get_detector())))
         if isinstance(imageset, ImageSequence):
-            twod = False
+            scan = imageset.get_scan()
+            if scan.get_oscillation()[1] == 0:
+                twod = True
+            else:
+                twod = False
         else:
             twod = True
         for i, (p, hp) in enumerate(zip(pixel_labeller, hotpixels)):
