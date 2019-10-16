@@ -2,8 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
 
+import concurrent.futures
 import copy
 import logging
+import sys
 
 import iotbx.phil
 from dxtbx.model.experiment_list import ExperimentList
@@ -14,7 +16,8 @@ from dials.util.slice import slice_reflections
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
-from dials.util import Sorry
+from dials.util import log
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.index")
 
@@ -106,7 +109,7 @@ refinement {
 working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
-def index_experiments(experiments, reflections, params, known_crystal_models=None):
+def _index_experiments(experiments, reflections, params, known_crystal_models=None):
     idxr = indexer.Indexer.from_parameters(
         reflections,
         experiments,
@@ -119,106 +122,81 @@ def index_experiments(experiments, reflections, params, known_crystal_models=Non
     return idxr.refined_experiments, idx_refl
 
 
-class Index(object):
-    def __init__(self, experiments, reflections, params):
+def index(experiments, reflections, params):
+    if experiments.crystals()[0] is not None:
+        known_crystal_models = experiments.crystals()
+    else:
+        known_crystal_models = None
 
-        self._params = params
+    if len(reflections) == 0:
+        raise ValueError("No reflection lists found in input")
+    elif len(reflections) == 1:
+        reflections[0]["imageset_id"] = reflections[0]["id"]
+    elif len(reflections) > 1:
+        assert len(reflections) == len(experiments)
+        for i in range(len(reflections)):
+            reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
+            if i > 0:
+                reflections[0].extend(reflections[i])
+    reflections = reflections[0]
 
-        if experiments.crystals()[0] is not None:
-            known_crystal_models = experiments.crystals()
-        else:
-            known_crystal_models = None
+    for expt in experiments:
+        if (
+            expt.goniometer is not None
+            and expt.scan is not None
+            and expt.scan.get_oscillation()[1] == 0
+        ):
+            expt.goniometer = None
+            expt.scan = None
 
-        if len(reflections) == 0:
-            raise Sorry("No reflection lists found in input")
-        elif len(reflections) == 1:
-            reflections[0]["imageset_id"] = reflections[0]["id"]
-        elif len(reflections) > 1:
-            assert len(reflections) == len(experiments)
-            for i in range(len(reflections)):
-                reflections[i]["imageset_id"] = flex.int(len(reflections[i]), i)
-                if i > 0:
-                    reflections[0].extend(reflections[i])
-        reflections = reflections[0]
+    if params.indexing.image_range:
+        reflections = slice_reflections(reflections, params.indexing.image_range)
 
-        for expt in experiments:
-            if (
-                expt.goniometer is not None
-                and expt.scan is not None
-                and expt.scan.get_oscillation()[1] == 0
-            ):
-                expt.goniometer = None
-                expt.scan = None
+    if len(experiments) == 1 or params.indexing.joint_indexing:
+        indexed_experiments, indexed_reflections = _index_experiments(
+            experiments,
+            reflections,
+            copy.deepcopy(params),
+            known_crystal_models=known_crystal_models,
+        )
+    else:
+        indexed_experiments = ExperimentList()
+        indexed_reflections = flex.reflection_table()
 
-        if self._params.indexing.image_range:
-            reflections = slice_reflections(
-                reflections, self._params.indexing.image_range
-            )
-
-        if len(experiments) == 1 or self._params.indexing.joint_indexing:
-            try:
-                self._indexed_experiments, self._indexed_reflections = index_experiments(
-                    experiments,
-                    reflections,
-                    copy.deepcopy(params),
-                    known_crystal_models=known_crystal_models,
-                )
-            except DialsIndexError as e:
-                raise Sorry(str(e))
-        else:
-            self._indexed_experiments = ExperimentList()
-            self._indexed_reflections = flex.reflection_table()
-
-            import concurrent.futures
-
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=params.indexing.nproc
-            ) as pool:
-                futures = []
-                for i_expt, expt in enumerate(experiments):
-                    refl = reflections.select(reflections["imageset_id"] == i_expt)
-                    refl["imageset_id"] = flex.size_t(len(refl), 0)
-                    futures.append(
-                        pool.submit(
-                            index_experiments,
-                            ExperimentList([expt]),
-                            refl,
-                            copy.deepcopy(params),
-                            known_crystal_models=known_crystal_models,
-                        )
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=params.indexing.nproc
+        ) as pool:
+            futures = []
+            for i_expt, expt in enumerate(experiments):
+                refl = reflections.select(reflections["imageset_id"] == i_expt)
+                refl["imageset_id"] = flex.size_t(len(refl), 0)
+                futures.append(
+                    pool.submit(
+                        _index_experiments,
+                        ExperimentList([expt]),
+                        refl,
+                        copy.deepcopy(params),
+                        known_crystal_models=known_crystal_models,
                     )
+                )
 
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        idx_expts, idx_refl = future.result()
-                    except Exception as e:
-                        print(e)
-                    else:
-                        if idx_expts is None:
-                            continue
-                        for j_expt, _ in enumerate(idx_expts):
-                            sel = idx_refl["id"] == j_expt
-                            idx_refl["id"].set_selected(
-                                sel, len(self._indexed_experiments) + j_expt
-                            )
-                        idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
-                        self._indexed_reflections.extend(idx_refl)
-                        self._indexed_experiments.extend(idx_expts)
-
-    def export_experiments(self, filename):
-        experiments = self._indexed_experiments
-        if self._params.output.split_experiments:
-            logger.info("Splitting experiments before output")
-
-            experiments = ExperimentList([copy.deepcopy(re) for re in experiments])
-        logger.info("Saving refined experiments to %s" % filename)
-
-        assert experiments.is_consistent()
-        experiments.as_file(filename)
-
-    def export_reflections(self, filename):
-        logger.info("Saving refined reflections to %s" % filename)
-        self._indexed_reflections.as_msgpack_file(filename=filename)
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    idx_expts, idx_refl = future.result()
+                except Exception as e:
+                    print(e)
+                else:
+                    if idx_expts is None:
+                        continue
+                    for j_expt, _ in enumerate(idx_expts):
+                        sel = idx_refl["id"] == j_expt
+                        idx_refl["id"].set_selected(
+                            sel, len(indexed_experiments) + j_expt
+                        )
+                    idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
+                    indexed_reflections.extend(idx_refl)
+                    indexed_experiments.extend(idx_expts)
+    return indexed_experiments, indexed_reflections
 
 
 def run(phil=working_phil, args=None):
@@ -235,13 +213,8 @@ def run(phil=working_phil, args=None):
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    from dials.util import log
-
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
-
-    from dials.util.version import dials_version
-
     logger.info(dials_version())
 
     # Log the diff phil
@@ -257,9 +230,26 @@ def run(phil=working_phil, args=None):
         parser.print_help()
         return
 
-    indexed = Index(experiments, reflections, params)
-    indexed.export_experiments(params.output.experiments)
-    indexed.export_reflections(params.output.reflections)
+    try:
+        indexed_experiments, indexed_reflections = index(
+            experiments, reflections, params
+        )
+    except (DialsIndexError, ValueError) as e:
+        sys.exit(str(e))
+
+    # Save experiments
+    if params.output.split_experiments:
+        logger.info("Splitting experiments before output")
+        indexed_experiments = ExperimentList(
+            [copy.deepcopy(re) for re in indexed_experiments]
+        )
+    logger.info("Saving refined experiments to %s" % params.output.experiments)
+    assert indexed_experiments.is_consistent()
+    indexed_experiments.as_file(params.output.experiments)
+
+    # Save reflections
+    logger.info("Saving refined reflections to %s" % params.output.reflections)
+    indexed_reflections.as_msgpack_file(filename=params.output.reflections)
 
 
 if __name__ == "__main__":
