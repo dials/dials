@@ -301,32 +301,6 @@ class SpotFrame(XrayFrame):
             self.params.sum_images = value
             self.reload_image()
 
-    # consolidate initialization of PySlip object into a single function
-    def init_pyslip(self):
-        super(SpotFrame, self).init_pyslip()
-        self.init_pyslip_select()
-
-    def init_pyslip_select(self):
-        # self.pyslip.Bind(pyslip.EVT_PYSLIP_SELECT, self.handle_select_event)
-
-        # self.TypeMask = 100
-        # self._xxx_layer = self.pyslip.AddLayer(
-        # render=self._draw_rings_layer,
-        # data=[],
-        # map_rel=True,
-        # visible=True,
-        # show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
-        # selectable=True,
-        # name="<xxx_layer>",
-        # type=self.TypeMask, update=False)
-        # self.image_layer = self._xxx_layer
-
-        # self.add_select_handler(self._xxx_layer, self.boxSelect)
-        # self.pyslip.SetLayerSelectable(self._xxx_layer, True)
-
-        # self.pyslip.layerBSelHandler[self.TypeMask] = self.GetBoxCorners
-        pass
-
     def GetBoxCorners(self, layer, p1, p2):
         """Get list of points inside box.
 
@@ -499,17 +473,6 @@ class SpotFrame(XrayFrame):
                     )
                 )
 
-    # def __del__(self):
-    # print self.show_all_pix_timer.legend
-    # print self.show_all_pix_timer.report()
-    # print self.show_shoebox_timer.report()
-    # print self.show_max_pix_timer.report()
-    # print self.show_ctr_mass_timer.report()
-    # print self.draw_all_pix_timer.report()
-    # print self.draw_shoebox_timer.report()
-    # print self.draw_max_pix_timer.report()
-    # print self.draw_ctr_mass_timer.report()
-
     def add_file_name_or_data(self, image_data):
         """
         Adds an image to the viewer's list of images.
@@ -621,34 +584,6 @@ class SpotFrame(XrayFrame):
                 pos=(x_start, y_start),
             )
         self.settings_frame.Show()
-
-    def _draw_rings_layer(self, dc, data, map_rel):
-        """Draw a points layer.
-
-        dc       the device context to draw on
-        data     an iterable of point tuples:
-                 (x, y, place, radius, colour, x_off, y_off, pdata)
-        map_rel  points relative to map if True, MUST BE TRUE for lightweight
-        Assumes all points are the same colour, saving 100's of ms.
-        """
-
-        assert map_rel is True
-        if len(data) == 0:
-            return
-        (lon, lat, place, radius, colour, x_off, y_off, pdata) = data[0]
-
-        scale = 2 ** self.pyslip.tiles.zoom_level
-
-        # Draw points on map/view, using transparency if implemented.
-        try:
-            dc = wx.GCDC(dc)
-        except NotImplementedError:
-            pass
-        dc.SetPen(wx.Pen(colour))
-        dc.SetBrush(wx.Brush(colour, wx.TRANSPARENT))
-        for (lon, lat, place, radius, colour, x_off, y_off, pdata) in data:
-            (x, y) = self.pyslip.ConvertGeo2View((lon, lat))
-            dc.DrawCircle(x, y, radius * scale)
 
     def draw_resolution_rings(self, unit_cell=None, space_group=None):
         image = self.image_chooser.GetClientData(
