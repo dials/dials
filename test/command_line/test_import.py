@@ -7,41 +7,41 @@ import pytest
 from dxtbx.serialize import load
 
 
-def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir):
+def test_multiple_sequence_import_fails_without_allow_parameter(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
-    del image_files[4]  # Delete filename to force two sweeps
+    del image_files[4]  # Delete filename to force two sequences
 
-    # run without allowing multiple sweeps
+    # run without allowing multiple sequences
     result = procrunner.run(
-        ["dials.import", "output.experiments=experiments_multiple_sweeps.expt"]
+        ["dials.import", "output.experiments=experiments_multiple_sequences.expt"]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
     assert result.returncode == 1
-    assert b"ore than 1 sweep" in result.stderr
-    assert not tmpdir.join("experiments_multiple_sweeps.expt").check()
+    assert b"ore than 1 sequence" in result.stderr
+    assert not tmpdir.join("experiments_multiple_sequences.expt").check()
 
 
-def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
+def test_multiple_sequence_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
-    del image_files[4]  # Delete filename to force two sweeps
+    del image_files[4]  # Delete filename to force two sequences
 
     result = procrunner.run(
         [
             "dials.import",
-            "output.experiments=experiments_multiple_sweeps.expt",
-            "allow_multiple_sweeps=True",
+            "output.experiments=experiments_multiple_sequences.expt",
+            "allow_multiple_sequences=True",
         ]
         + [f.strpath for f in image_files],
         working_directory=tmpdir.strpath,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
+    assert tmpdir.join("experiments_multiple_sequences.expt").check(file=1)
 
     experiments = load.experiment_list(
-        tmpdir.join("experiments_multiple_sweeps.expt").strpath
+        tmpdir.join("experiments_multiple_sequences.expt").strpath
     )
     assert len(experiments) == 2
 

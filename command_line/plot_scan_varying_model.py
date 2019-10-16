@@ -88,7 +88,7 @@ class Script(object):
         params, options = self.parser.parse_args()
         if len(params.input.experiments) == 0:
             self.parser.print_help()
-            raise dials.util.Sorry("No experiments found in the input")
+            return
         experiments = flatten_experiments(params.input.experiments)
 
         # Determine output path

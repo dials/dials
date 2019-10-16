@@ -85,7 +85,7 @@ class _Test(object):
         self.xluc_param = CrystalUnitCellParameterisation(self.crystal)
 
     def generate_reflections(self):
-        # Build a mock scan for a 3 degree sweep
+        # Build a mock scan for a 3 degree sequence
         from dxtbx.model import ScanFactory
 
         sf = ScanFactory()
@@ -96,7 +96,7 @@ class _Test(object):
             epochs=list(range(1)),
             deg=True,
         )
-        sweep_range = self.scan.get_oscillation_range(deg=False)
+        sequence_range = self.scan.get_oscillation_range(deg=False)
 
         # Create a scans ExperimentList, only for generating reflections
         experiments = ExperimentList()
@@ -112,7 +112,7 @@ class _Test(object):
         )
 
         # Create a ScansRayPredictor
-        ray_predictor = ScansRayPredictor(experiments, sweep_range)
+        ray_predictor = ScansRayPredictor(experiments, sequence_range)
 
         # Generate rays - only to work out which hkls are predicted
         resolution = 2.0

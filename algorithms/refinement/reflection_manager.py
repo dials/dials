@@ -36,11 +36,11 @@ format_data = {"outlier_phil": outlier_phil_str}
 phil_str = (
     """
     reflections_per_degree = Auto
-      .help = "The number of centroids per degree of the sweep to use in"
+      .help = "The number of centroids per degree of the sequence to use in"
               "refinement. The default (Auto) uses all reflections unless"
               "the dataset is wider than a single turn. Then the number of"
               "reflections may be reduced until a minimum of 100 per degree of"
-              "the sweep is reached to speed up calculations. Set this to None"
+              "the sequence is reached to speed up calculations. Set this to None"
               "to force use all of suitable reflections."
       .type = float(value_min=0.)
       .expert_level = 1
@@ -614,8 +614,8 @@ class ReflectionManager(object):
 
             # set sample size according to nref_per_degree (per experiment)
             if exp.scan and self._nref_per_degree:
-                sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-                width = abs(sweep_range_rad[1] - sweep_range_rad[0]) * RAD2DEG
+                sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
+                width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
                 if self._nref_per_degree is libtbx.Auto:
                     # For multi-turn, set sample size to the greater of the approx nref
                     # in a single turn and 100 reflections per degree

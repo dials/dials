@@ -816,7 +816,7 @@ class Manager(object):
                 f0, f1 = job.frames()
                 n = self.manager.num_reflections(i)
                 rows.append([str(i), str(group), str(f0), str(f1), str(n)])
-        elif self.experiments.all_sweeps():
+        elif self.experiments.all_sequences():
             rows = [
                 [
                     "#",
@@ -841,7 +841,7 @@ class Manager(object):
                     [str(i), str(group), str(f0), str(f1), str(p0), str(p1), str(n)]
                 )
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
+            raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
         task_table = table(rows, has_header=True, justify="right", prefix=" ")
@@ -869,7 +869,7 @@ class ManagerRot(Manager):
         """ Initialise the pre-processor, post-processor and manager. """
 
         # Ensure we have the correct type of data
-        if not experiments.all_sweeps():
+        if not experiments.all_sequences():
             raise RuntimeError(
                 """
         An inappropriate processing algorithm may have been selected!

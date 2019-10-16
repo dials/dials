@@ -56,7 +56,7 @@ the compressed images directly, however we need to extract the archive first::
   tar xvf DPF3_247398.tar
 
 At this point we have no reason not to trust the image headers. We shall just
-go ahead and import the whole sweep as normal::
+go ahead and import the whole sequence as normal::
 
   dials.import x247398/t1.0*.img.bz2
 

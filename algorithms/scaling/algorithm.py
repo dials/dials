@@ -91,9 +91,7 @@ def scaling_algorithm(scaler):
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
     do_error_analysis(scaler, reselect=False)
 
-    scaler.adjust_variances()
-    scaler.set_outliers()
-    scaler.clean_reflection_tables()
+    scaler.prepare_reflection_tables_for_output()
     return scaler
 
 
@@ -116,7 +114,5 @@ def targeted_scaling_algorithm(scaler):
     expand_and_do_outlier_rejection(scaler, calc_cov=True)
     # do_error_analysis(scaler, reselect=False)
 
-    scaler.adjust_variances()
-    scaler.set_outliers()
-    scaler.clean_reflection_tables()
+    scaler.prepare_reflection_tables_for_output()
     return scaler

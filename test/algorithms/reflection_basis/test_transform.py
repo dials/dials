@@ -36,13 +36,15 @@ def gaussian(size, a, x0, sx):
 
 
 def test_forward(dials_data):
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
 
     # Set some parameters
     sigma_divergence = beam.get_sigma_divergence(deg=False)
@@ -228,13 +230,15 @@ def test_forward(dials_data):
 
 
 def test_forward_no_model(dials_data):
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
     scan.set_image_range((0, 1000))
 
     # Set some parameters

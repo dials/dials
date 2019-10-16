@@ -9,7 +9,7 @@ from dials.util.slice import slice_experiments, slice_reflections
 
 help_message = """
 
-Slice a sweep to produce a smaller sweep within the bounds of the original. If
+Slice a sequence to produce a smaller sequence within the bounds of the original. If
 experiments or experiments are provided, modify the scan objects within these. If
 reflections are provided, remove reflections outside the provided image ranges.
 Each image_range parameter refers to a single experiment ID, counting up from
@@ -18,12 +18,12 @@ are removed.
 
 Examples::
 
-  dials.slice_sweep models.expt observations.refl "image_range=1 20"
+  dials.slice_sequence models.expt observations.refl "image_range=1 20"
 
-  dials.slice_sweep models.expt "image_range=1 20"
+  dials.slice_sequence models.expt "image_range=1 20"
 
   # two experiments and reflections with IDs '0' and '1'
-  dials.slice_sweep models.expt observations.refl \
+  dials.slice_sequence models.expt observations.refl \
     "image_range=1 20" "image_range=5 30"
 """
 
@@ -49,7 +49,7 @@ phil_scope = parse(
   }
 
   image_range = None
-    .help = "Range in images to slice a sweep. The number of arguments"
+    .help = "Range in images to slice a sequence. The number of arguments"
             "must be a factor of two. Each pair of arguments gives a range"
             "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
             "reflections by observed centroid."
@@ -58,7 +58,7 @@ phil_scope = parse(
 
   block_size = None
     .type = float
-    .help = "Overrides image_range if present. This option splits each sweep"
+    .help = "Overrides image_range if present. This option splits each sequence"
             "into the nearest integer number of equal size blocks close to"
             "block_size degrees in width"
 """
@@ -100,7 +100,7 @@ class Script(object):
         from dials.util.options import OptionParser
 
         usage = (
-            "usage: dials.slice_sweep [options] [param.phil] "
+            "usage: dials.slice_sequence [options] [param.phil] "
             "models.expt observations.refl"
         )
 

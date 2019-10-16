@@ -23,12 +23,10 @@ namespace recviewer { namespace ext {
       for (size_t y = 0; y < ylim; y++) {
         xy[0] = x;
         xy[1] = y;
-        try {
-          if (panel.get_resolution_at_pixel(s0, xy) > maxres) {
-            ret.push_back(xy);
-          }
-        } catch (...) {
-          // FIXME: How can I avoid this? Want to ignore beam center where res = INF.
+
+        // get_resolution_at_pixel() no longer returns INF, so this is safe
+        if (panel.get_resolution_at_pixel(s0, xy) > maxres) {
+          ret.push_back(xy);
         }
       }
     }
@@ -37,11 +35,11 @@ namespace recviewer { namespace ext {
 
   static void fill_voxels(const af::flex_int &image,
                           af::flex_double &grid,
-                          af::flex_int &cnts,
+                          af::flex_int &counts,
                           const flex_vec3_double &rotated_S,
                           const flex_vec2_double &xy,
                           const double rec_range) {
-    int npoints = grid.accessor().all()[0];  // is this OK?
+    int npoints = grid.accessor().all()[0];
     double step = 2 * rec_range / npoints;
 
     for (int i = 0, ilim = xy.size(); i < ilim; i++) {
@@ -55,14 +53,14 @@ namespace recviewer { namespace ext {
           || ind_y < 0 || ind_z < 0)
         continue;
       grid(ind_x, ind_y, ind_z) += image(y, x);
-      cnts(ind_x, ind_y, ind_z)++;
+      counts(ind_x, ind_y, ind_z)++;
     }
   }
 
-  static void normalize_voxels(af::flex_double &grid, af::flex_int &cnts) {
+  static void normalize_voxels(af::flex_double &grid, af::flex_int &counts) {
     for (int i = 0, ilim = grid.size(); i < ilim; i++) {
-      if (cnts[i] != 0) {
-        grid[i] /= cnts[i];
+      if (counts[i] != 0) {
+        grid[i] /= counts[i];
       }
     }
   }

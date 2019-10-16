@@ -975,21 +975,6 @@ class _(object):
             self["qe"] = qe
         return lp
 
-    def integrate(self, experiments, profile_model, reference_selector=None):
-        """
-        Helper function to integrate reflections.
-
-        :param experiments: The list of experiments
-        :param profile_model: The profile model
-        :param reference_selector: The algorithm to choose reference spots
-        """
-        self.compute_background(experiments)
-        self.compute_centroid(experiments)
-        self.compute_summed_intensity()
-        if reference_selector is not None:
-            reference_selector(self)
-        self.compute_fitted_intensity(experiments, profile_model)
-
     def extract_shoeboxes(self, imageset, mask=None, nthreads=1, verbose=False):
         """
         Helper function to read a load of shoebox data.

@@ -36,7 +36,7 @@ this file is changed subsequent processing can use this.
   dials.import semisynthetic_multilattice_data/2/ag/trp_ag_*.cbf
 
 The output just describes what the software understands of the images it was
-passed, in this case one sweep of data containing 100 images.
+passed, in this case one sequence of data containing 100 images.
 
 ::
 
@@ -50,7 +50,7 @@ passed, in this case one sweep of data containing 100 images.
   DataBlock 0
     format: <class 'dxtbx.format.FormatCBFMiniPilatusDLS6MSN100.FormatCBFMiniPilatusDLS6MSN100'>
     num images: 100
-    num sweeps: 1
+    num sequences: 1
     num stills: 0
   --------------------------------------------------------------------------------
   Writing datablocks to datablock.expt

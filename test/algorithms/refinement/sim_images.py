@@ -53,12 +53,12 @@ class Simulation(object):
         self.beam = BeamFactory().simple(wavelength=1)
 
         # Set up scan
-        sweep_width = 90.0
+        sequence_width = 90.0
         osc_start = 0.0
         image_width = 0.2
         oscillation = (osc_start, image_width)
 
-        nframes = int(math.ceil(sweep_width / image_width))
+        nframes = int(math.ceil(sequence_width / image_width))
         image_range = (1, nframes)
         exposure_times = 0.0
         epochs = [0] * nframes

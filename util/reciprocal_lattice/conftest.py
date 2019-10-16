@@ -9,7 +9,7 @@ from dials.array_family import flex
 
 
 @pytest.fixture
-def multi_sweep_data(dials_regression):
+def multi_sequence_data(dials_regression):
     experiments = load.experiment_list(
         os.path.join(
             dials_regression, "indexing_test_data", "multi_sweep", "experiments.json"

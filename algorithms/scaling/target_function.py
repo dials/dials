@@ -6,9 +6,8 @@ and have implementations of residual/gradient calculations for
 scaling.
 """
 from __future__ import absolute_import, division, print_function
-from copy import copy
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_restraints import MultiScalingRestraints
+from dials.algorithms.scaling.scaling_restraints import ScalingRestraintsCalculator
 from dials_scaling_ext import row_multiply, calc_dIh_by_dpi, calc_jacobian
 
 
@@ -23,12 +22,10 @@ class ScalingTarget(object):
     rmsd_units = ["a.u"]
 
     def __init__(self):
-        self._restr = None
         self.rmsd_names = ["RMSD_I"]
         self.rmsd_units = ["a.u"]
         # Quantities to cache each step
         self._rmsds = None
-        self.restraints_calculator = MultiScalingRestraints()
         self.param_restraints = True  # If one tests for restraints and None is
         # returned, then this is set to False and restraints calculations are not
         # attempted for the remainder of the minimisation with this target function.
@@ -37,30 +34,16 @@ class ScalingTarget(object):
         """Calculate RMSDs for the matches. Also calculate R-factors."""
         R = flex.double([])
         n = 0
-        if Ih_table.free_Ih_table:
-            work_blocks = Ih_table.blocked_data_list[:-1]
-            free_block = Ih_table.blocked_data_list[-1]
-            self.rmsd_names = ["RMSD_I", "RMSD_I (no restraints)", "Free RMSD_I"]
-            self.rmsd_units = ["a.u", "a.u", "a.u"]
-        else:
-            work_blocks = Ih_table.blocked_data_list
-            self.rmsd_names = ["RMSD_I"]
-            self.rmsd_units = ["a.u"]
-        for block in work_blocks:
+        for block in Ih_table.blocked_data_list:
             R.extend((self.calculate_residuals(block) ** 2) * block.weights)
             n += block.size
-        unrestr_R = copy(R)
         if self.param_restraints:
-            restraints = self.restraints_calculator.calculate_restraints(apm)
+            restraints = ScalingRestraintsCalculator.calculate_restraints(apm)
             if restraints:
                 R.extend(restraints[0])
             else:
                 self.param_restraints = False
         self._rmsds = [(flex.sum(R) / n) ** 0.5]
-        if Ih_table.free_Ih_table:
-            self._rmsds.append((flex.sum(unrestr_R) / n) ** 0.5)
-            Rmsdfree = (self.calculate_residuals(free_block) ** 2) * free_block.weights
-            self._rmsds.append((flex.sum(Rmsdfree) / free_block.size) ** 0.5)
         return self._rmsds
 
     @staticmethod
@@ -121,19 +104,21 @@ class ScalingTarget(object):
         return jacobian
 
     # The following methods are for adaptlbfgs.
-    def compute_functional_gradients(self, Ih_table):
+    @classmethod
+    def compute_functional_gradients(cls, Ih_table):
         """Return the functional and gradients."""
-        resids = self.calculate_residuals(Ih_table)
-        gradients = self.calculate_gradients(Ih_table)
+        resids = cls.calculate_residuals(Ih_table)
+        gradients = cls.calculate_gradients(Ih_table)
         weights = Ih_table.weights
         functional = flex.sum(resids ** 2 * weights)
+        del Ih_table.derivatives
         return functional, gradients
 
     def compute_restraints_functional_gradients(self, apm):
         """Return the restrains for functional and gradients."""
         restraints = None
         if self.param_restraints:
-            restr = self.restraints_calculator.calculate_restraints(apm)
+            restr = ScalingRestraintsCalculator.calculate_restraints(apm)
             if restr:
                 resid_restr = flex.sum(restr[0])  # add to total functional here
                 grad_restr = restr[1]
@@ -143,23 +128,26 @@ class ScalingTarget(object):
         return restraints  # list of restraints to add to resid, grads and curvs
 
     # The following methods are for adaptlstbx (GN/ LM algorithms)
-    def compute_residuals(self, Ih_table):
+    @classmethod
+    def compute_residuals(cls, Ih_table):
         """Return the residuals array and weights."""
-        residuals = self.calculate_residuals(Ih_table)
+        residuals = cls.calculate_residuals(Ih_table)
         weights = Ih_table.weights
         return residuals, weights
 
-    def compute_residuals_and_gradients(self, Ih_table):
+    @classmethod
+    def compute_residuals_and_gradients(cls, Ih_table):
         """Return the residuals array, jacobian matrix and weights."""
-        residuals = self.calculate_residuals(Ih_table)
-        jacobian = self.calculate_jacobian(Ih_table)
+        residuals = cls.calculate_residuals(Ih_table)
+        jacobian = cls.calculate_jacobian(Ih_table)
         weights = Ih_table.weights
+        Ih_table.derivatives = None
         return residuals, jacobian, weights
 
     def compute_restraints_residuals_and_gradients(self, apm):
         """Return the restraints for the residuals and jacobian."""
         if self.param_restraints:
-            restr = self.restraints_calculator.calculate_jacobian_restraints(apm)
+            restr = ScalingRestraintsCalculator.calculate_jacobian_restraints(apm)
             if not restr:
                 self.param_restraints = False
             return restr

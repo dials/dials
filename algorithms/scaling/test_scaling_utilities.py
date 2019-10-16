@@ -302,7 +302,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
 
     data_dir = os.path.join(dials_regression, "xia2-28")
     pickle_path = os.path.join(data_dir, "20_integrated.pickle")
-    sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+    sequence_path = os.path.join(data_dir, "20_integrated_experiments.json")
 
     phil_scope = phil.parse(
         """
@@ -317,7 +317,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     params.physical.lmax = lmax
 
     reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiments = load.experiment_list(sweep_path, check_format=False)
+    experiments = load.experiment_list(sequence_path, check_format=False)
     experiments = create_scaling_model(params, experiments, [reflection_table])
 
     experiment = experiments[0]

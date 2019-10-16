@@ -108,7 +108,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "bin_size_fraction=0.25",
         "image_range=1,20",
@@ -121,7 +121,7 @@ def test_index_i04_weak_data_fft3d(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -135,7 +135,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "cluster_analysis_search=True",
         "n_macro_cycles=3",
@@ -148,7 +148,7 @@ def test_index_cluster_analysis_search(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -162,7 +162,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "cluster_analysis_search=True",
         "n_macro_cycles=3",
@@ -178,7 +178,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
 
     result = run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -198,7 +198,7 @@ def test_index_cluster_analysis_search_with_symmetry(dials_regression, tmpdir):
 def test_index_trypsin_single_lattice(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1.json")
     extra_args = [
         "cluster_analysis_search=True",
         "n_macro_cycles=3",
@@ -214,7 +214,7 @@ def test_index_trypsin_single_lattice(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -228,7 +228,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
     # synthetic trypsin multi-lattice dataset (2 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2.json")
     extra_args = [
         "cluster_analysis_search=True",
         "reflections_per_degree=10",
@@ -247,7 +247,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -263,7 +263,7 @@ def test_index_trypsin_two_lattice(dials_regression, tmpdir):
 def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
     extra_args = [
         "cluster_analysis_search=True",
         "reflections_per_degree=10",
@@ -279,7 +279,7 @@ def test_index_trypsin_three_lattice_cluster_analysis_search(dials_regression, t
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -296,7 +296,7 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
     # synthetic trypsin multi-lattice dataset (4 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
     extra_args = [
         "cluster_analysis_search=True",
         "reflections_per_degree=10",
@@ -312,7 +312,7 @@ def test_index_trypsin_four_lattice_P1(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -328,7 +328,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
     # synthetic trypsin multi-lattice dataset (4 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3_4.json")
     extra_args = [
         "indexing.method=real_space_grid_search",
         "reflections_per_degree=10",
@@ -347,7 +347,7 @@ def test_index_trypsin_four_lattice_P212121(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -363,7 +363,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "n_macro_cycles=2",
         "indexing.method=fft1d",
@@ -378,7 +378,7 @@ def test_index_i04_weak_data_fft1d(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -391,7 +391,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
     # synthetic trypsin multi-lattice dataset (3 lattices)
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
+    sequence_path = os.path.join(data_dir, "experiments_P1_X6_1_2_3.json")
     extra_args = [
         "indexing.method=real_space_grid_search",
         "d_min_start=3",
@@ -413,7 +413,7 @@ def test_index_trypsin_index_assignment_local(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -429,7 +429,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
     # test indexing from single image of i04_weak_data
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "first_image.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
     extra_args = [
         "indexing.method=fft3d",
         "known_symmetry.space_group=P4",
@@ -447,7 +447,7 @@ def test_index_peak_search_clean(dials_regression, tmpdir):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -462,7 +462,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
     # http://www.ccp4.ac.uk/courses/BCA2005/tutorials/dataproc-tutorial.html
     data_dir = os.path.join(dials_regression, "indexing_test_data", "imosflm_hg_mar")
     pickle_path = os.path.join(data_dir, "strong.pickle")
-    sweep_path = os.path.join(data_dir, "experiments.json")
+    sequence_path = os.path.join(data_dir, "experiments.json")
 
     unit_cell = uctbx.unit_cell((58.373, 58.373, 155.939, 90, 90, 120))
     hall_symbol = '-R 3 2"'
@@ -482,7 +482,7 @@ def test_index_imosflm_tutorial(dials_regression, tmpdir, specify_unit_cell):
 
     run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -498,7 +498,7 @@ def insulin_spotfinding(dials_data, tmpdir_factory):
     data_dir = dials_data("insulin")
     tmpdir = tmpdir_factory.mktemp("insulin")
 
-    command = ["dials.import", "allow_multiple_sweeps=True"]
+    command = ["dials.import", "allow_multiple_sequences=True"]
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
         target = "image_00%i.img" % (i + 1)
         data_dir.join(image_path).copy(tmpdir.join(target))
@@ -521,7 +521,7 @@ def insulin_spotfinding(dials_data, tmpdir_factory):
 
 
 @pytest.mark.parametrize("method", ["fft3d", "fft1d", "real_space_grid_search"])
-def test_index_insulin_multi_sweep(insulin_spotfinding, tmpdir, method):
+def test_index_insulin_multi_sequence(insulin_spotfinding, tmpdir, method):
     experiment, reflections = insulin_spotfinding
     expected_unit_cell = uctbx.unit_cell(
         (78.163, 78.163, 78.163, 90.000, 90.000, 90.000)
@@ -556,7 +556,7 @@ def insulin_spotfinding_stills(dials_data, tmpdir_factory):
 
     command = [
         "dials.import",
-        "convert_sweeps_to_stills=True",
+        "convert_sequences_to_stills=True",
         data_dir.join("insulin_1_001.img"),
     ]
     result = procrunner.run(command, working_directory=tmpdir)
@@ -617,7 +617,7 @@ def test_multiple_experiments(dials_regression, tmpdir):
     expected_hall_symbol = " P 1"
     expected_rmsds = (0.1, 0.07, 0.0)
 
-    extra_args = ["stills.indexer=sweeps", "joint_indexing=False"]
+    extra_args = ["stills.indexer=sequences", "joint_indexing=False"]
 
     run_indexing(
         pickle_path,
@@ -635,7 +635,7 @@ def test_multiple_experiments(dials_regression, tmpdir):
 def test_index_4rotation(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "4rotation")
     pickle_path = os.path.join(data_dir, "strong.pickle")
-    sweep_path = os.path.join(data_dir, "experiments.json")
+    sequence_path = os.path.join(data_dir, "experiments.json")
     extra_args = [
         "max_refine=10",
         "reflections_per_degree=50",
@@ -648,7 +648,7 @@ def test_index_4rotation(dials_regression, tmpdir):
 
     result = run_indexing(
         pickle_path,
-        sweep_path,
+        sequence_path,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -658,8 +658,8 @@ def test_index_4rotation(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 276800, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
-    # test for small molecule multi-sweep indexing, 4 sweeps with different values
+def test_index_small_molecule_multi_sequence_4(dials_regression, tmpdir):
+    # test for small molecule multi-sequence indexing, 4 sequences with different values
     # of goniometer.fixed_rotation()
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_paths = [
@@ -668,7 +668,7 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
         )[0]
         for i in range(4)
     ]
-    sweep_paths = [
+    sequence_paths = [
         glob.glob(
             os.path.join(data_dir, "SWEEP%i" % (i + 1), "index", "experiments.json")
         )[0]
@@ -681,7 +681,7 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
 
     result = run_indexing(
         pickle_paths,
-        sweep_paths,
+        sequence_paths,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -691,15 +691,15 @@ def test_index_small_molecule_multi_sweep_4(dials_regression, tmpdir):
     assert len(result.indexed_reflections) > 1250, len(result.indexed_reflections)
 
 
-def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
-    # test for small molecule multi-sweep indexing, 3 sweeps with different values
+def test_index_small_molecule_multi_sequence_3(dials_regression, tmpdir):
+    # test for small molecule multi-sequence indexing, 3 sequences with different values
     # of goniometer setting rotation (i.e. phi scans)
     data_dir = os.path.join(dials_regression, "dials-191")
     pickle_paths = [
         glob.glob(os.path.join(data_dir, "*SWEEP%i*_strong.pickle" % (i + 1)))[0]
         for i in range(3)
     ]
-    sweep_paths = [
+    sequence_paths = [
         glob.glob(os.path.join(data_dir, "*SWEEP%i*_experiments.json" % (i + 1)))[0]
         for i in range(3)
     ]
@@ -712,7 +712,7 @@ def test_index_small_molecule_multi_sweep_3(dials_regression, tmpdir):
 
     result = run_indexing(
         pickle_paths,
-        sweep_paths,
+        sequence_paths,
         tmpdir,
         extra_args,
         expected_unit_cell,
@@ -846,7 +846,9 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_regression, tmp
             assert crys.get_domain_size_ang() == pytest.approx(2689.0, rel=0.1)
 
 
-@pytest.mark.parametrize("indexer_type,fix_cell", (("sweeps", False), ("stills", True)))
+@pytest.mark.parametrize(
+    "indexer_type,fix_cell", (("sequences", False), ("stills", True))
+)
 def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix_cell):
 
     # test indexing from a single simulated lysozyme ED still
@@ -870,7 +872,7 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         "indexing.method=low_res_spot_match",
         "known_symmetry.space_group=P43212",
         "known_symmetry.unit_cell=78.84,78.84,38.29,90,90,90",
-        "stills.indexer=sweeps",
+        "stills.indexer=sequences",
         "n_macro_cycles=2",
         "detector.fix_list=Dist",
     ]

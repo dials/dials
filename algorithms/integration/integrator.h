@@ -116,7 +116,7 @@ namespace dials { namespace algorithms {
   };
 
   /**
-   * A class to manage jobs for multiple sweeps
+   * A class to manage jobs for multiple sequences
    */
   class JobList {
   public:

@@ -1,5 +1,5 @@
 """
-Test refinement of multiple narrow sweeps.
+Test refinement of multiple narrow sequences.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -20,7 +20,7 @@ def test(dials_regression, run_in_tmpdir):
 
     selection = (2, 3, 4, 5, 6, 7, 9, 11, 12, 13, 14, 17, 18, 19, 20)
 
-    # Combine all the separate sweeps
+    # Combine all the separate sequences
 
     result = procrunner.run(
         [

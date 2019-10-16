@@ -13,7 +13,7 @@ from dials.algorithms.scaling.active_parameter_managers import (
 )
 from dials.algorithms.scaling.parameter_handler import (
     scaling_active_parameter_manager,
-    create_parameter_manager_generator,
+    ScalingParameterManagerGenerator,
 )
 
 
@@ -293,41 +293,6 @@ def test_scaling_active_parameter_manager():
         components_2 = {"1": mock_scaling_component(2), "2": mock_scaling_component(1)}
         scaling_apm = scaling_active_parameter_manager(components_2, ["1"])
 
-
-def test_create_parameter_manager_generator():
-    """Test that the create_parameter_manager_generator function correctly
-    interprets the scaler.id and concurrent/consecutive option to give
-    the correct mode of ParameterManagerGenerator."""
-
-    # Concurrent single apm
-    components_2 = {"1": mock_scaling_component(2), "2": mock_scaling_component(2)}
-    scaler = mock_data_manager(components_2)
-    scaler.id_ = "single"
-    scaler.params.scaling_refinery.refinement_order = "concurrent"
-    pmg = create_parameter_manager_generator(scaler)
-    assert isinstance(pmg.parameter_managers()[0], multi_active_parameter_manager)
-    assert pmg.mode == "concurrent"
-
-    # Consecutive single apm
-    scaler.params.scaling_refinery.refinement_order = "consecutive"
-    scaler.consecutive_refinement_order = [["1"], ["2"]]
-    pmg = create_parameter_manager_generator(scaler)
-    assert pmg.mode == "consecutive"
-
-    # Concurrent multi apm
-    components_1 = {"1": mock_scaling_component(3), "2": mock_scaling_component(3)}
-    components_2 = {"3": mock_scaling_component(2), "4": mock_scaling_component(2)}
-    scaler1 = mock_data_manager(components_1)
-    scaler1.consecutive_refinement_order = [["1"], ["2"]]
-    scaler2 = mock_data_manager(components_2)
-    scaler2.consecutive_refinement_order = [["3", "4"]]
-    multiscaler = mock_multiscaler([scaler1, scaler2])
-
-    for i in ["multi", "target"]:
-        multiscaler.id_ = i
-        multiscaler.params.scaling_refinery.refinement_order = "concurrent"
-        pmg = create_parameter_manager_generator(multiscaler)
-        assert isinstance(pmg.parameter_managers()[0], multi_active_parameter_manager)
-    multiscaler.id_ = "1"
-    with pytest.raises(AssertionError):
-        _ = create_parameter_manager_generator(multiscaler)
+    data_manager = mock_data_manager(components_2)
+    pmg = ScalingParameterManagerGenerator([data_manager], mode="concurrent")
+    assert isinstance(pmg.apm_type, type(scaling_active_parameter_manager))

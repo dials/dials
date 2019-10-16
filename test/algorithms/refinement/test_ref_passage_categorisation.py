@@ -59,7 +59,7 @@ def test():
     )
     indices = index_generator.to_array()
 
-    # Build a mock scan for a 30 degree sweep
+    # Build a mock scan for a 30 degree sequence
     sf = ScanFactory()
     myscan = sf.make_scan(
         image_range=(1, 300),
@@ -68,8 +68,8 @@ def test():
         epochs=list(range(300)),
         deg=True,
     )
-    sweep_range = myscan.get_oscillation_range(deg=False)
-    assert sweep_range == pytest.approx((0.0, math.pi / 6.0))
+    sequence_range = myscan.get_oscillation_range(deg=False)
+    assert sequence_range == pytest.approx((0.0, math.pi / 6.0))
     im_width = myscan.get_oscillation(deg=False)[1]
     assert im_width == pytest.approx(0.1 * math.pi / 180.0)
 
@@ -86,8 +86,8 @@ def test():
         )
     )
 
-    # Select those that are excited in a 30 degree sweep and get angles
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    # Select those that are excited in a 30 degree sequence and get angles
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     # Set the experiment number

@@ -8,8 +8,8 @@ from mock import Mock
 from scitbx import sparse
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_restraints import (
-    ScalingRestraints,
-    MultiScalingRestraints,
+    SingleScalingRestraintsCalculator,
+    ScalingRestraintsCalculator,
 )
 
 
@@ -116,17 +116,23 @@ def test_unrestrained_ScalingRestraints(
     """Test the case of unrestrained components. None should be returned in each
     case."""
 
-    assert ScalingRestraints().calculate_restraints(mock_unrestrained_apm) is None
     assert (
-        ScalingRestraints().calculate_jacobian_restraints(mock_unrestrained_apm) is None
-    )
-
-    assert (
-        MultiScalingRestraints().calculate_restraints(mock_multi_unrestrained_apm)
+        SingleScalingRestraintsCalculator.calculate_restraints(mock_unrestrained_apm)
         is None
     )
     assert (
-        MultiScalingRestraints().calculate_jacobian_restraints(
+        SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
+            mock_unrestrained_apm
+        )
+        is None
+    )
+
+    assert (
+        ScalingRestraintsCalculator.calculate_restraints(mock_multi_unrestrained_apm)
+        is None
+    )
+    assert (
+        ScalingRestraintsCalculator.calculate_jacobian_restraints(
             mock_multi_unrestrained_apm
         )
         is None
@@ -141,7 +147,9 @@ def test_ScalingRestraints(
     # Test the call to calculate restraints. This should return a residual
     # vector of the same length as the restraints of the restrained component,
     # and a gradient vector of the total length of all parameters.
-    restraints = ScalingRestraints().calculate_restraints(mock_parameter_manager)
+    restraints = SingleScalingRestraintsCalculator.calculate_restraints(
+        mock_parameter_manager
+    )
     abs_restraints = mock_restrained_component.calculate_restraints()
     assert list(restraints[0]) == list(abs_restraints[0])
     assert list(restraints[1]) == (
@@ -154,7 +162,7 @@ def test_ScalingRestraints(
     # The jacobian has n_rows equal to the number of restrainted parameters,
     # n_cols equal to the total number of parameters. Check that these are
     # correctly composed.
-    jacobian_restraints = ScalingRestraints().calculate_jacobian_restraints(
+    jacobian_restraints = SingleScalingRestraintsCalculator.calculate_jacobian_restraints(
         mock_parameter_manager
     )
     abs_restraints = mock_restrained_component.calculate_jacobian_restraints()
@@ -175,7 +183,7 @@ def test_MultiScalingRestraints(
 
     # Test the call to calculate restraints. Expected return is the individual
     # dataset vectors joined together.
-    restraints = MultiScalingRestraints().calculate_restraints(mock_multi_apm)
+    restraints = ScalingRestraintsCalculator.calculate_restraints(mock_multi_apm)
     abs_restraints = mock_restrained_component.calculate_restraints()
     assert list(restraints[0]) == (list(abs_restraints[0]) + list(abs_restraints[0]))
 
@@ -188,7 +196,7 @@ def test_MultiScalingRestraints(
 
     # Test the call to calculate jacobian restraints. Again, the expected return
     # is the individual dataset vectors joined together.
-    jacobian_restraints = MultiScalingRestraints().calculate_jacobian_restraints(
+    jacobian_restraints = ScalingRestraintsCalculator.calculate_jacobian_restraints(
         mock_multi_apm
     )
     abs_restraints = mock_restrained_component.calculate_jacobian_restraints()

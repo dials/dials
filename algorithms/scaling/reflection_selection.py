@@ -513,7 +513,7 @@ def _loop_over_class_matrix(
 
 
 def calculate_scaling_subset_connected(
-    global_Ih_table, experiment, params, preselection=None, print_summary=False
+    Ih_table, experiment, params, print_summary=False
 ):
     """Determine the selection for the reflection table of suitable reflections.
 
@@ -521,27 +521,14 @@ def calculate_scaling_subset_connected(
     determining the connected subset."""
     min_per_area = params.reflection_selection.quasi_random.min_per_area[0]
     n_resolution_bins = params.reflection_selection.quasi_random.n_resolution_bins[0]
-    suitable_selection = flex.bool(global_Ih_table.size, False)
-    if preselection:
-        Ih_table = global_Ih_table.select(preselection)
-    else:
-        Ih_table = global_Ih_table
     indices = select_highly_connected_reflections(
         Ih_table, experiment, min_per_area, n_resolution_bins, print_summary
     )
-    suitable_selection.set_selected(indices, True)
-    if print_summary:
-        logger.info(
-            "%s reflections were selected for scale factor determination \n"
-            + "out of %s suitable reflections. ",
-            suitable_selection.count(True),
-            global_Ih_table.size,
-        )
-    if suitable_selection.count(True) == 0:
+    if indices.size() == 0:
         raise BadDatasetForScalingException(
             """No reflections pass all user-controllable selection criteria"""
         )
-    return suitable_selection
+    return indices
 
 
 def _determine_Isigma_selection(reflection_table, params):

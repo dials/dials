@@ -243,7 +243,6 @@ def test_scale_script_prepare_input():
     ]
 
 
-@pytest.mark.skip(reason="Fix for targeted scaling not yet implemented")
 def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     """Test targeted scaling against an mtz generated with dials.scale."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
@@ -266,6 +265,55 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("scaled.refl").check()
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    assert len(expts) == 1
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        None,
+        "reflection_selection.method=random",
+        "reflection_selection.method=intensity_ranges",
+        "reflection_selection.method=quasi_random",
+        "reflection_selection.method=use_all",
+        "intensity_choice=sum",
+        "intensity_choice=profile",
+    ],
+)
+def test_scale_single_dataset_with_options(dials_regression, tmpdir, option):
+    """Test different non-default command-line options with a single dataset."""
+    data_dir = os.path.join(dials_regression, "xia2-28")
+    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
+    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    args = [refl_1, expt_1]
+    if option:
+        args.append(option)
+    run_one_scaling(tmpdir, args)
+
+
+@pytest.mark.parametrize(
+    "option",
+    [
+        None,
+        "combine.joint_analysis=False",
+        "reflection_selection.method=quasi_random",
+        "reflection_selection.method=random",
+        "reflection_selection.method=intensity_ranges",
+        "reflection_selection.method=use_all",
+    ],
+)
+def test_scale_multiple_datasets_with_options(dials_regression, tmpdir, option):
+    """Test different non-defaul command-line options with multiple datasets."""
+    data_dir = os.path.join(dials_regression, "xia2-28")
+    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
+    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
+    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    args = [refl_1, expt_1, refl_2, expt_2]
+    if option:
+        args.append(option)
+    run_one_scaling(tmpdir, args)
 
 
 def test_scale_physical(dials_regression, tmpdir):
@@ -282,10 +330,12 @@ def test_scale_physical(dials_regression, tmpdir):
         "unmerged_mtz=unmerged.mtz",
         "use_free_set=1",
         "outlier_rejection=simple",
+        "json=scaling.json",
     ]
     run_one_scaling(tmpdir, [refl_1, expt_1] + extra_args)
     assert tmpdir.join("unmerged.mtz").check()
     assert tmpdir.join("merged.mtz").check()
+    assert tmpdir.join("scaling.json").check()
 
     # Now inspect output, check it hasn't changed drastically, or if so verify
     # that the new behaviour is more correct and update test accordingly.
@@ -403,15 +453,6 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
-
-
-def test_scale_optimise_errors(dials_regression, tmpdir):
-    """Test standard scaling of one dataset with error optimisation."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl = os.path.join(data_dir, "20_integrated.pickle")
-    expt = os.path.join(data_dir, "20_integrated_experiments.json")
-    extra_args = ["model=physical", "error_model=basic"]
-    run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
 
 def test_scale_array(dials_regression, tmpdir):

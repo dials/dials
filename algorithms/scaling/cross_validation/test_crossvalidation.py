@@ -59,13 +59,13 @@ def test_crossvalidator():
     assert crossvalidator.results_dict[1]["configuration"][0] == "model=b"
 
     # now try adding results to dict
-    results_1 = [1.0, 1.5, 0.5, 3.0, 4.0, 1.0, 0.1, 0.2, 0.1]
-    results_2 = [1.0, 2.0, 1.0, 3.0, 2.0, 2.0, 0.3, 0.4, 0.1]
-    results_3 = [1.0, 2.0, 1.0, 3.0, 3.0, 0.0, 0.1, 0.3, 0.2]
-    results_4 = [1.0, 2.0, 1.0, 3.0, 3.5, 0.5, 0.3, 0.5, 0.2]
+    results_1 = [1.0, 1.5, 0.5, 3.0, 4.0, 1.0]
+    results_2 = [1.0, 2.0, 1.0, 3.0, 2.0, 2.0]
+    results_3 = [1.0, 2.0, 1.0, 3.0, 3.0, 0.0]
+    results_4 = [1.0, 2.0, 1.0, 3.0, 3.5, 0.5]
     crossvalidator.add_results_to_results_dict(0, results_1)
-    assert crossvalidator.results_dict[0]["work Rpim"] == [1.0]
-    assert crossvalidator.results_dict[0]["free Rpim"] == [1.5]
+    assert crossvalidator.results_dict[0]["work Rmeas"] == [1.0]
+    assert crossvalidator.results_dict[0]["free Rmeas"] == [1.5]
     assert crossvalidator.results_dict[0]["work CC1/2"] == [3.0]
     assert crossvalidator.results_dict[0]["free CC1/2"] == [4.0]
     # add some more so that can test interpreting results
@@ -75,58 +75,10 @@ def test_crossvalidator():
 
     # Now try interpreting results - check that values are calculated correctly
     st = crossvalidator.interpret_results()
-    r1 = [
-        "model=a",
-        "mean",
-        "1.0",
-        "1.75*",
-        "0.75*",
-        "3.0",
-        "3.0",
-        "1.5",
-        "0.2",
-        "0.3",
-        "0.1*",
-    ]
-    r2 = [
-        "",
-        "std dev",
-        "0.0",
-        "0.25",
-        "0.25",
-        "0.0",
-        "1.0",
-        "0.5",
-        "0.1",
-        "0.1",
-        "0.0",
-    ]
-    r3 = [
-        "model=b",
-        "mean",
-        "1.0",
-        "2.0",
-        "1.0",
-        "3.0",
-        "3.25*",
-        "0.25*",
-        "0.2",
-        "0.4*",
-        "0.2",
-    ]
-    r4 = [
-        "",
-        "std dev",
-        "0.0",
-        "0.0",
-        "0.0",
-        "0.0",
-        "0.25",
-        "0.25",
-        "0.1",
-        "0.1",
-        "0.0",
-    ]
+    r1 = ["model=a", "mean", "1.0", "1.75*", "0.75*", "3.0", "3.0", "1.5"]
+    r2 = ["", "std dev", "0.0", "0.25", "0.25", "0.0", "1.0", "0.5"]
+    r3 = ["model=b", "mean", "1.0", "2.0", "1.0", "3.0", "3.25*", "0.25*"]
+    r4 = ["", "std dev", "0.0", "0.0", "0.0", "0.0", "0.25", "0.25"]
     assert st._rows[0] == r1
     assert st._rows[1] == r2
     assert st._rows[2] == r3
@@ -140,7 +92,7 @@ def test_dialsscalecrossvalidator():
 
     def mock_script():
         script = mock.MagicMock()
-        script.scaler.final_rmsds = [1.0, 2.0, 3.0, 4.0]
+        script.scaler.work_free_stats = [1.0, 2.0, 3.0, 4.0]
         return script
 
     # test get results from script

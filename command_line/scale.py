@@ -58,39 +58,36 @@ from dials.command_line.compute_delta_cchalf import phil_scope as deltacc_phil_s
 help_message = """
 This program performs scaling on integrated datasets, which attempts to improve
 the internal consistency of the reflection intensities by correcting for
-various experimental effects. By default, a physical scaling model is used,
-with scale, decay and absorption components. If multiple input files have been
-specified, the datasets will be jointly scaled against a common target of
-unique reflection intensities.
+various experimental effects. By default, a physically motivated scaling model
+is used, with a scale, decay (B-factor) and absorption correction.
+If the input files contain multiple datasets, all data will be scaled against
+a common target of unique reflection intensities.
 
-The program outputs one scaled.refl and scaled.expt file, which
-contains reflection data and scale models, from one or more experiments.
-The output pickle file contains intensity.scale.value, the unscaled intensity
-values used to determine the scaling model, and a inverse scale factor per
-reflection. These values can then be used to merge the data for downstream
-structural solution. Alternatively, the scaled.expt and
-scaled.refl files can be passed back to dials.scale, and further scaling will
-be performed, starting from where the previous job finished.
+The program outputs one scaled.refl file, which contains updated reflection
+intensities, variances and per-refelction scale factors, and one scaled.expt
+containing the scaling models. These values can then be used to merge the data
+with dials.merge for downstream structural solution. Alternatively, the
+scaled.expt and scaled.refl files can be passed back to dials.scale, and
+further scaling will be performed, starting from where the previous job finished.
 
-The scaling models determined by this program can be plotted with::
-
-  dials.plot_scaling_models scaled.refl scaled.expt
+A scaling.html file is also generated, containing interactive plots of merging
+statistics and scaling model plots.
 
 Example use cases
 
-Regular single-sweep scaling, with no absorption correction::
+Regular single-sequence scaling, with no absorption correction::
 
-  dials.scale integrated.refl integrated.expt absorption_term=False
+  dials.scale integrated.refl integrated.expt physical.absorption_correction=False
 
-Scaling multiple datasets, specifying scale parameter interval::
+Scaling multiple datasets, specifying a resolution limit::
 
-  dials.scale 1_integrated.refl 1_integrated.expt 2_integrated.refl 2_integrated.expt scale_interval=10.0
+  dials.scale 1_integrated.refl 1_integrated.expt 2_integrated.refl 2_integrated.expt d_min=1.4
 
 Incremental scaling (with different options per dataset)::
 
-  dials.scale integrated.refl integrated.expt scale_interval=10.0
+  dials.scale integrated.refl integrated.expt physical.scale_interval=10.0
 
-  dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt scale_interval=15.0
+  dials.scale integrated_2.refl integrated_2.expt scaled.refl scaled.expt physical.scale_interval=15.0
 """
 
 
@@ -112,6 +109,9 @@ phil_scope = phil.parse(
     html = "scaling.html"
       .type = str
       .help = "Filename for html report."
+    json = None
+      .type = str
+      .help = "Filename to save html report data in json format."
     unmerged_mtz = None
       .type = str
       .help = "Filename to export an unmerged_mtz file using dials.export."
@@ -568,6 +568,10 @@ may be best to rerun scaling from this point for an improved model.""",
 
         if self.params.output.merged_mtz:
             _export_merged_mtz(self.params, self.experiments, joint_table)
+
+        logger.info(
+            "See dials.github.io/dials_scale_user_guide.html for more info on scaling options"
+        )
 
 
 def _export_merged_mtz(params, experiments, joint_table):

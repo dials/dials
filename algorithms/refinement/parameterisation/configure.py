@@ -214,7 +214,7 @@ phil_str = (
         .type = int(value_min=0)
         .expert_level = 1
 
-      fix = all position orientation
+      fix = all position orientation distance
         .help = "Fix detector parameters. The translational parameters"
                 "(position) may be set separately to the orientation."
         .type = choice
@@ -379,9 +379,9 @@ def _set_n_intervals(smoother_params, analysis, scan, exp_ids):
     if deg_per_interval is None:
         deg_per_interval = 36.0
 
-    sweep_range_deg = scan.get_oscillation_range(deg=True)
+    sequence_range_deg = scan.get_oscillation_range(deg=True)
     n_intervals = max(
-        int(abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval), 1
+        int(abs(sequence_range_deg[1] - sequence_range_deg[0]) / deg_per_interval), 1
     )
     return n_intervals
 
@@ -685,6 +685,8 @@ def _parameterise_detectors(options, experiments, analysis):
                 fix_list.extend(["Dist", "Shift1", "Shift2"])
             elif options.detector.fix == "orientation":
                 fix_list.extend(["Tau"])
+            elif options.detector.fix == "distance":
+                fix_list.extend(["Dist", "Tau2", "Tau3"])
             else:  # can only get here if refinement.phil is broken
                 raise RuntimeError("detector.fix value not recognised")
 

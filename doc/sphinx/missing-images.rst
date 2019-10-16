@@ -1,13 +1,13 @@
 +++++++++++++++++++++++++++++++++++++
-Processing Sweeps with Missing Images
+Processing Sequences with Missing Images
 +++++++++++++++++++++++++++++++++++++
 
-DIALS treats sweeps as a contiguous set of rotation images, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* be enough to allow processing to complete smoothly.
+DIALS treats sequences as a contiguous set of rotation images, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* be enough to allow processing to complete smoothly.
 
 Importing
 =========
 
-Importing the images with ``template=blah_####.cbf`` will not work, as this checks for continuous images, and it will be necessary to use ``allow_multiple_sweeps=true``. After this, finding spots and indexing work as usual, but with multiple imagesets.
+Importing the images with ``template=blah_####.cbf`` will not work, as this checks for continuous images, and it will be necessary to use ``allow_multiple_sequences=true``. After this, finding spots and indexing work as usual, but with multiple imagesets.
 
 Refinement
 ==========

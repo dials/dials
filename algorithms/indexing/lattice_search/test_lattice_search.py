@@ -9,7 +9,7 @@ from dxtbx.imageset import ImageSet
 from dials.algorithms.indexing import lattice_search
 from dials.algorithms.indexing import stills_indexer
 from dials.command_line.index import phil_scope
-from dials.command_line.slice_sweep import slice_experiments, slice_reflections
+from dials.command_line.slice_sequence import slice_experiments, slice_reflections
 from dials.array_family import flex
 
 

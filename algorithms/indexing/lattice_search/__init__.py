@@ -34,7 +34,7 @@ basis_vector_combinations
     max_refine = Auto
         .type = int(value_min=1)
         .help = "Maximum number of putative crystal models to test. Default"
-                "for rotation sweeps: 50, for still images: 5"
+                "for rotation sequences: 50, for still images: 5"
         .expert_level = 1
     sys_absent_threshold = 0.9
         .type = float(value_min=0.0, value_max=1.0)

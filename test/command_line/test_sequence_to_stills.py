@@ -6,7 +6,7 @@ import procrunner
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
-def test_sweep_to_stills(dials_regression, tmpdir):
+def test_sequence_to_stills(dials_regression, tmpdir):
     path = os.path.join(
         dials_regression, "refinement_test_data", "radiation_damaged_thaumatin"
     )
@@ -14,7 +14,7 @@ def test_sweep_to_stills(dials_regression, tmpdir):
     input_reflections = os.path.join(path, "indexed.pickle")
     result = procrunner.run(
         [
-            "dials.sweep_to_stills",
+            "dials.sequence_to_stills",
             input_experiments,
             input_reflections,
             "domain_size_ang=500",

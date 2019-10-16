@@ -133,31 +133,21 @@ class DialsScaleCrossValidator(CrossValidator):
 
     results_metadata = {  # metadata used when constructing the results table
         "names": [
-            "work Rpim",
-            "free Rpim",
-            "Rpim gap",
+            "work Rmeas",
+            "free Rmeas",
+            "Rmeas gap",
             "work CC1/2",
             "free CC1/2",
             "CC1/2 gap",
-            "work w.a.-CC1/2",
-            "free w.a.-CC1/2",
-            "w.avg.-CC1/2 gap",
         ],
-        "indices_to_monitor": [
-            1,
-            2,
-            4,
-            5,
-            7,
-            8,
-        ],  # these indices of the above list will be
-        # monitored to see which config gives the best values
-        "best_criterion": ["min", "min", "max", "min", "max", "min"],
+        "indices_to_monitor": [1, 2, 4, 5],  # these indices of the above list
+        # will be monitored to see which config gives the best values
+        "best_criterion": ["min", "min", "max", "min"],
     }
 
     def get_results_from_script(self, script):
         """Return the work/free results list from the command line script object"""
-        result = script.scaler.final_rmsds
+        result = script.scaler.work_free_stats
         return result
 
     def get_parameter_type(self, name):

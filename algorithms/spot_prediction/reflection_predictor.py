@@ -57,7 +57,7 @@ class ReflectionPredictor(object):
         from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
         from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
         from dials.algorithms.spot_prediction import StillsReflectionPredictor
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
         from dials.array_family import flex
 
         class Predictor(object):
@@ -83,7 +83,7 @@ class ReflectionPredictor(object):
             )
 
         # Select the predictor class
-        if isinstance(experiment.imageset, ImageSweep):
+        if isinstance(experiment.imageset, ImageSequence):
             xl_nsp = experiment.crystal.num_scan_points
             bm_nsp = experiment.beam.num_scan_points
             gn_nsp = experiment.goniometer.num_scan_points

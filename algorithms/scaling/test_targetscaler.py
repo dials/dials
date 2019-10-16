@@ -119,13 +119,14 @@ def test_scale_against_target(KB_test_param):
     experiments = test_exp()
     experiments.append(test_exp(idval=1)[0])
     experiments[0].scaling_model = KBScalingModel.from_data(KB_test_param, [], [])
+    experiments[0].scaling_model.set_scaling_model_as_scaled()
     experiments[1].scaling_model = KBScalingModel.from_data(KB_test_param, [], [])
     target_reflections = test_target_refl()
     reflections = test_refl_to_scale()
     # Repeat the test but calling the TargetScaler directly, to allow inspection
     # of the model components.
     targetscaler = TargetScalerFactory.create(
-        KB_test_param, experiments, [target_reflections, reflections], [True, False]
+        KB_test_param, experiments, [target_reflections, reflections]
     )
     targetscaler.perform_scaling()
     assert list(

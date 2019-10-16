@@ -80,7 +80,7 @@ def test(args=[]):
         epochs=list(range(1)),
         deg=True,
     )
-    sweep_range = myscan.get_oscillation_range(deg=False)
+    sequence_range = myscan.get_oscillation_range(deg=False)
     im_width = myscan.get_oscillation(deg=False)[1]
     assert approx_equal(im_width, 1.5 * pi / 180.0)
 
@@ -153,7 +153,7 @@ def test(args=[]):
 
     # Build a ray predictor and predict rays close to the Ewald sphere by using
     # the narrow rotation scan
-    ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
+    ref_predictor = ScansRayPredictor(scans_experiments, sequence_range)
     obs_refs = ref_predictor(indices, experiment_id=0)
 
     # Take only those rays that intersect the detector

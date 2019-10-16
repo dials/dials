@@ -154,9 +154,8 @@ def scale_against_target(
     reflections = [reflection_table, target_reflection_table]
     experiment.append(target_experiment[0])
     experiments = create_scaling_model(params, experiment, reflections)
-    scaler = TargetScalerFactory.create(
-        params, experiments, reflections, is_scaled_list=[False, True]
-    )
+    experiments[-1].scaling_model.set_scaling_model_as_scaled()
+    scaler = TargetScalerFactory.create(params, experiments, reflections)
     scaler.perform_scaling()
     scaler.expand_scales_to_all_reflections(calc_cov=True)
     return scaler.unscaled_scalers[0].reflection_table
@@ -390,7 +389,7 @@ def determine_best_unit_cell(experiments):
 
 
 def merging_stats_from_scaled_array(
-    scaled_miller_array, n_bins=20, use_internal_variance=False
+    scaled_miller_array, n_bins=20, use_internal_variance=False, anomalous=True
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -408,20 +407,22 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=0.01,
         )
-
-        intensities_anom = scaled_miller_array.as_anomalous_array()
-        intensities_anom = intensities_anom.map_to_asu().customized_copy(
-            info=scaled_miller_array.info()
-        )
-        anom_result = iotbx.merging_statistics.dataset_statistics(
-            i_obs=intensities_anom,
-            n_bins=n_bins,
-            anomalous=True,
-            sigma_filtering=None,
-            cc_one_half_significance_level=0.01,
-            eliminate_sys_absent=False,
-            use_internal_variance=use_internal_variance,
-        )
+        if anomalous:
+            intensities_anom = scaled_miller_array.as_anomalous_array()
+            intensities_anom = intensities_anom.map_to_asu().customized_copy(
+                info=scaled_miller_array.info()
+            )
+            anom_result = iotbx.merging_statistics.dataset_statistics(
+                i_obs=intensities_anom,
+                n_bins=n_bins,
+                anomalous=True,
+                sigma_filtering=None,
+                cc_one_half_significance_level=0.01,
+                eliminate_sys_absent=False,
+                use_internal_variance=use_internal_variance,
+            )
+        else:
+            anom_result = False
     except RuntimeError:
         raise DialsMergingStatisticsError(
             "Failure during merging statistics calculation"

@@ -45,21 +45,11 @@ class scaling_active_parameter_manager(active_parameter_manager):
         self.n_obs = n_obs[0]  # list of length n_blocks
 
 
-def create_parameter_manager_generator(scaler):
-    """Create and return the appropriate manager generator for the scaler."""
-    allowed = ["concurrent", "consecutive"]
-    mode = scaler.params.scaling_refinery.refinement_order
-    if mode not in allowed:
-        raise ValueError(
-            "Bad value for refinement_order: %s, expected %s"
-            % (mode, " or ".join(allowed))
+class ScalingParameterManagerGenerator(ParameterManagerGenerator):
+
+    """Class to generate parameter manager for scaling."""
+
+    def __init__(self, data_managers, mode):
+        super(ScalingParameterManagerGenerator, self).__init__(
+            data_managers, scaling_active_parameter_manager, mode
         )
-    if scaler.id_ == "single":
-        data_managers = [scaler]
-    elif scaler.id_ == "target" or scaler.id_ == "multi":
-        data_managers = scaler.active_scalers
-    else:
-        assert 0, "unrecognised scaler id_"
-    return ParameterManagerGenerator(
-        data_managers, scaling_active_parameter_manager, mode
-    )

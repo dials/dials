@@ -489,8 +489,7 @@ class Target(object):
         """extract vector of residuals and corresponding weights. The space the
         residuals are measured in (e.g. X, Y and Phi) and the order they are
         returned is determined by a concrete implementation of a staticmethod"""
-
-        pass
+        raise NotImplementedError()
 
     @staticmethod
     @abc.abstractmethod
@@ -498,8 +497,7 @@ class Target(object):
         """extract vector of squared residuals. The space the residuals are measured
         in (e.g. X, Y and Phi) and the order they are returned is determined by a
         concrete implementation of a staticmethod"""
-
-        pass
+        raise NotImplementedError()
 
     def rmsds(self):
         """calculate unweighted RMSDs for the matches"""
@@ -547,8 +545,7 @@ class Target(object):
     @abc.abstractmethod
     def achieved(self):
         """return True to terminate the refinement."""
-
-        pass
+        raise NotImplementedError()
 
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):

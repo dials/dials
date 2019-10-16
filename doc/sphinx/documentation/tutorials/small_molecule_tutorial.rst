@@ -23,13 +23,13 @@ The data for this tutorial are on Zenodo at https://zenodo.org/record/51405 - l-
 Import
 ------
 
-Usually DIALS processing is run on a sweep-by-sweep basis - for small molecule data however where multiple sweeps from one sample are routinely collected, with different experimental configurations, it is helpful to process all sweeps at once, therefore starting with:
+Usually DIALS processing is run on a sequence-by-sequence basis - for small molecule data however where multiple sequences from one sample are routinely collected, with different experimental configurations, it is helpful to process all sequences at once, therefore starting with:
 
 .. code-block:: bash
 
-   dials.import allow_multiple_sweeps=True ../data/*cbf
+   dials.import allow_multiple_sequences=True ../data/*cbf
 
-This will create a DIALS datablock.expt file with details of the 4 sweeps within it.
+This will create a DIALS datablock.expt file with details of the 4 sequences within it.
 
 Spot Finding
 ------------
@@ -40,13 +40,13 @@ This is identical to the routine usage i.e.
 
    dials.find_spots datablock.expt nproc=8
 
-Though will of course take a little longer to work through four sweeps. Here nproc=8 was assigned (for a core i7 machine.) The spot finding is independent from sweep to sweep but the spots from all sweeps may be viewed with
+Though will of course take a little longer to work through four sequences. Here nproc=8 was assigned (for a core i7 machine.) The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
 
 .. code-block:: bash
 
    dials.reciprocal_lattice_viewer datablock.expt strong.refl
 
-Which will show how the four sweeps overlap in reciprocal space, as:
+Which will show how the four sequences overlap in reciprocal space, as:
 
 .. image:: /figures/l-cyst-rlv.png
 
@@ -64,7 +64,7 @@ Without any additional input, the indexing will determine the most approproiate 
 Bravais Lattice Determination
 -----------------------------
 
-In the single sweep tutorial the determination of the Bravais lattice is performed between indexing and refinement. This step however will only work on a single lattice at a time - therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
+In the single sequence tutorial the determination of the Bravais lattice is performed between indexing and refinement. This step however will only work on a single lattice at a time - therefore in this case the analysis will be performed, the results verified then the conclusion fed back into indexing as follows:
 
 .. code-block:: bash
 
@@ -84,14 +84,14 @@ This will once again consistently index the data, this time enforcing the lattic
 Refinement
 ----------
 
-Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps - the first is to perform static refinement on each indexed sweep, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
+Prior to integration we want to refine the experimental geometry and the scan varying crystal orientation and unit cell. This is performed in two steps - the first is to perform static refinement on each indexed sequence, the second to take this refined model and refine the unit cell and orientation allowing for time varying parameters:
 
 .. code-block:: bash
 
    dials.refine indexed.refl indexed.expt output.reflections=static.refl output.experiments=static.expt scan_varying=false
    dials.refine static.refl static.expt scan_varying=True
 
-At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sweeps:
+At this stage the reciprocal lattice view will show a much improved level of agreement between the indexed reflections from the four sequences:
 
 .. code-block:: bash
 
@@ -107,12 +107,12 @@ At this stage the reflections may be integrated - this is run with:
 
    dials.integrate refined.refl refined.expt nproc=8
 
-which will integrate each sweep in sequence, again using 8 cores.
+which will integrate each sequence in sequence, again using 8 cores.
 
 Unit Cell Refinement
 --------------------
 
-After integration the unit cell for downstream analysis may be derived from refinement of the cell against observed two-theta angles from the reflections, across the four sweeps:
+After integration the unit cell for downstream analysis may be derived from refinement of the cell against observed two-theta angles from the reflections, across the four sequences:
 
 .. code-block:: bash
 

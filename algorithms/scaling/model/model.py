@@ -927,7 +927,7 @@ def calculate_new_offset(
 def initialise_smooth_input(osc_range, one_osc_width, interval):
     """Calculate the required smoother parameters.
 
-    Using information about the sweep and the chosen parameterisation
+    Using information about the sequence and the chosen parameterisation
     interval, the required parameters for the smoother are determined.
 
     Args:

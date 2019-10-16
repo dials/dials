@@ -42,6 +42,9 @@ lattice_group = None
 seed = 230
   .type = int(value_min=0)
 
+lattice_symmetry_max_delta = 2.0
+  .type = float(value_min=0)
+
 relative_length_tolerance = 0.05
   .type = float(value_min=0)
 
@@ -92,6 +95,7 @@ input data and filtering settings e.g partiality_threshold"""
             normalisation=self._params.normalisation,
             d_min=self._params.d_min,
             min_i_mean_over_sigma_mean=self._params.min_i_mean_over_sigma_mean,
+            lattice_symmetry_max_delta=self._params.lattice_symmetry_max_delta,
             relative_length_tolerance=self._params.relative_length_tolerance,
             absolute_angle_tolerance=self._params.absolute_angle_tolerance,
         )
@@ -107,19 +111,19 @@ input data and filtering settings e.g partiality_threshold"""
 
         reindexed_experiments = copy.deepcopy(experiments)
         reindexed_reflections = flex.reflection_table()
-        cb_op_inp_best = (
-            result.best_solution.subgroup["cb_op_inp_best"] * result.cb_op_inp_min
-        )
+        # Change of basis operator from input unit cell to best unit cell
+        cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
+        # Get the best space group.
         best_subsym = result.best_solution.subgroup["best_subsym"]
+        best_space_group = best_subsym.space_group().build_derived_acentric_group()
         for i, expt in enumerate(reindexed_experiments):
-            expt.crystal = expt.crystal.change_basis(result.cb_op_inp_min)
+            # Set the space group to the best symmetry and change basis accordingly.
+            # Setting the basis to one incompatible with the initial space group is
+            # forbidden, so we must first change the space group to P1 to be safe`.
             expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-            expt.crystal = expt.crystal.change_basis(
-                result.best_solution.subgroup["cb_op_inp_best"]
-            )
-            expt.crystal.set_space_group(
-                best_subsym.space_group().build_derived_acentric_group()
-            )
+            expt.crystal = expt.crystal.change_basis(cb_op_inp_best)
+            expt.crystal.set_space_group(best_space_group)
+
             S = parameter_reduction.symmetrize_reduce_enlarge(
                 expt.crystal.get_space_group()
             )

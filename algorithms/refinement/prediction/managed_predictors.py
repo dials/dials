@@ -28,11 +28,11 @@ class ScansRayPredictor(object):
     required.
     """
 
-    def __init__(self, experiments, sweep_range=(0, 2.0 * pi)):
+    def __init__(self, experiments, sequence_range=(0, 2.0 * pi)):
         """Construct by linking to instances of experimental model classes"""
 
         self._experiments = experiments
-        self._sweep_range = sweep_range
+        self._sequence_range = sequence_range
 
     def __call__(self, hkl, experiment_id=0, UB=None):
         """
@@ -48,7 +48,7 @@ class ScansRayPredictor(object):
             e.goniometer.get_rotation_axis_datum(),
             e.goniometer.get_fixed_rotation(),
             e.goniometer.get_setting_rotation(),
-            self._sweep_range,
+            self._sequence_range,
         )
 
         UB_ = UB if UB else e.crystal.get_A()

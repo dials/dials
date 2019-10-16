@@ -62,11 +62,13 @@ def test_ScalingHTMLGenerator(run_in_tmpdir):
     """Test the scaling html generator."""
     script = mock.Mock()
     script.params.output.html = "test.html"
+    script.params.output.json = "test.json"
 
     # Test that ScalingHTMLGenerator works if all data is empty.
     observer = ScalingHTMLGenerator()
     observer.make_scaling_html(script)
     assert os.path.exists("test.html")
+    assert os.path.exists("test.json")
 
 
 def test_ScalingModelObserver():
@@ -190,11 +192,11 @@ def test_ErrorModelObserver():
     delta_hl = flex.double(range(10))
 
     scaler = mock.Mock()
-    scaler.experiment.scaling_model.error_model.delta_hl = delta_hl
-    scaler.experiment.scaling_model.error_model.intensities = delta_hl
-    scaler.experiment.scaling_model.error_model.inverse_scale_factors = delta_hl
-    scaler.experiment.scaling_model.error_model.sigmaprime = delta_hl
-    scaler.experiment.scaling_model.error_model.binning_info = {}
+    scaler.error_model.delta_hl = delta_hl
+    scaler.error_model.intensities = delta_hl
+    scaler.error_model.inverse_scale_factors = delta_hl
+    scaler.error_model.sigmaprime = delta_hl
+    scaler.error_model.binning_info = {}
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()

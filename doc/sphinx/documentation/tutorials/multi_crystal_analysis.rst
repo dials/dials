@@ -33,10 +33,10 @@ and between all of the datasets we collected then we can use DIALS joint
 refinement to refine all of the crystal cells *at the same time*, simultaneously
 with shared detector and beam models.
 
-In this tutorial, we will attempt to do that for 73 sweeps of data collected
+In this tutorial, we will attempt to do that for 73 sequences of data collected
 from crystals of TehA, a well-diffracting integral membrane protein measured
 using *in situ* diffraction from crystallisation plates at room temperature.
-Each sweep provides between 4 and 10 degrees of data.
+Each sequence provides between 4 and 10 degrees of data.
 
 This tutorial is relatively advanced in that it requires high level scripting
 of the DIALS command line programs, however candidate scripts are provided and
@@ -46,8 +46,8 @@ Individual processing
 ---------------------
 
 We start with a directory full of images. It is easy enough to figure out
-which files belong with which sweep from the filename templates, however note
-that the pattern between templates is not totally consistent. Most of the sweeps
+which files belong with which sequence from the filename templates, however note
+that the pattern between templates is not totally consistent. Most of the sequences
 start with the prefix :samp:`xtal`, but some have just :samp:`xta`. One way of
 getting around this annoyance would be to use the fact that each dataset has
 a single :samp:`*.log` file associated with it and identify the different
@@ -67,12 +67,12 @@ let DIALS figure it out for us::
   DataBlock 0
     format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>
     num images: 2711
-    num sweeps: 73
+    num sequences: 73
     num stills: 0
   --------------------------------------------------------------------------------
   Writing datablocks to datablock.expt
 
-With a single command we have determined that there are 73 individual sweeps
+With a single command we have determined that there are 73 individual sequences
 comprising 2711 total images. Running the following command will give us
 information about each one of these datasets::
 
@@ -82,10 +82,10 @@ That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
 to compare to. This will also give us intermediate files so that we don't have
 to start from scratch when setting up the joint refinement job. Essentially
-we just want to run a sequence of DIALS commands to process each recorded sweep.
-However we can't (currently) split the datablock into individual sweeps with
+we just want to run a sequence of DIALS commands to process each recorded sequence.
+However we can't (currently) split the datablock into individual sequences with
 a single command. We will have to start again with :program:`dials.import` for
-each sweep individually - but we really don't want to run this manually 73
+each sequence individually - but we really don't want to run this manually 73
 times.
 
 The solution is to write a script that will take the :samp:`datablock.expt` as
@@ -96,7 +96,7 @@ or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
 Also we would like to read :samp:`datablock.expt` with the DIALS API rather than
-extracting the sweep templates using something like :program:`grep`.
+extracting the sequence templates using something like :program:`grep`.
 
 .. highlight:: python
 
@@ -120,8 +120,8 @@ script does. If time is *really* short then try uncommenting the line
   from dxtbx.datablock import DataBlockFactory
   from dials.test import cd
 
-  def process_sweep(task):
-    """Process a single sweep of data. The parameter 'task' will be a
+  def process_sequence(task):
+    """Process a single sequence of data. The parameter 'task' will be a
     tuple, the first element of which is an integer job number and the
     second is the filename template of the images to process"""
 
@@ -129,7 +129,7 @@ script does. If time is *really* short then try uncommenting the line
     template = task[1]
 
     # create directory
-    with cd("sweep_%02d" % num):
+    with cd("sequence_%02d" % num):
       cmd = "dials.import template={0}".format(template)
       easy_run.fully_buffered(command=cmd)
       easy_run.fully_buffered(command="dials.find_spots datablock.expt")
@@ -175,7 +175,7 @@ script does. If time is *really* short then try uncommenting the line
         return
 
     # if we got this far, return the path to the MTZ
-    return "sweep_%02d/integrated.mtz" % num
+    return "sequence_%02d/integrated.mtz" % num
 
   if __name__ == "__main__":
 
@@ -185,8 +185,8 @@ script does. If time is *really* short then try uncommenting the line
     datablock_path = os.path.abspath(sys.argv[1])
     datablock = DataBlockFactory.from_serialized_format(datablock_path,
       check_format=False)[0]
-    sweeps = datablock.extract_sweeps()
-    templates = [e.get_template() for e in sweeps]
+    sequences = datablock.extract_sequences()
+    templates = [e.get_template() for e in sequences]
     tasklist = list(enumerate(sorted(templates)))
 
     if len(tasklist) == 0: sys.exit("No images found!")
@@ -202,7 +202,7 @@ script does. If time is *really* short then try uncommenting the line
       print "%d: %s" % task
 
     results = easy_mp.parallel_map(
-      func=process_sweep,
+      func=process_sequence,
       iterable=tasklist,
       processes=nproc,
       preserve_order=True)
@@ -218,23 +218,23 @@ just imports to bring in modules from the Python standard library as well as
 :samp:`DataBlockFactory` from :samp:`dxtbx` to read in the datablock and
 a class from the :samp:`dials.test` package that simplifies running commands in
 a new directory. Following that is a definition for the function
-:samp:`process_sweep` which will perform all the steps required to process one
+:samp:`process_sequence` which will perform all the steps required to process one
 dataset from images to unmerged MTZ. The code block under::
 
   if __name__ == "__main__":
 
 are the lines that are executed when the script starts. First we check that the
-script has been passed a path to a datablock. We then extract the 73 sweeps
+script has been passed a path to a datablock. We then extract the 73 sequences
 from this into a list, then get the filename templates from each element in the
 list. We associate each of these templates with a number to form a list of
-'tasks' to pass into :samp:`process_sweep`, but instead
+'tasks' to pass into :samp:`process_sequence`, but instead
 of doing this in serial we can use :samp:`easy_mp` to run in parallel. This will
-be okay because inside :samp:`process_sweep`, we ensure that all results are
+be okay because inside :samp:`process_sequence`, we ensure that all results are
 written into a new directory. First we use a facility of the :samp:`easy_mp`
 module to determine the number of processes to run in parallel and then we submit
 the job with :samp:`parallel_map`.
 
-Within :samp:`process_sweep` all external commands are run within a :samp:`with`
+Within :samp:`process_sequence` all external commands are run within a :samp:`with`
 block where execution is controlled by the *context manager* :samp:`cd`. If you
 want the gory details, they are `here <https://docs.python.org/2/reference/datamodel.html#context-managers>`_.
 Essentially this is a way to write clean code that tidies up after itself
@@ -246,9 +246,9 @@ The commands that are run inside the managed block are usual dials commands,
 familiar from other tutorials. There are a couple of interesting points
 to note though. We know that the correct space group is *H* 3, but it turns out
 that if we ask :program:`dials.index` to find an *H* 3 cell right from the start
-then many of the sweeps fail to index. This is simply because the initial models
+then many of the sequences fail to index. This is simply because the initial models
 contained in :samp:`datablock.expt` are too poor to locate a cell with the
-symmetry constraints. However, for many of the sweeps the indexing program will
+symmetry constraints. However, for many of the sequences the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
@@ -316,7 +316,7 @@ Finally we use :program:`dials.export` to create an MTZ file::
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
 exist we make no effort to rescue the dataset, we just return early from the
-:samp:`process_sweep` function, freeing up a process so that
+:samp:`process_sequence` function, freeing up a process so that
 :samp:`parallel_map` can start up the next.
 
 Here is the output of a run of the script::
@@ -428,47 +428,47 @@ Here is the output of a run of the script::
   Job 71 failed in initial indexing
   Job 72 failed in indexing
   Successfully created the following MTZs:
-  sweep_00/integrated.mtz
-  sweep_01/integrated.mtz
-  sweep_02/integrated.mtz
-  sweep_03/integrated.mtz
-  sweep_05/integrated.mtz
-  sweep_09/integrated.mtz
-  sweep_14/integrated.mtz
-  sweep_16/integrated.mtz
-  sweep_17/integrated.mtz
-  sweep_18/integrated.mtz
-  sweep_19/integrated.mtz
-  sweep_22/integrated.mtz
-  sweep_23/integrated.mtz
-  sweep_24/integrated.mtz
-  sweep_25/integrated.mtz
-  sweep_26/integrated.mtz
-  sweep_27/integrated.mtz
-  sweep_28/integrated.mtz
-  sweep_29/integrated.mtz
-  sweep_30/integrated.mtz
-  sweep_31/integrated.mtz
-  sweep_33/integrated.mtz
-  sweep_34/integrated.mtz
-  sweep_36/integrated.mtz
-  sweep_42/integrated.mtz
-  sweep_43/integrated.mtz
-  sweep_46/integrated.mtz
-  sweep_48/integrated.mtz
-  sweep_50/integrated.mtz
-  sweep_51/integrated.mtz
-  sweep_53/integrated.mtz
-  sweep_54/integrated.mtz
-  sweep_56/integrated.mtz
-  sweep_58/integrated.mtz
-  sweep_59/integrated.mtz
-  sweep_60/integrated.mtz
-  sweep_63/integrated.mtz
-  sweep_64/integrated.mtz
-  sweep_65/integrated.mtz
-  sweep_66/integrated.mtz
-  sweep_67/integrated.mtz
+  sequence_00/integrated.mtz
+  sequence_01/integrated.mtz
+  sequence_02/integrated.mtz
+  sequence_03/integrated.mtz
+  sequence_05/integrated.mtz
+  sequence_09/integrated.mtz
+  sequence_14/integrated.mtz
+  sequence_16/integrated.mtz
+  sequence_17/integrated.mtz
+  sequence_18/integrated.mtz
+  sequence_19/integrated.mtz
+  sequence_22/integrated.mtz
+  sequence_23/integrated.mtz
+  sequence_24/integrated.mtz
+  sequence_25/integrated.mtz
+  sequence_26/integrated.mtz
+  sequence_27/integrated.mtz
+  sequence_28/integrated.mtz
+  sequence_29/integrated.mtz
+  sequence_30/integrated.mtz
+  sequence_31/integrated.mtz
+  sequence_33/integrated.mtz
+  sequence_34/integrated.mtz
+  sequence_36/integrated.mtz
+  sequence_42/integrated.mtz
+  sequence_43/integrated.mtz
+  sequence_46/integrated.mtz
+  sequence_48/integrated.mtz
+  sequence_50/integrated.mtz
+  sequence_51/integrated.mtz
+  sequence_53/integrated.mtz
+  sequence_54/integrated.mtz
+  sequence_56/integrated.mtz
+  sequence_58/integrated.mtz
+  sequence_59/integrated.mtz
+  sequence_60/integrated.mtz
+  sequence_63/integrated.mtz
+  sequence_64/integrated.mtz
+  sequence_65/integrated.mtz
+  sequence_66/integrated.mtz
+  sequence_67/integrated.mtz
 
   real	7m45.656s
   user	25m32.532s
@@ -489,12 +489,12 @@ The dendrogram resulting from clustering is shown here:
 
 Immediately the dendrogram shows that dataset 27 is an extreme outlier.
 From :file:`FINAL_list_of_files.dat` we can see that this refers to
-:file:`sweep_46/integrated.mtz`.
+:file:`sequence_46/integrated.mtz`.
 As we kept all the dials :file:`.log` files
 from DIALS processing we could investigate this further, however as this is
-only one sweep out of 41, we decide just to throw it away and
+only one sequence out of 41, we decide just to throw it away and
 move on. So, edit :file:`individual_mtzs.dat` to remove
-the line :file:`sweep_46/integrated.mtz`
+the line :file:`sequence_46/integrated.mtz`
 and rerun blend.
 
 Now the dendrogram looks better:
@@ -513,111 +513,111 @@ we would like to do joint refinement of the crystals to reduce correlations
 between the detector or beam parameters with individual crystals. As motivation
 we may look at these correlations for one of these datasets. For example::
 
-  cd sweep_00
+  cd sequence_00
   dials.refine indexed.expt indexed.refl scan_varying=false \
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
-The new file :file:`sweep_00/corrplot.png` shows correlations between parameters
+The new file :file:`sequence_00/corrplot.png` shows correlations between parameters
 refined with this single 8 degree dataset. Clearly parameters like the
 detector distance and the crystal metrical matrix parameters are highly
 correlated.
 
- .. image:: /figures/sweep_00_corrplot.png
+ .. image:: /figures/sequence_00_corrplot.png
 
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is still
-rather limited. In order to do joint refinement of the sweeps we need to combine them
+rather limited. In order to do joint refinement of the sequences we need to combine them
 into a single multi-experiment :file:`combined.expt` and corresponding
 :file:`combined.refl`. Whilst doing this we want to reduce the separate
 detector, beam and goniometer models for each experiment into a single shared
 model of each type. The program :program:`dials.combine_experiments` can
 be used for this, but first we have to prepare an input file with a text editor
-listing the individual sweeps in order. We can use
+listing the individual sequences in order. We can use
 :file:`individual_mtzs.dat` as a template to start with. In our case the final
 file looks like this::
 
   input {
-    experiments = "sweep_00/refined.expt"
-    experiments = "sweep_01/refined.expt"
-    experiments = "sweep_02/refined.expt"
-    experiments = "sweep_03/refined.expt"
-    experiments = "sweep_05/refined.expt"
-    experiments = "sweep_09/refined.expt"
-    experiments = "sweep_14/refined.expt"
-    experiments = "sweep_16/refined.expt"
-    experiments = "sweep_17/refined.expt"
-    experiments = "sweep_18/refined.expt"
-    experiments = "sweep_19/refined.expt"
-    experiments = "sweep_22/refined.expt"
-    experiments = "sweep_23/refined.expt"
-    experiments = "sweep_24/refined.expt"
-    experiments = "sweep_25/refined.expt"
-    experiments = "sweep_26/refined.expt"
-    experiments = "sweep_27/refined.expt"
-    experiments = "sweep_28/refined.expt"
-    experiments = "sweep_29/refined.expt"
-    experiments = "sweep_30/refined.expt"
-    experiments = "sweep_31/refined.expt"
-    experiments = "sweep_33/refined.expt"
-    experiments = "sweep_34/refined.expt"
-    experiments = "sweep_36/refined.expt"
-    experiments = "sweep_42/refined.expt"
-    experiments = "sweep_43/refined.expt"
-    experiments = "sweep_48/refined.expt"
-    experiments = "sweep_50/refined.expt"
-    experiments = "sweep_51/refined.expt"
-    experiments = "sweep_53/refined.expt"
-    experiments = "sweep_54/refined.expt"
-    experiments = "sweep_56/refined.expt"
-    experiments = "sweep_58/refined.expt"
-    experiments = "sweep_59/refined.expt"
-    experiments = "sweep_60/refined.expt"
-    experiments = "sweep_63/refined.expt"
-    experiments = "sweep_64/refined.expt"
-    experiments = "sweep_65/refined.expt"
-    experiments = "sweep_66/refined.expt"
-    experiments = "sweep_67/refined.expt"
-    reflections = "sweep_00/indexed.refl"
-    reflections = "sweep_01/indexed.refl"
-    reflections = "sweep_02/indexed.refl"
-    reflections = "sweep_03/indexed.refl"
-    reflections = "sweep_05/indexed.refl"
-    reflections = "sweep_09/indexed.refl"
-    reflections = "sweep_14/indexed.refl"
-    reflections = "sweep_16/indexed.refl"
-    reflections = "sweep_17/indexed.refl"
-    reflections = "sweep_18/indexed.refl"
-    reflections = "sweep_19/indexed.refl"
-    reflections = "sweep_22/indexed.refl"
-    reflections = "sweep_23/indexed.refl"
-    reflections = "sweep_24/indexed.refl"
-    reflections = "sweep_25/indexed.refl"
-    reflections = "sweep_26/indexed.refl"
-    reflections = "sweep_27/indexed.refl"
-    reflections = "sweep_28/indexed.refl"
-    reflections = "sweep_29/indexed.refl"
-    reflections = "sweep_30/indexed.refl"
-    reflections = "sweep_31/indexed.refl"
-    reflections = "sweep_33/indexed.refl"
-    reflections = "sweep_34/indexed.refl"
-    reflections = "sweep_36/indexed.refl"
-    reflections = "sweep_42/indexed.refl"
-    reflections = "sweep_43/indexed.refl"
-    reflections = "sweep_48/indexed.refl"
-    reflections = "sweep_50/indexed.refl"
-    reflections = "sweep_51/indexed.refl"
-    reflections = "sweep_53/indexed.refl"
-    reflections = "sweep_54/indexed.refl"
-    reflections = "sweep_56/indexed.refl"
-    reflections = "sweep_58/indexed.refl"
-    reflections = "sweep_59/indexed.refl"
-    reflections = "sweep_60/indexed.refl"
-    reflections = "sweep_63/indexed.refl"
-    reflections = "sweep_64/indexed.refl"
-    reflections = "sweep_65/indexed.refl"
-    reflections = "sweep_66/indexed.refl"
-    reflections = "sweep_67/indexed.refl"
+    experiments = "sequence_00/refined.expt"
+    experiments = "sequence_01/refined.expt"
+    experiments = "sequence_02/refined.expt"
+    experiments = "sequence_03/refined.expt"
+    experiments = "sequence_05/refined.expt"
+    experiments = "sequence_09/refined.expt"
+    experiments = "sequence_14/refined.expt"
+    experiments = "sequence_16/refined.expt"
+    experiments = "sequence_17/refined.expt"
+    experiments = "sequence_18/refined.expt"
+    experiments = "sequence_19/refined.expt"
+    experiments = "sequence_22/refined.expt"
+    experiments = "sequence_23/refined.expt"
+    experiments = "sequence_24/refined.expt"
+    experiments = "sequence_25/refined.expt"
+    experiments = "sequence_26/refined.expt"
+    experiments = "sequence_27/refined.expt"
+    experiments = "sequence_28/refined.expt"
+    experiments = "sequence_29/refined.expt"
+    experiments = "sequence_30/refined.expt"
+    experiments = "sequence_31/refined.expt"
+    experiments = "sequence_33/refined.expt"
+    experiments = "sequence_34/refined.expt"
+    experiments = "sequence_36/refined.expt"
+    experiments = "sequence_42/refined.expt"
+    experiments = "sequence_43/refined.expt"
+    experiments = "sequence_48/refined.expt"
+    experiments = "sequence_50/refined.expt"
+    experiments = "sequence_51/refined.expt"
+    experiments = "sequence_53/refined.expt"
+    experiments = "sequence_54/refined.expt"
+    experiments = "sequence_56/refined.expt"
+    experiments = "sequence_58/refined.expt"
+    experiments = "sequence_59/refined.expt"
+    experiments = "sequence_60/refined.expt"
+    experiments = "sequence_63/refined.expt"
+    experiments = "sequence_64/refined.expt"
+    experiments = "sequence_65/refined.expt"
+    experiments = "sequence_66/refined.expt"
+    experiments = "sequence_67/refined.expt"
+    reflections = "sequence_00/indexed.refl"
+    reflections = "sequence_01/indexed.refl"
+    reflections = "sequence_02/indexed.refl"
+    reflections = "sequence_03/indexed.refl"
+    reflections = "sequence_05/indexed.refl"
+    reflections = "sequence_09/indexed.refl"
+    reflections = "sequence_14/indexed.refl"
+    reflections = "sequence_16/indexed.refl"
+    reflections = "sequence_17/indexed.refl"
+    reflections = "sequence_18/indexed.refl"
+    reflections = "sequence_19/indexed.refl"
+    reflections = "sequence_22/indexed.refl"
+    reflections = "sequence_23/indexed.refl"
+    reflections = "sequence_24/indexed.refl"
+    reflections = "sequence_25/indexed.refl"
+    reflections = "sequence_26/indexed.refl"
+    reflections = "sequence_27/indexed.refl"
+    reflections = "sequence_28/indexed.refl"
+    reflections = "sequence_29/indexed.refl"
+    reflections = "sequence_30/indexed.refl"
+    reflections = "sequence_31/indexed.refl"
+    reflections = "sequence_33/indexed.refl"
+    reflections = "sequence_34/indexed.refl"
+    reflections = "sequence_36/indexed.refl"
+    reflections = "sequence_42/indexed.refl"
+    reflections = "sequence_43/indexed.refl"
+    reflections = "sequence_48/indexed.refl"
+    reflections = "sequence_50/indexed.refl"
+    reflections = "sequence_51/indexed.refl"
+    reflections = "sequence_53/indexed.refl"
+    reflections = "sequence_54/indexed.refl"
+    reflections = "sequence_56/indexed.refl"
+    reflections = "sequence_58/indexed.refl"
+    reflections = "sequence_59/indexed.refl"
+    reflections = "sequence_60/indexed.refl"
+    reflections = "sequence_63/indexed.refl"
+    reflections = "sequence_64/indexed.refl"
+    reflections = "sequence_65/indexed.refl"
+    reflections = "sequence_66/indexed.refl"
+    reflections = "sequence_67/indexed.refl"
   }
 
 
@@ -632,7 +632,7 @@ We called this file :file:`experiments_and_reflections.phil` then run
 The :samp:`reference_from_experiment` options tell the program to replace all
 beam, goniometer and detector models in the input experiments with those
 models taken from the first experiment, i.e. experiment '0' using 0-based
-indexing. The output lists the number of reflections in each sweep contributing
+indexing. The output lists the number of reflections in each sequence contributing
 to the final :file:`combined.refl`::
 
   ---------------------
@@ -863,7 +863,7 @@ terminal.
 
 We can compare the RMSDs from individually refined experiments to those from
 the joint experiments. For example, look at the RSMDs for experiment 0, in the
-logfile :file:`sweep_00/dials.refine.log`::
+logfile :file:`sequence_00/dials.refine.log`::
 
   RMSDs by experiment:
   --------------------------------------------
@@ -970,8 +970,8 @@ to run in parallel, similar to the one used previously::
   from libtbx import easy_run, easy_mp
   from dials.test import cd
 
-  def process_sweep(task):
-    """Process a single sweep of data. The parameter 'task' will be a
+  def process_sequence(task):
+    """Process a single sequence of data. The parameter 'task' will be a
     tuple, the first element of which is an integer job number and the
     second is the path to the directory containing the data"""
 
@@ -984,7 +984,7 @@ to run in parallel, similar to the one used previously::
     reflections_path = os.path.join(datadir, reflections_file)
 
     # create directory
-    with cd("sweep_%02d" % num):
+    with cd("sequence_%02d" % num):
       # WARNING! Fast and dirty integration.
       # Do not use the result for scaling/merging!
       cmd = "dials.integrate %s %s " + \
@@ -1004,7 +1004,7 @@ to run in parallel, similar to the one used previously::
         return
 
     # if we got this far, return the path to the MTZ
-    return "sweep_%02d/integrated.mtz" % num
+    return "sequence_%02d/integrated.mtz" % num
 
   if __name__ == "__main__":
 
@@ -1026,7 +1026,7 @@ to run in parallel, similar to the one used previously::
       print "%d: %s/experiments%02d" % (task[0], task[1], task[0])
 
     results = easy_mp.parallel_map(
-      func=process_sweep,
+      func=process_sequence,
       iterable=tasklist,
       processes=nproc,
       preserve_order=True)
@@ -1041,7 +1041,7 @@ directory can be run as follows::
 
   dials.python integrate_joint_TehA.py .
 
-As expected this creates all 40 MTZs for the jointly refined sweeps without any
+As expected this creates all 40 MTZs for the jointly refined sequences without any
 problem. We can copy the paths to these into a new file, say
 :file:`joint_mtzs.dat`, and run blend::
 

@@ -60,7 +60,7 @@ indexing {
     include scope dials.algorithms.indexing.lattice_search.basis_vector_search_phil_scope
 
     image_range = None
-      .help = "Range in images to slice a sweep. The number of arguments"
+      .help = "Range in images to slice a sequence. The number of arguments"
               "must be a factor of two. Each pair of arguments gives a range"
               "that follows C conventions (e.g. j0 <= j < j1) when slicing the"
               "reflections by observed centroid."
