@@ -751,12 +751,16 @@ class Script(object):
         experiments = metadata_updater(imageset_importer())
 
         # Compute some numbers
-        num_sequences = 0
+        num_sweeps = 0
+        num_still_sequences = 0
         num_stills = 0
         num_images = 0
         for e in experiments:
             if isinstance(e.imageset, ImageSequence):
-                num_sequences += 1
+                if e.imageset.get_scan().is_still():
+                    num_still_sequences += 1
+                else:
+                    num_sweeps += 1
             else:
                 num_stills += 1
             num_images += len(e.imageset)
@@ -767,7 +771,9 @@ class Script(object):
         for f in format_list:
             logger.info("  format: %s" % f)
         logger.info("  num images: %d" % num_images)
-        logger.info("  num sequences: %d" % num_sequences)
+        logger.info("  sequences:")
+        logger.info("    still:    %d" % num_still_sequences)
+        logger.info("    sweep:    %d" % num_sweeps)
         logger.info("  num stills: %d" % num_stills)
 
         # Print out info for all experiments
