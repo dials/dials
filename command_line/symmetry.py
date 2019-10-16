@@ -201,13 +201,19 @@ def symmetry(experiments, reflection_tables, params=None):
 
     logger.info("Saving reindexed experiments to %s", params.output.experiments)
     experiments.as_file(params.output.experiments)
-    if params.laue_group is not None:
+    if params.output.reflections is not None:
+        if len(reflection_tables) > 1:
+            joint_reflections = flex.reflection_table()
+            for table in reflection_tables:
+                joint_reflections.extend(table)
+        else:
+            joint_reflections = reflection_tables[0]
         logger.info(
             "Saving %s reindexed reflections to %s",
-            len(reflection_tables[0]),
+            len(joint_reflections),
             params.output.reflections,
         )
-        reflection_tables[0].as_file(params.output.reflections)
+        joint_reflections.as_file(params.output.reflections)
 
     if params.output.html and params.systematic_absences.check:
         ScrewAxisObserver().generate_html_report(params.output.html)
