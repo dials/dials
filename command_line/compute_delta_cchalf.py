@@ -136,7 +136,7 @@ class Script(object):
         elif self.params.input.mtzfile is not None:
             data = self.read_mtzfile(self.params.input.mtzfile)
         else:
-            return SystemExit
+            raise SystemExit
         return data
 
     def run(self):
@@ -538,7 +538,7 @@ def run(args=None, phil=phil_scope):
     parser = OptionParser(
         usage=usage,
         phil=phil,
-        epilog=__doc__,
+        epilog=help_message,
         read_experiments=True,
         read_reflections=True,
         check_format=False,
@@ -550,6 +550,10 @@ def run(args=None, phil=phil_scope):
 
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
+
+    if len(experiments) == 0 and not params.input.mtzfile:
+        parser.print_help()
+        return
 
     script = Script(params, experiments, reflections)
     script.run()
