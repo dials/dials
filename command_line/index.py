@@ -123,6 +123,21 @@ def _index_experiments(experiments, reflections, params, known_crystal_models=No
 
 
 def index(experiments, reflections, params):
+    """
+    Index the input experiments and reflections.
+
+    Args:
+        experiments: The experiments to index
+        reflections (list): A list of reflection tables containing strong spots
+        params: An instance of the indexing phil scope
+
+    Returns:
+        (tuple): tuple containing:
+            experiments: The indexed experiment list
+            reflections (dials.array_family.flex.reflection_table):
+                The indexed reflections
+
+    """
     if experiments.crystals()[0] is not None:
         known_crystal_models = experiments.crystals()
     else:
@@ -140,6 +155,9 @@ def index(experiments, reflections, params):
                 reflections[0].extend(reflections[i])
     reflections = reflections[0]
 
+    # If there are scan and goniometer objects present but the oscillation angle is zero
+    # then expt.scan and expt.goniometer to None, as the behaviour of some downstream
+    # algorithms depend on the presence/absence of these objects
     for expt in experiments:
         if (
             expt.goniometer is not None
