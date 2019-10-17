@@ -118,7 +118,7 @@ phil_scope = parse(
       .help = "If True, assert the reference geometry is similar to"
               "the image geometry"
 
-    allow_multiple_sequences = False
+    allow_multiple_sequences = True
       .type = bool
       .help = "If False, raise an error if multiple sequences are found"
 
