@@ -217,7 +217,7 @@ class ImageSetImporter(object):
                         % self.params.input.directory
                     )
             else:
-                raise Sorry("No experimetns found")
+                raise Sorry("No experiments found")
 
         # Get a list of all imagesets
         imageset_list = experiments.imagesets()
