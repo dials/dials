@@ -142,7 +142,10 @@ class BlockCalculator(object):
         # scan edges
         start, stop = scan.get_oscillation_range(deg=False)
         if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise DialsRefineConfigError("The reflections do not fill the scan range.")
+            raise DialsRefineConfigError(
+                "The reflections do not fill the scan range. "
+                "A common reason for this is that the crystal has died at the end of the scan."
+            )
 
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
