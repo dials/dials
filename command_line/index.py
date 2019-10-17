@@ -9,6 +9,7 @@ import sys
 
 import iotbx.phil
 from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.imageset import ImageSetFactory
 from dials.algorithms.indexing import indexer
 from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
@@ -164,6 +165,7 @@ def index(experiments, reflections, params):
             and expt.scan is not None
             and expt.scan.get_oscillation()[1] == 0
         ):
+            expt.imageset = ImageSetFactory.imageset_from_anyset(expt.imageset)
             expt.goniometer = None
             expt.scan = None
 
