@@ -160,7 +160,10 @@ class Script(base_script):
 
 
 if __name__ == "__main__":
-    from mpi4py import MPI
+    try:
+        from mpi4py import MPI
+    except ImportError:
+        raise Sorry("MPI not available")
 
     comm = MPI.COMM_WORLD
     script = Script(comm)
