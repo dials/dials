@@ -872,7 +872,7 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         "indexing.method=low_res_spot_match",
         "known_symmetry.space_group=P43212",
         "known_symmetry.unit_cell=78.84,78.84,38.29,90,90,90",
-        "stills.indexer=sequences",
+        "stills.indexer=" + indexer_type,
         "n_macro_cycles=2",
         "detector.fix_list=Dist",
     ]
