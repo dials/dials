@@ -52,7 +52,7 @@ __all__ = [
 
 def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
     """Return the relevant bbox calculator."""
-    if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+    if goniometer is None or scan is None or scan.is_still():
         algorithm = BBoxCalculator2D(beam, detector, delta_b, delta_m)
     else:
         algorithm = BBoxCalculator3D(beam, detector, goniometer, scan, delta_b, delta_m)
@@ -61,7 +61,7 @@ def BBoxCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
 
 def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
     """Return the relevant partiality calculator."""
-    if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+    if goniometer is None or scan is None or scan.is_still():
         algorithm = PartialityCalculator2D(beam, sigma_m)
     else:
         algorithm = PartialityCalculator3D(beam, goniometer, scan, sigma_m)
@@ -70,7 +70,7 @@ def PartialityCalculator(crystal, beam, detector, goniometer, scan, sigma_m):
 
 def MaskCalculator(crystal, beam, detector, goniometer, scan, delta_b, delta_m):
     """Return the relevant partiality calculator."""
-    if goniometer is None or scan is None or scan.get_oscillation()[1] == 0:
+    if goniometer is None or scan is None or scan.is_still():
         algorithm = MaskCalculator2D(beam, detector, delta_b, delta_m)
     else:
         algorithm = MaskCalculator3D(beam, detector, goniometer, scan, delta_b, delta_m)

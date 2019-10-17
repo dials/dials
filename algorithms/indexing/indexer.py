@@ -378,11 +378,7 @@ class Indexer(object):
             has_stills = False
             has_sequences = False
             for expt in experiments:
-                if (
-                    expt.goniometer is None
-                    or expt.scan is None
-                    or expt.scan.get_oscillation()[1] == 0
-                ):
+                if expt.goniometer is None or expt.scan is None or expt.scan.is_still():
                     if has_sequences:
                         raise Sorry(
                             "Please provide only stills or only sequences, not both"

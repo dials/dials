@@ -595,7 +595,7 @@ class Model(ProfileModelExt):
             if (
                 experiment.scan is None
                 or experiment.goniometer is None
-                or experiment.scan.get_oscillation()[1] == 0
+                or experiment.scan.is_still()
             ):
                 return None
 

@@ -150,7 +150,7 @@ indexing_min_spots = 10
         if (
             imageset.get_goniometer() is not None
             and imageset.get_scan() is not None
-            and imageset.get_scan().get_oscillation()[1] == 0
+            and imageset.get_scan().is_still()
         ):
             imageset.set_goniometer(None)
             imageset.set_scan(None)

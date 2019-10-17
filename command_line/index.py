@@ -162,7 +162,7 @@ def index(experiments, reflections, params):
         if (
             expt.goniometer is not None
             and expt.scan is not None
-            and expt.scan.get_oscillation()[1] == 0
+            and expt.scan.is_still()
         ):
             expt.goniometer = None
             expt.scan = None
