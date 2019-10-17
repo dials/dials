@@ -7,6 +7,7 @@ import pytest
 from dxtbx.serialize import load
 
 
+@pytest.mark.skip(reason="API changed so the test no longer useful")
 def test_multiple_sequence_import_fails_without_allow_parameter(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
@@ -23,6 +24,7 @@ def test_multiple_sequence_import_fails_without_allow_parameter(dials_data, tmpd
     assert not tmpdir.join("experiments_multiple_sequences.expt").check()
 
 
+@pytest.mark.skip(reason="API changed so the test no longer useful")
 def test_multiple_sequence_import_suceeds_with_allow_parameter(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
