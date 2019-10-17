@@ -10,7 +10,6 @@ from dials.util import show_mail_on_error, Sorry
 from dxtbx.model.experiment_list import Experiment
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSequence
 from dials.util.options import flatten_experiments
@@ -200,10 +199,9 @@ class ImageSetImporter(object):
             # Check if a template has been set and print help if not, otherwise try to
             # import the images based on the template input
             if len(self.params.input.template) > 0:
-                importer = ExperimentListTemplateImporter(
+                experiments = ExperimentListFactory.from_templates(
                     self.params.input.template, format_kwargs=format_kwargs
                 )
-                experiments = importer.experiments
                 if len(experiments) == 0:
                     raise Sorry(
                         "No experiments found matching template %s"
