@@ -58,13 +58,7 @@ class BackgroundAlgorithm(object):
         model = global_model_cache.get(model)
 
         # Create the background creator
-        self._create = Creator(
-            model=model,
-            robust=robust,
-            tuning_constant=tuning_constant,
-            max_iter=100,
-            min_pixels=min_pixels,
-        )
+        self._create = Creator(model=model, robust=robust, min_pixels=min_pixels)
 
     def compute_background(self, reflections, image_volume=None):
         """

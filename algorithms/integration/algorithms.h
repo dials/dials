@@ -209,7 +209,7 @@ namespace dials { namespace algorithms {
                                double tuning_constant,
                                std::size_t max_iter,
                                std::size_t min_pixels)
-        : creator_(model, robust, tuning_constant, max_iter, min_pixels) {}
+        : creator_(model, robust, min_pixels) {}
 
     ~GModelBackgroundCalculator() {}
 
