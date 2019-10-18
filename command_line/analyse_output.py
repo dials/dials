@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import errno
+import functools
 import os
 import math
 
@@ -196,9 +197,7 @@ def generate_plot(filename, plot_data, plot_function):
                     continue
                 else:
                     break
-            if 1 and (n_cols, n_rows) == (1, 24):
-                fig.subplots_adjust(hspace=0.1 / (n_rows), right=0.8)
-            elif n_panels > 1:
+            if (n_cols, n_rows) == (1, 24) or n_panels > 1:
                 fig.subplots_adjust(hspace=0.1 / n_rows, right=0.8)
 
         if title is not None:
@@ -414,36 +413,19 @@ class CentroidAnalyser(object):
         rlist = rlist.select(mask)
         assert len(rlist) > 0
 
-        def _plot_centroid_diff_x(ax, rlist, gridsize):
-            xc, yc, zc = rlist["xyzcal.px"].parts()
-            xo, yo, zo = rlist["xyzobs.px.value"].parts()
-            xd = xo - xc
+        def _plot_centroid_diff(direction, ax, rlist, gridsize):
+            # directions: 0:x, 1:y, 2:z
+            calculated = rlist["xyzcal.px"].parts()
+            observed = rlist["xyzobs.px.value"].parts()
+            diff = observed[direction] - calculated[direction]
             diff_max = self.centroid_diff_max
             if diff_max is None:
-                diff_max = max(abs(xd))
+                diff_max = max(abs(diff))
 
             hex_ax = ax.hexbin(
-                xc.as_numpy_array(),
-                yc.as_numpy_array(),
-                C=xd.as_numpy_array(),
-                gridsize=gridsize,
-                vmin=-1.0 * diff_max,
-                vmax=diff_max,
-            )
-            return hex_ax
-
-        def _plot_centroid_diff_y(ax, rlist, gridsize):
-            xc, yc, zc = rlist["xyzcal.px"].parts()
-            xo, yo, zo = rlist["xyzobs.px.value"].parts()
-            yd = yo - yc
-            diff_max = self.centroid_diff_max
-            if diff_max is None:
-                diff_max = max(abs(yd))
-
-            hex_ax = ax.hexbin(
-                xc.as_numpy_array(),
-                yc.as_numpy_array(),
-                C=yd.as_numpy_array(),
+                calculated[0].as_numpy_array(),
+                calculated[1].as_numpy_array(),
+                C=diff.as_numpy_array(),
                 gridsize=gridsize,
                 vmin=-1.0 * diff_max,
                 vmax=diff_max,
@@ -459,7 +441,7 @@ class CentroidAnalyser(object):
                 "grid_size": self.grid_size,
                 "pixels_per_bin": self.pixels_per_bin,
             },
-            _plot_centroid_diff_x,
+            functools.partial(_plot_centroid_diff, 0),
         )
         generate_plot(
             os.path.join(self.directory, "centroid_diff_y.png"),
@@ -470,7 +452,7 @@ class CentroidAnalyser(object):
                 "grid_size": self.grid_size,
                 "pixels_per_bin": self.pixels_per_bin,
             },
-            _plot_centroid_diff_y,
+            functools.partial(_plot_centroid_diff, 1),
         )
 
     def centroid_diff_z(self, rlist, threshold):
@@ -581,19 +563,19 @@ class CentroidAnalyser(object):
         rlist = rlist.select(mask)
         assert len(rlist) > 0
 
-        def _residuals_xy_plot(ax, rlist, *args):
-            xc, yc, zc = rlist["xyzcal.px"].parts()
-            xo, yo, zo = rlist["xyzobs.px.value"].parts()
-            dx = xc - xo
-            dy = yc - yo
+        def _residuals_plot(directions, ax, rlist, *args):
+            calculated = rlist["xyzcal.px"].parts()
+            observed = rlist["xyzobs.px.value"].parts()
+            d0 = calculated[directions[0]] - observed[directions[0]]
+            d1 = calculated[directions[1]] - observed[directions[1]]
 
             ax.axhline(0, color="grey")
             ax.axvline(0, color="grey")
-            ax_xy = ax.scatter(
-                dx.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
+            scatter = ax.scatter(
+                d0.as_numpy_array(), d1.as_numpy_array(), c="b", alpha=0.3
             )
             ax.set_aspect("equal")
-            return ax_xy
+            return scatter
 
         xc, yc, zc = rlist["xyzcal.px"].parts()
         xo, yo, zo = rlist["xyzobs.px.value"].parts()
@@ -615,22 +597,8 @@ class CentroidAnalyser(object):
                 "limits_x": limits_x,
                 "limits_y": limits_y,
             },
-            _residuals_xy_plot,
+            functools.partial(_residuals_plot, (0, 1)),
         )
-
-        def _residuals_zy_plot(ax, rlist, *args):
-            xc, yc, zc = rlist["xyzcal.px"].parts()
-            xo, yo, zo = rlist["xyzobs.px.value"].parts()
-            dy = yc - yo
-            dz = zc - zo
-
-            ax.axhline(0, color="grey")
-            ax.axvline(0, color="grey")
-            ax_zy = ax.scatter(
-                dz.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
-            )
-            ax.set_aspect("equal")
-            return ax_zy
 
         generate_plot(
             os.path.join(self.directory, "centroid_zy_residuals.png"),
@@ -643,22 +611,8 @@ class CentroidAnalyser(object):
                 "limits_x": limits_z,
                 "limits_y": limits_y,
             },
-            _residuals_zy_plot,
+            functools.partial(_residuals_plot, (2, 1)),
         )
-
-        def _residuals_xz_plot(ax, rlist, *args):
-            xc, yc, zc = rlist["xyzcal.px"].parts()
-            xo, yo, zo = rlist["xyzobs.px.value"].parts()
-            dx = xc - xo
-            dz = zc - zo
-
-            ax.axhline(0, color="grey")
-            ax.axvline(0, color="grey")
-            ax_xz = ax.scatter(
-                dx.as_numpy_array(), dz.as_numpy_array(), c="b", alpha=0.3
-            )
-            ax.set_aspect("equal")
-            return ax_xz
 
         generate_plot(
             os.path.join(self.directory, "centroid_xz_residuals.png"),
@@ -671,7 +625,7 @@ class CentroidAnalyser(object):
                 "limits_x": limits_x,
                 "limits_y": limits_z,
             },
-            _residuals_xz_plot,
+            functools.partial(_residuals_plot, (0, 2)),
         )
 
 
