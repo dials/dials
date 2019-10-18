@@ -1309,33 +1309,31 @@ class ReferenceProfileAnalyser(object):
 
     def reflection_corr_vs_xy(self, rlist, filename):
         """ Analyse the correlations. """
-        tmp_filename = filename
 
-        class corr_vs_xy_plot(per_panel_plot):
+        def _corr_vs_xy_plot(ax, rlist, gridsize):
+            corr = rlist["profile.correlation"]
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Reflection correlations binned in X/Y"
-            filename = "%s_corr_vs_xy.png" % tmp_filename
-            cbar_ylabel = "Correlation with reference profile"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=corr.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                corr = rlist["profile.correlation"]
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=corr.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        corr_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "%s_corr_vs_xy.png" % filename),
+            {
+                "title": "Reflection correlations binned in X/Y",
+                "cbar_ylabel": "Correlation with reference profile",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _corr_vs_xy_plot,
         )
 
     def reflection_corr_vs_z(self, rlist, filename):
