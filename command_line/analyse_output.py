@@ -87,6 +87,127 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
+def generate_plot(filename, plot_data, plot_function):
+    title = plot_data.get("title")
+    cbar_ylabel = plot_data.get("cbar_ylabel")
+    xlabel = plot_data.get("xlabel", "x")
+    ylabel = plot_data.get("ylabel", "y")
+    limits_x = plot_data.get("limits_x")
+    limits_y = plot_data.get("limits_y")
+    rlist = plot_data["rlist"]
+    pixels_per_bin = plot_data.get("pixels_per_bin", 10)
+    if not limits_x or not limits_y:
+        xc, yc, zc = rlist["xyzcal.px"].parts()
+        xo, yo, zo = rlist["xyzobs.px.value"].parts()
+        if not limits_x:
+            limits_x = (
+                math.floor(min(flex.min(xc), flex.min(xo))),
+                math.ceil(max(flex.max(xc), flex.max(xo))),
+            )
+        if not limits_y:
+            limits_y = (
+                math.floor(min(flex.min(yc), flex.min(yo))),
+                math.ceil(max(flex.max(yc), flex.max(yo))),
+            )
+
+    panel_ids = rlist["panel"]
+    crystal_ids = rlist["id"]
+    n_crystals = flex.max(crystal_ids) + 1
+    n_panels = flex.max(panel_ids) + 1
+
+    n_cols, n_rows = determine_grid_size(rlist, grid_size=plot_data.get("grid_size"))
+
+    for i_crystal in range(n_crystals):
+        crystal_sel = crystal_ids == i_crystal
+        fig, axes = pyplot.subplots(n_rows, n_cols, squeeze=False)
+
+        gridsize = (
+            int(math.ceil(limits_x[1] / pixels_per_bin)),
+            int(math.ceil(limits_y[1] / pixels_per_bin)),
+        )
+
+        clim = (1e8, 1e-8)
+
+        plots = []
+
+        i_panel = 0
+        for i_row in range(n_rows):
+            for i_col in range(n_cols):
+
+                panel_sel = panel_ids == i_panel
+                sel = panel_sel & crystal_sel
+                i_panel += 1
+
+                if n_panels > 1:
+                    axes[i_row][i_col].set_title("Panel %d" % i_panel)
+                    axes[i_row][i_col].set_title("Panel %d" % i_panel)
+
+                if (i_row + 1) == n_rows:
+                    axes[i_row][i_col].set_xlabel(xlabel)
+                else:
+                    pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
+
+                if i_col == 0:
+                    axes[i_row][i_col].set_ylabel(ylabel)
+                else:
+                    pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
+
+                if sel.count(True) > 0:
+                    rlist_sel = rlist.select(sel)
+                    if len(rlist_sel) <= 1:
+                        ax = pyplot.scatter([], [])  # create empty plot
+                    else:
+                        ax = plot_function(axes[i_row][i_col], rlist_sel, gridsize)
+                        clim = (
+                            min(clim[0], ax.get_clim()[0]),
+                            max(clim[1], ax.get_clim()[1]),
+                        )
+                    plots.append(ax)
+
+                axes[i_row][i_col].set_xlim(*limits_x)
+                axes[i_row][i_col].set_ylim(*limits_y)
+                axes[i_row][i_col].axes.set_aspect("equal")
+                axes[i_row][i_col].invert_yaxis()
+
+        for p in plots:
+            p.set_clim(clim)
+
+        default_size = fig.get_size_inches()
+        if cbar_ylabel is not None and (n_cols, n_rows) == (1, 24):
+            fig.set_size_inches(
+                (n_cols * default_size[0], 0.15 * n_rows * default_size[1])
+            )
+        elif cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
+            fig.set_size_inches(
+                (n_cols * default_size[0], 0.5 * n_rows * default_size[1])
+            )
+        else:
+            fig.set_size_inches((n_cols * default_size[0], n_rows * default_size[1]))
+
+        # pyplot.tight_layout()
+        if cbar_ylabel is not None:
+            cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
+            for ax in plots:
+                try:
+                    cbar = fig.colorbar(ax, cax=cax)
+                    cbar.ax.set_ylabel(cbar_ylabel, fontsize=n_cols * 10)
+                    cbar.ax.tick_params(labelsize=n_cols * 8)
+                except Exception:
+                    continue
+                else:
+                    break
+            if 1 and (n_cols, n_rows) == (1, 24):
+                fig.subplots_adjust(hspace=0.1 / (n_rows), right=0.8)
+            elif n_panels > 1:
+                fig.subplots_adjust(hspace=0.1 / n_rows, right=0.8)
+
+        if title is not None:
+            fig.suptitle(title, fontsize=n_cols * 12)
+        fig.savefig(filename)
+        fig.set_size_inches(default_size)
+        pyplot.close()
+
+
 class per_panel_plot(object):
     title = None
     filename = None
@@ -415,32 +536,35 @@ class CentroidAnalyser(object):
         rlist = rlist.select(mask)
         assert len(rlist) > 0
 
-        class diff_x_plot(per_panel_plot):
-            def __init__(self, *args, **kwargs):
-
-                self.title = "Difference between observed and calculated in X"
-                self.filename = "centroid_diff_x.png"
-                self.cbar_ylabel = "Difference in x position (pixels)"
-                self.centroid_diff_max = kwargs.pop("centroid_diff_max", None)
-                super(diff_x_plot, self).__init__(*args, **kwargs)
-
-            def plot_one_panel(self, ax, rlist):
+        def _plot_centroid_diff_x(ax, rlist, gridsize):
+            diff_max = self.centroid_diff_max
+            if diff_max is None:
                 xc, yc, zc = rlist["xyzcal.px"].parts()
                 xo, yo, zo = rlist["xyzobs.px.value"].parts()
                 xd = xo - xc
+                diff_max = max(abs(xd))
 
-                if self.centroid_diff_max is None:
-                    self.centroid_diff_max = max(abs(xd))
+            hex_ax = ax.hexbin(
+                xc.as_numpy_array(),
+                yc.as_numpy_array(),
+                C=xd.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=-1.0 * diff_max,
+                vmax=diff_max,
+            )
+            return hex_ax
 
-                hex_ax = ax.hexbin(
-                    xc.as_numpy_array(),
-                    yc.as_numpy_array(),
-                    C=xd.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=-1.0 * self.centroid_diff_max,
-                    vmax=self.centroid_diff_max,
-                )
-                return hex_ax
+        generate_plot(
+            os.path.join(self.directory, "centroid_diff_x.png"),
+            {
+                "title": "Difference between observed and calculated in X",
+                "cbar_ylabel": "Difference in x position (pixels)",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _plot_centroid_diff_x,
+        )
 
         class diff_y_plot(per_panel_plot):
             def __init__(self, *args, **kwargs):
@@ -469,13 +593,6 @@ class CentroidAnalyser(object):
                 )
                 return hex_ax
 
-        diff_x_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
-            centroid_diff_max=self.centroid_diff_max,
-        )
         diff_y_plot(
             rlist,
             self.directory,
