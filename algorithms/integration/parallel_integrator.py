@@ -177,7 +177,6 @@ class BackgroundCalculatorFactory(object):
                 experiments,
                 model=params.model,
                 robust=params.robust.algorithm,
-                tuning_constant=params.robust.tuning_constant,
                 min_pixels=params.min_pixels,
             )
 

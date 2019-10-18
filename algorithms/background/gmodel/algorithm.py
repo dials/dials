@@ -82,9 +82,7 @@ class GModelBackgroundCalculatorFactory(object):
     """ Class to do background subtraction. """
 
     @staticmethod
-    def create(
-        experiments, model=None, robust=False, tuning_constant=1.345, min_pixels=10
-    ):
+    def create(experiments, model=None, robust=False, min_pixels=10):
         """
         Initialise the algorithm.
 
@@ -102,9 +100,5 @@ class GModelBackgroundCalculatorFactory(object):
 
         # Create the background creator
         return GModelBackgroundCalculator(
-            model=model,
-            robust=robust,
-            tuning_constant=tuning_constant,
-            max_iter=100,
-            min_pixels=min_pixels,
+            model=model, robust=robust, min_pixels=min_pixels
         )

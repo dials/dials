@@ -200,14 +200,10 @@ namespace dials { namespace algorithms {
      * Init the algorithms
      * @param model The model to use
      * @param robust Do robust estimation
-     * @param tuning_constant The robust tuning constant
-     * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels
      */
     GModelBackgroundCalculator(boost::shared_ptr<BackgroundModel> model,
                                bool robust,
-                               double tuning_constant,
-                               std::size_t max_iter,
                                std::size_t min_pixels)
         : creator_(model, robust, min_pixels) {}
 

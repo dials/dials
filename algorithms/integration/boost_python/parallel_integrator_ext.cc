@@ -302,12 +302,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       "GModelBackgroundCalculator", no_init)
       .def(init<boost::shared_ptr<BackgroundModel>,
                 bool,
-                double,
-                std::size_t,
                 std::size_t>((arg("model"),
                               arg("robust"),
-                              arg("tuning_constant"),
-                              arg("max_iter"),
                               arg("min_pixels"))));
 
     // Export the reference data structure
