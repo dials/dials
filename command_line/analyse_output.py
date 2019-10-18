@@ -537,17 +537,35 @@ class CentroidAnalyser(object):
         assert len(rlist) > 0
 
         def _plot_centroid_diff_x(ax, rlist, gridsize):
+            xc, yc, zc = rlist["xyzcal.px"].parts()
+            xo, yo, zo = rlist["xyzobs.px.value"].parts()
+            xd = xo - xc
             diff_max = self.centroid_diff_max
             if diff_max is None:
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                xd = xo - xc
                 diff_max = max(abs(xd))
 
             hex_ax = ax.hexbin(
                 xc.as_numpy_array(),
                 yc.as_numpy_array(),
                 C=xd.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=-1.0 * diff_max,
+                vmax=diff_max,
+            )
+            return hex_ax
+
+        def _plot_centroid_diff_y(ax, rlist, gridsize):
+            xc, yc, zc = rlist["xyzcal.px"].parts()
+            xo, yo, zo = rlist["xyzobs.px.value"].parts()
+            yd = yo - yc
+            diff_max = self.centroid_diff_max
+            if diff_max is None:
+                diff_max = max(abs(yd))
+
+            hex_ax = ax.hexbin(
+                xc.as_numpy_array(),
+                yc.as_numpy_array(),
+                C=yd.as_numpy_array(),
                 gridsize=gridsize,
                 vmin=-1.0 * diff_max,
                 vmax=diff_max,
@@ -565,40 +583,16 @@ class CentroidAnalyser(object):
             },
             _plot_centroid_diff_x,
         )
-
-        class diff_y_plot(per_panel_plot):
-            def __init__(self, *args, **kwargs):
-
-                self.title = "Difference between observed and calculated in Y"
-                self.filename = "centroid_diff_y.png"
-                self.cbar_ylabel = "Difference in y position (pixels)"
-                self.centroid_diff_max = kwargs.pop("centroid_diff_max", None)
-                super(diff_y_plot, self).__init__(*args, **kwargs)
-
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                yd = yo - yc
-
-                if self.centroid_diff_max is None:
-                    self.centroid_diff_max = max(abs(yd))
-
-                hex_ax = ax.hexbin(
-                    xc.as_numpy_array(),
-                    yc.as_numpy_array(),
-                    C=yd.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=-1.0 * self.centroid_diff_max,
-                    vmax=self.centroid_diff_max,
-                )
-                return hex_ax
-
-        diff_y_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
-            centroid_diff_max=self.centroid_diff_max,
+        generate_plot(
+            os.path.join(self.directory, "centroid_diff_y.png"),
+            {
+                "title": "Difference between observed and calculated in Y",
+                "cbar_ylabel": "Difference in y position (pixels)",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _plot_centroid_diff_y,
         )
 
     def centroid_diff_z(self, rlist, threshold):
