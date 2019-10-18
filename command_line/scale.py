@@ -596,7 +596,7 @@ def _export_merged_mtz(params, experiments, joint_table):
 
 def _export_unmerged_mtz(params, experiments, reflection_table):
     """Export data to unmerged_mtz format."""
-    from dials.command_line.export import MTZExporter
+    from dials.command_line.export import export_mtz
     from dials.command_line.export import phil_scope as export_phil_scope
 
     export_params = export_phil_scope.extract()
@@ -610,8 +610,7 @@ def _export_unmerged_mtz(params, experiments, reflection_table):
         "\nSaving output to an unmerged mtz file to %s.", params.output.unmerged_mtz
     )
     export_params.mtz.hklout = params.output.unmerged_mtz
-    exporter = MTZExporter(export_params, experiments, [reflection_table])
-    exporter.export()
+    export_mtz(export_params, experiments, [reflection_table])
 
 
 def run_scaling(params, experiments, reflections):
