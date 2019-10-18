@@ -888,31 +888,30 @@ class BackgroundAnalyser(object):
     def mean_vs_xy(self, rlist):
         """ Plot I/Sigma vs X/Y """
 
-        class mean_vs_xy_plot(per_panel_plot):
+        def _mean_vs_xy_plot(ax, rlist, gridsize):
+            MEAN = rlist["background.mean"]
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of Background Model mean vs X/Y"
-            filename = "background_model_mean_vs_xy.png"
-            cbar_ylabel = "Background Model mean"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=MEAN.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                MEAN = rlist["background.mean"]
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=MEAN.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        mean_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "background_model_mean_vs_xy.png"),
+            {
+                "title": "Distribution of Background Model mean vs X/Y",
+                "cbar_ylabel": "Background Model mean",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _mean_vs_xy_plot,
         )
 
     def mean_vs_z(self, rlist):
@@ -1264,25 +1263,24 @@ class ReferenceProfileAnalyser(object):
         mask = rlist.get_flags(rlist.flags.reference_spot)
         rlist = rlist.select(mask)
 
-        class reference_xy_plot(per_panel_plot):
+        def _reference_xy_plot(ax, rlist, gridsize):
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Reference profiles binned in X/Y"
-            filename = "reference_xy.png"
-            cbar_ylabel = "# reflections"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(), y.as_numpy_array(), gridsize=gridsize
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(), y.as_numpy_array(), gridsize=self.gridsize
-                )
-                return hex_ax
-
-        reference_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "reference_xy.png"),
+            {
+                "title": "Reference profiles binned in X/Y",
+                "cbar_ylabel": "# reflections",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _reference_xy_plot,
         )
 
     def reference_z(self, rlist):
