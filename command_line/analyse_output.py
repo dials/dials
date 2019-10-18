@@ -1313,6 +1313,12 @@ def run():
     # Show the help
     if len(params.input.reflections) != 1:
         parser.print_help()
+        print(
+            """
+dials.analyse_output is deprecated and will be removed in a future release.
+Its successor is dials.report, which generates interactive reports.
+"""
+        )
         exit(0)
 
     # Analyse the reflections
@@ -1322,6 +1328,12 @@ def run():
         grid_size=params.grid_size,
         pixels_per_bin=params.pixels_per_bin,
         centroid_diff_max=params.centroid_diff_max,
+    )
+    print(
+        """
+dials.analyse_output is deprecated and will be removed in a future release.
+Its successor is dials.report, which generates interactive reports.
+"""
     )
 
 
