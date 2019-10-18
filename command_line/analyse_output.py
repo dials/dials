@@ -64,14 +64,12 @@ def ensure_directory(path):
 
 def ensure_required(rlist, required):
     """ Check which keys aren't present. """
-    not_present = []
-    for k in required:
-        if k not in rlist:
-            not_present.append(k)
-    if len(not_present) != 0:
+    required = set(required)
+    present = set(rlist)
+    not_present = required - present
+    if not_present:
         print(" Skipping: following required fields not present:")
-        for k in not_present:
-            print("  %s" % k)
+        print("  " + "  ".join(not_present))
         return False
     return True
 
@@ -90,7 +88,6 @@ def determine_grid_size(rlist, grid_size=None):
 
 
 class per_panel_plot(object):
-
     title = None
     filename = None
     cbar_ylabel = None
