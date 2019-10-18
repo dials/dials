@@ -738,40 +738,41 @@ class CentroidAnalyser(object):
             _residuals_xy_plot,
         )
 
-        class residuals_zy_plot(per_panel_plot):
+        def _residuals_zy_plot(ax, rlist, *args):
+            xc, yc, zc = rlist["xyzcal.px"].parts()
+            xo, yo, zo = rlist["xyzobs.px.value"].parts()
+            dy = yc - yo
+            dz = zc - zo
 
-            title = "Centroid residuals in Z and Y"
-            filename = "centroid_zy_residuals.png"
-            cbar_ylabel = None
-            xlabel = "Z (images)"
-            ylabel = "Y (pixels)"
+            ax.axhline(0, color="grey")
+            ax.axvline(0, color="grey")
+            ax_zy = ax.scatter(
+                dz.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
+            )
+            ax.set_aspect("equal")
 
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dy = yc - yo
-                dz = zc - zo
+            return ax_zy
 
-                ax.axhline(0, color="grey")
-                ax.axvline(0, color="grey")
-                ax_zy = ax.scatter(
-                    dz.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
-                )
-                ax.set_aspect("equal")
+        _, yc, zc = rlist["xyzcal.px"].parts()
+        _, yo, zo = rlist["xyzobs.px.value"].parts()
+        dy = yc - yo
+        dz = zc - zo
+        limits_x = (math.floor(flex.min(dz)), math.ceil(flex.max(dz)))
+        limits_y = (math.floor(flex.min(dy)), math.ceil(flex.max(dy)))
 
-                return ax_zy
-
-            def get_min_max_xy(self, rlist):
-                _, yc, zc = rlist["xyzcal.px"].parts()
-                _, yo, zo = rlist["xyzobs.px.value"].parts()
-                dy = yc - yo
-                dz = zc - zo
-
-                min_x = math.floor(flex.min(dz))
-                min_y = math.floor(flex.min(dy))
-                max_x = math.ceil(flex.max(dz))
-                max_y = math.ceil(flex.max(dy))
-                return min_x, max_x, min_y, max_y
+        generate_plot(
+            os.path.join(self.directory, "centroid_zy_residuals.png"),
+            {
+                "title": "Centroid residuals in Z and Y",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "xlabel": "Z (images)",
+                "ylabel": "Y (pixels)",
+                "limits_x": limits_x,
+                "limits_y": limits_y,
+            },
+            _residuals_zy_plot,
+        )
 
         class residuals_xz_plot(per_panel_plot):
 
@@ -808,7 +809,6 @@ class CentroidAnalyser(object):
                 max_y = math.ceil(flex.max(dz))
                 return min_x, max_x, min_y, max_y
 
-        residuals_zy_plot(rlist, self.directory, grid_size=self.grid_size)
         residuals_xz_plot(rlist, self.directory, grid_size=self.grid_size)
 
 
