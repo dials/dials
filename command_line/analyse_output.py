@@ -963,33 +963,32 @@ class BackgroundAnalyser(object):
     def rmsd_vs_xy(self, rlist):
         """ Plot I/Sigma vs X/Y """
 
-        class rmsd_vs_xy_plot(per_panel_plot):
+        def _rmsd_vs_xy_plot(ax, rlist, gridsize):
+            RMSD = flex.sqrt(rlist["background.mse"])
+            MEAN = rlist["background.mean"]
+            RMSD = RMSD / MEAN
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of Background Model CVRMSD vs X/Y"
-            filename = "background_model_cvrmsd_vs_xy.png"
-            cbar_ylabel = "Background Model CVRMSD"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=RMSD.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                RMSD = flex.sqrt(rlist["background.mse"])
-                MEAN = rlist["background.mean"]
-                RMSD = RMSD / MEAN
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=RMSD.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        rmsd_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "background_model_cvrmsd_vs_xy.png"),
+            {
+                "title": "Distribution of Background Model CVRMSD vs X/Y",
+                "cbar_ylabel": "Background Model CVRMSD",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _rmsd_vs_xy_plot,
         )
 
     def rmsd_vs_z(self, rlist):
@@ -1106,34 +1105,33 @@ class IntensityAnalyser(object):
     def i_over_s_vs_xy(self, rlist, intensity_type):
         """ Plot I/Sigma vs X/Y """
 
-        class i_over_s_vs_xy_plot(per_panel_plot):
+        def _i_over_s_vs_xy_plot(ax, rlist, gridsize):
+            I_sig = flex.sqrt(rlist["intensity.%s.variance" % intensity_type])
+            sel = I_sig > 0
+            rlist = rlist.select(sel)
+            I_sig = I_sig.select(sel)
+            I = rlist["intensity.%s.value" % intensity_type]
+            I_over_S = I / I_sig
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of I/Sigma vs X/Y"
-            filename = "ioversigma_%s_vs_xy.png" % intensity_type
-            cbar_ylabel = "Log I/Sigma"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=flex.log(I_over_S),
+                gridsize=gridsize,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                I_sig = flex.sqrt(rlist["intensity.%s.variance" % intensity_type])
-                sel = I_sig > 0
-                rlist = rlist.select(sel)
-                I_sig = I_sig.select(sel)
-                I = rlist["intensity.%s.value" % intensity_type]
-                I_over_S = I / I_sig
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=flex.log(I_over_S),
-                    gridsize=self.gridsize,
-                )
-                return hex_ax
-
-        i_over_s_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "ioversigma_%s_vs_xy.png" % intensity_type),
+            {
+                "title": "Distribution of I/Sigma vs X/Y",
+                "cbar_ylabel": "Log I/Sigma",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _i_over_s_vs_xy_plot,
         )
 
     def i_over_s_vs_z(self, rlist):
