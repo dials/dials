@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 import errno
+import functools
 import os
 import math
 
@@ -10,6 +11,7 @@ import matplotlib
 import libtbx.phil
 from dials.array_family import flex
 from dials.util import show_mail_on_error
+from dials.util.command_line import Command
 
 # Offline backend
 matplotlib.use("Agg")
@@ -64,24 +66,20 @@ def ensure_directory(path):
 
 def ensure_required(rlist, required):
     """ Check which keys aren't present. """
-    not_present = []
-    for k in required:
-        if k not in rlist:
-            not_present.append(k)
-    if len(not_present) != 0:
+    required = set(required)
+    present = set(rlist)
+    not_present = required - present
+    if not_present:
         print(" Skipping: following required fields not present:")
-        for k in not_present:
-            print("  %s" % k)
+        print("  " + "  ".join(not_present))
         return False
     return True
 
 
 def determine_grid_size(rlist, grid_size=None):
-    from libtbx import Auto
-
     panel_ids = rlist["panel"]
     n_panels = flex.max(panel_ids) + 1
-    if grid_size is not None and grid_size is not Auto:
+    if grid_size is not None and grid_size is not libtbx.Auto:
         assert (grid_size[0] * grid_size[1]) >= n_panels, n_panels
         return grid_size
     n_cols = int(math.floor(math.sqrt(n_panels)))
@@ -89,127 +87,123 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
-class per_panel_plot(object):
-
-    title = None
-    filename = None
-    cbar_ylabel = None
-    xlabel = "x"
-    ylabel = "y"
-
-    def __init__(self, rlist, directory, grid_size=None, pixels_per_bin=10):
-        min_x, max_x, min_y, max_y = self.get_min_max_xy(rlist)
-        panel_ids = rlist["panel"]
-        crystal_ids = rlist["id"]
-        n_crystals = flex.max(crystal_ids) + 1
-        n_panels = flex.max(panel_ids) + 1
-
-        n_cols, n_rows = determine_grid_size(rlist, grid_size=grid_size)
-
-        for i_crystal in range(n_crystals):
-            crystal_sel = crystal_ids == i_crystal
-            fig, axes = pyplot.subplots(n_rows, n_cols, squeeze=False)
-
-            self.gridsize = tuple(
-                int(math.ceil(i))
-                for i in (max_x / pixels_per_bin, max_y / pixels_per_bin)
-            )
-
-            clim = (1e8, 1e-8)
-
-            plots = []
-
-            i_panel = 0
-            for i_row in range(n_rows):
-                for i_col in range(n_cols):
-
-                    panel_sel = panel_ids == i_panel
-                    sel = panel_sel & crystal_sel
-                    i_panel += 1
-
-                    if n_panels > 1:
-                        axes[i_row][i_col].set_title("Panel %d" % i_panel)
-                        axes[i_row][i_col].set_title("Panel %d" % i_panel)
-
-                    if (i_row + 1) == n_rows:
-                        axes[i_row][i_col].set_xlabel(self.xlabel)
-                    else:
-                        pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
-
-                    if i_col == 0:
-                        axes[i_row][i_col].set_ylabel(self.ylabel)
-                    else:
-                        pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
-
-                    if sel.count(True) > 0:
-                        rlist_sel = rlist.select(sel)
-                        if len(rlist_sel) <= 1:
-                            ax = pyplot.scatter([], [])  # create empty plot
-                        else:
-                            ax = self.plot_one_panel(axes[i_row][i_col], rlist_sel)
-                            clim = (
-                                min(clim[0], ax.get_clim()[0]),
-                                max(clim[1], ax.get_clim()[1]),
-                            )
-                        plots.append(ax)
-
-                    axes[i_row][i_col].set_xlim(min_x, max_x)
-                    axes[i_row][i_col].set_ylim(min_y, max_y)
-                    axes[i_row][i_col].axes.set_aspect("equal")
-                    axes[i_row][i_col].invert_yaxis()
-
-            for p in plots:
-                p.set_clim(clim)
-
-            default_size = fig.get_size_inches()
-            if self.cbar_ylabel is not None and (n_cols, n_rows) == (1, 24):
-                fig.set_size_inches(
-                    (n_cols * default_size[0], 0.15 * n_rows * default_size[1])
-                )
-            elif self.cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
-                fig.set_size_inches(
-                    (n_cols * default_size[0], 0.5 * n_rows * default_size[1])
-                )
-            else:
-                fig.set_size_inches(
-                    (n_cols * default_size[0], n_rows * default_size[1])
-                )
-
-            # pyplot.tight_layout()
-            if self.cbar_ylabel is not None:
-                cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
-                for ax in plots:
-                    try:
-                        cbar = fig.colorbar(ax, cax=cax)
-                        cbar.ax.set_ylabel(self.cbar_ylabel, fontsize=n_cols * 10)
-                        cbar.ax.tick_params(labelsize=n_cols * 8)
-                    except Exception:
-                        continue
-                    else:
-                        break
-                if 1 and (n_cols, n_rows) == (1, 24):
-                    fig.subplots_adjust(hspace=0.1 / (n_rows), right=0.8)
-                elif n_panels > 1:
-                    fig.subplots_adjust(hspace=0.1 / n_rows, right=0.8)
-
-            if self.title is not None:
-                fig.suptitle(self.title, fontsize=n_cols * 12)
-            fig.savefig(os.path.join(directory, self.filename))
-            fig.set_size_inches(default_size)
-            pyplot.close()
-
-    def get_min_max_xy(self, rlist):
+def generate_plot(filename, plot_data, plot_function):
+    title = plot_data.get("title")
+    cbar_ylabel = plot_data.get("cbar_ylabel")
+    xlabel = plot_data.get("xlabel", "x")
+    ylabel = plot_data.get("ylabel", "y")
+    limits_x = plot_data.get("limits_x")
+    limits_y = plot_data.get("limits_y")
+    rlist = plot_data["rlist"]
+    pixels_per_bin = plot_data.get("pixels_per_bin", 10)
+    if not limits_x or not limits_y:
         xc, yc, zc = rlist["xyzcal.px"].parts()
         xo, yo, zo = rlist["xyzobs.px.value"].parts()
+        if not limits_x:
+            limits_x = (
+                math.floor(min(flex.min(xc), flex.min(xo))),
+                math.ceil(max(flex.max(xc), flex.max(xo))),
+            )
+        if not limits_y:
+            limits_y = (
+                math.floor(min(flex.min(yc), flex.min(yo))),
+                math.ceil(max(flex.max(yc), flex.max(yo))),
+            )
 
-        min_x = math.floor(min(flex.min(xc), flex.min(xo)))
-        min_y = math.floor(min(flex.min(yc), flex.min(yo)))
-        max_x = math.ceil(max(flex.max(xc), flex.max(xo)))
-        max_y = math.ceil(max(flex.max(yc), flex.max(yo)))
-        return min_x, max_x, min_y, max_y
+    panel_ids = rlist["panel"]
+    crystal_ids = rlist["id"]
+    n_crystals = flex.max(crystal_ids) + 1
+    n_panels = flex.max(panel_ids) + 1
 
-    def plot_one_panel(self, ax, rlist):
-        raise NotImplementedError()
+    n_cols, n_rows = determine_grid_size(rlist, grid_size=plot_data.get("grid_size"))
+
+    for i_crystal in range(n_crystals):
+        crystal_sel = crystal_ids == i_crystal
+        fig, axes = pyplot.subplots(n_rows, n_cols, squeeze=False)
+
+        gridsize = (
+            int(math.ceil(limits_x[1] / pixels_per_bin)),
+            int(math.ceil(limits_y[1] / pixels_per_bin)),
+        )
+
+        clim = (1e8, 1e-8)
+
+        plots = []
+
+        i_panel = 0
+        for i_row in range(n_rows):
+            for i_col in range(n_cols):
+
+                panel_sel = panel_ids == i_panel
+                sel = panel_sel & crystal_sel
+                i_panel += 1
+
+                if n_panels > 1:
+                    axes[i_row][i_col].set_title("Panel %d" % i_panel)
+                    axes[i_row][i_col].set_title("Panel %d" % i_panel)
+
+                if (i_row + 1) == n_rows:
+                    axes[i_row][i_col].set_xlabel(xlabel)
+                else:
+                    pyplot.setp(axes[i_row][i_col].get_xticklabels(), visible=False)
+
+                if i_col == 0:
+                    axes[i_row][i_col].set_ylabel(ylabel)
+                else:
+                    pyplot.setp(axes[i_row][i_col].get_yticklabels(), visible=False)
+
+                if sel.count(True) > 0:
+                    rlist_sel = rlist.select(sel)
+                    if len(rlist_sel) <= 1:
+                        ax = pyplot.scatter([], [])  # create empty plot
+                    else:
+                        ax = plot_function(axes[i_row][i_col], rlist_sel, gridsize)
+                        clim = (
+                            min(clim[0], ax.get_clim()[0]),
+                            max(clim[1], ax.get_clim()[1]),
+                        )
+                    plots.append(ax)
+
+                axes[i_row][i_col].set_xlim(*limits_x)
+                axes[i_row][i_col].set_ylim(*limits_y)
+                axes[i_row][i_col].axes.set_aspect("equal")
+                axes[i_row][i_col].invert_yaxis()
+
+        for p in plots:
+            p.set_clim(clim)
+
+        default_size = fig.get_size_inches()
+        if cbar_ylabel is not None and (n_cols, n_rows) == (1, 24):
+            fig.set_size_inches(
+                (n_cols * default_size[0], 0.15 * n_rows * default_size[1])
+            )
+        elif cbar_ylabel is not None and (n_cols, n_rows) == (5, 24):
+            fig.set_size_inches(
+                (n_cols * default_size[0], 0.5 * n_rows * default_size[1])
+            )
+        else:
+            fig.set_size_inches((n_cols * default_size[0], n_rows * default_size[1]))
+
+        # pyplot.tight_layout()
+        if cbar_ylabel is not None:
+            cax = fig.add_axes([0.9, 0.1, 0.03, 0.8])
+            for ax in plots:
+                try:
+                    cbar = fig.colorbar(ax, cax=cax)
+                    cbar.ax.set_ylabel(cbar_ylabel, fontsize=n_cols * 10)
+                    cbar.ax.tick_params(labelsize=n_cols * 8)
+                except Exception:
+                    continue
+                else:
+                    break
+            if (n_cols, n_rows) == (1, 24) or n_panels > 1:
+                fig.subplots_adjust(hspace=0.1 / n_rows, right=0.8)
+
+        if title is not None:
+            fig.suptitle(title, fontsize=n_cols * 12)
+        fig.savefig(filename)
+        fig.set_size_inches(default_size)
+        pyplot.close()
 
 
 class StrongSpotsAnalyser(object):
@@ -227,8 +221,6 @@ class StrongSpotsAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the strong spots. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing strong spots")
         if not ensure_required(rlist, self.required):
@@ -272,10 +264,10 @@ class StrongSpotsAnalyser(object):
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
         ax.set_title("Spot count per image")
-        for j in range(len(spot_count_per_image)):
+        for j, spots in enumerate(spot_count_per_image):
             ax.scatter(
-                list(range(len(spot_count_per_image[j]))),
-                spot_count_per_image[j],
+                list(range(len(spots))),
+                spots,
                 s=5,
                 color=colours[j],
                 marker="o",
@@ -342,8 +334,6 @@ class CentroidAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reflection centroids")
         if not ensure_required(rlist, self.required):
@@ -418,73 +408,46 @@ class CentroidAnalyser(object):
         rlist = rlist.select(mask)
         assert len(rlist) > 0
 
-        class diff_x_plot(per_panel_plot):
-            def __init__(self, *args, **kwargs):
+        def _plot_centroid_diff(direction, ax, rlist, gridsize):
+            # directions: 0:x, 1:y, 2:z
+            calculated = rlist["xyzcal.px"].parts()
+            observed = rlist["xyzobs.px.value"].parts()
+            diff = observed[direction] - calculated[direction]
+            diff_max = self.centroid_diff_max
+            if diff_max is None:
+                diff_max = max(abs(diff))
 
-                self.title = "Difference between observed and calculated in X"
-                self.filename = "centroid_diff_x.png"
-                self.cbar_ylabel = "Difference in x position (pixels)"
-                self.centroid_diff_max = kwargs.pop("centroid_diff_max", None)
-                super(diff_x_plot, self).__init__(*args, **kwargs)
+            hex_ax = ax.hexbin(
+                calculated[0].as_numpy_array(),
+                calculated[1].as_numpy_array(),
+                C=diff.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=-1.0 * diff_max,
+                vmax=diff_max,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                xd = xo - xc
-
-                if self.centroid_diff_max is None:
-                    self.centroid_diff_max = max(abs(xd))
-
-                hex_ax = ax.hexbin(
-                    xc.as_numpy_array(),
-                    yc.as_numpy_array(),
-                    C=xd.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=-1.0 * self.centroid_diff_max,
-                    vmax=self.centroid_diff_max,
-                )
-                return hex_ax
-
-        class diff_y_plot(per_panel_plot):
-            def __init__(self, *args, **kwargs):
-
-                self.title = "Difference between observed and calculated in Y"
-                self.filename = "centroid_diff_y.png"
-                self.cbar_ylabel = "Difference in y position (pixels)"
-                self.centroid_diff_max = kwargs.pop("centroid_diff_max", None)
-                super(diff_y_plot, self).__init__(*args, **kwargs)
-
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                yd = yo - yc
-
-                if self.centroid_diff_max is None:
-                    self.centroid_diff_max = max(abs(yd))
-
-                hex_ax = ax.hexbin(
-                    xc.as_numpy_array(),
-                    yc.as_numpy_array(),
-                    C=yd.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=-1.0 * self.centroid_diff_max,
-                    vmax=self.centroid_diff_max,
-                )
-                return hex_ax
-
-        diff_x_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
-            centroid_diff_max=self.centroid_diff_max,
+        generate_plot(
+            os.path.join(self.directory, "centroid_diff_x.png"),
+            {
+                "title": "Difference between observed and calculated in X",
+                "cbar_ylabel": "Difference in x position (pixels)",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            functools.partial(_plot_centroid_diff, 0),
         )
-        diff_y_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
-            centroid_diff_max=self.centroid_diff_max,
+        generate_plot(
+            os.path.join(self.directory, "centroid_diff_y.png"),
+            {
+                "title": "Difference between observed and calculated in Y",
+                "cbar_ylabel": "Difference in y position (pixels)",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            functools.partial(_plot_centroid_diff, 1),
         )
 
     def centroid_diff_z(self, rlist, threshold):
@@ -595,113 +558,70 @@ class CentroidAnalyser(object):
         rlist = rlist.select(mask)
         assert len(rlist) > 0
 
-        class residuals_xy_plot(per_panel_plot):
+        def _residuals_plot(directions, ax, rlist, *args):
+            calculated = rlist["xyzcal.px"].parts()
+            observed = rlist["xyzobs.px.value"].parts()
+            d0 = calculated[directions[0]] - observed[directions[0]]
+            d1 = calculated[directions[1]] - observed[directions[1]]
 
-            title = "Centroid residuals in X and Y"
-            filename = "centroid_xy_residuals.png"
-            cbar_ylabel = None
-            xlabel = "X (pixels)"
-            ylabel = "Y (pixels)"
+            ax.axhline(0, color="grey")
+            ax.axvline(0, color="grey")
+            scatter = ax.scatter(
+                d0.as_numpy_array(), d1.as_numpy_array(), c="b", alpha=0.3
+            )
+            ax.set_aspect("equal")
+            return scatter
 
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dx = xc - xo
-                dy = yc - yo
+        xc, yc, zc = rlist["xyzcal.px"].parts()
+        xo, yo, zo = rlist["xyzobs.px.value"].parts()
+        dx = xc - xo
+        dy = yc - yo
+        dz = zc - zo
+        limits_x = (math.floor(flex.min(dx)), math.ceil(flex.max(dx)))
+        limits_y = (math.floor(flex.min(dy)), math.ceil(flex.max(dy)))
+        limits_z = (math.floor(flex.min(dz)), math.ceil(flex.max(dz)))
 
-                ax.axhline(0, color="grey")
-                ax.axvline(0, color="grey")
-                ax_xy = ax.scatter(
-                    dx.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
-                )
-                ax.set_aspect("equal")
-                return ax_xy
+        generate_plot(
+            os.path.join(self.directory, "centroid_xy_residuals.png"),
+            {
+                "title": "Centroid residuals in X and Y",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "xlabel": "X (pixels)",
+                "ylabel": "Y (pixels)",
+                "limits_x": limits_x,
+                "limits_y": limits_y,
+            },
+            functools.partial(_residuals_plot, (0, 1)),
+        )
 
-            def get_min_max_xy(self, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dx = xc - xo
-                dy = yc - yo
+        generate_plot(
+            os.path.join(self.directory, "centroid_zy_residuals.png"),
+            {
+                "title": "Centroid residuals in Z and Y",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "xlabel": "Z (images)",
+                "ylabel": "Y (pixels)",
+                "limits_x": limits_z,
+                "limits_y": limits_y,
+            },
+            functools.partial(_residuals_plot, (2, 1)),
+        )
 
-                min_x = math.floor(flex.min(dx))
-                min_y = math.floor(flex.min(dy))
-                max_x = math.ceil(flex.max(dx))
-                max_y = math.ceil(flex.max(dy))
-                return min_x, max_x, min_y, max_y
-
-        class residuals_zy_plot(per_panel_plot):
-
-            title = "Centroid residuals in Z and Y"
-            filename = "centroid_zy_residuals.png"
-            cbar_ylabel = None
-            xlabel = "Z (images)"
-            ylabel = "Y (pixels)"
-
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dy = yc - yo
-                dz = zc - zo
-
-                ax.axhline(0, color="grey")
-                ax.axvline(0, color="grey")
-                ax_zy = ax.scatter(
-                    dz.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
-                )
-                ax.set_aspect("equal")
-
-                return ax_zy
-
-            def get_min_max_xy(self, rlist):
-                _, yc, zc = rlist["xyzcal.px"].parts()
-                _, yo, zo = rlist["xyzobs.px.value"].parts()
-                dy = yc - yo
-                dz = zc - zo
-
-                min_x = math.floor(flex.min(dz))
-                min_y = math.floor(flex.min(dy))
-                max_x = math.ceil(flex.max(dz))
-                max_y = math.ceil(flex.max(dy))
-                return min_x, max_x, min_y, max_y
-
-        class residuals_xz_plot(per_panel_plot):
-
-            title = "Centroid residuals in X and Z"
-            filename = "centroid_xz_residuals.png"
-            cbar_ylabel = None
-            xlabel = "X (pixels)"
-            ylabel = "Z (images)"
-
-            def plot_one_panel(self, ax, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dx = xc - xo
-                dz = zc - zo
-
-                ax.axhline(0, color="grey")
-                ax.axvline(0, color="grey")
-                ax_xz = ax.scatter(
-                    dx.as_numpy_array(), dz.as_numpy_array(), c="b", alpha=0.3
-                )
-                ax.set_aspect("equal")
-
-                return ax_xz
-
-            def get_min_max_xy(self, rlist):
-                xc, yc, zc = rlist["xyzcal.px"].parts()
-                xo, yo, zo = rlist["xyzobs.px.value"].parts()
-                dx = xc - xo
-                dz = zc - zo
-
-                min_x = math.floor(flex.min(dx))
-                min_y = math.floor(flex.min(dz))
-                max_x = math.ceil(flex.max(dx))
-                max_y = math.ceil(flex.max(dz))
-                return min_x, max_x, min_y, max_y
-
-        residuals_xy_plot(rlist, self.directory, grid_size=self.grid_size)
-        residuals_zy_plot(rlist, self.directory, grid_size=self.grid_size)
-        residuals_xz_plot(rlist, self.directory, grid_size=self.grid_size)
+        generate_plot(
+            os.path.join(self.directory, "centroid_xz_residuals.png"),
+            {
+                "title": "Centroid residuals in X and Z",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "xlabel": "X (pixels)",
+                "ylabel": "Z (images)",
+                "limits_x": limits_x,
+                "limits_y": limits_z,
+            },
+            functools.partial(_residuals_plot, (0, 2)),
+        )
 
 
 class BackgroundAnalyser(object):
@@ -726,8 +646,6 @@ class BackgroundAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the relfection background. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reflection backgrounds")
         if not ensure_required(rlist, self.required):
@@ -795,31 +713,30 @@ class BackgroundAnalyser(object):
     def mean_vs_xy(self, rlist):
         """ Plot I/Sigma vs X/Y """
 
-        class mean_vs_xy_plot(per_panel_plot):
+        def _mean_vs_xy_plot(ax, rlist, gridsize):
+            MEAN = rlist["background.mean"]
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of Background Model mean vs X/Y"
-            filename = "background_model_mean_vs_xy.png"
-            cbar_ylabel = "Background Model mean"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=MEAN.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                MEAN = rlist["background.mean"]
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=MEAN.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        mean_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "background_model_mean_vs_xy.png"),
+            {
+                "title": "Distribution of Background Model mean vs X/Y",
+                "cbar_ylabel": "Background Model mean",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _mean_vs_xy_plot,
         )
 
     def mean_vs_z(self, rlist):
@@ -871,33 +788,32 @@ class BackgroundAnalyser(object):
     def rmsd_vs_xy(self, rlist):
         """ Plot I/Sigma vs X/Y """
 
-        class rmsd_vs_xy_plot(per_panel_plot):
+        def _rmsd_vs_xy_plot(ax, rlist, gridsize):
+            RMSD = flex.sqrt(rlist["background.mse"])
+            MEAN = rlist["background.mean"]
+            RMSD = RMSD / MEAN
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of Background Model CVRMSD vs X/Y"
-            filename = "background_model_cvrmsd_vs_xy.png"
-            cbar_ylabel = "Background Model CVRMSD"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=RMSD.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                RMSD = flex.sqrt(rlist["background.mse"])
-                MEAN = rlist["background.mean"]
-                RMSD = RMSD / MEAN
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=RMSD.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        rmsd_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "background_model_cvrmsd_vs_xy.png"),
+            {
+                "title": "Distribution of Background Model CVRMSD vs X/Y",
+                "cbar_ylabel": "Background Model CVRMSD",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _rmsd_vs_xy_plot,
         )
 
     def rmsd_vs_z(self, rlist):
@@ -954,8 +870,6 @@ class IntensityAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # FIXME Do the same and a comparison for intensity.prf
 
         # Check we have the required fields
@@ -1014,34 +928,33 @@ class IntensityAnalyser(object):
     def i_over_s_vs_xy(self, rlist, intensity_type):
         """ Plot I/Sigma vs X/Y """
 
-        class i_over_s_vs_xy_plot(per_panel_plot):
+        def _i_over_s_vs_xy_plot(ax, rlist, gridsize):
+            I_sig = flex.sqrt(rlist["intensity.%s.variance" % intensity_type])
+            sel = I_sig > 0
+            rlist = rlist.select(sel)
+            I_sig = I_sig.select(sel)
+            I = rlist["intensity.%s.value" % intensity_type]
+            I_over_S = I / I_sig
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Distribution of I/Sigma vs X/Y"
-            filename = "ioversigma_%s_vs_xy.png" % intensity_type
-            cbar_ylabel = "Log I/Sigma"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=flex.log(I_over_S),
+                gridsize=gridsize,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                I_sig = flex.sqrt(rlist["intensity.%s.variance" % intensity_type])
-                sel = I_sig > 0
-                rlist = rlist.select(sel)
-                I_sig = I_sig.select(sel)
-                I = rlist["intensity.%s.value" % intensity_type]
-                I_over_S = I / I_sig
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=flex.log(I_over_S),
-                    gridsize=self.gridsize,
-                )
-                return hex_ax
-
-        i_over_s_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "ioversigma_%s_vs_xy.png" % intensity_type),
+            {
+                "title": "Distribution of I/Sigma vs X/Y",
+                "cbar_ylabel": "Log I/Sigma",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _i_over_s_vs_xy_plot,
         )
 
     def i_over_s_vs_z(self, rlist):
@@ -1106,8 +1019,6 @@ class ReferenceProfileAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reference profiles. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reference profiles")
         if not ensure_required(rlist, self.required):
@@ -1171,25 +1082,24 @@ class ReferenceProfileAnalyser(object):
         mask = rlist.get_flags(rlist.flags.reference_spot)
         rlist = rlist.select(mask)
 
-        class reference_xy_plot(per_panel_plot):
+        def _reference_xy_plot(ax, rlist, gridsize):
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Reference profiles binned in X/Y"
-            filename = "reference_xy.png"
-            cbar_ylabel = "# reflections"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(), y.as_numpy_array(), gridsize=gridsize
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(), y.as_numpy_array(), gridsize=self.gridsize
-                )
-                return hex_ax
-
-        reference_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "reference_xy.png"),
+            {
+                "title": "Reference profiles binned in X/Y",
+                "cbar_ylabel": "# reflections",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _reference_xy_plot,
         )
 
     def reference_z(self, rlist):
@@ -1216,33 +1126,31 @@ class ReferenceProfileAnalyser(object):
 
     def reflection_corr_vs_xy(self, rlist, filename):
         """ Analyse the correlations. """
-        tmp_filename = filename
 
-        class corr_vs_xy_plot(per_panel_plot):
+        def _corr_vs_xy_plot(ax, rlist, gridsize):
+            corr = rlist["profile.correlation"]
+            x, y, z = rlist["xyzcal.px"].parts()
 
-            title = "Reflection correlations binned in X/Y"
-            filename = "%s_corr_vs_xy.png" % tmp_filename
-            cbar_ylabel = "Correlation with reference profile"
+            hex_ax = ax.hexbin(
+                x.as_numpy_array(),
+                y.as_numpy_array(),
+                C=corr.as_numpy_array(),
+                gridsize=gridsize,
+                vmin=0,
+                vmax=1,
+            )
+            return hex_ax
 
-            def plot_one_panel(self, ax, rlist):
-                corr = rlist["profile.correlation"]
-                x, y, z = rlist["xyzcal.px"].parts()
-
-                hex_ax = ax.hexbin(
-                    x.as_numpy_array(),
-                    y.as_numpy_array(),
-                    C=corr.as_numpy_array(),
-                    gridsize=self.gridsize,
-                    vmin=0,
-                    vmax=1,
-                )
-                return hex_ax
-
-        corr_vs_xy_plot(
-            rlist,
-            self.directory,
-            grid_size=self.grid_size,
-            pixels_per_bin=self.pixels_per_bin,
+        generate_plot(
+            os.path.join(self.directory, "%s_corr_vs_xy.png" % filename),
+            {
+                "title": "Reflection correlations binned in X/Y",
+                "cbar_ylabel": "Correlation with reference profile",
+                "rlist": rlist,
+                "grid_size": self.grid_size,
+                "pixels_per_bin": self.pixels_per_bin,
+            },
+            _corr_vs_xy_plot,
         )
 
     def reflection_corr_vs_z(self, rlist, filename):
@@ -1405,6 +1313,12 @@ def run():
     # Show the help
     if len(params.input.reflections) != 1:
         parser.print_help()
+        print(
+            """
+dials.analyse_output is deprecated and will be removed in a future release.
+Its successor is dials.report, which generates interactive reports.
+"""
+        )
         exit(0)
 
     # Analyse the reflections
@@ -1414,6 +1328,12 @@ def run():
         grid_size=params.grid_size,
         pixels_per_bin=params.pixels_per_bin,
         centroid_diff_max=params.centroid_diff_max,
+    )
+    print(
+        """
+dials.analyse_output is deprecated and will be removed in a future release.
+Its successor is dials.report, which generates interactive reports.
+"""
     )
 
 
