@@ -11,6 +11,7 @@ import matplotlib
 import libtbx.phil
 from dials.array_family import flex
 from dials.util import show_mail_on_error
+from dials.util.command_line import Command
 
 # Offline backend
 matplotlib.use("Agg")
@@ -76,11 +77,9 @@ def ensure_required(rlist, required):
 
 
 def determine_grid_size(rlist, grid_size=None):
-    from libtbx import Auto
-
     panel_ids = rlist["panel"]
     n_panels = flex.max(panel_ids) + 1
-    if grid_size is not None and grid_size is not Auto:
+    if grid_size is not None and grid_size is not libtbx.Auto:
         assert (grid_size[0] * grid_size[1]) >= n_panels, n_panels
         return grid_size
     n_cols = int(math.floor(math.sqrt(n_panels)))
@@ -222,8 +221,6 @@ class StrongSpotsAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the strong spots. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing strong spots")
         if not ensure_required(rlist, self.required):
@@ -267,10 +264,10 @@ class StrongSpotsAnalyser(object):
         fig = pyplot.figure()
         ax = fig.add_subplot(111)
         ax.set_title("Spot count per image")
-        for j in range(len(spot_count_per_image)):
+        for j, spots in enumerate(spot_count_per_image):
             ax.scatter(
-                list(range(len(spot_count_per_image[j]))),
-                spot_count_per_image[j],
+                list(range(len(spots))),
+                spots,
                 s=5,
                 color=colours[j],
                 marker="o",
@@ -337,8 +334,6 @@ class CentroidAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reflection centroids")
         if not ensure_required(rlist, self.required):
@@ -651,8 +646,6 @@ class BackgroundAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the relfection background. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reflection backgrounds")
         if not ensure_required(rlist, self.required):
@@ -877,8 +870,6 @@ class IntensityAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reflection centroids. """
-        from dials.util.command_line import Command
-
         # FIXME Do the same and a comparison for intensity.prf
 
         # Check we have the required fields
@@ -1028,8 +1019,6 @@ class ReferenceProfileAnalyser(object):
 
     def __call__(self, rlist):
         """ Analyse the reference profiles. """
-        from dials.util.command_line import Command
-
         # Check we have the required fields
         print("Analysing reference profiles")
         if not ensure_required(rlist, self.required):
