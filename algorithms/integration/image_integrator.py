@@ -5,6 +5,14 @@ import platform
 from time import time
 
 import dials.algorithms.integration
+from dials.algorithms.integration.processor import job
+from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
+from dials.array_family import flex
+from dials.model.data import make_image
+from dials.model.data import MultiPanelImageVolume
+from dials.model.data import ImageVolume
+from dials.util import log
+from dials.util.mp import multi_node_parallel_map
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +57,6 @@ class ProcessorImageBase(object):
 
         :return: The processing results
         """
-        from dials.util.mp import multi_node_parallel_map
-
         start_time = time()
         self.manager.initialize()
         mp_method = self.manager.params.integration.mp.method
@@ -80,8 +86,6 @@ class ProcessorImageBase(object):
                 result[0].data = None
 
             def execute_task(task):
-                from dials.util import log
-
                 log.config_simple_cached()
                 result = task()
                 handlers = logging.getLogger("dials").handlers
@@ -127,8 +131,6 @@ class Result(object):
 
 class Dataset(object):
     def __init__(self, frames, size):
-        from dials.array_family import flex
-
         self.frames = frames
         nframes = frames[1] - frames[0]
         self.data = []
@@ -138,8 +140,6 @@ class Dataset(object):
             self.mask.append(flex.bool(flex.grid(nframes, sz[0], sz[1])))
 
     def set_image(self, index, data, mask):
-        from dials.array_family import flex
-
         for d1, d2 in zip(self.data, data):
             h, w = d2.all()
             d2.reshape(flex.grid(1, h, w))
@@ -179,11 +179,6 @@ class Task(object):
 
         :return: The processed data
         """
-        from dials.model.data import make_image
-        from dials.model.data import MultiPanelImageVolume
-        from dials.model.data import ImageVolume
-        from dials.algorithms.integration.processor import job
-
         # Set the job index
         job.index = self.index
 
@@ -297,10 +292,6 @@ class ManagerImage(object):
         """
         Initialise the processing
         """
-        from dials_algorithms_integration_integrator_ext import (
-            ReflectionManagerPerImage,
-        )
-
         # Get the start time
         start_time = time()
 
@@ -444,8 +435,6 @@ class InitializerRot(object):
         """
         Do some pre-processing.
         """
-        from dials.array_family import flex
-
         # Compute some reflection properties
         reflections.compute_zeta_multi(self.experiments)
         reflections.compute_d(self.experiments)
@@ -480,171 +469,3 @@ class FinalizerRot(object):
 
         # Compute the corrections
         reflections.compute_corrections(self.experiments)
-
-
-class ImageIntegratorExecutor(object):
-    def __init__(self):
-        pass
-
-    def process(self, image_volume, experiments, reflections):
-        from dials.algorithms.integration.processor import job
-
-        # Compute the partiality
-        reflections.compute_partiality(experiments)
-
-        # Get some info
-        full_value = 0.997
-        fully_recorded = reflections["partiality"] > full_value
-        npart = fully_recorded.count(False)
-        nfull = fully_recorded.count(True)
-        nice = reflections.get_flags(reflections.flags.in_powder_ring).count(True)
-        nint = reflections.get_flags(reflections.flags.dont_integrate).count(False)
-        ntot = len(reflections)
-
-        # Write some output
-        logger.info("")
-        logger.info(" Beginning integration job %d" % job.index)
-        logger.info("")
-        logger.info(
-            " Frames: %d -> %d" % (image_volume.frame0(), image_volume.frame1())
-        )
-        logger.info("")
-        logger.info(" Number of reflections")
-        logger.info("  Partial:     %d" % npart)
-        logger.info("  Full:        %d" % nfull)
-        logger.info("  In ice ring: %d" % nice)
-        logger.info("  Integrate:   %d" % nint)
-        logger.info("  Total:       %d" % ntot)
-        logger.info("")
-
-        # Print a histogram of reflections on frames
-        if image_volume.frame1() - image_volume.frame0() > 1:
-            logger.info(
-                " The following histogram shows the number of reflections predicted"
-            )
-            logger.info(" to have all or part of their intensity on each frame.")
-            logger.info("")
-            logger.info(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
-            logger.info("")
-
-        # Compute the shoebox mask
-        reflections.compute_mask(experiments=experiments, image_volume=image_volume)
-
-        # Compute the background
-        reflections.compute_background(
-            experiments=experiments, image_volume=image_volume
-        )
-
-        # Compute the summed intensity
-        reflections.compute_summed_intensity(image_volume=image_volume)
-
-        # Compute the centroid
-        reflections.compute_centroid(experiments=experiments, image_volume=image_volume)
-
-        # Get some reflection info
-        image_volume.update_reflection_info(reflections)
-
-        # Print some info
-        fmt = " Integrated % 5d (sum) + % 5d (prf) / % 5d reflections"
-        nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
-        nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
-        ntot = len(reflections)
-        logger.info(fmt % (nsum, nprf, ntot))
-
-
-class ImageIntegrator(object):
-    """
-    A class that does integration directly on the image skipping the shoebox
-    creation step.
-    """
-
-    def __init__(self, experiments, reflections, params):
-        """
-        Initialize the integrator
-
-        :param experiments: The experiment list
-        :param reflections: The reflections to process
-        :param params: The parameters to use
-        """
-        # Check all reflections have same imageset and get it
-        imageset = experiments[0].imageset
-        for expr in experiments:
-            assert expr.imageset == imageset, "All experiments must share and imageset"
-
-        # Save some stuff
-        self.experiments = experiments
-        self.reflections = reflections
-        self.params = Parameters.from_phil(params.integration)
-        self.profile_model_report = None
-        self.integration_report = None
-
-    def integrate(self):
-        """
-        Integrate the data
-        """
-        from dials.algorithms.integration.report import IntegrationReport
-        from dials.util.command_line import heading
-
-        # Init the report
-        self.profile_model_report = None
-        self.integration_report = None
-
-        # Print the summary
-        logger.info(
-            "=" * 80
-            + (
-                "\n\n"
-                "Processing reflections\n\n"
-                " Processing the following experiments:\n"
-                "\n"
-                " Experiments: %d\n"
-                " Beams:       %d\n"
-                " Detectors:   %d\n"
-                " Goniometers: %d\n"
-                " Scans:       %d\n"
-                " Crystals:    %d\n"
-                " Imagesets:   %d\n"
-            )
-            % (
-                len(self.experiments),
-                len(self.experiments.beams()),
-                len(self.experiments.detectors()),
-                len(self.experiments.goniometers()),
-                len(self.experiments.scans()),
-                len(self.experiments.crystals()),
-                len(self.experiments.imagesets()),
-            )
-        )
-
-        # Print a heading
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info(heading("Integrating reflections"))
-        logger.info("")
-
-        # Initialise the processing
-        initialize = InitializerRot(self.experiments, self.params)
-        initialize(self.reflections)
-
-        # Construvt the image integrator processor
-        processor = ProcessorImage(self.experiments, self.reflections, self.params)
-        processor.executor = ImageIntegratorExecutor()
-
-        # Do the processing
-        self.reflections, time_info = processor.process()
-
-        # Finalise the processing
-        finalize = FinalizerRot(self.experiments, self.params)
-        finalize(self.reflections)
-
-        # Create the integration report
-        self.integration_report = IntegrationReport(self.experiments, self.reflections)
-        logger.info("")
-        logger.info(self.integration_report.as_str(prefix=" "))
-
-        # Print the time info
-        logger.info(str(time_info))
-        logger.info("")
-
-        # Return the reflections
-        return self.reflections

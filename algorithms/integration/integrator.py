@@ -19,7 +19,6 @@ from dials.algorithms.integration.processor import ProcessorSingle2D
 from dials.algorithms.integration.processor import ProcessorStills
 from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
-from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials.array_family import flex
 from dials.util import phil
 from dials.util import Sorry
@@ -31,7 +30,6 @@ __all__ = [
     "FinalizerBase",
     "FinalizerRot",
     "FinalizerStills",
-    "ImageIntegrator",
     "InitializerRot",
     "InitializerStills",
     "Integrator",
@@ -43,7 +41,6 @@ __all__ = [
     "IntegratorFlat3D",
     "IntegratorSingle2D",
     "IntegratorStills",
-    "IntegratorVolume",
     "JobList",
     "Parameters",
     "Processor2D",
@@ -167,7 +164,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills volume 3d_threaded
+      integrator = *auto 3d flat3d 2d single2d stills 3d_threaded
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -1349,14 +1346,6 @@ class IntegratorStills(Integrator):
     FinalizerClass = FinalizerStills
 
 
-class IntegratorVolume(ImageIntegrator):
-    """
-    Volume integrator
-    """
-
-    pass
-
-
 class Integrator3DThreaded(object):
     """
     Integrator for 3D algorithms
@@ -1620,8 +1609,6 @@ class IntegratorFactory(object):
             IntegratorClass = IntegratorSingle2D
         elif params.integration.integrator == "stills":
             IntegratorClass = IntegratorStills
-        elif params.integration.integrator == "volume":
-            IntegratorClass = IntegratorVolume
         elif params.integration.integrator == "3d_threaded":
             IntegratorClass = Integrator3DThreaded
         else:
