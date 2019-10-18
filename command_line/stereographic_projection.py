@@ -7,6 +7,7 @@ import os
 import sys
 
 import iotbx.phil
+import matplotlib
 from cctbx import crystal, miller
 from cctbx.array_family import flex
 from scitbx import matrix
@@ -308,7 +309,7 @@ def run(args):
             marker_size=params.plot.marker_size,
             font_size=params.plot.font_size,
             gridsize=params.plot.gridsize,
-            label_indices=params.plot.label_indices,
+            label_indices=miller_indices if params.plot.label_indices else False,
             epochs=epochs,
             colour_map=params.plot.colour_map,
         )
@@ -332,16 +333,11 @@ def plot_projections(
     assert [filename, show].count(None) < 2
     projections_all = projections
 
-    try:
-        import matplotlib
-
-        if not show:
-            # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
-            matplotlib.use("Agg")  # use a non-interactive backend
-        from matplotlib import pyplot
-        from matplotlib import pylab
-    except ImportError:
-        raise Sorry("matplotlib must be installed to generate a plot.")
+    if not show:
+        # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+        matplotlib.use("Agg")  # use a non-interactive backend
+    from matplotlib import pyplot
+    from matplotlib import pylab
 
     if epochs is not None and colour_map is not None:
         epochs = flex.double(epochs)
@@ -380,7 +376,7 @@ def plot_projections(
                 edgecolors="none",
             )
             if label_indices:
-                for j, (hkl, proj) in enumerate(zip(miller_indices, projections)):
+                for j, (hkl, proj) in enumerate(zip(label_indices, projections)):
                     # hack to not write two labels on top of each other
                     p1, p2 = (projections - proj).parts()
                     if (flex.sqrt(flex.pow2(p1) + flex.pow2(p2)) < 1e-3).iselection()[
