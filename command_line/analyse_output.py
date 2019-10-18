@@ -721,8 +721,10 @@ class CentroidAnalyser(object):
         xo, yo, zo = rlist["xyzobs.px.value"].parts()
         dx = xc - xo
         dy = yc - yo
+        dz = zc - zo
         limits_x = (math.floor(flex.min(dx)), math.ceil(flex.max(dx)))
         limits_y = (math.floor(flex.min(dy)), math.ceil(flex.max(dy)))
+        limits_z = (math.floor(flex.min(dz)), math.ceil(flex.max(dz)))
 
         generate_plot(
             os.path.join(self.directory, "centroid_xy_residuals.png"),
@@ -750,15 +752,7 @@ class CentroidAnalyser(object):
                 dz.as_numpy_array(), dy.as_numpy_array(), c="b", alpha=0.3
             )
             ax.set_aspect("equal")
-
             return ax_zy
-
-        _, yc, zc = rlist["xyzcal.px"].parts()
-        _, yo, zo = rlist["xyzobs.px.value"].parts()
-        dy = yc - yo
-        dz = zc - zo
-        limits_x = (math.floor(flex.min(dz)), math.ceil(flex.max(dz)))
-        limits_y = (math.floor(flex.min(dy)), math.ceil(flex.max(dy)))
 
         generate_plot(
             os.path.join(self.directory, "centroid_zy_residuals.png"),
@@ -768,7 +762,7 @@ class CentroidAnalyser(object):
                 "grid_size": self.grid_size,
                 "xlabel": "Z (images)",
                 "ylabel": "Y (pixels)",
-                "limits_x": limits_x,
+                "limits_x": limits_z,
                 "limits_y": limits_y,
             },
             _residuals_zy_plot,
@@ -786,15 +780,7 @@ class CentroidAnalyser(object):
                 dx.as_numpy_array(), dz.as_numpy_array(), c="b", alpha=0.3
             )
             ax.set_aspect("equal")
-
             return ax_xz
-
-        xc, yc, zc = rlist["xyzcal.px"].parts()
-        xo, yo, zo = rlist["xyzobs.px.value"].parts()
-        dx = xc - xo
-        dz = zc - zo
-        limits_x = (math.floor(flex.min(dx)), math.ceil(flex.max(dx)))
-        limits_y = (math.floor(flex.min(dz)), math.ceil(flex.max(dz)))
 
         generate_plot(
             os.path.join(self.directory, "centroid_xz_residuals.png"),
@@ -805,7 +791,7 @@ class CentroidAnalyser(object):
                 "xlabel": "X (pixels)",
                 "ylabel": "Z (images)",
                 "limits_x": limits_x,
-                "limits_y": limits_y,
+                "limits_y": limits_z,
             },
             _residuals_xz_plot,
         )
