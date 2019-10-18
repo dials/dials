@@ -568,7 +568,7 @@ class ProfileModelCalculator(object):
 
             self._sigma_b = beam_divergence.sigma()
 
-            logger.info("Calculating E.S.D Reflecting Range.")
+            logger.info("Calculating E.S.D Reflecting Range (mosaicity).")
             reflecting_range = ComputeEsdReflectingRange(
                 crystal,
                 beam,
