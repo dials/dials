@@ -910,3 +910,26 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
         result.stderr.strip()
         == "Target unit cell must be provided for real_space_grid_search"
     )
+
+
+@pytest.mark.xfail(
+    raises=AssertionError, reason="https://github.com/dials/dials/issues/977"
+)
+def test_index_known_orientation(dials_data, tmpdir):
+    data_dir = dials_data("vmxi_proteinase_k_sweeps")
+    experiments_json = data_dir.join("experiments_0.json").strpath
+    reflections = data_dir.join("reflections_0.pickle").strpath
+
+    expected_unit_cell = uctbx.unit_cell((68.395, 68.395, 104, 90, 90, 90))
+    expected_rmsds = (0.06, 0.05, 0.0005)
+    expected_hall_symbol = " P 4"
+
+    run_indexing(
+        reflections,
+        experiments_json,
+        tmpdir,
+        [],
+        expected_unit_cell,
+        expected_rmsds,
+        expected_hall_symbol,
+    )
