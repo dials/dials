@@ -892,3 +892,21 @@ def test_index_ED_still_low_res_spot_match(dials_data, tmpdir, indexer_type, fix
         expected_rmsds,
         expected_hall_symbol,
     )
+
+
+def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
+    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+    experiments_json = os.path.join(data_dir, "experiments_import.json")
+    pickle_path = os.path.join(data_dir, "full.pickle")
+    commands = [
+        "dials.index",
+        experiments_json,
+        pickle_path,
+        "indexing.method=real_space_grid_search",
+    ]
+    result = procrunner.run(commands, working_directory=tmpdir)
+    assert result.stderr
+    assert (
+        result.stderr.strip()
+        == "Target unit cell must be provided for real_space_grid_search"
+    )
