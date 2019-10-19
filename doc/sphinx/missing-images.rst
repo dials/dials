@@ -1,6 +1,6 @@
-+++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++
 Processing Sequences with Missing Images
-+++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++
 
 DIALS treats sequences as a contiguous set of rotation images, and in some circumstances deviations from this will cause problems. A clear example of this is having one or more "bad" images in your data set - simply removing them *will not* be enough to allow processing to complete smoothly.
 
