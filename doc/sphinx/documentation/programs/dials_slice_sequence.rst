@@ -1,5 +1,5 @@
 dials.slice_sequence
-=================
+====================
 
 Introduction
 ------------
