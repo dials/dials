@@ -7,6 +7,7 @@ import operator
 
 import libtbx.phil
 from cctbx import miller
+from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
 from dxtbx.model import Crystal
 from scitbx import matrix
@@ -135,6 +136,11 @@ class LowResSpotMatch(Strategy):
         super(LowResSpotMatch, self).__init__(params=params, *args, **kwargs)
         self._target_symmetry_primitive = target_symmetry_primitive
         self._max_lattices = max_lattices
+
+        if target_symmetry_primitive is None:
+            raise DialsIndexError(
+                "Target unit cell and space group must be provided for low_res_spot_match"
+            )
 
         # Set reciprocal space orthogonalisation matrix
         uc = self._target_symmetry_primitive.unit_cell()
