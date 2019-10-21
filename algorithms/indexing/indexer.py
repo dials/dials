@@ -17,7 +17,6 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dials.util import Sorry
 from dxtbx.model import ExperimentList
 
 logger = logging.getLogger(__name__)
@@ -380,13 +379,13 @@ class Indexer(object):
             for expt in experiments:
                 if expt.goniometer is None or expt.scan is None or expt.scan.is_still():
                     if has_sequences:
-                        raise Sorry(
+                        raise ValueError(
                             "Please provide only stills or only sequences, not both"
                         )
                     has_stills = True
                 else:
                     if has_stills:
-                        raise Sorry(
+                        raise ValueError(
                             "Please provide only stills or only sequences, not both"
                         )
                     has_sequences = True
@@ -541,7 +540,7 @@ class Indexer(object):
                 try:
                     new = self.find_lattices()
                     experiments.extend(new)
-                except Sorry:
+                except DialsIndexError:
                     logger.info("Indexing remaining reflections failed")
 
             if self.params.refinement_protocol.d_min_step is libtbx.Auto:
