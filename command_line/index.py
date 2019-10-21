@@ -147,7 +147,8 @@ def index(experiments, reflections, params):
     if len(reflections) == 0:
         raise ValueError("No reflection lists found in input")
     elif len(reflections) == 1:
-        reflections[0]["imageset_id"] = reflections[0]["id"]
+        if "imageset_id" not in reflections[0]:
+            reflections[0]["imageset_id"] = reflections[0]["id"]
     elif len(reflections) > 1:
         assert len(reflections) == len(experiments)
         for i in range(len(reflections)):
