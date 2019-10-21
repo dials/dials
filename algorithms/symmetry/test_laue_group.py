@@ -5,7 +5,7 @@ import pytest
 from cctbx import miller
 from cctbx import sgtbx
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
-from dials.algorithms.symmetry.determine_space_group import determine_space_group
+from dials.algorithms.symmetry.laue_group import LaueGroupAnalysis
 
 
 @pytest.mark.parametrize("space_group", ["P2", "P3", "P6", "R3:h", "I23"][:])
@@ -25,7 +25,7 @@ def test_determine_space_group(space_group):
     # needed to give vaguely sensible E_cc_true values
     intensities = intensities.customized_copy(sigmas=intensities.data() / 50)
     intensities.set_info(miller.array_info(source="fake", source_type="mtz"))
-    result = determine_space_group([intensities], normalisation=None)
+    result = LaueGroupAnalysis([intensities], normalisation=None)
     print(result)
     assert (
         result.best_solution.subgroup["best_subsym"].space_group()

@@ -19,7 +19,7 @@ from dials.algorithms.indexing.symmetry import find_matching_symmetry
 from dials.algorithms.symmetry.cosym import target
 from dials.algorithms.symmetry.cosym import engine
 from dials.algorithms.symmetry import symmetry_base
-from dials.algorithms.symmetry.determine_space_group import ScoreCorrelationCoefficient
+from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
 from libtbx import Auto
 from libtbx import table_utils

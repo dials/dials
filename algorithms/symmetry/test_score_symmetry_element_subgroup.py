@@ -5,7 +5,7 @@ import pytest
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dials.algorithms.symmetry.cosym._generate_test_data import generate_intensities
-from dials.algorithms.symmetry.determine_space_group import (
+from dials.algorithms.symmetry.laue_group import (
     ScoreCorrelationCoefficient,
     ScoreSubGroup,
     ScoreSymmetryElement,

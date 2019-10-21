@@ -408,11 +408,20 @@ class Resolutionizer(object):
         indices = flex.miller_index()
         variances = flex.double()
         for table in reflection_tables:
-            table = filter_reflection_table(table, ["scale"], partiality_threshold=0.4)
-            batches.extend(table["batch"])
-            intensities.extend(table["intensity.scale.value"])
+            if "intensity.scale.value" in table:
+                table = filter_reflection_table(
+                    table, ["scale"], partiality_threshold=0.4
+                )
+                intensities.extend(table["intensity.scale.value"])
+                variances.extend(table["intensity.scale.variance"])
+            else:
+                table = filter_reflection_table(
+                    table, ["profile"], partiality_threshold=0.4
+                )
+                intensities.extend(table["intensity.prf.value"])
+                variances.extend(table["intensity.prf.variance"])
             indices.extend(table["miller_index"])
-            variances.extend(table["intensity.scale.variance"])
+            batches.extend(table["batch"])
 
         crystal_symmetry = miller.crystal.symmetry(
             unit_cell=determine_best_unit_cell(experiments),
