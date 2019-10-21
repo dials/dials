@@ -211,7 +211,7 @@ class RefinerFactory(object):
             elif exp.scan.get_num_images() == 1:
                 if single_as_still:
                     exps_are_stills.append(True)
-                elif exp.scan.get_oscillation()[1] == 0.0:
+                elif exp.scan.is_still():
                     exps_are_stills.append(True)
                 else:
                     exps_are_stills.append(False)
