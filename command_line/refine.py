@@ -264,6 +264,9 @@ def run_dials_refine(experiments, reflections, params):
     Returns:
         tuple: The refined experiments, the updated reflection table, the
             Refiner object and the refinement history object.
+
+    Raises:
+        dials.util.Sorry: Refinement failed.
     """
 
     # Modify options if necessary
