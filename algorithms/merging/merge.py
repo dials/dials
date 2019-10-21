@@ -24,24 +24,24 @@ from six.moves import cStringIO as StringIO
 logger = logging.getLogger("dials")
 
 
-def prepare_merged_reflection_table(experiments, reflections, d_min=None):
+def prepare_merged_reflection_table(experiments, reflection_table, d_min=None):
     """Filter the data and prepare a reflection table with merged data."""
     if (
-        "inverse_scale_factor" in reflections[0]
-        and "intensity.scale.value" in reflections[0]
+        "inverse_scale_factor" in reflection_table
+        and "intensity.scale.value" in reflection_table
     ):
         logger.info("Performing systematic absence checks on scaled data")
         reflections = filter_reflection_table(
-            reflections[0], intensity_choice=["scale"], d_min=d_min
+            reflection_table, intensity_choice=["scale"], d_min=d_min
         )
         reflections["intensity"] = reflections["intensity.scale.value"]
         reflections["variance"] = reflections["intensity.scale.variance"]
-    elif "intensity.prf.value" in reflections[0]:
+    elif "intensity.prf.value" in reflection_table:
         logger.info(
             "Performing systematic absence checks on unscaled profile-integrated data"
         )
         reflections = filter_reflection_table(
-            reflections[0], intensity_choice=["profile"], d_min=d_min
+            reflection_table, intensity_choice=["profile"], d_min=d_min
         )
         reflections["intensity"] = reflections["intensity.prf.value"]
         reflections["variance"] = reflections["intensity.prf.variance"]
@@ -50,7 +50,7 @@ def prepare_merged_reflection_table(experiments, reflections, d_min=None):
             "Performing systematic absence checks on unscaled summation-integrated data"
         )
         reflections = filter_reflection_table(
-            reflections[0], intensity_choice=["sum"], d_min=d_min
+            reflection_table, intensity_choice=["sum"], d_min=d_min
         )
         reflections["intensity"] = reflections["intensity.sum.value"]
         reflections["variance"] = reflections["intensity.sum.variance"]

@@ -189,10 +189,19 @@ def symmetry(experiments, reflection_tables, params=None):
             )
         else:
             d_min = params.d_min
-        merged_reflections = prepare_merged_reflection_table(
-            experiments, reflection_tables, d_min
-        )
 
+        # combine before sys abs test - only triggers if laue_group=None and
+        # multiple input files.
+        if len(reflection_tables) > 1:
+            joint_reflections = flex.reflection_table()
+            for table in reflection_tables:
+                joint_reflections.extend(table)
+        else:
+            joint_reflections = reflection_tables[0]
+
+        merged_reflections = prepare_merged_reflection_table(
+            experiments, joint_reflections, d_min
+        )
         run_systematic_absences_checks(
             experiments,
             merged_reflections,
