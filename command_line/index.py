@@ -138,6 +138,10 @@ def index(experiments, reflections, params):
             reflections (dials.array_family.flex.reflection_table):
                 The indexed reflections
 
+    Raises:
+        ValueError: `reflections` is an empty list or `experiments` contains a
+                    combination of sequence and stills data.
+        dials.algorithms.indexing.DialsIndexError: Indexing failed.
     """
     if experiments.crystals()[0] is not None:
         known_crystal_models = experiments.crystals()
