@@ -908,7 +908,7 @@ def test_real_space_grid_search_no_unit_cell(dials_regression, tmpdir):
     assert result.stderr
     assert (
         result.stderr.strip()
-        == "Target unit cell must be provided for real_space_grid_search"
+        == b"Target unit cell must be provided for real_space_grid_search"
     )
 
 
