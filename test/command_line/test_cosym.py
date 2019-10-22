@@ -5,11 +5,14 @@ import pytest
 import procrunner
 
 from cctbx import sgtbx, uctbx
+import scitbx.matrix
 from dxtbx.serialize import load
+from dxtbx.model import Crystal, Experiment, ExperimentList
 from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.command_line.cosym import cosym
 
 
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
@@ -175,3 +178,84 @@ def test_synthetic(
             )
         assert str(expt.crystal.get_space_group().info()) == str(space_group.info())
         assert expt.crystal.get_space_group() == space_group
+
+
+def test_eliminate_sys_absent():
+    refl = flex.reflection_table()
+    refl["miller_index"] = flex.miller_index(
+        [(-31, -5, -3), (-25, -3, -3), (0, 1, 0), (-42, -8, -2)]
+    )
+    sgi = sgtbx.space_group_info("C121")
+    uc = sgi.any_compatible_unit_cell(volume=1000)
+    B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+    expt = Experiment(crystal=Crystal(B, space_group=sgi.group(), reciprocal=True))
+    reflections = cosym._eliminate_sys_absent([expt], [refl])
+    assert list(reflections[0]["miller_index"]) == [
+        (-31, -5, -3),
+        (-25, -3, -3),
+        (-42, -8, -2),
+    ]
+
+
+def test_map_to_minimum_cell():
+    # Input and expected output
+    input_ucs = [
+        (39.7413, 183.767, 140.649, 90, 90, 90),
+        (40.16, 142.899, 92.4167, 90, 102.48, 90),
+        (180.613, 40.1558, 142.737, 90, 90.0174, 90),
+    ]
+    input_sgs = ["C 2 2 21", "P 1 2 1", "C 1 2 1"]
+    input_hkl = [
+        [(1, -75, -71), (1, -73, -70), (1, -71, -69)],
+        [(14, -37, -36), (-2, -35, -46), (-3, -34, -47)],
+        [(-31, -5, -3), (-25, -3, -3), (-42, -8, -2)],
+    ]
+    expected_ucs = [
+        (39.7413, 94.00755450320204, 140.649, 90.0, 90.0, 77.79717980856927),
+        (40.16, 92.46399390642911, 142.899, 90.0, 90.0, 77.3882749092846),
+        (
+            40.1558,
+            92.51154528306184,
+            142.73699999999997,
+            89.9830147351441,
+            90.0,
+            77.46527404307477,
+        ),
+    ]
+    expected_output_hkl = [
+        [(-1, 37, -71), (-1, 36, -70), (-1, 35, -69)],
+        [(-14, 22, 37), (2, 48, 35), (3, 50, 34)],
+        [(-5, 13, -3), (-3, 11, -3), (-8, 17, -2)],
+    ]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    reflections = []
+    for uc, sg, hkl in zip(input_ucs, input_sgs, input_hkl):
+        uc = uctbx.unit_cell(uc)
+        sg = sgtbx.space_group_info(sg).group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+        refl = flex.reflection_table()
+        refl["miller_index"] = flex.miller_index(hkl)
+        reflections.append(refl)
+
+    # Actually run the method we are testing
+    expts_min, reflections_min = cosym._map_to_minimum_cell(
+        expts, reflections, max_delta=5
+    )
+
+    # Verify that the unit cells have been transformed as expected
+    for expt, uc in zip(expts, expected_ucs):
+        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc)
+
+    # Space group should be set to P1
+    assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
+        1,
+        1,
+        1,
+    ]
+
+    # Verify that the reflections have been reindexed as expected
+    for refl, hkl in zip(reflections, expected_output_hkl):
+        assert list(refl["miller_index"]) == hkl

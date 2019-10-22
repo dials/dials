@@ -1,10 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import random
 import sys
 
 import iotbx.phil
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -15,8 +17,14 @@ from dials.util.multi_dataset_handling import (
 )
 from dials.util.observer import Subject
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
+from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.version import dials_version
 from dials.algorithms.symmetry.cosym.observers import register_default_cosym_observers
 from dials.algorithms.symmetry.cosym import CosymAnalysis
+from dials.algorithms.clustering.unit_cell import UnitCellCluster
+from xfel.clustering.cluster_groups import unit_cell_info
+
 
 logger = logging.getLogger("dials.command_line.cosym")
 
@@ -76,11 +84,6 @@ class cosym(Subject):
             experiments, reflections
         )
 
-        # map experiments and reflections to primitive setting
-        self._experiments, self._reflections = self._map_to_primitive(
-            self._experiments, self._reflections
-        )
-
         if len(self._experiments) > 1:
             # perform unit cell clustering
             identifiers = self._unit_cell_clustering(self._experiments)
@@ -94,8 +97,15 @@ class cosym(Subject):
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
-        self._experiments, self._reflections = self._map_to_minimum_cell(
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
+        self._reflections = self._eliminate_sys_absent(
             self._experiments, self._reflections
+        )
+
+        self._experiments, self._reflections = self._map_to_minimum_cell(
+            self._experiments, self._reflections, params.lattice_symmetry_max_delta
         )
 
         # transform models into miller arrays
@@ -193,33 +203,24 @@ class cosym(Subject):
                 )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
 
-    def _map_to_primitive(self, experiments, reflections):
-        identifiers = []
-
-        for i, (expt, refl) in enumerate(zip(experiments, reflections)):
-            cb_op_to_primitive = (
-                expt.crystal.get_crystal_symmetry().change_of_basis_op_to_primitive_setting()
-            )
+    @staticmethod
+    def _eliminate_sys_absent(experiments, reflections):
+        for i, expt in enumerate(experiments):
             if expt.crystal.get_space_group().n_ltr() > 1:
                 effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
                     anomalous_flag=True
                 )
-                sys_absent_flags = effective_group.is_sys_absent(refl["miller_index"])
+                sys_absent_flags = effective_group.is_sys_absent(
+                    reflections[i]["miller_index"]
+                )
                 if sys_absent_flags.count(True):
-                    refl = refl.select(~sys_absent_flags)
-                    reflections[i] = refl
+                    reflections[i] = reflections[i].select(~sys_absent_flags)
                     logger.info(
                         "Eliminating %i systematic absences for experiment %s",
                         sys_absent_flags.count(True),
                         expt.identifier,
                     )
-            refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
-            expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
-            identifiers.append(expt.identifier)
-
-        return select_datasets_on_ids(
-            experiments, reflections, use_datasets=identifiers
-        )
+        return reflections
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []
@@ -232,16 +233,24 @@ class cosym(Subject):
             experiments, reflections, use_datasets=identifiers
         )
 
-    def _map_to_minimum_cell(self, experiments, reflections):
-        cb_op_ref_min = (
-            experiments[0]
-            .crystal.get_crystal_symmetry()
-            .change_of_basis_op_to_minimum_cell()
-        )
+    @staticmethod
+    def _map_to_minimum_cell(experiments, reflections, max_delta):
+        # Map to the minimum cell via the best cell, which seems to guarantee that the
+        # resulting minimum cells are consistent
         for expt, refl in zip(experiments, reflections):
-            expt.crystal = expt.crystal.change_basis(cb_op_ref_min)
+            groups = metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            group = groups.result_groups[0]
+            cb_op_best_to_min = group[
+                "best_subsym"
+            ].change_of_basis_op_to_minimum_cell()
+            cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+            refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
+            expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
             expt.crystal.set_space_group(sgtbx.space_group())
-            refl["miller_index"] = cb_op_ref_min.apply(refl["miller_index"])
         return experiments, reflections
 
     @Subject.notify_event("performed_unit_cell_clustering")
@@ -250,8 +259,6 @@ class cosym(Subject):
             expt.crystal.get_crystal_symmetry() for expt in experiments
         ]
         lattice_ids = experiments.identifiers()
-        from dials.algorithms.clustering.unit_cell import UnitCellCluster
-        from xfel.clustering.cluster_groups import unit_cell_info
 
         ucs = UnitCellCluster.from_crystal_symmetries(
             crystal_symmetries, lattice_ids=lattice_ids
@@ -301,9 +308,6 @@ Examples::
 
 
 def run(args):
-    from dials.util import log
-    from dials.util.options import OptionParser
-
     usage = "dials.cosym [options] models.expt observations.refl"
 
     parser = OptionParser(
@@ -322,8 +326,6 @@ def run(args):
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
 
-    from dials.util.version import dials_version
-
     logger.info(dials_version())
 
     # Log the diff phil
@@ -333,8 +335,6 @@ def run(args):
         logger.info(diff_phil)
 
     if params.seed is not None:
-        import random
-
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
 
