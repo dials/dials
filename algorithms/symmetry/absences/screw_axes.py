@@ -40,7 +40,7 @@ class ScrewAxisObserver(Observer):
             screw_axes_graphs=self.data["screw_axes"],
         )
         with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 class ScrewAxis(Subject):
