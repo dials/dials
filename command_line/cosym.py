@@ -196,18 +196,23 @@ class cosym(Subject):
     def _map_to_primitive(self, experiments, reflections):
         identifiers = []
 
-        for expt, refl in zip(experiments, reflections):
+        for i, (expt, refl) in enumerate(zip(experiments, reflections)):
             cb_op_to_primitive = (
                 expt.crystal.get_crystal_symmetry().change_of_basis_op_to_primitive_setting()
             )
-            sel = expt.crystal.get_space_group().is_sys_absent(refl["miller_index"])
-            if sel.count(True):
-                logger.info(
-                    "Eliminating %i systematic absences for experiment %s",
-                    sel.count(True),
-                    expt.identifier,
+            if expt.crystal.get_space_group().n_ltr() > 1:
+                effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
+                    anomalous_flag=True
                 )
-                refl = refl.select(~sel)
+                sys_absent_flags = effective_group.is_sys_absent(refl["miller_index"])
+                if sys_absent_flags.count(True):
+                    refl = refl.select(~sys_absent_flags)
+                    reflections[i] = refl
+                    logger.info(
+                        "Eliminating %i systematic absences for experiment %s",
+                        sys_absent_flags.count(True),
+                        expt.identifier,
+                    )
             refl["miller_index"] = cb_op_to_primitive.apply(refl["miller_index"])
             expt.crystal = expt.crystal.change_basis(cb_op_to_primitive)
             identifiers.append(expt.identifier)
