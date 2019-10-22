@@ -161,6 +161,9 @@ class MaskGenerator(object):
                     else:
                         trusted_mask = trusted_mask | frame_mask
 
+                    if trusted_mask.count(False) == 0:
+                        break
+
                 mask = trusted_mask
             else:
                 mask = flex.bool(flex.grid(im.all()), True)
