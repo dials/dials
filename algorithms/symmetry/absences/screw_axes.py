@@ -39,8 +39,8 @@ class ScrewAxisObserver(Observer):
             page_title="DIALS systematic absences report",
             screw_axes_graphs=self.data["screw_axes"],
         )
-        with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+        with open(filename, "w") as f:
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 class ScrewAxis(Subject):

@@ -59,8 +59,8 @@ class CosymHTMLGenerator(Observer):
             unit_cell_graphs=self.data["unit_cell_graphs"],
             symmetry_analysis=self.data["symmetry_analysis"],
         )
-        with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+        with open(filename, "w") as f:
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 @singleton
