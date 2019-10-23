@@ -78,3 +78,23 @@ def test_filter_reflections_printing_analysis(reflections, tmpdir):
         ["dials.filter_reflections", reflections], working_directory=tmpdir
     )
     assert not result.returncode and not result.stderr
+
+
+def test_filter_ice_rings(dials_data, tmpdir):
+    directory = dials_data("centroid_test_data")
+    expt_filename = directory.join("imported_experiments.json").strpath
+    refl_filename = directory.join("strong.pickle").strpath
+    result = procrunner.run(
+        [
+            "dials.filter_reflections",
+            "ice_rings.filter=True",
+            expt_filename,
+            refl_filename,
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    input_refl = flex.reflection_table.from_file(refl_filename)
+    filtered_refl = flex.reflection_table.from_file(tmpdir.join("filtered.refl"))
+    assert len(filtered_refl) < len(input_refl)
+    assert len(filtered_refl) == 615

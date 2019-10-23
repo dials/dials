@@ -315,6 +315,8 @@ def run_filtering(params, experiments, reflections):
             d_spacings = reflections["d"]
         else:
             if "rlp" not in reflections:
+                if "xyzobs.mm.value" not in reflections:
+                    reflections.centroid_px_to_mm(experiments)
                 reflections.map_centroids_to_reciprocal_space(experiments)
             d_star_sq = flex.pow2(reflections["rlp"].norms())
             d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
