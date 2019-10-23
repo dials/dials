@@ -5,15 +5,30 @@ for repository in cctbx_project dxtbx; do
     echo Cleaning existing cctbx_project directory
     rm -rf $HOME/build_dials/modules/${repository}
   fi
-  if [ ! -e $HOME/build_dials/modules/${repository} ]; then
-    echo Cloning ${repository} from scratch
-    git clone https://github.com/cctbx/${repository}.git --depth=1 $HOME/build_dials/modules/${repository}
-  fi
-
-  echo Checking out latest ${repository} commit
-  cd $HOME/build_dials/modules/${repository} || exit 1
-  git fetch origin master --depth=1 || exit 2
-  git checkout FETCH_HEAD || exit 3
-  echo -n "${repository} is at commit "
-  git show --oneline -s --no-abbrev-commit || exit 4
 done
+
+if [ ! -e $HOME/build_dials/modules/cctbx_project ]; then
+  echo Cloning cctbx_project from scratch
+  git clone https://github.com/dials/cctbx.git -b dials-2.0 --depth=1 $HOME/build_dials/modules/cctbx_project
+fi
+
+if [ ! -e $HOME/build_dials/modules/dxtbx ]; then
+  echo Cloning dxtbx from scratch
+  git clone https://github.com/dials/dxtbx.git -b dials-next --depth=1 $HOME/build_dials/modules/dxtbx
+fi
+
+cd $HOME/build_dials/modules/cctbx_project || exit 1
+git remote rm origin
+git remote add origin https://github.com/dials/cctbx.git
+git fetch origin dials-2.0 --depth=1 || exit 2
+git checkout FETCH_HEAD || exit 3
+echo CCTBX is at commit:
+git show --oneline -s --no-abbrev-commit || exit 4
+
+cd $HOME/build_dials/modules/dxtbx || exit 1
+git remote rm origin
+git remote add origin https://github.com/dials/dxtbx.git
+git fetch origin dials-next --depth=1 || exit 2
+git checkout FETCH_HEAD || exit 3
+echo DXTBX is at commit:
+git show --oneline -s --no-abbrev-commit || exit 4
