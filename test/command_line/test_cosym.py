@@ -247,7 +247,7 @@ def test_map_to_minimum_cell():
 
     # Verify that the unit cells have been transformed as expected
     for expt, uc in zip(expts, expected_ucs):
-        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc)
+        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
 
     # Space group should be set to P1
     assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
@@ -257,5 +257,8 @@ def test_map_to_minimum_cell():
     ]
 
     # Verify that the reflections have been reindexed as expected
-    for refl, hkl in zip(reflections, expected_output_hkl):
-        assert list(refl["miller_index"]) == hkl
+    # Because the exact choice of minimum cell can be platform-dependent,
+    # compare the magnitude, but not the sign of the output hkl values
+    for refl, expected_hkl in zip(reflections, expected_output_hkl):
+        for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
+            assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
