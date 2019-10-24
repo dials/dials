@@ -80,21 +80,45 @@ def test_filter_reflections_printing_analysis(reflections, tmpdir):
     assert not result.returncode and not result.stderr
 
 
-def test_filter_ice_rings(dials_data, tmpdir):
-    directory = dials_data("centroid_test_data")
-    expt_filename = directory.join("imported_experiments.json").strpath
-    refl_filename = directory.join("strong.pickle").strpath
+@pytest.mark.parametrize(
+    "dirname,expt_filename,refl_filename,args,expected",
+    [
+        (
+            "centroid_test_data",
+            "imported_experiments.json",
+            "strong.pickle",
+            ["ice_rings.filter=True"],
+            615,
+        ),
+        (
+            "centroid_test_data",
+            "imported_experiments.json",
+            "strong.pickle",
+            ["d_min=3.1", "d_max=20"],
+            153,
+        ),
+        (
+            "centroid_test_data",
+            "experiments.json",
+            "integrated.refl",
+            ["d_min=2", "d_max=20"],
+            371,
+        ),
+    ],
+)
+def test_filter_reflections(
+    dirname, expt_filename, refl_filename, args, expected, dials_data, tmpdir
+):
+    directory = dials_data(dirname)
     result = procrunner.run(
         [
             "dials.filter_reflections",
-            "ice_rings.filter=True",
-            expt_filename,
-            refl_filename,
-        ],
+            directory.join(expt_filename).strpath,
+            directory.join(refl_filename).strpath,
+        ]
+        + args,
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    input_refl = flex.reflection_table.from_file(refl_filename)
     filtered_refl = flex.reflection_table.from_file(tmpdir.join("filtered.refl"))
-    assert len(filtered_refl) < len(input_refl)
-    assert len(filtered_refl) == 615
+    assert len(filtered_refl) == expected
