@@ -428,44 +428,50 @@ includes the application of the LP correction to the intensities. Then
 summary tables are printed giving quality statistics first by frame, and
 then by resolution bin.
 
-Symmetry and Scaling
-^^^^^^^^^^^^^^^^^^^^
 
-At this point, we have the option to continue processing with dials or to
-export the integrated data to do the symmetry and scaling steps with the
-CCP4 programs pointless_ and aimless_. For instructions on how to export the
-data for further processing, see `Exporting as MTZ`_. In this tutorial we shall
-continue to process with dials.
+Symmetry analysis
+^^^^^^^^^^^^^^^^^
 
-Checking the symmetry
-^^^^^^^^^^^^^^^^^^^^^
+After integration, further assessments of the crystal symmetry are possible.
+Previously, we made an assessment of the lattice symmetry (i.e. the symmetry
+of the diffraction spot positions), however now we have determined a set of
+intensity values and can investigate the full symmetry of the diffraction
+pattern (i.e. spot positions and intensities). The symmetry analysis consists
+of two stages, determining the laue group symmetry and analysing absent
+reflections to suggest the space group symmetry.
 
-After integration we can return to our hypothesis of the space group of the
-crystal. Although we made an assessment of that when we chose a Bravais lattice
-after indexing, we now have better, background-subtracted, values for the
-intensities, and for all reflections, not just the strong spots. So, it is
-prudent to repeat the assessment to see if there is any indication that our
-initial assessment should be revised.::
+.. dials_tutorial_include:: betalactamase/dials.symmetry.cmd
 
-  dials.symmetry integrated.expt integrated.refl
+.. container:: toggle
 
-The symmetry analysis scores all possible symmetry operations by looking at
-the intensities of reflections that would be equivalent under that operation.
-Then the symmetry operations are combined to score potential space groups::
+    .. container:: header
 
-  Scoring all possible sub-groups
-  ---------------------------------------------------------------------------------------------
-  Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
-  ---------------------------------------------------------------------------------------------
-  C 1 2/m 1        ***  0.913        9.76    9.76   0.00   0.98   0.00  0.0    -a,b,-c
-  P -1                  0.087        0.09    9.81   9.72   0.98   0.97  0.0    -x-y,-x+y,-z
-  ---------------------------------------------------------------------------------------------
-  Best solution: C 1 2/m 1
+        **Show/Hide Log**
 
-Here we see clearly that the best solution is given by :samp:`C 1 2/m 1`, with
-a high likelihood, in agreement with the result from
-:samp:`dials.refine_bravais_settings`. As we remain confident with this choice,
-we now continue to scaling.
+    .. dials_tutorial_include:: betalactamase/dials.symmetry.log
+        :linenos:
+
+The laue group symmetry is the 3D rotational symmetry of the diffraction
+pattern plus inversion symmetry (due to Friedel's law that I(h,k,l) = I(-h,-k,-l)
+when absorption is negligible). To determine the laue group symmetry, all
+possible symmetry operations of the lattice are scored by comparing the
+correlation of reflection intensities that would be equivalent under a given
+operation. The scores for individual symmetry operations are then combined to
+score the potential laue groups.
+
+.. dials_tutorial_include:: betalactamase/dials.symmetry.log
+    :start-at: Scoring all possible sub-groups
+    :end-before: Analysing systematic absences
+
+Here we see clearly that the best solution is given by C 1 2/m 1, with
+a high likelihood. For macromolecules, their chirality means that mirror symmetry
+is not allowed (the 'm' in C 1 2/m 1), therefore the determined symmetry
+relevant for MX at this point is C2. For some laue groups, there are multiple
+space groups possible due additional translational symmetries
+(e.g P 2, P 2\ :sub:`1` for laue group P2/m), which requires an additional
+analysis of systematic absences. However this is not the case for C 1 2/m 1,
+therefore the final result of the analysis is the space group C2, in agreement
+with the result from :samp:`dials.refine_bravais_settings`.
 
 Scaling
 ^^^^^^^
@@ -481,75 +487,56 @@ representative of the 'true' scattering intensity from the contents of the unit
 cell.
 
 During scaling, a scaling model is created, from which scale factors are calculated
-for each reflection. By default, three components are used to create a physical model
-for scaling, in a similar manner to that used in the program aimless_.
+for each reflection. Three physically motivated corrections are used to create an
+scaling model, in a similar manner to that used in the program aimless_.
 This model consists of a smoothly varying scale factor as a
 function of rotation angle, a smoothly varying B-factor to
 account for radiation damage as a function of rotation angle
 and an absorption surface correction, dependent on the direction of the incoming
-and scattered beam vector relative to the crystal. In this example, we shall
-scale the dataset using the output of dials.symmetry with a resolution cutoff of
-1.4 Angstrom::
+and scattered beam vector relative to the crystal.
 
-  dials.scale symmetrized.expt symmetrized.refl d_min=1.4
+.. dials_tutorial_include:: betalactamase/dials.scale.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: betalactamase/dials.scale.log
+        :linenos:
 
 As can be seen from the output text, 70 parameters are used to parameterise the
 scaling model for this dataset. Outlier rejection is performed at several stages,
 as outliers have a disproportionately large effect during scaling and can lead
 to poor scaling results. During scaling, the distribution of the intensity
-uncertainties are also analysed and an error model is optimised to transform the
-intensity errors to an expected normal distribution. At the end of the output,
+uncertainties are also analysed and a correction is applied based on a prior
+expectation of the intensity error distribution. At the end of the output,
 a table and summary of the merging statistics are presented, which give indications
-of the quality of the scaled dataset::
+of the quality of the scaled dataset:
 
-             ----------Overall merging statistics (non-anomalous)----------
+.. dials_tutorial_include:: betalactamase/dials.scale.log
+    :start-at: ----------Merging statistics----------
+    :end-before: ----------Resolution cutoff estimates----------
 
-  Resolution: 35.33 - 1.40
-  Observations: 276800
-  Unique reflections: 41135
-  Redundancy: 6.7
-  Completeness: 94.11%
-  Mean intensity: 82.6
-  Mean I/sigma(I): 13.8
-  R-merge: 0.065
-  R-meas:  0.071
-  R-pim:   0.027
+Looking at the resolution-dependent merging statistics, we can see that the
+completeness falls significantly beyond 1.4 Angstrom resolution.
+If desired, a resolution cutoff can be applied and the
+data rescaled (using the output of the previous scaling run as input to the
+next run to load the existing state of the scaling model):
 
-The merging statistics, as well as additional output plots, are output into
-a html report called :samp:`scaling.html`. This can be opened in your browser -
-nativigate to the section "scaling model plots" and take a look.
+.. dials_tutorial_include:: betalactamase/dials.scale_cut.cmd
 
+The merging statistics, as well as a number of scaling and merging plots, are
+output into a html report called :samp:`scaling.html`.
+This can be opened in your browser - nativigate to the section "scaling model plots" and take a look.
 What is immediately apparent is the periodic nature of the scale term, with peaks
 and troughs 90° apart. This indicates that the illuminated volume was changing
 significantly during the experiment: a reflection would be measured as almost
 twice as intense if it was measured at rotation angle of ~120° compared to at ~210°.
 The absorption surface also shows a similar periodicity, as may be expected.
-The form of the relative B-factor is less well defined, although is does show some
-periodicity similar to the scale term. There is certainly no strong B-factor
-reduction as a function of rotation angle, which would have suggested radiation
-damage. The scaling can be repeated, omitting the :samp:`decay_term`::
-
-  dials.scale symmetrized.expt symmetrized.refl d_min=1.4 decay_term=False
-
-::
-
-             ----------Overall merging statistics (non-anomalous)----------
-
-  Resolution: 35.33 - 1.40
-  Observations: 276792
-  Unique reflections: 41135
-  Redundancy: 6.7
-  Completeness: 94.11%
-  Mean intensity: 75.9
-  Mean I/sigma(I): 14.3
-  R-merge: 0.064
-  R-meas:  0.069
-  R-pim:   0.026
-
-
-By inspecting the statistics in the output, we can see that removing the decay
-term has slightly improved some of the R-factors and mean I/sigma(I). Therefore
-it is probably best to exclude the decay correction for this dataset.
+The relative B-factor shows low overall variation, suggesting little overall
+radiation damage.
 
 .. _betalactamase-html-report:
 
@@ -608,82 +595,30 @@ Some of the most useful plots are
   were no bad frames, not much radiation damage occurred and that scale factors
   are likely to be fairly uniform.
 
-Exporting as MTZ
+Exporting to MTZ
 ^^^^^^^^^^^^^^^^
 
-The final step of dials processing is to either 1) export the integrated results to mtz
-format, suitable for input to downstream processing programs such as pointless_
-and aimless_.
+The final step of dials processing is to export the data to a merged or unmerged
+mtz file, suitable for input to downstream structure solution or further processing.
 
-.. dials_tutorial_include:: betalactamase/dials.export.cmd
+To produce a merged mtz file we can use the command::
 
-2) export the scaled intensities for further downstream processing, making sure to
-include the :samp:`intensity=scale` option::
+  dials.merge scaled.expt scaled.refl
 
-  dials.export scaled.refl scaled.expt intensity=scale
+This reports some intensity statistics and performs a truncation procedure, to give
+merged structure factors (Fs) in addition to merged intensities.
 
-Here is the output for exporting after integration, showing the reflection file statistics.
+To produce an unmerged mtz file, one can use the command::
 
-.. dials_tutorial_include:: betalactamase/dials.export.log
-    :linenos:
+  dials.export scaled.refl scaled.expt
 
-Alternative processing with pointless and aimless
--------------------------------------------------
+Note that it is also possible to export the integrated (unscaled) data in mtz
+format using :samp:`dials.export`, for symmetry analysis and scaling with the
+ccp4 programs pointless_ and aimless_::
 
-The following demonstrates how to take the output of dials processing after integration and
-continue with downstream analysis using the CCP4 programs pointless_, to sort the data and assign
-the correct symmetry, followed by scaling with aimless_ and intensity analysis
-using ctruncate_::
-
-  pointless hklin integrated.mtz hklout sorted.mtz > pointless.log
-  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
-  resolution 1.4
-  EOF
-  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
-  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
-
-to get merged data for downstream analysis. The output from this includes
-the merging statistics which will give a better idea about data quality. It is
-easiest to view these logfiles using the program :program:`logview`, e.g.::
-
-  logview aimless.log
-
-Often passing in a sensible resolution limit to aimless is helpful. Here
-we assumed we ran first without a resolution limit to help decide where
-to cut the data. Following this we chose to exclude all data at a
-resolution higher than 1.4 Angstroms, to ensure about 90% completeness
-in the outer shell. Here is the summary from aimless.log:
-
-::
-
-    Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
-
-                                              Overall  InnerShell  OuterShell
-    Low resolution limit                       69.19     69.19      1.42
-    High resolution limit                       1.40      7.54      1.40
-
-    Rmerge  (within I+/I-)                     0.056     0.028     0.598
-    Rmerge  (all I+ and I-)                    0.066     0.039     0.670
-    Rmeas (within I+/I-)                       0.067     0.033     0.733
-    Rmeas (all I+ & I-)                        0.072     0.043     0.737
-    Rpim (within I+/I-)                        0.036     0.017     0.417
-    Rpim (all I+ & I-)                         0.027     0.017     0.302
-    Rmerge in top intensity bin                0.029        -         -
-    Total number of observations              276017      2016     11442
-    Total number unique                        41113       300      1980
-    Mean((I)/sd(I))                             14.4      47.7       2.1
-    Mn(I) half-set correlation CC(1/2)         0.999     0.998     0.808
-    Completeness                                94.3      99.3      90.5
-    Multiplicity                                 6.7       6.7       5.8
-    Mean(Chi^2)                                 0.92      0.77      0.83
-
-    Anomalous completeness                      94.3     100.0      89.0
-    Anomalous multiplicity                       3.4       3.7       2.9
-    DelAnom correlation between half-sets      0.363     0.683     0.033
-    Mid-Slope of Anom Normal Probability       1.140       -         -
+  dials.export integrated.refl integrated.expt
 
 
 
-.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
 .. _aimless: http://www.ccp4.ac.uk/html/aimless.html
-.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
+.. _pointless: http://www.ccp4.ac.uk/html/pointless.html

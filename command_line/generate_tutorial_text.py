@@ -122,9 +122,15 @@ def generate_processing_detail_text_betalactamase(options):
         store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
-    runcmd(["dials.report", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=1.4"],
+        store_command=outdir / "dials.scale_cut.cmd",
+        store_output=outdir / "dials.scale_cut.log",
+    )
+    runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
-    runcmd(["dials.export", "integrated.refl", "integrated.expt"])
 
     print("Updated result files written to {}".format(outdir.strpath))
     if not options.keep:
