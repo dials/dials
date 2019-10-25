@@ -255,10 +255,10 @@ class _(object):
         """
         Write the reflection table to file in either msgpack or pickle format
         """
-        if os.getenv("DIALS_USE_MESSAGEPACK"):
-            self.as_msgpack_file(filename)
-        else:
+        if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        else:
+            self.as_msgpack_file(filename)
 
     @staticmethod
     def from_file(filename):
