@@ -7,6 +7,7 @@ import sys
 
 from cctbx import sgtbx
 from libtbx import Auto
+from libtbx.table_utils import simple_table
 import iotbx.phil
 from rstbx.symmetry.constraints import parameter_reduction
 
@@ -25,6 +26,9 @@ from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
+)
+from dials.algorithms.symmetry.absences.laue_groups_info import (
+    laue_groups as laue_groups_for_absence_analysis,
 )
 
 logger = logging.getLogger("dials.command_line.symmetry")
@@ -157,6 +161,12 @@ def symmetry(experiments, reflection_tables, params=None):
         # Get the best space group.
         best_subsym = result.best_solution.subgroup["best_subsym"]
         best_space_group = best_subsym.space_group().build_derived_acentric_group()
+        logger.info(
+            simple_table(
+                [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
+                ["Patterson group", "Corresponding MX group"],
+            ).format()
+        )
         # Reindex the input data
         experiments, reflection_tables = _reindex_experiments_reflections(
             experiments, reflection_tables, best_space_group, cb_op_inp_best
@@ -178,37 +188,48 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Analysing systematic absences")
         logger.info("")
 
-        if (params.d_min is Auto) and (result is not None):
-            d_min = result.intensities.resolution_range()[1]
-        elif params.d_min is Auto:
-            d_min = resolution_filter_from_reflections_experiments(
-                reflection_tables,
-                experiments,
-                params.min_i_mean_over_sigma_mean,
-                params.min_cc_half,
+        # Get the laue class from the current space group.
+        space_group = experiments[0].crystal.get_space_group()
+        laue_group = str(space_group.build_derived_patterson_group().info())
+        logger.info("Laue group: %s", laue_group)
+        if laue_group not in laue_groups_for_absence_analysis:
+            logger.info("No absences to check for this laue group\n")
+        else:
+            if (params.d_min is Auto) and (result is not None):
+                d_min = result.intensities.resolution_range()[1]
+            elif params.d_min is Auto:
+                d_min = resolution_filter_from_reflections_experiments(
+                    reflection_tables,
+                    experiments,
+                    params.min_i_mean_over_sigma_mean,
+                    params.min_cc_half,
+                )
+            else:
+                d_min = params.d_min
+
+            # combine before sys abs test - only triggers if laue_group=None and
+            # multiple input files.
+            if len(reflection_tables) > 1:
+                joint_reflections = flex.reflection_table()
+                for table in reflection_tables:
+                    joint_reflections.extend(table)
+            else:
+                joint_reflections = reflection_tables[0]
+
+            merged_reflections = prepare_merged_reflection_table(
+                experiments, joint_reflections, d_min
             )
-        else:
-            d_min = params.d_min
+            run_systematic_absences_checks(
+                experiments,
+                merged_reflections,
+                float(params.systematic_absences.significance_level),
+            )
 
-        # combine before sys abs test - only triggers if laue_group=None and
-        # multiple input files.
-        if len(reflection_tables) > 1:
-            joint_reflections = flex.reflection_table()
-            for table in reflection_tables:
-                joint_reflections.extend(table)
-        else:
-            joint_reflections = reflection_tables[0]
-
-        merged_reflections = prepare_merged_reflection_table(
-            experiments, joint_reflections, d_min
-        )
-        run_systematic_absences_checks(
-            experiments,
-            merged_reflections,
-            float(params.systematic_absences.significance_level),
-        )
-
-    logger.info("Saving reindexed experiments to %s", params.output.experiments)
+    logger.info(
+        "Saving reindexed experiments to %s in space group %s",
+        params.output.experiments,
+        str(experiments[0].crystal.get_space_group().info()),
+    )
     experiments.as_file(params.output.experiments)
     if params.output.reflections is not None:
         if len(reflection_tables) > 1:
