@@ -11,7 +11,7 @@ phil_scope = iotbx.phil.parse(
     .help = "If True, create new scaling models for all datasets"
     .expert_level = 0
   reflection_selection {
-    method = *auto quasi_random intensity_ranges use_all random
+    method = *quasi_random intensity_ranges use_all random
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
               "minimisation. auto (default) will choose use_all for small datasets"
@@ -23,34 +23,32 @@ phil_scope = iotbx.phil.parse(
               "uses the E2_range, Isigma_range and d_range options to choose a"
               "subset of reflections. use_all uses all suitable reflections for"
               "model minimisation, which may be slow for large datasets."
-    quasi_random {
-      min_per_area = 100
-        .type = ints
-        .help = "Numbers of reflections for each of the 12 volumes in"
-                "reciprocal space at a given resolution."
-        .expert_level = 2
-      n_resolution_bins = 20
-        .type = ints
-        .help = "Number of resolution bins for quasi random sampling."
-        .expert_level = 2
+    random {
       multi_dataset {
-        min_per_dataset = 500
+        refl_per_param = 250
           .type = int
-          .help = "Minimum number of cross-dataset connected reflections in"
-                  "each dataset."
+          .help = "Target number of reflections per parameter to select for"
+                  "minimisation in multi-dataset case"
+        min_reflections = 20000
+          .type = int
+          .help = "Minimum number of reflections to use for minimisation across"
+                  "all datasets"
         Isigma_cutoff = 1.0
           .type = float
           .help = "Minimum average I/sigma of reflection groups to use when"
                   "selecting cross-dataset connected reflections."
-        min_multiplicity = 2
-          .type = int
-          .help = "Minimum multiplicity of cross-dataset connected reflections"
-                  "for reflections used during minimisation."
       }
+      min_groups = 4000
+        .type = int
+        .help = "The minimum number of symmetry groups to use during"
+                "minimisation for single datasets."
+        .expert_level=1
+      min_reflections = 20000
+        .type = int
+        .help = "The minimum number of reflections to use during minimisation"
+                "for single datasets"
+        .expert_level=1
     }
-    n_random = 50000
-      .type = int
-      .help = "Number of randomly chosen reflections to use"
     best_unit_cell = None
       .type = floats(size=6)
       .help = "Best unit cell value, to use when performing resolution cutting

@@ -489,6 +489,10 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.Ih_table["weights"] = 1.0 / self.Ih_table["variance"]
         self._setup_info["setup_complete"] = True
 
+    def group_multiplicities(self):
+        """Return the multiplicities of the symmetry groups."""
+        return flex.double(self.size, 1.0) * self.h_index_matrix
+
     def select(self, sel):
         """Select a subset of the data, returning a new IhTableBlock object."""
         Ih_table = self.Ih_table.select(sel)
@@ -648,11 +652,17 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         return self.Ih_table.size()
 
     @property
+    def n_groups(self):
+        """Return the length of the stored Ih_table (a reflection table)."""
+        return self.h_index_matrix.n_cols
+
+    @property
     def asu_miller_index(self):
         """Return the miller indices in the asymmetric unit."""
         return self.Ih_table["asu_miller_index"]
 
     def setup_binner(self, unit_cell, space_group, n_resolution_bins):
+        """Create a binner for the reflections contained in the table."""
         ma = _reflection_table_to_iobs(self.Ih_table, unit_cell, space_group)
         # need d star sq step
         d_star_sq = ma.d_star_sq().data()

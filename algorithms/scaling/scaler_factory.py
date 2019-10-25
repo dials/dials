@@ -18,9 +18,6 @@ from dials.algorithms.scaling.scaling_utilities import (
     calc_crystal_frame_vectors,
 )
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
-from dials.algorithms.scaling.reflection_selection import (
-    determine_reflection_selection_parameters,
-)
 
 logger = logging.getLogger("dials")
 
@@ -134,10 +131,6 @@ class SingleScalerFactory(ScalerFactory):
                 reasons,
             )
 
-        if not for_multi:
-            determine_reflection_selection_parameters(
-                params, [experiment], [reflection_table]
-            )
         if params.reflection_selection.method == "intensity_ranges":
             reflection_table = quasi_normalisation(reflection_table, experiment)
         if (
@@ -210,7 +203,6 @@ class MultiScalerFactory(object):
         n_exp, n_refl, n_ss = (len(experiments), len(reflections), len(single_scalers))
         assert n_exp == n_ss, (n_exp, n_ss)
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
         return MultiScaler(single_scalers)
 
     @classmethod
@@ -259,7 +251,6 @@ class TargetScalerFactory(object):
         n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
         return TargetScaler(scaled_scalers, unscaled_scalers)
 
     @classmethod
@@ -295,5 +286,4 @@ class TargetScalerFactory(object):
         n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
         return TargetScaler(scaled_scalers, unscaled_scalers)
