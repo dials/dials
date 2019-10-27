@@ -300,11 +300,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export GModel background calculator
     class_<GModelBackgroundCalculator, bases<BackgroundCalculatorIface> >(
       "GModelBackgroundCalculator", no_init)
-      .def(init<boost::shared_ptr<BackgroundModel>,
-                bool,
-                std::size_t>((arg("model"),
-                              arg("robust"),
-                              arg("min_pixels"))));
+      .def(init<boost::shared_ptr<BackgroundModel>, bool, std::size_t>(
+        (arg("model"), arg("robust"), arg("min_pixels"))));
 
     // Export the reference data structure
     class_<ReferenceProfileData>("ReferenceProfileData")

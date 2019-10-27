@@ -39,9 +39,7 @@ namespace dials { namespace algorithms {
     GModelBackgroundCreator(boost::shared_ptr<BackgroundModel> model,
                             bool robust,
                             std::size_t min_pixels)
-        : model_(model),
-          robust_(robust),
-          min_pixels_(min_pixels) {
+        : model_(model), robust_(robust), min_pixels_(min_pixels) {
       DIALS_ASSERT(min_pixels > 0);
     }
 

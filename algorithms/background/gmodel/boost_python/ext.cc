@@ -63,11 +63,8 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
 
     class_<GModelBackgroundCreator> creator("Creator", no_init);
     creator
-      .def(init<boost::shared_ptr<BackgroundModel>,
-                bool,
-                std::size_t>((arg("model"),
-                              arg("robust"),
-                              arg("min_pixels") = 10)))
+      .def(init<boost::shared_ptr<BackgroundModel>, bool, std::size_t>(
+        (arg("model"), arg("robust"), arg("min_pixels") = 10)))
       .def("__call__", &GModelBackgroundCreator::shoebox)
       .def("__call__", &GModelBackgroundCreator::volume);
   }
