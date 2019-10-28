@@ -42,7 +42,7 @@ def dials_regression():
     try:
         import socket
 
-        reference_copy = "/dls/science/groups/scisoft/DIALS/repositories/git-reference/dials_regression"
+        reference_copy = "/dls/science/groups/scisoft/DIALS/repositories/git-reference/dials_regression_1939"
         if (
             os.name == "posix"
             and socket.gethostname().endswith(".diamond.ac.uk")
