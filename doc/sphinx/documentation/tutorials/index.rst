@@ -26,7 +26,6 @@ Introductory command-line tutorials
    processing_in_detail_betalactamase
    diamond
    small_molecule_tutorial
-   processing_in_detail_tutorial
 
 Advanced command-line tutorials
 

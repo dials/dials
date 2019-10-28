@@ -203,7 +203,7 @@ of these are right. First look at the ``Metric fit`` column. This value is
 the `Le Page <https://doi.org/10.1107/S0021889882011959>`_ :math:`\delta`
 value. For a correct indexing solution with a good dataset this should be a
 small number, less than 0.1 say, such as in the
-:doc:`processing_in_detail_tutorial` tutorial. The ``rmsd`` column reports an
+:doc:`processing_in_detail_betalactamase` tutorial. The ``rmsd`` column reports an
 overall positional RMSD. Again, small numbers are better. Typically we would
 look for a solution below a jump to higher values of RMSD. Here they are all
 pretty bad, at around an order of magnitude larger than what we'd expect
@@ -355,7 +355,7 @@ from :program:`dials.refine_bravais_settings` looks reasonable::
   --------------------------------------------------------------------------------------------------------------
 
 We may now go on to refine the solution and integrate, following the steps
-outlined in the :doc:`processing_in_detail_tutorial` tutorial. This is left
+outlined in the :doc:`processing_in_detail_betalactamase` tutorial. This is left
 as an exercise for the reader. You can continue to solve
 the structure in the primitive orthorhombic lattice, however model refinement
 will present difficulties.

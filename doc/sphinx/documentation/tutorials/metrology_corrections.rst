@@ -16,7 +16,7 @@ Refining multi-tile detector metrology with DIALS
 Introduction
 ------------
 
-At the end of the :doc:`processing_in_detail_tutorial`, we showed plots from
+At the end of the :doc:`processing_in_detail_betalactamase`, we showed plots from
 :program:`dials.analyse_output`, including images of the positional
 residuals as a function of position on the detector face. There were
 clearly some systematic effects, suggesting whole-tile shifts or rotations.
@@ -406,7 +406,7 @@ figure this out itself.
 Here are the positional residual plots for X and Y, :file:`analysis/centroid/centroid_diff_x.png`
 and :file:`analysis/centroid/centroid_diff_y.png`. The multi-panel versions
 of these plots are not as compact as the single tile version presented in the
-:doc:`processing_in_detail_tutorial`. However, careful comparison of the plots is enough to
+:doc:`processing_in_detail_betalactamase`. However, careful comparison of the plots is enough to
 show that the same pattern of shifts is present.
 
   .. image:: /figures/centroid_diff_x_multi_panel_lev0.png
@@ -633,7 +633,7 @@ Format object for the detector to incorporate the corrections, we could try to
 'copy and paste' the detector from one dataset to the other.
 
 We will choose the standard tutorial data to try this, from the
-:doc:`processing_in_detail_tutorial`. First we have to process that data using the
+:doc:`processing_in_detail_betalactamase`. First we have to process that data using the
 multi-panel version of the Pilatus P6M detector model. Assuming the environment
 variable :samp:`P6M_60_PANEL=1` is set in this terminal we just need to repeat
 the commands from the tutorial::
@@ -646,7 +646,7 @@ the commands from the tutorial::
   dials.refine indexed.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the
-:doc:`processing_in_detail_tutorial`, as we'd expect)::
+:doc:`processing_in_detail_betalactamase`, as we'd expect)::
 
   RMSDs by experiment:
   ----------------------------------------------
