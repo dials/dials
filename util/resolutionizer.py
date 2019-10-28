@@ -172,10 +172,10 @@ def interpolate_value(x, y, t):
 
 
 def miller_array_from_mtz(unmerged_mtz, params):
-    from iotbx import reflection_file_reader
+    from dials.util import mtz
 
-    hkl_in = reflection_file_reader.any_reflection_file(unmerged_mtz)
-    miller_arrays = hkl_in.as_miller_arrays(
+    mtz_object = mtz.object(unmerged_mtz)
+    miller_arrays = mtz_object.as_miller_arrays(
         merge_equivalents=False, anomalous=params.anomalous
     )
     i_obs = None
@@ -208,13 +208,12 @@ def miller_array_from_mtz(unmerged_mtz, params):
                 )
         else:
             i_obs = all_i_obs[0]
-    if hkl_in.file_type() == "ccp4_mtz":
-        # need original miller indices otherwise we don't get correct anomalous
-        # merging statistics
-        mtz_object = hkl_in.file_content()
-        if "M_ISYM" in mtz_object.column_labels():
-            indices = mtz_object.extract_original_index_miller_indices()
-            i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
+
+    # need original miller indices otherwise we don't get correct anomalous
+    # merging statistics
+    if "M_ISYM" in mtz_object.column_labels():
+        indices = mtz_object.extract_original_index_miller_indices()
+        i_obs = i_obs.customized_copy(indices=indices, info=i_obs.info())
     return i_obs, batches
 
 
