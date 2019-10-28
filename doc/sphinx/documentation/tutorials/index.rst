@@ -37,6 +37,8 @@ Advanced command-line tutorials
    multi_lattice_tutorial
    dials_for_ed
    multi_crystal_symmetry_and_scaling
+   metrology_corrections
+   multi_crystal_analysis
 
 Developer tutorials
 
