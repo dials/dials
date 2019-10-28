@@ -6,8 +6,10 @@ from six.moves import range
 from six.moves import zip
 
 ext = boost.python.import_ext("iotbx_mtz_ext")
-from iotbx_mtz_ext import *
 import iotbx_mtz_ext as ext
+
+# copy into local namespace - used in typical calling code
+object = ext.object
 
 from iotbx.mtz import extract_from_symmetry_lib
 from cctbx import xray
@@ -20,10 +22,11 @@ from cctbx.array_family import flex
 from libtbx.str_utils import show_string, overwrite_at, contains_one_of
 from libtbx.utils import Sorry
 from libtbx import adopt_init_args, slots_getstate_setstate
+import os
 import warnings
 import string
 import re
-import sys, os
+import sys
 
 expected_cmtz_struct_sizes = (
     (56, 84, 176, 500, 12336, 12488),  # Linux 32-bit
@@ -517,7 +520,6 @@ class _:
         if "M_ISYM" in self.column_labels():
             original_miller_indices = self.extract_original_index_miller_indices()
             indices = cb_op.apply(original_miller_indices)
-            isym = flex.int(len(indices))
             self.replace_original_index_miller_indices(indices)
         else:
             self.replace_miller_indices(cb_op.apply(self.extract_miller_indices()))
@@ -1361,7 +1363,6 @@ def cutoff_data(file_name, d_min_cut):
     mtz_in = object(file_name=file_name)
     cut_arrays = []
     labels = ["H", "K", "L"]
-    uppercase = [""]
     for miller_array in mtz_in.as_miller_arrays():
         cut_arrays.append(miller_array.resolution_filter(d_min=d_min_cut))
         labels.extend(miller_array.info().labels)
