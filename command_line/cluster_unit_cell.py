@@ -51,13 +51,12 @@ def run(args):
     if len(experiments) == 0:
         if len(args):
             import os
-            from iotbx.reflection_file_reader import any_reflection_file
+            from dials.util import mtz
 
             for arg in args:
                 assert os.path.isfile(arg), arg
-                reader = any_reflection_file(arg)
-                assert reader.file_type() == "ccp4_mtz"
-                arrays = reader.as_miller_arrays(
+                mtz_object = mtz.object(arg)
+                arrays = mtz_object.as_miller_arrays(
                     merge_equivalents=False, anomalous=False
                 )
                 crystal_symmetries.append(arrays[0].crystal_symmetry())
