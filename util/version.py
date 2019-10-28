@@ -16,11 +16,15 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
     version = None
     with open(os.devnull, "w") as devnull:
         # Obtain name of the current branch. If this fails then the other commands will probably also fail
-        branch = subprocess.check_output(
-            ["git", "describe", "--contains", "--all", "HEAD"],
-            cwd=dials_path,
-            stderr=devnull,
-        ).rstrip()
+        branch = (
+            subprocess.check_output(
+                ["git", "describe", "--contains", "--all", "HEAD"],
+                cwd=dials_path,
+                stderr=devnull,
+            )
+            .rstrip()
+            .decode("latin-1")
+        )
         releasebranch = "dials-2" in branch
 
         # Always treat merges as single commit on release branches
@@ -40,9 +44,13 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
                 pass  # This is not supported on older git versions < 1.8.4.
         if version is None:
             # Find the most recent tag
-            version = subprocess.check_output(
-                ["git", "describe", "--long"], cwd=dials_path, stderr=devnull
-            ).rstrip()
+            version = (
+                subprocess.check_output(
+                    ["git", "describe", "--long"], cwd=dials_path, stderr=devnull
+                )
+                .rstrip()
+                .decode("latin-1")
+            )
             if treat_merges_as_single_commit:
                 tag = version[: version.rindex("-", 0, version.rindex("-"))]
                 commit = version[version.rindex("-") + 1 :]  # 'gxxxxxxx'
