@@ -415,7 +415,7 @@ class Statistics(object):
 
 
 def run(args):
-    from iotbx.reflection_file_reader import any_reflection_file
+    from dials.util import mtz
 
     interp = phil_scope.command_line_argument_interpreter()
     params, unhandled = interp.process_and_fetch(
@@ -429,9 +429,8 @@ def run(args):
     batches = None
     dose = None
 
-    reader = any_reflection_file(args[0])
-    assert reader.file_type() == "ccp4_mtz"
-    arrays = reader.as_miller_arrays(
+    mtz_object = mtz.object(args[0])
+    arrays = mtz_object.as_miller_arrays(
         merge_equivalents=False, anomalous=params.anomalous
     )
     for ma in arrays:
@@ -446,7 +445,6 @@ def run(args):
 
     assert intensities is not None
     assert batches is not None
-    mtz_object = reader.file_content()
 
     indices = mtz_object.extract_original_index_miller_indices()
     intensities = intensities.customized_copy(indices=indices)
