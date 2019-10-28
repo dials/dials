@@ -73,7 +73,7 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
         # If we are on a release branch, then append a '-release'-tag
         if releasebranch:
             version = version + "-release"
-    return version
+    return str(version)
 
 
 # When run from a development installation the version information is extracted
