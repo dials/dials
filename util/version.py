@@ -35,11 +35,15 @@ def get_git_version(dials_path, treat_merges_as_single_commit=False):
         if treat_merges_as_single_commit:
             try:
                 # Get a 'correct' depth, which should be the shortest path to the most recent tag
-                version = subprocess.check_output(
-                    ["git", "describe", "--long", "--first-parent"],
-                    cwd=dials_path,
-                    stderr=devnull,
-                ).rstrip()
+                version = (
+                    subprocess.check_output(
+                        ["git", "describe", "--long", "--first-parent"],
+                        cwd=dials_path,
+                        stderr=devnull,
+                    )
+                    .rstrip()
+                    .decode("latin-1")
+                )
             except Exception:
                 pass  # This is not supported on older git versions < 1.8.4.
         if version is None:
