@@ -164,7 +164,7 @@ script does. If time is *really* short then try uncommenting the line
     # WARNING! Fast and dirty integration.
     # Do not use the result for scaling/merging!
     cmd = "dials.integrate refined.expt indexed.refl " + \
-      "profile.fitting=False prediction.d_min=8.0 prediction.d_max=8.1"
+      "profile.fitting=False prediction.d_min=7.0 prediction.d_max=8.1"
     easy_run.fully_buffered(command=cmd)
     if not os.path.isfile("integrated.refl"):
       print "Job %02d failed during integration" % num
@@ -289,7 +289,7 @@ data usually!::
 The :samp:`profile.fitting=False` option ensures we only do summation integration,
 no profile fitting, while the :samp:`prediction.dmin=7.0` and
 :samp:`prediction.dmax=8.1` options only integrate data between 7.0 and 8.1 Angstroms.
-As a result very few reflections will be integrated. The MTZ file here is just
+As a result few reflections will be integrated. The MTZ file here is just
 being used as a carrier of the cell information into blend. By restricting the
 resolution range this way we are making it obvious that the content of the file
 is useless for any other purpose.
