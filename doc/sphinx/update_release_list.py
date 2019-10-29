@@ -68,6 +68,7 @@ if __name__ == "__main__":
             "macosx-10.6.pkg": "Mac installer (OS X 10.6)",
             "macosx-10.6.tar.gz": "Mac tar archive (OS X 10.6)",
             "linux-x86_64.tar.xz": "Linux installer",
+            "linux-x86_64-conda3.tar.xz": "Linux installer (Python 3 preview, unsupported)",
             "source.tar.xz": "Source installer",
         }
 
