@@ -5,8 +5,8 @@
   Please click here to go to the tutorial for DIALS 1.14.
   </a>
 
-Multi-crystal analysis with DIALS and BLEND
-===========================================
+Multi-crystal analysis with DIALS and BLEND: individual vs joint refinement
+===========================================================================
 
 Introduction
 ------------
@@ -60,42 +60,43 @@ let DIALS figure it out for us::
   The following parameters have been modified:
 
   input {
-    datablock = <image files>
+    experiments = <image files>
   }
 
   --------------------------------------------------------------------------------
-  DataBlock 0
     format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>
     num images: 2711
-    num sequences: 73
+    sequences:
+      still:    0
+      sweep:    73
     num stills: 0
   --------------------------------------------------------------------------------
-  Writing datablocks to datablock.expt
+  Writing experiments to imported.expt
 
 With a single command we have determined that there are 73 individual sequences
 comprising 2711 total images. Running the following command will give us
 information about each one of these datasets::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
 to compare to. This will also give us intermediate files so that we don't have
 to start from scratch when setting up the joint refinement job. Essentially
 we just want to run a sequence of DIALS commands to process each recorded sequence.
-However we can't (currently) split the datablock into individual sequences with
+However we can't (currently) split the experimentlist into individual sequences with
 a single command. We will have to start again with :program:`dials.import` for
 each sequence individually - but we really don't want to run this manually 73
 times.
 
-The solution is to write a script that will take the :samp:`datablock.expt` as
+The solution is to write a script that will take the :samp:`imported.expt` as
 input, extract the filename templates, and run the same processing commands
 for each dataset. This script could be written in BASH, tcsh, perl,
 ruby - whatever you feel most comfortable with. However here we will use Python,
 or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
-Also we would like to read :samp:`datablock.expt` with the DIALS API rather than
+Also we would like to read :samp:`imported.expt` with the DIALS API rather than
 extracting the sequence templates using something like :program:`grep`.
 
 .. highlight:: python
@@ -103,22 +104,23 @@ extracting the sequence templates using something like :program:`grep`.
 The script we used to do this is reproduced below. You can copy this into a file,
 save it as :samp:`process_TehA.py` and then run it as follows::
 
-  time dials.python process_TehA.py datablock.expt
+  time dials.python process_TehA.py imported.expt
 
 On a Linux desktop with a Core i7 CPU running at 3.07GHz the script took about 8
 minutes to run (though file i/o is a significant factor)
-and successfully processed 41 datasets. If time is short, you
+and successfully processed 58 datasets. If time is short, you
 might like to start running it now before reading the description of what the
 script does. If time is *really* short then try uncommenting the line
-:samp:`tasklist = tasklist[0:35]` to reduce the number of datasets processed.::
+:samp:`tasklist = tasklist[0:35]` to reduce the number of datasets processed.
+
+::
 
   #!/bin/env dials.python
   import os
   import sys
-  import glob
-  from libtbx import easy_run, easy_mp
-  from dxtbx.datablock import DataBlockFactory
-  from dials.test import cd
+  from libtbx import easy_run, easy_mp, Auto
+  from dxtbx.serialize import load
+
 
   def process_sequence(task):
     """Process a single sequence of data. The parameter 'task' will be a
@@ -129,50 +131,52 @@ script does. If time is *really* short then try uncommenting the line
     template = task[1]
 
     # create directory
-    with cd("sequence_%02d" % num):
-      cmd = "dials.import template={0}".format(template)
-      easy_run.fully_buffered(command=cmd)
-      easy_run.fully_buffered(command="dials.find_spots datablock.expt")
+    newdir = os.getcwd()+"/sequence_%02d" % num
+    os.mkdir(newdir)
+    os.chdir(newdir)
+    cmd = "dials.import template={0}".format(template)
+    easy_run.fully_buffered(command=cmd)
+    easy_run.fully_buffered(command="dials.find_spots imported.expt")
 
-      # initial indexing in P 1
-      cmd = "dials.index datablock.expt strong.refl " +\
-            "output.experiments=P1_models.expt"
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("P1_models.expt"):
-        print "Job %02d failed in initial indexing" % num
-        return
+    # initial indexing in P 1
+    cmd = "dials.index imported.expt strong.refl " +\
+      "output.experiments=P1_models.expt"
+    easy_run.fully_buffered(command=cmd)
+    if not os.path.isfile("P1_models.expt"):
+      print "Job %02d failed in initial indexing" % num
+      return
 
-      # bootstrap from the refined P 1 cell
-      cmd = "dials.index P1_models.expt strong.refl space_group='H 3'"
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("indexed.expt"):
-        print "Job %02d failed in indexing" % num
-        return
+    # bootstrap from the refined P 1 cell
+    cmd = "dials.index P1_models.expt strong.refl space_group='H 3'"
+    easy_run.fully_buffered(command=cmd)
+    if not os.path.isfile("indexed.expt"):
+      print "Job %02d failed in indexing" % num
+      return
 
-      # static model refinement
-      cmd = "dials.refine indexed.expt indexed.refl scan_varying=false " + \
-            "outlier.algorithm=tukey use_all_reflections=true"
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("refined.expt"):
-        print "Job %02d failed in refinement" % num
-        return
+    # static model refinement
+    cmd = "dials.refine indexed.expt indexed.refl scan_varying=false " + \
+      "outlier.algorithm=tukey"
+    easy_run.fully_buffered(command=cmd)
+    if not os.path.isfile("refined.expt"):
+      print "Job %02d failed in refinement" % num
+      return
 
-      # WARNING! Fast and dirty integration.
-      # Do not use the result for scaling/merging!
-      cmd = "dials.integrate refined.expt indexed.refl " + \
-            "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.refl"):
-        print "Job %02d failed during integration" % num
-        return
+    # WARNING! Fast and dirty integration.
+    # Do not use the result for scaling/merging!
+    cmd = "dials.integrate refined.expt indexed.refl " + \
+      "profile.fitting=False prediction.d_min=8.0 prediction.d_max=8.1"
+    easy_run.fully_buffered(command=cmd)
+    if not os.path.isfile("integrated.refl"):
+      print "Job %02d failed during integration" % num
+      return
 
-      # create MTZ
-      cmd = "dials.export refined.expt integrated.refl " +\
-            "mtz.hklout=integrated.mtz"
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.mtz"):
-        print "Job %02d failed during MTZ export" % num
-        return
+    # create MTZ
+    cmd = "dials.export refined.expt integrated.refl " +\
+      "intensity=sum mtz.hklout=integrated.mtz"
+    easy_run.fully_buffered(command=cmd)
+    if not os.path.isfile("integrated.mtz"):
+      print "Job %02d failed during MTZ export" % num
+      return
 
     # if we got this far, return the path to the MTZ
     return "sequence_%02d/integrated.mtz" % num
@@ -180,21 +184,19 @@ script does. If time is *really* short then try uncommenting the line
   if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-      sys.exit("Usage: dials.python process_TehA.py datablock.expt")
+      sys.exit("Usage: dials.python process_TehA.py imported.expt")
 
-    datablock_path = os.path.abspath(sys.argv[1])
-    datablock = DataBlockFactory.from_serialized_format(datablock_path,
-      check_format=False)[0]
-    sequences = datablock.extract_sequences()
-    templates = [e.get_template() for e in sequences]
+    expt_path = os.path.abspath(sys.argv[1])
+    experiments = load.experiment_list(expt_path, check_format=False)
+    templates = [i.get_template() for i in experiments.imagesets()]
     tasklist = list(enumerate(sorted(templates)))
 
-    if len(tasklist) == 0: sys.exit("No images found!")
+    if not tasklist:
+      sys.exit("No images found!")
 
     # uncomment the following line if short on time!
     #tasklist = tasklist[0:35]
 
-    from libtbx import Auto
     nproc = easy_mp.get_processes(Auto)
 
     print "Attempting to process the following datasets, with {} processes".format(nproc)
@@ -205,7 +207,8 @@ script does. If time is *really* short then try uncommenting the line
       func=process_sequence,
       iterable=tasklist,
       processes=nproc,
-      preserve_order=True)
+      preserve_order=True,
+    )
 
     good_results = [e for e in results if e is not None]
     print "Successfully created the following MTZs:"
@@ -215,16 +218,15 @@ script does. If time is *really* short then try uncommenting the line
 We will now describe what is in this script. The first lines are
 just imports to bring in modules from the Python standard library as well as
 :samp:`easy_run` and :samp:`easy_mp` from :samp:`libtbx` (part of cctbx),
-:samp:`DataBlockFactory` from :samp:`dxtbx` to read in the datablock and
-a class from the :samp:`dials.test` package that simplifies running commands in
-a new directory. Following that is a definition for the function
+:samp:`serlialize.load` from :samp:`dxtbx` to read in the ExperimentList.
+Following that is a definition for the function
 :samp:`process_sequence` which will perform all the steps required to process one
 dataset from images to unmerged MTZ. The code block under::
 
   if __name__ == "__main__":
 
 are the lines that are executed when the script starts. First we check that the
-script has been passed a path to a datablock. We then extract the 73 sequences
+script has been passed a path to an experiments file. We then extract the 73 sequences
 from this into a list, then get the filename templates from each element in the
 list. We associate each of these templates with a number to form a list of
 'tasks' to pass into :samp:`process_sequence`, but instead
@@ -234,25 +236,17 @@ written into a new directory. First we use a facility of the :samp:`easy_mp`
 module to determine the number of processes to run in parallel and then we submit
 the job with :samp:`parallel_map`.
 
-Within :samp:`process_sequence` all external commands are run within a :samp:`with`
-block where execution is controlled by the *context manager* :samp:`cd`. If you
-want the gory details, they are `here <https://docs.python.org/2/reference/datamodel.html#context-managers>`_.
-Essentially this is a way to write clean code that tidies up after itself
-properly. In this case, we will create a new directory, execute commands in that
-directory, then change back to the old directory afterwards. If the directory
-already exists, this will fail with an error.
-
-The commands that are run inside the managed block are usual dials commands,
+The commands that are inside the function are usual dials commands,
 familiar from other tutorials. There are a couple of interesting points
 to note though. We know that the correct space group is *H* 3, but it turns out
 that if we ask :program:`dials.index` to find an *H* 3 cell right from the start
 then many of the sequences fail to index. This is simply because the initial models
-contained in :samp:`datablock.expt` are too poor to locate a cell with the
+contained in :samp:`imported.expt` are too poor to locate a cell with the
 symmetry constraints. However, for many of the sequences the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
-  dials.index datablock.expt strong.refl output.experiments=P1_models.expt
+  dials.index imported.expt strong.refl output.experiments=P1_models.expt
 
 and then we feed the refined :file:`P1_models.expt` back into
 :program:`dials.index` specifying the correct symmetry::
@@ -260,7 +254,7 @@ and then we feed the refined :file:`P1_models.expt` back into
   dials.index P1_models.expt strong.refl space_group='H 3'
 
 When :program:`dials.index` is passed a :file:`models.expt` containing
-a crystal model rather than just a :file:`databock.expt` then it automatically
+a crystal model rather than just a :file:`imported.expt` then it automatically
 uses a :samp:`known_orientation` indexer, which avoids doing the basis vector
 search again. It uses the basis of the refined *P* 1 cell and just assigns
 indices under the assumption of *H* 3 symmetry. The symmetry constraints are
@@ -270,7 +264,7 @@ no manual intervention.
 
 Following indexing we do scan-static cell refinement::
 
-  dials.refine indexed.expt indexed.refl scan_varying=false outlier.algorithm=tukey use_all_reflections=true
+  dials.refine indexed.expt indexed.refl scan_varying=false outlier.algorithm=tukey
 
 Outlier rejection was switched on in an attempt to avoid any zingers or other
 errant spots from affecting our refined cells. Without analysing the data closer
@@ -278,10 +272,6 @@ it is not clear whether there are any particularly bad outliers here. We could r
 the whole analysis with this switched off if we want to investigate more closely,
 or look through all the :file:`dials.refine.log` files to see results of the
 outlier rejection step.
-
-We elected use all reflections rather than taking a random subset because these
-are narrow wedges and there are few reflections anyway. Taking a random subset
-is only a time-saving procedure, and it won't provide much benefit here anyway.
 
 We don't bother with the time-consuming step of scan-varying refinement, because
 it is the scan-static cell that will be written into the MTZ header. Scan-
@@ -294,11 +284,11 @@ Following refinement we integrate the data in a very quick and dirty way, simply
 to get an MTZ file as fast as possible. This is a terrible way to integrate
 data usually!::
 
-  dials.integrate refined.expt indexed.refl profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1
+  dials.integrate refined.expt indexed.refl profile.fitting=False prediction.d_min=7.0 prediction.d_max=8.1
 
 The :samp:`profile.fitting=False` option ensures we only do summation integration,
-no profile fitting, while the :samp:`prediction.dmin=8.0` and
-:samp:`prediction.dmax=8.1` options only integrate data between 8.0 and 8.1 Angstroms.
+no profile fitting, while the :samp:`prediction.dmin=7.0` and
+:samp:`prediction.dmax=8.1` options only integrate data between 7.0 and 8.1 Angstroms.
 As a result very few reflections will be integrated. The MTZ file here is just
 being used as a carrier of the cell information into blend. By restricting the
 resolution range this way we are making it obvious that the content of the file
@@ -311,7 +301,7 @@ is useless for any other purpose.
 
 Finally we use :program:`dials.export` to create an MTZ file::
 
-  dials.export refined.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export refined.expt integrated.refl intensity=sum mtz.hklout=integrated.mtz
 
 After each of these major steps we check whether the last command ran successfully
 by checking for the existence of an expected output file. If the file does not
@@ -322,123 +312,45 @@ exist we make no effort to rescue the dataset, we just return early from the
 Here is the output of a run of the script::
 
   Attempting to process the following datasets, with 5 processes
-  0: /home/david/xray/TehA/xta30_1_####.cbf
-  1: /home/david/xray/TehA/xta31_1_####.cbf
-  2: /home/david/xray/TehA/xta32_1_####.cbf
-  3: /home/david/xray/TehA/xta33_1_####.cbf
-  4: /home/david/xray/TehA/xta34_1_####.cbf
-  5: /home/david/xray/TehA/xta9_1_####.cbf
-  6: /home/david/xray/TehA/xta9_2_####.cbf
-  7: /home/david/xray/TehA/xtal10_1_####.cbf
-  8: /home/david/xray/TehA/xtal11_1_####.cbf
-  9: /home/david/xray/TehA/xtal12_1_####.cbf
-  10: /home/david/xray/TehA/xtal12_2_####.cbf
-  11: /home/david/xray/TehA/xtal13_1_####.cbf
-  12: /home/david/xray/TehA/xtal14_1_####.cbf
-  13: /home/david/xray/TehA/xtal15_1_####.cbf
-  14: /home/david/xray/TehA/xtal16_1_####.cbf
-  15: /home/david/xray/TehA/xtal17_1_####.cbf
-  16: /home/david/xray/TehA/xtal18_1_####.cbf
-  17: /home/david/xray/TehA/xtal19_1_####.cbf
-  18: /home/david/xray/TehA/xtal1_1_####.cbf
-  19: /home/david/xray/TehA/xtal20_1_####.cbf
-  20: /home/david/xray/TehA/xtal21_1_####.cbf
-  21: /home/david/xray/TehA/xtal22_1_####.cbf
-  22: /home/david/xray/TehA/xtal23_1_####.cbf
-  23: /home/david/xray/TehA/xtal24_1_####.cbf
-  24: /home/david/xray/TehA/xtal25_1_####.cbf
-  25: /home/david/xray/TehA/xtal26_1_####.cbf
-  26: /home/david/xray/TehA/xtal26_2_####.cbf
-  27: /home/david/xray/TehA/xtal27_1_####.cbf
-  28: /home/david/xray/TehA/xtal28_1_####.cbf
-  29: /home/david/xray/TehA/xtal29_1_####.cbf
-  30: /home/david/xray/TehA/xtal2_1_####.cbf
-  31: /home/david/xray/TehA/xtal35_1_####.cbf
-  32: /home/david/xray/TehA/xtal36_1_####.cbf
-  33: /home/david/xray/TehA/xtal37_1_####.cbf
-  34: /home/david/xray/TehA/xtal37_2_####.cbf
-  35: /home/david/xray/TehA/xtal38_1_####.cbf
-  36: /home/david/xray/TehA/xtal39_1_####.cbf
-  37: /home/david/xray/TehA/xtal3_2_####.cbf
-  38: /home/david/xray/TehA/xtal40_1_####.cbf
-  39: /home/david/xray/TehA/xtal40_2_####.cbf
-  40: /home/david/xray/TehA/xtal40_3_####.cbf
-  41: /home/david/xray/TehA/xtal40_4_####.cbf
-  42: /home/david/xray/TehA/xtal41_1_####.cbf
-  43: /home/david/xray/TehA/xtal42_1_####.cbf
-  44: /home/david/xray/TehA/xtal43_1_####.cbf
-  45: /home/david/xray/TehA/xtal44_1_####.cbf
-  46: /home/david/xray/TehA/xtal45_1_####.cbf
-  47: /home/david/xray/TehA/xtal46_1_####.cbf
-  48: /home/david/xray/TehA/xtal47_1_####.cbf
-  49: /home/david/xray/TehA/xtal48_1_####.cbf
-  50: /home/david/xray/TehA/xtal49_1_####.cbf
-  51: /home/david/xray/TehA/xtal4_3_####.cbf
-  52: /home/david/xray/TehA/xtal50_1_####.cbf
-  53: /home/david/xray/TehA/xtal50_2_####.cbf
-  54: /home/david/xray/TehA/xtal51_1_####.cbf
-  55: /home/david/xray/TehA/xtal52_1_####.cbf
-  56: /home/david/xray/TehA/xtal53_1_####.cbf
-  57: /home/david/xray/TehA/xtal54_1_####.cbf
-  58: /home/david/xray/TehA/xtal55_1_####.cbf
-  59: /home/david/xray/TehA/xtal55_2_####.cbf
-  60: /home/david/xray/TehA/xtal56_1_####.cbf
-  61: /home/david/xray/TehA/xtal56_2_####.cbf
-  62: /home/david/xray/TehA/xtal57_1_####.cbf
-  63: /home/david/xray/TehA/xtal58_1_####.cbf
-  64: /home/david/xray/TehA/xtal58_2_####.cbf
-  65: /home/david/xray/TehA/xtal58_3_####.cbf
-  66: /home/david/xray/TehA/xtal59_1_####.cbf
-  67: /home/david/xray/TehA/xtal5_1_####.cbf
-  68: /home/david/xray/TehA/xtal60_1_####.cbf
-  69: /home/david/xray/TehA/xtal60_2_####.cbf
-  70: /home/david/xray/TehA/xtal6_1_####.cbf
-  71: /home/david/xray/TehA/xtal7_1_####.cbf
-  72: /home/david/xray/TehA/xtal8_1_####.cbf
-  Job 04 failed in indexing
+  0: /joint-refinement-img/xta30_1_####.cbf
+  1: /joint-refinement-img/xta31_1_####.cbf
+
+  ...
+
+  71: /joint-refinement-img/xtal7_1_####.cbf
+  72: /joint-refinement-img/xtal8_1_####.cbf
   Job 06 failed in initial indexing
-  Job 07 failed in indexing
-  Job 08 failed in indexing
-  Job 11 failed in indexing
-  Job 10 failed in indexing
-  Job 13 failed in indexing
-  Job 12 failed in indexing
-  Job 15 failed in initial indexing
-  Job 21 failed in initial indexing
-  Job 20 failed in initial indexing
-  Job 32 failed in initial indexing
-  Job 37 failed in indexing
-  Job 35 failed in indexing
-  Job 38 failed in indexing
-  Job 39 failed in indexing
-  Job 41 failed in indexing
-  Job 40 failed in indexing
-  Job 45 failed in indexing
-  Job 44 failed in indexing
-  Job 47 failed in indexing
+  Job 05 failed during integration
+  Job 07 failed during integration
+  Job 10 failed during integration
+  Job 15 failed during integration
+  Job 18 failed during integration
+  Job 30 failed during integration
+  Job 34 failed during integration
+  Job 37 failed in initial indexing
+  Job 36 failed during integration
   Job 52 failed in initial indexing
-  Job 49 failed in initial indexing
-  Job 55 failed in initial indexing
-  Job 57 failed in initial indexing
-  Job 61 failed in indexing
-  Job 62 failed in indexing
-  Job 69 failed in indexing
-  Job 70 failed in indexing
-  Job 68 failed in indexing
-  Job 71 failed in initial indexing
-  Job 72 failed in indexing
+  Job 51 failed during integration
+  Job 49 failed during integration
+  Job 56 failed during integration
+  Job 72 failed during integration
   Successfully created the following MTZs:
   sequence_00/integrated.mtz
   sequence_01/integrated.mtz
   sequence_02/integrated.mtz
   sequence_03/integrated.mtz
-  sequence_05/integrated.mtz
+  sequence_04/integrated.mtz
+  sequence_08/integrated.mtz
   sequence_09/integrated.mtz
+  sequence_11/integrated.mtz
+  sequence_12/integrated.mtz
+  sequence_13/integrated.mtz
   sequence_14/integrated.mtz
   sequence_16/integrated.mtz
   sequence_17/integrated.mtz
-  sequence_18/integrated.mtz
   sequence_19/integrated.mtz
+  sequence_20/integrated.mtz
+  sequence_21/integrated.mtz
   sequence_22/integrated.mtz
   sequence_23/integrated.mtz
   sequence_24/integrated.mtz
@@ -447,63 +359,65 @@ Here is the output of a run of the script::
   sequence_27/integrated.mtz
   sequence_28/integrated.mtz
   sequence_29/integrated.mtz
-  sequence_30/integrated.mtz
   sequence_31/integrated.mtz
+  sequence_32/integrated.mtz
   sequence_33/integrated.mtz
-  sequence_34/integrated.mtz
-  sequence_36/integrated.mtz
+  sequence_35/integrated.mtz
+  sequence_38/integrated.mtz
+  sequence_39/integrated.mtz
+  sequence_40/integrated.mtz
+  sequence_41/integrated.mtz
   sequence_42/integrated.mtz
   sequence_43/integrated.mtz
+  sequence_44/integrated.mtz
+  sequence_45/integrated.mtz
   sequence_46/integrated.mtz
+  sequence_47/integrated.mtz
   sequence_48/integrated.mtz
   sequence_50/integrated.mtz
-  sequence_51/integrated.mtz
   sequence_53/integrated.mtz
   sequence_54/integrated.mtz
-  sequence_56/integrated.mtz
+  sequence_55/integrated.mtz
+  sequence_57/integrated.mtz
   sequence_58/integrated.mtz
   sequence_59/integrated.mtz
   sequence_60/integrated.mtz
+  sequence_61/integrated.mtz
+  sequence_62/integrated.mtz
   sequence_63/integrated.mtz
   sequence_64/integrated.mtz
   sequence_65/integrated.mtz
   sequence_66/integrated.mtz
   sequence_67/integrated.mtz
+  sequence_68/integrated.mtz
+  sequence_69/integrated.mtz
+  sequence_70/integrated.mtz
+  sequence_71/integrated.mtz
 
-  real	7m45.656s
-  user	25m32.532s
-  sys	1m34.090s
+  real	9m56.401s
+  user	29m36.650s
+  sys	  8m3.996s
 
 
 Analysis of individually processed datasets
 -------------------------------------------
 
 The paths to :file:`integrated.mtz` files can be copied directly into a file,
-say :file:`individual_mtzs.dat`, and passed to blend for analysis::
+say :file:`individual_mtzs.dat`, and passed to BLEND for analysis::
 
   echo "END" | blend -a individual_mtzs.dat
 
 The dendrogram resulting from clustering is shown here:
 
-  .. image:: /figures/tree_01.png
+  .. image:: /figures/tree.png
 
-Immediately the dendrogram shows that dataset 27 is an extreme outlier.
-From :file:`FINAL_list_of_files.dat` we can see that this refers to
-:file:`sequence_46/integrated.mtz`.
-As we kept all the dials :file:`.log` files
-from DIALS processing we could investigate this further, however as this is
-only one sequence out of 41, we decide just to throw it away and
-move on. So, edit :file:`individual_mtzs.dat` to remove
-the line :file:`sequence_46/integrated.mtz`
-and rerun blend.
+As we can see, the linear cell variation is less than 1%, with an absolute
+value of 0.79 Angstroms, indicating good isomorphism amongst the datasets.
+If any extreme outliers had been shown by the plot, one can inspect the
+file :file:`FINAL_list_of_files.dat` to see which sequence the blend numbering
+relates to. These files could then be removed from :file:`individual_mtzs.dat`
+before rerunning BLEND.
 
-Now the dendrogram looks better:
-
-  .. image:: /figures/tree_02.png
-
-The Linear Cell Variation (LCV) is now less than 1%, with an absolute value
-of 1.03 Angstroms, indicating good isomorphism amongst all the remaining
-datasets.
 
 Joint refinement
 ----------------
@@ -518,16 +432,16 @@ we may look at these correlations for one of these datasets. For example::
     track_parameter_correlation=true correlation_plot.filename=corrplot.png
   cd ..
 
-The new file :file:`sequence_00/corrplot.png` shows correlations between parameters
-refined with this single 8 degree dataset. Clearly parameters like the
-detector distance and the crystal metrical matrix parameters are highly
-correlated.
+The new file :file:`sequence_00/corrplot_X.png` shows correlations between parameters
+refined with this single 8 degree dataset (see also correlations in Y and Phi).
+Clearly parameters like the detector distance and the crystal metrical matrix
+parameters are highly correlated.
 
- .. image:: /figures/sequence_00_corrplot.png
+ .. image:: /figures/corrplot_X.png
 
 Although the DIALS toolkit has a sophisticated mechanism for modelling
-multi-experiment data, the user interface for handling such data is still
-rather limited. In order to do joint refinement of the sequences we need to combine them
+multi-experiment data, the user interface for handling such data is somewhat
+limited. In order to do joint refinement of the sequences we need to combine them
 into a single multi-experiment :file:`combined.expt` and corresponding
 :file:`combined.refl`. Whilst doing this we want to reduce the separate
 detector, beam and goniometer models for each experiment into a single shared
@@ -538,87 +452,124 @@ listing the individual sequences in order. We can use
 file looks like this::
 
   input {
-    experiments = "sequence_00/refined.expt"
-    experiments = "sequence_01/refined.expt"
-    experiments = "sequence_02/refined.expt"
-    experiments = "sequence_03/refined.expt"
-    experiments = "sequence_05/refined.expt"
-    experiments = "sequence_09/refined.expt"
-    experiments = "sequence_14/refined.expt"
-    experiments = "sequence_16/refined.expt"
-    experiments = "sequence_17/refined.expt"
-    experiments = "sequence_18/refined.expt"
-    experiments = "sequence_19/refined.expt"
-    experiments = "sequence_22/refined.expt"
-    experiments = "sequence_23/refined.expt"
-    experiments = "sequence_24/refined.expt"
-    experiments = "sequence_25/refined.expt"
-    experiments = "sequence_26/refined.expt"
-    experiments = "sequence_27/refined.expt"
-    experiments = "sequence_28/refined.expt"
-    experiments = "sequence_29/refined.expt"
-    experiments = "sequence_30/refined.expt"
-    experiments = "sequence_31/refined.expt"
-    experiments = "sequence_33/refined.expt"
-    experiments = "sequence_34/refined.expt"
-    experiments = "sequence_36/refined.expt"
-    experiments = "sequence_42/refined.expt"
-    experiments = "sequence_43/refined.expt"
-    experiments = "sequence_48/refined.expt"
-    experiments = "sequence_50/refined.expt"
-    experiments = "sequence_51/refined.expt"
-    experiments = "sequence_53/refined.expt"
-    experiments = "sequence_54/refined.expt"
-    experiments = "sequence_56/refined.expt"
-    experiments = "sequence_58/refined.expt"
-    experiments = "sequence_59/refined.expt"
-    experiments = "sequence_60/refined.expt"
-    experiments = "sequence_63/refined.expt"
-    experiments = "sequence_64/refined.expt"
-    experiments = "sequence_65/refined.expt"
-    experiments = "sequence_66/refined.expt"
-    experiments = "sequence_67/refined.expt"
-    reflections = "sequence_00/indexed.refl"
-    reflections = "sequence_01/indexed.refl"
-    reflections = "sequence_02/indexed.refl"
-    reflections = "sequence_03/indexed.refl"
-    reflections = "sequence_05/indexed.refl"
-    reflections = "sequence_09/indexed.refl"
-    reflections = "sequence_14/indexed.refl"
-    reflections = "sequence_16/indexed.refl"
-    reflections = "sequence_17/indexed.refl"
-    reflections = "sequence_18/indexed.refl"
-    reflections = "sequence_19/indexed.refl"
-    reflections = "sequence_22/indexed.refl"
-    reflections = "sequence_23/indexed.refl"
-    reflections = "sequence_24/indexed.refl"
-    reflections = "sequence_25/indexed.refl"
-    reflections = "sequence_26/indexed.refl"
-    reflections = "sequence_27/indexed.refl"
-    reflections = "sequence_28/indexed.refl"
-    reflections = "sequence_29/indexed.refl"
-    reflections = "sequence_30/indexed.refl"
-    reflections = "sequence_31/indexed.refl"
-    reflections = "sequence_33/indexed.refl"
-    reflections = "sequence_34/indexed.refl"
-    reflections = "sequence_36/indexed.refl"
-    reflections = "sequence_42/indexed.refl"
-    reflections = "sequence_43/indexed.refl"
-    reflections = "sequence_48/indexed.refl"
-    reflections = "sequence_50/indexed.refl"
-    reflections = "sequence_51/indexed.refl"
-    reflections = "sequence_53/indexed.refl"
-    reflections = "sequence_54/indexed.refl"
-    reflections = "sequence_56/indexed.refl"
-    reflections = "sequence_58/indexed.refl"
-    reflections = "sequence_59/indexed.refl"
-    reflections = "sequence_60/indexed.refl"
-    reflections = "sequence_63/indexed.refl"
-    reflections = "sequence_64/indexed.refl"
-    reflections = "sequence_65/indexed.refl"
-    reflections = "sequence_66/indexed.refl"
-    reflections = "sequence_67/indexed.refl"
+    experiments = sequence_00/refined.expt
+    experiments = sequence_01/refined.expt
+    experiments = sequence_02/refined.expt
+    experiments = sequence_03/refined.expt
+    experiments = sequence_04/refined.expt
+    experiments = sequence_08/refined.expt
+    experiments = sequence_09/refined.expt
+    experiments = sequence_11/refined.expt
+    experiments = sequence_12/refined.expt
+    experiments = sequence_13/refined.expt
+    experiments = sequence_14/refined.expt
+    experiments = sequence_16/refined.expt
+    experiments = sequence_17/refined.expt
+    experiments = sequence_19/refined.expt
+    experiments = sequence_20/refined.expt
+    experiments = sequence_21/refined.expt
+    experiments = sequence_22/refined.expt
+    experiments = sequence_23/refined.expt
+    experiments = sequence_24/refined.expt
+    experiments = sequence_25/refined.expt
+    experiments = sequence_26/refined.expt
+    experiments = sequence_27/refined.expt
+    experiments = sequence_28/refined.expt
+    experiments = sequence_29/refined.expt
+    experiments = sequence_31/refined.expt
+    experiments = sequence_32/refined.expt
+    experiments = sequence_33/refined.expt
+    experiments = sequence_35/refined.expt
+    experiments = sequence_38/refined.expt
+    experiments = sequence_39/refined.expt
+    experiments = sequence_40/refined.expt
+    experiments = sequence_41/refined.expt
+    experiments = sequence_42/refined.expt
+    experiments = sequence_43/refined.expt
+    experiments = sequence_44/refined.expt
+    experiments = sequence_45/refined.expt
+    experiments = sequence_46/refined.expt
+    experiments = sequence_47/refined.expt
+    experiments = sequence_48/refined.expt
+    experiments = sequence_50/refined.expt
+    experiments = sequence_53/refined.expt
+    experiments = sequence_54/refined.expt
+    experiments = sequence_55/refined.expt
+    experiments = sequence_57/refined.expt
+    experiments = sequence_58/refined.expt
+    experiments = sequence_59/refined.expt
+    experiments = sequence_60/refined.expt
+    experiments = sequence_61/refined.expt
+    experiments = sequence_62/refined.expt
+    experiments = sequence_63/refined.expt
+    experiments = sequence_64/refined.expt
+    experiments = sequence_65/refined.expt
+    experiments = sequence_66/refined.expt
+    experiments = sequence_67/refined.expt
+    experiments = sequence_68/refined.expt
+    experiments = sequence_69/refined.expt
+    experiments = sequence_70/refined.expt
+    experiments = sequence_71/refined.expt
+    reflections = sequence_00/indexed.refl
+    reflections = sequence_01/indexed.refl
+    reflections = sequence_02/indexed.refl
+    reflections = sequence_03/indexed.refl
+    reflections = sequence_04/indexed.refl
+    reflections = sequence_08/indexed.refl
+    reflections = sequence_09/indexed.refl
+    reflections = sequence_11/indexed.refl
+    reflections = sequence_12/indexed.refl
+    reflections = sequence_13/indexed.refl
+    reflections = sequence_14/indexed.refl
+    reflections = sequence_16/indexed.refl
+    reflections = sequence_17/indexed.refl
+    reflections = sequence_19/indexed.refl
+    reflections = sequence_20/indexed.refl
+    reflections = sequence_21/indexed.refl
+    reflections = sequence_22/indexed.refl
+    reflections = sequence_23/indexed.refl
+    reflections = sequence_24/indexed.refl
+    reflections = sequence_25/indexed.refl
+    reflections = sequence_26/indexed.refl
+    reflections = sequence_27/indexed.refl
+    reflections = sequence_28/indexed.refl
+    reflections = sequence_29/indexed.refl
+    reflections = sequence_31/indexed.refl
+    reflections = sequence_32/indexed.refl
+    reflections = sequence_33/indexed.refl
+    reflections = sequence_35/indexed.refl
+    reflections = sequence_38/indexed.refl
+    reflections = sequence_39/indexed.refl
+    reflections = sequence_40/indexed.refl
+    reflections = sequence_41/indexed.refl
+    reflections = sequence_42/indexed.refl
+    reflections = sequence_43/indexed.refl
+    reflections = sequence_44/indexed.refl
+    reflections = sequence_45/indexed.refl
+    reflections = sequence_46/indexed.refl
+    reflections = sequence_47/indexed.refl
+    reflections = sequence_48/indexed.refl
+    reflections = sequence_50/indexed.refl
+    reflections = sequence_53/indexed.refl
+    reflections = sequence_54/indexed.refl
+    reflections = sequence_55/indexed.refl
+    reflections = sequence_57/indexed.refl
+    reflections = sequence_58/indexed.refl
+    reflections = sequence_59/indexed.refl
+    reflections = sequence_60/indexed.refl
+    reflections = sequence_61/indexed.refl
+    reflections = sequence_62/indexed.refl
+    reflections = sequence_63/indexed.refl
+    reflections = sequence_64/indexed.refl
+    reflections = sequence_65/indexed.refl
+    reflections = sequence_66/indexed.refl
+    reflections = sequence_67/indexed.refl
+    reflections = sequence_68/indexed.refl
+    reflections = sequence_69/indexed.refl
+    reflections = sequence_70/indexed.refl
+    reflections = sequence_71/indexed.refl
   }
+
 
 
 We called this file :file:`experiments_and_reflections.phil` then run
@@ -627,58 +578,79 @@ We called this file :file:`experiments_and_reflections.phil` then run
   dials.combine_experiments experiments_and_reflections.phil \
     reference_from_experiment.beam=0 \
     reference_from_experiment.goniometer=0 \
-    reference_from_experiment.detector=0
+    reference_from_experiment.detector=0 \
+    compare_models=False
 
 The :samp:`reference_from_experiment` options tell the program to replace all
 beam, goniometer and detector models in the input experiments with those
 models taken from the first experiment, i.e. experiment '0' using 0-based
-indexing. The output lists the number of reflections in each sequence contributing
+indexing. If you run without :samp:`compare_models=False`, you'll see that the beam
+models are not similar enough to pass the tolerance tests in combine_experiments.
+The output lists the number of reflections in each sequence contributing
 to the final :file:`combined.refl`::
 
-  ---------------------
-  | Experiment | Nref |
-  ---------------------
-  | 0          | 1446 |
-  | 1          | 1422 |
-  | 2          | 1209 |
-  | 3          | 1376 |
-  | 4          | 452  |
-  | 5          | 1664 |
-  | 6          | 1528 |
-  | 7          | 1448 |
-  | 8          | 1275 |
-  | 9          | 239  |
-  | 10         | 1614 |
-  | 11         | 1052 |
-  | 12         | 1845 |
-  | 13         | 1495 |
-  | 14         | 2041 |
-  | 15         | 1308 |
-  | 16         | 1839 |
-  | 17         | 1828 |
-  | 18         | 1644 |
-  | 19         | 243  |
-  | 20         | 1061 |
-  | 21         | 2416 |
-  | 22         | 1885 |
-  | 23         | 949  |
-  | 24         | 3569 |
-  | 25         | 2967 |
-  | 26         | 935  |
-  | 27         | 1329 |
-  | 28         | 650  |
-  | 29         | 1325 |
-  | 30         | 633  |
-  | 31         | 1233 |
-  | 32         | 2131 |
-  | 33         | 2094 |
-  | 34         | 2141 |
-  | 35         | 1661 |
-  | 36         | 2544 |
-  | 37         | 2227 |
-  | 38         | 982  |
-  | 39         | 1138 |
-  ---------------------
+  --------------------------------------
+  | Experiment | Number of reflections |
+  --------------------------------------
+  | 0          | 1471                  |
+  | 1          | 1464                  |
+  | 2          | 1232                  |
+  | 3          | 1381                  |
+  | 4          | 1588                  |
+  | 5          | 616                   |
+  | 6          | 1642                  |
+  | 7          | 1083                  |
+  | 8          | 1210                  |
+  | 9          | 1000                  |
+  | 10         | 1529                  |
+  | 11         | 1430                  |
+  | 12         | 1261                  |
+  | 13         | 1587                  |
+  | 14         | 1727                  |
+  | 15         | 1358                  |
+  | 16         | 1049                  |
+  | 17         | 1830                  |
+  | 18         | 1477                  |
+  | 19         | 2033                  |
+  | 20         | 1308                  |
+  | 21         | 1856                  |
+  | 22         | 1830                  |
+  | 23         | 1654                  |
+  | 24         | 1048                  |
+  | 25         | 1695                  |
+  | 26         | 2398                  |
+  | 27         | 2173                  |
+  | 28         | 2869                  |
+  | 29         | 3181                  |
+  | 30         | 2810                  |
+  | 31         | 1563                  |
+  | 32         | 3508                  |
+  | 33         | 2985                  |
+  | 34         | 2526                  |
+  | 35         | 2453                  |
+  | 36         | 1738                  |
+  | 37         | 1152                  |
+  | 38         | 981                   |
+  | 39         | 1336                  |
+  | 40         | 1331                  |
+  | 41         | 641                   |
+  | 42         | 1052                  |
+  | 43         | 1364                  |
+  | 44         | 2114                  |
+  | 45         | 2063                  |
+  | 46         | 2139                  |
+  | 47         | 1570                  |
+  | 48         | 2334                  |
+  | 49         | 1645                  |
+  | 50         | 2499                  |
+  | 51         | 2227                  |
+  | 52         | 971                   |
+  | 53         | 1130                  |
+  | 54         | 2376                  |
+  | 55         | 1211                  |
+  | 56         | 1190                  |
+  | 57         | 652                   |
+  --------------------------------------
   Saving combined experiments to combined.expt
   Saving combined reflections to combined.refl
 
@@ -693,20 +665,22 @@ generally, multi-experiment) data is ongoing within the DIALS project.
 Suggestions are always welcome!
 
 Now we have the joint experiments and reflections files we can run our multi-
-crystal refinement job. First we try outlier rejection, so that the refinement
-run is similar to the jobs we ran on individual datasets::
+crystal refinement job::
 
   dials.refine combined.expt combined.refl \
-    scan_varying=false use_all_reflections=true outlier.algorithm=tukey
+    scan_varying=false outlier.algorithm=tukey
 
 ::
 
   The following parameters have been modified:
 
   refinement {
+    parameterisation {
+      scan_varying = False
+    }
     reflections {
       outlier {
-        algorithm = null *tukey
+        algorithm = null auto mcd *tukey sauter_poon
       }
     }
   }
@@ -717,331 +691,226 @@ run is similar to the jobs we ran on individual datasets::
 
   Configuring refiner
 
-  Summary statistics for observations matched to predictions:
-  ---------------------------------------------------------------------
-  |                   | Min    | Q1      | Med       | Q3     | Max   |
-  ---------------------------------------------------------------------
-  | Xc - Xo (mm)      | -14.68 | -0.8191 | -0.0739   | 0.7823 | 15.85 |
-  | Yc - Yo (mm)      | -21.75 | -0.5103 | -0.01936  | 0.4596 | 17.19 |
-  | Phic - Phio (deg) | -17.36 | -0.2058 | 0.0004136 | 0.2091 | 28.12 |
-  | X weights         | 233    | 359.2   | 379.4     | 392.9  | 405.6 |
-  | Y weights         | 264.7  | 392.9   | 401.3     | 404.4  | 405.6 |
-  | Phi weights       | 177    | 299.9   | 300       | 300    | 300   |
-  ---------------------------------------------------------------------
+  Summary statistics for 96848 observations matched to predictions:
+  --------------------------------------------------------------------
+  |                   | Min    | Q1      | Med      | Q3     | Max   |
+  --------------------------------------------------------------------
+  | Xc - Xo (mm)      | -9.637 | -0.8559 | -0.04029 | 0.8264 | 13.31 |
+  | Yc - Yo (mm)      | -27.99 | -0.5649 | -0.02585 | 0.4819 | 27.1  |
+  | Phic - Phio (deg) | -37.46 | -0.1734 | 0.001499 | 0.1756 | 39.32 |
+  | X weights         | 232.3  | 359.5   | 378.5    | 392.9  | 405.6 |
+  | Y weights         | 246.2  | 390.2   | 399      | 403.2  | 405.6 |
+  | Phi weights       | 262.1  | 299.8   | 300      | 300    | 300   |
+  --------------------------------------------------------------------
 
-  16559 reflections have been rejected as outliers
-  Traceback (most recent call last):
-    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 370, in <module>
-      halraiser(e)
-    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 368, in <module>
-      script.run()
-    File "/home/david/bsx/cctbx-svn/build/../sources/dials/command_line/refine.py", line 274, in run
-      reflections, experiments)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 340, in from_parameters_data_experiments
-      verbosity=verbosity)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 585, in _build_components
-      target = cls.config_target(params, experiments, refman, pred_param, do_stills)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/refiner.py", line 1008, in config_target
-      options.jacobian_max_nref)
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/target.py", line 404, in __init__
-      self._reflection_manager.finalise()
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/reflection_manager.py", line 237, in finalise
-      self._check_too_few()
-    File "/home/david/bsx/cctbx-svn/sources/dials/algorithms/refinement/reflection_manager.py", line 262, in _check_too_few
-      raise RuntimeError(msg)
-  RuntimeError: Please report this error to dials-support@lists.sourceforge.net: Remaining number of reflections = 8, for experiment 19, which is below the configured limit for this reflection manager
+  Detecting centroid outliers using the Tukey algorithm
+  9352 reflections have been flagged as outliers
 
-Oops! That wasn't good. Looking at the error we see that experiment 19 provides
-only 8 reflections to refinement, which is disallowed by a default
-parameters of :program:`dials.refine`, namely ``minimum_number_of_reflections=20``.
-But from the output of :program:`dials.combine_experiments` we see that experiment
-19 has 243 indexed reflections. What happened? Well, forcing the individual
-experiments to share the beam and detector models of experiment 0 has led to some
-very poor predictions for some of these experiments. See the ``Summary statistics``
-table, where the worst positional residuals are greater than 20 mm! We may put this
-down to the very narrow wedges of data we have. Experiment 19 is one of the
-narrowest, with only 4 degrees of data. Outlier rejection is not a good idea here
-because it selectively removes reflections from the worst fitting experiments.
+  Summary statistics for 87496 observations matched to predictions:
+  --------------------------------------------------------------------
+  |                   | Min    | Q1      | Med      | Q3     | Max   |
+  --------------------------------------------------------------------
+  | Xc - Xo (mm)      | -9.637 | -0.89   | -0.02594 | 0.8807 | 13.31 |
+  | Yc - Yo (mm)      | -11.78 | -0.5064 | -0.02297 | 0.4352 | 11.87 |
+  | Phic - Phio (deg) | -8.19  | -0.1399 | 0.001485 | 0.1429 | 8.693 |
+  | X weights         | 232.3  | 359.3   | 378.3    | 392.6  | 405.6 |
+  | Y weights         | 246.2  | 390.6   | 399.1    | 403.2  | 405.6 |
+  | Phi weights       | 262.1  | 300     | 300      | 300    | 300   |
+  --------------------------------------------------------------------
 
-Instead we try without outlier rejection::
-
-  dials.refine combined.expt combined.refl \
-    scan_varying=false use_all_reflections=true \
-    output.experiments=refined_combined.expt
-
-This worked much better::
-
-  The following parameters have been modified:
-
-  output {
-    experiments = refined_combined.expt
-  }
-  refinement {
-    reflections {
-      use_all_reflections = true
-    }
-  }
-  input {
-    experiments = combined.expt
-    reflections = combined.refl
-  }
-
-  Configuring refiner
-
-  Summary statistics for observations matched to predictions:
-  ---------------------------------------------------------------------
-  |                   | Min    | Q1      | Med       | Q3     | Max   |
-  ---------------------------------------------------------------------
-  | Xc - Xo (mm)      | -14.68 | -0.8191 | -0.0739   | 0.7823 | 15.85 |
-  | Yc - Yo (mm)      | -21.75 | -0.5103 | -0.01936  | 0.4596 | 17.19 |
-  | Phic - Phio (deg) | -17.36 | -0.2058 | 0.0004136 | 0.2091 | 28.12 |
-  | X weights         | 233    | 359.2   | 379.4     | 392.9  | 405.6 |
-  | Y weights         | 264.7  | 392.9   | 401.3     | 404.4  | 405.6 |
-  | Phi weights       | 177    | 299.9   | 300       | 300    | 300   |
-  ---------------------------------------------------------------------
-
-  Performing refinement...
+  There are 297 parameters to refine against 87496 reflections in 3 dimensions
+  Performing refinement of 58 Experiments...
 
   Refinement steps:
   -----------------------------------------------
   | Step | Nref  | RMSD_X  | RMSD_Y  | RMSD_Phi |
   |      |       | (mm)    | (mm)    | (deg)    |
   -----------------------------------------------
-  | 0    | 57629 | 1.6886  | 1.3984  | 1.2926   |
-  | 1    | 57629 | 1.3726  | 1.0295  | 0.69528  |
-  | 2    | 57629 | 1.1462  | 0.86286 | 0.64657  |
-  | 3    | 57629 | 0.88257 | 0.6659  | 0.5764   |
-  | 4    | 57629 | 0.61437 | 0.47405 | 0.44825  |
-  | 5    | 57629 | 0.38414 | 0.31317 | 0.28436  |
-  | 6    | 57629 | 0.22337 | 0.19783 | 0.16576  |
-  | 7    | 57629 | 0.1759  | 0.16573 | 0.12827  |
-  | 8    | 57629 | 0.17255 | 0.16354 | 0.12475  |
-  | 9    | 57629 | 0.17228 | 0.16336 | 0.12463  |
-  | 10   | 57629 | 0.17217 | 0.16325 | 0.12457  |
-  | 11   | 57629 | 0.17218 | 0.16322 | 0.12452  |
-  | 12   | 57629 | 0.17219 | 0.16322 | 0.1245   |
-  | 13   | 57629 | 0.17219 | 0.16321 | 0.1245   |
+  | 0    | 87496 | 1.6408  | 1.1569  | 0.79118  |
+  | 1    | 87496 | 1.0856  | 0.83106 | 0.52798  |
+  | 2    | 87496 | 0.91236 | 0.7085  | 0.50131  |
+  | 3    | 87496 | 0.70048 | 0.54736 | 0.46902  |
+  | 4    | 87496 | 0.46951 | 0.36137 | 0.40123  |
+  | 5    | 87496 | 0.29632 | 0.21747 | 0.28785  |
+  | 6    | 87496 | 0.20347 | 0.15376 | 0.17079  |
+  | 7    | 87496 | 0.16762 | 0.13534 | 0.11626  |
+  | 8    | 87496 | 0.16252 | 0.13282 | 0.10889  |
+  | 9    | 87496 | 0.16223 | 0.13265 | 0.1086   |
+  | 10   | 87496 | 0.16213 | 0.13258 | 0.1086   |
+  | 11   | 87496 | 0.16204 | 0.13254 | 0.10869  |
+  | 12   | 87496 | 0.162   | 0.13252 | 0.10877  |
+  | 13   | 87496 | 0.16199 | 0.13252 | 0.10879  |
+  | 14   | 87496 | 0.16199 | 0.13252 | 0.10879  |
   -----------------------------------------------
   RMSD no longer decreasing
 
   RMSDs by experiment:
   ---------------------------------------------
   | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)    | (px)    | (images) |
+  | id  |      | (px)    | (px)    | (images) |
   ---------------------------------------------
-  | 0   | 1374 | 0.63002 | 0.40512 | 0.35154  |
-  | 1   | 1325 | 0.65204 | 0.38951 | 0.34116  |
-  | 2   | 1138 | 0.90682 | 0.85212 | 0.75447  |
-  | 3   | 1294 | 0.67566 | 0.51293 | 0.27902  |
-  | 4   | 406  | 0.76138 | 0.50378 | 0.36697  |
-  | 5   | 1579 | 1.059   | 1.5602  | 0.93859  |
-  | 6   | 1452 | 0.63949 | 0.32975 | 0.3447   |
-  | 7   | 1376 | 1.0682  | 1.1586  | 0.90346  |
-  | 8   | 1203 | 1.0566  | 1.4784  | 0.69921  |
-  | 9   | 213  | 2.0411  | 2.0389  | 1.3643   |
-  | 10  | 1543 | 0.78169 | 0.47908 | 0.51499  |
-  | 11  | 980  | 0.96025 | 1.16    | 0.72548  |
-  | 12  | 1783 | 0.74162 | 0.84784 | 0.6762   |
-  | 13  | 1424 | 0.73974 | 0.51861 | 0.37127  |
-  | 14  | 1937 | 1.1603  | 1.4405  | 0.84322  |
-  | 15  | 1237 | 0.92314 | 0.50443 | 0.42126  |
-  | 16  | 1751 | 0.71062 | 0.37032 | 0.34264  |
-  | 17  | 1742 | 0.6608  | 0.40137 | 0.2978   |
-  | 18  | 1550 | 0.84246 | 1.2565  | 0.71967  |
-  | 19  | 222  | 1.1222  | 0.77297 | 0.95399  |
+  | 0   | 1438 | 0.55006 | 0.36386 | 0.39245  |
+  | 1   | 1377 | 0.60375 | 0.35395 | 0.37074  |
+  | 2   | 1046 | 0.81377 | 0.55378 | 0.74578  |
+  | 3   | 1042 | 0.71331 | 0.50699 | 0.29662  |
+  | 4   | 1430 | 1.7057  | 2.0768  | 0.70272  |
+  | 5   | 562  | 0.76136 | 0.54465 | 0.444    |
+  | 6   | 1473 | 0.91579 | 1.2153  | 0.38596  |
+  | 7   | 1033 | 0.50161 | 0.37586 | 0.24255  |
+  | 8   | 1097 | 0.49387 | 0.35304 | 0.27443  |
+  | 9   | 871  | 0.8339  | 0.58238 | 0.27862  |
+  | 10  | 1462 | 0.51758 | 0.29764 | 0.26121  |
+  | 11  | 1297 | 1.0496  | 1.0934  | 0.62916  |
+  | 12  | 1060 | 0.56529 | 0.41568 | 0.35943  |
+  | 13  | 1508 | 0.52573 | 0.34911 | 0.2364   |
+  | 14  | 1581 | 0.64887 | 0.3499  | 0.27855  |
+  | 15  | 1142 | 1.3555  | 1.0016  | 0.81589  |
+  | 16  | 987  | 0.57376 | 0.46291 | 0.30225  |
+  | 17  | 1642 | 0.68198 | 0.55891 | 0.48053  |
+  | 18  | 1334 | 0.62128 | 0.55331 | 0.34444  |
+  | 19  | 1814 | 0.97204 | 0.80027 | 0.48625  |
+  | 20  | 1172 | 0.82146 | 0.47213 | 0.41469  |
+  | 21  | 1696 | 0.65721 | 0.34464 | 0.28293  |
+  | 22  | 1700 | 0.59074 | 0.37139 | 0.28981  |
+  | 23  | 1472 | 0.72438 | 0.69007 | 0.39294  |
+  | 24  | 886  | 0.81814 | 0.64633 | 0.39922  |
+  | 25  | 1413 | 1.5227  | 1.839   | 0.90807  |
+  | 26  | 2374 | 0.52255 | 0.2912  | 0.24541  |
+  | 27  | 1998 | 0.494   | 0.29952 | 0.23895  |
+  | 28  | 2620 | 0.5181  | 0.30387 | 0.25139  |
+  | 29  | 2928 | 0.51628 | 0.29307 | 0.27191  |
+  | 30  | 2510 | 0.51078 | 0.3342  | 0.29667  |
+  | 31  | 1334 | 0.68191 | 0.38606 | 0.2856   |
+  | 32  | 3240 | 0.80437 | 0.50846 | 0.5801   |
+  | 33  | 2330 | 1.5782  | 1.0468  | 0.59145  |
+  | 34  | 2409 | 0.64632 | 0.28538 | 0.26755  |
+  | 35  | 2226 | 1.944   | 1.6115  | 0.86348  |
+  | 36  | 1551 | 0.91913 | 0.90458 | 0.64259  |
+  | 37  | 1047 | 0.75458 | 0.54531 | 0.30649  |
+  | 38  | 742  | 1.6069  | 1.0673  | 1.3176   |
+  | 39  | 1205 | 1.2038  | 0.94187 | 1.0289   |
+  | 40  | 1200 | 1.3346  | 0.98056 | 0.46257  |
+  | 41  | 502  | 1.6651  | 1.159   | 1.7142   |
+  | 42  | 939  | 2.2596  | 1.5491  | 2.0847   |
+  | 43  | 1105 | 1.1467  | 0.86945 | 1.0626   |
+  | 44  | 1929 | 0.55025 | 0.2708  | 0.25013  |
+  | 45  | 1786 | 0.60951 | 0.27533 | 0.27842  |
+  | 46  | 1738 | 0.56749 | 0.35204 | 0.33809  |
+  | 47  | 1454 | 0.53203 | 0.31578 | 0.27452  |
+  | 48  | 2016 | 1.1326  | 1.2978  | 0.59713  |
+  | 49  | 1481 | 0.97476 | 1.0774  | 0.32288  |
+  | 50  | 2412 | 0.54143 | 0.47678 | 0.25686  |
+  | 51  | 2005 | 1.0293  | 0.77775 | 0.46855  |
+  | 52  | 924  | 0.97306 | 0.64495 | 0.28243  |
+  | 53  | 1046 | 0.63827 | 0.42478 | 0.58041  |
+  | 54  | 2180 | 0.58521 | 0.32623 | 0.31898  |
+  | 55  | 1094 | 0.63002 | 0.40298 | 0.26934  |
+  | 56  | 1070 | 1.3311  | 1.0275  | 0.73719  |
+  | 57  | 566  | 2.3765  | 1.2727  | 0.78839  |
   ---------------------------------------------
-  Table truncated to show the first 20 experiments only
-  Re-run with verbosity >= 2 to show all experiments
-  Saving refined experiments to refined_combined.expt
+  Updating predictions for indexed reflections
+  Saving refined experiments to refined.expt
+  Saving reflections with updated predictions to refined.refl
 
-The overall final RMSDs are 0.17 mm in X, 0.16 mm in Y and 0.12 degrees in
-:math:`\phi`. The RMSDs per experiment are also shown, but only for the first
-20 experiments. Rerunning with :samp:`verbosity=2` does give the full table,
-but also produces a great deal more log output, so it would be easier to find
-in the file :file:`dials.refine.log` rather than scrolling up pages in your
-terminal.
+
+The overall final RMSDs are 0.16 mm in X, 0.13 mm in Y and 0.11 degrees in
+:math:`\phi`. The RMSDs per experiment are also shown, which exhibit significant
+variation between datasets.
 
 We can compare the RMSDs from individually refined experiments to those from
-the joint experiments. For example, look at the RSMDs for experiment 0, in the
-logfile :file:`sequence_00/dials.refine.log`::
+the joint experiments. For example, look at the RSMDs for experiment 1, in the
+logfile :file:`sequence_01/dials.refine.log`::
 
   RMSDs by experiment:
-  --------------------------------------------
-  | Exp | Nref | RMSD_X  | RMSD_Y | RMSD_Z   |
-  |     |      | (px)    | (px)   | (images) |
-  --------------------------------------------
-  | 0   | 1000 | 0.57553 | 0.3374 | 0.26322  |
-  --------------------------------------------
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  | id  |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 1422 | 0.54278 | 0.30358 | 0.2555   |
+  ---------------------------------------------
 
 Clearly allowing the detector and beam to refine only against this data lets
 the model better fit the observations, but is it a more accurate description of
 reality? Given that we *know* or can comfortably assume that the detector and
 beam did not move between data collections, then the constraints applied by
-joint refinement seem appropriate. For better parity with the original results
-perhaps we should use outlier rejection though. Now the models are close enough
-it is safe to do so::
+joint refinement seem appropriate. The RMSDs for experiment 1 are not so much
+worse than from the individual refinement job. We are happy with this result
+and move on to re-integrating the data to create MTZs for BLEND.
 
-  dials.refine refined_combined.expt combined.refl \
-    scan_varying=false \
-    use_all_reflections=true \
-    outlier.algorithm=tukey \
-    output.experiments=refined_combined_outrej.expt
+It is worth noting that including/excluding outlier rejection can have a
+significant effect on the stability of the refinement (although not in this
+case). If issues are encountered processing your own data, try without
+outlier rejection to see if the result is improved.
 
-The RMSD tables resulting from this::
-
-  Refinement steps:
-  ------------------------------------------------
-  | Step | Nref  | RMSD_X  | RMSD_Y   | RMSD_Phi |
-  |      |       | (mm)    | (mm)     | (deg)    |
-  ------------------------------------------------
-  | 0    | 50918 | 0.10361 | 0.06205  | 0.05831  |
-  | 1    | 50918 | 0.10333 | 0.061719 | 0.057777 |
-  | 2    | 50918 | 0.10311 | 0.061549 | 0.057746 |
-  | 3    | 50918 | 0.10277 | 0.061306 | 0.057601 |
-  | 4    | 50918 | 0.10246 | 0.061116 | 0.057267 |
-  | 5    | 50918 | 0.10228 | 0.061063 | 0.056877 |
-  | 6    | 50918 | 0.10215 | 0.061081 | 0.05668  |
-  | 7    | 50918 | 0.10208 | 0.061099 | 0.05666  |
-  | 8    | 50918 | 0.10204 | 0.061066 | 0.056661 |
-  | 9    | 50918 | 0.10201 | 0.060985 | 0.056634 |
-  | 10   | 50918 | 0.102   | 0.0609   | 0.056573 |
-  | 11   | 50918 | 0.10203 | 0.060857 | 0.056504 |
-  | 12   | 50918 | 0.10205 | 0.060845 | 0.056468 |
-  | 13   | 50918 | 0.10206 | 0.060843 | 0.05646  |
-  | 14   | 50918 | 0.10206 | 0.060843 | 0.05646  |
-  ------------------------------------------------
-  RMSD no longer decreasing
-
-  RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |      | (px)    | (px)    | (images) |
-  ---------------------------------------------
-  | 0   | 1304 | 0.57371 | 0.34681 | 0.30517  |
-  | 1   | 1275 | 0.60022 | 0.34285 | 0.30982  |
-  | 2   | 1004 | 0.67823 | 0.41947 | 0.29667  |
-  | 3   | 1211 | 0.61019 | 0.42341 | 0.26994  |
-  | 4   | 374  | 0.66814 | 0.41793 | 0.28288  |
-  | 5   | 1429 | 0.53542 | 0.30974 | 0.25422  |
-  | 6   | 1426 | 0.51288 | 0.282   | 0.23681  |
-  | 7   | 1237 | 0.65645 | 0.32797 | 0.27486  |
-  | 8   | 1090 | 0.54471 | 0.34442 | 0.2591   |
-  | 9   | 137  | 1.2492  | 0.48144 | 0.31548  |
-  | 10  | 1483 | 0.54167 | 0.33374 | 0.25129  |
-  | 11  | 907  | 0.56563 | 0.39174 | 0.26267  |
-  | 12  | 1697 | 0.53376 | 0.33867 | 0.25553  |
-  | 13  | 1354 | 0.59745 | 0.32363 | 0.27096  |
-  | 14  | 1766 | 0.55775 | 0.30882 | 0.25687  |
-  | 15  | 1109 | 0.68372 | 0.35892 | 0.31     |
-  | 16  | 1636 | 0.5659  | 0.3262  | 0.30059  |
-  | 17  | 1656 | 0.53262 | 0.32716 | 0.26653  |
-  | 18  | 1401 | 0.51543 | 0.37366 | 0.2767   |
-  | 19  | 172  | 0.90236 | 0.38946 | 0.39827  |
-  ---------------------------------------------
-  Table truncated to show the first 20 experiments only
-
-Now we have RMSDs in X down to 0.1 mm, in Y to 0.06 mm and 0.06 degrees in
-:math:`\phi`. The RMSDs for experiment 0 are not so much worse than from the
-individual refinement job. We are happy with this result and move on to
-re-integrating the data to create MTZs for BLEND.
 
 Analysis of jointly refined datasets
 ------------------------------------
 
-:program:`dials.integrate` will not work with our :file:`refined_combined_outrej.expt`
-and :file:`combined.refl` directly, so we have to separate these
-into individual files for each experiment. It is best to do this inside a new
-directory:
+We can run :program:`dials.integrate` on the combined datafiles. We'll do
+a 'quick and dirty' integration like before, to enable a fair comparison
+to be made for the BLEND results::
 
-.. code-block:: bash
+  dials.integrate combined.refl refined.expt \
+    prediction.d_min=7.0 prediction.d_max=8.1 \
+    profile.fitting=False nproc=4
 
-  mkdir joint
-  cd !$
-  dials.split_experiments ../refined_combined_outrej.expt ../combined.refl
+This will integrate each dataset without profile fitting, using multiple
+processors, but only between 7.0 and 8.1 Angstrom to produce a quick result
+for the purpose of creating the MTZ files for BLEND. Next, we want to
+generate mtz files, however :program:`dials.export` can
+only export one dataset at a time, so we will first need to separate the
+dataset into individual files::
 
-This fills the directory with 39 individual :file:`experiments_##.expt` and
-:file:`reflections_##.refl` files. To integrate these quickly we want a script
-to run in parallel, similar to the one used previously::
+  dials.split_experiments integrated.refl integrated.expt
+
+This will create a series of datafiles from
+:file:`split_00.refl`, :file:`split_00.expt` up to
+:file:`split_57.refl`, :file:`split_57.expt`.
+
+To export the 58 datasets, we should write a script to avoid having to work
+manually. Currently, many DIALS programs such as :program:`dials.export`
+can be imported into python scripts as functions to be called directly.
+Therefore the script we need is as follows::
 
   #!/bin/env dials.python
-  import os
-  import sys
-  import glob
-  from libtbx import easy_run, easy_mp
-  from dials.test import cd
+  import logging
+  from dxtbx.serialize import load
+  from dials.array_family import flex
+  from dials.util import log
+  from dials.command_line.export import phil_scope, export_mtz
 
-  def process_sequence(task):
-    """Process a single sequence of data. The parameter 'task' will be a
-    tuple, the first element of which is an integer job number and the
-    second is the path to the directory containing the data"""
-
-    num = task[0]
-    datadir = task[1]
-
-    experiments_file = "experiments_%02d.expt" % num
-    reflections_file = "reflections_%02d.refl" % num
-    experiments_path = os.path.join(datadir, experiments_file)
-    reflections_path = os.path.join(datadir, reflections_file)
-
-    # create directory
-    with cd("sequence_%02d" % num):
-      # WARNING! Fast and dirty integration.
-      # Do not use the result for scaling/merging!
-      cmd = "dials.integrate %s %s " + \
-            "profile.fitting=False prediction.dmin=8.0 prediction.dmax=8.1"
-      cmd = cmd % (experiments_path, reflections_path)
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.refl"):
-        print "Job %02d failed during integration" % num
-        return
-
-      # create MTZ
-      cmd = "dials.export %s integrated.refl mtz.hklout=integrated.mtz"
-      cmd = cmd % experiments_path
-      easy_run.fully_buffered(command=cmd)
-      if not os.path.isfile("integrated.mtz"):
-        print "Job %02d failed during MTZ export" % num
-        return
-
-    # if we got this far, return the path to the MTZ
-    return "sequence_%02d/integrated.mtz" % num
+  logger = logging.getLogger("dials.command_line.export")
 
   if __name__ == "__main__":
 
-    if len(sys.argv) != 2:
-      sys.exit("Usage: dials.python integrate_joint_TehA.py ..")
-    data_dir = os.path.abspath(sys.argv[1])
+    log.config(logfile="export_all.log")
 
-    pathname = os.path.join(data_dir, "experiments_*.expt")
-    experiments = glob.glob(pathname)
+    params = phil_scope.extract()
+    params.intensity = ["sum"]
 
-    templates = [data_dir for f in experiments]
-    tasklist = list(enumerate(sorted(templates)))
+    for i in range(0, 58):
+        params.mtz.hklout = "integrated_%02d.mtz" % i
+        logger.info("Attempting to export to %s", params.mtz.hklout)
+        refl = flex.reflection_table.from_file("split_%02d.refl" % i)
+        expts = load.experiment_list("split_%02d.expt" % i, check_format=False)
+        export_mtz(params, expts, [refl])
 
-    from libtbx import Auto
-    nproc = easy_mp.get_processes(Auto)
+This, if saved as :file:`joint_export.py`, can be run as simply::
 
-    print "Attempting to process the following datasets, with {} processes".format(nproc)
-    for task in tasklist:
-      print "%d: %s/experiments%02d" % (task[0], task[1], task[0])
+  dials.python joint_export.py
 
-    results = easy_mp.parallel_map(
-      func=process_sequence,
-      iterable=tasklist,
-      processes=nproc,
-      preserve_order=True)
+This simple script has several key components. The 'phil_scope' contains the
+command-line program parameters, which we extract to a 'params' object for the
+export_mtz function call. We can override parameters in the params object, in
+this example we set the intensity type to export and set a new mtz filename for
+each iteration in the loop.
+We also need to provide a reflection table and experiment list for each dataset,
+which are loaded within the loop and passed to export_mtz. We also create a logger
+to capture any output from the export_mtz function, which we have to configure
+in the program. For this simple task, where we don't need to take advantage of
+parallel processing, this script is sufficient.
 
-    good_results = [e for e in results if e is not None]
-    print "Successfully created the following MTZs:"
-    for result in good_results:
-      print result
-
-This, if saved as :file:`integrate_joint_TehA.py` in the new :file:`joint`
-directory can be run as follows::
-
-  dials.python integrate_joint_TehA.py .
-
-As expected this creates all 40 MTZs for the jointly refined sequences without any
+As expected this creates all 58 MTZs for the jointly refined sequences without any
 problem. We can copy the paths to these into a new file, say
 :file:`joint_mtzs.dat`, and run blend::
 
@@ -1049,9 +918,9 @@ problem. We can copy the paths to these into a new file, say
 
 The :file:`tree.png` resulting from this is very interesting.
 
-  .. image:: /figures/tree_03.png
+  .. image:: /figures/tree_joint.png
 
-The LCV is now as low as 0.36% (aLCV 0.6 Angstroms). This indicates an even
+The LCV is now as low as 0.35% (aLCV 0.58 Angstroms). This indicates an even
 higher degree of isomorphism than detected during after individual processing.
 So although joint refinement leads to slightly higher RMSDs for each experiment
 (as we expected) the resulting unit cells are more similar. It is worth
