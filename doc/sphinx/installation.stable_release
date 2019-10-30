@@ -36,8 +36,11 @@ Stable Release: DIALS 1.14
 ==========================
 
 We still support the previous stable release version of DIALS. This can be downloaded
-from `Github <https://github.com/dials/dials/releases/tag/v1.14.0>`_,
-where you can also find further `release notes <https://github.com/dials/dials/releases/tag/v1.14.0>`_.
+from `Github`__,
+where you can also find further `release notes`__.
+
+.. __: https://github.com/dials/dials/releases/tag/v1.14.0
+__ https://github.com/dials/dials/releases/tag/v1.14.0
 
 .. button::
    :text: DIALS 1.14.12 Linux installer
