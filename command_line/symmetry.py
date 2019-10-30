@@ -12,7 +12,7 @@ import iotbx.phil
 from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
-from dials.util import log, Sorry, show_mail_on_error
+from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
@@ -331,7 +331,7 @@ def run(args=None):
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
-        raise Sorry(
+        raise sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
@@ -339,7 +339,7 @@ def run(args=None):
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         symmetry(experiments, reflections, params=params)
     except ValueError as e:
-        raise Sorry(e)
+        raise sys.exit(e)
 
 
 if __name__ == "__main__":
