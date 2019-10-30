@@ -6,7 +6,7 @@ import sys
 
 import iotbx.phil
 from cctbx import sgtbx
-from cctbx.sgtbx.lattice_symmetry import metric_subgroups
+from dials.command_line.symmetry import map_to_minimum_cell
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -104,7 +104,7 @@ class cosym(Subject):
             self._experiments, self._reflections
         )
 
-        self._experiments, self._reflections = self._map_to_minimum_cell(
+        self._experiments, self._reflections = map_to_minimum_cell(
             self._experiments, self._reflections, params.lattice_symmetry_max_delta
         )
 
@@ -232,26 +232,6 @@ class cosym(Subject):
         return select_datasets_on_ids(
             experiments, reflections, use_datasets=identifiers
         )
-
-    @staticmethod
-    def _map_to_minimum_cell(experiments, reflections, max_delta):
-        # Map to the minimum cell via the best cell, which seems to guarantee that the
-        # resulting minimum cells are consistent
-        for expt, refl in zip(experiments, reflections):
-            groups = metric_subgroups(
-                expt.crystal.get_crystal_symmetry(),
-                max_delta,
-                enforce_max_delta_for_generated_two_folds=True,
-            )
-            group = groups.result_groups[0]
-            cb_op_best_to_min = group[
-                "best_subsym"
-            ].change_of_basis_op_to_minimum_cell()
-            cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
-            refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
-            expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
-            expt.crystal.set_space_group(sgtbx.space_group())
-        return experiments, reflections
 
     @Subject.notify_event("performed_unit_cell_clustering")
     def _unit_cell_clustering(self, experiments):
