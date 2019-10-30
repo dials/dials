@@ -32,3 +32,34 @@ where you can also find further `release notes <https://github.com/dials/dials/r
    :text: DIALS 2.0.0 Source installer
    :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-source.tar.xz
 
+Stable Release: DIALS 1.14
+==========================
+
+We still support the previous stable release version of DIALS. This can be downloaded
+from `Github <https://github.com/dials/dials/releases/tag/v1.14.0>`_,
+where you can also find further `release notes <https://github.com/dials/dials/releases/tag/v1.14.0>`_.
+
+.. button::
+   :text: DIALS 1.14.12 Linux installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-linux-x86_64.tar.xz
+
+.. button::
+   :text: DIALS 1.14.12 Mac installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx.pkg
+
+.. button::
+   :text: DIALS 1.14.12 Mac installer (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx-10.6.pkg
+
+.. button::
+   :text: DIALS 1.14.12 Mac tar archive
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx.tar.gz
+
+.. button::
+   :text: DIALS 1.14.12 Mac tar archive (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx-10.6.tar.gz
+
+.. button::
+   :text: DIALS 1.14.12 Source installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-source.tar.xz
+
