@@ -206,7 +206,7 @@ def run_macrocycle(params, reflections, experiments):
     # just copy over the columns of interest or columns that may have been
     # updated, leaving behind things added by e.g. scan-varying refinement
     # such as 'block', the U, B and UB matrices and gradients.
-    for key in preds.rows():
+    for key in preds:
         if key in reflections.keys() or key in [
             "s1",
             "xyzcal.mm",

@@ -13,6 +13,8 @@ import os
 
 import procrunner
 import pytest
+
+from annlib_ext import AnnAdaptor
 from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -178,3 +180,16 @@ def test3(dials_regression, tmpdir):
     assert unit_cell == pytest.approx(
         [42.27482, 42.27482, 39.66893, 90.00000, 90.00000, 90.00000], abs=1e-3
     )
+
+    refined_refl = flex.reflection_table.from_file(tmpdir.join("refined.refl").strpath)
+    # re-predict reflections using the refined experiments
+    predicted = flex.reflection_table.from_predictions_multi([ref_exp])
+
+    matched, reference, unmatched = predicted.match_with_reference(refined_refl)
+    # assert most refined reflections are matched with predictions
+    assert reference.size() > (0.997 * refined_refl.size())
+
+    # second check with nearest neighbour matching that the predictions match up
+    ann = AnnAdaptor(data=predicted["xyzcal.px"].as_double(), dim=3, k=1)
+    ann.query(refined_refl["xyzcal.px"].as_double())
+    assert (ann.distances < 0.5).count(True) > (0.998 * refined_refl.size())
