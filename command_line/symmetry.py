@@ -6,6 +6,7 @@ import random
 import sys
 
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 from libtbx.table_utils import simple_table
 import iotbx.phil
@@ -108,6 +109,34 @@ output {
 )
 
 
+def map_to_minimum_cell(experiments, reflections, max_delta):
+    """
+    Map experiments and reflections to the minimum cell
+
+    Map to the minimum cell via the best cell, which appears to guarantee that the
+    resulting minimum cells are consistent.
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflections (list): a list of reflection tables
+
+    Returns: The experiments and reflections mapped to the minimum cell
+    """
+    for expt, refl in zip(experiments, reflections):
+        groups = metric_subgroups(
+            expt.crystal.get_crystal_symmetry(),
+            max_delta,
+            enforce_max_delta_for_generated_two_folds=True,
+        )
+        group = groups.result_groups[0]
+        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+        refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
+        expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
+        expt.crystal.set_space_group(sgtbx.space_group())
+    return experiments, reflections
+
+
 def symmetry(experiments, reflection_tables, params=None):
     """
     Run symmetry analysis
@@ -129,6 +158,11 @@ def symmetry(experiments, reflection_tables, params=None):
 
         # transform models into miller arrays
         n_datasets = len(experiments)
+
+        experiments, reflection_tables = map_to_minimum_cell(
+            experiments, reflection_tables, params.lattice_symmetry_max_delta
+        )
+
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             reflection_tables,
