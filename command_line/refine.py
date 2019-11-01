@@ -23,7 +23,6 @@ import dials.util
 import libtbx.phil
 from libtbx import Auto
 from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 from dials.algorithms.refinement.corrgram import create_correlation_plots
@@ -371,11 +370,14 @@ def run(args=None, phil=working_phil):
 
     logger.info(dials_version())
 
-    # duplicate crystal if exactly one and > 1 scan - should probably check
-    # if scan_varying is not False here too.
-    if len(experiments) > 1 and len(experiments.crystals()) == 1:
-        logger.info("Splitting experiments refinement")
-        experiments = ExperimentList([copy.deepcopy(e) for e in experiments])
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if exactly one and > 1 scan
+        if len(experiments) > 1 and len(experiments.crystals()) == 1:
+            logger.info("Splitting crystal models before refinement")
+            c = experiments.crystals()[0]
+            crystals = [copy.deepcopy(c) for e in experiments]
+            for j, e in enumerate(experiments):
+                e.crystal = crystals[j]
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
