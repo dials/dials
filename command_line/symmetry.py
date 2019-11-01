@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import json
 import logging
 import random
 import sys
@@ -122,6 +123,7 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
 
     Returns: The experiments and reflections mapped to the minimum cell
     """
+    cb_ops = []
     for expt, refl in zip(experiments, reflections):
         groups = metric_subgroups(
             expt.crystal.get_crystal_symmetry(),
@@ -134,7 +136,8 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
         refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
         expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
         expt.crystal.set_space_group(sgtbx.space_group())
-    return experiments, reflections
+        cb_ops.append(cb_op_inp_min)
+    return experiments, reflections, cb_ops
 
 
 def symmetry(experiments, reflection_tables, params=None):
@@ -159,7 +162,7 @@ def symmetry(experiments, reflection_tables, params=None):
         # transform models into miller arrays
         n_datasets = len(experiments)
 
-        experiments, reflection_tables = map_to_minimum_cell(
+        experiments, reflection_tables, cb_ops = map_to_minimum_cell(
             experiments, reflection_tables, params.lattice_symmetry_max_delta
         )
 
@@ -188,7 +191,14 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info(result)
 
         if params.output.json is not None:
-            result.as_json(filename=params.output.json)
+            d = result.as_dict()
+            d["cb_op_inp_min"] = [str(cb_op) for cb_op in cb_ops]
+            # This is not the input symmetry as we have already mapped it to minimum
+            # cell, so delete from the output dictionary to avoid confusion
+            del d["input_symmetry"]
+            json_str = json.dumps(d, indent=2)
+            with open(params.output.json, "w") as f:
+                f.write(json_str)
 
         # Change of basis operator from input unit cell to best unit cell
         cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
