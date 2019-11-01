@@ -147,6 +147,14 @@ class ScrewAxis(Subject):
             # results appear inconsistent - significant i_over_sigma_abs, but this
             # is still low compared to i_over_sigma_expected
             # try removing the highest absent reflection in case its an outlier
+            outlier_msg = (
+                """Screw axis %s could only be assigned after removing a suspected outlier
+from the expected 'absent' reflections."""
+                % self.name
+            )
+            if expected_abs.size() <= 1:
+                logger.info(outlier_msg)
+                return P_present
             sel = flex.sort_permutation(expected_abs)
             sorted_exp_abs = expected_abs.select(sel)
             mean_i_sigma_abs = flex.mean(sorted_exp_abs[:-1])
@@ -166,11 +174,7 @@ There may be a set of weak reflections due to pseudosymmetry.""",
                 self.intensities.select(~expected_sel).select(sel)[:-1]
             )
             if z_score_present > cutoff:
-                logger.info(
-                    """Screw axis %s could only be assigned after removing a suspected outlier
-from the expected 'absent' reflections.""",
-                    self.name,
-                )
+                logger.info(outlier_msg)
                 return P_present
             # else in the uncertain case
         elif z_score_present > cutoff:  # evidence with confidence
