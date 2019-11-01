@@ -14,22 +14,24 @@ phil_scope = iotbx.phil.parse(
     method = *quasi_random intensity_ranges use_all random
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
-              "minimisation. auto (default) will choose use_all for small datasets"
-              "and quasi_random for large datasets, and will try to optimise the"
-              "quasi_random algorithm parameters. Manually selecting quasi-random"
-              "will use the reflection_selection.quasi_random parameters to"
-              "attempt to choose reflection groups that have a good connectedness"
-              "across reciprocal space, for all resolutions. intensity_ranges"
-              "uses the E2_range, Isigma_range and d_range options to choose a"
-              "subset of reflections. use_all uses all suitable reflections for"
-              "model minimisation, which may be slow for large datasets."
+              "minimisation."
+              "The quasi_random option randomly selects reflections groups"
+              "within a dataset, and also selects groups which have good"
+              "connectedness across datasets for multi-dataset cases. The random"
+              "option selects reflection groups randomly for both single"
+              "and multi dataset scaling, so for a single dataset"
+              "quasi_random == random."
+              "The intensity_ranges option uses the E2_range, Isigma_range and"
+              "d_range options to the subset of reflections"
+              "The use_all option uses all suitable reflections, which may be"
+              "slow for large datasets."
     random {
       multi_dataset {
         refl_per_param = 250
           .type = int
           .help = "Target number of reflections per parameter to select for"
                   "minimisation in multi-dataset case"
-        min_reflections = 20000
+        min_reflections = 40000
           .type = int
           .help = "Minimum number of reflections to use for minimisation across"
                   "all datasets"

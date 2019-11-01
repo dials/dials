@@ -150,7 +150,12 @@ def _perform_quasi_random_selection(
 
 
 def select_connected_reflections_across_datasets(
-    Ih_table, experiment, min_per_class=500, Isigma_cutoff=2.0, min_total=40000
+    Ih_table,
+    experiment,
+    min_per_class=500,
+    Isigma_cutoff=2.0,
+    min_total=40000,
+    n_resolution_bins=20,
 ):
     """Select highly connected reflections across datasets."""
     assert Ih_table.n_work_blocks == 1
@@ -159,7 +164,9 @@ def select_connected_reflections_across_datasets(
 
     # now split into resolution bins
     sel_Ih_table.setup_binner(
-        experiment.crystal.get_unit_cell(), experiment.crystal.get_space_group(), 20
+        experiment.crystal.get_unit_cell(),
+        experiment.crystal.get_space_group(),
+        n_resolution_bins,
     )
     binner = sel_Ih_table.binner
 
@@ -186,9 +193,9 @@ from each dataset, with a total number between %s and %s.
         max_total,
     )
     # split across resolution bins
-    mpc = int(min_per_class / 20.0)
-    mint = int(min_total / 20.0)
-    maxt = int(max_total / 20.0)
+    mpc = int(min_per_class / n_resolution_bins)
+    mint = int(min_total / n_resolution_bins)
+    maxt = int(max_total / n_resolution_bins)
 
     header = ["d-range", "n_groups", "n_refl"] + [str(i) for i in range(n_datasets)]
     rows = []

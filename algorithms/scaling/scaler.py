@@ -649,12 +649,6 @@ class SingleScaler(ScalerBase):
     def _select_reflections_for_scaling(self):
         """Select a subset of reflections to use in minimisation."""
         # For single dataset, auto means random
-        if self.params.reflection_selection.method == "quasi_random":
-            logger.info(
-                """
-reflection_selection.method=quasi_random option only available for multi-dataset
-scaling, using reflection_selection.method=random option instead."""
-            )
         if self.params.reflection_selection.method in (
             None,
             Auto,
@@ -690,9 +684,9 @@ scaling, using reflection_selection.method=random option instead."""
             )
             if n_groups_to_sel < n_groups_in_table:
                 isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
-                sel = flex.bool(n_groups_in_table, False)
-                sel.set_selected(isel, True)
-                loc_indices = presel_block.select_on_groups(sel).Ih_table["loc_indices"]
+                loc_indices = presel_block.select_on_groups_isel(isel).Ih_table[
+                    "loc_indices"
+                ]
                 self.scaling_selection = flex.bool(self.n_suitable_refl, False)
                 self.scaling_selection.set_selected(loc_indices, True)
             else:
@@ -700,7 +694,9 @@ scaling, using reflection_selection.method=random option instead."""
                 loc_indices = presel_block.Ih_table["loc_indices"]
                 self.scaling_selection.set_selected(loc_indices, True)
             logger.info(
-                "Selected %s/%s groups (m>1) to use for minimisation (%s reflections)",
+                """
+Randomly selected %s/%s groups (m>1) to use for scaling model
+minimisation (%s reflections)""",
                 n_groups_to_sel,
                 n_groups_in_table,
                 loc_indices.size(),
@@ -918,7 +914,7 @@ class MultiScalerBase(ScalerBase):
                     scaler.reflection_table["inverse_scale_factor"].select(
                         scaler.suitable_refl_for_scaling_sel
                     ),
-                    dataset_id=0,
+                    dataset_id=i,
                     column="inverse_scale_factor",
                 )
                 self._free_Ih_table.calc_Ih()
@@ -1149,9 +1145,7 @@ class MultiScalerBase(ScalerBase):
                     n_groups_in_table = block.n_groups
                     if n_groups < n_groups_in_table:
                         isel = flex.random_selection(n_groups_in_table, n_groups)
-                        sel = flex.bool(n_groups_in_table, False)
-                        sel.set_selected(isel, True)
-                        loc_indices = block.select_on_groups(sel).Ih_table[
+                        loc_indices = block.select_on_groups_isel(isel).Ih_table[
                             "loc_indices"
                         ]
                         scaler.scaling_selection.set_selected(loc_indices, True)
@@ -1193,10 +1187,7 @@ class MultiScalerBase(ScalerBase):
                     )
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
-        elif self.params.reflection_selection.method == "use_all" or (
-            self.params.reflection_selection.method == "random"
-            and (self.params.reflection_selection.n_random >= self.global_Ih_table.size)
-        ):
+        elif self.params.reflection_selection.method == "use_all":
             for scaler in self.active_scalers:
                 if self._free_Ih_table:
                     scaler.scaling_selection = ~scaler.free_set_selection
@@ -1205,14 +1196,38 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
         elif self.params.reflection_selection.method == "random":
-            n = self.params.reflection_selection.n_random
-            isel = flex.random_selection(self.global_Ih_table.size, n)
-            sel = flex.bool(self.global_Ih_table.size, False)
-            sel.set_selected(isel, True)
-            sel_Ih = self.global_Ih_table.Ih_table_blocks[0].select(sel)
+            # random means a random subset of groups,
+            # using random.multi_dataset.refl_per_param & min_reflections
+            n_params = sum(
+                s.experiment.scaling_model.n_params for s in self.active_scalers
+            )
+            random_phil = self.params.reflection_selection.random.multi_dataset
+            n_refl = random_phil.refl_per_param * n_params
+            n_refl_to_use = max(n_refl, random_phil.min_reflections)
+
+            block = self.global_Ih_table.Ih_table_blocks[0]
+            block = block.select(block.calc_nh() > 1)
+            if not block.size:
+                raise SystemExit(
+                    "No groups left with multiplicity >1, scaling not possible."
+                )
+            avg_multi = flex.mean(block.group_multiplicities())
+            n_groups_to_sel = int(n_refl_to_use / avg_multi)
+            n_groups_in_table = block.n_groups
+            if n_groups_to_sel < n_groups_in_table:
+                isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
+                sel_block = block.select_on_groups_isel(isel)
+            else:  # just use all
+                sel_block = block
+            logger.info(
+                "Selected %s/%s groups (m>1) to use for minimisation (%s reflections)",
+                min(n_groups_to_sel, n_groups_in_table),
+                n_groups_in_table,
+                sel_block.size,
+            )
             for i, scaler in enumerate(self.active_scalers):
-                sel = sel_Ih.Ih_table["dataset_id"] == i
-                indiv_block = sel_Ih.select(sel)
+                sel = sel_block.Ih_table["dataset_id"] == i
+                indiv_block = sel_block.select(sel)
                 loc_indices = indiv_block.Ih_table["loc_indices"]
                 scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
                 scaler.scaling_selection.set_selected(loc_indices, True)

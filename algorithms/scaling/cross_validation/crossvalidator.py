@@ -182,6 +182,7 @@ is provided. For example, physical.decay_correction rather than decay_correction
             params.scaling_options,
             params.reflection_selection,
             params.reflection_selection.random,
+            params.reflection_selection.random.multi_dataset,
         ]
         if params.model:
             phil_branches.append(params.__getattribute__(str(params.model)))

@@ -275,7 +275,6 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         None,
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
-        "reflection_selection.method=quasi_random",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
         "intensity_choice=profile",
