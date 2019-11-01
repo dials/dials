@@ -15,6 +15,7 @@ Examples::
 """
 
 from __future__ import absolute_import, division, print_function
+import copy
 import sys
 import logging
 from time import time
@@ -22,6 +23,7 @@ import dials.util
 import libtbx.phil
 from libtbx import Auto
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 from dials.algorithms.refinement.corrgram import create_correlation_plots
@@ -368,6 +370,12 @@ def run(args=None, phil=working_phil):
     from dials.util.version import dials_version
 
     logger.info(dials_version())
+
+    # duplicate crystal if exactly one and > 1 scan - should probably check
+    # if scan_varying is not False here too.
+    if len(experiments) > 1 and len(experiments.crystals()) == 1:
+        logger.info("Splitting experiments refinement")
+        experiments = ExperimentList([copy.deepcopy(e) for e in experiments])
 
     # Log the diff phil
     diff_phil = parser.diff_phil.as_str()
