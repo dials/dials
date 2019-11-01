@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-
+import json
 import procrunner
 import pytest
 from cctbx import sgtbx, uctbx
@@ -61,7 +61,7 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     joint_table.as_pickle("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
-    command = ["dials.symmetry", expt_file, refl_file]
+    command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
@@ -72,6 +72,17 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     )
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
+
+    # Using the change of basis ops from the json output we should be able to
+    # reindex the input experiments to match the output experiments
+    with tmpdir.join("symmetry.json").open() as f:
+        d = json.load(f)
+        cs = experiments[0].crystal.get_crystal_symmetry()
+        cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
+        cb_op_min_best = sgtbx.change_of_basis_op(str(d["subgroup_scores"][0]["cb_op"]))
+        assert cs.change_basis(cb_op_min_best * cb_op_inp_min).is_similar_symmetry(
+            expts[0].crystal.get_crystal_symmetry()
+        )
 
 
 def test_symmetry_with_absences(dials_regression, tmpdir):
@@ -195,11 +206,21 @@ def test_map_to_minimum_cell():
         reflections.append(refl)
 
     # Actually run the method we are testing
-    expts_min, reflections_min = map_to_minimum_cell(expts, reflections, max_delta=5)
+    expts_min, reflections_min, cb_ops = map_to_minimum_cell(
+        expts, reflections, max_delta=5
+    )
 
     # Verify that the unit cells have been transformed as expected
     for expt, uc in zip(expts, expected_ucs):
         assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
+
+    # Verify that the cb_ops map the input unit cells to the expected minimum unit cells
+    for input_uc, expected_uc, cb_op in zip(input_ucs, expected_ucs, cb_ops):
+        assert (
+            uctbx.unit_cell(input_uc)
+            .change_basis(cb_op)
+            .is_similar_to(uctbx.unit_cell(expected_uc))
+        )
 
     # Space group should be set to P1
     assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [

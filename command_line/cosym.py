@@ -104,7 +104,7 @@ class cosym(Subject):
             self._experiments, self._reflections
         )
 
-        self._experiments, self._reflections = map_to_minimum_cell(
+        self._experiments, self._reflections, _ = map_to_minimum_cell(
             self._experiments, self._reflections, params.lattice_symmetry_max_delta
         )
 
