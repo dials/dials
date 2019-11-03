@@ -209,6 +209,8 @@ def run(args):
             )
         )
 
+        print(show_connectivity(experiments))
+
     if len(reflections):
         print(
             show_reflections(
@@ -296,6 +298,58 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                         )
                     )
                     i += 1
+    return "\n".join(text)
+
+
+def show_connectivity(experiments):
+
+    text = []
+
+    if len(experiments) == 1:
+        return ""
+
+    detectors = experiments.detectors()
+    beams = experiments.beams()
+    crystals = experiments.crystals()
+
+    text.append("")
+    text.append("Experiment / Models")
+    text.append("")
+    text.append("Detector:")
+    text.append("              " + "  ".join([str(j) for j in range(len(detectors))]))
+    for j, e in enumerate(experiments):
+        tmp = ["Experiment %d" % j]
+        for d in detectors:
+            if e.detector is d:
+                tmp.append("X")
+            else:
+                tmp.append("/")
+        text.append("  ".join(tmp))
+
+    text.append("")
+    text.append("Crystal:")
+    text.append("              " + "  ".join([str(j) for j in range(len(crystals))]))
+    for j, e in enumerate(experiments):
+        tmp = ["Experiment %d" % j]
+        for c in crystals:
+            if e.crystal is c:
+                tmp.append("X")
+            else:
+                tmp.append("/")
+        text.append("  ".join(tmp))
+
+    text.append("")
+    text.append("Beam:")
+    text.append("              " + "  ".join([str(j) for j in range(len(beams))]))
+    for j, e in enumerate(experiments):
+        tmp = ["Experiment %d" % j]
+        for b in beams:
+            if e.beam is b:
+                tmp.append("X")
+            else:
+                tmp.append("/")
+        text.append("  ".join(tmp))
+
     return "\n".join(text)
 
 
