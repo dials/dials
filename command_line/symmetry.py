@@ -375,7 +375,7 @@ def run(args=None):
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
-        raise sys.exit(
+        sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
@@ -383,7 +383,7 @@ def run(args=None):
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         symmetry(experiments, reflections, params=params)
     except ValueError as e:
-        raise sys.exit(e)
+        sys.exit(e)
 
 
 if __name__ == "__main__":
