@@ -375,7 +375,13 @@ class MergingStatisticsObserver(Observer):
                 "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
             # Now calculate batch data
-            batches, rvb, isigivb, svb, batch_data = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            (
+                batches,
+                rvb,
+                isigivb,
+                svb,
+                batch_data,
+            ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
                 scaling_script.reflections,
                 scaling_script.experiments,
                 scaling_script.scaled_miller_array,

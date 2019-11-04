@@ -352,9 +352,11 @@ class ScalingLstbxBuildUpMixin(ScalingRefinery):
 
             for block_id, block in enumerate(work_blocks):
                 self._scaler.update_for_minimisation(self._parameters, block_id)
-                residuals, jacobian, weights = self._target.compute_residuals_and_gradients(
-                    block
-                )
+                (
+                    residuals,
+                    jacobian,
+                    weights,
+                ) = self._target.compute_residuals_and_gradients(block)
                 self.add_equations(residuals, jacobian, weights)
             """task_results = easy_mp.pool_map(
                 fixed_func=self._target.compute_residuals_and_gradients,

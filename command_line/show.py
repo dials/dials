@@ -257,9 +257,14 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                 abc = flex.vec3_double()
                 angles = flex.vec3_double()
                 for n in range(expt.crystal.num_scan_points):
-                    a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(
-                        n
-                    ).parameters()
+                    (
+                        a,
+                        b,
+                        c,
+                        alpha,
+                        beta,
+                        gamma,
+                    ) = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
                     abc.append((a, b, c))
                     angles.append((alpha, beta, gamma))
                 a, b, c = abc.mean()

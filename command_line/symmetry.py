@@ -1,17 +1,20 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import json
 import logging
 import random
 import sys
 
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
+from libtbx.table_utils import simple_table
 import iotbx.phil
 from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
-from dials.util import log, Sorry, show_mail_on_error
+from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
@@ -25,6 +28,9 @@ from dials.algorithms.merging.merge import prepare_merged_reflection_table
 from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
+)
+from dials.algorithms.symmetry.absences.laue_groups_info import (
+    laue_groups as laue_groups_for_absence_analysis,
 )
 
 logger = logging.getLogger("dials.command_line.symmetry")
@@ -104,6 +110,36 @@ output {
 )
 
 
+def map_to_minimum_cell(experiments, reflections, max_delta):
+    """
+    Map experiments and reflections to the minimum cell
+
+    Map to the minimum cell via the best cell, which appears to guarantee that the
+    resulting minimum cells are consistent.
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflections (list): a list of reflection tables
+
+    Returns: The experiments and reflections mapped to the minimum cell
+    """
+    cb_ops = []
+    for expt, refl in zip(experiments, reflections):
+        groups = metric_subgroups(
+            expt.crystal.get_crystal_symmetry(),
+            max_delta,
+            enforce_max_delta_for_generated_two_folds=True,
+        )
+        group = groups.result_groups[0]
+        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+        refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
+        expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
+        expt.crystal.set_space_group(sgtbx.space_group())
+        cb_ops.append(cb_op_inp_min)
+    return experiments, reflections, cb_ops
+
+
 def symmetry(experiments, reflection_tables, params=None):
     """
     Run symmetry analysis
@@ -125,6 +161,11 @@ def symmetry(experiments, reflection_tables, params=None):
 
         # transform models into miller arrays
         n_datasets = len(experiments)
+
+        experiments, reflection_tables, cb_ops = map_to_minimum_cell(
+            experiments, reflection_tables, params.lattice_symmetry_max_delta
+        )
+
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             reflection_tables,
@@ -150,13 +191,26 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info(result)
 
         if params.output.json is not None:
-            result.as_json(filename=params.output.json)
+            d = result.as_dict()
+            d["cb_op_inp_min"] = [str(cb_op) for cb_op in cb_ops]
+            # This is not the input symmetry as we have already mapped it to minimum
+            # cell, so delete from the output dictionary to avoid confusion
+            del d["input_symmetry"]
+            json_str = json.dumps(d, indent=2)
+            with open(params.output.json, "w") as f:
+                f.write(json_str)
 
         # Change of basis operator from input unit cell to best unit cell
         cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
         # Get the best space group.
         best_subsym = result.best_solution.subgroup["best_subsym"]
         best_space_group = best_subsym.space_group().build_derived_acentric_group()
+        logger.info(
+            simple_table(
+                [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
+                ["Patterson group", "Corresponding MX group"],
+            ).format()
+        )
         # Reindex the input data
         experiments, reflection_tables = _reindex_experiments_reflections(
             experiments, reflection_tables, best_space_group, cb_op_inp_best
@@ -178,37 +232,48 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Analysing systematic absences")
         logger.info("")
 
-        if (params.d_min is Auto) and (result is not None):
-            d_min = result.intensities.resolution_range()[1]
-        elif params.d_min is Auto:
-            d_min = resolution_filter_from_reflections_experiments(
-                reflection_tables,
-                experiments,
-                params.min_i_mean_over_sigma_mean,
-                params.min_cc_half,
+        # Get the laue class from the current space group.
+        space_group = experiments[0].crystal.get_space_group()
+        laue_group = str(space_group.build_derived_patterson_group().info())
+        logger.info("Laue group: %s", laue_group)
+        if laue_group not in laue_groups_for_absence_analysis:
+            logger.info("No absences to check for this laue group\n")
+        else:
+            if (params.d_min is Auto) and (result is not None):
+                d_min = result.intensities.resolution_range()[1]
+            elif params.d_min is Auto:
+                d_min = resolution_filter_from_reflections_experiments(
+                    reflection_tables,
+                    experiments,
+                    params.min_i_mean_over_sigma_mean,
+                    params.min_cc_half,
+                )
+            else:
+                d_min = params.d_min
+
+            # combine before sys abs test - only triggers if laue_group=None and
+            # multiple input files.
+            if len(reflection_tables) > 1:
+                joint_reflections = flex.reflection_table()
+                for table in reflection_tables:
+                    joint_reflections.extend(table)
+            else:
+                joint_reflections = reflection_tables[0]
+
+            merged_reflections = prepare_merged_reflection_table(
+                experiments, joint_reflections, d_min
             )
-        else:
-            d_min = params.d_min
+            run_systematic_absences_checks(
+                experiments,
+                merged_reflections,
+                float(params.systematic_absences.significance_level),
+            )
 
-        # combine before sys abs test - only triggers if laue_group=None and
-        # multiple input files.
-        if len(reflection_tables) > 1:
-            joint_reflections = flex.reflection_table()
-            for table in reflection_tables:
-                joint_reflections.extend(table)
-        else:
-            joint_reflections = reflection_tables[0]
-
-        merged_reflections = prepare_merged_reflection_table(
-            experiments, joint_reflections, d_min
-        )
-        run_systematic_absences_checks(
-            experiments,
-            merged_reflections,
-            float(params.systematic_absences.significance_level),
-        )
-
-    logger.info("Saving reindexed experiments to %s", params.output.experiments)
+    logger.info(
+        "Saving reindexed experiments to %s in space group %s",
+        params.output.experiments,
+        str(experiments[0].crystal.get_space_group().info()),
+    )
     experiments.as_file(params.output.experiments)
     if params.output.reflections is not None:
         if len(reflection_tables) > 1:
@@ -310,7 +375,7 @@ def run(args=None):
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
-        raise Sorry(
+        sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
@@ -318,7 +383,7 @@ def run(args=None):
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         symmetry(experiments, reflections, params=params)
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
 
 if __name__ == "__main__":

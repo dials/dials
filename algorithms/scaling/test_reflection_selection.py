@@ -85,7 +85,11 @@ def test_select_connected_reflections_across_datasets():
 
     space_group = sgtbx.space_group("P1")
     table = IhTable(reflections, space_group)
-    indices, datset_ids, total_in_classes = select_connected_reflections_across_datasets(
+    (
+        indices,
+        datset_ids,
+        total_in_classes,
+    ) = select_connected_reflections_across_datasets(
         table, min_per_class=5, Isigma_cutoff=0.0
     )
     assert list(total_in_classes) == [8, 7, 7]

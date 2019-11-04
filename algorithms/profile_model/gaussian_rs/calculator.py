@@ -714,7 +714,7 @@ class ScanVaryingProfileModelCalculator(object):
             sigma = mid / 3.0
             kernel = []
             for i in range(n):
-                kernel.append(math.exp(-(i - mid) ** 2 / (2 * sigma ** 2)))
+                kernel.append(math.exp(-((i - mid) ** 2) / (2 * sigma ** 2)))
             kernel = [k / sum(kernel) for k in kernel]
             return kernel
 

@@ -107,9 +107,13 @@ def plot_smooth_scales(physical_model):
     data = []
 
     if "scale" in physical_model.components:
-        smoother_phis, parameters, parameter_esds, sample_values, sample_scales = _get_smooth_plotting_data_from_model(
-            physical_model, component="scale"
-        )
+        (
+            smoother_phis,
+            parameters,
+            parameter_esds,
+            sample_values,
+            sample_scales,
+        ) = _get_smooth_plotting_data_from_model(physical_model, component="scale")
 
         data.append(
             {
@@ -136,9 +140,13 @@ def plot_smooth_scales(physical_model):
             data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
 
     if "decay" in physical_model.components:
-        smoother_phis, parameters, parameter_esds, sample_values, sample_scales = _get_smooth_plotting_data_from_model(
-            physical_model, component="decay"
-        )
+        (
+            smoother_phis,
+            parameters,
+            parameter_esds,
+            sample_values,
+            sample_scales,
+        ) = _get_smooth_plotting_data_from_model(physical_model, component="decay")
 
         data.append(
             {

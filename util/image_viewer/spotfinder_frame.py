@@ -639,9 +639,7 @@ class SpotFrame(XrayFrame):
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
-            p_id = (
-                0
-            )  # XXX beam doesn't intersect with any panels - is there a better solution?
+            p_id = 0  # XXX beam doesn't intersect with any panels - is there a better solution?
         pan = detector[p_id]
 
         for tt, d, pxl in zip(twotheta, spacings, L_pixels):

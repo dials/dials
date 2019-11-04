@@ -1,16 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-
+import json
 import procrunner
 import pytest
-from cctbx import sgtbx
+from cctbx import sgtbx, uctbx
+import scitbx.matrix
 from dxtbx.serialize import load
+from dxtbx.model import Crystal, Experiment, ExperimentList
 
 from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.command_line.symmetry import map_to_minimum_cell
 
 
 def test_symmetry_laue_only(dials_regression, tmpdir):
@@ -58,7 +61,7 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     joint_table.as_pickle("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
-    command = ["dials.symmetry", expt_file, refl_file]
+    command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
@@ -69,6 +72,17 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     )
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
+
+    # Using the change of basis ops from the json output we should be able to
+    # reindex the input experiments to match the output experiments
+    with tmpdir.join("symmetry.json").open() as f:
+        d = json.load(f)
+        cs = experiments[0].crystal.get_crystal_symmetry()
+        cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
+        cb_op_min_best = sgtbx.change_of_basis_op(str(d["subgroup_scores"][0]["cb_op"]))
+        assert cs.change_basis(cb_op_min_best * cb_op_inp_min).is_similar_symmetry(
+            expts[0].crystal.get_crystal_symmetry()
+        )
 
 
 def test_symmetry_with_absences(dials_regression, tmpdir):
@@ -146,3 +160,78 @@ def test_symmetry_absences_only(dials_data, tmpdir):
         tmpdir.join("symmetrized.expt").strpath, check_format=False
     )
     assert str(exps[0].crystal.get_space_group().info()) == "P 41"
+
+
+def test_map_to_minimum_cell():
+    # Input and expected output
+    input_ucs = [
+        (39.7413, 183.767, 140.649, 90, 90, 90),
+        (40.16, 142.899, 92.4167, 90, 102.48, 90),
+        (180.613, 40.1558, 142.737, 90, 90.0174, 90),
+    ]
+    input_sgs = ["C 2 2 21", "P 1 2 1", "C 1 2 1"]
+    input_hkl = [
+        [(1, -75, -71), (1, -73, -70), (1, -71, -69)],
+        [(14, -37, -36), (-2, -35, -46), (-3, -34, -47)],
+        [(-31, -5, -3), (-25, -3, -3), (-42, -8, -2)],
+    ]
+    expected_ucs = [
+        (39.7413, 94.00755450320204, 140.649, 90.0, 90.0, 77.79717980856927),
+        (40.16, 92.46399390642911, 142.899, 90.0, 90.0, 77.3882749092846),
+        (
+            40.1558,
+            92.51154528306184,
+            142.73699999999997,
+            89.9830147351441,
+            90.0,
+            77.46527404307477,
+        ),
+    ]
+    expected_output_hkl = [
+        [(-1, 37, -71), (-1, 36, -70), (-1, 35, -69)],
+        [(-14, 22, 37), (2, 48, 35), (3, 50, 34)],
+        [(-5, 13, -3), (-3, 11, -3), (-8, 17, -2)],
+    ]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    reflections = []
+    for uc, sg, hkl in zip(input_ucs, input_sgs, input_hkl):
+        uc = uctbx.unit_cell(uc)
+        sg = sgtbx.space_group_info(sg).group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+        refl = flex.reflection_table()
+        refl["miller_index"] = flex.miller_index(hkl)
+        reflections.append(refl)
+
+    # Actually run the method we are testing
+    expts_min, reflections_min, cb_ops = map_to_minimum_cell(
+        expts, reflections, max_delta=5
+    )
+
+    # Verify that the unit cells have been transformed as expected
+    for expt, uc in zip(expts, expected_ucs):
+        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
+
+    # Verify that the cb_ops map the input unit cells to the expected minimum unit cells
+    for input_uc, expected_uc, cb_op in zip(input_ucs, expected_ucs, cb_ops):
+        assert (
+            uctbx.unit_cell(input_uc)
+            .change_basis(cb_op)
+            .is_similar_to(uctbx.unit_cell(expected_uc))
+        )
+
+    # Space group should be set to P1
+    assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
+        1,
+        1,
+        1,
+    ]
+
+    # Verify that the reflections have been reindexed as expected
+    # Because the exact choice of minimum cell can be platform-dependent,
+    # compare the magnitude, but not the sign of the output hkl values
+    for refl, expected_hkl in zip(reflections, expected_output_hkl):
+        for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
+            assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]

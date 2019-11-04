@@ -199,9 +199,10 @@ def run_filtering(params, experiments, reflections):
     if params.d_min is not None and params.d_max is not None:
         if params.d_min > params.d_max:
             raise Sorry("d_min must be less than d_max")
-    if params.d_min is not None or params.d_max is not None:
+    if params.d_min is not None or params.d_max is not None or params.ice_rings.filter:
         if "d" not in reflections:
-            if experiments:
+            if experiments and any(experiments.crystals()):
+                # Calculate d-spacings from the miller indices
                 print(
                     "Reflection table does not have resolution information. "
                     "Attempting to calculate this from the experiment list"
@@ -215,6 +216,14 @@ def run_filtering(params, experiments, reflections):
                     )
                 reflections = reflections.select(sel)
                 reflections.compute_d(experiments)
+            elif experiments:
+                # Calculate d-spacings from the observed reflection centroids
+                if "rlp" not in reflections:
+                    if "xyzobs.mm.value" not in reflections:
+                        reflections.centroid_px_to_mm(experiments)
+                    reflections.map_centroids_to_reciprocal_space(experiments)
+                d_star_sq = flex.pow2(reflections["rlp"].norms())
+                reflections["d"] = uctbx.d_star_sq_as_d(d_star_sq)
             else:
                 raise Sorry(
                     "reflection table has no resolution information "
@@ -311,19 +320,11 @@ def run_filtering(params, experiments, reflections):
 
     # Filter powder rings
     if params.ice_rings.filter:
-        if "d" in reflections:
-            d_spacings = reflections["d"]
-        else:
-            if "rlp" not in reflections:
-                reflections.map_centroids_to_reciprocal_space(experiments)
-            d_star_sq = flex.pow2(reflections["rlp"].norms())
-            d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
-
         d_min = params.ice_rings.d_min
         width = params.ice_rings.width
 
         if d_min is None:
-            d_min = flex.min(d_spacings)
+            d_min = flex.min(reflections["d"])
 
         ice_filter = filtering.PowderRingFilter(
             params.ice_rings.unit_cell,
@@ -332,7 +333,7 @@ def run_filtering(params, experiments, reflections):
             width,
         )
 
-        ice_sel = ice_filter(d_spacings)
+        ice_sel = ice_filter(reflections["d"])
 
         print("Rejecting %i reflections at ice ring resolution" % ice_sel.count(True))
         reflections = reflections.select(~ice_sel)

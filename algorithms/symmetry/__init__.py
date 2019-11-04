@@ -128,11 +128,15 @@ class symmetry_base(object):
                 relative_length_tolerance is not None
                 and absolute_angle_tolerance is not None
             ):
-                assert d.unit_cell().is_similar_to(
+                if not d.unit_cell().is_similar_to(
                     self.median_unit_cell,
                     relative_length_tolerance,
                     absolute_angle_tolerance,
-                ), (str(d.unit_cell()), str(self.median_unit_cell))
+                ):
+                    raise ValueError(
+                        "Incompatible unit cell: %s\n" % d.unit_cell()
+                        + "      median unit cell: %s" % self.median_unit_cell
+                    )
 
     def _normalise(self, method):
         if method is None:
