@@ -15,6 +15,7 @@
         "pytest>=4.5,<5.0",
         "scikit_learn[alldeps]<0.21",
         "scipy",
+        "tabulate",
         "tqdm==4.23.4",
         'futures;python_version<="2.7"',
     ],

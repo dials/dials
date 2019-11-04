@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import iotbx.phil
 import numpy
+from tabulate import tabulate
 from libtbx import table_utils
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
@@ -306,7 +307,6 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
 
 
 def experiment_has_model(experiments):
-
     text = []
 
     if len(experiments) == 1:
@@ -320,39 +320,42 @@ def experiment_has_model(experiments):
     text.append("Experiment / Models")
     text.append("")
     text.append("Detector:")
-    text.append("              " + "  ".join([str(j) for j in range(len(detectors))]))
+    rows = [[""] + [str(j) for j in range(len(detectors))]]
     for j, e in enumerate(experiments):
-        tmp = ["Experiment %d" % j]
+        row = ["Experiment %d" % j]
         for d in detectors:
             if e.detector is d:
-                tmp.append("X")
+                row.append("X")
             else:
-                tmp.append("/")
-        text.append("  ".join(tmp))
+                row.append("/")
+        rows.append(row)
+    text.append(tabulate(rows, tablefmt="plain"))
 
     text.append("")
     text.append("Crystal:")
-    text.append("              " + "  ".join([str(j) for j in range(len(crystals))]))
+    rows = [[""] + [str(j) for j in range(len(crystals))]]
     for j, e in enumerate(experiments):
-        tmp = ["Experiment %d" % j]
+        row = ["Experiment %d" % j]
         for c in crystals:
             if e.crystal is c:
-                tmp.append("X")
+                row.append("X")
             else:
-                tmp.append("/")
-        text.append("  ".join(tmp))
+                row.append("/")
+        rows.append(row)
+    text.append(tabulate(rows, tablefmt="plain"))
 
     text.append("")
     text.append("Beam:")
-    text.append("              " + "  ".join([str(j) for j in range(len(beams))]))
+    rows = [[""] + [str(j) for j in range(len(beams))]]
     for j, e in enumerate(experiments):
-        tmp = ["Experiment %d" % j]
+        row = ["Experiment %d" % j]
         for b in beams:
             if e.beam is b:
-                tmp.append("X")
+                row.append("X")
             else:
-                tmp.append("/")
-        text.append("  ".join(tmp))
+                row.append("/")
+        rows.append(row)
+    text.append(tabulate(rows, tablefmt="plain"))
 
     return "\n".join(text)
 
