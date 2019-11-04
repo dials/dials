@@ -214,6 +214,7 @@ def run(args):
         )
 
         if params.show_experiment_has_model:
+            print()
             print(experiment_has_model(experiments))
 
     if len(reflections):
@@ -307,55 +308,30 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
 
 
 def experiment_has_model(experiments):
-    text = []
+    def experiment_has_model_impl(experiments, model):
+        text = [""]
+        text.append("%s:" % model.capitalize())
+        models = getattr(experiments, "%ss" % model)()
+        rows = [[""] + [str(j) for j in range(len(models))]]
+        for j, e in enumerate(experiments):
+            row = ["Experiment %d" % j]
+            for m in models:
+                if getattr(e, model) is m:
+                    row.append("X")
+                else:
+                    row.append("/")
+            rows.append(row)
+        text.append(tabulate(rows, tablefmt="plain"))
+        return text
 
     if len(experiments) == 1:
         return ""
 
-    detectors = experiments.detectors()
-    beams = experiments.beams()
-    crystals = experiments.crystals()
-
-    text.append("")
+    text = []
     text.append("Experiment / Models")
-    text.append("")
-    text.append("Detector:")
-    rows = [[""] + [str(j) for j in range(len(detectors))]]
-    for j, e in enumerate(experiments):
-        row = ["Experiment %d" % j]
-        for d in detectors:
-            if e.detector is d:
-                row.append("X")
-            else:
-                row.append("/")
-        rows.append(row)
-    text.append(tabulate(rows, tablefmt="plain"))
-
-    text.append("")
-    text.append("Crystal:")
-    rows = [[""] + [str(j) for j in range(len(crystals))]]
-    for j, e in enumerate(experiments):
-        row = ["Experiment %d" % j]
-        for c in crystals:
-            if e.crystal is c:
-                row.append("X")
-            else:
-                row.append("/")
-        rows.append(row)
-    text.append(tabulate(rows, tablefmt="plain"))
-
-    text.append("")
-    text.append("Beam:")
-    rows = [[""] + [str(j) for j in range(len(beams))]]
-    for j, e in enumerate(experiments):
-        row = ["Experiment %d" % j]
-        for b in beams:
-            if e.beam is b:
-                row.append("X")
-            else:
-                row.append("/")
-        rows.append(row)
-    text.append(tabulate(rows, tablefmt="plain"))
+    text.extend(experiment_has_model_impl(experiments, "detector"))
+    text.extend(experiment_has_model_impl(experiments, "crystal"))
+    text.extend(experiment_has_model_impl(experiments, "beam"))
 
     return "\n".join(text)
 
