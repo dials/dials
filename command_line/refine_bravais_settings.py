@@ -7,11 +7,19 @@ import os
 
 import iotbx.phil
 import libtbx
+from libtbx.phil import scope_extract
+from dials.algorithms.indexing.symmetry import (
+    BravaisSetting,
+    RefinedSettingsList,
+    refined_settings_factory_from_refined_triclinic,
+)
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
+from dxtbx.model.experiment_list import ExperimentList
+
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 help_message = """
@@ -125,6 +133,69 @@ def short_space_group_name(space_group):
     return symbol.replace(" ", "")
 
 
+def refine_bravais_settings(
+    experiments,  # type: ExperimentList
+    reflections,  # type: flex.reflection_table
+    params,  # type: scope_extract
+):
+    # type: (...) -> RefinedSettingsList[BravaisSetting]
+    """
+    Refine all the possible Bravais settings.
+
+    TODO:  Elaborate with more detail.
+
+    Args:
+        experiments:  The indexed experiments list.
+        reflections:  The indexed reflections.
+        params:  The extracted PHIL parameters for dials.refine_bravais_settings (see
+            dials.command_line.refine_bravais_settings.phil for details).
+
+    Returns:
+        A list of refined Bravais settings.
+    """
+    # If the refinement algorithm is unspecified, select the most appropriate.
+    if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
+        if experiments[0].goniometer is None:
+            # Use the Sauter & Poon outlier rejection algorithm
+            # (see https://doi.org/10.1107/S0021889810010782)
+            params.refinement.reflections.outlier.algorithm = "sauter_poon"
+        else:
+            # different default to dials.refine
+            # Tukey is faster and more appropriate at the indexing step
+            params.refinement.reflections.outlier.algorithm = "tukey"
+
+    # Get the operator to change the basis to the primitive setting.
+    cb_op_to_primitive = (
+        experiments[0]
+        .crystal.get_space_group()
+        .info()
+        .change_of_basis_op_to_primitive_setting()
+    )
+    # TODO: Sprinkle with comments.
+    if experiments[0].crystal.get_space_group().n_ltr() > 1:
+        effective_group = (
+            experiments[0]
+            .crystal.get_space_group()
+            .build_derived_reflection_intensity_group(anomalous_flag=True)
+        )
+        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
+        reflections = reflections.select(~sys_absent_flags)
+    experiments[0].crystal.update(
+        experiments[0].crystal.change_basis(cb_op_to_primitive)
+    )
+    miller_indices = reflections["miller_index"]
+    miller_indices = cb_op_to_primitive.apply(miller_indices)
+    reflections["miller_index"] = miller_indices
+
+    return refined_settings_factory_from_refined_triclinic(
+        params,
+        experiments,
+        reflections,
+        lepage_max_delta=params.lepage_max_delta,
+        nproc=params.nproc,
+    )
+
+
 def run(args=None):
     from dials.util import log
 
@@ -185,46 +256,10 @@ def run(args=None):
                 "Only one crystal can be processed at a time: set crystal_id to choose experiment."
             )
 
-    if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
-        if experiments[0].goniometer is None:
-            params.refinement.reflections.outlier.algorithm = "sauter_poon"
-        else:
-            # different default to dials.refine
-            # tukey is faster and more appropriate at the indexing step
-            params.refinement.reflections.outlier.algorithm = "tukey"
+    # Perform the refinement in all Bravais settings
+    Lfat = refine_bravais_settings(experiments, reflections, params)
 
-    from dials.algorithms.indexing.symmetry import (
-        refined_settings_factory_from_refined_triclinic,
-    )
-
-    cb_op_to_primitive = (
-        experiments[0]
-        .crystal.get_space_group()
-        .info()
-        .change_of_basis_op_to_primitive_setting()
-    )
-    if experiments[0].crystal.get_space_group().n_ltr() > 1:
-        effective_group = (
-            experiments[0]
-            .crystal.get_space_group()
-            .build_derived_reflection_intensity_group(anomalous_flag=True)
-        )
-        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
-        reflections = reflections.select(~sys_absent_flags)
-    experiments[0].crystal.update(
-        experiments[0].crystal.change_basis(cb_op_to_primitive)
-    )
-    miller_indices = reflections["miller_index"]
-    miller_indices = cb_op_to_primitive.apply(miller_indices)
-    reflections["miller_index"] = miller_indices
-
-    Lfat = refined_settings_factory_from_refined_triclinic(
-        params,
-        experiments,
-        reflections,
-        lepage_max_delta=params.lepage_max_delta,
-        nproc=params.nproc,
-    )
+    # Log the results
     possible_bravais_settings = {solution["bravais"] for solution in Lfat}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
     logger.info(Lfat.labelit_printout())
