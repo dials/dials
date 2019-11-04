@@ -363,8 +363,8 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
 def test_dials_show_on_scaled_data(dials_data):
     """Test that dials.show works on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl = location.join("scaled_30.refl").strpath
-    expt = location.join("scaled_30.expt").strpath
+    refl = location.join("scaled_30.refl")
+    expt = location.join("scaled_30.expt")
 
     result = procrunner.run(["dials.show", refl, expt])
     assert not result.returncode and not result.stderr
@@ -407,7 +407,7 @@ Experiment 3  X"""
 def test_dials_show_model_connectivity(dials_data):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
-    expt = location.join("indexed.expt").strpath
+    expt = location.join("indexed.expt")
     result = procrunner.run(["dials.show", expt, "show_model_connectivity=True"])
     assert not result.returncode and not result.stderr
     assert "Experiment / Models" in result.stdout
