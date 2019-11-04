@@ -393,7 +393,10 @@ def run(args=None, phil=working_phil):
         for j, e in enumerate(experiments):
             if e.crystal in crystal_has_scan:
                 if e.scan is not crystal_has_scan[e.crystal]:
-                    logger.info("Separating crystal model for experiment %d" % j)
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d"
+                        % j
+                    )
                     e.crystal = copy.deepcopy(e.crystal)
             else:
                 crystal_has_scan[e.crystal] = e.scan
