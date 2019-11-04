@@ -383,24 +383,24 @@ Experiment / Models
 
 Detector:
               0  1
-Experiment 0  X  /
-Experiment 1  X  /
-Experiment 2  X  /
-Experiment 3  /  X
+Experiment 0  x  .
+Experiment 1  x  .
+Experiment 2  x  .
+Experiment 3  .  x
 
 Crystal:
               0
-Experiment 0  X
-Experiment 1  X
-Experiment 2  X
-Experiment 3  X
+Experiment 0  x
+Experiment 1  x
+Experiment 2  x
+Experiment 3  x
 
 Beam:
               0
-Experiment 0  X
-Experiment 1  X
-Experiment 2  X
-Experiment 3  X"""
+Experiment 0  x
+Experiment 1  x
+Experiment 2  x
+Experiment 3  x"""
     )
 
 

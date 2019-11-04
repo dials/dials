@@ -317,9 +317,9 @@ def model_connectivity(experiments):
             row = ["Experiment %d" % j]
             for m in models:
                 if getattr(e, model) is m:
-                    row.append("X")
+                    row.append("x")
                 else:
-                    row.append("/")
+                    row.append(".")
             rows.append(row)
         text.append(tabulate(rows, tablefmt="plain"))
         return text
