@@ -15,6 +15,7 @@ Examples::
 """
 
 from __future__ import absolute_import, division, print_function
+import copy
 import sys
 import logging
 from time import time
@@ -382,6 +383,23 @@ def run(args=None, phil=working_phil):
             "circumstances. It is not recommended for typical data processing "
             "tasks.\n"
         )
+
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d"
+                        % j
+                    )
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
 
     # Run refinement
     experiments, reflections, refiner, history = run_dials_refine(
