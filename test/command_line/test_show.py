@@ -410,4 +410,4 @@ def test_dials_show_model_connectivity(dials_data):
     expt = location.join("indexed.expt")
     result = procrunner.run(["dials.show", expt, "show_model_connectivity=True"])
     assert not result.returncode and not result.stderr
-    assert "Experiment / Models" in result.stdout
+    assert b"Experiment / Models" in result.stdout
