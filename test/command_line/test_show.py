@@ -365,3 +365,39 @@ def test_dials_show_on_scaled_data(dials_data):
 
     result = procrunner.run(["dials.show", refl, expt])
     assert not result.returncode and not result.stderr
+
+
+def test_dials_show_experiment_has_model(dials_data):
+    """Test that dials.show experiments_has_model option."""
+    location = dials_data("l_cysteine_dials_output")
+    refl = location.join("indexed.refl").strpath
+    expt = location.join("indexed.expt").strpath
+    result = procrunner.run(
+        ["dials.show", refl, expt, "show_experiment_has_model=True"]
+    )
+    assert not result.returncode and not result.stderr
+    expected_output = """\
+Experiment / Models
+
+Detector:
+              0  1
+Experiment 0  X  /
+Experiment 1  X  /
+Experiment 2  X  /
+Experiment 3  /  X
+
+Crystal:
+              0
+Experiment 0  X
+Experiment 1  X
+Experiment 2  X
+Experiment 3  X
+
+Beam:
+              0
+Experiment 0  X
+Experiment 1  X
+Experiment 2  X
+Experiment 3  X
+"""
+    assert expected_output in result.stdout
