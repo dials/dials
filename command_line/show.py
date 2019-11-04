@@ -27,7 +27,7 @@ phil_scope = iotbx.phil.parse(
 show_scan_varying = False
   .type = bool
   .help = "Whether or not to show the crystal at each scan point."
-show_experiment_has_model = False
+show_model_connectivity = False
   .type = bool
   .help = "Show which models are linked to which experiments"
 show_all_reflection_data = False
@@ -213,9 +213,9 @@ def run(args):
             )
         )
 
-        if params.show_experiment_has_model:
+        if params.show_model_connectivity:
             print()
-            print(experiment_has_model(experiments))
+            print(model_connectivity(experiments))
 
     if len(reflections):
         print(
@@ -307,8 +307,8 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
     return "\n".join(text)
 
 
-def experiment_has_model(experiments):
-    def experiment_has_model_impl(experiments, model):
+def model_connectivity(experiments):
+    def model_connectivity_impl(experiments, model):
         text = [""]
         text.append("%s:" % model.capitalize())
         models = getattr(experiments, "%ss" % model)()
@@ -329,9 +329,9 @@ def experiment_has_model(experiments):
 
     text = []
     text.append("Experiment / Models")
-    text.extend(experiment_has_model_impl(experiments, "detector"))
-    text.extend(experiment_has_model_impl(experiments, "crystal"))
-    text.extend(experiment_has_model_impl(experiments, "beam"))
+    text.extend(model_connectivity_impl(experiments, "detector"))
+    text.extend(model_connectivity_impl(experiments, "crystal"))
+    text.extend(model_connectivity_impl(experiments, "beam"))
 
     return "\n".join(text)
 

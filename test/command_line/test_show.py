@@ -4,7 +4,7 @@ import os
 
 import procrunner
 
-from dials.command_line.show import experiment_has_model
+from dials.command_line.show import model_connectivity
 from dxtbx.serialize import load
 
 
@@ -370,14 +370,14 @@ def test_dials_show_on_scaled_data(dials_data):
     assert not result.returncode and not result.stderr
 
 
-def test_experiment_has_model(dials_data):
+def test_model_connectivity(dials_data):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
     expts = load.experiment_list(
         location.join("indexed.expt").strpath, check_format=False
     )
     assert (
-        experiment_has_model(expts)
+        model_connectivity(expts)
         == """\
 Experiment / Models
 
@@ -404,10 +404,10 @@ Experiment 3  X"""
     )
 
 
-def test_dials_show_experiment_has_model(dials_data):
+def test_dials_show_model_connectivity(dials_data):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
     expt = location.join("indexed.expt").strpath
-    result = procrunner.run(["dials.show", expt, "show_experiment_has_model=True"])
+    result = procrunner.run(["dials.show", expt, "show_model_connectivity=True"])
     assert not result.returncode and not result.stderr
     assert "Experiment / Models" in result.stdout
