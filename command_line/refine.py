@@ -385,11 +385,18 @@ def run(args=None, phil=working_phil):
         )
 
     if params.refinement.parameterisation.scan_varying is not False:
-        # duplicate crystal if necessary for scan varying
-        if len(experiments) > len(experiments.crystals()):
-            logger.info("Splitting crystal models before refinement")
-            for e in experiments:
-                e.crystal = copy.deepcopy(e.crystal)
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info("Separating crystal model for experiment %d" % j)
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
 
     # Run refinement
     experiments, reflections, refiner, history = run_dials_refine(
