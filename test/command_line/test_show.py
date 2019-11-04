@@ -4,7 +4,7 @@ import os
 
 import procrunner
 
-from dials.command_line.show import model_connectivity
+from dials.command_line.show import model_connectivity, run
 from dxtbx.serialize import load
 
 
@@ -404,10 +404,11 @@ Experiment 3  X"""
     )
 
 
-def test_dials_show_model_connectivity(dials_data):
+def test_dials_show_model_connectivity(dials_data, capsys):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
     expt = location.join("indexed.expt")
-    result = procrunner.run(["dials.show", expt, "show_model_connectivity=True"])
-    assert not result.returncode and not result.stderr
-    assert b"Experiment / Models" in result.stdout
+    run([expt.strpath, "show_model_connectivity=True"])
+    stdout, stderr = capsys.readouterr()
+    assert not stderr
+    assert b"Experiment / Models" in stdout

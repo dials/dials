@@ -192,7 +192,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
 
