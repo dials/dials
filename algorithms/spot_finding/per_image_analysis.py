@@ -103,7 +103,7 @@ def outlier_rejection(reflections):
     p_prior = (
         1
         / math.sqrt(2 * math.pi * var_prior)
-        * math.exp(-(i_test - flex.mean(intensities_subset)) ** 2 / (2 * var_prior))
+        * math.exp(-((i_test - flex.mean(intensities_subset)) ** 2) / (2 * var_prior))
     )
     # print p_prior
 
@@ -666,10 +666,16 @@ def stats_single_image(
         estimated_d_min = estimate_resolution_limit(
             reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename
         )
-        d_min_distl_method_1, noisiness_method_1 = estimate_resolution_limit_distl_method1(
+        (
+            d_min_distl_method_1,
+            noisiness_method_1,
+        ) = estimate_resolution_limit_distl_method1(
             reflections_all, imageset, plot_filename=distl_method_1_filename
         )
-        d_min_distl_method_2, noisiness_method_2 = estimate_resolution_limit_distl_method2(
+        (
+            d_min_distl_method_2,
+            noisiness_method_2,
+        ) = estimate_resolution_limit_distl_method2(
             reflections_all, imageset, plot_filename=distl_method_2_filename
         )
     else:

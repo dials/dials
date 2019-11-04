@@ -2100,9 +2100,13 @@ def merging_stats_results(reflections, experiments):
     resolution_plots.update(plotter.make_all_plots())
     summary_table, results_table = plotter.statistics_tables()
 
-    batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
-        reflections, experiments
-    )
+    (
+        batches,
+        rvb,
+        isigivb,
+        svb,
+        batch_data,
+    ) = combined_table_to_batch_dependent_properties(reflections, experiments)
 
     bm = batch_manager(batches, batch_data)
 
@@ -2177,9 +2181,12 @@ class Analyser(object):
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
             print("Calculating and generating merging statistics plots")
-            summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
-                rlist, experiments
-            )
+            (
+                summary,
+                scaling_table_by_resolution,
+                resolution_plots,
+                batch_plots,
+            ) = merging_stats_results(rlist, experiments)
             rplots, misc_plots, scaled_intensity_plots = intensity_statistics(
                 rlist, experiments
             )
@@ -2377,9 +2384,14 @@ class Analyser(object):
                     abc = flex.vec3_double()
                     angles = flex.vec3_double()
                     for n in range(expt.crystal.num_scan_points):
-                        a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(
-                            n
-                        ).parameters()
+                        (
+                            a,
+                            b,
+                            c,
+                            alpha,
+                            beta,
+                            gamma,
+                        ) = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
                         abc.append((a, b, c))
                         angles.append((alpha, beta, gamma))
                     a, b, c = abc.mean()

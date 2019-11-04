@@ -65,9 +65,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     assert params.refinement.reflections.outlier.algorithm in (
         None,
         "null",
-    ), (
-        "Cannot index, set refinement.reflections.outlier.algorithm=null"
-    )  # we do our own outlier rejection
+    ), "Cannot index, set refinement.reflections.outlier.algorithm=null"  # we do our own outlier rejection
 
     from dials.algorithms.refinement.refiner import RefinerFactory
 
@@ -580,9 +578,10 @@ class StillsIndexer(Indexer):
                         not self.params.stills.refine_candidates_with_known_symmetry
                         and self.params.known_symmetry.space_group is not None
                     ):
-                        new_crystal, cb_op_to_primitive = self._symmetry_handler.apply_symmetry(
-                            crystal_model
-                        )
+                        (
+                            new_crystal,
+                            cb_op_to_primitive,
+                        ) = self._symmetry_handler.apply_symmetry(crystal_model)
                         if new_crystal is None:
                             logger.info(
                                 "P1 refinement yielded model diverged from target, candidate %d",

@@ -59,9 +59,13 @@ def test_truncated():
     mean = 20
 
     def assert_is_correct(data, mask):
-        invalid, foreground, background, background_used, background_valid = assert_basic_mask_is_correct(
-            mask, ninvalid, nforeground
-        )
+        (
+            invalid,
+            foreground,
+            background,
+            background_used,
+            background_valid,
+        ) = assert_basic_mask_is_correct(mask, ninvalid, nforeground)
         ntot = len(background_valid)
         i0 = int(lower * ntot / 2.0)
         i1 = int(upper * ntot / 2.0)
@@ -86,9 +90,13 @@ def test_nsigma():
     mean = 20
 
     def assert_is_correct(data, mask):
-        invalid, foreground, background, background_used, background_valid = assert_basic_mask_is_correct(
-            mask, ninvalid, nforeground
-        )
+        (
+            invalid,
+            foreground,
+            background,
+            background_used,
+            background_valid,
+        ) = assert_basic_mask_is_correct(mask, ninvalid, nforeground)
         subdata = data.select(background_valid)
         mv = flex.mean_and_variance(subdata)
         m = mv.mean()

@@ -526,9 +526,10 @@ class _Tiles(object):
         return pic
 
     def get_flex_pixel_coordinates(self, lon, lat):
-        fast_picture_coord_pixel_scale, slow_picture_coord_pixel_scale = self.lon_lat_to_picture_fast_slow(
-            lon, lat
-        )
+        (
+            fast_picture_coord_pixel_scale,
+            slow_picture_coord_pixel_scale,
+        ) = self.lon_lat_to_picture_fast_slow(lon, lat)
         if (
             self.flex_image.supports_rotated_tiles_antialiasing_recommended
         ):  # for generic_flex_image

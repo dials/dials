@@ -378,8 +378,8 @@ class SingleScaler(ScalerBase):
         else:
             self.outliers = flex.bool(self.n_suitable_refl, False)
         self.scaling_subset_sel = (
-            None
-        )  # A selection of len n_suitable_refl of scaling subset selection
+            None  # A selection of len n_suitable_refl of scaling subset selection
+        )
         self.scaling_selection = None  # As above, but with outliers deselected also
         self.free_set_selection = flex.bool(self.n_suitable_refl, False)
         self._free_Ih_table = None  # An array of len n_suitable_refl
@@ -1216,9 +1216,10 @@ class MultiScaler(MultiScalerBase):
                 logger.info("Intensity combination failed with the error %s", e)
             else:
                 for i, scaler in enumerate(self.active_scalers):
-                    intensity, variance = combiner.calculate_suitable_combined_intensities(
-                        i
-                    )
+                    (
+                        intensity,
+                        variance,
+                    ) = combiner.calculate_suitable_combined_intensities(i)
                     scaler.reflection_table["intensity"].set_selected(
                         scaler.suitable_refl_for_scaling_sel.iselection(), intensity
                     )

@@ -512,7 +512,10 @@ prepare the data in the correct space group.\n"""
     @Subject.notify_event(event="merging_statistics")
     def calculate_merging_stats(self):
         try:
-            self.merging_statistics_result, self.anom_merging_statistics_result = merging_stats_from_scaled_array(
+            (
+                self.merging_statistics_result,
+                self.anom_merging_statistics_result,
+            ) = merging_stats_from_scaled_array(
                 self.scaled_miller_array,
                 self.params.output.merging.nbins,
                 self.params.output.use_internal_variance,

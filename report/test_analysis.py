@@ -110,7 +110,13 @@ def test_reflections_to_batch_properties(
     experiments[0].scan.get_image_range.return_value = [1, 10]
     experiments[0].crystal = example_crystal
 
-    bins, rmerge, isigi, scalesvsbatch, batch_data = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+    (
+        bins,
+        rmerge,
+        isigi,
+        scalesvsbatch,
+        batch_data,
+    ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
         [reflections], experiments
     )
 
@@ -132,7 +138,13 @@ def test_reflections_to_batch_properties(
     experiments[1].scan.get_image_range.return_value = [1, 10]
     experiments[1].crystal = example_crystal
 
-    bins, rmerge, isigi, scalesvsbatch, batch_data = combined_table_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+    (
+        bins,
+        rmerge,
+        isigi,
+        scalesvsbatch,
+        batch_data,
+    ) = combined_table_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
         reflections, experiments
     )
 

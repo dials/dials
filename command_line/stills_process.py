@@ -1274,9 +1274,15 @@ class Processor(object):
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
                     for i in range(len(subranks)):
                         logger.info("Rank %d waiting for sender" % rank)
-                        sender, indexed_experiments, indexed_reflections, integrated_experiments, integrated_reflections, int_pickles, int_pickle_filenames = comm.recv(
-                            source=MPI.ANY_SOURCE
-                        )
+                        (
+                            sender,
+                            indexed_experiments,
+                            indexed_reflections,
+                            integrated_experiments,
+                            integrated_reflections,
+                            int_pickles,
+                            int_pickle_filenames,
+                        ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info(
                             "Rank %d recieved data from rank %d" % (rank, sender)
                         )

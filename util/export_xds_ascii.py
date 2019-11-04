@@ -79,9 +79,10 @@ def _export_experiment(filename, integrated_data, experiment, params, var_model=
 
     # calculate the scl = lp/dqe correction for outputting but don't apply it as
     # it has already been applied in filter_reflection_table
-    integrated_data, scl = FilteringReductionMethods.calculate_lp_qe_correction_and_filter(
-        integrated_data
-    )
+    (
+        integrated_data,
+        scl,
+    ) = FilteringReductionMethods.calculate_lp_qe_correction_and_filter(integrated_data)
 
     # sort data before output
     nref = len(integrated_data["miller_index"])

@@ -354,9 +354,11 @@ class Target(object):
         if not self._restraints_parameterisation:
             return None
 
-        residuals, jacobian, weights = (
-            self._restraints_parameterisation.get_residuals_gradients_and_weights()
-        )
+        (
+            residuals,
+            jacobian,
+            weights,
+        ) = self._restraints_parameterisation.get_residuals_gradients_and_weights()
         w_resid = weights * residuals
         residuals2 = residuals * residuals
 
@@ -447,9 +449,11 @@ class Target(object):
         weights for non-linear least squares methods"""
 
         if self._restraints_parameterisation:
-            residuals, jacobian, weights = (
-                self._restraints_parameterisation.get_residuals_gradients_and_weights()
-            )
+            (
+                residuals,
+                jacobian,
+                weights,
+            ) = self._restraints_parameterisation.get_residuals_gradients_and_weights()
             return (residuals, jacobian, weights)
 
         else:

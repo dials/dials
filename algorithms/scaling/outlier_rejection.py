@@ -292,9 +292,10 @@ class NormDevOutlierRejection(OutlierRejectionBase):
             good_sel = flex.bool(self._Ih_table_block.Ih_table.size(), False)
             good_sel.set_selected(internal_potential_outliers, True)
             self._Ih_table_block = self._Ih_table_block.select(good_sel)
-            other_potential_outliers, internal_potential_outliers = self._check_for_more_outliers(
-                other_potential_outliers
-            )
+            (
+                other_potential_outliers,
+                internal_potential_outliers,
+            ) = self._check_for_more_outliers(other_potential_outliers)
 
     def _check_for_more_outliers(self, other_potential_outliers):
         """
@@ -309,9 +310,10 @@ class NormDevOutlierRejection(OutlierRejectionBase):
                 to the initial Ih_table data
         """
         # Find outlier indices with respect to reduced Ih_table block
-        internal_outlier_indices, internal_other_potential_outliers = (
-            self._round_of_outlier_rejection()
-        )
+        (
+            internal_outlier_indices,
+            internal_other_potential_outliers,
+        ) = self._round_of_outlier_rejection()
         outliers_wrt_original = other_potential_outliers.select(
             internal_outlier_indices
         )

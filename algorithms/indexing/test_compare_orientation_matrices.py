@@ -27,7 +27,12 @@ def test_compare_orientation_matrices():
     assert (
         matrix.sqr(crystal_b.get_U()) * matrix.sqr(crystal_a.get_U()).transpose()
     ).elems == pytest.approx(R.elems)
-    best_R_ab, best_axis, best_angle, best_cb_op = compare_orientation_matrices.difference_rotation_matrix_axis_angle(
+    (
+        best_R_ab,
+        best_axis,
+        best_angle,
+        best_cb_op,
+    ) = compare_orientation_matrices.difference_rotation_matrix_axis_angle(
         crystal_a, crystal_b
     )
     best_euler_angles = euler.xyz_angles(best_R_ab)
@@ -47,7 +52,12 @@ def test_compare_orientation_matrices():
         R * real_space_c,
         space_group=sgtbx.space_group("I 2 3"),
     ).change_basis(cb_op)
-    best_R_ab, best_axis, best_angle, best_cb_op = compare_orientation_matrices.difference_rotation_matrix_axis_angle(
+    (
+        best_R_ab,
+        best_axis,
+        best_angle,
+        best_cb_op,
+    ) = compare_orientation_matrices.difference_rotation_matrix_axis_angle(
         crystal_a, crystal_b
     )
     best_euler_angles = euler.xyz_angles(best_R_ab)
