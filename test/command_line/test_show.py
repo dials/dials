@@ -4,6 +4,9 @@ import os
 
 import procrunner
 
+from dials.command_line.show import experiment_has_model
+from dxtbx.serialize import load
+
 
 def test_dials_show(dials_regression):
     path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
@@ -367,16 +370,15 @@ def test_dials_show_on_scaled_data(dials_data):
     assert not result.returncode and not result.stderr
 
 
-def test_dials_show_experiment_has_model(dials_data):
+def test_experiment_has_model(dials_data):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
-    refl = location.join("indexed.refl").strpath
-    expt = location.join("indexed.expt").strpath
-    result = procrunner.run(
-        ["dials.show", refl, expt, "show_experiment_has_model=True"]
+    expts = load.experiment_list(
+        location.join("indexed.expt").strpath, check_format=False
     )
-    assert not result.returncode and not result.stderr
-    expected_output = """\
+    assert (
+        experiment_has_model(expts)
+        == """\
 Experiment / Models
 
 Detector:
@@ -398,6 +400,14 @@ Beam:
 Experiment 0  X
 Experiment 1  X
 Experiment 2  X
-Experiment 3  X
-"""
-    assert expected_output in result.stdout
+Experiment 3  X"""
+    )
+
+
+def test_dials_show_experiment_has_model(dials_data):
+    """Test that dials.show experiments_has_model option."""
+    location = dials_data("l_cysteine_dials_output")
+    expt = location.join("indexed.expt").strpath
+    result = procrunner.run(["dials.show", expt, "show_experiment_has_model=True"])
+    assert not result.returncode and not result.stderr
+    assert "Experiment / Models" in result.stdout
