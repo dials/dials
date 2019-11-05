@@ -6,6 +6,7 @@
     "python_required": [
         "dials-data>=2.0.38",
         "Jinja2",
+        "pyparsing<2.4.3",
         "pytest-mock",
         "mock>=2.0",
         "msgpack",
