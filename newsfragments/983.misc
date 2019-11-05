@@ -1,5 +1,5 @@
 Allow unicode output in HTML report
 
-Previously, if you put a unicode character in any logging call, the HTML report generation fell over with a UnicodeEncode/DecodeError.  This fixes that, so now DIALS programs can write all the unicode they want.
+Previously, unicode characters in the output from DIALS commands would cause dials.report to exit with an error.  This fixes that, so now DIALS programs can write all the unicode they want.
 
 Μπορῶ νὰ φάω σπασμένα γυαλιὰ χωρὶς νὰ πάθω τίποτα.
