@@ -198,7 +198,7 @@ class ScalingHTMLGenerator(Observer):
                 misc_plots=self.data["misc_plots"],
                 filter_plots=self.data["filter_plots"],
             )
-            with open(html_file, "w") as f:
+            with open(html_file, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
         if json_file:
             logger.info("Writing html report data to: %s", json_file)

@@ -2235,7 +2235,7 @@ class Analyser(object):
             )
 
             print("Writing html report to: %s" % self.params.output.html)
-            with open(self.params.output.html, "w") as f:
+            with open(self.params.output.html, "wb") as f:
                 f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
