@@ -83,8 +83,6 @@ output {
     .type = path
   reflections = indexed.refl
     .type = path
-  unindexed_reflections = None
-    .type = path
   log = dials.index.log
     .type = str
 }
