@@ -395,10 +395,11 @@ class Script(object):
             split_experiments = split_experiments2
 
             # Wrapper function
-            def do_work(i, item_list):
-                processor = Processor(
-                    copy.deepcopy(params), composite_tag="%04d" % i, rank=i
-                )
+            def do_work(i, item_list, processor=None, finalize=True):
+                if not processor:
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % i, rank=i
+                    )
 
                 for item in item_list:
                     try:
@@ -427,7 +428,9 @@ class Script(object):
                         experiment.detector = imageset.get_detector()
 
                     processor.process_experiments(item[0], item[1])
-                processor.finalize()
+                if finalize:
+                    processor.finalize()
+                return processor
 
             iterable = list(zip(tags, split_experiments))
 
@@ -452,10 +455,11 @@ class Script(object):
             all_paths = all_paths2
 
             # Wrapper function
-            def do_work(i, item_list):
-                processor = Processor(
-                    copy.deepcopy(params), composite_tag="%04d" % i, rank=i
-                )
+            def do_work(i, item_list, processor=None, finalize=True):
+                if not processor:
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % i, rank=i
+                    )
                 for item in item_list:
                     tag, filename = item
 
@@ -494,7 +498,9 @@ class Script(object):
                         experiments[0].detector = imageset.get_detector()
 
                     processor.process_experiments(tag, experiments)
-                processor.finalize()
+                if finalize:
+                    processor.finalize()
+                return processor
 
             iterable = list(zip(tags, all_paths))
 
@@ -556,6 +562,7 @@ class Script(object):
                     print("All stops sent.")
                 else:
                     # client process
+                    processor = None
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
@@ -567,13 +574,15 @@ class Script(object):
                             break
                         print("Rank %d beginning processing" % rank)
                         try:
-                            do_work(rank, [item])
+                            processor = do_work(rank, [item], processor, finalize=False)
                         except Exception as e:
                             print(
                                 "Rank %d unhandled exception processing event" % rank,
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
+                    if processor:
+                        processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
 

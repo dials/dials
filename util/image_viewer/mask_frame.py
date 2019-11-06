@@ -654,6 +654,7 @@ class MaskSettingsPanel(wx.Panel):
             mask = []
             for p1, p2 in zip(m1, m2):
                 mask.append(p2 & p1)
+            mask = tuple(mask)
         elif m1 is not None:
             mask = m1
         elif m2 is not None:
