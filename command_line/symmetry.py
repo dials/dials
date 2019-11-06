@@ -1,17 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import json
 import logging
 import random
 import sys
 
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
 from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
-from dials.util import log, Sorry, show_mail_on_error
+from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
@@ -104,6 +106,36 @@ output {
 )
 
 
+def map_to_minimum_cell(experiments, reflections, max_delta):
+    """
+    Map experiments and reflections to the minimum cell
+
+    Map to the minimum cell via the best cell, which appears to guarantee that the
+    resulting minimum cells are consistent.
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflections (list): a list of reflection tables
+
+    Returns: The experiments and reflections mapped to the minimum cell
+    """
+    cb_ops = []
+    for expt, refl in zip(experiments, reflections):
+        groups = metric_subgroups(
+            expt.crystal.get_crystal_symmetry(),
+            max_delta,
+            enforce_max_delta_for_generated_two_folds=True,
+        )
+        group = groups.result_groups[0]
+        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+        refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
+        expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
+        expt.crystal.set_space_group(sgtbx.space_group())
+        cb_ops.append(cb_op_inp_min)
+    return experiments, reflections, cb_ops
+
+
 def symmetry(experiments, reflection_tables, params=None):
     """
     Run symmetry analysis
@@ -125,6 +157,11 @@ def symmetry(experiments, reflection_tables, params=None):
 
         # transform models into miller arrays
         n_datasets = len(experiments)
+
+        experiments, reflection_tables, cb_ops = map_to_minimum_cell(
+            experiments, reflection_tables, params.lattice_symmetry_max_delta
+        )
+
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
             reflection_tables,
@@ -150,7 +187,14 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info(result)
 
         if params.output.json is not None:
-            result.as_json(filename=params.output.json)
+            d = result.as_dict()
+            d["cb_op_inp_min"] = [str(cb_op) for cb_op in cb_ops]
+            # This is not the input symmetry as we have already mapped it to minimum
+            # cell, so delete from the output dictionary to avoid confusion
+            del d["input_symmetry"]
+            json_str = json.dumps(d, indent=2)
+            with open(params.output.json, "w") as f:
+                f.write(json_str)
 
         # Change of basis operator from input unit cell to best unit cell
         cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
@@ -310,7 +354,7 @@ def run(args=None):
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
-        raise Sorry(
+        sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
             % (len(experiments), len(reflections))
         )
@@ -318,7 +362,7 @@ def run(args=None):
         experiments, reflections = assign_unique_identifiers(experiments, reflections)
         symmetry(experiments, reflections, params=params)
     except ValueError as e:
-        raise Sorry(e)
+        sys.exit(e)
 
 
 if __name__ == "__main__":

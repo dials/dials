@@ -5,11 +5,14 @@ import pytest
 import procrunner
 
 from cctbx import sgtbx, uctbx
+import scitbx.matrix
 from dxtbx.serialize import load
+from dxtbx.model import Crystal, Experiment
 from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
+from dials.command_line.cosym import cosym
 
 
 @pytest.mark.parametrize("space_group", [None, "P 1", "P 4"])
@@ -175,3 +178,20 @@ def test_synthetic(
             )
         assert str(expt.crystal.get_space_group().info()) == str(space_group.info())
         assert expt.crystal.get_space_group() == space_group
+
+
+def test_eliminate_sys_absent():
+    refl = flex.reflection_table()
+    refl["miller_index"] = flex.miller_index(
+        [(-31, -5, -3), (-25, -3, -3), (0, 1, 0), (-42, -8, -2)]
+    )
+    sgi = sgtbx.space_group_info("C121")
+    uc = sgi.any_compatible_unit_cell(volume=1000)
+    B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+    expt = Experiment(crystal=Crystal(B, space_group=sgi.group(), reciprocal=True))
+    reflections = cosym._eliminate_sys_absent([expt], [refl])
+    assert list(reflections[0]["miller_index"]) == [
+        (-31, -5, -3),
+        (-25, -3, -3),
+        (-42, -8, -2),
+    ]
