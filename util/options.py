@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import sys
 import os
 import itertools
@@ -390,7 +391,7 @@ class PhilCommandParser(object):
         if phil is None:
             self._system_phil = parse("")
         else:
-            self._system_phil = phil
+            self._system_phil = copy.deepcopy(phil)
 
         # Set the flags
         self._read_experiments = read_experiments
