@@ -149,7 +149,7 @@ def mock_exp(mock_scaling_component, idval=0):
     }
     exp.crystal = Crystal.from_dict(exp_dict)
     exp.scan.get_oscillation.return_value = (0, 1.0)
-    exp.beam.get_s0.return_value = (0.0, 0.0, 1.0)
+    exp.beam.get_sample_to_source_direction.return_value = (0.0, 0.0, -1.0)
     exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
     return exp
 

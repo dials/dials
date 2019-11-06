@@ -32,7 +32,7 @@ from mock import Mock
 def mock_exp():
     """Create a mock experiments object."""
     exp = Mock()
-    exp.beam.get_s0.return_value = (1.0, 0.0, 0.0)
+    exp.beam.get_sample_to_source_direction.return_value = (1.0, 0.0, 0.0)
     exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
     return exp
 
