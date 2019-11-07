@@ -689,12 +689,12 @@ class ScoreSubGroup(object):
             .hall_symbol(),
             "likelihood": self.likelihood,
             "confidence": self.confidence,
-            "z_cc_net": "% .2f" % self.z_cc_net,
-            "z_cc_for": "% .2f" % self.z_cc_for,
-            "z_cc_against": "% .2f" % self.z_cc_against,
-            "cc_for": "% .2f" % self.cc_for.coefficient(),
-            "cc_against": "% .2f" % self.cc_against.coefficient(),
-            "max_angular_difference": "%.1f" % self.subgroup["max_angular_difference"],
+            "z_cc_net": self.z_cc_net,
+            "z_cc_for": self.z_cc_for,
+            "z_cc_against": self.z_cc_against,
+            "cc_for": self.cc_for.coefficient(),
+            "cc_against": self.cc_against.coefficient(),
+            "max_angular_difference": self.subgroup["max_angular_difference"],
             "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
         }
 
