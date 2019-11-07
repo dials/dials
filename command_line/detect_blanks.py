@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 import math
+import sys
 
 import libtbx.phil
 from libtbx.math_utils import iceil
@@ -289,10 +291,8 @@ def run(args):
     }
 
     if params.output.json is not None:
-        import json
-
-        with open(params.output.json, "wb") as f:
-            json.dump(d, f)
+        with open(params.output.json, "w") as fh:
+            json.dump(d, fh)
 
     if params.output.plot:
         from matplotlib import pyplot
@@ -323,6 +323,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
