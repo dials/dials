@@ -57,7 +57,7 @@ def generated_refl():
 def mock_errormodel():
     """Mock error model."""
     em = MagicMock()
-    em.refined_parameters = [1.0, 0.1]
+    em.parameters = [1.0, 0.1]
     em.update_variances.return_value = flex.double([1.0, 1.1, 1.0, 1.0])
     return em
 
@@ -107,10 +107,7 @@ def test_ScalingModelBase(mock_errormodel):
     assert not SM_base.components
     _ = SM_base.to_dict()
     SM_base.set_error_model(mock_errormodel)
-    assert (
-        SM_base.configdict["error_model_parameters"]
-        == mock_errormodel.refined_parameters
-    )
+    assert SM_base.configdict["error_model_parameters"] == mock_errormodel.parameters
     assert SM_base.error_model is mock_errormodel
     SM_base.show()
 

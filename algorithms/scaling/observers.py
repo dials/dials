@@ -21,6 +21,10 @@ from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
 )
+from dials.algorithms.scaling.error_model.error_model import (
+    calc_sigmaprime,
+    calc_deltahl,
+)
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
@@ -316,12 +320,15 @@ class ErrorModelObserver(Observer):
     """
 
     def update(self, scaler):
-        if scaler.error_model:
-            self.data["delta_hl"] = list(scaler.error_model.delta_hl)
-            self.data["intensity"] = scaler.error_model.intensities
-            self.data["inv_scale"] = scaler.error_model.inverse_scale_factors
-            self.data["sigma"] = scaler.error_model.sigmaprime * self.data["inv_scale"]
-            self.data["binning_info"] = scaler.error_model.binning_info
+        if scaler.error_model.filtered_Ih_table:
+            table = scaler.error_model.filtered_Ih_table
+            self.data["intensity"] = table.intensities
+            sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
+            self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+            self.data["inv_scale"] = table.inverse_scale_factors
+            self.data["sigma"] = sigmaprime * self.data["inv_scale"]
+            self.data["binning_info"] = scaler.error_model.components["b"].binning_info
+            scaler.error_model.clear_Ih_table()
 
     def make_plots(self):
         """Generate normal probability plot data."""

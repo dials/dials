@@ -108,6 +108,16 @@ phil_scope = iotbx.phil.parse(
         .type = choice
         .help = "The error model to use."
         .expert_level = 1
+      basic {
+        a = None
+          .type = float
+          .help = "Used this fixed value for the error model 'a' parameter"
+          .expert_level = 2
+        b = None
+          .type = float
+          .help = "Used this fixed value for the error model 'b' parameter"
+          .expert_level = 2
+      }
       min_Ih = 25.0
         .type = float
         .help = "Reflections with expected intensity above this value are to."

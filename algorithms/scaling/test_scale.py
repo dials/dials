@@ -291,6 +291,54 @@ def test_scale_single_dataset_with_options(dials_regression, tmpdir, option):
     run_one_scaling(tmpdir, args)
 
 
+@pytest.fixture
+def vmxi_protk_reindexed(dials_data, tmpdir):
+    """Reindex the protk data to be in the correct space group."""
+    location = dials_data("vmxi_proteinase_k_sweeps")
+
+    command = [
+        "dials.reindex",
+        location.join("experiments_0.json"),
+        location.join("reflections_0.pickle"),
+        "space_group=P422",
+    ]
+    procrunner.run(command, working_directory=tmpdir)
+    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+
+
+@pytest.mark.parametrize(
+    ("options", "expected", "tolerances"),
+    [
+        (["error_model=None"], None, None),
+        (["error_model=basic"], (0.73711, 0.04720), (0.05, 0.005)),
+        (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
+        (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
+        (
+            ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
+            (1.50, 0.02),
+            (1e-6, 1e-6),
+        ),
+    ],
+)
+def test_error_model_options(
+    vmxi_protk_reindexed, tmpdir, options, expected, tolerances
+):
+    """Test different non-default command-line options with a single dataset.
+
+    Current values taken at 14.11.19"""
+    expt_1, refl_1 = vmxi_protk_reindexed
+    args = [refl_1, expt_1] + [o for o in options]
+    run_one_scaling(tmpdir, args)
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    config = expts[0].scaling_model.configdict
+    if not expected:
+        assert "error_model_parameters" not in config
+    else:
+        params = expts[0].scaling_model.configdict["error_model_parameters"]
+        assert params[0] == pytest.approx(expected[0], abs=tolerances[0])
+        assert params[1] == pytest.approx(expected[1], abs=tolerances[1])
+
+
 @pytest.mark.parametrize(
     "option",
     [

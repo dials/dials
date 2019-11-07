@@ -13,6 +13,13 @@ from dials.algorithms.refinement.engine import (
     LevenbergMarquardtIterations,
 )
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage
+from dials.algorithms.scaling.error_model.error_model_target import (
+    ErrorModelTargetA,
+    ErrorModelTargetB,
+)
+from dials.algorithms.scaling.error_model.error_model import (
+    BasicErrorModelParameterisation,
+)
 from libtbx.phil import parse
 
 logger = logging.getLogger("dials")
@@ -126,7 +133,7 @@ def scaling_refinery(
         )
 
 
-def error_model_refinery(engine, target, max_iterations):
+def error_model_refinery(engine, model, max_iterations):
     """Return the correct engine based on phil parameters.
 
     Note that here the target also takes the role of the predication
@@ -134,11 +141,7 @@ def error_model_refinery(engine, target, max_iterations):
     methods (the code is organised in this way to allow the use of the
     dials.refinement engines)."""
     if engine == "SimpleLBFGS":
-        return ErrorModelSimpleLBFGS(
-            target=target,
-            prediction_parameterisation=target,
-            max_iterations=max_iterations,
-        )
+        return ErrorModelRefinery(model=model, max_iterations=max_iterations)
 
 
 def print_step_table(refinery):
@@ -160,32 +163,6 @@ def print_step_table(refinery):
 
     logger.info(tabulate(rows, header))
     logger.info(refinery.history.reason_for_termination)
-
-
-class ErrorModelRefinery(object):
-    """Mixin class to add extra return method."""
-
-    def __init__(self, error_model_target):
-        self.error_model_target = error_model_target
-
-    def print_step_table(self):
-        print_step_table(self)
-
-    def return_error_model(self):
-        """Set error manager parameters and return error manager."""
-        print_step_table(self)
-        self._target.error_model.refined_parameters = self._target.x
-        # logger.info("\nMinimised error model with parameters {0:.5f} and {1:.5f}. {sep}"
-        #      .format(self._target.x[0], abs(self._target.x[1]), sep='\n'))
-        self._target.error_model.intensities = (
-            self._target.error_model.Ih_table.intensities
-        )
-        self._target.error_model.sigmaprime = self._target.error_model.sigmaprime
-        self._target.error_model.inverse_scale_factors = (
-            self._target.error_model.Ih_table.inverse_scale_factors
-        )
-        self._target.error_model.clear_Ih_table()
-        return self._target.error_model
 
 
 class ScalingRefinery(object):
@@ -304,17 +281,31 @@ class ScalingSimpleLBFGS(ScalingRefinery, SimpleLBFGS):
         return f, g, None
 
 
-class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
-    """Adapt Refinery for L-BFGS minimiser"""
+class ErrorModelComponentRefiner(SimpleLBFGS):
+
+    """Refiner for a single component of an error model."""
 
     def __init__(self, *args, **kwargs):
-        super(ErrorModelSimpleLBFGS, self).__init__(*args, **kwargs)
-        ErrorModelRefinery.__init__(self, self)
+        self.parameterisation = kwargs["prediction_parameterisation"]
+        SimpleLBFGS.__init__(self, *args, **kwargs)
+
+    def prepare_for_step(self):
+        """Update the parameterisation and prepare the target function. Overwrites
+        the prepare_for_step method from refinery to direct the updating away from
+        the target function to the update_for_minimisation method."""
+
+        x = self.x
+
+        # set current parameter values
+        self.parameterisation.set_param_vals(x)
+
+        return
 
     def compute_functional_gradients_and_curvatures(self):
         """overwrite method to avoid calls to 'blocks' methods of target"""
-        logger.debug("Current parameters %s" % ["%.6f" % i for i in self.x])
+        logger.debug("Current parameters %s", ["%.6f" % i for i in self.x])
         self.prepare_for_step()
+        self._target.predict()
 
         f, g = self._target.compute_functional_gradients()
 
@@ -324,8 +315,105 @@ class ErrorModelSimpleLBFGS(SimpleLBFGS, ErrorModelRefinery):
         if restraints:
             f += restraints[0]
             g += restraints[1]
-        logger.debug("Current functional %s" % f)
+        logger.debug("Current functional %s", f)
         return f, g, None
+
+
+class ErrorModelRefinery(object):
+
+    """Refiner for the basic error model."""
+
+    def __init__(self, model, *args, **kwargs):
+        self.model = model
+        self.args = args
+        self.kwargs = kwargs
+        self.parameterisation = BasicErrorModelParameterisation(model)
+        self.model.update_parameters(
+            self.parameterisation
+        )  # make sure model up to date.
+        self.avals = []
+        self.bvals = []
+        self._avals_tolerance = 0.01
+        self.converged = False
+
+    def test_value_convergence(self):
+        """Test for convergence of RMSDs"""
+
+        # http://en.wikipedia.org/wiki/
+        # Non-linear_least_squares#Convergence_criteria
+        try:
+            r1 = self.avals[-1]
+            r2 = self.avals[-2]
+        except IndexError:
+            return False
+
+        tests = [abs((r2 - r1) / r2) < self._avals_tolerance if r2 > 0 else True]
+
+        return all(tests)
+
+    def _update_parameterisation(self,):
+        self.parameterisation.b = self.bvals[-1]
+        self.parameterisation.a = self.avals[-1]
+        self.model.update_parameters(self.parameterisation)
+
+    def _refine_a(self):
+        self._refine_component(ErrorModelTargetA(self.model, self.parameterisation))
+
+    def _refine_b(self):
+        self._refine_component(ErrorModelTargetB(self.model, self.parameterisation))
+
+    def _refine_component(self, target):
+        refiner = ErrorModelComponentRefiner(
+            target=target,
+            prediction_parameterisation=self.parameterisation,
+            *self.args,
+            **self.kwargs
+        )
+        refiner.run()
+
+    def run(self):
+        """Refine the model."""
+        if not self.model.free_components:
+            return
+        if ("a" in self.model.free_components) and ("b" in self.model.free_components):
+
+            for n in range(20):  # usually converges in around 5 cycles
+                self._refine_a()
+                self.avals.append(self.parameterisation.a)
+                logger.debug(
+                    "Error model refinement cycle %s: a = %s", n, self.avals[-1]
+                )
+                self.model.update_parameters_after_minimisation(self.parameterisation)
+                self._refine_b()
+                self.bvals.append(self.parameterisation.b)
+                logger.debug(
+                    "Error model refinement cycle %s: b = %s", n, self.bvals[-1]
+                )
+                self.model.update_parameters_after_minimisation(self.parameterisation)
+                if self.test_value_convergence():
+                    self.converged = True
+                    break
+            if self.converged and self.avals[-1] > 0.4:
+                self._refine_a()
+                self.avals.append(self.parameterisation.a)
+                self._update_parameterisation()
+            else:
+                logger.info(
+                    """
+Two-parameter Error model refinement failed.
+Performing error model refinement with fixed a=1.0
+"""
+                )
+                self.parameterisation.a = 1.0
+                self._refine_b()
+                self.model.update_parameters(self.parameterisation)
+
+        elif "a" in self.model.free_components:
+            self._refine_a()
+            self.model.update_parameters(self.parameterisation)
+        elif "b" in self.model.free_components:
+            self._refine_b()
+            self.model.update_parameters(self.parameterisation)
 
 
 class ScalingLstbxBuildUpMixin(ScalingRefinery):

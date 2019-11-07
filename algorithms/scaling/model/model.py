@@ -256,7 +256,7 @@ class ScalingModelBase(object):
         self._configdict.update(
             {
                 "error_model_type": self.error_model.__class__.__name__,
-                "error_model_parameters": list(error_model.refined_parameters),
+                "error_model_parameters": list(error_model.parameters),
             }
         )
 

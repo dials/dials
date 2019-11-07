@@ -32,7 +32,6 @@ from dials.algorithms.scaling.scaling_refiner import (
     error_model_refinery,
 )
 from dials.algorithms.scaling.error_model.error_model import get_error_model
-from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
@@ -211,25 +210,17 @@ class ScalerBase(Subject):
             logger.info("Performing a round of error model refinement.")
             refinery = error_model_refinery(
                 engine="SimpleLBFGS",
-                target=ErrorModelTarget(
-                    error_model(
-                        Ih_table.blocked_data_list[0],
-                        self.params.weighting.error_model.n_bins,
-                        self.params.weighting.error_model.min_Ih,
-                        self.params.reflection_selection.min_partiality,
-                    )
-                ),
+                model=error_model(Ih_table.blocked_data_list[0], self.params),
                 max_iterations=100,
             )
             refinery.run()
         except (RuntimeError, ValueError) as e:
             logger.error(e, exc_info=True)
         else:
-            error_model = refinery.return_error_model()
-            logger.info(error_model)
-            logger.info(error_model.minimisation_summary())
-            self._update_error_model(error_model, update_Ih=update_Ih)
-        return error_model
+            logger.info(refinery.model)
+            logger.info(refinery.model.minimisation_summary())
+            self._update_error_model(refinery.model, update_Ih=update_Ih)
+        return refinery.model
 
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""
