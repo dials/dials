@@ -760,9 +760,13 @@ def sum_partial_reflections(reflection_table):
             "Combined %s partial reflections with other partial reflections"
             % (nrefl - reflection_table.size())
         )
-    logger.debug("\nSummary of combination of partial reflections")
-    st = simple_table(rows, header)
-    logger.debug(st.format())
+
+    # Formatting this table can be sloooow for large numbers of reflections, so skip
+    # this unless debug output has been requested
+    if logger.getEffectiveLevel() <= logging.DEBUG:
+        logger.debug("\nSummary of combination of partial reflections")
+        st = simple_table(rows, header)
+        logger.debug(st.format())
     return reflection_table
 
 
