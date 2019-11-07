@@ -12,6 +12,7 @@ import json
 import logging
 import math
 from collections import OrderedDict
+from tabulate import tabulate
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -22,7 +23,6 @@ from dials.algorithms.symmetry import symmetry_base
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
 from libtbx import Auto
-from libtbx import table_utils
 from scitbx import matrix
 from scitbx.array_family import flex
 
@@ -697,12 +697,12 @@ class SymmetryAnalysis(object):
         output.append("Scoring individual symmetry elements")
         d = self.as_dict()
         output.append(
-            table_utils.format(self.sym_ops_table(d), has_header=True, delim="  ")
+            tabulate(self.sym_ops_table(d), headers="firstrow", tablefmt="rst")
         )
 
         output.append("Scoring all possible sub-groups")
         output.append(
-            table_utils.format(self.subgroups_table(d), has_header=True, delim="  ")
+            tabulate(self.subgroups_table(d), headers="firstrow", tablefmt="rst")
         )
 
         output.append(

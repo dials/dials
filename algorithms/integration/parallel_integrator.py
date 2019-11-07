@@ -2,11 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from math import ceil, floor
+from tabulate import tabulate
 
 import psutil
 
 from libtbx import Auto
-import libtbx.table_utils
 
 from dials.array_family import flex
 from dials.algorithms.integration.processor import ExecuteParallelTask
@@ -761,9 +761,7 @@ class IntegrationManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = libtbx.table_utils.format(
-            rows, has_header=True, justify="right", prefix=" "
-        )
+        task_table = tabulate(rows, headers="firstrow", tablefmt="rst")
 
         # The format string
         if self.params.integration.block.size is None:
@@ -1229,9 +1227,7 @@ class ReferenceCalculatorManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = libtbx.table_utils.format(
-            rows, has_header=True, justify="right", prefix=" "
-        )
+        task_table = tabulate(rows, headers="firstrow", tablefmt="rst")
 
         # The format string
         if self.params.integration.block.size is None:

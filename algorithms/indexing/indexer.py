@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import math
 import pkg_resources
+from tabulate import tabulate
 
 import iotbx.phil
 import libtbx
@@ -850,11 +851,7 @@ class Indexer(object):
                     "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
                 ]
             )
-        from libtbx import table_utils
-
-        logger.info(
-            table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-        )
+        logger.info(tabulate(rows, headers="firstrow", tablefmt="rst"))
 
     def find_max_cell(self):
         params = self.params.max_cell_estimation

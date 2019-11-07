@@ -1,10 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
 import math
+from tabulate import tabulate
 
 from cctbx.crystal import symmetry
 from dials.array_family import flex
-from libtbx import table_utils
 from libtbx.phil import parse
 
 """
@@ -164,11 +164,7 @@ class SignificanceFilter(object):
             for b, row in zip(acceptable_resolution_bins, table_data[2:]):
                 if b:
                     row.append("X")
-            print(
-                table_utils.format(
-                    table_data, has_header=2, justify="center", delim=" "
-                )
-            )
+            print(tabulate(table_data, headers="firstrow", tablefmt="rst"))
 
             # Save the results
             if any(acceptable_resolution_bins):

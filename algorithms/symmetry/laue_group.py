@@ -4,12 +4,12 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 import math
+from tabulate import tabulate
 
 import libtbx
 import scipy.stats
 from cctbx import crystal, sgtbx
 from dials.algorithms.symmetry import symmetry_base
-from libtbx import table_utils
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
@@ -291,7 +291,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring individual symmetry elements\n")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        output.append(tabulate(rows, headers="firstrow", tablefmt="rst"))
 
         header = (
             "Patterson group",
@@ -331,7 +331,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring all possible sub-groups\n")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        output.append(tabulate(rows, headers="firstrow", tablefmt="rst"))
 
         output.append(
             "\nBest solution: %s"

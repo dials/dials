@@ -4,6 +4,7 @@ import collections
 import logging
 import math
 import random
+from tabulate import tabulate
 
 import six
 import six.moves.cPickle as pickle
@@ -1270,8 +1271,6 @@ class Integrator(object):
 
     def summary(self, block_size, block_size_units):
         """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1293,7 +1292,7 @@ class Integrator(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+        return tabulate(rows, headers="firstrow", tablefmt="rst")
 
 
 class Integrator3D(Integrator):
@@ -1511,8 +1510,6 @@ class Integrator3DThreaded(object):
 
     def summary(self, block_size, block_size_units):
         """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1534,7 +1531,7 @@ class Integrator3DThreaded(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+        return tabulate(rows, headers="firstrow", tablefmt="rst")
 
 
 class IntegratorFactory(object):
