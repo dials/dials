@@ -5,6 +5,8 @@ methods overwritten to use them with scaling code."""
 
 from __future__ import absolute_import, division, print_function
 import logging
+from tabulate import tabulate
+
 from dials.algorithms.refinement.engine import (
     SimpleLBFGS,
     GaussNewtonIterations,
@@ -12,7 +14,6 @@ from dials.algorithms.refinement.engine import (
 )
 from dials.algorithms.scaling.scaling_utilities import log_memory_usage
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 
 logger = logging.getLogger("dials")
 
@@ -157,8 +158,7 @@ def print_step_table(refinery):
             + ["%.5g" % r for r in rmsds]
         )
 
-    st = simple_table(rows, header)
-    logger.info(st.format())
+    logger.info(tabulate(rows, header, tablefmt="rst"))
     logger.info(refinery.history.reason_for_termination)
 
 

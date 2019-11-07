@@ -5,11 +5,11 @@ import json
 import logging
 import random
 import sys
+from tabulate import tabulate
 
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
-from libtbx.table_utils import simple_table
 import iotbx.phil
 from rstbx.symmetry.constraints import parameter_reduction
 
@@ -207,10 +207,11 @@ def symmetry(experiments, reflection_tables, params=None):
         best_subsym = result.best_solution.subgroup["best_subsym"]
         best_space_group = best_subsym.space_group().build_derived_acentric_group()
         logger.info(
-            simple_table(
+            tabulate(
                 [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
                 ["Patterson group", "Corresponding MX group"],
-            ).format()
+                tablefmt="rst",
+            )
         )
         # Reindex the input data
         experiments, reflection_tables = _reindex_experiments_reflections(

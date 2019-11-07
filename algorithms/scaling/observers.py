@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 from collections import OrderedDict
+from tabulate import tabulate
 
 import six
 from cctbx import uctbx
@@ -32,7 +33,6 @@ from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plo
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
@@ -139,8 +139,7 @@ class ScalingSummaryGenerator(Observer):
             ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
             ["p < 0.01", str(not_zero_sel.count(False))],
         ]
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header, tablefmt="rst"))
         logger.info(
             """
 Reflections below a partiality_cutoff of %s are not considered for any

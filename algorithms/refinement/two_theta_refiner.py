@@ -2,13 +2,11 @@
 
 from __future__ import absolute_import, division, print_function
 import logging
-
-logger = logging.getLogger(__name__)
+from tabulate import tabulate
 
 from dials.array_family import flex
 from scitbx import matrix
 from math import sqrt, pi
-from libtbx.table_utils import simple_table
 from scitbx.math import five_number_summary
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 from dials.algorithms.refinement.prediction.managed_predictors import (
@@ -18,6 +16,8 @@ from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     PredictionParameterisation,
 )
+
+logger = logging.getLogger(__name__)
 
 # constants
 RAD2DEG = 180.0 / pi
@@ -97,9 +97,8 @@ class TwoThetaReflectionManager(ReflectionManager):
         rows.append(
             ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
         )
-        st = simple_table(rows, header)
         logger.info(msg)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header, tablefmt="rst"))
         logger.info("")
 
 

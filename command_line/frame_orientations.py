@@ -10,10 +10,10 @@ Usage: dials.frame_orientations refined.expt
 from __future__ import absolute_import, division, print_function
 
 import sys
+from tabulate import tabulate
 
 import dials.util
 from dials.util.options import flatten_experiments, OptionParser
-from libtbx.table_utils import simple_table
 from scitbx import matrix
 import matplotlib
 
@@ -123,8 +123,7 @@ class Script(object):
                 rows.append(row)
 
             # Print the table
-            st = simple_table(rows, header)
-            print(st.format())
+            print(tabulate(rows, header, tablefmt="rst"))
 
             # Add to the plot, if requested
             if self.params.plot_filename:

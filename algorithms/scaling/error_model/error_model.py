@@ -3,9 +3,9 @@ Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
 from math import log, exp
+from tabulate import tabulate
 from dials.array_family import flex
 from scitbx import sparse
-from libtbx.table_utils import simple_table
 
 
 def get_error_model(error_model_type):
@@ -96,13 +96,12 @@ class BasicErrorModel(object):
                     str(round(bin_var, 3)),
                 ]
             )
-        st = simple_table(rows, header)
         return "\n".join(
             (
                 "Results of error model refinement. Uncorrected and corrected variances",
                 "of normalised intensity deviations for given intensity ranges. Variances",
                 "are expected to be ~1.0 for reliable errors (sigmas).",
-                st.format(),
+                tabulate(rows, header, tablefmt="rst"),
                 "",
             )
         )
