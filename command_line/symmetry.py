@@ -196,9 +196,8 @@ def symmetry(experiments, reflection_tables, params=None):
             # This is not the input symmetry as we have already mapped it to minimum
             # cell, so delete from the output dictionary to avoid confusion
             del d["input_symmetry"]
-            json_str = json.dumps(d, indent=2)
-            with open(params.output.json, "w") as f:
-                f.write(json_str)
+            with open(params.output.json, "w") as fh:
+                json.dump(fh, d, indent=2)
 
         # Change of basis operator from input unit cell to best unit cell
         cb_op_inp_best = result.best_solution.subgroup["cb_op_inp_best"]
