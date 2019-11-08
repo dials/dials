@@ -5,32 +5,32 @@ The current stable release can be downloaded from `Github <https://github.com/di
 where you can also find further `release notes <https://github.com/dials/dials/releases/latest>`_.
 
 .. button::
-   :text: DIALS 2.0.0 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-linux-x86_64.tar.xz
+   :text: DIALS 2.0.1 Linux installer
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-linux-x86_64.tar.xz
 
 .. button::
-   :text: DIALS 2.0.0 Linux installer (Python 3 preview, unsupported)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-linux-x86_64-conda3.tar.xz
+   :text: DIALS 2.0.1 Linux installer (Python 3 preview, unsupported)
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-linux-x86_64-conda3.tar.xz
 
 .. button::
-   :text: DIALS 2.0.0 Mac installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-macosx.pkg
+   :text: DIALS 2.0.1 Mac installer
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-macosx.pkg
 
 .. button::
-   :text: DIALS 2.0.0 Mac installer (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-macosx-10.6.pkg
+   :text: DIALS 2.0.1 Mac installer (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-macosx-10.6.pkg
 
 .. button::
-   :text: DIALS 2.0.0 Mac tar archive
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-macosx.tar.gz
+   :text: DIALS 2.0.1 Mac tar archive
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-macosx.tar.gz
 
 .. button::
-   :text: DIALS 2.0.0 Mac tar archive (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-macosx-10.6.tar.gz
+   :text: DIALS 2.0.1 Mac tar archive (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-macosx-10.6.tar.gz
 
 .. button::
-   :text: DIALS 2.0.0 Source installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-0-source.tar.xz
+   :text: DIALS 2.0.1 Source installer
+   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-1-source.tar.xz
 
 Stable Release: DIALS 1.14
 ==========================
@@ -43,26 +43,26 @@ where you can also find further `release notes`__.
 __ https://github.com/dials/dials/releases/tag/v1.14.0
 
 .. button::
-   :text: DIALS 1.14.12 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-linux-x86_64.tar.xz
+   :text: DIALS 1.14.13 Linux installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-linux-x86_64.tar.xz
 
 .. button::
-   :text: DIALS 1.14.12 Mac installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx.pkg
+   :text: DIALS 1.14.13 Mac installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx.pkg
 
 .. button::
-   :text: DIALS 1.14.12 Mac installer (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx-10.6.pkg
+   :text: DIALS 1.14.13 Mac installer (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx-10.6.pkg
 
 .. button::
-   :text: DIALS 1.14.12 Mac tar archive
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx.tar.gz
+   :text: DIALS 1.14.13 Mac tar archive
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx.tar.gz
 
 .. button::
-   :text: DIALS 1.14.12 Mac tar archive (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-macosx-10.6.tar.gz
+   :text: DIALS 1.14.13 Mac tar archive (OS X 10.6)
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx-10.6.tar.gz
 
 .. button::
-   :text: DIALS 1.14.12 Source installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-12-source.tar.xz
+   :text: DIALS 1.14.13 Source installer
+   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-source.tar.xz
 
