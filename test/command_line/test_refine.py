@@ -193,3 +193,15 @@ def test3(dials_regression, tmpdir):
     ann = AnnAdaptor(data=predicted["xyzcal.px"].as_double(), dim=3, k=1)
     ann.query(refined_refl["xyzcal.px"].as_double())
     assert (ann.distances < 0.5).count(True) > (0.998 * refined_refl.size())
+
+
+@pytest.mark.parametrize("fix", ["cell", "orientation"])
+def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
+    location = dials_data("multi_crystal_proteinase_k")
+    refls = location.join("reflections_1.pickle")
+    expts = location.join("experiments_1.json")
+
+    result = procrunner.run(
+        ("dials.refine", expts, refls, "crystal.fix=" + fix), working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
