@@ -693,6 +693,7 @@ class SingleScaler(ScalerBase):
                 self.scaling_selection = flex.bool(self.n_suitable_refl, False)
                 loc_indices = presel_block.Ih_table["loc_indices"]
                 self.scaling_selection.set_selected(loc_indices, True)
+                n_groups_to_sel = n_groups_in_table
             logger.info(
                 """
 Randomly selected %s/%s groups (m>1) to use for scaling model
