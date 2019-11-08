@@ -109,8 +109,10 @@ class SingleDatasetIntensityCombiner(object):
             rows, results = self._test_Imid_combinations()
             st = simple_table(rows, header)
             logger.info(st.format())
-
             self.max_key = min(results, key=results.get)
+            while results[self.max_key] < 0:
+                del results[self.max_key]
+                self.max_key = min(results, key=results.get)
             if self.max_key == 0:
                 logger.info("Profile intensities determined to be best for scaling. \n")
             elif self.max_key == 1:
