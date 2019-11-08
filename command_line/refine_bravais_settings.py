@@ -156,7 +156,7 @@ def refine_bravais_settings(
     # If the refinement algorithm is unspecified, select the most appropriate.
     if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
         if experiments[0].goniometer is None:
-            # Use the Sauter & Poon outlier rejection algorithm
+            # Use the Sauter & Poon outlier rejection algorithm for serial data
             # (see https://doi.org/10.1107/S0021889810010782)
             params.refinement.reflections.outlier.algorithm = "sauter_poon"
         else:
