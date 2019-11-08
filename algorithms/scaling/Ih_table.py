@@ -104,7 +104,7 @@ class IhTable(object):
             "n_reflections_in_each_block": {},
             "miller_index_boundaries": [],
         }
-        self._determine_required_block_structures(reflection_tables, self.n_work_blocks)
+        self._determine_required_block_structures(reflection_tables)
         self._create_empty_Ih_table_blocks()
         for i, table in enumerate(reflection_tables):
             if indices_lists:
@@ -208,7 +208,7 @@ class IhTable(object):
             for block in self.Ih_table_blocks:
                 block.calc_Ih()
 
-    def _determine_required_block_structures(self, reflection_tables, nblocks=1):
+    def _determine_required_block_structures(self, reflection_tables):
         """
         Inspect the input to determine how to split into blocks.
 
@@ -228,8 +228,12 @@ class IhTable(object):
 
         asu_index_set = OrderedSet(sorted_joint_asu_indices)
         n_unique_groups = len(asu_index_set)
+        self.n_work_blocks = min(self.n_work_blocks, n_unique_groups)
         # also record how many unique groups go into each block
-        group_boundaries = [int(i * n_unique_groups / nblocks) for i in range(nblocks)]
+        group_boundaries = [
+            int(i * n_unique_groups / self.n_work_blocks)
+            for i in range(self.n_work_blocks)
+        ]
         group_boundaries.append(n_unique_groups)
 
         next_boundary = group_boundaries[1]
