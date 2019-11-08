@@ -4,7 +4,7 @@ Optimise the combination of profile and summation intensity values.
 from __future__ import absolute_import, division, print_function
 
 import logging
-from tabulate import tabulate
+from dials.util import tabulate
 
 import boost.python
 from cctbx import miller, crystal
@@ -107,7 +107,8 @@ class SingleDatasetIntensityCombiner(object):
             self._determine_Imids(raw_intensities)
             header = ["Combination", "CC1/2", "Rmeas"]
             rows, results = self._test_Imid_combinations()
-            logger.info(tabulate(rows, header, tablefmt="rst"))
+            logger.info(tabulate(rows, header))
+
             self.max_key = min(results, key=results.get)
             while results[self.max_key] < 0:
                 del results[self.max_key]
@@ -242,7 +243,7 @@ class MultiDatasetIntensityCombiner(object):
 
         header = ["Combination", "CC1/2", "Rmeas"]
         rows, results = self._test_Imid_combinations()
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
 
         self.max_key = min(results, key=results.get)
         while results[self.max_key] < 0:

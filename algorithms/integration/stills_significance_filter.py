@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 
 from cctbx.crystal import symmetry
 from dials.array_family import flex
@@ -164,7 +164,7 @@ class SignificanceFilter(object):
             for b, row in zip(acceptable_resolution_bins, table_data[2:]):
                 if b:
                     row.append("X")
-            print(tabulate(table_data, headers="firstrow", tablefmt="rst"))
+            print(tabulate(table_data, headers="firstrow"))
 
             # Save the results
             if any(acceptable_resolution_bins):

@@ -7,7 +7,7 @@ import copy
 import logging
 import math
 import random
-from tabulate import tabulate
+from dials.util import tabulate
 
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
@@ -733,7 +733,7 @@ class ReflectionManager(object):
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
 
         logger.info(msg)
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
         logger.info("")
 
     def reset_accepted_reflections(self, reflections=None):
@@ -830,5 +830,5 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
         logger.info("")

@@ -16,7 +16,7 @@ import copy
 import logging
 import time
 from collections import OrderedDict
-from tabulate import tabulate
+from dials.util import tabulate
 
 import six
 from six.moves import cStringIO as StringIO
@@ -787,7 +787,7 @@ minimisation (%s reflections)""",
             )
         rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
         logger.info("The following corrections will be applied to this dataset: \n")
-        logger.info(tabulate(rows, ["correction", "n_parameters"], tablefmt="rst"))
+        logger.info(tabulate(rows, ["correction", "n_parameters"]))
 
     @Subject.notify_event(event="performed_outlier_rejection")
     def round_of_outlier_rejection(self):
@@ -1168,7 +1168,7 @@ class MultiScalerBase(ScalerBase):
                 "Summary of reflections chosen for minimisation from each dataset (%s total):",
                 total_across_datasets,
             )
-            logger.info(tabulate(rows, header, tablefmt="rst"))
+            logger.info(tabulate(rows, header))
         elif self.params.reflection_selection.method == "intensity_ranges":
             for scaler in self.active_scalers:
                 overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(

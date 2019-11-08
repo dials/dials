@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import random
-from tabulate import tabulate
+from dials.util import tabulate
 
 import dials.util
 from dials.util import Sorry
@@ -557,7 +557,7 @@ class Script(object):
 
         header = ["Experiment", "Number of reflections"]
         rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
-        print(tabulate(rows, header, tablefmt="rst"))
+        print(tabulate(rows, header))
 
         # save a random subset if requested
         if (

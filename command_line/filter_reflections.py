@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import token
 from operator import itemgetter
-from tabulate import tabulate
+from dials.util import tabulate
 from tokenize import generate_tokens, TokenError, untokenize
 
 from cctbx import uctbx
@@ -186,7 +186,7 @@ def run_analysis(flags, reflections):
         if n > 0:
             rows.append([name, "%d" % n])
     if rows:
-        print(tabulate(rows, header, tablefmt="rst"))
+        print(tabulate(rows, header))
     else:
         print("No flags set")
 

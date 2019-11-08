@@ -44,7 +44,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
-from tabulate import tabulate
+from dials.util import tabulate
 
 from cctbx import crystal, miller
 from dials.array_family import flex
@@ -765,7 +765,7 @@ def sum_partial_reflections(reflection_table):
     # this unless debug output has been requested
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug("\nSummary of combination of partial reflections")
-        logger.debug(tabulate(rows, header, tablefmt="rst"))
+        logger.debug(tabulate(rows, header))
     return reflection_table
 
 

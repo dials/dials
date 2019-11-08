@@ -4,7 +4,7 @@ import abc
 import copy
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 
 import libtbx
 from libtbx import group_args
@@ -196,7 +196,7 @@ class ModelRankFilter(ModelRank):
                 ]
             )
 
-        return tabulate(rows, headers="firstrow", tablefmt="rst")
+        return tabulate(rows, headers="firstrow")
 
 
 class ModelRankWeighted(ModelRank):
@@ -296,7 +296,7 @@ class ModelRankWeighted(ModelRank):
                 ]
             )
 
-        return tabulate(rows, headers="firstrow", tablefmt="rst")
+        return tabulate(rows, headers="firstrow")
 
 
 class Strategy(object):

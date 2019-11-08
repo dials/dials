@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from tabulate import tabulate
+from dials.util import tabulate
 
 import boost.python
 from dials_algorithms_integration_ext import *
@@ -37,4 +37,4 @@ class TimingInfo(object):
             )
             if value
         ]
-        return tabulate(rows, tablefmt="rst")
+        return tabulate(rows)

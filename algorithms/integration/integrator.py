@@ -4,7 +4,7 @@ import collections
 import logging
 import math
 import random
-from tabulate import tabulate
+from dials.util import tabulate
 
 import six
 import six.moves.cPickle as pickle
@@ -1292,7 +1292,7 @@ class Integrator(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return tabulate(rows, headers="firstrow", tablefmt="rst")
+        return tabulate(rows, headers="firstrow")
 
 
 class Integrator3D(Integrator):
@@ -1531,7 +1531,7 @@ class Integrator3DThreaded(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return tabulate(rows, headers="firstrow", tablefmt="rst")
+        return tabulate(rows, headers="firstrow")
 
 
 class IntegratorFactory(object):

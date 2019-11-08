@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 
 import psutil
 
@@ -767,7 +767,7 @@ class Refiner(object):
                 + ["%.5g" % r for r in rmsds]
             )
 
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
         logger.info(self._refinery.history.reason_for_termination)
 
         return
@@ -806,7 +806,7 @@ class Refiner(object):
             ]
             rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
 
         return
 
@@ -869,7 +869,7 @@ class Refiner(object):
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
-            logger.info(tabulate(rows, header, tablefmt="rst"))
+            logger.info(tabulate(rows, header))
 
         return
 
@@ -933,7 +933,7 @@ class Refiner(object):
                 rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
             if len(rows) > 0:
-                logger.info(tabulate(rows, header, tablefmt="rst"))
+                logger.info(tabulate(rows, header))
 
         return
 

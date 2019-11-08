@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 from time import time
 
 from dials.array_family import flex
@@ -288,7 +288,7 @@ class Script(object):
         for n, p, e in zip(names, cell, esd):
             rows.append([n, "%9.5f" % p, "%9.5f" % e])
         rows.append(["\nvolume", "\n%9.5f" % vol, "\n%9.5f" % vol_esd])
-        return tabulate(rows, header, tablefmt="rst")
+        return tabulate(rows, header)
 
     @staticmethod
     def generate_p4p(crystal, beam, filename):

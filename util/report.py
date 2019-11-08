@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-from tabulate import tabulate
+from dials.util import tabulate
 
 
 class Array(object):
@@ -88,11 +88,7 @@ class Table(object):
         rows = [[col[1] for col in self.cols]]
         for i, row in enumerate(self.rows):
             rows.append([str(x) for x in row])
-        text = [
-            prefix + self.title,
-            tabulate(rows, headers="firstrow", tablefmt="rst"),
-            "",
-        ]
+        text = [prefix + self.title, tabulate(rows, headers="firstrow"), ""]
         return "\n".join(text)
 
 

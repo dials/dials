@@ -10,7 +10,7 @@ Usage: dials.frame_orientations refined.expt
 from __future__ import absolute_import, division, print_function
 
 import sys
-from tabulate import tabulate
+from dials.util import tabulate
 
 import dials.util
 from dials.util.options import flatten_experiments, OptionParser
@@ -123,7 +123,7 @@ class Script(object):
                 rows.append(row)
 
             # Print the table
-            print(tabulate(rows, header, tablefmt="rst"))
+            print(tabulate(rows, header))
 
             # Add to the plot, if requested
             if self.params.plot_filename:

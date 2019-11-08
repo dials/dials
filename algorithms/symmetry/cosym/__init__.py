@@ -12,7 +12,7 @@ import json
 import logging
 import math
 from collections import OrderedDict
-from tabulate import tabulate
+from dials.util import tabulate
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -696,14 +696,10 @@ class SymmetryAnalysis(object):
         output = []
         output.append("Scoring individual symmetry elements")
         d = self.as_dict()
-        output.append(
-            tabulate(self.sym_ops_table(d), headers="firstrow", tablefmt="rst")
-        )
+        output.append(tabulate(self.sym_ops_table(d), headers="firstrow"))
 
         output.append("Scoring all possible sub-groups")
-        output.append(
-            tabulate(self.subgroups_table(d), headers="firstrow", tablefmt="rst")
-        )
+        output.append(tabulate(self.subgroups_table(d), headers="firstrow"))
 
         output.append(
             "Best solution: %s"

@@ -63,8 +63,8 @@ intra-dataset connectedness.
 """
 from __future__ import absolute_import, division, print_function
 import logging
-from math import pi, floor
-from tabulate import tabulate
+from math import floor
+from dials.util import tabulate
 
 from scitbx import sparse
 
@@ -242,10 +242,10 @@ from each dataset, with a total number between %s and %s.
         indices.size(),
     )
     if n_datasets < 15:
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
     else:
-        logger.info(tabulate(summary_rows, summary_header="rst"))
-        logger.debug(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(summary_rows, summary_header))
+        logger.debug(tabulate(rows, header))
 
     return indices, dataset_ids
 

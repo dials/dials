@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import, division, print_function
 import logging
-from tabulate import tabulate
+from dials.util import tabulate
 
 from dials.array_family import flex
 from scitbx import matrix
@@ -98,7 +98,7 @@ class TwoThetaReflectionManager(ReflectionManager):
             ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
         )
         logger.info(msg)
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
         logger.info("")
 
 

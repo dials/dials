@@ -5,7 +5,7 @@ import json
 import logging
 import random
 import sys
-from tabulate import tabulate
+from dials.util import tabulate
 
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
@@ -210,7 +210,6 @@ def symmetry(experiments, reflection_tables, params=None):
             tabulate(
                 [[str(best_subsym.space_group_info()), str(best_space_group.info())]],
                 ["Patterson group", "Corresponding MX group"],
-                tablefmt="rst",
             )
         )
         # Reindex the input data

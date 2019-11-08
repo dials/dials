@@ -3,7 +3,7 @@ Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
 from math import log, exp
-from tabulate import tabulate
+from dials.util import tabulate
 from dials.array_family import flex
 from scitbx import sparse
 
@@ -101,7 +101,7 @@ class BasicErrorModel(object):
                 "Results of error model refinement. Uncorrected and corrected variances",
                 "of normalised intensity deviations for given intensity ranges. Variances",
                 "are expected to be ~1.0 for reliable errors (sigmas).",
-                tabulate(rows, header, tablefmt="rst"),
+                tabulate(rows, header),
                 "",
             )
         )

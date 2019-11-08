@@ -5,7 +5,7 @@ methods overwritten to use them with scaling code."""
 
 from __future__ import absolute_import, division, print_function
 import logging
-from tabulate import tabulate
+from dials.util import tabulate
 
 from dials.algorithms.refinement.engine import (
     SimpleLBFGS,
@@ -158,7 +158,7 @@ def print_step_table(refinery):
             + ["%.5g" % r for r in rmsds]
         )
 
-    logger.info(tabulate(rows, header, tablefmt="rst"))
+    logger.info(tabulate(rows, header))
     logger.info(refinery.history.reason_for_termination)
 
 

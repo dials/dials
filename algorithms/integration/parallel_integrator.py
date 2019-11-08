@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from math import ceil, floor
-from tabulate import tabulate
+from dials.util import tabulate
 
 import psutil
 
@@ -761,7 +761,7 @@ class IntegrationManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = tabulate(rows, headers="firstrow", tablefmt="rst")
+        task_table = tabulate(rows, headers="firstrow")
 
         # The format string
         if self.params.integration.block.size is None:
@@ -1227,7 +1227,7 @@ class ReferenceCalculatorManager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = tabulate(rows, headers="firstrow", tablefmt="rst")
+        task_table = tabulate(rows, headers="firstrow")
 
         # The format string
         if self.params.integration.block.size is None:

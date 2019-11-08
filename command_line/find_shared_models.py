@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from tabulate import tabulate
+from dials.util import tabulate
 
 from dials.util import show_mail_on_error
 
@@ -158,7 +158,7 @@ class Script(object):
                 "%s" % time_str,
             ]
             rows.append(row)
-        logger.info(tabulate(rows, headers="firstrow", tablefmt="rst"))
+        logger.info(tabulate(rows, headers="firstrow"))
 
         # Print the time
         logger.info("Time Taken: %f" % (time() - start_time))

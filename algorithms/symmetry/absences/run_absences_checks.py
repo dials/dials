@@ -1,6 +1,6 @@
 """Definition of systematic absences check algorithm."""
 import logging
-from tabulate import tabulate
+from dials.util import tabulate
 
 from cctbx import sgtbx
 
@@ -61,7 +61,6 @@ def run_systematic_absences_checks(
                 "<I/sig> present",
                 "<I/sig> absent",
             ],
-            tablefmt="rst",
         ),
     )
 
@@ -75,7 +74,6 @@ def run_systematic_absences_checks(
         tabulate(
             [[sg, "%.4f" % score] for sg, score in zip(space_groups, scores)],
             ["Space group", "score"],
-            tablefmt="rst",
         ),
     )
 

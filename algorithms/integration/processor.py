@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 from time import time
 
 import psutil
@@ -836,7 +836,7 @@ class Manager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = tabulate(rows, headers="firstrow", tablefmt="rst")
+        task_table = tabulate(rows, headers="firstrow")
 
         # The format string
         if self.params.block.size is None:

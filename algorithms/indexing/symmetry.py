@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 
 import scitbx.matrix
 from cctbx import crystal, sgtbx
@@ -106,7 +106,7 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        output = tabulate(table_data, headers="firstrow", tablefmt="rst")
+        output = tabulate(table_data, headers="firstrow")
         output = output + "\n* = recommended solution\n"
         return output
 

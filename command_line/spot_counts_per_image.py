@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-from tabulate import tabulate
+from dials.util import tabulate
 
 import iotbx.phil
 from dials.util.options import OptionParser
@@ -119,7 +119,7 @@ def run(args):
             % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
         ),
     ]
-    print(tabulate(rows, headers="firstrow", tablefmt="rst"))
+    print(tabulate(rows, headers="firstrow"))
 
     if params.json:
         import json

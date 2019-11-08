@@ -6,7 +6,7 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 from collections import OrderedDict
-from tabulate import tabulate
+from dials.util import tabulate
 
 import six
 from cctbx import uctbx
@@ -139,7 +139,7 @@ class ScalingSummaryGenerator(Observer):
             ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
             ["p < 0.01", str(not_zero_sel.count(False))],
         ]
-        logger.info(tabulate(rows, header, tablefmt="rst"))
+        logger.info(tabulate(rows, header))
         logger.info(
             """
 Reflections below a partiality_cutoff of %s are not considered for any

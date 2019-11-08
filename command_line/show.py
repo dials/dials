@@ -5,7 +5,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import iotbx.phil
 import numpy
-from tabulate import tabulate
+from dials.util import tabulate
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
@@ -349,7 +349,7 @@ def _create_flag_count_table(table):
     # Build the array of output strings
     text = []
     text.append("Reflection flags:")
-    text.append(tabulate(flag_rows, headers="firstrow", tablefmt="rst"))
+    text.append(tabulate(flag_rows, headers="firstrow"))
     return "\n".join(text)
 
 
@@ -503,7 +503,7 @@ def show_reflections(
                     ]
                 )
 
-        text.append(tabulate(rows, headers="firstrow", tablefmt="rst"))
+        text.append(tabulate(rows, headers="firstrow"))
 
         if show_flags:
             text.append(_create_flag_count_table(rlist))

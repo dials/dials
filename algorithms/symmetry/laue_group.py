@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 import math
-from tabulate import tabulate
+from dials.util import tabulate
 
 import libtbx
 import scipy.stats
@@ -291,7 +291,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring individual symmetry elements\n")
-        output.append(tabulate(rows, headers="firstrow", tablefmt="rst"))
+        output.append(tabulate(rows, headers="firstrow"))
 
         header = (
             "Patterson group",
@@ -331,7 +331,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring all possible sub-groups\n")
-        output.append(tabulate(rows, headers="firstrow", tablefmt="rst"))
+        output.append(tabulate(rows, headers="firstrow"))
 
         output.append(
             "\nBest solution: %s"
