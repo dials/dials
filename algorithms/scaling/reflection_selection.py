@@ -214,9 +214,12 @@ from each dataset, with a total number between %s and %s.
         if not res_Ih_table.Ih_table.size():
             continue
 
-        indices_this_res, dataset_ids_this_res, n_groups_used, total_per_dataset = _perform_quasi_random_selection(
-            res_Ih_table, n_datasets, mpc, mint, maxt
-        )
+        (
+            indices_this_res,
+            dataset_ids_this_res,
+            n_groups_used,
+            total_per_dataset,
+        ) = _perform_quasi_random_selection(res_Ih_table, n_datasets, mpc, mint, maxt)
 
         indices.extend(indices_this_res)
         dataset_ids.extend(dataset_ids_this_res)
