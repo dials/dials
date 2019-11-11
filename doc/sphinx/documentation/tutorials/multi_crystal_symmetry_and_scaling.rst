@@ -42,7 +42,7 @@ Have a look at the :doc:`processing_in_detail_betalactamase` tutorial if you
 want to know more about the different processing steps up to this point.
 
 ..  Note::
-    The data for this tutorial is currently only available for users at diamond
+    The data for this tutorial are currently only available for users at diamond
     on BAG training.
     After typing :samp:`module load bagtraining` you'll be moved to a working
     folder, with the data already located in the :samp:`tutorial-data/ccp4/integrated_files`
@@ -132,7 +132,7 @@ furthest resolution (CC1/2 > 0.3), which can be confirmed by a resolution analys
 
   Resolution cc_half:      1.78
 
-If the resolution limit was lower than the extend of the data, scaling would
+If the resolution limit was lower than the extent of the data, scaling would
 be rerun with a new resolution limit, for example::
 
   dials.scale scaled.refl scaled.expt d_min=1.78
