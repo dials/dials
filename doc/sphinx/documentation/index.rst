@@ -10,6 +10,7 @@ Documentation and tutorials for DIALS:
 .. toctree::
    :maxdepth: 1
 
+   dials_2.0
    data_files
    tutorials/index
    programs/index
@@ -17,4 +18,3 @@ Documentation and tutorials for DIALS:
    installation_developer
    library_reference/index
    developer_examples/index
-
