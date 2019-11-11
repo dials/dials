@@ -11,7 +11,7 @@ Tutorials
 
 .. _introduction:
 
-DialsUserInterface (DUI) tutorial
+DIALS User Interface (DUI) tutorial
 
 .. toctree::
    :maxdepth: 1
