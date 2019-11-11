@@ -71,7 +71,7 @@ POSIX-compliant systems). For example (may require installation of curl):
 
 With the format class in place, we can look at images using
 :doc:`dials.image_viewer<../programs/dials_image_viewer>` and import them to
-create a ``datablock.expt``. However, for reasons outlined in the paper, the
+create a ``imported.expt``. However, for reasons outlined in the paper, the
 files have incomplete metadata. For successful processing, various aspects of
 the experimental geometry must be described during import so they override the
 dummy values supplied by the format class.
@@ -138,12 +138,12 @@ recreate that file now as follows:
   }
   EOF
 
-We can now generate the mask using the ``datablock.expt`` created earlier, then
+We can now generate the mask using the ``imported.expt`` created earlier, then
 re-import including the mask:
 
 .. code-block:: bash
 
-  dials.generate_mask mask.phil datablock.expt
+  dials.generate_mask mask.phil imported.expt
   dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=pixels.mask
 
 Dataset 2
@@ -280,7 +280,7 @@ then the mask was generated, and used during re-import of the images
 
 .. code-block:: bash
 
-  dials.generate_mask mask.phil datablock.expt
+  dials.generate_mask mask.phil imported.expt
   dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=pixels.mask
 
 Dataset 7
@@ -327,7 +327,7 @@ Dataset 1
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=20 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 2
 ---------
@@ -347,7 +347,7 @@ Dataset 2
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.6 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 3
 ---------
@@ -367,7 +367,7 @@ Dataset 3
   EOF
 
   dials.find_spots nproc=8 min_spot_size=10 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 4
 ---------
@@ -387,7 +387,7 @@ Dataset 4
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 5
 ---------
@@ -407,7 +407,7 @@ Dataset 5
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 6
 ---------
@@ -427,7 +427,7 @@ Dataset 6
   EOF
 
   dials.find_spots nproc=8 min_spot_size=8 max_spot_size=300 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Dataset 7
 ---------
@@ -447,7 +447,7 @@ Dataset 7
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    imported.expt find_spots.phil
 
 Indexing
 ========
@@ -478,7 +478,7 @@ except dataset 6, with the following commands:
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil
+  dials.index imported.expt strong.refl refine.phil
   dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil
 
@@ -519,7 +519,7 @@ of PHIL definitions:
 at this stage we did not impose additional lattice symmetry, so kept the
 triclinic solution from indexing and refinement::
 
-  dials.index datablock.expt strong.refl refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
+  dials.index imported.expt strong.refl refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
   dials.refine indexed.expt indexed.refl refine.phil restraint.phil
 
 Static model refinement
@@ -597,7 +597,7 @@ Datasets 1-5 & 7
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil
+  dials.index imported.expt strong.refl refine.phil
   dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil \
     output.experiments=static.expt output.reflections=static.refl
@@ -611,7 +611,7 @@ restraint was still used.
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil restraint.phil
+  dials.index imported.expt strong.refl refine.phil restraint.phil
   dials.refine_bravais_settings indexed.expt indexed.refl refine.phil
   dials.refine bravais_setting_5.expt indexed.refl refine.phil restraint.phil \
     output.experiments=static.expt output.reflections=static.refl

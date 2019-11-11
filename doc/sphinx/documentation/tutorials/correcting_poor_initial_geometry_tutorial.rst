@@ -60,10 +60,10 @@ go ahead and import the whole sequence as normal::
 
   dials.import x247398/t1.0*.img.bz2
 
-This produces the file :file:`datablock.expt`, containing an initial model for
+This produces the file :file:`imported.expt`, containing an initial model for
 the beamline geometry. You can inspect this model using :program:`dials.show`::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 Note how the goniometer rotation axis is given by ``{-1,0,0}`` rather than
 ``{1,0,0}``. This is because DIALS recognises that these images as being
@@ -77,7 +77,7 @@ a case we could force the rotation axis to be whatever we want like this::
 
 Now that we have imported the data we should look at the images::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 Keen-eyed observers may already suspect that the beam centre is not correct,
 however we shall continue through spot-finding as this is not affected by
@@ -111,12 +111,12 @@ to :file:`find_spots.phil` by clicking the ``Save`` button on the
 :program:`dials.find_spots`, where we also request more than one process
 to speed the job up (feel free to set this greater than 4, if appropriate)::
 
-  dials.find_spots datablock.expt find_spots.phil nproc=4
+  dials.find_spots imported.expt find_spots.phil nproc=4
 
 After finding strong spots it is *always* worth viewing them using
 :program:`dials.reciprocal_lattice_viewer`::
 
-  dials.reciprocal_lattice_viewer datablock.expt strong.refl
+  dials.reciprocal_lattice_viewer imported.expt strong.refl
 
 .. image:: /figures/dpf3_bad_found_spot.png
 
@@ -139,7 +139,7 @@ Indexing
 
 ::
 
-  dials.index datablock.expt strong.refl
+  dials.index imported.expt strong.refl
 
 It turns out that the reciprocal lattice positions were regular enough for
 indexing to complete ('succeed' is the wrong word, as will become clear).
@@ -298,7 +298,7 @@ implemented in :program:`LABELIT`.
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
 
-  dials.search_beam_position strong.refl datablock.expt n_macro_cycles=2
+  dials.search_beam_position strong.refl imported.expt n_macro_cycles=2
 
 In particularly bad cases it may useful to perform this search iteratively.
 Here we requested two macrocyles, though we see from the concise, yet

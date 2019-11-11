@@ -46,7 +46,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that metadata are read for all the images, and a file
-describing their contents (:ref:`datablock.expt <datablock-json>`) is written::
+describing their contents (:ref:`imported.expt <datablock-json>`) is written::
 
     dials.import tutorial-data/summed/C2sum_1*.cbf.gz
 
@@ -59,7 +59,7 @@ Now is a good point to take a first look at the data using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>`, both to check that
 the data is sensible and to anticipate any problems in processing::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 You will be presented with the main image viewer screen:
 
@@ -100,7 +100,7 @@ not as fast as viewers such as ADXV, however it does integrate well with
 DIALS data files. Having found strong spots open the image viewer again,
 but giving it the newly found reflection list::
 
-  dials.image_viewer datablock.expt strong.refl
+  dials.image_viewer imported.expt strong.refl
 
 Adjust the brightness so that you can see the spots, then zoom in so
 that you can see the clustered individual pixels of a single spot.
@@ -133,7 +133,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions::
 
-  dials.reciprocal_lattice_viewer datablock.expt strong.refl
+  dials.reciprocal_lattice_viewer imported.expt strong.refl
 
 .. image:: /figures/process_detail_betalactamase/reciprocal_lattice_strong.png
 

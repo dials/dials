@@ -33,7 +33,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
-their contents (:ref:`datablock.expt <datablock-json>`) is written.
+their contents (:ref:`imported.expt <datablock-json>`) is written.
 
 ::
 
@@ -72,7 +72,7 @@ far too many spots being extracted (for example). It is always worth
 inspecting the images with :doc:`dials.image_viewer<../programs/dials_image_viewer>`,
 especially if you are having issues with spot finding::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 Viewing the various images from 'image' to 'threshold' gives an idea of how
 the various parameters affect the spot finding algorithm. The final image,
@@ -81,7 +81,7 @@ peaks at real diffraction spot positions will give the best chance of success.
 
 Having found strong spots it is worth checking the image viewer again::
 
-  dials.image_viewer datablock.expt strong.refl
+  dials.image_viewer imported.expt strong.refl
 
 The :doc:`dials.image_viewer<../programs/dials_image_viewer>` tool is not as
 fast as viewers such as ADXV, however it does integrate well with DIALS data
@@ -110,7 +110,7 @@ able to see the crystal's reciprocal lattice by eye in the strong spot
 positions. Some practice may be needed in rotating the lattice to an
 orientation that shows off the periodicity in reciprocal lattice positions::
 
-  dials.reciprocal_lattice_viewer datablock.expt strong.refl
+  dials.reciprocal_lattice_viewer imported.expt strong.refl
 
 .. image:: /figures/reciprocal_lattice_strong.png
 

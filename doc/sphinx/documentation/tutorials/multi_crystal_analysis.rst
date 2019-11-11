@@ -70,13 +70,13 @@ let DIALS figure it out for us::
     num sequences: 73
     num stills: 0
   --------------------------------------------------------------------------------
-  Writing datablocks to datablock.expt
+  Writing datablocks to imported.expt
 
 With a single command we have determined that there are 73 individual sequences
 comprising 2711 total images. Running the following command will give us
 information about each one of these datasets::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 That was a smooth start, but now things get abruptly more difficult.
 Before we perform the joint analysis, we want to do the individual analysis
@@ -88,14 +88,14 @@ a single command. We will have to start again with :program:`dials.import` for
 each sequence individually - but we really don't want to run this manually 73
 times.
 
-The solution is to write a script that will take the :samp:`datablock.expt` as
+The solution is to write a script that will take the :samp:`imported.expt` as
 input, extract the filename templates, and run the same processing commands
 for each dataset. This script could be written in BASH, tcsh, perl,
 ruby - whatever you feel most comfortable with. However here we will use Python,
 or more specifically :program:`dials.python` because we will take advantage of
 features in the cctbx to make it easy to write scripts that take advantage
 of `parallel execution <http://cctbx.sourceforge.net/current/python/libtbx.easy_mp.html>`_.
-Also we would like to read :samp:`datablock.expt` with the DIALS API rather than
+Also we would like to read :samp:`imported.expt` with the DIALS API rather than
 extracting the sequence templates using something like :program:`grep`.
 
 .. highlight:: python
@@ -103,7 +103,7 @@ extracting the sequence templates using something like :program:`grep`.
 The script we used to do this is reproduced below. You can copy this into a file,
 save it as :samp:`process_TehA.py` and then run it as follows::
 
-  time dials.python process_TehA.py datablock.expt
+  time dials.python process_TehA.py imported.expt
 
 On a Linux desktop with a Core i7 CPU running at 3.07GHz the script took about 8
 minutes to run (though file i/o is a significant factor)
@@ -132,10 +132,10 @@ script does. If time is *really* short then try uncommenting the line
     with cd("sequence_%02d" % num):
       cmd = "dials.import template={0}".format(template)
       easy_run.fully_buffered(command=cmd)
-      easy_run.fully_buffered(command="dials.find_spots datablock.expt")
+      easy_run.fully_buffered(command="dials.find_spots imported.expt")
 
       # initial indexing in P 1
-      cmd = "dials.index datablock.expt strong.refl " +\
+      cmd = "dials.index imported.expt strong.refl " +\
             "output.experiments=P1_models.expt"
       easy_run.fully_buffered(command=cmd)
       if not os.path.isfile("P1_models.expt"):
@@ -180,7 +180,7 @@ script does. If time is *really* short then try uncommenting the line
   if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-      sys.exit("Usage: dials.python process_TehA.py datablock.expt")
+      sys.exit("Usage: dials.python process_TehA.py imported.expt")
 
     datablock_path = os.path.abspath(sys.argv[1])
     datablock = DataBlockFactory.from_serialized_format(datablock_path,
@@ -247,12 +247,12 @@ familiar from other tutorials. There are a couple of interesting points
 to note though. We know that the correct space group is *H* 3, but it turns out
 that if we ask :program:`dials.index` to find an *H* 3 cell right from the start
 then many of the sequences fail to index. This is simply because the initial models
-contained in :samp:`datablock.expt` are too poor to locate a cell with the
+contained in :samp:`imported.expt` are too poor to locate a cell with the
 symmetry constraints. However, for many of the sequences the indexing program will
 refine the *P* 1 solution to the correct cell. For this reason we first run
 indexing in *P* 1::
 
-  dials.index datablock.expt strong.refl output.experiments=P1_models.expt
+  dials.index imported.expt strong.refl output.experiments=P1_models.expt
 
 and then we feed the refined :file:`P1_models.expt` back into
 :program:`dials.index` specifying the correct symmetry::

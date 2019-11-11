@@ -29,7 +29,7 @@ Usually DIALS processing is run on a sequence-by-sequence basis - for small mole
 
    dials.import allow_multiple_sequences=True ../data/*cbf
 
-This will create a DIALS datablock.expt file with details of the 4 sequences within it.
+This will create a DIALS imported.expt file with details of the 4 sequences within it.
 
 Spot Finding
 ------------
@@ -38,13 +38,13 @@ This is identical to the routine usage i.e.
 
 .. code-block:: bash
 
-   dials.find_spots datablock.expt nproc=8
+   dials.find_spots imported.expt nproc=8
 
 Though will of course take a little longer to work through four sequences. Here nproc=8 was assigned (for a core i7 machine.) The spot finding is independent from sequence to sequence but the spots from all sequences may be viewed with
 
 .. code-block:: bash
 
-   dials.reciprocal_lattice_viewer datablock.expt strong.refl
+   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
 Which will show how the four sequences overlap in reciprocal space, as:
 
@@ -57,7 +57,7 @@ Indexing here will depend on the model for the experiment being reasonably accur
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl
+   dials.index imported.expt strong.refl
 
 Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
 
@@ -77,7 +77,7 @@ Inspect the results, conclude that the oP lattice is appropriate then assign thi
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl space_group=P222
+   dials.index imported.expt strong.refl space_group=P222
 
 This will once again consistently index the data, this time enforcing the lattice constraints.
 

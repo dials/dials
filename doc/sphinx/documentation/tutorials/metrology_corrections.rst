@@ -53,11 +53,11 @@ With that in place, we start as usual by importing the dataset::
 The fact that the multiple panel detector model was used is clear from the
 output of::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 We can now inspect images from the dataset with::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 However, the dataset is at such low dose that it can be difficult to find the
 spots. It might be helpful to us a more mature image viewer such as ADXV or
@@ -67,7 +67,7 @@ We have to run spot finding throughout the dataset. It is a 360 degree sequence
 so this will take a few minutes. We can use more processes to move a little
 quicker::
 
-  dials.find_spots datablock.expt nproc=8 min_spot_size=3
+  dials.find_spots imported.expt nproc=8 min_spot_size=3
 
 Here we chose to set ``min_spot_size=3``, which overrides the default of 6 used
 for this detector model. We did this because otherwise this weakly diffracting
@@ -85,7 +85,7 @@ However, if not, we won't worry too much about it, because if we pass
 in the known unit cell for thaumatin then it works just fine. We
 also chose to apply tetragonal symmetry immediately::
 
-  dials.index datablock.expt strong.refl space_group="P 4" unit_cell="58 58 150 90 90 90"
+  dials.index imported.expt strong.refl space_group="P 4" unit_cell="58 58 150 90 90 90"
 
 The output of refinement in the highest resolution macrocycle is as follows::
 
@@ -641,8 +641,8 @@ the commands from the tutorial::
   mkdir tutorial_data
   cd !$
   dials.import /path/to/th_8_2*cbf
-  dials.find_spots datablock.expt nproc=4
-  dials.index datablock.expt strong.refl space_group="P4"
+  dials.find_spots imported.expt nproc=4
+  dials.index imported.expt strong.refl space_group="P4"
   dials.refine indexed.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the

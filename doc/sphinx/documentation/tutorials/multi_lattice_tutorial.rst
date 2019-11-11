@@ -28,7 +28,7 @@ Import
 
 The first stage of step-by-step DIALS processing is to import the data - all
 that happens here is that the image headers are read, and a file describing
-their contents (:samp:`datablock.expt`) is written. It's worth noting that if
+their contents (:samp:`imported.expt`) is written. It's worth noting that if
 this file is changed subsequent processing can use this.
 
 ::
@@ -53,7 +53,7 @@ passed, in this case one sequence of data containing 100 images.
     num sequences: 1
     num stills: 0
   --------------------------------------------------------------------------------
-  Writing datablocks to datablock.expt
+  Writing datablocks to imported.expt
 
 Find Spots
 ^^^^^^^^^^
@@ -64,13 +64,13 @@ processors to speed up the spot-finding (nproc=4).
 
 ::
 
-  dials.find_spots datablock.expt min_spot_size=3 nproc=4
+  dials.find_spots imported.expt min_spot_size=3 nproc=4
 
 This will just report the number of spots found.
 
 ::
 
-  Writing datablocks to datablock.expt
+  Writing datablocks to imported.expt
 
   The following parameters have been modified:
 
@@ -83,7 +83,7 @@ This will just report the number of spots found.
     }
   }
   input {
-    datablock = datablock.expt
+    datablock = imported.expt
   }
 
   Configuring spot finder from input parameters
@@ -119,7 +119,7 @@ lattice is searched for, but if there are sufficient unindexed reflections
 remaining after indexing the first lattice, we can switch on indexing of
 multiple lattices using the parameter max_lattices=2 (e.g.)::
 
-  dials.index datablock.expt strong.refl \
+  dials.index imported.expt strong.refl \
     max_lattices=2
 
 ::
@@ -132,7 +132,7 @@ multiple lattices using the parameter max_lattices=2 (e.g.)::
     }
   }
   input {
-    datablock = datablock.expt
+    datablock = imported.expt
     reflections = strong.refl
   }
 
@@ -236,7 +236,7 @@ P222.
 
 ::
 
-  dials.index datablock.expt strong.refl \
+  dials.index imported.expt strong.refl \
     max_lattices=2 \
     space_group=P222
 
@@ -253,7 +253,7 @@ P222.
     }
   }
   input {
-    datablock = datablock.expt
+    datablock = imported.expt
     reflections = strong.refl
   }
 
