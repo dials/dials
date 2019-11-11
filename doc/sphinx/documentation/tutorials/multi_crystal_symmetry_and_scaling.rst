@@ -67,7 +67,7 @@ To run :samp:`xia2.multiplex`, we must provide the path to the input integrated 
 
 This runs :samp:`dials.cosym` to analyse the laue symmetry and reindex all datasets
 consistently, scales the data with :samp:`dials.scale`,
-calculates a resolution limit with :samp:`dials.resolutionizer`and reruns
+calculates a resolution limit with :samp:`dials.resolutionizer` and reruns
 :samp:`dials.scale` with the determined resolution cutoff. The
 final dataset is exported to an unmerged mtz and a html report plot is generated.
 The easiest way to see the results is to open the html report in your browser of
