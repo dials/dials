@@ -25,7 +25,7 @@ below.
 +------------------+-------------------------------+-------------------------------+
 | dials.find_spots | imported.expt                 | strong.refl                   |
 +------------------+-------------------------------+-------------------------------+
-| dials.index      | | datablock.expt              | | indexed.expt                |
+| dials.index      | | imported.expt               | | indexed.expt                |
 |                  | | strong.refl                 | | indexed.refl                |
 +------------------+-------------------------------+-------------------------------+
 | dials.refine     | | indexed.expt                | | refined.expt                |
