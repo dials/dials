@@ -5,9 +5,9 @@
   Please click here to go to the tutorial for DIALS 1.14.
   </a>
 
-+++++++++++++++++++++++++++++++++++
+###################################
 Using DIALS at Diamond Light Source
-+++++++++++++++++++++++++++++++++++
+###################################
 
 .. _introduction:
 
@@ -15,6 +15,10 @@ DIALS is centrally installed on the Linux computer systems at Diamond. You can
 load the default version of DIALS by typing at the command line::
 
    $ module load dials
+
+DIALS 1.14 is available by typing::
+
+   $ module load dials/1
 
 The default version of DIALS (and xia2, etc.) is usually fixed at the start of
 a run, however a more recent nightly build of DIALS may be available::
