@@ -658,7 +658,6 @@ class SingleScaler(ScalerBase):
         ):
             # do the random reflection selection.
             block = self.global_Ih_table.Ih_table_blocks[0]
-            loc_indices = block.Ih_table["loc_indices"]
             suitable_table = self.get_valid_reflections()
             presel = calculate_scaling_subset_ranges(
                 suitable_table, self.params, print_summary=True
@@ -687,13 +686,11 @@ class SingleScaler(ScalerBase):
                 loc_indices = presel_block.select_on_groups_isel(isel).Ih_table[
                     "loc_indices"
                 ]
-                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
-                self.scaling_selection.set_selected(loc_indices, True)
             else:
-                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
                 loc_indices = presel_block.Ih_table["loc_indices"]
-                self.scaling_selection.set_selected(loc_indices, True)
                 n_groups_to_sel = n_groups_in_table
+            self.scaling_selection = flex.bool(self.n_suitable_refl, False)
+            self.scaling_selection.set_selected(loc_indices, True)
             logger.info(
                 """
 Randomly selected %s/%s groups (m>1) to use for scaling model
