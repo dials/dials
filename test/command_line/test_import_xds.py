@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import procrunner
-import six.moves.cPickle as pickle
+from dials.array_family import flex
 
 
 def test_import_integrate_hkl(dials_data, tmpdir):
@@ -16,9 +16,7 @@ def test_import_integrate_hkl(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrate_hkl.refl").open("rb") as fh:
-        table = pickle.load(fh)
-
+    table = flex.reflection_table.from_file(tmpdir / "integrate_hkl.refl")
     assert "miller_index" in table
     assert "id" in table
     assert "panel" in table
@@ -40,9 +38,7 @@ def test_import_spot_xds(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("spot_xds.refl").open("rb") as fh:
-        table = pickle.load(fh)
-
+    table = flex.reflection_table.from_file(tmpdir / "spot_xds.refl")
     assert "miller_index" in table
     assert "id" in table
     assert "panel" in table
@@ -63,9 +59,7 @@ def test_import_spot_xds_with_filtering(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("spot_xds.refl").open("rb") as fh:
-        table = pickle.load(fh)
-
+    table = flex.reflection_table.from_file(tmpdir / "spot_xds.refl")
     assert "miller_index" in table
     assert "id" in table
     assert "panel" in table

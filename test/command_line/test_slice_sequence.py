@@ -2,9 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-import six.moves.cPickle as pickle
 import procrunner
 import pytest
+from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
@@ -27,8 +27,7 @@ def test_slice_sequence_and_compare_with_expected_results(dials_regression, tmpd
     sliced_exp = ExperimentListFactory.from_json_file(
         tmpdir.join("experiments_1_20.expt").strpath, check_format=False
     )[0]
-    with tmpdir.join("indexed_strong_1_20.refl").open("rb") as f:
-        sliced_refs = pickle.load(f)
+    sliced_refs = flex.reflection_table.from_file(tmpdir / "indexed_strong_1_20.refl")
 
     # simple test of results
     assert sliced_exp.scan.get_image_range() == (1, 20)
