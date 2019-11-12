@@ -770,6 +770,24 @@ def _parameterise_goniometers(options, experiments, analysis):
     return gon_params
 
 
+def _map_parameterisation_to_experiment_ids(parameterisations, constraints):
+    d = {}
+    all_exp = set(i for p in parameterisations for i in p.get_experiment_ids())
+    for p in parameterisations:
+        ids = set(list(p.get_experiment_ids()))
+        for c in constraints:
+            if c.id is None:
+                check_ids = all_exp
+            else:
+                check_ids = c.id
+            # If a constraint extends to this parameterisation, then include all
+            # experiment IDs from the constraint
+            if len(ids & check_ids) > 0:
+                ids = ids | check_ids
+        d[p] = ids
+    return d
+
+
 def build_prediction_parameterisation(
     options, experiments, reflection_manager, do_stills=False
 ):
@@ -796,6 +814,32 @@ def build_prediction_parameterisation(
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
+
+    # Create a map of parameterisations to experiment ids, taking constraints into account
+    parameterisations_to_exp_ids = {}
+    parameterisations_to_exp_ids.update(
+        _map_parameterisation_to_experiment_ids(beam_params, options.beam.constraints)
+    )
+    parameterisations_to_exp_ids.update(
+        _map_parameterisation_to_experiment_ids(
+            xl_ori_params, options.crystal.orientation.constraints
+        )
+    )
+    parameterisations_to_exp_ids.update(
+        _map_parameterisation_to_experiment_ids(
+            xl_uc_params, options.crystal.unit_cell.constraints
+        )
+    )
+    parameterisations_to_exp_ids.update(
+        _map_parameterisation_to_experiment_ids(
+            det_params, options.detector.constraints
+        )
+    )
+    parameterisations_to_exp_ids.update(
+        _map_parameterisation_to_experiment_ids(
+            gon_params, options.goniometer.constraints
+        )
+    )
 
     # Check for too many parameters and reduce if requested
     autoreduce = AutoReduce(
