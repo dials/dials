@@ -794,9 +794,7 @@ def _map_panel_groups_to_panels(detector_parameterisation, constraints):
     param_names = detector_parameterisation.get_param_names(only_free=False)
     ids = set(list(detector_parameterisation.get_experiment_ids()))
 
-    d = {}
-    for i, _ in enumerate(gps_to_pnls):
-        d[i] = set()
+    result = [set()] * len(gps_to_pnls)
 
     for c in constraints:
         if c.id is not None:
@@ -818,9 +816,10 @@ def _map_panel_groups_to_panels(detector_parameterisation, constraints):
 
         # For each group, record all the panels affected by the constraint
         for g in groups:
-            d[g] = d[g] | panels
+            result[g] = result[g] | panels
 
-    return d
+    result = [list(e) for e in result]
+    return result
 
 
 def build_prediction_parameterisation(
