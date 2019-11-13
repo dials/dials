@@ -22,7 +22,7 @@ graphically through the DIALS User Interface, DUI_.
 DUI is part of CCP4 and can be launched from ccp4i2 by selecting the relevant
 icon from within the "Integrate X-ray images" task folder.
 
-.. image:: /figures/process_detail_betalactamase_dui/ccp4i2_dui.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/ccp4i2_dui.png
 
 Tutorial data
 -------------
@@ -51,7 +51,7 @@ Import
 When DUI starts up you will initially be presented by a window like the
 following.
 
-.. image:: /figures/process_detail_betalactamase_dui/dui_empty.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/dui_empty.png
 
 At this stage you can resize various parts of the interface until you are
 comfortable with the layout, but you can't do much else until the dataset is
@@ -61,7 +61,7 @@ determine the filename template and will show that with a wildcard in the text
 box. If there are problems with this template it is possible to edit this before
 importing the images. Otherwise, just click the "Run" button to proceed.
 
-.. image:: /figures/process_detail_betalactamase_dui/import.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/import.png
 
 What happens then is that that the metadata are read for all the
 images in the dataset. If these are consistent, then the dataset is imported
@@ -69,7 +69,7 @@ and initial models for the "Beam", "Scan" and "Detector" are created. The images
 are now also displayed within the "Image View" tab. You can adjust the contrast
 and colour scheme by controls under the "Palette Tuning" pull-down.
 
-.. image:: /figures/process_detail_betalactamase_dui/image_view_palette.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/image_view_palette.png
 
 Find Spots
 ^^^^^^^^^^
@@ -105,7 +105,7 @@ instead we had seen the number of strong spots drop off over the dataset, or
 otherwise show large variability we would start to worry about issues such
 as radiation damage or a poorly-centred crystal.
 
-.. image:: /figures/process_detail_betalactamase_dui/report_spot_count.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/report_spot_count.png
 
 The cyan button at the bottom left of the graph opens a help window with a
 description of how the appearance of this plot may be affected by various
@@ -161,7 +161,7 @@ In this case, keep the method set to the default :samp:`fft3d` and click "Run" t
 start the indexing job. Once the job has finished running, you will see that
 the experimental models have now been completed with a "Crystal" model.
 
-.. image:: /figures/process_detail_betalactamase_dui/status_after_index.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/status_after_index.png
 
 Now let's click through the tabs of output. First, on the image viewer you will
 now see that indexed strong spots are assigned Miller indices. If you also
@@ -169,7 +169,7 @@ click on the "Predictions" checkbox, under "Reflection Type" you will in
 addition see centroid positions and Miller indices for all predicted
 reflections, not just the strong spots.
 
-.. image:: /figures/process_detail_betalactamase_dui/image_view_predictions.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/image_view_predictions.png
 
 Moving to the "Log Text" tab, it is worth reading through the output to
 understand what the indexing program has done. Inspecting the beginning of the
@@ -263,7 +263,7 @@ the defaults, as they are suitable for the majority of data sets.
 Once the job has run, a window will pop up containing scoring data and the unit
 cell for each Bravais setting.
 
-.. image:: /figures/process_detail_betalactamase_dui/reindex_table.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/reindex_table.png
 
 The scores for each setting include max δ (a metric fit measured in degrees),
 RMSDs (in mm), and the best and worse correlation coefficients for data related
@@ -532,7 +532,7 @@ To see what the scaling is telling us about the dataset, plots of the scaling
 model should be viewed. These are visible within the "Report View" tab, at the
 bottom under "Analysis of scaling model".
 
-.. image:: /figures/process_detail_betalactamase_dui/report_scaling_plots.png
+.. image:: https://dials.github.io/images/process_detail_betalactamase_dui/report_scaling_plots.png
 
 What is immediately apparent is the periodic nature of the scale term, with peaks
 and troughs 90° apart. This indicates that the illuminated volume was changing
