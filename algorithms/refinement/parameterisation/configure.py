@@ -770,58 +770,6 @@ def _parameterise_goniometers(options, experiments, analysis):
     return gon_params
 
 
-def _map_parameterisation_to_experiment_ids(parameterisations, constraints):
-    d = {}
-    all_exp = set(i for p in parameterisations for i in p.get_experiment_ids())
-    for p in parameterisations:
-        ids = set(list(p.get_experiment_ids()))
-        for c in constraints:
-            if c.id is None:
-                check_ids = all_exp
-            else:
-                check_ids = c.id
-            # If a constraint extends to this parameterisation, then include all
-            # experiment IDs from the constraint
-            if len(ids & check_ids) > 0:
-                ids = ids | check_ids
-        d[p] = ids
-    return d
-
-
-def _map_panel_groups_to_panels(detector_parameterisation, constraints):
-    gps_to_pnls = detector_parameterisation.get_panel_ids_by_group()
-    params_to_gps = detector_parameterisation.get_param_panel_groups()
-    param_names = detector_parameterisation.get_param_names(only_free=False)
-    ids = set(list(detector_parameterisation.get_experiment_ids()))
-
-    result = [set()] * len(gps_to_pnls)
-
-    for c in constraints:
-        if c.id is not None:
-            if len(set(c.id) & ids) == 0:
-                continue
-        c.parameter
-
-        # Ignore model name prefixes
-        patt1 = re.compile("^Detector" + "[0-9]+")
-        pname = patt1.sub("", c.parameter)
-
-        # Find groups and panels that this constraint affects
-        params = [i for i, s in enumerate(param_names) if pname in s]
-        groups = [params_to_gps[i] for i in params]
-        panels = []
-        for g in groups:
-            panels.extend(gps_to_pnls[g])
-        panels = set(panels)
-
-        # For each group, record all the panels affected by the constraint
-        for g in groups:
-            result[g] = result[g] | panels
-
-    result = [list(e) for e in result]
-    return result
-
-
 def build_prediction_parameterisation(
     options, experiments, reflection_manager, do_stills=False
 ):
@@ -848,40 +796,6 @@ def build_prediction_parameterisation(
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
-
-    # Create a map of parameterisations to experiment ids, taking constraints into account
-    parameterisations_to_exp_ids = {}
-    parameterisations_to_exp_ids.update(
-        _map_parameterisation_to_experiment_ids(beam_params, options.beam.constraints)
-    )
-    parameterisations_to_exp_ids.update(
-        _map_parameterisation_to_experiment_ids(
-            xl_ori_params, options.crystal.orientation.constraints
-        )
-    )
-    parameterisations_to_exp_ids.update(
-        _map_parameterisation_to_experiment_ids(
-            xl_uc_params, options.crystal.unit_cell.constraints
-        )
-    )
-    parameterisations_to_exp_ids.update(
-        _map_parameterisation_to_experiment_ids(
-            det_params, options.detector.constraints
-        )
-    )
-    parameterisations_to_exp_ids.update(
-        _map_parameterisation_to_experiment_ids(
-            gon_params, options.goniometer.constraints
-        )
-    )
-
-    # For each detector parameterisation, create a map of panel groups to panels,
-    # taking constraints into account
-    det_param_pnl_groups_to_pnls = {}
-    for d in det_params:
-        det_param_pnl_groups_to_pnls[d] = _map_panel_groups_to_panels(
-            d, options.detector.constraints
-        )
 
     # Check for too many parameters and reduce if requested
     autoreduce = AutoReduce(
