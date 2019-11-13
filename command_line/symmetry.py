@@ -374,6 +374,18 @@ def run(args=None):
     reflections = flatten_reflections(params.input.reflections)
 
     reflections = parse_multiple_datasets(reflections)
+
+    # Cut down reflection lists according to input batch range if set
+    if params.batch is not None:
+        z0, z1 = map(float, params.batch)
+        logger.info("Cutting reflection lists to batch range %d to %d" % (z0, z1))
+        trimmed_reflections = []
+        for refl in reflections:
+            z = refl["xyzcal.px"].parts()[2]
+            keep = (z >= z0) & (z <= z1)
+            trimmed_reflections.append(refl.select(keep))
+        reflections = trimmed_reflections
+
     if len(experiments) != len(reflections):
         sys.exit(
             "Mismatched number of experiments and reflection tables found: %s & %s."
