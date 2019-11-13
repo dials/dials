@@ -96,7 +96,7 @@ job can take some time, but by default it will be run in parallel using
 multiple processors. To proceed, press the "Run" button below the input
 parameters.
 
-Once the job is finished, the image viewer will display small green boxes
+Once the job is finished, the image viewer will display small blue boxes
 around the pixels that have been marked as strong. It is also useful to click
 on the "Report View" tab and scroll down to the "Analysis of strong reflections".
 This shows a graph of the number of strong spots found per image. In this case
@@ -119,7 +119,7 @@ detector types, such as CCDs or image plates. If you have a case where
 spot-finding has gone badly, it may be helpful to debug using the
 :doc:`dials.image_viewer<../programs/dials_image_viewer>` and
 :doc:`dials.reciprocal_lattice_viewer<../programs/dials_reciprocal_lattice_viewer>`,
-which can be launched via buttons shown on the "External Tools" tab.
+which can be launched via buttons shown on the "Tools" tab.
 
 In particular, the effect of changing the spot-finding parameters can be explored
 interactively with the :doc:`dials.image_viewer<../programs/dials_image_viewer>`.
