@@ -66,8 +66,8 @@ importing the images. Otherwise, just click the "Run" button to proceed.
 What happens then is that that the metadata are read for all the
 images in the dataset. If these are consistent, then the dataset is imported
 and initial models for the "Beam", "Scan" and "Detector" are created. The images
-are now also displayed within the "Image View" tab. You can adjust the contrast
-and colour scheme by controls under the "Palette Tuning" pull-down.
+are now also displayed within the "Image" tab. You can adjust the contrast
+and colour scheme by controls under the "Display" pull-down.
 
 .. image:: https://dials.github.io/images/process_detail_betalactamase_dui/image_view_palette.png
 
