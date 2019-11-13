@@ -61,17 +61,27 @@ This runs several DIALS programs, including the programs described above, while
 producing useful plots and output files.
 
 To run :samp:`xia2.multiplex`, we must provide the path to the input integrated files from
-:samp:`dials.integrate`::
+:samp:`dials.integrate`:
 
-  xia2.multiplex ../tutorial-data/ccp4/integrated_files/{reflections_*.refl,experiments_*.expt}
+.. dials_tutorial_include:: multi_crystal/xia2.multiplex.cmd
 
-This runs :samp:`dials.cosym` to analyse the laue symmetry and reindex all datasets
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    ..  dials_tutorial_include:: multi_crystal/xia2.multiplex.log
+
+This runs :samp:`dials.cosym` to analyse the Laue symmetry and reindex all datasets
 consistently, scales the data with :samp:`dials.scale`,
 calculates a resolution limit with :samp:`dials.resolutionizer` and reruns
 :samp:`dials.scale` with the determined resolution cutoff. The
-final dataset is exported to an unmerged mtz and a html report plot is generated.
-The easiest way to see the results is to open the html report in your browser of
-choice e.g.::
+final dataset is exported to an unmerged mtz and a
+:doc:`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`
+is generated. The easiest way to see the results is to open the
+:doc:`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`
+in your browser of choice e.g.::
 
   firefox xia2.multiplex.html
 
@@ -84,36 +94,22 @@ to explore the different steps and address this issue.
 
 Manual reprocessing
 -------------------
-The first step is Laue/Patterson group analysis using :samp:`dials.cosym`::
+The first step is Laue/Patterson group analysis using :samp:`dials.cosym`:
 
-  dials.cosym ../tutorial-data/ccp4/integrated_files/{reflections_*.refl,experiments_*.expt}
+.. dials_tutorial_include:: multi_crystal/dials.cosym.cmd
 
-  Scoring all possible sub-groups
-  -------------------------------------------------------------------------------
-  Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   delta  Reindex operator
-  -------------------------------------------------------------------------------
-  P 4/m m m        ***  1.000        9.76    9.76   0.00  0.0    -b,-a,-c
-  C m m m               0.000        0.01    9.77   9.76  0.0    a+b,-a+b,c
-  P 4/m                 0.000       -0.02    9.75   9.77  0.0    -b,-a,-c
-  P m m m               0.000       -0.02    9.75   9.77  0.0    -b,-a,-c
-  C 1 2/m 1             0.000        0.04    9.80   9.76  0.0    a+b,-a+b,c
-  P 1 2/m 1             0.000        0.02    9.78   9.76  0.0    -b,-a,-c
-  C 1 2/m 1             0.000        0.01    9.77   9.76  0.0    a-b,a+b,c
-  P 1 2/m 1             0.000       -0.02    9.75   9.77  0.0    -a,-c,-b
-  P 1 2/m 1             0.000       -0.04    9.73   9.77  0.0    a,b,c
-  P -1                  0.000       -9.76    0.00   9.76  0.0    -b,-a,-c
-  -------------------------------------------------------------------------------
-  Best solution: P 4/m m m
-  Unit cell: (68.3974, 68.3974, 104.002, 90, 90, 90)
-  Reindex operator: -b,-a,-c
-  Laue group probability: 1.000
-  Laue group confidence: 1.000
-  Space groups:
-  P 4 2 2
-  [0, 1, 2, 3]
-  Reindexing operators:
-  x,y,z
-  [0, 1, 2, 3]
+.. dials_tutorial_include:: multi_crystal/dials.cosym.log
+   :start-at: Scoring all possible sub-groups
+   :end-before: Writing html report
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.cosym.log
+
 
 As you can see, the P 4/m m m patterson group is found with the highest confidence.
 For the corresponding space group, the mirror symmetries are removed to give P 4 2 2,
@@ -121,21 +117,40 @@ as the chiral nature of macromolecules means we have a resctricted choice of spa
 groups. In this example, all datasets were indexed consistently, but this is not
 the case in general.
 
-Next, the data can be scaled::
+Next, the data can be scaled:
 
-  dials.scale symmetrized.refl symmetrized.expt
+.. dials_tutorial_include:: multi_crystal/dials.scale.cmd
 
 From the merging statistics it is clear that the data quality is good out to the
-furthest resolution (CC1/2 > 0.3), which can be confirmed by a resolution analysis::
+furthest resolution (CC1/2 > 0.3), which can be confirmed by a resolution analysis:
 
-  dials.resolutionizer scaled.refl scaled.expt
+.. dials_tutorial_include:: multi_crystal/dials.resolutionizer.cmd
 
-  Resolution cc_half:      1.78
+.. dials_tutorial_include:: multi_crystal/dials.resolutionizer.log
+   :start-at: Resolution cc_half
+   :end-before: Resolution cc_half
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.resolutionizer.log
+
 
 If the resolution limit was lower than the extent of the data, scaling would
-be rerun with a new resolution limit, for example::
+be rerun with a new resolution limit, for example:
 
-  dials.scale scaled.refl scaled.expt d_min=1.78
+.. dials_tutorial_include:: multi_crystal/dials.scale_cut.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.scale_cut.log
 
 For exploring the scaling results, a wide variety of scaling and merging plots
 can be found in the :samp:`scaling.html` report generated by :samp:`dials.scale`.
@@ -147,22 +162,21 @@ R-merge values and much lower I/sigma.
 Therefore the question one must ask is if it is better to exclude this dataset.
 We can get some useful information about the agreement between datasets by
 running the program :samp:`dials.compute_delta_cchalf`. This program implements
-a version of the algorithms described in Assmann_ *et al.* ::
+a version of the algorithms described in Assmann_ *et al.* :
 
-  dials.compute_delta_cchalf scaled.refl scaled.expt
+.. dials_tutorial_include:: multi_crystal/dials.compute_delta_cchalf.cmd
 
-  # Datasets: 4
-  # Reflections: 222563
-  # Unique: 26478
-  CC 1/2 mean: 94.806
-  CC 1/2 excluding dataset 0: 92.005
-  CC 1/2 excluding dataset 1: 91.977
-  CC 1/2 excluding dataset 2: 91.915
-  CC 1/2 excluding dataset 3: 99.323
-  Dataset: 3, Delta CC 1/2: -4.517
-  Dataset: 0, Delta CC 1/2: 2.801
-  Dataset: 1, Delta CC 1/2: 2.829
-  Dataset: 2, Delta CC 1/2: 2.891
+.. dials_tutorial_include:: multi_crystal/dials.compute_delta_cchalf.log
+   :start-at: # Datasets:
+   :end-before: Writing table
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.compute_delta_cchalf.log
 
 It looks like we could get a significantly better CC 1/2 by excluding the final
 dataset - it has a negative Delta CC 1/2. But how bad is too bad that it warrants
@@ -174,9 +188,17 @@ then one could argue that these measurements are not drawn from the same populat
 as the rest of the data and should be excluded.
 
 To see the effect of removing the last dataset (dataset '3'), we can rerun
-:samp:`dials.scale` (note that this will overwrite the previous scaled files)::
+:samp:`dials.scale` (note that this will overwrite the previous scaled files):
 
-  dials.scale scaled.refl scaled.expt exclude_datasets=3
+.. dials_tutorial_include:: multi_crystal/dials.scale_exclude.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.scale_exclude.log
 
 The overall merging statistics look significantly improved and therefore
 one would probably proceed with the first three datasets::
@@ -204,31 +226,21 @@ In ``dials.cosym``, only the Laue/Patterson group was tested to determine a spac
 group of P 4 2 2. However, a number of other MX space groups are possible for the
 Laue group (due to the possibility of screw-axes), such as P42\ :sub:`1` 2,
 P4\ :sub:`1` 22 etc. The screw-axes tests are performed by :samp:`dials.symmetry`, and we can disable the
-Laue group testing as we are already confident about this::
+Laue group testing as we are already confident about this:
 
-  dials.symmetry scaled.refl scaled.expt laue=None
+.. dials_tutorial_include:: multi_crystal/dials.symmetry.cmd
 
-  Running systematic absences check
-  Laue group: P 4/m m m
-  ---------------------------------------------------------------------------------------------------------------
-  | Screw axis | Score | No. present | No. absent | <I> present | <I> absent | <I/sig> present | <I/sig> absent |
-  ---------------------------------------------------------------------------------------------------------------
-  | 41c        | 1.000 | 10          | 32         | 254.195     | 0.061      | 39.922          | 0.295          |
-  | 21a        | 1.000 | 13          | 14         | 288.382     | 0.186      | 37.236          | 1.381          |
-  | 42c        | 1.000 | 21          | 21         | 121.058     | 0.079      | 19.296          | 0.164          |
-  ---------------------------------------------------------------------------------------------------------------
-  ------------------------
-  | Space group | score  |
-  ------------------------
-  | P 4 2 2     | 0.0000 |
-  | P 4 21 2    | 0.0000 |
-  | P 41 2 2    | 0.0000 |
-  | P 42 2 2    | 0.0000 |
-  | P 41 21 2   | 1.0000 |
-  | P 42 21 2   | 0.0000 |
-  ------------------------
-  Recommended space group: P 41 21 2
-  Space group with equivalent score (enantiomorphic pair): P 43 21 2
+.. dials_tutorial_include:: multi_crystal/dials.symmetry.log
+   :start-after: Laue group
+   :end-before: Saving reindexed experiments
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.symmetry.log
 
 By analysing the sets of reflections we expect to be present and absent, the
 existing of the 4\ :sub:`1` and 2\ :sub:`1`  screw axes are confirmed, hence the space group is
@@ -238,9 +250,17 @@ the Laue group for scaling, however it is preferable to do this after scaling as
 outliers may have been removed by scaling.
 
 Finally, we must merge the data and produce an MTZ file for downstream structure
-solution::
+solution:
 
-  dials.merge scaled.refl scaled.expt
+.. dials_tutorial_include:: multi_crystal/dials.merge.cmd
+
+.. container:: toggle
+
+    .. container:: header
+
+        **Show/Hide Log**
+
+    .. dials_tutorial_include:: multi_crystal/dials.merge.log
 
 This merges the data and performs a truncation procedure, to give a merged MTZ
 file containing intensities and strictly-positive structure factors (Fs).
