@@ -48,6 +48,7 @@ min_cc_half = 0.6
 
 batch = None
   .type = ints(value_min=0, size=2)
+  .help = "Limit batch range for analysis: manually apply results afterwards"
 
 normalisation = kernel quasi ml_iso *ml_aniso
   .type = choice
