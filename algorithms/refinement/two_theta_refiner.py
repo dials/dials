@@ -98,8 +98,7 @@ class TwoThetaReflectionManager(ReflectionManager):
             ["2theta weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data]
         )
         logger.info(msg)
-        logger.info(tabulate(rows, header))
-        logger.info("")
+        logger.info(tabulate(rows, header) + "\n")
 
 
 class TwoThetaExperimentsPredictor(ExperimentsPredictor):

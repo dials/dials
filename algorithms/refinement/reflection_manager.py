@@ -733,8 +733,7 @@ class ReflectionManager(object):
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
 
         logger.info(msg)
-        logger.info(tabulate(rows, header))
-        logger.info("")
+        logger.info(tabulate(rows, header) + "\n")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -830,5 +829,4 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        logger.info(tabulate(rows, header))
-        logger.info("")
+        logger.info(tabulate(rows, header) + "\n")
