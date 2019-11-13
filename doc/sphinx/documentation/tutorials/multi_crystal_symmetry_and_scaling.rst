@@ -128,7 +128,7 @@ furthest resolution (CC1/2 > 0.3), which can be confirmed by a resolution analys
 
 .. dials_tutorial_include:: multi_crystal/dials.resolutionizer.log
    :start-at: Resolution cc_half
-   :end-before: Resolution cc_half
+   :end-at: Resolution cc_half
 
 .. container:: toggle
 
