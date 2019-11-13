@@ -11,7 +11,7 @@ from libtbx.utils import Sorry
 
 
 # Define the default tablefmt in dials
-tabulate = functools.partial(_tabulate.tabulate, tablefmt="github")
+tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
 
 
 def debug_console():
