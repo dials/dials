@@ -158,14 +158,15 @@ indexing and refinement will be carried out in the primitive lattice
 using space group P1.
 
 In this case, keep the method set to the default :samp:`fft3d` and click "Run" to
-start the indexing job. Once the job has finished running, you will see that
-the experimental models have now been completed with a "Crystal" model.
+start the indexing job. Once the job has finished running, you can see in the
+"Experiment" tab that the experimental models have now been completed with a
+"Crystal" model.
 
 .. image:: https://dials.github.io/images/process_detail_betalactamase_dui/status_after_index.png
 
-Now let's click through the tabs of output. First, on the image viewer you will
-now see that indexed strong spots are assigned Miller indices. If you also
-click on the "Predictions" checkbox, under "Reflection Type" you will in
+Now let's click through the all the tabs of output. First, on the "Image" tab
+you will now see that indexed strong spots are assigned Miller indices. If you
+also click on the "Predictions" checkbox, under "Reflection Type" you will in
 addition see centroid positions and Miller indices for all predicted
 reflections, not just the strong spots.
 
