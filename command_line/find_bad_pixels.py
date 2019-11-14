@@ -4,26 +4,25 @@ from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
 import math
+import sys
 
 import iotbx.phil
-import libtbx.load_env
 from scitbx.array_family import flex
 from dials.util import Sorry
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 from libtbx import easy_pickle
 
-help_message = (
-    """
+help_message = """
 
 Examples::
 
-  %s data_master.h5
+  dev.dials.find_bad_pixels data_master.h5
 
 """
-    % libtbx.env.dispatcher_name
-)
 
 phil_scope = iotbx.phil.parse(
     """
@@ -99,11 +98,7 @@ def find_constant_signal_pixels(imageset, images):
 
 
 def run(args):
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-
-    usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
+    usage = "dev.dials.find_bad_pixels [options] data_master.h5"
 
     parser = OptionParser(
         usage=usage,
@@ -201,6 +196,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
