@@ -143,15 +143,15 @@ def run(args):
     imageset.reader().nullify_format_instance()
 
     n = int(math.ceil(len(images) / params.nproc))
-    work = [images[i : i + n] for i in range(0, len(images), n)]
-    assert len(images) == sum([len(chunk) for chunk in work])
+    chunks = [images[i : i + n] for i in range(0, len(images), n)]
+    assert len(images) == sum([len(chunk) for chunk in chunks])
 
     total = None
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as p:
         jobs = []
         for j in range(params.nproc):
-            jobs.append(p.submit(find_constant_signal_pixels, imageset, work[j]))
+            jobs.append(p.submit(find_constant_signal_pixels, imageset, chunks[j]))
         for job in concurrent.futures.as_completed(jobs):
             if total is None:
                 total = job.result()
