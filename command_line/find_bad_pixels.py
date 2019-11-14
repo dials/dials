@@ -34,7 +34,7 @@ image_range = None
   .help = "Image range for analysis e.g. 1,1800"
 nproc = 1
   .type = int(value_min=1)
-  .help = "Number of processors to use for bad pixel finding"
+    .help = "The number of processes to use."
 
 output {
     mask = pixels.mask
