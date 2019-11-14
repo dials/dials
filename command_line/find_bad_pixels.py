@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import concurrent.futures
+import math
 
 import iotbx.phil
 import libtbx.load_env
@@ -64,7 +65,6 @@ def find_constant_signal_pixels(imageset, images):
     # p = ProgressBar(title="Finding hot pixels")
 
     for idx in images:
-
         # p.update(idx * 100.0 / len(images))
 
         pixels = imageset.get_raw_data(idx - 1)
@@ -103,9 +103,7 @@ def find_constant_signal_pixels(imageset, images):
 
     # p.finished("Finished finding hot pixels on %d images" % len(images))
 
-    hot_mask = total >= (len(images) // 2)
-
-    return hot_mask, total
+    return total
 
 
 def run(args):
@@ -158,11 +156,10 @@ def run(args):
     # work around issues with HDF5 and multiprocessing
     imageset.reader().nullify_format_instance()
 
-    n = len(images) // params.nproc
+    n = int(math.ceil(len(images) / params.nproc))
     work = [images[i : i + n] for i in range(0, len(images), n)]
     assert len(images) == sum([len(chunk) for chunk in work])
 
-    hot_mask = None
     total = None
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as p:
@@ -170,16 +167,12 @@ def run(args):
         for j in range(params.nproc):
             jobs.append(p.submit(find_constant_signal_pixels, imageset, work[j]))
         for job in concurrent.futures.as_completed(jobs):
-            _hot_mask, _total = job.result()
-            if hot_mask is None:
-                hot_mask = _hot_mask
-            else:
-                hot_mask = hot_mask & _hot_mask
             if total is None:
-                total = _total
+                total = job.result()
             else:
-                total += _total
+                total += job.result()
 
+    hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
 
     p = ProgressBar(title="Finding capricious pixels")
@@ -189,7 +182,6 @@ def run(args):
         capricious_pixels[h] = []
 
     for idx in images:
-
         p.update(idx * 100.0 / len(images))
 
         pixels = imageset.get_raw_data(idx - 1)
