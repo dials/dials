@@ -47,7 +47,7 @@ class Script(object):
     def __init__(self):
         """Initialise the script."""
         # The script usage
-        usage = "usage: dials.find_shared_models [options] [param.phil] " "models.expt "
+        usage = "dials.find_shared_models [options] [param.phil] models.expt"
 
         # Initialise the base class
         self.parser = OptionParser(
