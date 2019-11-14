@@ -60,13 +60,7 @@ def find_constant_signal_pixels(imageset, images):
 
     total = None
 
-    # from dials.util.command_line import ProgressBar
-
-    # p = ProgressBar(title="Finding hot pixels")
-
     for idx in images:
-        # p.update(idx * 100.0 / len(images))
-
         pixels = imageset.get_raw_data(idx - 1)
         assert len(pixels) == 1
         data = pixels[0]
@@ -101,8 +95,6 @@ def find_constant_signal_pixels(imageset, images):
         else:
             total += peak_pixels.as_1d().as_int()
 
-    # p.finished("Finished finding hot pixels on %d images" % len(images))
-
     return total
 
 
@@ -110,7 +102,6 @@ def run(args):
 
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
-    from dials.util.command_line import ProgressBar
 
     usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
 
@@ -175,22 +166,16 @@ def run(args):
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
 
-    p = ProgressBar(title="Finding capricious pixels")
-
     capricious_pixels = {}
     for h in hot_pixels:
         capricious_pixels[h] = []
 
     for idx in images:
-        p.update(idx * 100.0 / len(images))
-
         pixels = imageset.get_raw_data(idx - 1)
         data = pixels[0]
 
         for h in hot_pixels:
             capricious_pixels[h].append(data[h])
-
-    p.finished("Finished hunting for capricious pixels on %d images" % len(images))
 
     nslow, nfast = data.focus()
 
