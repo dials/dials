@@ -32,7 +32,10 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
-from dials.util.exclude_images import exclude_image_ranges_for_scaling
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_selection_for_valid_image_ranges,
+)
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
@@ -157,13 +160,12 @@ def symmetry(experiments, reflection_tables, params=None):
         """Optionally apply exclude images"""
         refls_for_sym = []
         if params.exclude_images:
-            reflection_tables, experiments = exclude_image_ranges_for_scaling(
-                reflection_tables, experiments, params.exclude_images
+            experiments = exclude_image_ranges_from_scans(
+                experiments, params.exclude_images
             )
-            for refl in reflection_tables:
-                refls_for_sym.append(
-                    refl.select(~refl.get_flags(refl.flags.user_excluded_in_scaling))
-                )
+            for refl, exp in zip(reflection_tables, experiments):
+                sel = get_selection_for_valid_image_ranges(refl, exp)
+                refls_for_sym.append(refl.select(sel))
         else:
             refls_for_sym = reflection_tables
         return refls_for_sym
