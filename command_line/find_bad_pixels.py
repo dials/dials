@@ -119,7 +119,7 @@ def run(args):
     imagesets = experiments.imagesets()
 
     if len(imagesets) != 1:
-        raise Sorry("Please pass an experiment list that contains one imageset")
+        sys.exit("Please pass an experiment list that contains one imageset")
 
     imageset = imagesets[0]
     detectors = imageset.get_detector()
