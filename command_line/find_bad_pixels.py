@@ -46,7 +46,10 @@ output {
 
 def find_constant_signal_pixels(imageset, images):
     """Find pixels which are constantly reporting as signal through the
-    images in imageset."""
+    images in imageset: on every image the pixel dispersion index is computed,
+    and signal pixels identified using the default settings. A map is then
+    calculated of the number of times a pixel is identified as signal: if this
+    is >= 50% of the images (say) that pixel is untrustworthy."""
 
     panels = imageset.get_detector()
     assert len(panels) == 1
