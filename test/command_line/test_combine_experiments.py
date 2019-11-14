@@ -11,7 +11,6 @@ import procrunner
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.util import Sorry
 from dials.array_family import flex
 import dials.command_line.combine_experiments as combine_experiments
 
@@ -230,7 +229,7 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     exp_2 = params.input.experiments[1].data[0]
     exp_2.beam.set_wavelength(exp_2.beam.get_wavelength() * 2)
 
-    with pytest.raises(Sorry) as exc:
+    with pytest.raises(SystemExit) as exc:
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)

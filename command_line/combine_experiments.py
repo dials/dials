@@ -2,11 +2,30 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import random
-from dials.util import tabulate
+import sys
+
+from libtbx.phil import parse
+from scitbx import matrix
+import xfel.clustering.cluster
+from xfel.clustering.cluster_groups import unit_cell_info
+
+from dxtbx.command_line.image_average import splitit
+from dxtbx.datablock import BeamDiff
+from dxtbx.datablock import DetectorDiff
+from dxtbx.datablock import GoniometerDiff
+from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import BeamComparison
+from dxtbx.model.experiment_list import DetectorComparison
+from dxtbx.model.experiment_list import GoniometerComparison
 
 import dials.util
-from dials.util import Sorry
-from libtbx.phil import parse
+from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+from dials.array_family import flex
+from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser
+from dials.util import tabulate
+
 
 help_message = """
 
@@ -218,13 +237,6 @@ class CombineWithReference(object):
             self.average_detector = False
 
     def __call__(self, experiment):
-        from dxtbx.model.experiment_list import BeamComparison
-        from dxtbx.model.experiment_list import DetectorComparison
-        from dxtbx.model.experiment_list import GoniometerComparison
-        from dxtbx.datablock import BeamDiff
-        from dxtbx.datablock import DetectorDiff
-        from dxtbx.datablock import GoniometerDiff
-
         if self.tolerance:
             compare_beam = BeamComparison(
                 wavelength_tolerance=self.tolerance.beam.wavelength,
@@ -312,8 +324,6 @@ class CombineWithReference(object):
             imageset = experiment.imageset
             self._last_imageset = imageset
 
-        from dxtbx.model.experiment_list import Experiment
-
         return Experiment(
             beam=beam,
             detector=detector,
@@ -328,14 +338,9 @@ class Cluster(object):
     def __init__(
         self, experiments, reflections, dendrogram=False, threshold=1000, n_max=None
     ):
-        try:
-            from xfel.clustering.cluster import Cluster
-            from xfel.clustering.cluster_groups import unit_cell_info
-        except ImportError:
-            raise Sorry("clustering is not configured")
         import matplotlib.pyplot as plt
 
-        ucs = Cluster.from_expts(
+        ucs = xfel.clustering.cluster.Cluster.from_expts(
             refl_table=reflections, expts_list=experiments, n_images=n_max
         )
         self.clusters, _ = ucs.ab_cluster(
@@ -358,14 +363,11 @@ class Cluster(object):
 class Script(object):
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
+            "usage: dials.combine_experiments [options] [param.phil] "
             "experiments1.expt experiments2.expt reflections1.refl "
-            "reflections2.refl..." % libtbx.env.dispatcher_name
+            "reflections2.refl..."
         )
 
         # Create the parser
@@ -385,8 +387,6 @@ class Script(object):
 
     def run_with_preparsed(self, params, options):
         """Run combine_experiments, but allow passing in of parameters"""
-        from dials.util.options import flatten_experiments
-
         # Try to load the models and data
         if len(params.input.experiments) == 0:
             print("No Experiments found in the input")
@@ -399,7 +399,7 @@ class Script(object):
         try:
             assert len(params.input.reflections) == len(params.input.experiments)
         except AssertionError:
-            raise Sorry(
+            sys.exit(
                 "The number of input reflections files does not match the "
                 "number of input experiments"
             )
@@ -416,35 +416,34 @@ class Script(object):
             try:
                 ref_beam = flat_exps[ref_beam].beam
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_beam))
+                sys.exit("{} is not a valid experiment ID".format(ref_beam))
 
         if ref_goniometer is not None:
             try:
                 ref_goniometer = flat_exps[ref_goniometer].goniometer
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_goniometer))
+                sys.exit("{} is not a valid experiment ID".format(ref_goniometer))
 
         if ref_scan is not None:
             try:
                 ref_scan = flat_exps[ref_scan].scan
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_scan))
+                sys.exit("{} is not a valid experiment ID".format(ref_scan))
 
         if ref_crystal is not None:
             try:
                 ref_crystal = flat_exps[ref_crystal].crystal
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_crystal))
+                sys.exit("{} is not a valid experiment ID".format(ref_crystal))
 
         if ref_detector is not None:
             assert not params.reference_from_experiment.average_detector
             try:
                 ref_detector = flat_exps[ref_detector].detector
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_detector))
+                sys.exit("{} is not a valid experiment ID".format(ref_detector))
         elif params.reference_from_experiment.average_detector:
             # Average all of the detectors together
-            from scitbx.matrix import col
 
             def average_detectors(target, panelgroups, depth):
                 # Recursive function to do the averaging
@@ -454,15 +453,15 @@ class Script(object):
                     or depth == params.reference_from_experiment.average_hierarchy_level
                 ):
                     n = len(panelgroups)
-                    sum_fast = col((0.0, 0.0, 0.0))
-                    sum_slow = col((0.0, 0.0, 0.0))
-                    sum_ori = col((0.0, 0.0, 0.0))
+                    sum_fast = matrix.col((0.0, 0.0, 0.0))
+                    sum_slow = matrix.col((0.0, 0.0, 0.0))
+                    sum_ori = matrix.col((0.0, 0.0, 0.0))
 
                     # Average the d matrix vectors
                     for pg in panelgroups:
-                        sum_fast += col(pg.get_local_fast_axis())
-                        sum_slow += col(pg.get_local_slow_axis())
-                        sum_ori += col(pg.get_local_origin())
+                        sum_fast += matrix.col(pg.get_local_fast_axis())
+                        sum_slow += matrix.col(pg.get_local_slow_axis())
+                        sum_ori += matrix.col(pg.get_local_origin())
                     sum_fast /= n
                     sum_slow /= n
                     sum_ori /= n
@@ -497,13 +496,9 @@ class Script(object):
         )
 
         # set up global experiments and reflections lists
-        from dials.array_family import flex
-
         reflections = flex.reflection_table()
         global_id = 0
         skipped_expts = 0
-        from dxtbx.model.experiment_list import ExperimentList
-
         experiments = ExperimentList()
 
         # loop through the input, building up the global lists
@@ -534,7 +529,7 @@ class Script(object):
                 except ComparisonError as e:
                     # When we failed tolerance checks, give a useful error message
                     (path, index) = find_experiment_in(exp, params.input.experiments)
-                    raise Sorry(
+                    sys.exit(
                         "Model didn't match reference within required tolerance for experiment {} in {}:"
                         "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
                             index, path, str(e)
@@ -607,10 +602,6 @@ class Script(object):
                 )
 
             elif params.output.n_subset_method == "significance_filter":
-                from dials.algorithms.integration.stills_significance_filter import (
-                    SignificanceFilter,
-                )
-
                 params.output.significance_filter.enable = True
                 sig_filter = SignificanceFilter(params.output)
                 refls_subset = sig_filter(experiments, reflections)
@@ -632,8 +623,6 @@ class Script(object):
         def save_in_batches(
             experiments, reflections, exp_name, refl_name, batch_size=1000
         ):
-            from dxtbx.command_line.image_average import splitit
-
             for i, indices in enumerate(
                 splitit(
                     list(range(len(experiments))), (len(experiments) // batch_size) + 1

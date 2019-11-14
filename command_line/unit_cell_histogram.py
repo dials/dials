@@ -1,8 +1,21 @@
 from __future__ import absolute_import, division, print_function
-import libtbx.phil
-from dials.util import log
 
 import logging
+import math
+import sys
+
+import numpy as np
+
+import libtbx.phil
+from scitbx.array_family import flex
+from scitbx.math import five_number_summary
+
+from dials.algorithms.clustering.observers import uc_params_from_experiments
+from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
+
 
 logger = logging.getLogger("dials.unit_cell_histogram")
 
@@ -19,9 +32,6 @@ iqr_ratio = 1.5
     process_includes=True,
 )
 
-from scitbx.array_family import flex
-from dials.algorithms.clustering.observers import uc_params_from_experiments
-
 
 def panel_distances_from_experiments(experiments):
     distances = [flex.double() for i in range(len(experiments[0].detector))]
@@ -34,8 +44,6 @@ def panel_distances_from_experiments(experiments):
 def outlier_selection(uc_params, iqr_ratio=1.5):
     outliers = flex.bool(uc_params[0].size(), False)
     for p in uc_params:
-        from scitbx.math import five_number_summary
-
         min_x, q1_x, med_x, q3_x, max_x = five_number_summary(p)
         logger.info(
             "Five number summary: min %.2f, q1 %.2f, med %.2f, q3 %.2f, max %.2f"
@@ -52,12 +60,7 @@ def outlier_selection(uc_params, iqr_ratio=1.5):
 
 
 def run(args):
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
-
-    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
+    usage = "dials.unit_cell_histogram [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -66,8 +69,6 @@ def run(args):
         check_format=False,
         epilog=help_message,
     )
-
-    from dials.util.version import dials_version
 
     logger.info(dials_version())
 
@@ -107,8 +108,6 @@ def plot_uc_histograms(
 
     def uc_param_hist2d(p1, p2, ax):
         nbins = 100
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(p1, p2, bins=nbins)
         H = np.rot90(H)
         H = np.flipud(H)
@@ -121,8 +120,6 @@ def plot_uc_histograms(
 
     for i in range(3):
         mmm = flex.min_max_mean_double(uc_params[i])
-        import math
-
         steps_per_A = steps_per_angstrom
         Amin = math.floor(mmm.min * steps_per_A) / steps_per_A
         Amax = math.floor(mmm.max * steps_per_A) / steps_per_A
@@ -188,8 +185,6 @@ def plot_uc_vs_detector_distance(
 
     def hist2d(p1, p2, ax):
         nbins = 100
-        import numpy as np
-
         H, xedges, yedges = np.histogram2d(p1, p2, bins=nbins)
         H = np.rot90(H)
         H = np.flipud(H)
@@ -201,8 +196,6 @@ def plot_uc_vs_detector_distance(
     hist2d(c, panel_distances[0], ax3)
 
     mmm = flex.min_max_mean_double(panel_distances[0])
-    import math
-
     steps_per_mm = 20
     Amin = math.floor(mmm.min * steps_per_mm) / steps_per_mm
     Amax = math.floor(mmm.max * steps_per_mm) / steps_per_mm
@@ -262,6 +255,4 @@ def plot_number_of_crystals(experiments):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

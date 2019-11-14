@@ -4,7 +4,6 @@ import math
 import logging
 import sys
 
-import libtbx.load_env
 from libtbx.utils import show_times_at_exit
 
 import iotbx.phil
@@ -307,7 +306,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 
 def run(args):
-    usage = "%s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
+    usage = "dials.check_indexing_symmetry [options] indexed.expt indexed.refl"
 
     parser = OptionParser(
         usage=usage,
