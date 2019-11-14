@@ -136,7 +136,7 @@ def run(args):
 
     if params.images:
         if min(params.images) < first or max(params.images) > last:
-            raise Sorry("image outside of scan range")
+            sys.exit("Image outside of scan range")
         images = params.images
 
     # work around issues with HDF5 and multiprocessing
