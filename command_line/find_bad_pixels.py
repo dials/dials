@@ -113,7 +113,7 @@ def run(args):
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) != 1:
         parser.print_help()
-        print("Please pass an experiment list\n")
+        sys.exit("Please pass an experiment list\n")
         return
 
     imagesets = experiments.imagesets()
