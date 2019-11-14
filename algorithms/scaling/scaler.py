@@ -220,7 +220,6 @@ class ScalerBase(Subject):
             logger.info(refinery.model)
             logger.info(refinery.model.minimisation_summary())
             self._update_error_model(refinery.model, update_Ih=update_Ih)
-        return refinery.model
 
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""

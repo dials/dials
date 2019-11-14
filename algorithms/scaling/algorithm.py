@@ -32,7 +32,7 @@ def do_error_analysis(scaler, reselect=True):
     Optionally reselect reflections to prepare for another minimisation round.
     """
     if scaler.params.weighting.error_model.error_model:
-        _ = scaler.perform_error_optimisation()
+        scaler.perform_error_optimisation()
     if reselect:
         scaler.make_ready_for_scaling()
 
