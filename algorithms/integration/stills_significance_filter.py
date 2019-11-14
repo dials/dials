@@ -6,6 +6,7 @@ from cctbx.crystal import symmetry
 from dials.array_family import flex
 from libtbx import table_utils
 from libtbx.phil import parse
+from scitbx.math import basic_statistics
 
 """
 Class to find a reasonable cutoff for integration based on work in LABELIT.
@@ -44,15 +45,74 @@ class SignificanceFilter(object):
         self.params = params.significance_filter
         self.best_d_min = None
 
-    def __call__(self, experiments, reflections):
+    def __call__(self, experiments, reflections, doubled=True):
+        if doubled:
+            for crystal in experiments.crystals():
+                uc = crystal.get_unit_cell()
+                a, b, c, alpha, beta, gamma = uc.parameters()
+                crystal.set_unit_cell(type(uc)((a / 2, b, c, alpha, beta, gamma)))
+            h, k, l = reflections["miller_index"].as_vec3_double().parts()
+            sel = (h.iround() % 2) == 0
+            even = reflections.select(sel)
+            odd = reflections.select(~sel)
+
+            h, k, l = even["miller_index"].as_vec3_double().parts()
+            even["miller_index"] = flex.miller_index(
+                (h / 2).iround(), k.iround(), l.iround()
+            )
+            h, k, l = odd["miller_index"].as_vec3_double().parts()
+            odd["miller_index"] = flex.miller_index(
+                (h / 2).iround(), k.iround(), l.iround()
+            )
+
+            even = self(experiments, even, doubled=False)
+            odd = self(experiments, odd, doubled=False)
+
+            print("Even stats")
+            even_isigi = even["intensity.sum.value"] / flex.sqrt(
+                even["intensity.sum.variance"]
+            )
+            basic_statistics(even_isigi).show()
+            print("Odd stats")
+            odd_isigi = odd["intensity.sum.value"] / flex.sqrt(
+                odd["intensity.sum.variance"]
+            )
+            basic_statistics(odd_isigi).show()
+
+            # from matplotlib import pyplot as plt
+            # h1 = flex.histogram(even_isigi, n_slots=100, data_min = -10, data_max = 10)
+            # h2 = flex.histogram(odd_isigi, n_slots=100, data_min = -10, data_max = 10)
+            # plt.plot(h1.slot_centers(), h1.slots(), '-')
+            # plt.plot(h2.slot_centers(), h2.slots(), '-')
+            # plt.show()
+
+            odd["id"] = flex.int(len(odd), 1)
+            even.extend(odd)
+            experiments.append(experiments[0])
+
+            return even
+
         results = flex.reflection_table()
-        table_header = ["", "", "", "I", "IsigI", "N >", "RMSD", "Cutoff"]
+        table_header = [
+            "",
+            "",
+            "",
+            "I",
+            "IsigI",
+            "IsigI",
+            "IsigI",
+            "N >",
+            "RMSD",
+            "Cutoff",
+        ]
         table_header2 = [
             "Bin",
             "Resolution Range",
             "Completeness",
-            "",
-            "",
+            "mean",
+            "mean",
+            "stddev",
+            "skew",
             "cutoff",
             "(um)",
             "",
@@ -86,31 +146,26 @@ class SignificanceFilter(object):
                     sel = d > d_min
                 else:
                     sel = (d <= d_max) & (d > d_min)
-                sel &= refls["intensity.sum.value"] > 0
                 bin_refls = refls.select(sel)
                 n_refls = len(bin_refls)
                 avg_i = (
                     flex.mean(bin_refls["intensity.sum.value"]) if n_refls > 0 else 0
                 )
-                avg_i_sigi = (
-                    flex.mean(
-                        bin_refls["intensity.sum.value"]
-                        / flex.sqrt(bin_refls["intensity.sum.variance"])
-                    )
-                    if n_refls > 0
-                    else 0
+                i_sigi = bin_refls["intensity.sum.value"] / flex.sqrt(
+                    bin_refls["intensity.sum.variance"]
                 )
+                stats = basic_statistics(i_sigi)
+                i_sigi_stddev = (
+                    stats.bias_corrected_standard_deviation if n_refls > 0 else 0
+                )
+                i_sigi_skew = stats.skew if n_refls > 0 else 0
+
+                avg_i_sigi = flex.mean(i_sigi) if n_refls > 0 else 0
                 acceptable_resolution_bins.append(
                     avg_i_sigi >= self.params.isigi_cutoff
                 )
 
-                bright_refls = bin_refls.select(
-                    (
-                        bin_refls["intensity.sum.value"]
-                        / flex.sqrt(bin_refls["intensity.sum.variance"])
-                    )
-                    >= self.params.isigi_cutoff
-                )
+                bright_refls = bin_refls.select((i_sigi) >= self.params.isigi_cutoff)
                 n_bright = len(bright_refls)
 
                 rmsd_obs = (
@@ -150,6 +205,8 @@ class SignificanceFilter(object):
 
                 table_row.append("%.2f" % (avg_i))
                 table_row.append("%.2f" % (avg_i_sigi))
+                table_row.append("%.2f" % (i_sigi_stddev))
+                table_row.append("%.2f" % (i_sigi_skew))
                 table_row.append("%3d" % n_bright)
                 table_row.append("%.2f" % (rmsd_obs))
                 table_data.append(table_row)

@@ -149,6 +149,12 @@ class Script(object):
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
         reference = flatten_reflections(params.input.reflections)
         experiments = flatten_experiments(params.input.experiments)
+
+        for crystal in experiments.crystals():
+            uc = crystal.get_unit_cell()
+            a, b, c, alpha, beta, gamma = uc.parameters()
+            crystal.set_unit_cell(type(uc)((a * 2, b, c, alpha, beta, gamma)))
+
         if len(reference) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
