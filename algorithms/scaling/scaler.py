@@ -656,40 +656,44 @@ class SingleScaler(ScalerBase):
             presel_block = block.select(preselection)
             # then select random groups
             n_h_over_1 = presel_block.calc_nh() > 1
-            presel_block = presel_block.select(n_h_over_1)
-            if not presel_block.size:
-                raise SystemExit(
-                    "No groups left with multiplicity >1, scaling not possible."
-                )
-            min_groups = self.params.reflection_selection.random.min_groups
-            avg_multi = flex.mean(presel_block.group_multiplicities())
-            min_refl = self.params.reflection_selection.random.min_reflections
-            n_groups_in_table = presel_block.n_groups
-            n_groups_to_sel = max(int(min_refl / avg_multi), min_groups)
+            if True in n_h_over_1:
+                presel_block = presel_block.select(n_h_over_1)
+                min_groups = self.params.reflection_selection.random.min_groups
+                avg_multi = flex.mean(presel_block.group_multiplicities())
+                min_refl = self.params.reflection_selection.random.min_reflections
+                n_groups_in_table = presel_block.n_groups
+                n_groups_to_sel = max(int(min_refl / avg_multi), min_groups)
 
-            logger.debug(
-                "Average multiplicity that reflection selection is sampling from: %s",
-                avg_multi,
-            )
-            if n_groups_to_sel < n_groups_in_table:
-                isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
-                loc_indices = presel_block.select_on_groups_isel(isel).Ih_table[
-                    "loc_indices"
-                ]
+                logger.debug(
+                    "Average multiplicity that reflection selection is sampling from: %s",
+                    avg_multi,
+                )
+                if n_groups_to_sel < n_groups_in_table:
+                    isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
+                    loc_indices = presel_block.select_on_groups_isel(isel).Ih_table[
+                        "loc_indices"
+                    ]
+                else:
+                    loc_indices = presel_block.Ih_table["loc_indices"]
+                    n_groups_to_sel = n_groups_in_table
+                self.scaling_selection = flex.bool(self.n_suitable_refl, False)
+                self.scaling_selection.set_selected(loc_indices, True)
+                logger.info(
+                    """
+    Randomly selected %s/%s groups (m>1) to use for scaling model
+    minimisation (%s reflections)""",
+                    n_groups_to_sel,
+                    n_groups_in_table,
+                    loc_indices.size(),
+                )
             else:
-                loc_indices = presel_block.Ih_table["loc_indices"]
-                n_groups_to_sel = n_groups_in_table
-            self.scaling_selection = flex.bool(self.n_suitable_refl, False)
-            self.scaling_selection.set_selected(loc_indices, True)
-            logger.info(
-                """
-Randomly selected %s/%s groups (m>1) to use for scaling model
-minimisation (%s reflections)""",
-                n_groups_to_sel,
-                n_groups_in_table,
-                loc_indices.size(),
-            )
-        elif self.params.reflection_selection.method == "intensity_ranges":
+                logger.warning(
+                    """No groups left with multiplicity >1 after prefiltering,
+attempting to use all reflections for minimisation."""
+                )
+                self.params.reflection_selection.method = "use_all"
+
+        if self.params.reflection_selection.method == "intensity_ranges":
             overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(
                 self.reflection_table, self.params
             )
@@ -698,13 +702,11 @@ minimisation (%s reflections)""",
             )
             if self._free_Ih_table:
                 self.scaling_selection.set_selected(self.free_set_selection, False)
-        elif self.params.reflection_selection.method == "use_all":
+        if self.params.reflection_selection.method == "use_all":
             if self._free_Ih_table:
                 self.scaling_selection = ~self.free_set_selection
             else:
                 self.scaling_selection = flex.bool(self.n_suitable_refl, True)
-        else:
-            raise ValueError("Invalid choice for 'reflection_selection.method'.")
         self.scaling_subset_sel = copy.deepcopy(self.scaling_selection)
         self.scaling_selection &= ~self.outliers  # now apply outliers
 
