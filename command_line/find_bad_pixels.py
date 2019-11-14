@@ -144,7 +144,7 @@ def run(args):
     n = int(math.ceil(len(images) / params.nproc))
     chunks = [images[i : i + n] for i in range(0, len(images), n)]
 
-    assert len(images) == sum([len(chunk) for chunk in chunks])
+    assert len(images) == sum(len(chunk) for chunk in chunks)
 
     if len(chunks) < params.nproc:
         params.nproc = len(chunks)
