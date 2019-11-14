@@ -8,7 +8,6 @@ import sys
 
 import iotbx.phil
 from scitbx.array_family import flex
-from dials.util import Sorry
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.util.options import OptionParser
@@ -49,9 +48,9 @@ def find_constant_signal_pixels(imageset, images):
     """Find pixels which are constantly reporting as signal through the
     images in imageset."""
 
-    detectors = imageset.get_detector()
-    assert len(detectors) == 1
-    detector = detectors[0]
+    panels = imageset.get_detector()
+    assert len(panels) == 1
+    detector = panels[0]
     trusted = detector.get_trusted_range()
 
     # construct an integer array same shape as image; accumulate number of
@@ -122,9 +121,9 @@ def run(args):
         sys.exit("Please pass an experiment list that contains one imageset")
 
     imageset = imagesets[0]
-    detectors = imageset.get_detector()
-    assert len(detectors) == 1
-    detector = detectors[0]
+    panels = imageset.get_detector()
+    assert len(panels) == 1
+    detector = panels[0]
     trusted = detector.get_trusted_range()
 
     first, last = imageset.get_scan().get_image_range()
@@ -144,7 +143,11 @@ def run(args):
 
     n = int(math.ceil(len(images) / params.nproc))
     chunks = [images[i : i + n] for i in range(0, len(images), n)]
+
     assert len(images) == sum([len(chunk) for chunk in chunks])
+
+    if len(chunks) < params.nproc:
+        params.nproc = len(chunks)
 
     total = None
 
