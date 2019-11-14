@@ -1,4 +1,4 @@
-cctbx::hdf5_plugins
+conda-forge::hdf5-external-filter-plugins
 
 conda-forge::dials-data
 conda-forge::mrcfile

@@ -2,7 +2,7 @@ pthread-stubs
 py2app
 python.app
 
-cctbx::hdf5_plugins
+conda-forge::hdf5-external-filter-plugins
 cctbx::libcxx
 
 conda-forge::dials-data
