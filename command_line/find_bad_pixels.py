@@ -2,27 +2,25 @@
 
 from __future__ import absolute_import, division, print_function
 
-import cPickle as pickle
-import sys
-
 import iotbx.phil
+import libtbx.load_env
 from scitbx.array_family import flex
+from dials.util import Sorry
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dxtbx.model.experiment_list import ExperimentList, Experiment
+from libtbx import easy_pickle
 
-from dials.util.options import OptionParser
-from dials.util.options import flatten_experiments
-from dials.util.command_line import ProgressBar
-
-
-help_message = """
+help_message = (
+    """
 
 Examples::
 
-  dev.dials.find_bad_pixels data_master.h5
+  %s data_master.h5
 
 """
+    % libtbx.env.dispatcher_name
+)
 
 phil_scope = iotbx.phil.parse(
     """
@@ -43,7 +41,12 @@ output {
 
 
 def run(args):
-    usage = "dev.dials.find_bad_pixels [options] data_master.h5"
+
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_experiments
+    from dials.util.command_line import ProgressBar
+
+    usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
 
     parser = OptionParser(
         usage=usage,
@@ -64,7 +67,7 @@ def run(args):
     imagesets = experiments.imagesets()
 
     if len(imagesets) != 1:
-        sys.exit("Please pass an experiment list that contains one imageset")
+        raise Sorry("Please pass an experiment list that contains one imageset")
 
     imageset = imagesets[0]
 
@@ -77,7 +80,7 @@ def run(args):
 
     if params.images:
         if min(params.images) < first or max(params.images) > last:
-            sys.exit("image outside of scan range")
+            raise Sorry("image outside of scan range")
         images = params.images
 
     detectors = imageset.get_detector()
@@ -173,8 +176,10 @@ def run(args):
     print("Also found %d very hot pixels" % ffff)
     hot_mask.reshape(flex.grid(data.focus()))
 
-    pickle.dump(params.output.mask, (~hot_mask,))
+    easy_pickle.dump(params.output.mask, (~hot_mask,))
 
 
 if __name__ == "__main__":
+    import sys
+
     run(sys.argv[1:])
