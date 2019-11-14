@@ -2,25 +2,26 @@
 
 from __future__ import absolute_import, division, print_function
 
+import concurrent.futures
+import math
+import sys
+
 import iotbx.phil
-import libtbx.load_env
 from scitbx.array_family import flex
-from dials.util import Sorry
 from dials.algorithms.spot_finding.factory import SpotFinderFactory
 from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
 from dxtbx.model.experiment_list import ExperimentList, Experiment
 from libtbx import easy_pickle
 
-help_message = (
-    """
+help_message = """
 
 Examples::
 
-  %s data_master.h5
+  dev.dials.find_bad_pixels data_master.h5
 
 """
-    % libtbx.env.dispatcher_name
-)
 
 phil_scope = iotbx.phil.parse(
     """
@@ -30,6 +31,9 @@ images = None
 image_range = None
   .type = ints(value_min=0, size=2)
   .help = "Image range for analysis e.g. 1,1800"
+nproc = 1
+  .type = int(value_min=1)
+    .help = "The number of processes to use."
 
 output {
     mask = pixels.mask
@@ -40,52 +44,16 @@ output {
 )
 
 
-def run(args):
+def find_constant_signal_pixels(imageset, images):
+    """Find pixels which are constantly reporting as signal through the
+    images in imageset: on every image the pixel dispersion index is computed,
+    and signal pixels identified using the default settings. A map is then
+    calculated of the number of times a pixel is identified as signal: if this
+    is >= 50% of the images (say) that pixel is untrustworthy."""
 
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.command_line import ProgressBar
-
-    usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
-
-    parser = OptionParser(
-        usage=usage,
-        phil=phil_scope,
-        read_experiments=True,
-        read_experiments_from_images=True,
-        epilog=help_message,
-    )
-
-    params, options = parser.parse_args(show_diff_phil=True)
-
-    experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
-        parser.print_help()
-        print("Please pass an experiment list\n")
-        return
-
-    imagesets = experiments.imagesets()
-
-    if len(imagesets) != 1:
-        raise Sorry("Please pass an experiment list that contains one imageset")
-
-    imageset = imagesets[0]
-
-    first, last = imageset.get_scan().get_image_range()
-    images = range(first, last + 1)
-
-    if params.images is None and params.image_range is not None:
-        start, end = params.image_range
-        params.images = list(range(start, end + 1))
-
-    if params.images:
-        if min(params.images) < first or max(params.images) > last:
-            raise Sorry("image outside of scan range")
-        images = params.images
-
-    detectors = imageset.get_detector()
-    assert len(detectors) == 1
-    detector = detectors[0]
+    panels = imageset.get_detector()
+    assert len(panels) == 1
+    detector = panels[0]
     trusted = detector.get_trusted_range()
 
     # construct an integer array same shape as image; accumulate number of
@@ -93,12 +61,7 @@ def run(args):
 
     total = None
 
-    p = ProgressBar(title="Finding hot pixels")
-
     for idx in images:
-
-        p.update(idx * 100.0 / len(images))
-
         pixels = imageset.get_raw_data(idx - 1)
         assert len(pixels) == 1
         data = pixels[0]
@@ -133,28 +96,87 @@ def run(args):
         else:
             total += peak_pixels.as_1d().as_int()
 
-    p.finished("Finished finding hot pixels on %d images" % len(images))
+    return total
+
+
+def run(args):
+    usage = "dev.dials.find_bad_pixels [options] data_master.h5"
+
+    parser = OptionParser(
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        read_experiments_from_images=True,
+        epilog=help_message,
+    )
+
+    params, options = parser.parse_args(show_diff_phil=True)
+
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) != 1:
+        parser.print_help()
+        sys.exit("Please pass an experiment list\n")
+        return
+
+    imagesets = experiments.imagesets()
+
+    if len(imagesets) != 1:
+        sys.exit("Please pass an experiment list that contains one imageset")
+
+    imageset = imagesets[0]
+    panels = imageset.get_detector()
+    assert len(panels) == 1
+    detector = panels[0]
+    trusted = detector.get_trusted_range()
+
+    first, last = imageset.get_scan().get_image_range()
+    images = range(first, last + 1)
+
+    if params.images is None and params.image_range is not None:
+        start, end = params.image_range
+        params.images = list(range(start, end + 1))
+
+    if params.images:
+        if min(params.images) < first or max(params.images) > last:
+            sys.exit("Image outside of scan range")
+        images = params.images
+
+    # work around issues with HDF5 and multiprocessing
+    imageset.reader().nullify_format_instance()
+
+    n = int(math.ceil(len(images) / params.nproc))
+    chunks = [images[i : i + n] for i in range(0, len(images), n)]
+
+    assert len(images) == sum(len(chunk) for chunk in chunks)
+
+    if len(chunks) < params.nproc:
+        params.nproc = len(chunks)
+
+    total = None
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as p:
+        jobs = []
+        for j in range(params.nproc):
+            jobs.append(p.submit(find_constant_signal_pixels, imageset, chunks[j]))
+        for job in concurrent.futures.as_completed(jobs):
+            if total is None:
+                total = job.result()
+            else:
+                total += job.result()
 
     hot_mask = total >= (len(images) // 2)
     hot_pixels = hot_mask.iselection()
-
-    p = ProgressBar(title="Finding capricious pixels")
 
     capricious_pixels = {}
     for h in hot_pixels:
         capricious_pixels[h] = []
 
     for idx in images:
-
-        p.update(idx * 100.0 / len(images))
-
         pixels = imageset.get_raw_data(idx - 1)
         data = pixels[0]
 
         for h in hot_pixels:
             capricious_pixels[h].append(data[h])
-
-    p.finished("Finished hunting for capricious pixels on %d images" % len(images))
 
     nslow, nfast = data.focus()
 
@@ -180,6 +202,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])
