@@ -33,7 +33,7 @@ image_range = None
   .type = ints(value_min=0, size=2)
   .help = "Image range for analysis e.g. 1,1800"
 nproc = 1
-  .type = int
+  .type = int(value_min=1)
   .help = "Number of processors to use for bad pixel finding"
 
 output {
