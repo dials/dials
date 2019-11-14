@@ -44,11 +44,11 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
+from dials.util import tabulate
 
 from cctbx import crystal, miller
 from dials.array_family import flex
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
-from libtbx.table_utils import simple_table
 
 logger = logging.getLogger("dials")
 
@@ -765,8 +765,7 @@ def sum_partial_reflections(reflection_table):
     # this unless debug output has been requested
     if logger.getEffectiveLevel() <= logging.DEBUG:
         logger.debug("\nSummary of combination of partial reflections")
-        st = simple_table(rows, header)
-        logger.debug(st.format())
+        logger.debug(tabulate(rows, header))
     return reflection_table
 
 

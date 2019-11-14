@@ -1,11 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
 import contextlib
+import functools
 import sys
+import tabulate as _tabulate
 
 from ._progress import progress  # noqa: F401, exported symbol
 
 from libtbx.utils import Sorry
+
+
+# Define the default tablefmt in dials
+tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
 
 
 def debug_console():

@@ -24,8 +24,13 @@ def test_spot_counts_per_image(dials_data, run_in_tmpdir):
     result = easy_run.fully_buffered(cmd).raise_if_errors()
     assert os.path.exists("spot_counts.png"), result.show_stdout()
 
-    assert (
-        "| image | #spots | #spots_no_ice | total_intensity |"
-        + " d_min | d_min (distl method 1) | d_min (distl method 2) |"
-        in result.stdout_lines
+    assert all(
+        s in "\n".join(result.stdout_lines)
+        for s in (
+            "image",
+            "#spots_no_ice",
+            "total_intensity",
+            "d_min (distl method 1)",
+            "d_min (distl method 2)",
+        )
     ), result.stdout_lines

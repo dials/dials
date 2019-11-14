@@ -2,11 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import math
 import sys
+from dials.util import tabulate
 
 from cctbx import sgtbx, uctbx
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-from libtbx import group_args, table_utils
+from libtbx import group_args
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 from dxtbx.model import Experiment, ExperimentList
@@ -828,9 +829,7 @@ def print_table(stats, perm=None, n_rows=None, out=None):
         out = sys.stdout
 
     rows = table(stats, perm=perm, n_rows=n_rows)
-    print(
-        table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"), file=out
-    )
+    print(tabulate(rows, headers="firstrow"), file=out)
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):

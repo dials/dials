@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import collections
 import copy
 import json
+from dials.util import tabulate
 
 import iotbx.phil
 from cctbx import sgtbx
@@ -268,8 +269,6 @@ class align_crystal(object):
     info = show
 
     def __str__(self):
-        from libtbx import table_utils
-
         U = matrix.sqr(self.experiment.crystal.get_U())
         B = matrix.sqr(self.experiment.crystal.get_B())
 
@@ -312,7 +311,7 @@ class align_crystal(object):
         output.append(
             "Angles between reciprocal cell axes and principal experimental axes:"
         )
-        output.append(table_utils.format(rows=rows, has_header=True))
+        output.append(tabulate(rows, headers="firstrow"))
         output.append("")
 
         rows = [["Experimental axis", "a", "b", "c"]]
@@ -338,7 +337,7 @@ class align_crystal(object):
             ]
         )
         output.append("Angles between unit cell axes and principal experimental axes:")
-        output.append(table_utils.format(rows=rows, has_header=True))
+        output.append(tabulate(rows, headers="firstrow"))
         output.append("")
 
         names = self.experiment.goniometer.get_names()
@@ -358,7 +357,7 @@ class align_crystal(object):
             )
         rows = [("Primary axis", "Secondary axis", names[1], names[0])] + sorted(rows)
         output.append("Independent solutions:")
-        output.append(table_utils.format(rows=rows, has_header=True))
+        output.append(tabulate(rows, headers="firstrow"))
 
         return "\n".join(output)
 

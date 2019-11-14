@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+from dials.util import tabulate
+
 import boost.python
 from dials_algorithms_integration_ext import *
 from dials_algorithms_integration_kapton_ext import *
 from dials.algorithms.integration.integrator_stills import *
-
-import libtbx.table_utils
 
 
 class TimingInfo(object):
@@ -37,4 +37,4 @@ class TimingInfo(object):
             )
             if value
         ]
-        return libtbx.table_utils.format(rows, justify="right", prefix=" ")
+        return tabulate(rows)

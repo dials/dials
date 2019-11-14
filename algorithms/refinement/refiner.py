@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+from dials.util import tabulate
 
 import psutil
 
@@ -741,8 +742,6 @@ class Refiner(object):
     def print_step_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
-        from libtbx.table_utils import simple_table
-
         logger.info("\nRefinement steps:")
 
         rmsd_multipliers = []
@@ -768,16 +767,13 @@ class Refiner(object):
                 + ["%.5g" % r for r in rmsds]
             )
 
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
         logger.info(self._refinery.history.reason_for_termination)
 
         return
 
     def print_out_of_sample_rmsd_table(self):
         """print out-of-sample RSMDs per step, if these were tracked"""
-
-        from libtbx.table_utils import simple_table
 
         # check if it makes sense to proceed
         if "out_of_sample_rmsd" not in self._refinery.history:
@@ -810,15 +806,12 @@ class Refiner(object):
             ]
             rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
 
         return
 
     def print_exp_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
-
-        from libtbx.table_utils import simple_table
 
         logger.info("\nRMSDs by experiment:")
 
@@ -876,15 +869,12 @@ class Refiner(object):
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
-            st = simple_table(rows, header)
-            logger.info(st.format())
+            logger.info(tabulate(rows, header))
 
         return
 
     def print_panel_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
-
-        from libtbx.table_utils import simple_table
 
         if len(self._experiments.scans()) > 1:
             logger.warning(
@@ -943,8 +933,7 @@ class Refiner(object):
                 rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
             if len(rows) > 0:
-                st = simple_table(rows, header)
-                logger.info(st.format())
+                logger.info(tabulate(rows, header))
 
         return
 

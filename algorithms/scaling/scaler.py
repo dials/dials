@@ -16,6 +16,7 @@ import copy
 import logging
 import time
 from collections import OrderedDict
+from dials.util import tabulate
 
 import six
 from six.moves import cStringIO as StringIO
@@ -51,7 +52,6 @@ from dials.algorithms.scaling.reflection_selection import (
     select_connected_reflections_across_datasets,
 )
 from dials.util.observer import Subject
-from libtbx.table_utils import simple_table
 from libtbx import Auto
 from scitbx import sparse
 
@@ -786,9 +786,8 @@ minimisation (%s reflections)""",
                 nblocks=1,
             )
         rows = [[key, str(val.n_params)] for key, val in six.iteritems(self.components)]
-        st = simple_table(rows, ["correction", "n_parameters"])
         logger.info("The following corrections will be applied to this dataset: \n")
-        logger.info(st.format())
+        logger.info(tabulate(rows, ["correction", "n_parameters"]))
 
     @Subject.notify_event(event="performed_outlier_rejection")
     def round_of_outlier_rejection(self):
@@ -1165,12 +1164,11 @@ class MultiScalerBase(ScalerBase):
                 total_across_datasets += total_this_dataset
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
-            st = simple_table(rows, header)
             logger.info(
                 "Summary of reflections chosen for minimisation from each dataset (%s total):",
                 total_across_datasets,
             )
-            logger.info(st.format())
+            logger.info(tabulate(rows, header))
         elif self.params.reflection_selection.method == "intensity_ranges":
             for scaler in self.active_scalers:
                 overall_scaling_selection = calculate_scaling_subset_ranges_with_E2(

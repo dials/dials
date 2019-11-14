@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import token
 from operator import itemgetter
+from dials.util import tabulate
 from tokenize import generate_tokens, TokenError, untokenize
 
 from cctbx import uctbx
@@ -14,7 +15,6 @@ from dials.util.options import OptionParser, flatten_reflections, flatten_experi
 from dials.array_family import flex
 from dials.algorithms.integration import filtering
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 
 
 logger = logging.getLogger("dials")
@@ -186,8 +186,7 @@ def run_analysis(flags, reflections):
         if n > 0:
             rows.append([name, "%d" % n])
     if rows:
-        st = simple_table(rows, header)
-        print(st.format())
+        print(tabulate(rows, header))
     else:
         print("No flags set")
 

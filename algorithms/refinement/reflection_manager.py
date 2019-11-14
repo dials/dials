@@ -7,6 +7,7 @@ import copy
 import logging
 import math
 import random
+from dials.util import tabulate
 
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
@@ -21,7 +22,6 @@ from dials.algorithms.refinement.refinement_helpers import (
 from dials.array_family import flex
 import libtbx
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 from scitbx import matrix
 from scitbx.math import five_number_summary
 
@@ -731,11 +731,9 @@ class ReflectionManager(object):
         rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
         row_data = five_number_summary(w_phi)
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
-        st = simple_table(rows, header)
 
         logger.info(msg)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(tabulate(rows, header) + "\n")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -798,7 +796,6 @@ class StillsReflectionManager(ReflectionManager):
             )
             return
 
-        from libtbx.table_utils import simple_table
         from scitbx.math import five_number_summary
 
         try:
@@ -832,6 +829,4 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        st = simple_table(rows, header)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(tabulate(rows, header) + "\n")

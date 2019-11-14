@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
+from dials.util import tabulate
 
 import scitbx.matrix
 from cctbx import crystal, sgtbx
@@ -68,8 +69,6 @@ class RefinedSettingsList(list):
         return result
 
     def labelit_printout(self):
-        from libtbx import table_utils
-
         table_data = [
             [
                 "Solution",
@@ -107,9 +106,7 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        output = table_utils.format(
-            table_data, has_header=1, justify="right", delim=" "
-        )
+        output = tabulate(table_data, headers="firstrow")
         output = output + "\n* = recommended solution\n"
         return output
 

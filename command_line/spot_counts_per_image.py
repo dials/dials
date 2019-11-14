@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
+from dials.util import tabulate
 
 import iotbx.phil
 from dials.util.options import OptionParser
@@ -97,7 +98,6 @@ def run(args):
             getattr(e, k).extend(getattr(s, k))
 
     per_image_analysis.print_table(e)
-    from libtbx import table_utils
 
     # FIXME this is now probably nonsense...
     overall_stats = per_image_analysis.stats_single_image(
@@ -119,7 +119,7 @@ def run(args):
             % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
         ),
     ]
-    print(table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
+    print(tabulate(rows, headers="firstrow"))
 
     if params.json:
         import json

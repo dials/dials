@@ -1,6 +1,8 @@
 """Functions to help with reindexing against a reference dataset."""
 from __future__ import absolute_import, division, print_function
 
+from dials.util import tabulate
+
 from dials.util import Sorry
 from cctbx import sgtbx
 from mmtbx.scaling.twin_analyses import twin_laws
@@ -57,14 +59,11 @@ reference dataset if both dataset are in the same spacegroup."""
             correlations.append(cc.coefficient())
 
         # print out table of results and choose best
-        from libtbx.table_utils import simple_table
-
         header = ["Reindex op", "CC to reference"]
         rows = [["a, b, c (no reindex)", "%.5f" % correlations[0]]]
         for i, op in enumerate(twin_ops):
             rows.append([str(op), "%.5f" % correlations[i + 1]])
-        st = simple_table(rows, header)
-        print(st.format())
+        print(tabulate(rows, header))
 
         best_solution_idx = correlations.index(max(correlations))
         print("\nOutcome of analysis against reference dataset:")

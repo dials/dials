@@ -1,7 +1,7 @@
 """Definition of systematic absences check algorithm."""
 import logging
+from dials.util import tabulate
 
-from libtbx.table_utils import simple_table
 from cctbx import sgtbx
 
 from dials.algorithms.symmetry.absences.laue_groups_info import (
@@ -36,7 +36,8 @@ def run_systematic_absences_checks(
     )
 
     logger.info(
-        simple_table(
+        "%s",
+        tabulate(
             [
                 [
                     a.name,
@@ -50,7 +51,7 @@ def run_systematic_absences_checks(
                 ]
                 for a, score in zip(screw_axes, screw_axis_scores)
             ],
-            column_headers=[
+            [
                 "Screw axis",
                 "Score",
                 "No. present",
@@ -60,7 +61,7 @@ def run_systematic_absences_checks(
                 "<I/sig> present",
                 "<I/sig> absent",
             ],
-        ).format()
+        ),
     )
 
     # Score the space groups from the screw axis scores.
@@ -69,10 +70,11 @@ def run_systematic_absences_checks(
     )
 
     logger.info(
-        simple_table(
+        "%s",
+        tabulate(
             [[sg, "%.4f" % score] for sg, score in zip(space_groups, scores)],
-            column_headers=["Space group", "score"],
-        ).format()
+            ["Space group", "score"],
+        ),
     )
 
     # Find the best space group and update the experiments.

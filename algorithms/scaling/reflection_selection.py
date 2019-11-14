@@ -64,8 +64,10 @@ intra-dataset connectedness.
 from __future__ import absolute_import, division, print_function
 import logging
 from math import floor
+from dials.util import tabulate
+
 from scitbx import sparse
-from libtbx.table_utils import simple_table
+
 from dials.array_family import flex
 from dials.algorithms.scaling.scaling_utilities import (
     Reasons,
@@ -234,17 +236,16 @@ from each dataset, with a total number between %s and %s.
         if n_datasets >= 15:
             summary_rows.append([drange, str(n_groups_used), n_refl])
 
-    st = simple_table(rows, header)
     logger.info(
         "Summary of cross-dataset reflection groups chosen (%s groups, %s reflections):",
         n_cols_used,
         indices.size(),
     )
     if n_datasets < 15:
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
     else:
-        logger.info(simple_table(summary_rows, summary_header).format())
-        logger.debug(st.format())
+        logger.info(tabulate(summary_rows, summary_header))
+        logger.debug(tabulate(rows, header))
 
     return indices, dataset_ids
 

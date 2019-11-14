@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import itertools
 import logging
 import math
+from dials.util import tabulate
 from time import time
 
 import psutil
@@ -798,8 +799,6 @@ class Manager(object):
         """
         Get a summary of the processing
         """
-        from libtbx.table_utils import format as table
-
         # Compute the task table
         if self.experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To", "# Reflections"]]
@@ -837,7 +836,7 @@ class Manager(object):
             raise RuntimeError("Experiments must be all sequences or all stills")
 
         # The job table
-        task_table = table(rows, has_header=True, justify="right", prefix=" ")
+        task_table = tabulate(rows, headers="firstrow")
 
         # The format string
         if self.params.block.size is None:

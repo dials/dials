@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+from dials.util import tabulate
 
 from dials.util import show_mail_on_error
 
@@ -48,7 +49,11 @@ class Script(object):
 
         # Initialise the base class
         self.parser = OptionParser(
-            usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
+            read_experiments=True,
+            check_format=False,
         )
 
     def run(self):
@@ -137,8 +142,6 @@ class Script(object):
             g_index.append(gn)
 
         # Print a table of possibly shared models
-        from libtbx.table_utils import format as table
-
         rows = [["Sequence", "ID", "Beam", "Detector", "Goniometer", "Date", "Time"]]
         for i in range(len(sequences)):
             timestamp = sequences[i].get_scan().get_epochs()[0]
@@ -155,7 +158,7 @@ class Script(object):
                 "%s" % time_str,
             ]
             rows.append(row)
-        logger.info(table(rows, has_header=True, justify="left", prefix=" "))
+        logger.info(tabulate(rows, headers="firstrow"))
 
         # Print the time
         logger.info("Time Taken: %f" % (time() - start_time))
