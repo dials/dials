@@ -40,48 +40,9 @@ output {
 )
 
 
-def run(args):
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.command_line import ProgressBar
-
-    usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
-
-    parser = OptionParser(
-        usage=usage,
-        phil=phil_scope,
-        read_experiments=True,
-        read_experiments_from_images=True,
-        epilog=help_message,
-    )
-
-    params, options = parser.parse_args(show_diff_phil=True)
-
-    experiments = flatten_experiments(params.input.experiments)
-    if len(experiments) != 1:
-        parser.print_help()
-        print("Please pass an experiment list\n")
-        return
-
-    imagesets = experiments.imagesets()
-
-    if len(imagesets) != 1:
-        raise Sorry("Please pass an experiment list that contains one imageset")
-
-    imageset = imagesets[0]
-
-    first, last = imageset.get_scan().get_image_range()
-    images = range(first, last + 1)
-
-    if params.images is None and params.image_range is not None:
-        start, end = params.image_range
-        params.images = list(range(start, end + 1))
-
-    if params.images:
-        if min(params.images) < first or max(params.images) > last:
-            raise Sorry("image outside of scan range")
-        images = params.images
+def find_constant_signal_pixels(imageset, images):
+    """Find pixels which are constantly reporting as signal through the
+    images in imageset."""
 
     detectors = imageset.get_detector()
     assert len(detectors) == 1
@@ -92,6 +53,8 @@ def run(args):
     # "signal" pixels in each pixel across data
 
     total = None
+
+    from dials.util.command_line import ProgressBar
 
     p = ProgressBar(title="Finding hot pixels")
 
@@ -136,6 +99,58 @@ def run(args):
     p.finished("Finished finding hot pixels on %d images" % len(images))
 
     hot_mask = total >= (len(images) // 2)
+
+    return hot_mask, total
+
+
+def run(args):
+
+    from dials.util.options import OptionParser
+    from dials.util.options import flatten_experiments
+    from dials.util.command_line import ProgressBar
+
+    usage = "%s [options] data_master.h5" % (libtbx.env.dispatcher_name)
+
+    parser = OptionParser(
+        usage=usage,
+        phil=phil_scope,
+        read_experiments=True,
+        read_experiments_from_images=True,
+        epilog=help_message,
+    )
+
+    params, options = parser.parse_args(show_diff_phil=True)
+
+    experiments = flatten_experiments(params.input.experiments)
+    if len(experiments) != 1:
+        parser.print_help()
+        print("Please pass an experiment list\n")
+        return
+
+    imagesets = experiments.imagesets()
+
+    if len(imagesets) != 1:
+        raise Sorry("Please pass an experiment list that contains one imageset")
+
+    imageset = imagesets[0]
+    detectors = imageset.get_detector()
+    assert len(detectors) == 1
+    detector = detectors[0]
+    trusted = detector.get_trusted_range()
+
+    first, last = imageset.get_scan().get_image_range()
+    images = range(first, last + 1)
+
+    if params.images is None and params.image_range is not None:
+        start, end = params.image_range
+        params.images = list(range(start, end + 1))
+
+    if params.images:
+        if min(params.images) < first or max(params.images) > last:
+            raise Sorry("image outside of scan range")
+        images = params.images
+
+    hot_mask, total = find_constant_signal_pixels(imageset, images)
     hot_pixels = hot_mask.iselection()
 
     p = ProgressBar(title="Finding capricious pixels")
