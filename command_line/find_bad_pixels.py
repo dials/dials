@@ -2,6 +2,8 @@
 
 from __future__ import absolute_import, division, print_function
 
+import concurrent.futures
+
 import iotbx.phil
 import libtbx.load_env
 from scitbx.array_family import flex
@@ -30,6 +32,9 @@ images = None
 image_range = None
   .type = ints(value_min=0, size=2)
   .help = "Image range for analysis e.g. 1,1800"
+nproc = 1
+  .type = int
+  .help = "Number of processors to use for bad pixel finding"
 
 output {
     mask = pixels.mask
@@ -54,13 +59,13 @@ def find_constant_signal_pixels(imageset, images):
 
     total = None
 
-    from dials.util.command_line import ProgressBar
+    # from dials.util.command_line import ProgressBar
 
-    p = ProgressBar(title="Finding hot pixels")
+    # p = ProgressBar(title="Finding hot pixels")
 
     for idx in images:
 
-        p.update(idx * 100.0 / len(images))
+        # p.update(idx * 100.0 / len(images))
 
         pixels = imageset.get_raw_data(idx - 1)
         assert len(pixels) == 1
@@ -96,7 +101,7 @@ def find_constant_signal_pixels(imageset, images):
         else:
             total += peak_pixels.as_1d().as_int()
 
-    p.finished("Finished finding hot pixels on %d images" % len(images))
+    # p.finished("Finished finding hot pixels on %d images" % len(images))
 
     hot_mask = total >= (len(images) // 2)
 
@@ -150,7 +155,31 @@ def run(args):
             raise Sorry("image outside of scan range")
         images = params.images
 
-    hot_mask, total = find_constant_signal_pixels(imageset, images)
+    # work around issues with HDF5 and multiprocessing
+    imageset.reader().nullify_format_instance()
+
+    n = len(images) // params.nproc
+    work = [images[i : i + n] for i in range(0, len(images), n)]
+    assert len(images) == sum([len(chunk) for chunk in work])
+
+    hot_mask = None
+    total = None
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as p:
+        jobs = []
+        for j in range(params.nproc):
+            jobs.append(p.submit(find_constant_signal_pixels, imageset, work[j]))
+        for job in concurrent.futures.as_completed(jobs):
+            _hot_mask, _total = job.result()
+            if hot_mask is None:
+                hot_mask = _hot_mask
+            else:
+                hot_mask = hot_mask & _hot_mask
+            if total is None:
+                total = _total
+            else:
+                total += _total
+
     hot_pixels = hot_mask.iselection()
 
     p = ProgressBar(title="Finding capricious pixels")
