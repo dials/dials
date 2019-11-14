@@ -3,11 +3,22 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
+import sys
 
+from cctbx import miller
+from cctbx import crystal
 from libtbx.phil import parse
+from scitbx import matrix
 
+from dxtbx.model import ExperimentList
+from dials.algorithms.refinement import rotation_decomposition
+from dials.algorithms.shadowing.filter import filter_shadowed_reflections
 from dials.array_family import flex
+from dials.util import log
 from dials.util import show_mail_on_error
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
 
 
 logger = logging.getLogger("dials.command_line.complete_full_sphere")
@@ -34,11 +45,8 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
-        usage = "usage: %s [options] " % libtbx.env.dispatcher_name
+        usage = "usage: dials.complete_full_sphere [options] "
 
         # Create the parser
         self.parser = OptionParser(
@@ -51,14 +59,7 @@ class Script(object):
 
     def run(self):
         params, options = self.parser.parse_args(show_diff_phil=True)
-        from dials.util import log
-
         log.config(logfile="dials.complete_full_sphere.log")
-
-        import math
-        from scitbx import matrix
-        from dials.algorithms.refinement import rotation_decomposition
-        from dials.util.options import flatten_experiments
 
         model_shadow = params.shadow
 
@@ -73,14 +74,10 @@ class Script(object):
         axes = expt.goniometer.get_axes()
 
         if len(axes) != 3:
-            from dials.util import Sorry
-
-            raise Sorry("This will only work with 3-axis goniometers")
+            sys.exit("This will only work with 3-axis goniometers")
 
         if not expt.imageset.reader().get_format():
-            from dials.util import Sorry
-
-            raise Sorry("This will only work with images available")
+            sys.exit("This will only work with images available")
 
         if not expt.imageset.reader().get_format().get_goniometer_shadow_masker():
             model_shadow = False
@@ -99,9 +96,6 @@ class Script(object):
         self.make_scan_360(expt.scan)
 
         # now get a full set of all unique miller indices
-        from cctbx import miller
-        from cctbx import crystal
-
         all_indices = miller.build_set(
             crystal_symmetry=crystal.symmetry(
                 space_group=expt.crystal.get_space_group(),
@@ -152,9 +146,7 @@ class Script(object):
             solutions.extend(sol_minus)
 
         if not solutions:
-            from dials.util import Sorry
-
-            raise Sorry("Impossible two theta: %.3f," % (two_theta * 180.0 / math.pi))
+            sys.exit("Impossible two theta: %.3f," % (two_theta * 180.0 / math.pi))
 
         logger.info("Maximum two theta: %.3f," % (two_theta * 180.0 / math.pi))
         logger.info("%d solutions found" % len(solutions))
@@ -203,9 +195,6 @@ class Script(object):
         hkl = predicted["miller_index"]
 
         # now get a full set of all unique miller indices
-        from cctbx import miller
-        from cctbx import crystal
-
         obs = miller.set(
             crystal_symmetry=crystal.symmetry(
                 space_group=expt.crystal.get_space_group(),
@@ -218,13 +207,9 @@ class Script(object):
         return obs
 
     def predict_to_miller_set_with_shadow(self, expt, resolution):
-        from dials.algorithms.shadowing.filter import filter_shadowed_reflections
-
         predicted = flex.reflection_table.from_predictions(expt, dmin=resolution)
 
         # transmogrify this to an ExperimentList from an Experiment
-        from dxtbx.model import ExperimentList
-
         experiments = ExperimentList()
         experiments.append(expt)
         predicted["id"] = flex.int(predicted.size(), 0)
@@ -236,9 +221,6 @@ class Script(object):
         hkl = predicted["miller_index"]
 
         # now get a full set of all unique miller indices
-        from cctbx import miller
-        from cctbx import crystal
-
         obs = miller.set(
             crystal_symmetry=crystal.symmetry(
                 space_group=expt.crystal.get_space_group(),

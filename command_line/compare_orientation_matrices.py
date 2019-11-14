@@ -1,7 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import iotbx.phil
 from cctbx.array_family import flex
+
+import dials.algorithms.indexing.compare_orientation_matrices
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
 
 help_message = """
 
@@ -35,11 +41,7 @@ space_group = None
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
-
-    usage = "%s [options] models.expt" % libtbx.env.dispatcher_name
+    usage = "dials.compare_orientation_matrices [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -57,8 +59,6 @@ def run(args):
 
     hkl = flex.miller_index(params.hkl)
 
-    import dials.algorithms.indexing.compare_orientation_matrices
-
     crystals = []
     for experiment in experiments:
         crystal = experiment.crystal
@@ -74,6 +74,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

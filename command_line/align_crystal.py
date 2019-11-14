@@ -5,11 +5,19 @@ from __future__ import absolute_import, division, print_function
 import collections
 import copy
 import json
-from dials.util import tabulate
-
+import sys
 import iotbx.phil
 from cctbx import sgtbx
 from scitbx import matrix
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+
+from dxtbx.model import MultiAxisGoniometer
+
+from dials.algorithms.refinement import rotation_decomposition
+from dials.util import tabulate
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+
 
 help_message = """
 Calculation of possible goniometer settings for re-alignment of crystal axes.
@@ -106,8 +114,6 @@ class align_crystal(object):
     vector_names = {a.elems: "a", b.elems: "b", c.elems: "c"}
 
     def __init__(self, experiment, vectors, frame="reciprocal", mode="main"):
-        from dials.util import Sorry
-
         self.experiment = experiment
         self.vectors = vectors
         self.frame = frame
@@ -118,13 +124,11 @@ class align_crystal(object):
         self.s0 = matrix.col(self.experiment.beam.get_s0())
         self.rotation_axis = matrix.col(gonio.get_rotation_axis())
 
-        from dxtbx.model import MultiAxisGoniometer
-
         if not isinstance(gonio, MultiAxisGoniometer):
-            raise Sorry("Only MultiAxisGoniometer models supported")
+            raise ValueError("Only MultiAxisGoniometer models supported")
         axes = gonio.get_axes()
         if len(axes) != 3:
-            raise Sorry("Only 3-axis goniometers supported")
+            raise ValueError("Only 3-axis goniometers supported")
         e1, e2, e3 = (matrix.col(e) for e in reversed(axes))
 
         # fixed_rotation = matrix.sqr(gonio.get_fixed_rotation())
@@ -133,8 +137,6 @@ class align_crystal(object):
         # rotation_matrix = rotation_axis.axis_and_angle_as_r3_rotation_matrix(
         #    experiment.scan.get_oscillation()[0], deg=True
         # )
-
-        from dials.algorithms.refinement import rotation_decomposition
 
         results = []
 
@@ -202,12 +204,7 @@ class align_crystal(object):
 
                 for perm in referential_permutations:
                     S = matrix.sqr(perm[0].elems + perm[1].elems + perm[2].elems)
-                    from rstbx.cftbx.coordinate_frame_helpers import (
-                        align_reference_frame,
-                    )
-
                     R = align_reference_frame(v1_0, S * l1, v2_0, S * l2)
-
                     solutions = rotation_decomposition.solve_r3_rotation_for_angles_given_axes(
                         R, e1, e2, e3, return_both_solutions=True, deg=True
                     )
@@ -363,12 +360,7 @@ class align_crystal(object):
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
-
-    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
-
+    usage = "dials.align_crystal [options] models.expt"
     parser = OptionParser(
         usage=usage,
         phil=phil_scope,
@@ -435,13 +427,14 @@ def run(args):
             (c_star, b_star),  # c*, b*
         )
 
-    result = align_crystal(expt, vectors, frame=frame, mode=params.align.mode)
-    print(result)
+    try:
+        result = align_crystal(expt, vectors, frame=frame, mode=params.align.mode)
+        print(result)
+    except ValueError as e:
+        sys.exit(e)
     if params.output.json is not None:
         result.as_json(filename=params.output.json)
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

@@ -26,7 +26,11 @@ from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 from dials.algorithms.refinement.corrgram import create_correlation_plots
-from dials.util import Sorry
+import dials.util.log
+from dials.util.version import dials_version
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections
+from dials.util.options import flatten_experiments
 
 logger = logging.getLogger("dials.command_line.refine")
 
@@ -185,7 +189,7 @@ def run_macrocycle(params, reflections, experiments):
             params, reflections, experiments
         )
     except DialsRefineConfigError as e:
-        raise Sorry(e.message)
+        sys.exit(e.message)
 
     # Refine the geometry
     nexp = len(experiments)
@@ -198,7 +202,7 @@ def run_macrocycle(params, reflections, experiments):
     try:
         history = refiner.run()
     except DialsRefineRuntimeError as e:
-        raise Sorry(e.message)
+        sys.exit(e.message)
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
@@ -266,8 +270,6 @@ def run_dials_refine(experiments, reflections, params):
         tuple: The refined experiments, the updated reflection table, the
             Refiner object and the refinement history object.
 
-    Raises:
-        dials.util.Sorry: Refinement failed.
     """
 
     # Modify options if necessary
@@ -315,19 +317,11 @@ def run(args=None, phil=working_phil):
     Returns:
         None
     """
-
-    import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
-
     start_time = time()
 
     # The script usage
     usage = (
-        "usage: %s [options] [param.phil] "
-        "models.expt observations.refl" % libtbx.env.dispatcher_name
+        "usage: dials.refine [options] [param.phil] " "models.expt observations.refl"
     )
 
     # Create the parser
@@ -363,10 +357,7 @@ def run(args=None, phil=working_phil):
     )
     for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
         if key not in reflections:
-            msg = msg.format(key)
-            raise dials.util.Sorry(msg)
-
-    from dials.util.version import dials_version
+            sys.exit(msg.format(key))
 
     logger.info(dials_version())
 
