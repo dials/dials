@@ -1,7 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import copy
-
 import pytest
 from dials.algorithms.refinement.reflection_manager import (
     phil_scope as refman_phil_scope,
@@ -11,12 +9,14 @@ from dials.algorithms.refinement.parameterisation.autoreduce import (
     phil_scope as ar_phil_scope,
 )
 from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills import (
+    StillsPredictionParameterisation,
+)
 
 from dials.test.algorithms.refinement.test_stills_prediction_parameters import _Test
 from dials.algorithms.refinement.prediction.managed_predictors import (
     StillsExperimentsPredictor,
 )
-from dials.array_family import flex
 from dials.algorithms.refinement import DialsRefineConfigError
 
 
@@ -34,42 +34,35 @@ def tc():
         do_stills=True,
     )
     test.refman.finalise()
+
+    # Build a prediction parameterisation for the stills experiment
+    test.pred_param = StillsPredictionParameterisation(
+        test.stills_experiments,
+        detector_parameterisations=[test.det_param],
+        beam_parameterisations=[test.s0_param],
+        xl_orientation_parameterisations=[test.xlo_param],
+        xl_unit_cell_parameterisations=[test.xluc_param],
+    )
     return test
 
 
 def test_check_and_fail(tc):
 
-    # There are 823 reflections and the detector parameterisation has 6 free
-    # parameters
+    # There are 823 reflections
     assert len(tc.refman.get_matches()) == 823
-    assert tc.det_param.num_free() == 6
 
-    # Setting 137 reflections as the minimum should pass (137*6<823)
+    # The parameters affecting the smallest number of reflections are
+    # g_param_0, g_param_3 and g_param_4, all of which have gradients for
+    # 792 reflections. Setting 792 reflections as the minimum should pass.
     options = ar_phil_scope.extract()
-    options.min_nref_per_parameter = 137
-    ar = AutoReduce(
-        options,
-        [tc.det_param],
-        [tc.s0_param],
-        [tc.xlo_param],
-        [tc.xluc_param],
-        gon_params=[],
-        reflection_manager=tc.refman,
-    )
+    options.min_nref_per_parameter = 792
+    ar = AutoReduce(options, pred_param=tc.pred_param, reflection_manager=tc.refman)
 
     ar.check_and_fail()
 
-    # Setting 138 reflections as the minimum should fail (138*6>823)
-    options.min_nref_per_parameter = 138
-    ar = AutoReduce(
-        options,
-        [tc.det_param],
-        [tc.s0_param],
-        [tc.xlo_param],
-        [tc.xluc_param],
-        gon_params=[],
-        reflection_manager=tc.refman,
-    )
+    # Setting 793 reflections as the minimum should fail
+    options.min_nref_per_parameter = 793
+    ar = AutoReduce(options, pred_param=tc.pred_param, reflection_manager=tc.refman)
 
     with pytest.raises(DialsRefineConfigError):
         ar.check_and_fail()
@@ -82,47 +75,38 @@ def test_check_and_fix(tc):
     n_xlo = tc.xlo_param.num_free()
     n_xluc = tc.xluc_param.num_free()
 
-    # Similar to test_check_and_fail, setting 137 reflections as the minimum
+    # Similar to test_check_and_fail, setting 792 reflections as the minimum
     # should leave all parameters free
     options = ar_phil_scope.extract()
-    options.min_nref_per_parameter = 137
-    ar = AutoReduce(
-        options,
-        [tc.det_param],
-        [tc.s0_param],
-        [tc.xlo_param],
-        [tc.xluc_param],
-        gon_params=[],
-        reflection_manager=tc.refman,
-    )
+    options.min_nref_per_parameter = 792
+    ar = AutoReduce(options, pred_param=tc.pred_param, reflection_manager=tc.refman)
     ar.check_and_fix()
 
-    assert ar.det_params[0].num_free() == n_det == 6
-    assert ar.beam_params[0].num_free() == n_beam == 3
-    assert ar.xl_ori_params[0].num_free() == n_xlo == 3
-    assert ar.xl_uc_params[0].num_free() == n_xluc == 6
+    det_params = tc.pred_param.get_detector_parameterisations()
+    beam_params = tc.pred_param.get_beam_parameterisations()
+    xl_ori_params = tc.pred_param.get_crystal_orientation_parameterisations()
+    xl_uc_params = tc.pred_param.get_crystal_unit_cell_parameterisations()
+    assert det_params[0].num_free() == n_det == 6
+    assert beam_params[0].num_free() == n_beam == 3
+    assert xl_ori_params[0].num_free() == n_xlo == 3
+    assert xl_uc_params[0].num_free() == n_xluc == 6
 
-    # Setting 138 reflections as the minimum should fix all the detector
-    # parameters and remove that parameterisation. The crystal unit cell also
-    # has 6 parameters, but each parameter is considered separately, so the
-    # critical minimum number of reflections is 138*1 not 138*6 in that case
+    # Setting 793 reflections as the minimum should fix crystal unit cell
+    # parameters g_param_0, g_param_3 and g_param_4
     options = ar_phil_scope.extract()
-    options.min_nref_per_parameter = 138
-    ar = AutoReduce(
-        options,
-        [tc.det_param],
-        [tc.s0_param],
-        [tc.xlo_param],
-        [tc.xluc_param],
-        gon_params=[],
-        reflection_manager=tc.refman,
-    )
+    options.min_nref_per_parameter = 793
+    ar = AutoReduce(options, pred_param=tc.pred_param, reflection_manager=tc.refman)
     ar.check_and_fix()
 
-    assert not ar.det_params
-    assert ar.xl_uc_params[0].num_free() == n_xluc
-    assert ar.beam_params[0].num_free() == n_beam
-    assert ar.xl_ori_params[0].num_free() == n_xlo
+    det_params = tc.pred_param.get_detector_parameterisations()
+    beam_params = tc.pred_param.get_beam_parameterisations()
+    xl_ori_params = tc.pred_param.get_crystal_orientation_parameterisations()
+    xl_uc_params = tc.pred_param.get_crystal_unit_cell_parameterisations()
+    assert det_params[0].num_free() == n_det
+    assert xl_uc_params[0].num_free() == 3
+    assert xl_uc_params[0].get_param_names() == ["g_param_1", "g_param_2", "g_param_5"]
+    assert beam_params[0].num_free() == n_beam
+    assert xl_ori_params[0].num_free() == n_xlo
 
 
 def test_check_and_remove():
@@ -163,164 +147,53 @@ def test_check_and_remove():
     )
     test.refman.finalise()
 
+    # Build a prediction parameterisation for the stills experiment
+    test.pred_param = StillsPredictionParameterisation(
+        test.stills_experiments,
+        detector_parameterisations=[test.det_param],
+        beam_parameterisations=[test.s0_param],
+        xl_orientation_parameterisations=[test.xlo_param],
+        xl_unit_cell_parameterisations=[test.xluc_param],
+    )
+
     # A non-hierarchical detector does not have panel groups, thus panels are
     # not treated independently wrt which reflections affect their parameters.
-    # As before, setting 137 reflections as the minimum should leave all
+    # As before, setting 792 reflections as the minimum should leave all
     # parameters free, and should not remove any reflections
     options = ar_phil_scope.extract()
-    options.min_nref_per_parameter = 137
-    ar = AutoReduce(
-        options,
-        [test.det_param],
-        [test.s0_param],
-        [test.xlo_param],
-        [test.xluc_param],
-        gon_params=[],
-        reflection_manager=test.refman,
-    )
+    options.min_nref_per_parameter = 792
+    ar = AutoReduce(options, pred_param=test.pred_param, reflection_manager=test.refman)
     ar.check_and_remove()
 
-    assert ar.det_params[0].num_free() == 6
-    assert ar.beam_params[0].num_free() == 3
-    assert ar.xl_ori_params[0].num_free() == 3
-    assert ar.xl_uc_params[0].num_free() == 6
-    assert len(ar.reflection_manager.get_obs()) == 823
+    det_params = test.pred_param.get_detector_parameterisations()
+    beam_params = test.pred_param.get_beam_parameterisations()
+    xl_ori_params = test.pred_param.get_crystal_orientation_parameterisations()
+    xl_uc_params = test.pred_param.get_crystal_unit_cell_parameterisations()
+    assert det_params[0].num_free() == 6
+    assert beam_params[0].num_free() == 3
+    assert xl_ori_params[0].num_free() == 3
+    assert xl_uc_params[0].num_free() == 6
+    assert len(test.refman.get_obs()) == 823
 
-    # Setting reflections as the minimum should fix the detector parameters,
-    # which removes that parameterisation. Because all reflections are recorded
-    # on that detector, they will all be removed as well. This then affects all
-    # other parameterisations, which will be removed.
+    # Setting 793 reflections as the minimum fixes 3 unit cell parameters,
+    # and removes all those reflections. There are then too few reflections
+    # for any parameterisation and all will be fixed, leaving no free
+    # parameters for refinement. This fails within PredictionParameterisation,
+    # during update so the final 31 reflections are not removed.
     options = ar_phil_scope.extract()
-    options.min_nref_per_parameter = 138
-    ar = AutoReduce(
-        options,
-        [test.det_param],
-        [test.s0_param],
-        [test.xlo_param],
-        [test.xluc_param],
-        gon_params=[],
-        reflection_manager=test.refman,
-    )
-    ar.check_and_remove()
+    options.min_nref_per_parameter = 793
+    ar = AutoReduce(options, pred_param=test.pred_param, reflection_manager=test.refman)
+    with pytest.raises(
+        DialsRefineConfigError, match="There are no free parameters for refinement"
+    ):
+        ar.check_and_remove()
 
-    assert not ar.det_params
-    assert not ar.beam_params
-    assert not ar.xl_ori_params
-    assert not ar.xl_uc_params
-    assert len(ar.reflection_manager.get_obs()) == 0
-
-
-# Test the functionality of the parameter 'auto reduction' extension modules
-@pytest.fixture(scope="session")
-def setup_test_sorting():
-    # Borrowed from tst_reflection_table function tst_find_overlapping
-
-    N = 110
-    r = flex.reflection_table.empty_standard(N)
-    r["panel"] = flex.size_t([1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0] * 10)
-    r["id"] = flex.int([1, 2, 1, 1, 2, 0, 1, 1, 1, 0, 1] * 10)
-    exp_ids = flex.size_t([0, 1])
-    for i in range(N):
-        r["miller_index"][i] = (
-            int(i // 10) - 5,
-            i % 3,
-            i % 7,
-        )  # A nice bunch of miller indices
-
-    # Filter out reflections to be used by refinement. Sorting of filtered reflections
-    # require to allow C++ extension modules to give performance benefit. Sorting
-    # performed within the _filter_reflections step by id, then by panel.
-    r_sorted = copy.deepcopy(r)
-    r_sorted.sort("id")
-    r_sorted.subsort("id", "panel")
-
-    # Test that the unfiltered/unsorted table becomes filtered/sorted for id
-    assert (r_sorted["id"] == r["id"].select(flex.sort_permutation(r["id"]))).count(
-        False
-    ) == 0
-    # as above for panel within each id
-    for ii in [0, 1, 2]:
-        r_id = r.select(r["id"] == ii)
-        r_sorted_id = r_sorted.select(r_sorted["id"] == ii)
-        assert (
-            r_sorted_id["panel"]
-            == r_id["panel"].select(flex.sort_permutation(r_id["panel"]))
-        ).count(False) == 0
-    return (r, r_sorted, exp_ids)
-
-
-def test_auto_reduction_parameter_extension_modules_part1(setup_test_sorting):
-    # Cut-down original algorithm for AutoReduce._surplus_reflections
-
-    from dials_refinement_helpers_ext import surpl_iter as surpl
-
-    r, r_sorted, exp_ids = setup_test_sorting
-    isel = flex.size_t()
-    for exp_id in exp_ids:
-        isel.extend((r["id"] == exp_id).iselection())
-    res0 = len(isel)
-
-    # Updated algorithm for _surplus_reflections, with templated id column for int and size_t
-    res1_unsrt_int = surpl(r["id"], exp_ids).result
-    res1_int = surpl(r_sorted["id"], exp_ids).result
-    res1_sizet = surpl(flex.size_t(list(r_sorted["id"])), exp_ids).result
-
-    # Check that unsorted list fails, while sorted succeeds for both int and size_t array types
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet
-
-
-def test_auto_reduction_parameter_extension_modules_part2(setup_test_sorting):
-    # Cut-down original algorithm for AutoReduce._unit_cell_surplus_reflections
-
-    from dials_refinement_helpers_ext import uc_surpl_iter as uc_surpl
-
-    r, r_sorted, exp_ids = setup_test_sorting
-    isel = flex.size_t()
-    for exp_id in exp_ids:
-        isel.extend((r["id"] == exp_id).iselection())
-    ref = r.select(isel)
-    h = ref["miller_index"].as_vec3_double()
-    dB_dp = flex.mat3_double([(1, 2, 3, 4, 5, 6, 7, 8, 9), (0, 1, 0, 1, 0, 1, 0, 1, 0)])
-    nref_each_param = []
-    for der in dB_dp:
-        tst = (der * h).norms()
-        nref_each_param.append((tst > 0.0).count(True))
-    res0 = min(nref_each_param)
-
-    # Updated algorithm for _unit_cell_surplus_reflections
-    res1_unsrt_int = uc_surpl(r["id"], r["miller_index"], exp_ids, dB_dp).result
-    res1_int = uc_surpl(r_sorted["id"], r_sorted["miller_index"], exp_ids, dB_dp).result
-    res1_sizet = uc_surpl(
-        flex.size_t(list(r_sorted["id"])), r_sorted["miller_index"], exp_ids, dB_dp
-    ).result
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet
-
-
-def test_auto_reduction_parameter_extension_modules_part3(setup_test_sorting):
-    # Cut-down original algorithm for AutoReduce._panel_gp_surplus_reflections
-
-    from dials_refinement_helpers_ext import pg_surpl_iter as pg_surpl
-
-    r, r_sorted, exp_ids = setup_test_sorting
-    isel = flex.size_t()
-    pnl_ids = [0, 1]
-    for exp_id in exp_ids:
-        sub_expID = (r["id"] == exp_id).iselection()
-        sub_panels_expID = r["panel"].select(sub_expID)
-        for pnl in pnl_ids:
-            isel.extend(sub_expID.select(sub_panels_expID == pnl))
-    res0 = len(isel)
-
-    # Updated algorithm for _panel_gp_surplus_reflections
-    res1_unsrt_int = pg_surpl(r["id"], r["panel"], pnl_ids, exp_ids, 0).result
-    res1_int = pg_surpl(r_sorted["id"], r_sorted["panel"], pnl_ids, exp_ids, 0).result
-    res1_sizet = pg_surpl(
-        flex.size_t(list(r_sorted["id"])), r_sorted["panel"], pnl_ids, exp_ids, 0
-    ).result
-    assert res0 != res1_unsrt_int
-    assert res0 == res1_int
-    assert res0 == res1_sizet
+    det_params = test.pred_param.get_detector_parameterisations()
+    beam_params = test.pred_param.get_beam_parameterisations()
+    xl_ori_params = test.pred_param.get_crystal_orientation_parameterisations()
+    xl_uc_params = test.pred_param.get_crystal_unit_cell_parameterisations()
+    assert det_params[0].num_free() == 0
+    assert beam_params[0].num_free() == 0
+    assert xl_ori_params[0].num_free() == 0
+    assert xl_uc_params[0].num_free() == 0
+    assert len(test.refman.get_obs()) == 823 - 792
