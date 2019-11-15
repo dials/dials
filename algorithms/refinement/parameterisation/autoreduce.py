@@ -60,17 +60,22 @@ phil_scope = parse(phil_str)
 # A callback for PredictionParameterisation.get_gradients which will give
 # the positions of reflections associated with a particular parameter
 def id_associated_refs(result):
+
+    # There are usually 3 parts to results: gradients in X, Y and Z
     vals = [v for v in result.values()]
     try:
         vals = [v.as_dense_vector() for v in vals]
     except AttributeError:
         pass
+
+    # Find all non-zero gradients
+    vals = [flex.abs(v) > 1e-10 for v in vals]
+
+    # Find any reflection that contributed a non-zero gradient
     val = vals[0]
     for v in vals[1:]:
-        val.extend(v)
-
-    val = flex.abs(val)
-    return val > 1e-10
+        val = val | v
+    return val
 
 
 # A callback for PredictionParameterisation.get_gradients which will count
