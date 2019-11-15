@@ -71,6 +71,26 @@ class PredictionParameterisation(object):
         # References to the underlying models
         self._experiments = experiments
 
+        self.update(
+            detector_parameterisations,
+            beam_parameterisations,
+            xl_orientation_parameterisations,
+            xl_unit_cell_parameterisations,
+            goniometer_parameterisations,
+        )
+
+    def update(
+        self,
+        detector_parameterisations,
+        beam_parameterisations,
+        xl_orientation_parameterisations,
+        xl_unit_cell_parameterisations,
+        goniometer_parameterisations,
+    ):
+        """
+        Update the parameterisations
+        """
+
         # Keep references to all parameterised models
         self._detector_parameterisations = detector_parameterisations
         self._beam_parameterisations = beam_parameterisations
@@ -119,7 +139,7 @@ class PredictionParameterisation(object):
             i: ParamSet(
                 e2bp.get(i), e2xop.get(i), e2xucp.get(i), e2dp.get(i), e2gp.get(i)
             )
-            for i, _ in enumerate(experiments)
+            for i, _ in enumerate(self._experiments)
         }
 
     # accessors for the lists of parameterisations of different types
@@ -222,8 +242,8 @@ class PredictionParameterisation(object):
 
         return param_names
 
-    def _set_param_vals_or_esds(self, vals, is_esds=False):
-        assert len(vals) == len(self)
+    def _modify_parameters(self, vals, set_vals=False, set_esds=False, set_fix=False):
+        assert [set_vals, set_esds, set_fix].count(True) == 1
         it = iter(vals)
 
         for model in (
@@ -233,18 +253,25 @@ class PredictionParameterisation(object):
             + self._xl_unit_cell_parameterisations
             + self._goniometer_parameterisations
         ):
-            tmp = [next(it) for i in range(model.num_free())]
-            if is_esds:
-                model.set_param_esds(tmp)
+            if set_fix:
+                size = model.num_total()
             else:
+                size = model.num_free()
+            tmp = [next(it) for i in range(size)]
+            if set_esds:
+                model.set_param_esds(tmp)
+            elif set_vals:
                 model.set_param_vals(tmp)
+            elif set_fix:
+                model.set_fixed(tmp)
 
     def set_param_vals(self, vals):
         """Set the parameter values of the contained models to the values in
         vals. This list must be of the same length as the result of get_param_vals
         and must contain the parameter values in the same order."""
 
-        return self._set_param_vals_or_esds(vals, is_esds=False)
+        assert len(vals) == len(self)
+        self._modify_parameters(vals, set_vals=True)
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of parameter values of the
@@ -252,7 +279,28 @@ class PredictionParameterisation(object):
         as the result of get_param_vals and must contain the parameter values in the
         same order."""
 
-        return self._set_param_vals_or_esds(esds, is_esds=True)
+        assert len(esds) == len(self)
+        self._modify_parameters(esds, set_esds=True)
+
+    def fix_params(self, fix):
+        """Fix the parameters according to the boolean values in fix. This list
+        must be of the same length as all parameters (fixed or free) from each
+        contained parameterisation."""
+
+        length = 0
+        for model in self._detector_parameterisations:
+            length += model.num_total()
+        for model in self._beam_parameterisations:
+            length += model.num_total()
+        for model in self._xl_orientation_parameterisations:
+            length += model.num_total()
+        for model in self._xl_unit_cell_parameterisations:
+            length += model.num_total()
+        for model in self._goniometer_parameterisations:
+            length += model.num_total()
+        assert len(fix) == length
+        self._modify_parameters(fix, set_fix=True)
+        self._length = self._len()
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Take a variance-covariance matrix of all free parameters (probably
