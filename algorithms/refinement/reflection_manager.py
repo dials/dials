@@ -7,8 +7,8 @@ import copy
 import logging
 import math
 import random
-from dials.util import tabulate
 
+import dials.util
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -733,7 +733,7 @@ class ReflectionManager(object):
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
 
         logger.info(msg)
-        logger.info(tabulate(rows, header) + "\n")
+        logger.info(dials.util.tabulate(rows, header) + "\n")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -829,4 +829,4 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        logger.info(tabulate(rows, header) + "\n")
+        logger.info(dials.util.tabulate(rows, header) + "\n")

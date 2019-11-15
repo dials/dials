@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
-from dials.util import tabulate
 
+import dials.util
 import scitbx.matrix
 from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
@@ -106,7 +106,7 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        output = tabulate(table_data, headers="firstrow")
+        output = dials.util.tabulate(table_data, headers="firstrow")
         output = output + "\n* = recommended solution\n"
         return output
 

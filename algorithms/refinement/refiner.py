@@ -6,8 +6,9 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import math
-from dials.util import tabulate
 
+import dials.util
+import libtbx
 import psutil
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -15,7 +16,6 @@ from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
-import libtbx
 
 # The include scope directive does not work here. For example:
 #
@@ -767,7 +767,7 @@ class Refiner(object):
                 + ["%.5g" % r for r in rmsds]
             )
 
-        logger.info(tabulate(rows, header))
+        logger.info(dials.util.tabulate(rows, header))
         logger.info(self._refinery.history.reason_for_termination)
 
         return
@@ -806,7 +806,7 @@ class Refiner(object):
             ]
             rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
-        logger.info(tabulate(rows, header))
+        logger.info(dials.util.tabulate(rows, header))
 
         return
 
@@ -869,7 +869,7 @@ class Refiner(object):
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
-            logger.info(tabulate(rows, header))
+            logger.info(dials.util.tabulate(rows, header))
 
         return
 
@@ -933,7 +933,7 @@ class Refiner(object):
                 rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
             if len(rows) > 0:
-                logger.info(tabulate(rows, header))
+                logger.info(dials.util.tabulate(rows, header))
 
         return
 

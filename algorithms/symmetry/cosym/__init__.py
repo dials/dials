@@ -12,8 +12,8 @@ import json
 import logging
 import math
 from collections import OrderedDict
-from dials.util import tabulate
 
+import dials.util
 import iotbx.phil
 from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -696,10 +696,10 @@ class SymmetryAnalysis(object):
         output = []
         output.append("Scoring individual symmetry elements")
         d = self.as_dict()
-        output.append(tabulate(self.sym_ops_table(d), headers="firstrow"))
+        output.append(dials.util.tabulate(self.sym_ops_table(d), headers="firstrow"))
 
         output.append("Scoring all possible sub-groups")
-        output.append(tabulate(self.subgroups_table(d), headers="firstrow"))
+        output.append(dials.util.tabulate(self.subgroups_table(d), headers="firstrow"))
 
         output.append(
             "Best solution: %s"
