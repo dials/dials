@@ -253,9 +253,17 @@ class AutoReduce(object):
                             msg.format(-1 * surplus, i + 1, igp + 1)
                             + "\nAttempting reduction of non-essential parameters"
                         )
-                        names = cls._filter_parameter_names(dp)
+                        from dials.algorithms.refinement.parameterisation.configure import (
+                            _filter_parameter_names,
+                        )
+
+                        names = _filter_parameter_names(dp)
                         prefix = "Group{}".format(igp + 1)
                         reduce_this_group = [prefix + e for e in reduce_list]
+                        from dials.algorithms.refinement.refinement_helpers import (
+                            string_sel,
+                        )
+
                         to_fix |= flex.bool(string_sel(reduce_this_group, names))
                         # try again, and fail if still unsuccessful
                         surplus = self._panel_gp_surplus_reflections(dp, gp, igp)
@@ -488,6 +496,147 @@ class AutoReduce(object):
         # model, so revert to the original function
         if self._scan_varying:
             self._unit_cell_surplus_reflections = self._surplus_reflections
+
+        # As a special case for detector metrology, try reducing the number of
+        # detector parameters if there are too few for some panel group. If this is
+        # unsuccessful, fail outright.
+        if self._options.detector_reduce:
+            self.detector_reduce()
+
+        if self._options.action == "fail":
+            self.check_and_fail()
+
+        elif self._options.action == "fix":
+            self.check_and_fix()
+
+        elif self._options.action == "remove":
+            self.check_and_remove()
+
+
+class AutoReduce2(object):
+    """Checks for over-parameterisation of models and acts in that case.
+
+    Tests each model parameterisation to ensure there are enough
+    reflections in refinement to support that parameterisation. If there are
+    not then some action is taken. More details are given in documentation
+    within the phil_str alongside this class definition.
+
+    Attributes:
+        det_params (list): A list of DetectorParameterisation objects
+        beam_params (list): A list of BeamParameterisation objects
+        xl_ori_params (list): A list of CrystalOrientationParameterisation objects
+        xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+        gon_params (list): A list of GoniometerParameterisation objects
+        reflections: A reflection table
+    """
+
+    def __init__(self, options, pred_param, reflection_manager, constraints_manager):
+        """Initialise the AutoReduce object
+
+        Args:
+            options: A PHIL scope containing the auto reduction options
+            det_params (list): A list of DetectorParameterisation objects
+            beam_params (list): A list of BeamParameterisation objects
+            xl_ori_params (list): A list of CrystalOrientationParameterisation
+                objects
+            xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
+            gon_params (list): A list of GoniometerParameterisation objects
+            reflection_manager: The ReflectionManager object handling reflection
+                data for refinement
+        """
+
+        self.pred_param = pred_param
+        self._options = options
+
+        # A template logging message to fill in when failing
+        self._failmsg = (
+            "Too few reflections to parameterise {0}\nTry modifying "
+            "refinement.parameterisation.auto_reduction options"
+        )
+
+        # Calculate the number of reflections for each parameter, taking
+        # constraints into account
+        obs = reflection_manager.get_obs()
+        try:
+            pred_param.compose(obs)
+        except AttributeError:
+            pass
+
+        def count_non_zero_elts(result):
+            vals = [v for v in result.values()]
+            try:
+                vals = [v.as_dense_vector() for v in vals]
+            except AttributeError:
+                pass
+            val = vals[0]
+            for v in vals[1:]:
+                val.extend(v)
+
+            val = flex.abs(val)
+            return (val > 1e-10).count(True)
+
+        nref_per_param = flex.size_t(
+            pred_param.get_gradients(obs, callback=count_non_zero_elts)
+        )
+
+        if constraints_manager is not None:
+            for link in constraints_manager.get_constrained_parameter_indices():
+                sel = flex.size_t(link)
+                total = flex.sum(nref_per_param.select(sel))
+                nref_per_param.set_selected(sel, total)
+        self.nref_per_param = nref_per_param
+
+    def check_and_fail(self):
+        """Check for too few reflections to support the model parameterisation.
+
+        Test each parameterisation of each type against the reflections it affects.
+
+        Returns:
+            None
+
+        Raises:
+            DialsRefineConfigError: If there are too few reflections to support
+            a parameterisation.
+        """
+
+        pass
+
+    def check_and_fix(self):
+        """Fix parameters when there are too few reflections.
+
+        Test each parameterisation of each type against the reflections it affects.
+        If there are too few reflections to support that parameterisation, fix the
+        parameters.
+
+        Returns:
+            None
+        """
+
+        pass
+
+    def check_and_remove(self):
+        """Fix parameters and remove reflections when there are too few reflections.
+
+        Test each parameterisation of each type against the reflections it affects.
+        If there are too few reflections to support that parameterisation, fix the
+        parameters and remove those reflections so that they will not be included
+        in refinement.
+
+        Returns:
+            None
+
+        Raises:
+            DialsRefineConfigError: error if only one single panel detector is present.
+        """
+
+        pass
+
+    def __call__(self):
+        """Perform checks and parameter reduction according to the selected option.
+
+        Returns:
+            None
+        """
 
         # As a special case for detector metrology, try reducing the number of
         # detector parameters if there are too few for some panel group. If this is
