@@ -329,8 +329,12 @@ class RefinerFactory(object):
             pred_param,
             refman,
             constraints_manager,
+            cmf,
         )
         autoreduce()
+
+        # if reduction was done, constraints_manager will have changed
+        constraints_manager = autoreduce.constraints_manager
 
         # Build a restraints parameterisation (if requested).
         # Only unit cell restraints are supported at the moment.
