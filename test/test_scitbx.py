@@ -1,10 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-import pytest
 from scitbx.array_family import flex
 
 
-@pytest.mark.xfail(reason="https://github.com/dials/dials/issues/1001")
 def test_complex_double_none_comparison():
     """For unknown reasons this can return a flex.bool() object on some builds."""
     assert (flex.complex_double() == None) is False  # noqa:E711
