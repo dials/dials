@@ -75,6 +75,9 @@ class ConstraintManager(object):
         self._unconstrained_idx = full_idx.select(keep)
         self._n_unconstrained_params = len(self._unconstrained_idx)
 
+    def get_constrained_parameter_indices(self):
+        return [c.indices for c in self._constraints]
+
     def constrain_parameters(self, x):
 
         assert len(x) == self._n_full_params
