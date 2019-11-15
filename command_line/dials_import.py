@@ -528,16 +528,34 @@ class MetaDataUpdater(object):
 
             # Append to new imageset list
             if isinstance(imageset, ImageSequence):
-                experiments.append(
-                    Experiment(
-                        imageset=imageset,
-                        beam=imageset.get_beam(),
-                        detector=imageset.get_detector(),
-                        goniometer=imageset.get_goniometer(),
-                        scan=imageset.get_scan(),
-                        crystal=None,
+                if imageset.get_scan().is_still():
+                    # make lots of experiments all pointing at one
+                    # image set
+                    start, end = imageset.get_scan().get_array_range()
+                    for j in range(start, end):
+                        subset = imageset[j : j + 1]
+                        experiments.append(
+                            Experiment(
+                                imageset=subset,
+                                beam=imageset.get_beam(),
+                                detector=imageset.get_detector(),
+                                goniometer=imageset.get_goniometer(),
+                                scan=subset.get_scan(),
+                                crystal=None,
+                            )
+                        )
+                else:
+                    # have just one experiment
+                    experiments.append(
+                        Experiment(
+                            imageset=imageset,
+                            beam=imageset.get_beam(),
+                            detector=imageset.get_detector(),
+                            goniometer=imageset.get_goniometer(),
+                            scan=imageset.get_scan(),
+                            crystal=None,
+                        )
                     )
-                )
             else:
                 for i in range(len(imageset)):
                     experiments.append(
