@@ -322,9 +322,9 @@ class RefinerFactory(object):
         constraints_manager = cmf()
 
         # Test for parameters that have too little data to refine and act accordingly
-        from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce2
+        from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
 
-        autoreduce = AutoReduce2(
+        autoreduce = AutoReduce(
             params.refinement.parameterisation.auto_reduction,
             pred_param,
             refman,
