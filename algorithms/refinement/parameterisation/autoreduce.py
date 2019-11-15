@@ -513,6 +513,29 @@ class AutoReduce(object):
             self.check_and_remove()
 
 
+# A callback for PredictionParameterisation.get_gradients which will give
+# the positions of reflections associated with a particular parameter
+def id_associated_refs(result):
+    vals = [v for v in result.values()]
+    try:
+        vals = [v.as_dense_vector() for v in vals]
+    except AttributeError:
+        pass
+    val = vals[0]
+    for v in vals[1:]:
+        val.extend(v)
+
+    val = flex.abs(val)
+    return val > 1e-10
+
+
+# A callback for PredictionParameterisation.get_gradients which will count
+# the number of reflections associated with a particular parameter
+def count_associated_refs(result):
+    refs = id_associated_refs(result)
+    return refs.count(True)
+
+
 class AutoReduce2(object):
     """Checks for over-parameterisation of models and acts in that case.
 
@@ -530,7 +553,14 @@ class AutoReduce2(object):
         reflections: A reflection table
     """
 
-    def __init__(self, options, pred_param, reflection_manager, constraints_manager):
+    def __init__(
+        self,
+        options,
+        pred_param,
+        reflection_manager,
+        constraints_manager,
+        constraints_manager_factory,
+    ):
         """Initialise the AutoReduce object
 
         Args:
@@ -545,46 +575,33 @@ class AutoReduce2(object):
                 data for refinement
         """
 
-        self.pred_param = pred_param
         self._options = options
+        self.pred_param = pred_param
+        self.param_names = self.pred_param.get_param_names()
+        self.reflection_manager = reflection_manager
+        self.constraints_manager = constraints_manager
+        self.constraints_manager_factory = constraints_manager_factory
 
-        # A template logging message to fill in when failing
-        self._failmsg = (
-            "Too few reflections to parameterise {0}\nTry modifying "
-            "refinement.parameterisation.auto_reduction options"
-        )
-
+    def _nref_per_param(self):
         # Calculate the number of reflections for each parameter, taking
         # constraints into account
-        obs = reflection_manager.get_obs()
+        obs = self.reflection_manager.get_obs()
         try:
-            pred_param.compose(obs)
+            self.pred_param.compose(obs)
         except AttributeError:
             pass
 
-        def count_non_zero_elts(result):
-            vals = [v for v in result.values()]
-            try:
-                vals = [v.as_dense_vector() for v in vals]
-            except AttributeError:
-                pass
-            val = vals[0]
-            for v in vals[1:]:
-                val.extend(v)
-
-            val = flex.abs(val)
-            return (val > 1e-10).count(True)
-
         nref_per_param = flex.size_t(
-            pred_param.get_gradients(obs, callback=count_non_zero_elts)
+            self.pred_param.get_gradients(obs, callback=count_associated_refs)
         )
 
-        if constraints_manager is not None:
-            for link in constraints_manager.get_constrained_parameter_indices():
+        if self.constraints_manager is not None:
+            for link in self.constraints_manager.get_constrained_parameter_indices():
                 sel = flex.size_t(link)
                 total = flex.sum(nref_per_param.select(sel))
                 nref_per_param.set_selected(sel, total)
-        self.nref_per_param = nref_per_param
+
+        return nref_per_param
 
     def check_and_fail(self):
         """Check for too few reflections to support the model parameterisation.
@@ -599,7 +616,14 @@ class AutoReduce2(object):
             a parameterisation.
         """
 
-        pass
+        sel = (
+            self._nref_per_param() < self._options.min_nref_per_parameter
+        ).iselection()
+        if len(sel) > 0:
+            names = ", ".join([self.param_names[i] for i in sel])
+            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg += "Try modifying refinement.parameterisation.auto_reduction options"
+            raise DialsRefineConfigError(msg)
 
     def check_and_fix(self):
         """Fix parameters when there are too few reflections.
@@ -612,7 +636,15 @@ class AutoReduce2(object):
             None
         """
 
-        pass
+        sel = self._nref_per_param() < self._options.min_nref_per_parameter
+        isel = sel.iselection()
+        if len(isel) > 0:
+            names = ", ".join([self.param_names[i] for i in isel])
+            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg += "These parameters will be fixed for refinement."
+            logger.warning(msg)
+        self.pred_param.fix_params(sel)
+        self.constraints_manager = self.constraints_manager_factory()
 
     def check_and_remove(self):
         """Fix parameters and remove reflections when there are too few reflections.
@@ -629,7 +661,60 @@ class AutoReduce2(object):
             DialsRefineConfigError: error if only one single panel detector is present.
         """
 
-        pass
+        # If there is only one detector in a single experiment, the detector should
+        # be multi-panel for remove to make sense
+        det_params = self.pred_param.get_detector_parameterisations()
+        if len(det_params) == 1:
+            n_exp = len(det_params[0].get_experiment_ids())
+            if n_exp == 1 and not det_params[0].is_multi_state():
+                raise DialsRefineConfigError(
+                    "For single experiment, single panel refinement "
+                    "auto_reduction.action=remove cannot be used as it could only "
+                    "remove all reflections from refinement"
+                )
+
+        while True:
+
+            obs = self.reflection_manager.get_obs()
+            try:
+                self.pred_param.compose(obs)
+            except AttributeError:
+                pass
+
+            refs_by_parameterisation = self.pred_param.get_gradients(
+                obs, callback=id_associated_refs
+            )
+            nref_per_param = flex.size_t(
+                [refs.count(True) for refs in refs_by_parameterisation]
+            )
+
+            if self.constraints_manager is not None:
+                for (
+                    link
+                ) in self.constraints_manager.get_constrained_parameter_indices():
+                    sel = flex.size_t(link)
+                    total = flex.sum(nref_per_param.select(sel))
+                    nref_per_param.set_selected(sel, total)
+
+            sel = nref_per_param < self._options.min_nref_per_parameter
+            if sel.count(True) == 0:
+                break
+
+            names = ", ".join([self.param_names[i] for i in sel.iselection()])
+            msg = "Too few reflections to parameterise {0}.\n".format(names)
+            msg += (
+                "These parameters will be fixed for refinement and "
+                "the associated reflections will be removed."
+            )
+            logger.warning(msg)
+
+            self.pred_param.fix_params(sel)
+            self.constraints_manager = self.constraints_manager_factory()
+
+            for remove, refs in zip(sel, refs_by_parameterisation):
+                if remove:
+                    # only keep refs not associated with this parameterisation
+                    self.reflection_manager.filter_obs(~refs)
 
     def __call__(self):
         """Perform checks and parameter reduction according to the selected option.
@@ -637,12 +722,6 @@ class AutoReduce2(object):
         Returns:
             None
         """
-
-        # As a special case for detector metrology, try reducing the number of
-        # detector parameters if there are too few for some panel group. If this is
-        # unsuccessful, fail outright.
-        if self._options.detector_reduce:
-            self.detector_reduce()
 
         if self._options.action == "fail":
             self.check_and_fail()
