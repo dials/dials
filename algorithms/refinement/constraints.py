@@ -186,10 +186,6 @@ class ConstraintManagerFactory(object):
         self._params = refinement_phil
         self._pred_param = pred_param
 
-        # full parameter names and values
-        self._all_names = self._pred_param.get_param_names()
-        self._all_vals = self._pred_param.get_param_vals()
-
         return
 
     def build_constraint(self, constraint_scope, parameterisation, model_type):
@@ -264,6 +260,10 @@ class ConstraintManagerFactory(object):
         beam_c = options.beam.constraints
         orientation_c = options.crystal.orientation.constraints
         cell_c = options.crystal.unit_cell.constraints
+
+        # full parameter names and values
+        self._all_names = self._pred_param.get_param_names()
+        self._all_vals = self._pred_param.get_param_vals()
 
         # quit early if there are no constraints to apply
         n_constraints = sum(len(e) for e in [detector_c, beam_c, orientation_c, cell_c])
