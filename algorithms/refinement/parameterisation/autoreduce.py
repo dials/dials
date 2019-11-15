@@ -263,10 +263,13 @@ class AutoReduce(object):
             if self.constraints_manager is not None:
                 self.constraints_manager = self.constraints_manager_factory()
 
+            refs_to_filter = flex.bool(len(obs), True)
             for remove, refs in zip(sel, refs_by_parameterisation):
                 if remove:
+                    refs_to_filter = refs_to_filter & ~refs
+
                     # only keep refs not associated with this parameterisation
-                    self.reflection_manager.filter_obs(~refs)
+            self.reflection_manager.filter_obs(refs_to_filter)
 
     def __call__(self):
         """Perform checks and parameter reduction according to the selected option.
