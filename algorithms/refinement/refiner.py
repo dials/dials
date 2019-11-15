@@ -307,18 +307,12 @@ class RefinerFactory(object):
 
         # Create model parameterisations
         logger.debug("Building prediction equation parameterisation")
-        pred_param, param_reporter = cls.config_parameterisation(
-            params.refinement.parameterisation, experiments, refman, do_stills
+        from dials.algorithms.refinement.parameterisation import (
+            build_prediction_parameterisation,
         )
-        logger.debug("Prediction equation parameterisation built")
-        logger.debug("Parameter order : name mapping")
-        for i, e in enumerate(pred_param.get_param_names()):
-            logger.debug("Parameter %03d : %s", i + 1, e)
 
-        # Build a restraints parameterisation (if requested).
-        # Only unit cell restraints are supported at the moment.
-        restraints_parameterisation = cls.config_restraints(
-            params.refinement.parameterisation, pred_param
+        pred_param = build_prediction_parameterisation(
+            params.refinement.parameterisation, experiments, refman, do_stills
         )
 
         # Build a constraints manager, if requested
@@ -326,6 +320,41 @@ class RefinerFactory(object):
 
         cmf = ConstraintManagerFactory(params, pred_param)
         constraints_manager = cmf()
+
+        # Test for parameters that have too little data to refine and act accordingly
+        from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce2
+
+        autoreduce = AutoReduce2(
+            params.refinement.parameterisation.auto_reduction,
+            pred_param,
+            refman,
+            constraints_manager,
+        )
+        autoreduce()
+
+        # Build a restraints parameterisation (if requested).
+        # Only unit cell restraints are supported at the moment.
+        restraints_parameterisation = cls.config_restraints(
+            params.refinement.parameterisation, pred_param
+        )
+
+        # Parameter reporting
+        from dials.algorithms.refinement.parameterisation.parameter_report import (
+            ParameterReporter,
+        )
+
+        logger.debug("Prediction equation parameterisation built")
+        logger.debug("Parameter order : name mapping")
+        for i, e in enumerate(pred_param.get_param_names()):
+            logger.debug("Parameter %03d : %s", i + 1, e)
+
+        param_reporter = ParameterReporter(
+            pred_param.get_detector_parameterisations(),
+            pred_param.get_beam_parameterisations(),
+            pred_param.get_crystal_orientation_parameterisations(),
+            pred_param.get_crystal_unit_cell_parameterisations(),
+            pred_param.get_goniometer_parameterisations(),
+        )
 
         # Create target function
         logger.debug("Building target function")
@@ -412,31 +441,6 @@ class RefinerFactory(object):
             logger.warning("Resetting sparse=False")
             params.refinement.parameterisation.sparse = False
         return params
-
-    @staticmethod
-    def config_parameterisation(params, experiments, refman, do_stills=False):
-        from dials.algorithms.refinement.parameterisation import (
-            build_prediction_parameterisation,
-        )
-
-        pred_param = build_prediction_parameterisation(
-            params, experiments, refman, do_stills
-        )
-
-        # Parameter reporting
-        from dials.algorithms.refinement.parameterisation.parameter_report import (
-            ParameterReporter,
-        )
-
-        param_reporter = ParameterReporter(
-            pred_param.get_detector_parameterisations(),
-            pred_param.get_beam_parameterisations(),
-            pred_param.get_crystal_orientation_parameterisations(),
-            pred_param.get_crystal_unit_cell_parameterisations(),
-            pred_param.get_goniometer_parameterisations(),
-        )
-
-        return pred_param, param_reporter
 
     @staticmethod
     def config_restraints(params, pred_param):
