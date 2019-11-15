@@ -71,32 +71,19 @@ class PredictionParameterisation(object):
         # References to the underlying models
         self._experiments = experiments
 
-        self.update(
-            detector_parameterisations,
-            beam_parameterisations,
-            xl_orientation_parameterisations,
-            xl_unit_cell_parameterisations,
-            goniometer_parameterisations,
-        )
-
-    def update(
-        self,
-        detector_parameterisations,
-        beam_parameterisations,
-        xl_orientation_parameterisations,
-        xl_unit_cell_parameterisations,
-        goniometer_parameterisations,
-    ):
-        """
-        Update the parameterisations
-        """
-
         # Keep references to all parameterised models
         self._detector_parameterisations = detector_parameterisations
         self._beam_parameterisations = beam_parameterisations
         self._xl_orientation_parameterisations = xl_orientation_parameterisations
         self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
         self._goniometer_parameterisations = goniometer_parameterisations
+
+        self._update()
+
+    def _update(self):
+        """
+        Update the parameterisations
+        """
 
         # Check there are free parameters to refine
         self._length = self._len()
@@ -106,27 +93,27 @@ class PredictionParameterisation(object):
         # Calculate Experiment to parameterisation mapping
         e2bp = {
             ids: i
-            for i, p in enumerate(beam_parameterisations)
+            for i, p in enumerate(self._beam_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2xop = {
             ids: i
-            for i, p in enumerate(xl_orientation_parameterisations)
+            for i, p in enumerate(self._xl_orientation_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2xucp = {
             ids: i
-            for i, p in enumerate(xl_unit_cell_parameterisations)
+            for i, p in enumerate(self._xl_unit_cell_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2dp = {
             ids: i
-            for i, p in enumerate(detector_parameterisations)
+            for i, p in enumerate(self._detector_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2gp = {
             ids: i
-            for i, p in enumerate(goniometer_parameterisations)
+            for i, p in enumerate(self._goniometer_parameterisations)
             for ids in p.get_experiment_ids()
         }
         from collections import namedtuple
@@ -244,6 +231,7 @@ class PredictionParameterisation(object):
 
     def _modify_parameters(self, vals, set_vals=False, set_esds=False, set_fix=False):
         assert [set_vals, set_esds, set_fix].count(True) == 1
+        assert len(vals) == len(self)
         it = iter(vals)
 
         for model in (
@@ -253,24 +241,25 @@ class PredictionParameterisation(object):
             + self._xl_unit_cell_parameterisations
             + self._goniometer_parameterisations
         ):
-            if set_fix:
-                size = model.num_total()
-            else:
-                size = model.num_free()
-            tmp = [next(it) for i in range(size)]
+            tmp = [next(it) for i in range(model.num_free())]
             if set_esds:
                 model.set_param_esds(tmp)
             elif set_vals:
                 model.set_param_vals(tmp)
             elif set_fix:
-                model.set_fixed(tmp)
+                current_fixes = model.get_fixed()
+                free_indices = [i for i, e in enumerate(current_fixes) if not e]
+                assert len(free_indices) == model.num_free()
+                for i, fix in zip(free_indices, tmp):
+                    if fix:
+                        current_fixes[i] = True
+                model.set_fixed(current_fixes)
 
     def set_param_vals(self, vals):
         """Set the parameter values of the contained models to the values in
         vals. This list must be of the same length as the result of get_param_vals
         and must contain the parameter values in the same order."""
 
-        assert len(vals) == len(self)
         self._modify_parameters(vals, set_vals=True)
 
     def set_param_esds(self, esds):
@@ -279,28 +268,15 @@ class PredictionParameterisation(object):
         as the result of get_param_vals and must contain the parameter values in the
         same order."""
 
-        assert len(esds) == len(self)
         self._modify_parameters(esds, set_esds=True)
 
     def fix_params(self, fix):
         """Fix the parameters according to the boolean values in fix. This list
-        must be of the same length as all parameters (fixed or free) from each
-        contained parameterisation."""
+        must be of the same length as the result of get_param_vals and will
+        fix parameters at the positions that are True within the list"""
 
-        length = 0
-        for model in self._detector_parameterisations:
-            length += model.num_total()
-        for model in self._beam_parameterisations:
-            length += model.num_total()
-        for model in self._xl_orientation_parameterisations:
-            length += model.num_total()
-        for model in self._xl_unit_cell_parameterisations:
-            length += model.num_total()
-        for model in self._goniometer_parameterisations:
-            length += model.num_total()
-        assert len(fix) == length
         self._modify_parameters(fix, set_fix=True)
-        self._length = self._len()
+        self._update()
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Take a variance-covariance matrix of all free parameters (probably
