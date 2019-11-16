@@ -12,7 +12,9 @@ from cctbx.sgtbx import bravais_types
 from libtbx.introspection import number_of_processors
 
 from dxtbx.model.experiment_list import ExperimentList
-from dials.algorithms.indexing.symmetry import refined_settings_from_refined_triclinic
+from dials.algorithms.indexing.bravais_settings import (
+    refined_settings_from_refined_triclinic,
+)
 from dials.array_family import flex
 from dials.util import log
 from dials.util import Sorry
