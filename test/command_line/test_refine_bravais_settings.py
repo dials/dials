@@ -9,7 +9,7 @@ from cctbx import uctbx
 from dxtbx.serialize import load
 
 
-def test_refine_bravais_settings(dials_regression, tmpdir):
+def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -57,7 +57,7 @@ def test_refine_bravais_settings(dials_regression, tmpdir):
     assert bravais_summary["9"]["rmsd"] == pytest.approx(0.047, abs=1e-2)
 
 
-def test_refine_bravais_settings_2(dials_regression, tmpdir):
+def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -94,7 +94,7 @@ def test_refine_bravais_settings_2(dials_regression, tmpdir):
     assert bravais_summary["9"]["recommended"] is True
 
 
-def test_refine_bravais_settings_3(dials_regression, tmpdir):
+def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
