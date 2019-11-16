@@ -83,9 +83,7 @@ class PredictionParameterisation(object):
         self._update()
 
     def _update(self):
-        """
-        Update the parameterisations
-        """
+        """Update information derived from the parameterisations"""
 
         # Check there are free parameters to refine
         self._length = self._len()

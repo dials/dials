@@ -72,14 +72,6 @@ class AutoReduce(object):
     reflections in refinement to support that parameterisation. If there are
     not then some action is taken. More details are given in documentation
     within the phil_str alongside this class definition.
-
-    Attributes:
-        det_params (list): A list of DetectorParameterisation objects
-        beam_params (list): A list of BeamParameterisation objects
-        xl_ori_params (list): A list of CrystalOrientationParameterisation objects
-        xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
-        gon_params (list): A list of GoniometerParameterisation objects
-        reflections: A reflection table
     """
 
     def __init__(
@@ -94,14 +86,16 @@ class AutoReduce(object):
 
         Args:
             options: A PHIL scope containing the auto reduction options
-            det_params (list): A list of DetectorParameterisation objects
-            beam_params (list): A list of BeamParameterisation objects
-            xl_ori_params (list): A list of CrystalOrientationParameterisation
-                objects
-            xl_uc_params (list): A list of CrystalUnitCellParameterisation objects
-            gon_params (list): A list of GoniometerParameterisation objects
-            reflection_manager: The ReflectionManager object handling reflection
-                data for refinement
+            pred_param: A PredictionParameterisation object containing the
+                global model parameterisation
+            reflection_manager: A ReflectionManager object tracking the observations
+                for use in refinement
+            constraints_manager: An optional ConstraintsManager object to allow correct
+                determination of the number of reflections per parameter when constraints
+                are present
+            constraints_manager_factory: An optional ConstraintsManagerFactory, required
+                if constraints_manager is present, to recreate the constraints_manager
+                if parameters have been fixed
         """
 
         self._options = options
@@ -157,9 +151,8 @@ class AutoReduce(object):
     def check_and_fix(self):
         """Fix parameters when there are too few reflections.
 
-        Test each parameterisation of each type against the reflections it affects.
-        If there are too few reflections to support that parameterisation, fix the
-        parameters.
+        Test each parameter against the reflections it affects and fix any for
+        which there are too few reflections.
 
         Returns:
             None
@@ -179,10 +172,10 @@ class AutoReduce(object):
     def check_and_remove(self):
         """Fix parameters and remove reflections when there are too few reflections.
 
-        Test each parameterisation of each type against the reflections it affects.
-        If there are too few reflections to support that parameterisation, fix the
-        parameters and remove those reflections so that they will not be included
-        in refinement.
+        Test each parameter against the reflections it affects and fix any for
+        which there are too few reflections. In addition, remove all reflections
+        that are associated with that parameter to ensure they play no part in
+        refinement. This process is iterative.
 
         Returns:
             None
@@ -204,18 +197,17 @@ class AutoReduce(object):
                 )
 
         while True:
-
             obs = self.reflection_manager.get_obs()
             try:
                 self.pred_param.compose(obs)
             except AttributeError:
                 pass
 
-            refs_by_parameterisation = self.pred_param.get_gradients(
+            refs_by_parameters = self.pred_param.get_gradients(
                 obs, callback=id_associated_refs
             )
             nref_per_param = flex.size_t(
-                [refs.count(True) for refs in refs_by_parameterisation]
+                [refs.count(True) for refs in refs_by_parameters]
             )
 
             if self.constraints_manager is not None:
@@ -244,11 +236,11 @@ class AutoReduce(object):
                 self.constraints_manager = self.constraints_manager_factory()
 
             refs_to_filter = flex.bool(len(obs), True)
-            for remove, refs in zip(sel, refs_by_parameterisation):
+            for remove, refs in zip(sel, refs_by_parameters):
                 if remove:
                     refs_to_filter = refs_to_filter & ~refs
 
-                    # only keep refs not associated with this parameterisation
+            # only keep refs not associated with this parameterisation
             self.reflection_manager.filter_obs(refs_to_filter)
 
     def __call__(self):
