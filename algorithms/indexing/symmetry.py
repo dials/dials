@@ -1,24 +1,30 @@
 from __future__ import absolute_import, division, print_function
 
+import concurrent.futures
 import copy
 import logging
 import math
 
-import dials.util
+from six.moves import StringIO
+
 import scitbx.matrix
-from cctbx import crystal, sgtbx
+from cctbx import crystal, miller, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx import bravais_types, change_of_basis_op, subgroups
-from cctbx.sgtbx import lattice_symmetry
+from cctbx.sgtbx import bravais_types, change_of_basis_op, lattice_symmetry, subgroups
 from cctbx.sgtbx.bravais_types import bravais_lattice
-from dials.algorithms.indexing import DialsIndexError
-from dials.util.log import LoggingContext
-from dxtbx.model import Crystal
-from libtbx import easy_mp
 from rstbx.dps_core.lepage import iotbx_converter
 from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
-from six.moves import StringIO
+
+from dxtbx.model import Crystal
+
+import dials.util
+from dials.algorithms.indexing import DialsIndexError
+from dials.algorithms.indexing.refinement import refine
+from dials.command_line.check_indexing_symmetry import (
+    get_symop_correlation_coefficients,
+)
+from dials.util.log import LoggingContext
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +74,7 @@ class RefinedSettingsList(list):
 
         return result
 
-    def labelit_printout(self):
+    def as_str(self):
         table_data = [
             [
                 "Solution",
@@ -130,7 +136,7 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 }
 
 
-def refined_settings_factory_from_refined_triclinic(
+def refined_settings_from_refined_triclinic(
     params, experiments, reflections, i_setting=None, lepage_max_delta=5.0, nproc=1
 ):
 
@@ -140,26 +146,26 @@ def refined_settings_factory_from_refined_triclinic(
     used_reflections = copy.deepcopy(reflections)
     UC = crystal.get_unit_cell()
 
-    Lfat = RefinedSettingsList()
+    refined_settings = RefinedSettingsList()
     for item in iotbx_converter(UC, lepage_max_delta):
-        Lfat.append(BravaisSetting(item))
+        refined_settings.append(BravaisSetting(item))
 
-    triclinic = Lfat.triclinic()
+    triclinic = refined_settings.triclinic()
 
     # assert no transformation between indexing and bravais list
     assert str(triclinic["cb_op_inp_best"]) == "a,b,c"
 
-    Nset = len(Lfat)
+    Nset = len(refined_settings)
     for j in range(Nset):
-        Lfat[j].setting_number = Nset - j
+        refined_settings[j].setting_number = Nset - j
 
     for j in range(Nset):
-        cb_op = Lfat[j]["cb_op_inp_best"].c().as_double_array()[0:9]
+        cb_op = refined_settings[j]["cb_op_inp_best"].c().as_double_array()[0:9]
         orient = crystal_orientation(crystal.get_A(), True)
         orient_best = orient.change_basis(scitbx.matrix.sqr(cb_op).transpose())
-        constrain_orient = orient_best.constrain(Lfat[j]["system"])
-        bravais = Lfat[j]["bravais"]
-        cb_op_best_ref = Lfat[j][
+        constrain_orient = orient_best.constrain(refined_settings[j]["system"])
+        bravais = refined_settings[j]["bravais"]
+        cb_op_best_ref = refined_settings[j][
             "best_subsym"
         ].change_of_basis_op_to_reference_setting()
         space_group = sgtbx.space_group_info(
@@ -167,29 +173,25 @@ def refined_settings_factory_from_refined_triclinic(
         ).group()
         space_group = space_group.change_basis(cb_op_best_ref.inverse())
         bravais = str(bravais_types.bravais_lattice(group=space_group))
-        Lfat[j]["bravais"] = bravais
-        Lfat[j].unrefined_crystal = dials_crystal_from_orientation(
+        refined_settings[j]["bravais"] = bravais
+        refined_settings[j].unrefined_crystal = dials_crystal_from_orientation(
             constrain_orient, space_group
         )
 
-    args = []
-    for subgroup in Lfat:
-        args.append((params, subgroup, used_reflections, experiments))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+        for i, result in enumerate(
+            pool.map(
+                refine_subgroup,
+                (
+                    (params, subgroup, used_reflections, experiments)
+                    for subgroup in refined_settings
+                ),
+            )
+        ):
+            refined_settings[i] = result
 
-    results = easy_mp.parallel_map(
-        func=refine_subgroup,
-        iterable=args,
-        processes=nproc,
-        method="multiprocessing",
-        preserve_order=True,
-        asynchronous=True,
-        preserve_exception_message=True,
-    )
-
-    for i, result in enumerate(results):
-        Lfat[i] = result
-    identify_likely_solutions(Lfat)
-    return Lfat
+    identify_likely_solutions(refined_settings)
+    return refined_settings
 
 
 def identify_likely_solutions(all_solutions):
@@ -215,11 +217,6 @@ def identify_likely_solutions(all_solutions):
 
 def refine_subgroup(args):
     assert len(args) == 4
-    from dials.command_line.check_indexing_symmetry import (
-        get_symop_correlation_coefficients,
-        normalise_intensities,
-    )
-
     params, subgroup, used_reflections, experiments = args
 
     used_reflections = copy.deepcopy(used_reflections)
@@ -230,8 +227,6 @@ def refine_subgroup(args):
     unrefined_crystal = copy.deepcopy(subgroup.unrefined_crystal)
     for expt in experiments:
         expt.crystal = unrefined_crystal
-
-    from dials.algorithms.indexing.refinement import refine
 
     subgroup.max_cc = None
     subgroup.min_cc = None
@@ -289,18 +284,12 @@ def refine_subgroup(args):
                 # remove refl with -ve variance
                 sel = used_reflections["intensity.sum.variance"] > 0
                 good_reflections = used_reflections.select(sel)
-                from cctbx import miller
 
                 ms = miller.set(cs, good_reflections["miller_index"])
                 ms = ms.array(
                     good_reflections["intensity.sum.value"]
                     / flex.sqrt(good_reflections["intensity.sum.variance"])
                 )
-                if params.normalise:
-                    if params.normalise_bins:
-                        ms = normalise_intensities(ms, n_bins=params.normalise_bins)
-                    else:
-                        ms = normalise_intensities(ms)
                 if params.cc_n_bins is not None:
                     ms.setup_binner(n_bins=params.cc_n_bins)
                 ccs, nrefs = get_symop_correlation_coefficients(

@@ -7,11 +7,20 @@ import os
 
 import iotbx.phil
 import libtbx
+from cctbx import sgtbx
+from cctbx.sgtbx import bravais_types
+from libtbx.introspection import number_of_processors
+
+from dxtbx.model.experiment_list import ExperimentList
+from dials.algorithms.indexing.symmetry import refined_settings_from_refined_triclinic
 from dials.array_family import flex
+from dials.util import log
 from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
+
 
 logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 help_message = """
@@ -50,12 +59,6 @@ nproc = Auto
   .type = int(value_min=1)
 crystal_id = None
   .type = int(value_min=0)
-normalise = False
-  .type = bool
-  .help = "Normalise intensities before calculating correlation coefficients."
-normalise_bins = 0
-  .type = int
-  .help = "Number of resolution bins for normalisation"
 cc_n_bins = None
   .type = int(value_min=1)
   .help = "Number of resolution bins to use for calculation of correlation coefficients"
@@ -88,9 +91,6 @@ refinement {
 
 
 def bravais_lattice_to_space_groups(chiral_only=True):
-    from cctbx import sgtbx
-    from cctbx.sgtbx import bravais_types
-
     bravais_lattice_to_sg = collections.OrderedDict()
     for sgn in range(230):
         sg = sgtbx.space_group_info(number=sgn + 1).group()
@@ -126,8 +126,6 @@ def short_space_group_name(space_group):
 
 
 def run(args=None):
-    from dials.util import log
-
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
@@ -144,8 +142,6 @@ def run(args=None):
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
 
-    from dials.util.version import dials_version
-
     logger.info(dials_version())
 
     # Log the diff phil
@@ -160,6 +156,9 @@ def run(args=None):
         parser.print_help()
         return
 
+    if params.nproc is libtbx.Auto:
+        params.nproc = number_of_processors()
+
     assert len(reflections) == 1
     reflections = reflections[0]
 
@@ -172,7 +171,6 @@ def run(args=None):
             experiment_ids = experiments.where(
                 crystal=experiments.crystals()[params.crystal_id]
             )
-            from dxtbx.model.experiment_list import ExperimentList
 
             experiments = ExperimentList([experiments[i] for i in experiment_ids])
             refl_selections = [reflections["id"] == i for i in experiment_ids]
@@ -192,10 +190,6 @@ def run(args=None):
             # different default to dials.refine
             # tukey is faster and more appropriate at the indexing step
             params.refinement.reflections.outlier.algorithm = "tukey"
-
-    from dials.algorithms.indexing.symmetry import (
-        refined_settings_factory_from_refined_triclinic,
-    )
 
     cb_op_to_primitive = (
         experiments[0]
@@ -218,16 +212,16 @@ def run(args=None):
     miller_indices = cb_op_to_primitive.apply(miller_indices)
     reflections["miller_index"] = miller_indices
 
-    Lfat = refined_settings_factory_from_refined_triclinic(
+    refined_settings = refined_settings_from_refined_triclinic(
         params,
         experiments,
         reflections,
         lepage_max_delta=params.lepage_max_delta,
         nproc=params.nproc,
     )
-    possible_bravais_settings = {solution["bravais"] for solution in Lfat}
+    possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
-    logger.info(Lfat.labelit_printout())
+    logger.info(refined_settings.as_str())
 
     prefix = params.output.prefix
     if prefix is None:
@@ -235,9 +229,9 @@ def run(args=None):
     summary_file = "%sbravais_summary.json" % prefix
     logger.info("Saving summary as %s" % summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
-        json.dump(Lfat.as_dict(), fh)
+        json.dump(refined_settings.as_dict(), fh)
 
-    for subgroup in Lfat:
+    for subgroup in refined_settings:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
@@ -246,7 +240,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    from libtbx.utils import show_times_at_exit
-
-    show_times_at_exit()
     run()
