@@ -5,11 +5,10 @@ import json
 import logging
 import os
 
-import iotbx.phil
 import libtbx
+import libtbx.phil
 from cctbx import sgtbx
 from cctbx.sgtbx import bravais_types
-from libtbx.introspection import number_of_processors
 
 from dxtbx.model.experiment_list import ExperimentList
 from dials.algorithms.indexing.bravais_settings import (
@@ -53,17 +52,10 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
-phil_scope = iotbx.phil.parse(
+phil_scope = libtbx.phil.parse(
     """
-lepage_max_delta = 5
-  .type = float
-nproc = Auto
-  .type = int(value_min=1)
-crystal_id = None
-  .type = int(value_min=0)
-cc_n_bins = None
-  .type = int(value_min=1)
-  .help = "Number of resolution bins to use for calculation of correlation coefficients"
+include scope dials.algorithms.indexing.bravais_settings.phil_scope
+
 output {
   directory = "."
     .type = path
@@ -73,22 +65,8 @@ output {
     .type = str
 }
 
-include scope dials.algorithms.refinement.refiner.phil_scope
 """,
     process_includes=True,
-)
-
-# override default refinement parameters
-phil_scope = phil_scope.fetch(
-    source=iotbx.phil.parse(
-        """\
-refinement {
-  reflections {
-    reflections_per_degree=100
-  }
-}
-"""
-    )
 )
 
 
@@ -158,9 +136,6 @@ def run(args=None):
         parser.print_help()
         return
 
-    if params.nproc is libtbx.Auto:
-        params.nproc = number_of_processors()
-
     assert len(reflections) == 1
     reflections = reflections[0]
 
@@ -215,11 +190,7 @@ def run(args=None):
     reflections["miller_index"] = miller_indices
 
     refined_settings = refined_settings_from_refined_triclinic(
-        params,
-        experiments,
-        reflections,
-        lepage_max_delta=params.lepage_max_delta,
-        nproc=params.nproc,
+        params, experiments, reflections, lepage_max_delta=params.lepage_max_delta
     )
     possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)

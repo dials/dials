@@ -5,13 +5,16 @@ import copy
 import logging
 import math
 
-import scitbx.matrix
+import libtbx
+import libtbx.phil
 from cctbx import crystal, miller, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
 from cctbx.sgtbx import bravais_types
+from libtbx.introspection import number_of_processors
 from rstbx.dps_core.lepage import iotbx_converter
 from rstbx.symmetry.subgroup import MetricSubgroup
 from scitbx.array_family import flex
+import scitbx.matrix
 
 from dxtbx.model import Crystal
 
@@ -23,6 +26,37 @@ from dials.command_line.check_indexing_symmetry import (
 from dials.util.log import LoggingContext
 
 logger = logging.getLogger(__name__)
+
+
+phil_scope = libtbx.phil.parse(
+    """
+lepage_max_delta = 5
+  .type = float
+nproc = Auto
+  .type = int(value_min=1)
+crystal_id = None
+  .type = int(value_min=0)
+cc_n_bins = None
+  .type = int(value_min=1)
+  .help = "Number of resolution bins to use for calculation of correlation coefficients"
+
+include scope dials.algorithms.refinement.refiner.phil_scope
+""",
+    process_includes=True,
+)
+
+# override default refinement parameters
+phil_scope = phil_scope.fetch(
+    source=libtbx.phil.parse(
+        """\
+refinement {
+  reflections {
+    reflections_per_degree=100
+  }
+}
+"""
+    )
+)
 
 
 def dials_crystal_from_orientation(crystal_orientation, space_group):
@@ -133,8 +167,11 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 
 
 def refined_settings_from_refined_triclinic(
-    params, experiments, reflections, lepage_max_delta=5.0, nproc=1
+    params, experiments, reflections, lepage_max_delta=5.0
 ):
+
+    if params.nproc is libtbx.Auto:
+        params.nproc = number_of_processors()
 
     assert len(experiments.crystals()) == 1
     crystal = experiments.crystals()[0]
@@ -174,7 +211,7 @@ def refined_settings_from_refined_triclinic(
             constrain_orient, space_group
         )
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=params.nproc) as pool:
         for i, result in enumerate(
             pool.map(
                 refine_subgroup,
