@@ -133,7 +133,7 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 
 
 def refined_settings_from_refined_triclinic(
-    params, experiments, reflections, i_setting=None, lepage_max_delta=5.0, nproc=1
+    params, experiments, reflections, lepage_max_delta=5.0, nproc=1
 ):
 
     assert len(experiments.crystals()) == 1
