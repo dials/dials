@@ -19,6 +19,14 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 )
 from dials.algorithms.refinement import DialsRefineConfigError
 
+from dxtbx.model import Detector
+from dials.algorithms.refinement.parameterisation.detector_parameters import (
+    DetectorParameterisationMultiPanel,
+)
+from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
+    make_panel_in_array,
+)
+
 
 @pytest.fixture(scope="session")
 def tc():
@@ -116,14 +124,6 @@ def test_check_and_remove():
     # Override the single panel model and parameterisation. This test function
     # exercises the code for non-hierarchical multi-panel detectors. The
     # hierarchical detector version is tested via test_cspad_refinement.py
-    from dxtbx.model import Detector
-    from dials.algorithms.refinement.parameterisation.detector_parameters import (
-        DetectorParameterisationMultiPanel,
-    )
-    from dials.test.algorithms.refinement.test_multi_panel_detector_parameterisation import (
-        make_panel_in_array,
-    )
-
     multi_panel_detector = Detector()
     for x in range(3):
         for y in range(3):

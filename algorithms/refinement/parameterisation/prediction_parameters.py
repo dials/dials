@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+from collections import namedtuple
 from dials.array_family import flex
 from scitbx import matrix
+from scitbx import sparse
 from dials.algorithms.refinement import DialsRefineConfigError
 
 """The PredictionParameterisation class ties together parameterisations for
@@ -116,7 +118,6 @@ class PredictionParameterisation(object):
             for i, p in enumerate(self._goniometer_parameterisations)
             for ids in p.get_experiment_ids()
         }
-        from collections import namedtuple
 
         ParamSet = namedtuple(
             "ParamSet",
@@ -672,8 +673,6 @@ class SparseGradientVectorMixin(object):
         indexed by the given keys. The value for each key will be an empty vector of
         size m, to store the derivatives of n parameters, for m reflections.
         This is the sparse vector version."""
-
-        from scitbx import sparse
 
         new_results = [{key: sparse.matrix_column(m) for key in keys} for _ in range(n)]
         results.extend(new_results)

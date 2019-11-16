@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from functools import reduce
+import re
 
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -217,8 +218,6 @@ class ConstraintManagerFactory(object):
                     break
 
         # ignore model name prefixes
-        import re
-
         patt1 = re.compile("^" + model_type + "[0-9]+")
         pname = patt1.sub("", constraint_scope.parameter)
 
