@@ -34,26 +34,6 @@ phil_str = """
                 "still form residuals and will contribute to detector and beam"
                 "refinement."
         .type = choice
-
-      detector_reduce = False
-        .type = bool
-        .help = "Special case designed for detector metrology refinement"
-                "(particularly of the CSPAD). See detector_reduce_list for"
-                "details."
-        .expert_level = 2
-
-      detector_reduce_list = Dist Tau2 Tau3
-        .type = strings
-        .help = "Partial names to match to detector parameters to try fixing."
-                "If there are still not"
-                "enough parameters for refinement after fixing these, then"
-                "fail. This is to ensure that metrology refinement never"
-                "completes if it is not able to refine some panels. The default"
-                "is to try fixing the distance as well as Tau2 and Tau3"
-                "rotations of detector panel, leaving the in-plane shifts and"
-                "the rotation around the detector normal for refinement."
-                "groups only."
-        .expert_level = 2
 """
 phil_scope = parse(phil_str)
 
