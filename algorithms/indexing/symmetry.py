@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-from six.moves import StringIO
-
 import scitbx.matrix
 from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
@@ -183,22 +181,20 @@ class SymmetryHandler(object):
                 self.cb_op_ref_inp * self.cb_op_reference_to_primitive.inverse()
             )
 
-            if self.target_symmetry_reference_setting is not None:
-                debug_handle = StringIO()
-                self.target_symmetry_reference_setting.show_summary(f=debug_handle)
+            if self.target_symmetry_reference_setting:
                 logger.debug(
-                    "Target symmetry (reference setting):\n" + debug_handle.getvalue()
+                    "Target symmetry (reference setting):\n%s",
+                    self.target_symmetry_reference_setting,
                 )
-            if self.target_symmetry_primitive is not None:
-                debug_handle = StringIO()
-                self.target_symmetry_primitive.show_summary(f=debug_handle)
+            if self.target_symmetry_primitive:
                 logger.debug(
-                    "Target symmetry (primitive cell):\n" + debug_handle.getvalue()
+                    "Target symmetry (primitive cell):\n%s",
+                    self.target_symmetry_primitive,
                 )
             logger.debug(
-                "cb_op reference->primitive: " + str(self.cb_op_reference_to_primitive)
+                "cb_op reference->primitive: %s", self.cb_op_reference_to_primitive
             )
-            logger.debug("cb_op primitive->input: " + str(self.cb_op_primitive_inp))
+            logger.debug("cb_op primitive->input: %s", self.cb_op_primitive_inp)
 
     def _setup_target_unit_cell_and_space_group(
         self, target_unit_cell, target_space_group
