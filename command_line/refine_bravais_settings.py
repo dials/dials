@@ -1,4 +1,4 @@
-"""
+"""Refinement of Bravais settings consistent with the primitive unit cell.
 
 This program takes as input the output of dials.index, i.e. indexed.expt
 and indexed.refl files. Full refinement of the crystal and experimental
