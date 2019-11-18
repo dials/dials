@@ -113,7 +113,7 @@ def save_reflections(reflection_table, filename):
 def calc_crystal_frame_vectors(reflection_table, experiments):
     """Calculate the diffraction vectors in the crystal frame."""
     reflection_table["s0"] = flex.vec3_double(
-        [experiments.beam.get_s0()] * len(reflection_table)
+        [experiments.beam.get_sample_to_source_direction()] * len(reflection_table)
     )
     rot_axis = flex.vec3_double([experiments.goniometer.get_rotation_axis()])
     angles = reflection_table["phi"] * -1.0 * pi / 180  # want to do an inverse rot.
