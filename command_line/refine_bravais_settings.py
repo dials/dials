@@ -215,42 +215,5 @@ def run(args=None):
         expts.as_file(os.path.join(params.output.directory, bs_json))
 
 
-def refine_bravais_settings(experiments, reflections, params):
-    if len(experiments.crystals()) > 1:
-        if params.crystal_id is not None:
-            select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
-        else:
-            sys.exit(
-                "Only one crystal can be processed at a time: set crystal_id to choose "
-                "experiment."
-            )
-
-    map_to_primitive(experiments, reflections)
-
-    refined_settings = refined_settings_from_refined_triclinic(
-        experiments, reflections, params
-    )
-    possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
-    bravais_lattice_to_space_group_table(possible_bravais_settings)
-    logger.info(refined_settings.as_str())
-
-    prefix = params.output.prefix
-    if prefix is None:
-        prefix = ""
-    summary_file = "%sbravais_summary.json" % prefix
-    logger.info("Saving summary as %s" % summary_file)
-    with open(os.path.join(params.output.directory, summary_file), "w") as fh:
-        json.dump(refined_settings.as_dict(), fh)
-
-    for subgroup in refined_settings:
-        expts = subgroup.refined_experiments
-        soln = int(subgroup.setting_number)
-        bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
-        logger.info("Saving solution %i as %s" % (soln, bs_json))
-        expts.as_file(os.path.join(params.output.directory, bs_json))
-
-    return refined_settings
-
-
 if __name__ == "__main__":
     run()
