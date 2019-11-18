@@ -2,31 +2,29 @@ from __future__ import absolute_import, division, print_function
 
 import json
 import os
-
-import procrunner
 import pytest
+
 from cctbx import uctbx
 from dxtbx.serialize import load
+from dials.command_line import refine_bravais_settings
 
 
 def test_refine_bravais_settings_i04_weak_data(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
-        [
-            "dials.refine_bravais_settings",
-            pickle_path,
-            experiments_path,
-            "reflections_per_degree=5",
-            "minimum_sample_size=500",
-            "beam.fix=all",
-            "detector.fix=all",
-            "prefix=tst_",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run(
+            [
+                pickle_path,
+                experiments_path,
+                "reflections_per_degree=5",
+                "minimum_sample_size=500",
+                "beam.fix=all",
+                "detector.fix=all",
+                "prefix=tst_",
+            ]
+        )
     for i in range(1, 10):
         assert tmpdir.join("tst_bravais_setting_%i.expt" % i).check()
 
@@ -61,11 +59,8 @@ def test_refine_bravais_settings_multi_sweep(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
-        ["dials.refine_bravais_settings", pickle_path, experiments_path],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run([pickle_path, experiments_path])
     for i in range(1, 10):
         assert tmpdir.join("bravais_setting_%i.expt" % i).check()
 
@@ -98,16 +93,8 @@ def test_refine_bravais_settings_trypsin(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
-        [
-            "dials.refine_bravais_settings",
-            pickle_path,
-            experiments_path,
-            "crystal_id=1",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run([pickle_path, experiments_path, "crystal_id=1"])
     for i in range(1, 10):
         assert tmpdir.join("bravais_setting_%i.expt" % i).check()
 
@@ -142,11 +129,8 @@ def test_refine_bravais_settings_554(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "dials-554")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
-    result = procrunner.run(
-        ["dials.refine_bravais_settings", pickle_path, experiments_path],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        refine_bravais_settings.run([pickle_path, experiments_path])
     for i in range(1, 5):
         assert tmpdir.join("bravais_setting_%i.expt" % i).check()
 
