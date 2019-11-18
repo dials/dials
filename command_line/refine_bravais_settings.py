@@ -1,30 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-import collections
-import json
-import logging
-import os
-import sys
-
-import libtbx
-import libtbx.phil
-from cctbx import sgtbx
-from cctbx.sgtbx import bravais_types
-
-from dxtbx.model.experiment_list import ExperimentList
-from dials.algorithms.indexing.bravais_settings import (
-    refined_settings_from_refined_triclinic,
-)
-from dials.array_family import flex
-from dials.util import log
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
-from dials.util.version import dials_version
-
-
-logger = logging.getLogger("dials.command_line.refine_bravais_settings")
-help_message = """
+"""
 
 This program takes as input the output of dials.index, i.e. indexed.expt
 and indexed.refl files. Full refinement of the crystal and experimental
@@ -51,6 +25,32 @@ Examples::
 
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
+
+from __future__ import absolute_import, division, print_function
+
+import collections
+import json
+import logging
+import os
+import sys
+
+import libtbx.phil
+from cctbx import sgtbx
+from cctbx.sgtbx import bravais_types
+
+from dxtbx.model import ExperimentList
+from dials.algorithms.indexing.bravais_settings import (
+    refined_settings_from_refined_triclinic,
+)
+from dials.array_family import flex
+from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
+
+
+logger = logging.getLogger("dials.command_line.refine_bravais_settings")
 
 phil_scope = libtbx.phil.parse(
     """
@@ -153,7 +153,7 @@ def run(args=None):
         read_experiments=True,
         read_reflections=True,
         check_format=False,
-        epilog=help_message,
+        epilog=__doc__,
     )
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
@@ -186,7 +186,8 @@ def run(args=None):
             select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
         else:
             sys.exit(
-                "Only one crystal can be processed at a time: set crystal_id to choose experiment."
+                "Only one crystal can be processed at a time: set crystal_id to choose "
+                "experiment."
             )
 
     map_to_primitive(experiments, reflections)
@@ -220,7 +221,8 @@ def refine_bravais_settings(experiments, reflections, params):
             select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
         else:
             sys.exit(
-                "Only one crystal can be processed at a time: set crystal_id to choose experiment."
+                "Only one crystal can be processed at a time: set crystal_id to choose "
+                "experiment."
             )
 
     map_to_primitive(experiments, reflections)
