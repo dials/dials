@@ -108,14 +108,7 @@ def short_space_group_name(space_group):
     return symbol.replace(" ", "")
 
 
-def map_to_primitive(experiments, reflections):
-    """Map experiments and reflections to primitive setting."""
-    cb_op_to_primitive = (
-        experiments[0]
-        .crystal.get_space_group()
-        .info()
-        .change_of_basis_op_to_primitive_setting()
-    )
+def eliminate_sys_absent(experiments, reflections):
     if experiments[0].crystal.get_space_group().n_ltr() > 1:
         effective_group = (
             experiments[0]
@@ -124,6 +117,17 @@ def map_to_primitive(experiments, reflections):
         )
         sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
         reflections = reflections.select(~sys_absent_flags)
+    return reflections
+
+
+def map_to_primitive(experiments, reflections):
+    """Map experiments and reflections to primitive setting."""
+    cb_op_to_primitive = (
+        experiments[0]
+        .crystal.get_space_group()
+        .info()
+        .change_of_basis_op_to_primitive_setting()
+    )
     experiments[0].crystal.update(
         experiments[0].crystal.change_basis(cb_op_to_primitive)
     )
@@ -183,13 +187,16 @@ def run(args=None):
         return
     if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
-            select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
+            experiments, reflections = select_datasets_on_crystal_id(
+                experiments, reflections, params.crystal_id
+            )
         else:
             sys.exit(
                 "Only one crystal can be processed at a time: set crystal_id to choose "
                 "experiment."
             )
 
+    reflections = eliminate_sys_absent(experiments, reflections)
     map_to_primitive(experiments, reflections)
 
     refined_settings = refined_settings_from_refined_triclinic(
