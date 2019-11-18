@@ -773,7 +773,14 @@ class Script(object):
         num_still_sequences = 0
         num_stills = 0
         num_images = 0
+
+        # importing a lot of experiments all pointing at one imageset should
+        # work gracefully
+        counted_imagesets = []
+
         for e in experiments:
+            if e.imageset in counted_imagesets:
+                continue
             if isinstance(e.imageset, ImageSequence):
                 if e.imageset.get_scan().is_still():
                     num_still_sequences += 1
@@ -782,6 +789,8 @@ class Script(object):
             else:
                 num_stills += 1
             num_images += len(e.imageset)
+            counted_imagesets.append(e.imageset)
+
         format_list = {str(e.imageset.get_format_class()) for e in experiments}
 
         # Print out some bulk info
