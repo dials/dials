@@ -59,7 +59,17 @@ refinement {
 )
 
 
-def dials_crystal_from_orientation(crystal_orientation, space_group):
+def dxtbx_crystal_from_orientation(crystal_orientation, space_group):
+    """Convert a cctbx crystal_orientation to a dxtbx.Crystal model.
+
+    Args:
+        crystal_orientation (cctbx.crystal_orientation):
+            A cctbx crystal_orientation object
+        space_group (cctbx.sgtbx.space_group): The space group.
+
+    Returns:
+        dxtbx.model.Crystal: The dxtbx crystal model.
+    """
     dm = crystal_orientation.direct_matrix()
     AA = scitbx.matrix.col((dm[0], dm[1], dm[2]))
     BB = scitbx.matrix.col((dm[3], dm[4], dm[5]))
@@ -166,9 +176,18 @@ bravais_lattice_to_lowest_symmetry_spacegroup_number = {
 }
 
 
-def refined_settings_from_refined_triclinic(
-    params, experiments, reflections, lepage_max_delta=5.0
-):
+def refined_settings_from_refined_triclinic(experiments, reflections, params):
+    """Generate a RefinedSettingsList from a triclinic model.
+
+    Args:
+        experiments: The experiments refined with a triclinic model
+        reflections: A reflection table containing observed centroids
+        params: The working PHIL parameters.
+
+    Returns:
+        RefinedSettingsList: A list of the refined settings. The highest symmetry
+        setting will be first item in the list, and the triclinic setting will be last.
+    """
 
     if params.nproc is libtbx.Auto:
         params.nproc = number_of_processors()
@@ -180,7 +199,7 @@ def refined_settings_from_refined_triclinic(
     UC = crystal.get_unit_cell()
 
     refined_settings = RefinedSettingsList()
-    for item in iotbx_converter(UC, lepage_max_delta):
+    for item in iotbx_converter(UC, params.lepage_max_delta):
         refined_settings.append(BravaisSetting(item))
 
     triclinic = refined_settings.triclinic()
@@ -207,7 +226,7 @@ def refined_settings_from_refined_triclinic(
         space_group = space_group.change_basis(cb_op_best_ref.inverse())
         bravais = str(bravais_types.bravais_lattice(group=space_group))
         refined_settings[j]["bravais"] = bravais
-        refined_settings[j].unrefined_crystal = dials_crystal_from_orientation(
+        refined_settings[j].unrefined_crystal = dxtbx_crystal_from_orientation(
             constrain_orient, space_group
         )
 
@@ -228,6 +247,16 @@ def refined_settings_from_refined_triclinic(
 
 
 def identify_likely_solutions(all_solutions):
+    """Identify likely solutions using heuristics.
+
+    Args:
+        all_solutions (RefinedSettingsList): The list of refined bravais settings.
+
+    Use a set of heuristics to identify likely solutions, by comparing refined rmsds
+    in a given setting with the triclinic rmsds. Also looks at the max_angular
+    difference and the correlation coefficients for the solutions. Sets the
+    `recommended` attribute of each solution to `True` or `False` as appropriate.
+    """
     p1_solution = all_solutions[-1]
     assert p1_solution.setting_number == 1, p1_solution.setting_number
     rmsd_p1 = p1_solution.rmsd

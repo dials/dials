@@ -190,7 +190,7 @@ def run(args=None):
     reflections["miller_index"] = miller_indices
 
     refined_settings = refined_settings_from_refined_triclinic(
-        params, experiments, reflections, lepage_max_delta=params.lepage_max_delta
+        experiments, reflections, params
     )
     possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
