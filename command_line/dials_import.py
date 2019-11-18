@@ -536,7 +536,7 @@ class MetaDataUpdater(object):
                         subset = imageset[j : j + 1]
                         experiments.append(
                             Experiment(
-                                imageset=subset,
+                                imageset=imageset,
                                 beam=imageset.get_beam(),
                                 detector=imageset.get_detector(),
                                 goniometer=imageset.get_goniometer(),
