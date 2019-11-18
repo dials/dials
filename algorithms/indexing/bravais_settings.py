@@ -34,8 +34,6 @@ lepage_max_delta = 5
   .type = float
 nproc = Auto
   .type = int(value_min=1)
-crystal_id = None
-  .type = int(value_min=0)
 cc_n_bins = None
   .type = int(value_min=1)
   .help = "Number of resolution bins to use for calculation of correlation coefficients"
@@ -191,6 +189,14 @@ def refined_settings_from_refined_triclinic(experiments, reflections, params):
 
     if params.nproc is libtbx.Auto:
         params.nproc = number_of_processors()
+
+    if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
+        if experiments[0].goniometer is None:
+            params.refinement.reflections.outlier.algorithm = "sauter_poon"
+        else:
+            # different default to dials.refine
+            # tukey is faster and more appropriate at the indexing step
+            params.refinement.reflections.outlier.algorithm = "tukey"
 
     assert len(experiments.crystals()) == 1
     crystal = experiments.crystals()[0]

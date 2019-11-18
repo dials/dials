@@ -4,6 +4,7 @@ import collections
 import json
 import logging
 import os
+import sys
 
 import libtbx
 import libtbx.phil
@@ -16,7 +17,6 @@ from dials.algorithms.indexing.bravais_settings import (
 )
 from dials.array_family import flex
 from dials.util import log
-from dials.util import Sorry
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections
 from dials.util.options import flatten_experiments
@@ -55,6 +55,9 @@ Examples::
 phil_scope = libtbx.phil.parse(
     """
 include scope dials.algorithms.indexing.bravais_settings.phil_scope
+
+crystal_id = None
+  .type = int(value_min=0)
 
 output {
   directory = "."
@@ -105,6 +108,42 @@ def short_space_group_name(space_group):
     return symbol.replace(" ", "")
 
 
+def map_to_primitive(experiments, reflections):
+    """Map experiments and reflections to primitive setting."""
+    cb_op_to_primitive = (
+        experiments[0]
+        .crystal.get_space_group()
+        .info()
+        .change_of_basis_op_to_primitive_setting()
+    )
+    if experiments[0].crystal.get_space_group().n_ltr() > 1:
+        effective_group = (
+            experiments[0]
+            .crystal.get_space_group()
+            .build_derived_reflection_intensity_group(anomalous_flag=True)
+        )
+        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
+        reflections = reflections.select(~sys_absent_flags)
+    experiments[0].crystal.update(
+        experiments[0].crystal.change_basis(cb_op_to_primitive)
+    )
+    reflections["miller_index"] = cb_op_to_primitive.apply(reflections["miller_index"])
+
+
+def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
+    """Select experiments and reflections with the given crystal id"""
+    assert crystal_id < len(experiments.crystals())
+    experiment_ids = experiments.where(crystal=experiments.crystals()[crystal_id])
+
+    experiments = ExperimentList([experiments[i] for i in experiment_ids])
+    refl_selections = [reflections["id"] == i for i in experiment_ids]
+    reflections["id"] = flex.int(len(reflections), -1)
+    for i, sel in enumerate(refl_selections):
+        reflections["id"].set_selected(sel, i)
+    reflections = reflections.select(reflections["id"] > -1)
+    return experiments, reflections
+
+
 def run(args=None):
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
@@ -142,57 +181,49 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
+    if len(experiments.crystals()) > 1:
+        if params.crystal_id is not None:
+            select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
+        else:
+            sys.exit(
+                "Only one crystal can be processed at a time: set crystal_id to choose experiment."
+            )
 
-    refine_bravais_settings(experiments, reflections, params)
+    map_to_primitive(experiments, reflections)
+
+    refined_settings = refined_settings_from_refined_triclinic(
+        experiments, reflections, params
+    )
+    possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
+    bravais_lattice_to_space_group_table(possible_bravais_settings)
+    logger.info(refined_settings.as_str())
+
+    prefix = params.output.prefix
+    if prefix is None:
+        prefix = ""
+    summary_file = "%sbravais_summary.json" % prefix
+    logger.info("Saving summary as %s" % summary_file)
+    with open(os.path.join(params.output.directory, summary_file), "w") as fh:
+        json.dump(refined_settings.as_dict(), fh)
+
+    for subgroup in refined_settings:
+        expts = subgroup.refined_experiments
+        soln = int(subgroup.setting_number)
+        bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
+        logger.info("Saving solution %i as %s" % (soln, bs_json))
+        expts.as_file(os.path.join(params.output.directory, bs_json))
 
 
 def refine_bravais_settings(experiments, reflections, params):
     if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
-            assert params.crystal_id < len(experiments.crystals())
-            experiment_ids = experiments.where(
-                crystal=experiments.crystals()[params.crystal_id]
-            )
-
-            experiments = ExperimentList([experiments[i] for i in experiment_ids])
-            refl_selections = [reflections["id"] == i for i in experiment_ids]
-            reflections["id"] = flex.int(len(reflections), -1)
-            for i, sel in enumerate(refl_selections):
-                reflections["id"].set_selected(sel, i)
-            reflections = reflections.select(reflections["id"] > -1)
+            select_datasets_on_crystal_id(experiments, reflections, params.crystal_id)
         else:
-            raise Sorry(
+            sys.exit(
                 "Only one crystal can be processed at a time: set crystal_id to choose experiment."
             )
 
-    if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
-        if experiments[0].goniometer is None:
-            params.refinement.reflections.outlier.algorithm = "sauter_poon"
-        else:
-            # different default to dials.refine
-            # tukey is faster and more appropriate at the indexing step
-            params.refinement.reflections.outlier.algorithm = "tukey"
-
-    cb_op_to_primitive = (
-        experiments[0]
-        .crystal.get_space_group()
-        .info()
-        .change_of_basis_op_to_primitive_setting()
-    )
-    if experiments[0].crystal.get_space_group().n_ltr() > 1:
-        effective_group = (
-            experiments[0]
-            .crystal.get_space_group()
-            .build_derived_reflection_intensity_group(anomalous_flag=True)
-        )
-        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
-        reflections = reflections.select(~sys_absent_flags)
-    experiments[0].crystal.update(
-        experiments[0].crystal.change_basis(cb_op_to_primitive)
-    )
-    miller_indices = reflections["miller_index"]
-    miller_indices = cb_op_to_primitive.apply(miller_indices)
-    reflections["miller_index"] = miller_indices
+    map_to_primitive(experiments, reflections)
 
     refined_settings = refined_settings_from_refined_triclinic(
         experiments, reflections, params
