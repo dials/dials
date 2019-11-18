@@ -333,40 +333,40 @@ def refine_subgroup(args):
                 subgroup.refined_experiments = None
                 subgroup.rmsd = None
                 subgroup.Nmatches = None
+                return subgroup
             else:
                 raise
-        else:
-            dall = refinery.rmsds()
-            dx = dall[0]
-            dy = dall[1]
-            subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
-            subgroup.Nmatches = len(refinery.get_matches())
-            subgroup.refined_experiments = refinery.get_experiments()
-            assert len(subgroup.refined_experiments.crystals()) == 1
-            subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
-            cs = crystal.symmetry(
-                unit_cell=subgroup.refined_crystal.get_unit_cell(),
-                space_group=subgroup.refined_crystal.get_space_group(),
-            )
-            if "intensity.sum.value" in used_reflections:
-                # remove refl with -ve variance
-                sel = used_reflections["intensity.sum.variance"] > 0
-                good_reflections = used_reflections.select(sel)
+        dall = refinery.rmsds()
+        dx = dall[0]
+        dy = dall[1]
+        subgroup.rmsd = math.sqrt(dx * dx + dy * dy)
+        subgroup.Nmatches = len(refinery.get_matches())
+        subgroup.refined_experiments = refinery.get_experiments()
+        assert len(subgroup.refined_experiments.crystals()) == 1
+        subgroup.refined_crystal = subgroup.refined_experiments.crystals()[0]
+        cs = crystal.symmetry(
+            unit_cell=subgroup.refined_crystal.get_unit_cell(),
+            space_group=subgroup.refined_crystal.get_space_group(),
+        )
+        if "intensity.sum.value" in used_reflections:
+            # remove refl with -ve variance
+            sel = used_reflections["intensity.sum.variance"] > 0
+            good_reflections = used_reflections.select(sel)
 
-                ms = miller.set(cs, good_reflections["miller_index"])
-                ms = ms.array(
-                    good_reflections["intensity.sum.value"]
-                    / flex.sqrt(good_reflections["intensity.sum.variance"])
-                )
-                if params.cc_n_bins is not None:
-                    ms.setup_binner(n_bins=params.cc_n_bins)
-                ccs, nrefs = get_symop_correlation_coefficients(
-                    ms, use_binning=(params.cc_n_bins is not None)
-                )
-                subgroup.correlation_coefficients = ccs
-                subgroup.cc_nrefs = nrefs
-                ccs = ccs.select(nrefs > 10)
-                if len(ccs) > 1:
-                    subgroup.max_cc = flex.max(ccs[1:])
-                    subgroup.min_cc = flex.min(ccs[1:])
+            ms = miller.set(cs, good_reflections["miller_index"])
+            ms = ms.array(
+                good_reflections["intensity.sum.value"]
+                / flex.sqrt(good_reflections["intensity.sum.variance"])
+            )
+            if params.cc_n_bins is not None:
+                ms.setup_binner(n_bins=params.cc_n_bins)
+            ccs, nrefs = get_symop_correlation_coefficients(
+                ms, use_binning=(params.cc_n_bins is not None)
+            )
+            subgroup.correlation_coefficients = ccs
+            subgroup.cc_nrefs = nrefs
+            ccs = ccs.select(nrefs > 10)
+            if len(ccs) > 1:
+                subgroup.max_cc = flex.max(ccs[1:])
+                subgroup.min_cc = flex.min(ccs[1:])
     return subgroup
