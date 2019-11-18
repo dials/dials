@@ -91,12 +91,3 @@ def flex_histogram(z, char="*", width=60, height=10):
     )
     return "\n".join(rows)
 
-
-if __name__ == "__main__":
-    import sys
-    from libtbx import easy_pickle
-
-    for arg in sys.argv[1:]:
-        print(arg)
-        print(spot_counts_per_image_plot(easy_pickle.load(arg)))
-        print()
