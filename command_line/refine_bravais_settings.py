@@ -142,7 +142,12 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
-    elif len(experiments.crystals()) > 1:
+
+    refine_bravais_settings(experiments, reflections, params)
+
+
+def refine_bravais_settings(experiments, reflections, params):
+    if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
             assert params.crystal_id < len(experiments.crystals())
             experiment_ids = experiments.where(
@@ -210,6 +215,8 @@ def run(args=None):
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
         logger.info("Saving solution %i as %s" % (soln, bs_json))
         expts.as_file(os.path.join(params.output.directory, bs_json))
+
+    return refined_settings
 
 
 if __name__ == "__main__":
