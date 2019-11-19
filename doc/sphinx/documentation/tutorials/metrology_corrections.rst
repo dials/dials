@@ -660,7 +660,7 @@ Now we do the scan-varying refinement and integrate::
 
   dials.refine refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined.expt
   dials.integrate sv_refined.expt indexed.refl outlier.algorithm=null nproc=4
-  dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz ignore_panels=true
+  dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz
   dials.analyse_output integrated.refl grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
@@ -903,7 +903,7 @@ Let's now do scan-varying refinement then integrate the dataset with corrected m
 
   dials.refine corrected_refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined.expt
   dials.integrate corrected_sv_refined.expt indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
-  dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz ignore_panels=true
+  dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz
   dials.analyse_output corrected_integrated.refl grid_size=5,12
 
 From the integration log::

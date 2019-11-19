@@ -1,0 +1,2 @@
+The command dials.analyse_output was removed.
+Its replacement, dials.report, will give you more useful output.

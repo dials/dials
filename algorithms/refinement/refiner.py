@@ -170,19 +170,7 @@ class RefinerFactory(object):
         return rt
 
     @classmethod
-    def from_parameters_data_experiments(
-        cls, params, reflections, experiments, verbosity=None
-    ):
-
-        if verbosity is not None:
-            import warnings
-
-            warnings.warn(
-                "Setting verbosity for a Refiner is deprecated. See https://github.com/dials/dials/issues/860",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def from_parameters_data_experiments(cls, params, reflections, experiments):
         # TODO Checks on the input
         # E.g. does every experiment contain at least one overlapping model with at
         # least one other experiment? Are all the experiments either rotation series

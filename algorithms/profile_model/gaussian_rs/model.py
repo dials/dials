@@ -644,17 +644,6 @@ class Model(ProfileModelExt):
         # Return the wrapper function
         return wrapper
 
-    def show(self, out=None):
-        if out is None:
-            import sys
-
-            out = sys.stdout
-        print(
-            "Warning: Use of the .show() method is deprecated. Use print(object) instead.",
-            file=out,
-        )
-        print(str(self), file=out)
-
     def __str__(self):
         return "\n".join(
             [
