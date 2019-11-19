@@ -20,6 +20,9 @@ from wxtbx import bitmaps
 
 pyslip._Tiles = tile_generation._Tiles
 
+# Use minimum value for 4 byte int to indicate a masked pixel
+MASK_VAL = -(2 ** 31)
+
 
 class chooser_wrapper(object):
     def __init__(self, image_set, index):
@@ -228,10 +231,13 @@ class XrayFrame(XFBaseClass):
                 if possible_intensity is not None:
                     if possible_intensity == 0:
                         format_str = " I=%6.4f"
+                        posn_str += format_str % possible_intensity
+                    elif possible_intensity == MASK_VAL:
+                        posn_str += " I=mask"
                     else:
                         yaya = int(math.ceil(math.log10(abs(possible_intensity))))
                         format_str = " I=%%6.%df" % (max(0, 5 - yaya))
-                    posn_str += format_str % possible_intensity
+                        posn_str += format_str % possible_intensity
 
                 if (
                     len(coords) > 2 and readout >= 0
