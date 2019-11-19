@@ -106,7 +106,7 @@ After finding strong spots it is *always* worth viewing them using
 
   dials.reciprocal_lattice_viewer imported.expt strong.refl
 
-.. image:: /figures/dpf3_bad_found_spot.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_found_spot.png
 
 Presented with this view, we might already start to worry that something is
 not quite right. Instead of neat columns of points corresponding to a
@@ -162,13 +162,13 @@ in :program:`dials.reciprocal_lattice_viewer` is instructive as ever::
 
   dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
-.. image:: /figures/dpf3_bad_indexed.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_indexed.png
 
 Refinement has done what it could to produce a regular lattice, but it is still
 messy. We also see that the majority of the centroids remain unindexed, and
 these are messier still.
 
-.. image:: /figures/dpf3_bad_unindexed.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_unindexed.png
 
 At this point we should definitely heed the warnings and try to figure out
 what happened and how to fix it. However, unfortunately a careless user could

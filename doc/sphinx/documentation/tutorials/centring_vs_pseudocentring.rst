@@ -54,7 +54,7 @@ First the reciprocal lattice::
 
   dials.reciprocal_lattice_viewer bravais_setting_5.expt indexed.refl
 
-.. image:: /figures/dpf3_oP_lo_res.png
+.. image:: https://dials.github.io/images/centring_vs_pseudocentring/dpf3_oP_lo_res.png
 
 Here the view has been aligned almost down the long axis of the reciprocal
 cell, which is :math:`a^\star` for this choice of basis vectors. We see the
@@ -68,7 +68,7 @@ Now the image viewer::
 
   dials.image_viewer bravais_setting_5.expt indexed.refl
 
-.. image:: /figures/dpf3_oP_im5.png
+.. image:: https://dials.github.io/images/centring_vs_pseudocentring/dpf3_oP_im5.png
 
 Here we have zoomed in on a region of the central module on the 5th image. The
 line of indexed spots have Miller indices in :math:`(3,-13,l)`. Looking closely

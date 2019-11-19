@@ -409,7 +409,7 @@ say :file:`individual_mtzs.dat`, and passed to BLEND for analysis::
 
 The dendrogram resulting from clustering is shown here:
 
-  .. image:: /figures/tree.png
+  .. image:: https://dials.github.io/images/multi_crystal_analysis/tree.png
 
 As we can see, the linear cell variation is less than 1%, with an absolute
 value of 0.79 Angstroms, indicating good isomorphism amongst the datasets.
@@ -437,7 +437,7 @@ refined with this single 8 degree dataset (see also correlations in Y and Phi).
 Clearly parameters like the detector distance and the crystal metrical matrix
 parameters are highly correlated.
 
- .. image:: /figures/corrplot_X.png
+ .. image:: https://dials.github.io/images/multi_crystal_analysis/corrplot_X.png
 
 Although the DIALS toolkit has a sophisticated mechanism for modelling
 multi-experiment data, the user interface for handling such data is somewhat
@@ -918,7 +918,7 @@ problem. We can copy the paths to these into a new file, say
 
 The :file:`tree.png` resulting from this is very interesting.
 
-  .. image:: /figures/tree_joint.png
+  .. image:: https://dials.github.io/images/multi_crystal_analysis/tree_joint.png
 
 The LCV is now as low as 0.35% (aLCV 0.58 Angstroms). This indicates an even
 higher degree of isomorphism than detected during after individual processing.
