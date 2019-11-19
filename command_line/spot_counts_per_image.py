@@ -67,7 +67,7 @@ def run(args):
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
     expts = set(reflections["id"])
-    if max(expts) >= len(experiments.imagesets()):
+    if len(expts) and max(expts) >= len(experiments.imagesets()):
         sys.exit("Unknown experiments in reflection list")
 
     if params.id is not None:
