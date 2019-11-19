@@ -166,6 +166,7 @@ def merge_and_truncate(params, experiments, reflections):
     reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
 
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    # Note, merge_equivalents does not raise an error if data is unique.
     if params.anomalous:
         anomalous_scaled = scaled_array.as_anomalous_array()
 
