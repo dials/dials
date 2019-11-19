@@ -614,18 +614,21 @@ def stats_single_image(
     filter_ice=True,
     ice_rings_width=0.004,
 ):
-    expts = ExperimentList(
-        [
-            Experiment(
-                detector=imageset.get_detector(),
-                beam=imageset.get_beam(),
-                scan=imageset.get_scan(),
-                goniometer=imageset.get_goniometer(),
-            )
-        ]
-    )
-    reflections.centroid_px_to_mm(expts)
-    reflections.map_centroids_to_reciprocal_space(expts)
+    if "rlp" not in reflections:
+        expts = ExperimentList(
+            [
+                Experiment(
+                    detector=imageset.get_detector(),
+                    beam=imageset.get_beam(),
+                    scan=imageset.get_scan(),
+                    goniometer=imageset.get_goniometer(),
+                )
+            ]
+        )
+        reflections.centroid_px_to_mm(expts)
+        reflections.map_centroids_to_reciprocal_space(expts)
+
+    reflections = reflections.select(reflections["rlp"].norms() > 0)
 
     if plot and i is not None:
         filename = "i_over_sigi_vs_resolution_%d.png" % (i + 1)
@@ -647,7 +650,7 @@ def stats_single_image(
     reflections_all = reflections
     reflections_no_ice = reflections_all
     ice_sel = None
-    if filter_ice:
+    if reflections.size() and filter_ice:
         ice_sel = ice_rings_selection(reflections_all, width=ice_rings_width)
         if ice_sel is not None:
             reflections_no_ice = reflections_all.select(~ice_sel)
