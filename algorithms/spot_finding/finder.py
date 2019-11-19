@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import copy
 import logging
 import math
 import os
@@ -748,16 +747,9 @@ class SpotFinder(object):
 
         # Loop through all the experiments and get the unique imagesets
         imagesets = []
-        imageset_scan = {}
         for experiment in experiments:
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
-                imageset_scan[experiment.imageset] = copy.deepcopy(experiment.scan)
-            else:
-                imageset_scan[experiment.imageset] += experiment.scan
-
-        for imageset in imagesets:
-            imageset.set_scan(imageset_scan[imageset])
 
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table()
