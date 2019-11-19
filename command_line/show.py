@@ -172,7 +172,10 @@ def show_goniometer(goniometer):
 
 
 def run(args):
-    import dials.util.banner  # noqa: F401 - Importing means that it prints
+    import dials.util.log
+
+    dials.util.log.print_banner()
+
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
