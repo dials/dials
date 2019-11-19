@@ -112,13 +112,20 @@ class SingleDatasetIntensityCombiner(object):
             self.max_key = min(results, key=results.get)
             while results[self.max_key] < 0:
                 del results[self.max_key]
-                self.max_key = min(results, key=results.get)
+                if results:
+                    self.max_key = min(results, key=results.get)
+                else:
+                    self.max_key = -1
+                    break
             if self.max_key == 0:
                 logger.info("Profile intensities determined to be best for scaling. \n")
             elif self.max_key == 1:
                 logger.info(
                     "Summation intensities determined to be best for scaling. \n"
                 )
+            elif self.max_key == -1:
+                logger.info("No good statistics found, using profile intensities. \n")
+                self.max_key = 0
             else:
                 logger.info(
                     "Combined intensities with Imid = %s determined to be best for scaling. \n",
@@ -248,11 +255,18 @@ class MultiDatasetIntensityCombiner(object):
         self.max_key = min(results, key=results.get)
         while results[self.max_key] < 0:
             del results[self.max_key]
-            self.max_key = min(results, key=results.get)
+            if results:
+                self.max_key = min(results, key=results.get)
+            else:
+                self.max_key = -1
+                break
         if self.max_key == 0:
             logger.info("Profile intensities determined to be best for scaling. \n")
         elif self.max_key == 1:
             logger.info("Summation intensities determined to be best for scaling. \n")
+        elif self.max_key == -1:
+            logger.info("No good statistics found, using profile intensities. \n")
+            self.max_key = 0
         else:
             logger.info(
                 "Combined intensities with Imid = %s determined to be best for scaling. \n",
