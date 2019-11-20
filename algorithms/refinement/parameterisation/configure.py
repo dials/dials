@@ -41,8 +41,6 @@ from .prediction_parameters_stills import (
     SphericalRelpStillsPredictionParameterisationSparse,
 )
 
-from .autoreduce import AutoReduce
-
 # PHIL
 from libtbx.phil import parse
 from dials.algorithms.refinement.parameterisation.autoreduce import (
@@ -796,24 +794,6 @@ def build_prediction_parameterisation(
     xl_ori_params, xl_uc_params = _parameterise_crystals(options, experiments, analysis)
     det_params = _parameterise_detectors(options, experiments, analysis)
     gon_params = _parameterise_goniometers(options, experiments, analysis)
-
-    # Check for too many parameters and reduce if requested
-    autoreduce = AutoReduce(
-        options.auto_reduction,
-        det_params,
-        beam_params,
-        xl_ori_params,
-        xl_uc_params,
-        gon_params,
-        reflection_manager,
-        scan_varying=options.scan_varying,
-    )
-    autoreduce()
-    det_params = autoreduce.det_params
-    beam_params = autoreduce.beam_params
-    xl_ori_params = autoreduce.xl_ori_params
-    xl_uc_params = autoreduce.xl_uc_params
-    gon_params = autoreduce.gon_params
 
     # Build the prediction equation parameterisation
     if do_stills:  # doing stills

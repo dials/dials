@@ -46,7 +46,6 @@ sources = [
     "boost_python/gaussian_smoother_2D.cc",
     "boost_python/gaussian_smoother_3D.cc",
     "boost_python/refinement_ext.cc",
-    "boost_python/autoreduce_helpers.cc",
 ]
 
 env.SharedLibrary(
