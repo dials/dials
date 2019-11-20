@@ -1,0 +1,3 @@
+Rewritten parameter auto-reduction code for dials.refine provides finer-grained
+fixing of individual parameters rather than whole parameterisations and
+correctly takes constrained parameters into account
