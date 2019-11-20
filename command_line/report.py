@@ -227,13 +227,13 @@ class ScanVaryingCrystalAnalyser(object):
                     },
                     "xaxis2": {"domain": [0.55, 1], "anchor": "y6"},
                     "xaxis": {"domain": [0, 0.45], "anchor": "y3"},
-                    "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 3},
-                    "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 3},
-                    "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 3},
-                    "yaxis4": {"domain": [0.8, 1], "anchor": "x2", "nticks": 3},
-                    "yaxis3": {"domain": [0.3, 0.5], "anchor": "x", "nticks": 3},
-                    "yaxis2": {"domain": [0.55, 0.75], "anchor": "x", "nticks": 3},
-                    "yaxis": {"domain": [0.8, 1], "nticks": 3},
+                    "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 5},
+                    "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 5},
+                    "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 5},
+                    "yaxis4": {"domain": [0.8, 1], "anchor": "x2", "nticks": 5},
+                    "yaxis3": {"domain": [0.3, 0.5], "anchor": "x", "nticks": 5},
+                    "yaxis2": {"domain": [0.55, 0.75], "anchor": "x", "nticks": 5},
+                    "yaxis": {"domain": [0.8, 1], "nticks": 5},
                 },
                 "help": """\
 A plot of the smoothly-varying unit cell parameters determined by scan-varying
@@ -369,9 +369,9 @@ the refinement algorithm accounting for unmodelled features in the data.
                     },
                     "xaxis2": {"domain": [0, 1], "anchor": "y3"},
                     "xaxis": {"domain": [0, 1], "anchor": "y3"},
-                    "yaxis3": {"domain": [0, 0.3], "anchor": "x3"},
-                    "yaxis2": {"domain": [0.35, 0.65], "anchor": "x2"},
-                    "yaxis": {"domain": [0.7, 1]},
+                    "yaxis3": {"domain": [0, 0.3], "anchor": "x3", "nticks": 5},
+                    "yaxis2": {"domain": [0.35, 0.65], "anchor": "x2", "nticks": 5},
+                    "yaxis": {"domain": [0.7, 1], "nticks": 5},
                 },
                 "help": """\
 A plot of the smoothly-varying crystal orientation parameters determined by
