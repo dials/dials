@@ -768,9 +768,12 @@ class SpotFinder(object):
             for i, experiment in enumerate(experiments):
                 if experiment.imageset is not imageset:
                     continue
-                z0, z1 = experiment.scan.get_array_range()
-                z = table["xyzobs.px.value"].parts()[2]
-                table["id"].set_selected((z > z0) & (z < z1), i)
+                if experiment.scan:
+                    z0, z1 = experiment.scan.get_array_range()
+                    z = table["xyzobs.px.value"].parts()[2]
+                    table["id"].set_selected((z > z0) & (z < z1), i)
+                else:
+                    table["id"] = flex.int(table.nrows(), j)
             missed = table["id"] == -1
             assert missed.count(True) == 0, missed.count(True)
             reflections.extend(table)
