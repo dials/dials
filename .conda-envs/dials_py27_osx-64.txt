@@ -2,7 +2,7 @@ pthread-stubs
 py2app
 python.app
 
-cctbx::libcxx
+conda-forge::libcxx
 conda-forge::hdf5-external-filter-plugins
 cctbx::wxpython<4
 
