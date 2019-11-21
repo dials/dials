@@ -271,8 +271,6 @@ setting:
 
 .. dials_tutorial_include:: betalactamase/dials.refine_bravais_settings.log
     :start-at: Chiral space groups
-    :end-before: usr+sys
-
 
 The scores include the metric fit (in degrees), RMSDs (in mm), and the
 best and worse correlation coefficients for data related by symmetry
