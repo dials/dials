@@ -78,9 +78,9 @@ consistently, scales the data with :samp:`dials.scale`,
 calculates a resolution limit with :samp:`dials.resolutionizer` and reruns
 :samp:`dials.scale` with the determined resolution cutoff. The
 final dataset is exported to an unmerged mtz and a
-:doc:`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`
+`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`_
 is generated. The easiest way to see the results is to open the
-:doc:`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`
+`HTML report <https://dials.github.io/tutorial_data/master/multi_crystal/xia2.multiplex.html>`_
 in your browser of choice e.g.::
 
   firefox xia2.multiplex.html
