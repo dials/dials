@@ -302,7 +302,7 @@ def frame_hist(bbox, width=80, symbol="#", prefix=""):
     :return: The histogram string
     """
     return hist(
-        [z for b in bbox for z in range(b[4], b[5])],
+        [(z + 1) for b in bbox for z in range(b[4], b[5])],
         width=width,
         symbol=symbol,
         prefix=prefix,
