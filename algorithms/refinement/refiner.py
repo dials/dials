@@ -170,6 +170,7 @@ class RefinerFactory(object):
             "xyzcal.px",
             "xyzobs.mm.variance",
             "flags",
+            "shoebox",
             "delpsical.weights",
         ]
         # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
