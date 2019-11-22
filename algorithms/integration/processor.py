@@ -406,18 +406,21 @@ class Task(object):
         except Exception:
             frame10, frame11 = (0, len(imageset))
         try:
+            # range increasing
             assert frame00 < frame01
+
+            # within an increasing range
             assert frame10 < frame11
+
+            # we are processing data which is within range
             assert frame00 >= frame10
             assert frame01 <= frame11
-            index0 = frame00 - frame10
-            index1 = index0 + (frame01 - frame00)
-            assert index0 < index1
-            assert index0 >= 0
-            assert index1 <= len(imageset)
-            imageset = imageset[index0:index1]
-        except Exception:
-            raise RuntimeError("Programmer Error: bad array range")
+
+            assert (frame01 - frame00) <= len(imageset)
+            imageset = imageset[frame00:frame01]
+        except Exception as e:
+            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+
         try:
             frame0, frame1 = imageset.get_array_range()
         except Exception:
