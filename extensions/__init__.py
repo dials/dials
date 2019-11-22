@@ -76,7 +76,7 @@ class _Extension(object):
 
 
 class SpotFinderThreshold(_Extension):
-    """ Extensions for threshold algorithms to be used in spot finding. """
+    """Extensions for threshold algorithms to be used in spot finding."""
 
     scope = "spotfinder"
     name = "threshold"
@@ -114,7 +114,7 @@ class ProfileModel(_Extension):
 
 
 class Centroid(_Extension):
-    """ Extensions for centroid algorithms. """
+    """Extensions for centroid algorithms."""
 
     scope = "integration"
     name = "centroid"
@@ -127,7 +127,7 @@ class Centroid(_Extension):
 
 
 class Background(_Extension):
-    """ Extensions for background algorithms. """
+    """Extensions for background algorithms."""
 
     scope = "integration"
     name = "background"

@@ -97,7 +97,7 @@ phil_scope = parse(
 
 class Model(ProfileModelExt):
     def __init__(self, params, n_sigma, sigma_b, sigma_m, deg=False):
-        """ Initialise with the parameters. """
+        """Initialise with the parameters."""
         from math import pi
 
         self.params = params
@@ -124,7 +124,7 @@ class Model(ProfileModelExt):
 
     @classmethod
     def from_dict(cls, obj):
-        """ Convert the profile model from a dictionary. """
+        """Convert the profile model from a dictionary."""
         if obj["__id__"] != "gaussian_rs":
             raise RuntimeError("expected __id__ gaussian_rs, got %s" % obj["__id__"])
         n_sigma = obj["n_sigma"]
@@ -137,7 +137,7 @@ class Model(ProfileModelExt):
         return cls(None, n_sigma, sigma_b, sigma_m, deg=True)
 
     def to_dict(self):
-        """ Convert the model to a dictionary. """
+        """Convert the model to a dictionary."""
         n_sigma = self.n_sigma()
         if self._scan_varying:
             sigma_b = list(self.sigma_b(deg=True))
@@ -153,7 +153,7 @@ class Model(ProfileModelExt):
         }
 
     def sigma_b(self, index=None, deg=True):
-        """ Return sigma_b. """
+        """Return sigma_b."""
         from math import pi
 
         if index is None:
@@ -165,7 +165,7 @@ class Model(ProfileModelExt):
         return sigma_b
 
     def sigma_m(self, index=None, deg=True):
-        """ Return sigma_m. """
+        """Return sigma_m."""
         from math import pi
 
         if index is None:
@@ -177,23 +177,23 @@ class Model(ProfileModelExt):
         return sigma_m
 
     def n_sigma(self):
-        """ The number of sigmas. """
+        """The number of sigmas."""
         return self._n_sigma
 
     def delta_b(self, index=None, deg=True):
-        """ Return delta_b. """
+        """Return delta_b."""
         return self.sigma_b(index, deg) * self.n_sigma()
 
     def delta_m(self, index=None, deg=True):
-        """ Return delta_m. """
+        """Return delta_m."""
         return self.sigma_m(index, deg) * self.n_sigma()
 
     def is_scan_varying(self):
-        """ Return whether scan varying. """
+        """Return whether scan varying."""
         return self._scan_varying
 
     def num_scan_points(self):
-        """ Return number of scan points. """
+        """Return number of scan points."""
         if self._scan_varying:
             assert len(self._sigma_m) == len(self._sigma_b)
             return len(self._sigma_m)

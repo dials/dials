@@ -37,7 +37,7 @@ class ComputeEsdBeamDivergence(object):
         self._sigma = math.sqrt(flex.sum(variance) / len(variance))
 
     def sigma(self):
-        """ Return the E.S.D of the beam divergence. """
+        """Return the E.S.D of the beam divergence."""
         return self._sigma
 
     def _beam_direction_variance_list(
@@ -233,13 +233,13 @@ class ComputeEsdReflectingRange(object):
             self.sigma = math.exp(optimizer.get_solution()[0])
 
         def target(self, log_sigma):
-            """ The target for minimization. """
+            """The target for minimization."""
             from scitbx.array_family import flex
 
             return -flex.sum(self._R(math.exp(log_sigma[0])))
 
     class CrudeEstimator(object):
-        """ If the main estimator failed make a crude estimate """
+        """If the main estimator failed make a crude estimate"""
 
         def __init__(self, crystal, beam, detector, goniometer, scan, reflections):
 
@@ -296,7 +296,7 @@ class ComputeEsdReflectingRange(object):
             return flex.double(tau), flex.double(zeta2)
 
     class ExtendedEstimator(object):
-        """ Try to estimate using knowledge of intensities """
+        """Try to estimate using knowledge of intensities"""
 
         def __init__(
             self,
@@ -354,7 +354,7 @@ class ComputeEsdReflectingRange(object):
             self.sigma = sigma
 
         def target(self, log_sigma):
-            """ The target for minimization. """
+            """The target for minimization."""
             from scitbx.array_family import flex
             import scitbx.math
 
@@ -495,12 +495,12 @@ class ComputeEsdReflectingRange(object):
         self._sigma = estimator.sigma
 
     def sigma(self):
-        """ Return the E.S.D reflecting rang. """
+        """Return the E.S.D reflecting rang."""
         return self._sigma
 
 
 class ProfileModelCalculator(object):
-    """ Class to help calculate the profile model. """
+    """Class to help calculate the profile model."""
 
     def __init__(
         self,
@@ -514,7 +514,7 @@ class ProfileModelCalculator(object):
         algorithm="basic",
         centroid_definition="s1",
     ):
-        """ Calculate the profile model. """
+        """Calculate the profile model."""
         from dxtbx.model.experiment_list import Experiment
         from dials.array_family import flex
 
@@ -585,16 +585,16 @@ class ProfileModelCalculator(object):
         logger.info(" sigma m: %f degrees", self._sigma_m * 180 / math.pi)
 
     def sigma_b(self):
-        """ Return the E.S.D beam divergence. """
+        """Return the E.S.D beam divergence."""
         return self._sigma_b
 
     def sigma_m(self):
-        """ Return the E.S.D reflecting range. """
+        """Return the E.S.D reflecting range."""
         return self._sigma_m
 
 
 class ScanVaryingProfileModelCalculator(object):
-    """ Class to help calculate the profile model. """
+    """Class to help calculate the profile model."""
 
     def __init__(
         self,
@@ -608,7 +608,7 @@ class ScanVaryingProfileModelCalculator(object):
         algorithm="basic",
         centroid_definition="s1",
     ):
-        """ Calculate the profile model. """
+        """Calculate the profile model."""
         from copy import deepcopy
         from collections import defaultdict
         from dials.array_family import flex
@@ -746,15 +746,15 @@ class ScanVaryingProfileModelCalculator(object):
         logger.info(" sigma m: %f degrees", mean_sigma_m * 180 / math.pi)
 
     def num(self):
-        """ The number of reflections used. """
+        """The number of reflections used."""
         return self._num
 
     def sigma_b(self):
-        """ Return the E.S.D beam divergence. """
+        """Return the E.S.D beam divergence."""
         return self._sigma_b
 
     def sigma_m(self):
-        """ Return the E.S.D reflecting range. """
+        """Return the E.S.D reflecting range."""
         return self._sigma_m
 
 

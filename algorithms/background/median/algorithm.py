@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 class BackgroundAlgorithm(object):
-    """ Class to do background subtraction. """
+    """Class to do background subtraction."""
 
     def __init__(self, experiments):
         """

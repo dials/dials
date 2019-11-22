@@ -116,7 +116,7 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ The integration program. """
+    """The integration program."""
 
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
@@ -135,7 +135,7 @@ class Script(object):
         )
 
     def run(self, args=None):
-        """ Perform the integration. """
+        """Perform the integration."""
         from dials.util.command_line import heading
         from dials.util.options import flatten_reflections, flatten_experiments
         from dials.util import log
@@ -413,7 +413,7 @@ class Script(object):
         return experiments, reflections
 
     def process_reference(self, reference):
-        """ Load the reference spots. """
+        """Load the reference spots."""
         from time import time
         from dials.util import Sorry
 
@@ -491,7 +491,7 @@ class Script(object):
         return reference
 
     def save_reflections(self, reflections, filename):
-        """ Save the reflections to file. """
+        """Save the reflections to file."""
         from time import time
 
         st = time()
@@ -500,7 +500,7 @@ class Script(object):
         logger.info(" time taken: %g" % (time() - st))
 
     def save_experiments(self, experiments, filename):
-        """ Save the profile model parameters. """
+        """Save the profile model parameters."""
         from time import time
 
         st = time()
@@ -509,7 +509,7 @@ class Script(object):
         logger.info(" time taken: %g" % (time() - st))
 
     def sample_predictions(self, experiments, predicted, params):
-        """ Select a random sample of the predicted reflections to integrate. """
+        """Select a random sample of the predicted reflections to integrate."""
 
         nref_per_degree = params.sampling.reflections_per_degree
         min_sample_size = params.sampling.minimum_sample_size
@@ -564,7 +564,7 @@ class Script(object):
         return experiments
 
     def split_for_scan_range(self, experiments, reference, scan_range):
-        """ Update experiments when scan range is set. """
+        """Update experiments when scan range is set."""
         from dxtbx.model.experiment_list import ExperimentList
         from dxtbx.model.experiment_list import Experiment
 

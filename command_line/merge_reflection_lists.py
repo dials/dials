@@ -37,10 +37,10 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ A class to encapsulate the script. """
+    """A class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         # The script usage
         usage = "usage: dev.dials.merge_reflection_lists [options] /path/to/image/reflection/files"
         self.parser = OptionParser(
@@ -48,7 +48,7 @@ class Script(object):
         )
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)
         if len(params.input.reflections) == 0:

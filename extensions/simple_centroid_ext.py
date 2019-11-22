@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 class SimpleCentroidExt(object):
-    """ An extension class implementing a simple centroid algorithm. """
+    """An extension class implementing a simple centroid algorithm."""
 
     name = "simple"
 

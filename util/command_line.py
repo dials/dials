@@ -29,10 +29,10 @@ interactive_console = debug_console
 
 
 class ProgressBarTimer:
-    """ A simple timer for the progress bar. """
+    """A simple timer for the progress bar."""
 
     def __init__(self):
-        """ Init the progress bar timer. """
+        """Init the progress bar timer."""
         self._last_time = time.time()
         self._last_perc = 0
         self._update_period = 0.5
@@ -42,7 +42,7 @@ class ProgressBarTimer:
         return time.time() - self._last_time
 
     def update(self, percent):
-        """ Update the timer. """
+        """Update the timer."""
         # Get the current time diff between last time
         curr_time = time.time()
         diff_time = curr_time - self._last_time
@@ -67,7 +67,7 @@ class ProgressBarTimer:
 
 
 class ProgressBar:
-    """ A command line progress bar. """
+    """A command line progress bar."""
 
     def __init__(
         self,
@@ -78,7 +78,7 @@ class ProgressBar:
         indent=0,
         length=80,
     ):
-        """ Init the progress bar parameters. """
+        """Init the progress bar parameters."""
 
         # Set the parameters
         self._title = title
@@ -94,7 +94,7 @@ class ProgressBar:
         self.update(0)
 
     def update(self, fpercent):
-        """ Update the progress bar with a percentage. """
+        """Update the progress bar with a percentage."""
         from math import ceil
 
         # do not update if not a tty
@@ -151,7 +151,7 @@ class ProgressBar:
         sys.stdout.flush()
 
     def finished(self, string=None):
-        """ The progress bar is finished. """
+        """The progress bar is finished."""
         if string:
             self._title = string
         else:

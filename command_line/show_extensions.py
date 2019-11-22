@@ -6,10 +6,10 @@ from dials.util import show_mail_on_error
 
 
 class Script(object):
-    """ The class to encapsulate the script. """
+    """The class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         from dials.util.options import OptionParser
         from libtbx.phil import parse
 
@@ -27,7 +27,7 @@ class Script(object):
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
         import dials.extensions
 
         # Parse the command line arguments

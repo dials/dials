@@ -19,13 +19,13 @@ from dials.util.options import OptionParser
 
 
 class SpotXDSImporter(object):
-    """ Class to import a spot.xds file to a reflection table. """
+    """Class to import a spot.xds file to a reflection table."""
 
     def __init__(self, spot_xds):
         self._spot_xds = spot_xds
 
     def __call__(self, params, options):
-        """ Import the spot.xds file. """
+        """Import the spot.xds file."""
         # Read the SPOT.XDS file
         Command.start("Reading SPOT.XDS")
         handle = spot_xds.reader()
@@ -76,14 +76,14 @@ class SpotXDSImporter(object):
 
 
 class IntegrateHKLImporter(object):
-    """ Class to import an integrate.hkl file to a reflection table. """
+    """Class to import an integrate.hkl file to a reflection table."""
 
     def __init__(self, integrate_hkl, experiment):
         self._integrate_hkl = integrate_hkl
         self._experiment = experiment
 
     def __call__(self, params, options):
-        """ Import the integrate.hkl file. """
+        """Import the integrate.hkl file."""
         # Get the unit cell to calculate the resolution
         uc = self._experiment.crystal.get_unit_cell()
 
@@ -168,7 +168,7 @@ class IntegrateHKLImporter(object):
 
 
 class XDSFileImporter(object):
-    """ Import a data block from xds. """
+    """Import a data block from xds."""
 
     def __init__(self, args):
         """ Initialise with the options"""
@@ -373,10 +373,10 @@ class XDSFileImporter(object):
 
 
 class Script(object):
-    """ A class to encapsulate the script. """
+    """A class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         # Create the phil parameters
         phil_scope = parse(
             """
@@ -421,7 +421,7 @@ class Script(object):
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
 
         # Parse the command line arguments
         params, options, args = self.parser.parse_args(

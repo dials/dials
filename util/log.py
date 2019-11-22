@@ -49,7 +49,7 @@ def config(verbosity=0, logfile=None):
 
 
 class CacheHandler(logging.Handler):
-    """ A simple class to store log messages. """
+    """A simple class to store log messages."""
 
     def __init__(self):
         """

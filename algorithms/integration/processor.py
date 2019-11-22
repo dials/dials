@@ -197,7 +197,7 @@ class ExecuteParallelTask(object):
 
 
 class Processor(object):
-    """ Processor interface class. """
+    """Processor interface class."""
 
     def __init__(self, manager):
         """
@@ -643,7 +643,7 @@ class Manager(object):
             yield self.task(i)
 
     def accumulate(self, result):
-        """ Accumulate the results. """
+        """Accumulate the results."""
         self.data[result.index] = result.data
         self.manager.accumulate(result.index, result.reflections)
         self.time.read += result.read_time
@@ -879,7 +879,7 @@ class ManagerRot(Manager):
     post processors."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the pre-processor, post-processor and manager. """
+        """Initialise the pre-processor, post-processor and manager."""
 
         # Ensure we have the correct type of data
         if not experiments.all_sequences():
@@ -900,7 +900,7 @@ class ManagerStills(Manager):
     processors."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the pre-processor, post-processor and manager. """
+        """Initialise the pre-processor, post-processor and manager."""
 
         # Ensure we have the correct type of data
         if not experiments.all_stills():
@@ -917,10 +917,10 @@ class ManagerStills(Manager):
 
 
 class Processor3D(Processor):
-    """ Top level processor for 3D processing. """
+    """Top level processor for 3D processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Set some parameters
         params.shoebox.partials = False
@@ -934,10 +934,10 @@ class Processor3D(Processor):
 
 
 class ProcessorFlat3D(Processor):
-    """ Top level processor for flat 2D processing. """
+    """Top level processor for flat 2D processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Set some parameters
         params.shoebox.flatten = True
@@ -951,10 +951,10 @@ class ProcessorFlat3D(Processor):
 
 
 class Processor2D(Processor):
-    """ Top level processor for 2D processing. """
+    """Top level processor for 2D processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Set some parameters
         params.shoebox.partials = True
@@ -967,10 +967,10 @@ class Processor2D(Processor):
 
 
 class ProcessorSingle2D(Processor):
-    """ Top level processor for still image processing. """
+    """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Set some of the parameters
         params.block.size = 1
@@ -986,10 +986,10 @@ class ProcessorSingle2D(Processor):
 
 
 class ProcessorStills(Processor):
-    """ Top level processor for still image processing. """
+    """Top level processor for still image processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Set some parameters
         params.block.size = 1

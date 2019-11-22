@@ -37,10 +37,10 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ Encapsulate the script in a class. """
+    """Encapsulate the script in a class."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         from dials.util.options import OptionParser
 
         usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
@@ -54,7 +54,7 @@ class Script(object):
         )
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.util.command_line import Command
         from dials.array_family import flex
@@ -139,7 +139,7 @@ class Script(object):
         Command.end("Wrote experiments to %s" % params.output)
 
     def process_reference(self, reference, params):
-        """ Load the reference spots. """
+        """Load the reference spots."""
         from time import time
         from dials.util import Sorry
 

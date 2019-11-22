@@ -88,7 +88,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
 
 
 class StillsIndexer(Indexer):
-    """ Class for indexing stills """
+    """Class for indexing stills"""
 
     def __init__(self, reflections, experiments, params=None):
         if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
@@ -796,7 +796,7 @@ class StillsIndexer(Indexer):
         return ref_experiments, reflections
 
 
-""" Mixin class definitions that override the dials indexing class methods specific to stills """
+"""Mixin class definitions that override the dials indexing class methods specific to stills"""
 
 
 class StillsIndexerKnownOrientation(IndexerKnownOrientation, StillsIndexer):
