@@ -1,0 +1,3 @@
+Scan-varying refinement no longer fails when the scan is wider than the
+observed reflections (e.g. when the crystal has died). Instead, the scan
+is first trimmed to match the range of the diffraction.
