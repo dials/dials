@@ -135,17 +135,37 @@ class BlockCalculator(object):
         self._reflections["block_centre"] = flex.double(len(self._reflections))
 
     @staticmethod
-    def _check_scan_range(exp_phi, scan):
-        """Check that the observed reflections fill the scan-range"""
+    def _trim_scan(exp_phi, scan, shoeboxes=None):
+        """If the observed reflections do not fill the scan-range, trim the
+        scan to match the range of observed data"""
 
-        # Allow up to 5 degrees between the observed phi extrema and the
-        # scan edges
-        start, stop = scan.get_oscillation_range(deg=False)
-        if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise DialsRefineConfigError(
-                "The reflections do not fill the scan range. "
-                "A common reason for this is that the crystal has died at the end of the scan."
+        start, stop = scan.get_image_range()
+
+        # Find real observed range of data
+        min_phi = min(exp_phi)
+        max_phi = max(exp_phi)
+
+        # Extend either by shoebox size, or 0.5 deg if shoebox not available
+        if shoeboxes:
+            sb = shoeboxes[flex.first_index(exp_phi, min_phi)]
+            min_phi = scan.get_angle_from_image_index(sb.bbox[4], deg=False)
+            sb = shoeboxes[flex.first_index(exp_phi, max_phi)]
+            max_phi = scan.get_angle_from_image_index(sb.bbox[5] + 1, deg=False)
+        else:
+            min_phi -= 0.008726645
+            max_phi += 0.008726645
+        min_z = int(scan.get_image_index_from_angle(min_phi, deg=False))
+        max_z = int(math.ceil(scan.get_image_index_from_angle(max_phi, deg=False)))
+
+        if min_z > start or max_z < stop:
+            logger.warning(
+                "The reflections do not fill the scan range. The scan will be trimmed "
+                "to images {0}...{1} to match the range of observed data".format(
+                    min_z, max_z
+                )
             )
+
+            scan.set_image_range((min_z, max_z))
 
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
@@ -154,15 +174,23 @@ class BlockCalculator(object):
             width *= DEG2RAD
         self._create_block_columns()
 
-        # get observed phi in radians
+        # get observed phi in radians and shoeboxes if present
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
+        try:
+            shoebox = self._reflections["shoebox"]
+        except AttributeError:
+            shoebox = None
 
         for iexp, exp in enumerate(self._experiments):
 
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
+            if shoebox:
+                exp_shoe = shoebox.select(isel)
+            else:
+                exp_shoe = None
+            self._trim_scan(exp_phi, exp.scan, exp_shoe)
 
             start, stop = exp.scan.get_oscillation_range(deg=False)
             nblocks = int(abs(stop - start) / width) + 1
@@ -193,13 +221,21 @@ class BlockCalculator(object):
 
         # get observed phi in radians
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
+        try:
+            shoebox = self._reflections["shoebox"]
+        except AttributeError:
+            shoebox = None
 
         for iexp, exp in enumerate(self._experiments):
 
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
+            if shoebox:
+                exp_shoe = shoebox.select(isel)
+            else:
+                exp_shoe = None
+            self._trim_scan(exp_phi, exp.scan, exp_shoe)
 
             # convert phi to integer frames
             frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
