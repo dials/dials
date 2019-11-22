@@ -5,24 +5,21 @@ data and comparing with expected output.
 
 from __future__ import absolute_import, division, print_function
 
-import os
 import procrunner
 import pytest
 from dxtbx.model.experiment_list import ExperimentListFactory
 
 
-def test(dials_regression, tmpdir):
+def test(dials_data, tmpdir):
     """Test two theta refine on integrated data."""
     # use multiple scan small molecule data for this test
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    prefix = ["20", "25", "30", "35"]
-    exp_path = [e + "_integrated_experiments.json" for e in prefix]
-    exp_path = [os.path.join(data_dir, e) for e in exp_path]
-    pkl_path = [e + "_integrated.pickle" for e in prefix]
-    pkl_path = [os.path.join(data_dir, e) for e in pkl_path]
+    data_dir = dials_data("l_cysteine_dials_output")
+    prefix = (20, 25, 30, 35)
+    exp_path = [data_dir / ("%d_integrated_experiments.json" % p) for p in prefix]
+    pkl_path = [data_dir / ("%d_integrated.pickle" % p) for p in prefix]
 
     for pth in exp_path + pkl_path:
-        assert os.path.exists(pth), "%s missing" % pth
+        assert pth.check(), "%s missing" % pth.strpath
 
     cmd = (
         [
@@ -61,9 +58,8 @@ def test(dials_regression, tmpdir):
 def test_two_theta_refine_scaled_data(dials_data, tmpdir):
     """Test two theta refine on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
-
-    refls = location.join("scaled_20_25.refl").strpath
-    expts = location.join("scaled_20_25.expt").strpath
+    refls = location.join("scaled_20_25.refl")
+    expts = location.join("scaled_20_25.expt")
 
     command = [
         "dials.two_theta_refine",

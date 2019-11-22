@@ -5,10 +5,10 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import absolute_import, division, print_function
 
 import json
-import os
+
+import iotbx.merging_statistics
 import pytest
 import procrunner
-
 from libtbx import phil
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
@@ -47,7 +47,6 @@ def get_merging_stats(
     data_labels=None,
 ):
     """Return a merging statistics result from an mtz file."""
-    import iotbx.merging_statistics
 
     i_obs = iotbx.merging_statistics.select_data(
         scaled_unmerged_mtz, data_labels=data_labels
@@ -280,11 +279,11 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         "intensity_choice=profile",
     ],
 )
-def test_scale_single_dataset_with_options(dials_regression, tmpdir, option):
+def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     """Test different non-default command-line options with a single dataset."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
     args = [refl_1, expt_1]
     if option:
         args.append(option)
@@ -350,25 +349,25 @@ def test_error_model_options(
         "reflection_selection.method=use_all",
     ],
 )
-def test_scale_multiple_datasets_with_options(dials_regression, tmpdir, option):
+def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
     """Test different non-defaul command-line options with multiple datasets."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     args = [refl_1, expt_1, refl_2, expt_2]
     if option:
         args.append(option)
     run_one_scaling(tmpdir, args)
 
 
-def test_scale_physical(dials_regression, tmpdir):
+def test_scale_physical(dials_data, tmpdir):
     """Test standard scaling of one dataset."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
     extra_args = [
         "model=physical",
         "merged_mtz=merged.mtz",
@@ -502,27 +501,27 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
 
-def test_scale_array(dials_regression, tmpdir):
+def test_scale_array(dials_data, tmpdir):
     """Test a standard dataset - ideally needs a large dataset or full matrix
     round may fail. Currently turning off absorption term to avoid
     overparameterisation and failure of full matrix minimisation."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl = os.path.join(data_dir, "20_integrated.pickle")
-    expt = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl = data_dir / "20_integrated.pickle"
+    expt = data_dir / "20_integrated_experiments.json"
     extra_args = ["model=array", "array.absorption_correction=0", "full_matrix=0"]
 
     run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
 
-def test_multi_scale(dials_regression, tmpdir):
+def test_multi_scale(dials_data, tmpdir):
     """Test standard scaling of two datasets."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     extra_args = [
         "unmerged_mtz=unmerged.mtz",
         "error_model=None",
@@ -561,13 +560,13 @@ def test_multi_scale(dials_regression, tmpdir):
     assert result.overall.cc_one_half > 0.9965  # at 07/08/18, value was 0.996925
 
 
-def test_multi_scale_exclude_images(dials_regression, tmpdir):
+def test_multi_scale_exclude_images(dials_data, tmpdir):
     """Test scaling of multiple dataset with image exclusion."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     # Expect this dataset to be given batches 1-1800 and 1901-3600
     # Try excluding last two hundred batches
     extra_args = [
@@ -605,17 +604,17 @@ def test_multi_scale_exclude_images(dials_regression, tmpdir):
     assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
 
 
-def test_targeted_scaling(dials_regression, tmpdir, dials_data):
+def test_targeted_scaling(dials_data, tmpdir):
     """Test the targeted scaling workflow."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     target_refl = location.join("scaled_35.refl").strpath
     target_expt = location.join("scaled_35.expt").strpath
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
 
     # Do targeted scaling, use this as a chance to test the KB model as well.
     extra_args = ["model=KB"]
@@ -632,17 +631,17 @@ def test_targeted_scaling(dials_regression, tmpdir, dials_data):
     run_one_scaling(tmpdir, [refl_2, scaled_refl, expt_2, scaled_exp] + extra_args)
 
 
-def test_incremental_scale_workflow(dials_regression, tmpdir):
+def test_incremental_scale_workflow(dials_data, tmpdir):
     """Try scale, cosym, scale, cosym, scale."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
 
     run_one_scaling(tmpdir, [refl_1, expt_1])
 
     # test order also - first new file before scaled
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     command = ["dials.cosym", refl_2, expt_2, "scaled.refl", "scaled.expt"]
 
     result = procrunner.run(command, working_directory=tmpdir)
@@ -654,8 +653,8 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     run_one_scaling(tmpdir, ["symmetrized.refl", "symmetrized.expt"])
 
     # test order also - first scaled file then new file
-    refl_2 = os.path.join(data_dir, "30_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "30_integrated_experiments.json")
+    refl_2 = data_dir / "30_integrated.pickle"
+    expt_2 = data_dir / "30_integrated_experiments.json"
     command = [
         "dials.cosym",
         "scaled.refl",
@@ -684,13 +683,11 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
         ("multi", "model", "physical array"),
     ],
 )
-def test_scale_cross_validate(
-    dials_regression, tmpdir, mode, parameter, parameter_values
-):
+def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_values):
     """Test standard scaling of one dataset."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl = os.path.join(data_dir, "20_integrated.pickle")
-    expt = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl = data_dir / "20_integrated.pickle"
+    expt = data_dir / "20_integrated_experiments.json"
     extra_args = [
         "cross_validation_mode=%s" % mode,
         "nfolds=2",

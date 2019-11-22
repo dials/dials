@@ -7,6 +7,7 @@ from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
     merging_stats_from_scaled_array,
 )
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.algorithms.scaling.Ih_table import (
     _reflection_table_to_iobs,
     map_indices_to_asu,
@@ -165,6 +166,7 @@ def merge_and_truncate(params, experiments, reflections):
     reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
 
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    # Note, merge_equivalents does not raise an error if data is unique.
     if params.anomalous:
         anomalous_scaled = scaled_array.as_anomalous_array()
 
@@ -225,12 +227,18 @@ def merge_and_truncate(params, experiments, reflections):
 
     # Show merging stats again.
     if params.reporting.merging_stats:
-        stats, anom_stats = merging_stats_from_scaled_array(
-            scaled_array, params.merging.n_bins, params.merging.use_internal_variance
-        )
-        if params.merging.anomalous:
-            logger.info(make_merging_statistics_summary(anom_stats))
+        try:
+            stats, anom_stats = merging_stats_from_scaled_array(
+                scaled_array,
+                params.merging.n_bins,
+                params.merging.use_internal_variance,
+            )
+        except DialsMergingStatisticsError as e:
+            logger.info(e)
         else:
-            logger.info(make_merging_statistics_summary(stats))
+            if params.merging.anomalous:
+                logger.info(make_merging_statistics_summary(anom_stats))
+            else:
+                logger.info(make_merging_statistics_summary(stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes

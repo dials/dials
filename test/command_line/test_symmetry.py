@@ -16,16 +16,16 @@ from dials.algorithms.symmetry.cosym._generate_test_data import (
 from dials.command_line.symmetry import map_to_minimum_cell
 
 
-def test_symmetry_laue_only(dials_regression, tmpdir):
+def test_symmetry_laue_only(dials_data, tmpdir):
     """Simple test to check that dials.symmetry completes"""
 
     result = procrunner.run(
         [
             "dials.symmetry",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
             "systematic_absences.check=False",
         ],
         working_directory=tmpdir,
@@ -85,16 +85,16 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
         )
 
 
-def test_symmetry_with_absences(dials_regression, tmpdir):
+def test_symmetry_with_absences(dials_data, tmpdir):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
     result = procrunner.run(
         [
             "dials.symmetry",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
         ],
         working_directory=tmpdir,
     )
@@ -107,7 +107,7 @@ def test_symmetry_with_absences(dials_regression, tmpdir):
     assert str(expts[0].crystal.get_space_group().info()) == "P 21 21 21"
 
 
-def test_symmetry_with_laue_group_override(dials_regression, tmpdir):
+def test_symmetry_with_laue_group_override(dials_data, tmpdir):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
     result = procrunner.run(
@@ -115,10 +115,10 @@ def test_symmetry_with_laue_group_override(dials_regression, tmpdir):
             "dials.symmetry",
             "laue_group=P121",
             "change_of_basis_op=-b,-a,-c",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
         ],
         working_directory=tmpdir,
     )

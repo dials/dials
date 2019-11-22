@@ -454,17 +454,32 @@ class Task(object):
         ), "maximum memory usage must be <= 1"
         limit_memory = total_memory * self.params.block.max_memory_usage
         if sbox_memory > limit_memory:
+            shoebox = self.reflections["shoebox"]
+            sel = flex.random_selection(len(shoebox), min(len(shoebox), 1000))
+            subset_sb = shoebox.select(sel)
+            xsize = flex.mean(flex.double([s.xsize() for s in subset_sb]))
+            ysize = flex.mean(flex.double([s.ysize() for s in subset_sb]))
+            zsize = flex.mean(flex.double([s.zsize() for s in subset_sb]))
+
             raise RuntimeError(
                 """
     There was a problem allocating memory for shoeboxes. Possible solutions
     include increasing the percentage of memory allowed for shoeboxes or
     decreasing the block size. This could also be caused by a highly mosaic
-    crystal model - is your crystal really this mosaic?
+    crystal model. The average shoebox size is %d * %d * %d pixels - is your
+    crystal really this mosaic?
         Total system memory: %g GB
         Limit shoebox memory: %g GB
         Required shoebox memory: %g GB
     """
-                % (total_memory / 1e9, limit_memory / 1e9, sbox_memory / 1e9)
+                % (
+                    xsize,
+                    ysize,
+                    zsize,
+                    total_memory / 1e9,
+                    limit_memory / 1e9,
+                    sbox_memory / 1e9,
+                )
             )
         else:
             logger.info(" Memory usage:")

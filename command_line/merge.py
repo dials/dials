@@ -16,7 +16,6 @@ from dials.algorithms.merging.merge import (
     make_merged_mtz_file,
     merge_and_truncate,
 )
-from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from libtbx import phil
 from six.moves import cStringIO as StringIO
 
@@ -162,7 +161,7 @@ Only scaled data can be processed with dials.merge"""
 
     try:
         mtz_file = merge_data_to_mtz(params, experiments, reflections)
-    except (ValueError, DialsMergingStatisticsError) as e:
+    except ValueError as e:
         raise Sorry(e)
 
     logger.info("\nWriting reflections to %s", (params.output.mtz))

@@ -142,7 +142,8 @@ def run(args):
         images = params.images
 
     # work around issues with HDF5 and multiprocessing
-    imageset.reader().nullify_format_instance()
+    if hasattr(imageset.reader(), "nullify_format_instance"):
+        imageset.reader().nullify_format_instance()
 
     n = int(math.ceil(len(images) / params.nproc))
     chunks = [images[i : i + n] for i in range(0, len(images), n)]

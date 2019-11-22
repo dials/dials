@@ -257,14 +257,6 @@ class align_crystal(object):
         else:
             return json.dumps(d, indent=2)
 
-    def show(self):
-        print(
-            "Warning: Use of the .show() method is deprecated. Use print(object) instead."
-        )
-        print(str(self))
-
-    info = show
-
     def __str__(self):
         U = matrix.sqr(self.experiment.crystal.get_U())
         B = matrix.sqr(self.experiment.crystal.get_B())

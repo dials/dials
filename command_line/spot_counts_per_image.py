@@ -67,8 +67,7 @@ def run(args):
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
     expts = set(reflections["id"])
-
-    if max(expts) >= len(experiments):
+    if len(expts) and max(expts) >= len(experiments.imagesets()):
         sys.exit("Unknown experiments in reflection list")
 
     reflections.centroid_px_to_mm(experiments)

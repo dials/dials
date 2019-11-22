@@ -1,20 +1,4 @@
-from __future__ import absolute_import, division, print_function
-
-import collections
-import json
-import logging
-import os
-
-import iotbx.phil
-import libtbx
-from dials.array_family import flex
-from dials.util import Sorry
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
-
-logger = logging.getLogger("dials.command_line.refine_bravais_settings")
-help_message = """
+"""Refinement of Bravais settings consistent with the primitive unit cell.
 
 This program takes as input the output of dials.index, i.e. indexed.expt
 and indexed.refl files. Full refinement of the crystal and experimental
@@ -42,23 +26,39 @@ Examples::
   dials.refine_bravais_settings indexed.expt indexed.refl nproc=4
 """
 
-phil_scope = iotbx.phil.parse(
+from __future__ import absolute_import, division, print_function
+
+import collections
+import json
+import logging
+import os
+import sys
+
+import libtbx.phil
+from cctbx import sgtbx
+from cctbx.sgtbx import bravais_types
+
+from dxtbx.model import ExperimentList
+from dials.algorithms.indexing.bravais_settings import (
+    refined_settings_from_refined_triclinic,
+)
+from dials.array_family import flex
+from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.options import flatten_reflections
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
+
+
+logger = logging.getLogger("dials.command_line.refine_bravais_settings")
+
+phil_scope = libtbx.phil.parse(
     """
-lepage_max_delta = 5
-  .type = float
-nproc = Auto
-  .type = int(value_min=1)
+include scope dials.algorithms.indexing.bravais_settings.phil_scope
+
 crystal_id = None
   .type = int(value_min=0)
-normalise = False
-  .type = bool
-  .help = "Normalise intensities before calculating correlation coefficients."
-normalise_bins = 0
-  .type = int
-  .help = "Number of resolution bins for normalisation"
-cc_n_bins = None
-  .type = int(value_min=1)
-  .help = "Number of resolution bins to use for calculation of correlation coefficients"
+
 output {
   directory = "."
     .type = path
@@ -68,29 +68,12 @@ output {
     .type = str
 }
 
-include scope dials.algorithms.refinement.refiner.phil_scope
 """,
     process_includes=True,
 )
 
-# override default refinement parameters
-phil_scope = phil_scope.fetch(
-    source=iotbx.phil.parse(
-        """\
-refinement {
-  reflections {
-    reflections_per_degree=100
-  }
-}
-"""
-    )
-)
-
 
 def bravais_lattice_to_space_groups(chiral_only=True):
-    from cctbx import sgtbx
-    from cctbx.sgtbx import bravais_types
-
     bravais_lattice_to_sg = collections.OrderedDict()
     for sgn in range(230):
         sg = sgtbx.space_group_info(number=sgn + 1).group()
@@ -125,9 +108,47 @@ def short_space_group_name(space_group):
     return symbol.replace(" ", "")
 
 
-def run(args=None):
-    from dials.util import log
+def eliminate_sys_absent(experiments, reflections):
+    if experiments[0].crystal.get_space_group().n_ltr() > 1:
+        effective_group = (
+            experiments[0]
+            .crystal.get_space_group()
+            .build_derived_reflection_intensity_group(anomalous_flag=True)
+        )
+        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
+        reflections = reflections.select(~sys_absent_flags)
+    return reflections
 
+
+def map_to_primitive(experiments, reflections):
+    """Map experiments and reflections to primitive setting."""
+    cb_op_to_primitive = (
+        experiments[0]
+        .crystal.get_space_group()
+        .info()
+        .change_of_basis_op_to_primitive_setting()
+    )
+    experiments[0].crystal.update(
+        experiments[0].crystal.change_basis(cb_op_to_primitive)
+    )
+    reflections["miller_index"] = cb_op_to_primitive.apply(reflections["miller_index"])
+
+
+def select_datasets_on_crystal_id(experiments, reflections, crystal_id):
+    """Select experiments and reflections with the given crystal id"""
+    assert crystal_id < len(experiments.crystals())
+    experiment_ids = experiments.where(crystal=experiments.crystals()[crystal_id])
+
+    experiments = ExperimentList([experiments[i] for i in experiment_ids])
+    refl_selections = [reflections["id"] == i for i in experiment_ids]
+    reflections["id"] = flex.int(len(reflections), -1)
+    for i, sel in enumerate(refl_selections):
+        reflections["id"].set_selected(sel, i)
+    reflections = reflections.select(reflections["id"] > -1)
+    return experiments, reflections
+
+
+def run(args=None):
     usage = "dials.refine_bravais_settings indexed.expt indexed.refl [options]"
 
     parser = OptionParser(
@@ -136,15 +157,13 @@ def run(args=None):
         read_experiments=True,
         read_reflections=True,
         check_format=False,
-        epilog=help_message,
+        epilog=__doc__,
     )
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
     # Configure the logging
     log.config(verbosity=options.verbose, logfile=params.output.log)
-
-    from dials.util.version import dials_version
 
     logger.info(dials_version())
 
@@ -166,68 +185,26 @@ def run(args=None):
     if len(experiments) == 0:
         parser.print_help()
         return
-    elif len(experiments.crystals()) > 1:
+    if len(experiments.crystals()) > 1:
         if params.crystal_id is not None:
-            assert params.crystal_id < len(experiments.crystals())
-            experiment_ids = experiments.where(
-                crystal=experiments.crystals()[params.crystal_id]
+            experiments, reflections = select_datasets_on_crystal_id(
+                experiments, reflections, params.crystal_id
             )
-            from dxtbx.model.experiment_list import ExperimentList
-
-            experiments = ExperimentList([experiments[i] for i in experiment_ids])
-            refl_selections = [reflections["id"] == i for i in experiment_ids]
-            reflections["id"] = flex.int(len(reflections), -1)
-            for i, sel in enumerate(refl_selections):
-                reflections["id"].set_selected(sel, i)
-            reflections = reflections.select(reflections["id"] > -1)
         else:
-            raise Sorry(
-                "Only one crystal can be processed at a time: set crystal_id to choose experiment."
+            sys.exit(
+                "Only one crystal can be processed at a time: set crystal_id to choose "
+                "experiment."
             )
 
-    if params.refinement.reflections.outlier.algorithm in ("auto", libtbx.Auto):
-        if experiments[0].goniometer is None:
-            params.refinement.reflections.outlier.algorithm = "sauter_poon"
-        else:
-            # different default to dials.refine
-            # tukey is faster and more appropriate at the indexing step
-            params.refinement.reflections.outlier.algorithm = "tukey"
+    reflections = eliminate_sys_absent(experiments, reflections)
+    map_to_primitive(experiments, reflections)
 
-    from dials.algorithms.indexing.symmetry import (
-        refined_settings_factory_from_refined_triclinic,
+    refined_settings = refined_settings_from_refined_triclinic(
+        experiments, reflections, params
     )
-
-    cb_op_to_primitive = (
-        experiments[0]
-        .crystal.get_space_group()
-        .info()
-        .change_of_basis_op_to_primitive_setting()
-    )
-    if experiments[0].crystal.get_space_group().n_ltr() > 1:
-        effective_group = (
-            experiments[0]
-            .crystal.get_space_group()
-            .build_derived_reflection_intensity_group(anomalous_flag=True)
-        )
-        sys_absent_flags = effective_group.is_sys_absent(reflections["miller_index"])
-        reflections = reflections.select(~sys_absent_flags)
-    experiments[0].crystal.update(
-        experiments[0].crystal.change_basis(cb_op_to_primitive)
-    )
-    miller_indices = reflections["miller_index"]
-    miller_indices = cb_op_to_primitive.apply(miller_indices)
-    reflections["miller_index"] = miller_indices
-
-    Lfat = refined_settings_factory_from_refined_triclinic(
-        params,
-        experiments,
-        reflections,
-        lepage_max_delta=params.lepage_max_delta,
-        nproc=params.nproc,
-    )
-    possible_bravais_settings = {solution["bravais"] for solution in Lfat}
+    possible_bravais_settings = {solution["bravais"] for solution in refined_settings}
     bravais_lattice_to_space_group_table(possible_bravais_settings)
-    logger.info(Lfat.labelit_printout())
+    logger.info(refined_settings.as_str())
 
     prefix = params.output.prefix
     if prefix is None:
@@ -235,9 +212,9 @@ def run(args=None):
     summary_file = "%sbravais_summary.json" % prefix
     logger.info("Saving summary as %s" % summary_file)
     with open(os.path.join(params.output.directory, summary_file), "w") as fh:
-        json.dump(Lfat.as_dict(), fh)
+        json.dump(refined_settings.as_dict(), fh)
 
-    for subgroup in Lfat:
+    for subgroup in refined_settings:
         expts = subgroup.refined_experiments
         soln = int(subgroup.setting_number)
         bs_json = "%sbravais_setting_%i.expt" % (prefix, soln)
@@ -246,7 +223,4 @@ def run(args=None):
 
 
 if __name__ == "__main__":
-    from libtbx.utils import show_times_at_exit
-
-    show_times_at_exit()
     run()

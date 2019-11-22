@@ -16,7 +16,7 @@ Refining multi-tile detector metrology with DIALS
 Introduction
 ------------
 
-At the end of the :doc:`processing_in_detail_tutorial`, we showed plots from
+At the end of the :doc:`processing_in_detail_betalactamase`, we showed plots from
 :program:`dials.analyse_output`, including images of the positional
 residuals as a function of position on the detector face. There were
 clearly some systematic effects, suggesting whole-tile shifts or rotations.
@@ -53,11 +53,11 @@ With that in place, we start as usual by importing the dataset::
 The fact that the multiple panel detector model was used is clear from the
 output of::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 We can now inspect images from the dataset with::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 However, the dataset is at such low dose that it can be difficult to find the
 spots. It might be helpful to us a more mature image viewer such as ADXV or
@@ -67,7 +67,7 @@ We have to run spot finding throughout the dataset. It is a 360 degree sequence
 so this will take a few minutes. We can use more processes to move a little
 quicker::
 
-  dials.find_spots datablock.expt nproc=8 min_spot_size=3
+  dials.find_spots imported.expt nproc=8 min_spot_size=3
 
 Here we chose to set ``min_spot_size=3``, which overrides the default of 6 used
 for this detector model. We did this because otherwise this weakly diffracting
@@ -85,7 +85,7 @@ However, if not, we won't worry too much about it, because if we pass
 in the known unit cell for thaumatin then it works just fine. We
 also chose to apply tetragonal symmetry immediately::
 
-  dials.index datablock.expt strong.refl space_group="P 4" unit_cell="58 58 150 90 90 90"
+  dials.index imported.expt strong.refl space_group="P 4" unit_cell="58 58 150 90 90 90"
 
 The output of refinement in the highest resolution macrocycle is as follows::
 
@@ -406,7 +406,7 @@ figure this out itself.
 Here are the positional residual plots for X and Y, :file:`analysis/centroid/centroid_diff_x.png`
 and :file:`analysis/centroid/centroid_diff_y.png`. The multi-panel versions
 of these plots are not as compact as the single tile version presented in the
-:doc:`processing_in_detail_tutorial`. However, careful comparison of the plots is enough to
+:doc:`processing_in_detail_betalactamase`. However, careful comparison of the plots is enough to
 show that the same pattern of shifts is present.
 
   .. image:: /figures/centroid_diff_x_multi_panel_lev0.png
@@ -633,7 +633,7 @@ Format object for the detector to incorporate the corrections, we could try to
 'copy and paste' the detector from one dataset to the other.
 
 We will choose the standard tutorial data to try this, from the
-:doc:`processing_in_detail_tutorial`. First we have to process that data using the
+:doc:`processing_in_detail_betalactamase`. First we have to process that data using the
 multi-panel version of the Pilatus P6M detector model. Assuming the environment
 variable :samp:`P6M_60_PANEL=1` is set in this terminal we just need to repeat
 the commands from the tutorial::
@@ -641,12 +641,12 @@ the commands from the tutorial::
   mkdir tutorial_data
   cd !$
   dials.import /path/to/th_8_2*cbf
-  dials.find_spots datablock.expt nproc=4
-  dials.index datablock.expt strong.refl space_group="P4"
+  dials.find_spots imported.expt nproc=4
+  dials.index imported.expt strong.refl space_group="P4"
   dials.refine indexed.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0
 
 Note these are the overall RMSDs (comparable to the results from the
-:doc:`processing_in_detail_tutorial`, as we'd expect)::
+:doc:`processing_in_detail_betalactamase`, as we'd expect)::
 
   RMSDs by experiment:
   ----------------------------------------------
@@ -660,7 +660,7 @@ Now we do the scan-varying refinement and integrate::
 
   dials.refine refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=sv_refined.expt
   dials.integrate sv_refined.expt indexed.refl outlier.algorithm=null nproc=4
-  dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz ignore_panels=true
+  dials.export integrated.refl sv_refined.expt mtz.hklout=integrated.mtz
   dials.analyse_output integrated.refl grid_size=5,12
 
 From the end of :file:`dials.integrate.log`::
@@ -903,7 +903,7 @@ Let's now do scan-varying refinement then integrate the dataset with corrected m
 
   dials.refine corrected_refined.expt indexed.refl outlier.algorithm=tukey use_all_reflections=true bin_size_fraction=0.0 scan_varying=true output.experiments=corrected_sv_refined.expt
   dials.integrate corrected_sv_refined.expt indexed.refl outlier.algorithm=null nproc=4 output.reflections=corrected_integrated.refl
-  dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz ignore_panels=true
+  dials.export corrected_integrated.refl corrected_sv_refined.expt mtz.hklout=corrected_integrated.mtz
   dials.analyse_output corrected_integrated.refl grid_size=5,12
 
 From the integration log::

@@ -16,6 +16,22 @@ from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
+from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ExperimentsPredictorFactory,
+)
+from dials.algorithms.refinement.parameterisation import (
+    build_prediction_parameterisation,
+)
+from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
+from dials.algorithms.refinement.parameterisation.parameter_report import (
+    ParameterReporter,
+)
+from dials.algorithms.refinement.engine import AdaptLstbx
+from dials.algorithms.refinement.restraints import RestraintsParameterisation
+from dials.algorithms.refinement.target import TargetFactory
+from dials.algorithms.refinement.refinement_helpers import string_sel
 
 # The include scope directive does not work here. For example:
 #
@@ -170,19 +186,7 @@ class RefinerFactory(object):
         return rt
 
     @classmethod
-    def from_parameters_data_experiments(
-        cls, params, reflections, experiments, verbosity=None
-    ):
-
-        if verbosity is not None:
-            import warnings
-
-            warnings.warn(
-                "Setting verbosity for a Refiner is deprecated. See https://github.com/dials/dials/issues/860",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def from_parameters_data_experiments(cls, params, reflections, experiments):
         # TODO Checks on the input
         # E.g. does every experiment contain at least one overlapping model with at
         # least one other experiment? Are all the experiments either rotation series
@@ -251,10 +255,6 @@ class RefinerFactory(object):
         logger.debug("Input reflection list size = %d observations", len(reflections))
 
         # create reflection manager
-        from dials.algorithms.refinement.reflection_manager import (
-            ReflectionManagerFactory,
-        )
-
         refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
             params.refinement.reflections, reflections, experiments, do_stills
         )
@@ -273,10 +273,6 @@ class RefinerFactory(object):
         do_sparse = params.refinement.parameterisation.sparse
 
         # create managed reflection predictor
-        from dials.algorithms.refinement.prediction.managed_predictors import (
-            ExperimentsPredictorFactory,
-        )
-
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
             experiments,
             force_stills=do_stills,
@@ -307,13 +303,26 @@ class RefinerFactory(object):
 
         # Create model parameterisations
         logger.debug("Building prediction equation parameterisation")
-        pred_param, param_reporter = cls.config_parameterisation(
+        pred_param = build_prediction_parameterisation(
             params.refinement.parameterisation, experiments, refman, do_stills
         )
-        logger.debug("Prediction equation parameterisation built")
-        logger.debug("Parameter order : name mapping")
-        for i, e in enumerate(pred_param.get_param_names()):
-            logger.debug("Parameter %03d : %s", i + 1, e)
+
+        # Build a constraints manager, if requested
+        cmf = ConstraintManagerFactory(params, pred_param)
+        constraints_manager = cmf()
+
+        # Test for parameters that have too little data to refine and act accordingly
+        autoreduce = AutoReduce(
+            params.refinement.parameterisation.auto_reduction,
+            pred_param,
+            refman,
+            constraints_manager,
+            cmf,
+        )
+        autoreduce()
+
+        # if reduction was done, constraints_manager will have changed
+        constraints_manager = autoreduce.constraints_manager
 
         # Build a restraints parameterisation (if requested).
         # Only unit cell restraints are supported at the moment.
@@ -321,11 +330,19 @@ class RefinerFactory(object):
             params.refinement.parameterisation, pred_param
         )
 
-        # Build a constraints manager, if requested
-        from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+        # Parameter reporting
+        logger.debug("Prediction equation parameterisation built")
+        logger.debug("Parameter order : name mapping")
+        for i, e in enumerate(pred_param.get_param_names()):
+            logger.debug("Parameter %03d : %s", i + 1, e)
 
-        cmf = ConstraintManagerFactory(params, pred_param)
-        constraints_manager = cmf()
+        param_reporter = ParameterReporter(
+            pred_param.get_detector_parameterisations(),
+            pred_param.get_beam_parameterisations(),
+            pred_param.get_crystal_orientation_parameterisations(),
+            pred_param.get_crystal_unit_cell_parameterisations(),
+            pred_param.get_goniometer_parameterisations(),
+        )
 
         # Create target function
         logger.debug("Building target function")
@@ -354,7 +371,6 @@ class RefinerFactory(object):
                 nparam, nref, ndim
             )
         )
-        from dials.algorithms.refinement.engine import AdaptLstbx
 
         if not params.refinement.parameterisation.sparse and isinstance(
             refinery, AdaptLstbx
@@ -414,31 +430,6 @@ class RefinerFactory(object):
         return params
 
     @staticmethod
-    def config_parameterisation(params, experiments, refman, do_stills=False):
-        from dials.algorithms.refinement.parameterisation import (
-            build_prediction_parameterisation,
-        )
-
-        pred_param = build_prediction_parameterisation(
-            params, experiments, refman, do_stills
-        )
-
-        # Parameter reporting
-        from dials.algorithms.refinement.parameterisation.parameter_report import (
-            ParameterReporter,
-        )
-
-        param_reporter = ParameterReporter(
-            pred_param.get_detector_parameterisations(),
-            pred_param.get_beam_parameterisations(),
-            pred_param.get_crystal_orientation_parameterisations(),
-            pred_param.get_crystal_unit_cell_parameterisations(),
-            pred_param.get_goniometer_parameterisations(),
-        )
-
-        return pred_param, param_reporter
-
-    @staticmethod
     def config_restraints(params, pred_param):
         """Given a set of user parameters plus a model parameterisation, create
         restraints plus a parameterisation of these restraints
@@ -467,8 +458,6 @@ class RefinerFactory(object):
         xl_ori_params = pred_param.get_crystal_orientation_parameterisations()
         xl_uc_params = pred_param.get_crystal_unit_cell_parameterisations()
         gon_params = pred_param.get_goniometer_parameterisations()
-
-        from dials.algorithms.refinement.restraints import RestraintsParameterisation
 
         rp = RestraintsParameterisation(
             detector_parameterisations=det_params,
@@ -591,8 +580,6 @@ class RefinerFactory(object):
         do_sparse,
     ):
 
-        from dials.algorithms.refinement.target import TargetFactory
-
         target = TargetFactory.from_parameters_and_experiments(
             params,
             experiments,
@@ -709,7 +696,6 @@ class Refiner(object):
             return None, None
 
         all_labels = self._pred_param.get_param_names()
-        from dials.algorithms.refinement.refinement_helpers import string_sel
 
         if col_select is None:
             col_select = list(range(len(all_labels)))
@@ -1006,8 +992,6 @@ class Refiner(object):
         """Return a selection as a flex.bool in terms of the input reflection
         data of those reflections that were used in the final step of
         refinement."""
-
-        from scitbx.array_family import flex
 
         matches = self._refman.get_matches()
         selection = flex.bool(len(self._refman.get_indexed()), False)

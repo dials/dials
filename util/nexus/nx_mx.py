@@ -121,13 +121,13 @@ def polarization_stokes_to_normal(S0, S1, S2, S3):
     return n, p
 
 
-def get_nx_class(handle, klass, path):
+def get_nx_class(handle, nx_class, path):
     if path in handle:
         group = handle[path]
-        assert group.attrs["NX_class"] == klass
+        assert group.attrs["NX_class"] == nx_class
     else:
         group = handle.create_group(path)
-        group.attrs["NX_class"] = klass
+        group.attrs["NX_class"] = nx_class
     return group
 
 

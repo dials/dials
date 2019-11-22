@@ -264,13 +264,6 @@ class ScalingModelBase(object):
         """Record the intensity combination Imid value."""
         self._configdict["Imid"] = Imid
 
-    def show(self):
-        """Print a representation of the scaling model."""
-        print(
-            "Warning: Use of the .show() method is deprecated. Use print(object) instead."
-        )
-        print(str(self))
-
     def __str__(self):
         """:obj:`str`: Return a string representation of a scaling model."""
         msg = ["Scaling model:"]
