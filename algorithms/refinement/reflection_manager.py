@@ -147,10 +147,12 @@ class BlockCalculator(object):
 
         # Extend either by shoebox size, or 0.5 deg if shoebox not available
         if shoeboxes:
-            sb = shoeboxes[flex.first_index(exp_phi, min_phi)]
-            min_phi = scan.get_angle_from_image_index(sb.bbox[4], deg=False)
-            sb = shoeboxes[flex.first_index(exp_phi, max_phi)]
-            max_phi = scan.get_angle_from_image_index(sb.bbox[5] + 1, deg=False)
+            bb = shoeboxes.bounding_boxes()
+            first_im, last_im = bb.parts()[4:]
+            first_im = first_im[flex.first_index(exp_phi, min_phi)]
+            min_phi = scan.get_angle_from_image_index(first_im, deg=False)
+            last_im = last_im[flex.first_index(exp_phi, max_phi)] + 1
+            max_phi = scan.get_angle_from_image_index(last_im, deg=False)
         else:
             min_phi -= 0.008726645
             max_phi += 0.008726645
