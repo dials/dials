@@ -2,8 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import dials.precommitbx.nagger
 import libtbx.pkg_utils
-from libtbx.utils import to_str
-import io
 
 libtbx.pkg_utils.define_entry_points(
     {
@@ -58,10 +56,8 @@ def _install_dials_autocompletion():
     for filename in sorted(os.listdir(commands_dir)):
         if not filename.startswith("_") and filename.endswith(".py"):
             # Check if this file marks itself as completable
-            with io.open(
-                os.path.join(commands_dir, filename), encoding="utf-8", errors="ignore"
-            ) as f:
-                if "DIALS_ENABLE_COMMAND_LINE_COMPLETION" in to_str(f.read()):
+            with open(os.path.join(commands_dir, filename), "rb") as f:
+                if b"DIALS_ENABLE_COMMAND_LINE_COMPLETION" in f.read():
                     command_name = "dials.%s" % filename[:-3]
                     command_list.append(command_name)
     print("Identified autocompletable commands: " + " ".join(command_list))
