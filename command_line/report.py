@@ -614,7 +614,7 @@ ice rings, or poor spot-finding parameters.
         }
 
     def indexed_count_xy(self, rlist):
-        """Analyse the indexed spot count in x/y. """
+        """Analyse the indexed spot count in x/y."""
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
