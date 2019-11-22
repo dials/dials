@@ -180,7 +180,7 @@ class KaptonTape_2019(object):
         return max(kapton_path_mm)
 
     def abs_correction(self, s1):
-        """ Compute absorption correction using beers law. Takes in a tuple for a single s1 vector and does absorption correction"""
+        """Compute absorption correction using beers law. Takes in a tuple for a single s1 vector and does absorption correction"""
         kapton_path_mm = self.get_kapton_path_mm(s1)
         if kapton_path_mm is not None:
             absorption_correction = 1 / math.exp(
