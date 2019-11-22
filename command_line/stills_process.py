@@ -823,7 +823,7 @@ class Processor(object):
         self.debug_write("integrate_ok_%d" % len(integrated), "done")
 
     def pre_process(self, experiments):
-        """ Add any pre-processing steps here """
+        """Add any pre-processing steps here"""
         pass
 
     def find_spots(self, experiments):
@@ -1219,7 +1219,7 @@ class Processor(object):
                     easy_pickle.dump(outfile, frame)
 
     def process_reference(self, reference):
-        """ Load the reference spots. """
+        """Load the reference spots."""
         if reference is None:
             return None, None
         st = time.time()
@@ -1260,14 +1260,14 @@ class Processor(object):
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
-        """ Save the reflections to file. """
+        """Save the reflections to file."""
         st = time.time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
         reflections.as_file(filename)
         logger.info(" time taken: %g" % (time.time() - st))
 
     def finalize(self):
-        """ Perform any final operations """
+        """Perform any final operations"""
         if self.params.output.composite_output:
             if self.params.mp.composite_stride is not None:
                 assert self.params.mp.method == "mpi"

@@ -614,7 +614,7 @@ class IntegrationManager(object):
             yield self.task(i)
 
     def accumulate(self, result):
-        """ Accumulate the results. """
+        """Accumulate the results."""
         self.manager.accumulate(result.index, result.reflections)
         # self.time.read += result.read_time
         # self.time.extract += result.extract_time
@@ -1079,7 +1079,7 @@ class ReferenceCalculatorManager(object):
             yield self.task(i)
 
     def accumulate(self, result):
-        """ Accumulate the results. """
+        """Accumulate the results."""
         self.manager.accumulate(result.index, result.reflections)
 
         if self.reference is None:

@@ -65,7 +65,7 @@ Examples::
 
 
 def ensure_directory(path):
-    """ Make the directory if not already there. """
+    """Make the directory if not already there."""
     try:
         os.makedirs(path)
     except OSError as e:

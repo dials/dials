@@ -172,7 +172,7 @@ ArgumentHandlingErrorInfo = namedtuple(
 
 
 class Importer(object):
-    """ A class to import the command line arguments. """
+    """A class to import the command line arguments."""
 
     def __init__(
         self,
@@ -366,7 +366,7 @@ class Importer(object):
 
 
 class PhilCommandParser(object):
-    """ A class to parse phil parameters from positional arguments """
+    """A class to parse phil parameters from positional arguments"""
 
     def __init__(
         self,
@@ -633,7 +633,7 @@ class PhilCommandParser(object):
 
 
 class OptionParserBase(optparse.OptionParser, object):
-    """ The base class for the option parser. """
+    """The base class for the option parser."""
 
     def __init__(self, config_options=False, sort_options=False, **kwargs):
         """
@@ -740,7 +740,7 @@ class OptionParserBase(optparse.OptionParser, object):
         return options, args
 
     def format_epilog(self, formatter):
-        """ Don't do formatting on epilog. """
+        """Don't do formatting on epilog."""
         if self.epilog is None:
             return ""
         return self.epilog
@@ -1013,7 +1013,7 @@ class OptionParser(OptionParserBase):
                 parameter_choice_list[d.path] = ["true", "false"]
 
         def construct_completion_tree(paths):
-            """ Construct a tree of parameters, grouped by common prefixes """
+            """Construct a tree of parameters, grouped by common prefixes"""
 
             # Split parameter paths at '.' character
             paths = [p.split(".", 1) for p in paths]

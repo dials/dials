@@ -34,7 +34,7 @@ global_model_cache = ModelCache()
 
 
 class BackgroundAlgorithm(object):
-    """ Class to do background subtraction. """
+    """Class to do background subtraction."""
 
     def __init__(
         self,
@@ -79,7 +79,7 @@ class BackgroundAlgorithm(object):
 
 
 class GModelBackgroundCalculatorFactory(object):
-    """ Class to do background subtraction. """
+    """Class to do background subtraction."""
 
     @staticmethod
     def create(experiments, model=None, robust=False, min_pixels=10):

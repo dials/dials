@@ -23,7 +23,7 @@ class TimingInfo(object):
         self.user = 0
 
     def __str__(self):
-        """ Convert to string. """
+        """Convert to string."""
         rows = [
             [description, "%.2f seconds" % value]
             for description, value in (

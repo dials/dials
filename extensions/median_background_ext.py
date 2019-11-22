@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 class MedianBackgroundExt(object):
-    """ An extension class implementing a median background algorithm. """
+    """An extension class implementing a median background algorithm."""
 
     name = "median"
 

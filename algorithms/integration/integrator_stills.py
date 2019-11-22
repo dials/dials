@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 
 class ReflectionBlockIntegratorStills(object):
-    """ A class to perform the integration. """
+    """A class to perform the integration."""
 
     def __init__(self, params, experiments, reference, extractor=None):
-        """ Initialise the integrator. """
+        """Initialise the integrator."""
         from dials.algorithms import shoebox
 
         # Ensure we have 1 experiment at the moment
@@ -25,7 +25,7 @@ class ReflectionBlockIntegratorStills(object):
         )
 
     def integrate(self):
-        """ Integrate all the reflections. """
+        """Integrate all the reflections."""
         from dials.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
@@ -48,7 +48,7 @@ class ReflectionBlockIntegratorStills(object):
 
 
 class IntegratorStills(object):
-    """ Integrate reflections """
+    """Integrate reflections"""
 
     def __init__(self, params, exlist, reference=None, predicted=None, shoeboxes=None):
         """Initialise the script."""
@@ -117,11 +117,11 @@ class IntegratorStills(object):
         )
 
     def integrate(self):
-        """ Integrate the reflections. """
+        """Integrate the reflections."""
         return self._integrator.integrate()
 
     def _match_with_reference(self, predicted, reference):
-        """ Match predictions with reference spots. """
+        """Match predictions with reference spots."""
 
         from dials.algorithms.spot_finding.spot_matcher import SpotMatcher
         from dials.util.command_line import Command
@@ -139,7 +139,7 @@ class IntegratorStills(object):
         return predicted
 
     def _load_extractor(self, filename, params, exlist):
-        """ Load the shoebox extractor. """
+        """Load the shoebox extractor."""
         from dials.model.serialize.reflection_block import ReflectionBlockExtractor
 
         assert len(exlist) == 1
@@ -149,7 +149,7 @@ class IntegratorStills(object):
         )
 
     def _create_extractor(self, params, exlist, predicted):
-        """ Create the extractor. """
+        """Create the extractor."""
         from dials.model.serialize.reflection_block import ReflectionBlockExtractor
 
         assert len(exlist) == 1
@@ -159,7 +159,7 @@ class IntegratorStills(object):
         )
 
     def _predict_reflections(self, params, experiments):
-        """ Predict all the reflections. """
+        """Predict all the reflections."""
         from dials.array_family import flex
 
         result = flex.reflection_table()
@@ -170,7 +170,7 @@ class IntegratorStills(object):
         return result
 
     def _filter_reflections(self, params, experiments, reflections):
-        """ Filter the reflections to integrate. """
+        """Filter the reflections to integrate."""
         from dials.util.command_line import Command
         from dials.algorithms import filtering
         from dials.array_family import flex

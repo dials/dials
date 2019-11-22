@@ -4,7 +4,7 @@ import libtbx.phil
 
 
 class FilenameDataWrapper(object):
-    """ A wrapper class to store data with a filename. """
+    """A wrapper class to store data with a filename."""
 
     def __init__(self, filename, data):
         self.filename = filename
@@ -12,7 +12,7 @@ class FilenameDataWrapper(object):
 
 
 class ExperimentListConverters(object):
-    """ A phil converter for the experiment list class. """
+    """A phil converter for the experiment list class."""
 
     phil_type = "experiment_list"
 
@@ -54,7 +54,7 @@ class ExperimentListConverters(object):
 
 
 class ReflectionTableConverters(object):
-    """ A phil converter for the reflection table class. """
+    """A phil converter for the reflection table class."""
 
     phil_type = "reflection_table"
 
@@ -88,7 +88,7 @@ class ReflectionTableConverters(object):
 
 
 class ReflectionTableSelectorConverters(object):
-    """ A phil converter for the reflection table selector class. """
+    """A phil converter for the reflection table selector class."""
 
     phil_type = "reflection_table_selector"
 
@@ -148,7 +148,7 @@ def parse(
     converter_registry=None,
     process_includes=False,
 ):
-    """ Redefinition of the parse function. """
+    """Redefinition of the parse function."""
     if converter_registry is None:
         converter_registry = default_converter_registry
     return libtbx.phil.parse(

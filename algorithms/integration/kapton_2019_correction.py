@@ -38,7 +38,7 @@ class KaptonTape_2019(object):
         self.abs_coeff = 1 / attenuation_length_mm
 
         def create_kapton_face(ori, fast, slow, image_size, pixel_size, name):
-            """ Create a face of the kapton as a dxtbx detector object """
+            """Create a face of the kapton as a dxtbx detector object"""
             from dxtbx.model import Detector
 
             d = Detector()
@@ -217,7 +217,7 @@ class KaptonTape_2019(object):
         return abs(num) / denom
 
     def abs_bounding_lines_in_mm(self, detector):
-        """ Return bounding lines of kapton """
+        """Return bounding lines of kapton"""
         # first get bounding directions from detector:
         detz = flex.mean(flex.double([panel.get_origin()[2] for panel in detector]))
         edges = []

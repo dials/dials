@@ -676,10 +676,10 @@ class MetaDataUpdater(object):
 
 
 class Script(object):
-    """ Class to parse the command line options. """
+    """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
-        """ Set the expected options. """
+        """Set the expected options."""
         from dials.util.options import OptionParser
 
         # Create the option parser
@@ -693,7 +693,7 @@ class Script(object):
         )
 
     def run(self, args=None):
-        """ Parse the options. """
+        """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
         params, options = self.parser.parse_args(

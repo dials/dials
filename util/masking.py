@@ -129,14 +129,14 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
 
 
 class MaskGenerator(object):
-    """ Generate a mask. """
+    """Generate a mask."""
 
     def __init__(self, params):
-        """ Set the parameters. """
+        """Set the parameters."""
         self.params = params
 
     def generate(self, imageset):
-        """ Generate the mask. """
+        """Generate the mask."""
         # Get the detector and beam
         detector = imageset.get_detector()
         beam = imageset.get_beam()
