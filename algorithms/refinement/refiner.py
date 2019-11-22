@@ -154,7 +154,7 @@ def _copy_experiments_for_refining(experiments):
 
 def _trim_scans_to_observations(experiments, reflections):
     """Check the range of each scan matches the range of observed data and
-    trim to scan to match if it is too wide"""
+    trim the scan to match if it is too wide"""
 
     # Get observed image number (or at least observed phi)
     obs_phi = reflections["xyzobs.mm.value"].parts()[2]
@@ -193,21 +193,19 @@ def _trim_scans_to_observations(experiments, reflections):
 
         # Extend array range either by shoebox size, or 0.5 deg if shoebox not available
         if shoebox is not None:
-            obs_start = z_min.select(isel)
-            obs_stop = z_max.select(isel)
-            obs_start = obs_start[flex.first_index(exp_z, min_exp_z)]
-            obs_stop = obs_stop[flex.first_index(exp_z, max_exp_z)] + 1
+            obs_start = flex.min(z_min.select(isel))
+            obs_stop = flex.max(z_max.select(isel))
         else:
-            obs_start = min_exp_z
-            obs_stop = max_exp_z
+            obs_start = int(min_exp_z)
+            obs_stop = int(math.ceil(max_exp_z))
             half_deg_in_images = int(math.ceil(0.5 / exp.scan.get_oscillation()[1]))
             obs_start -= half_deg_in_images
             obs_stop += half_deg_in_images
 
         # Convert obs_start, obs_stop from position in array range to integer image number
         if obs_start > start or obs_stop < stop:
-            im_start = max(start, obs_start + 1)
-            im_stop = min(obs_stop + 1, stop)
+            im_start = max(start, obs_start)
+            im_stop = min(obs_stop, stop)
 
             logger.warning(
                 "The reflections do not fill the scan range. The scan will be trimmed "
