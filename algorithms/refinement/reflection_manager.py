@@ -178,7 +178,7 @@ class BlockCalculator(object):
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
         try:
             shoebox = self._reflections["shoebox"]
-        except AttributeError:
+        except KeyError:
             shoebox = None
 
         for iexp, exp in enumerate(self._experiments):
@@ -223,7 +223,7 @@ class BlockCalculator(object):
         phi_obs = self._reflections["xyzobs.mm.value"].parts()[2]
         try:
             shoebox = self._reflections["shoebox"]
-        except AttributeError:
+        except KeyError:
             shoebox = None
 
         for iexp, exp in enumerate(self._experiments):
