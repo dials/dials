@@ -867,9 +867,6 @@ class SpotFinder(object):
 
             logger.info("\nFinding spots in image {0} to {1}...".format(j0, j1))
             j0 -= 1
-            if isinstance(imageset, ImageSequence):
-                j0 -= imageset.get_array_range()[0]
-                j1 -= imageset.get_array_range()[0]
             r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:
