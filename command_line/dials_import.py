@@ -318,6 +318,9 @@ class ManualGeometryUpdater(object):
 
         if self.params.geometry.convert_sequences_to_stills:
             imageset = ImageSetFactory.imageset_from_anyset(imageset)
+            for j in imageset.indices():
+                imageset.set_scan(None, j)
+                imageset.set_goniometer(None, j)
         if not isinstance(imageset, ImageSequence):
             if self.params.geometry.convert_stills_to_sequences:
                 imageset = self.convert_stills_to_sequence(imageset)
