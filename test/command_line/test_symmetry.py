@@ -235,3 +235,96 @@ def test_map_to_minimum_cell():
     for refl, expected_hkl in zip(reflections, expected_output_hkl):
         for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
             assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
+
+
+def test_map_to_minimum_cell_1037():
+    # See https://github.com/dials/dials/issues/1037
+
+    # Input and expected output
+    input_ucs = [
+        (
+            4.805202948916906,
+            12.808064769657364,
+            16.544899201125446,
+            106.45808502003258,
+            90.0065567098825,
+            100.77735674275475,
+        ),
+        (
+            4.808011343212577,
+            12.821894835790472,
+            16.557339561965573,
+            106.48431244651402,
+            90.0252848479048,
+            100.77252933676507,
+        ),
+        (
+            4.8096632137789985,
+            12.815648858527567,
+            16.55931712239122,
+            106.48990701341536,
+            90.01703141314147,
+            100.80397887485773,
+        ),
+        (
+            4.807294085194974,
+            12.822386757910516,
+            16.560411742466663,
+            106.43185845358086,
+            90.02067929544215,
+            100.79522302759383,
+        ),
+    ]
+    input_sgs = ["P1"] * 4
+    input_hkl = [[], [], [], []]
+    expected_ucs = [
+        (4.8052, 12.8081, 16.5449, 106.458, 90.0066, 100.777),
+        (4.80801, 12.8219, 16.5573, 106.484, 90.0253, 100.773),
+        (4.80966, 12.8156, 16.5593, 106.49, 90.017, 100.804),
+        (4.80729, 12.8224, 16.5604, 106.432, 90.0207, 100.795),
+    ]
+    expected_output_hkl = [[], [], [], []]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    reflections = []
+    for uc, sg, hkl in zip(input_ucs, input_sgs, input_hkl):
+        uc = uctbx.unit_cell(uc)
+        sg = sgtbx.space_group_info(sg).group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+        refl = flex.reflection_table()
+        refl["miller_index"] = flex.miller_index(hkl)
+        reflections.append(refl)
+
+    # Actually run the method we are testing
+    expts_min, reflections_min, cb_ops = map_to_minimum_cell(
+        expts, reflections, max_delta=5
+    )
+
+    # Verify that the unit cells have been transformed as expected
+    for expt, uc in zip(expts, expected_ucs):
+        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
+
+    # Verify that the cb_ops map the input unit cells to the expected minimum unit cells
+    for input_uc, expected_uc, cb_op in zip(input_ucs, expected_ucs, cb_ops):
+        assert (
+            uctbx.unit_cell(input_uc)
+            .change_basis(cb_op)
+            .is_similar_to(uctbx.unit_cell(expected_uc))
+        )
+
+    # Space group should be set to P1
+    assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
+        1,
+        1,
+        1,
+        1,
+    ]
+
+    # Verify that the reflections have been reindexed as expected
+    # Because the exact choice of minimum cell can be platform-dependent,
+    # compare the magnitude, but not the sign of the output hkl values
+    for refl, expected_hkl in zip(reflections, expected_output_hkl):
+        for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
+            assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
