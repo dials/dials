@@ -32,6 +32,7 @@ import pytest
 import mock
 from dials.array_family import flex
 from dxtbx.model import Crystal, Experiment, ExperimentList
+from dxtbx.model.experiment_list import ExperimentListFactory
 from cctbx import miller
 from dials.util.filter_reflections import (
     FilteringReductionMethods,
@@ -171,6 +172,11 @@ def test_filtered_arrays_from_experiments_reflections():
     )
     assert len(miller_sets) == 1
 
+    with pytest.raises(AssertionError):
+        miller_sets = filtered_arrays_from_experiments_reflections(
+            experiments, [refl, refl2], return_batches=True
+        )
+
     experiments = ExperimentList()
     experiments.append(Experiment(crystal=crystal))
     experiments.append(Experiment(crystal=crystal))
@@ -179,6 +185,24 @@ def test_filtered_arrays_from_experiments_reflections():
     with pytest.raises(ValueError):
         refl["partiality"] = flex.double(6, 0.0)
         _ = filtered_arrays_from_experiments_reflections(experiments, [refl, refl2])
+
+
+def test_filtered_arrays_from_experiments_reflections_with_batches(dials_data):
+    x4wide_dir = dials_data("x4wide_processed")
+    refl = flex.reflection_table.from_file(
+        x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.refl").strpath
+    )
+    expts = ExperimentListFactory.from_serialized_format(
+        x4wide_dir.join("AUTOMATIC_DEFAULT_scaled.expt").strpath, check_format=False
+    )
+    miller_arrays, batches = filtered_arrays_from_experiments_reflections(
+        expts, [refl], return_batches=True
+    )
+    assert len(miller_arrays) == len(batches) == 1
+    assert miller_arrays[0].size() == batches[0].size() == 62920
+    assert len(set(batches[0].data())) == 88
+    assert flex.min(batches[0].data()) == 2
+    assert flex.max(batches[0].data()) == 89
 
 
 def test_IntensityReducer_instantiations():
