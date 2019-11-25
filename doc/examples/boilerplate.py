@@ -24,7 +24,7 @@ logger = logging.getLogger("dials.logger_name")
 phil_scope = libtbx.phil.parse(
     """
 output {
-    reflections = stronger.pickle
+    reflections = stronger.refl
         .type = path
     log = dials.command_name.log
         .type = path
@@ -39,14 +39,11 @@ integer_parameter = 0
 
 def do_stuff(experiments, reflections, params):
     """Write the behaviour of the program as functions and classes outside run()"""
-    import cPickle as pickle
-
     logger.info("Hello world!")
     # Include file output here
     logger.info("integer_parameter: %i", params.integer_parameter)
     logger.info("bool_parameter: %s", params.bool_parameter)
-    with open(params.output.reflections, "w") as f:
-        pickle.dump(reflections, f)
+    reflections.as_file(params.output.reflections)
 
 
 def run(args=None, phil=phil_scope):
@@ -91,7 +88,7 @@ def run(args=None, phil=phil_scope):
     if len(experiments) != 1:
         sys.exit("Exactly one 1 experiment list required")
 
-    do_stuff(experiments, reflections, params)
+    do_stuff(experiments, reflections[0], params)
 
 
 if __name__ == "__main__":
