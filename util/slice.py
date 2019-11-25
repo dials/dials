@@ -38,18 +38,7 @@ def slice_experiments(experiments, image_ranges):
 
         # account for scan-varying crystal
         if exp.crystal.num_scan_points > 0:
-            UB_mats = [
-                exp.crystal.get_A_at_scan_point(i)
-                for i in range(exp.crystal.num_scan_points)
-            ]
-            UB_mats = UB_mats[beg:end]
-            B_cov = exp.crystal.get_B_covariance_at_scan_points()
-
-            exp.crystal.reset_scan_points()
-            exp.crystal.set_A_at_scan_points(UB_mats)
-            if len(B_cov) > 0:
-                B_cov = B_cov[beg:end, 0:9, 0:9]
-                exp.crystal.set_B_covariance_at_scan_points(B_cov)
+            exp.crystal = slice_crystal(exp.crystal, (beg, end))
 
     return experiments
 
@@ -85,3 +74,24 @@ def slice_reflections(reflections, image_ranges):
     # implictly also removes any reflections with ID outside the range of the
     # length of image_ranges
     return reflections.select(to_keep)
+
+
+def slice_crystal(crystal, array_range):
+    """Slice a scan-varying crystal by the provided array range"""
+
+    if crystal.num_scan_points == 0:
+        return crystal
+    crystal = copy.deepcopy(crystal)
+    UB_mats = [crystal.get_A_at_scan_point(i) for i in range(crystal.num_scan_points)]
+    beg, end = array_range
+    end += 1  # one more scan-point than images in the range
+    UB_mats = UB_mats[beg:end]
+    B_cov = crystal.get_B_covariance_at_scan_points()
+
+    crystal.reset_scan_points()
+    crystal.set_A_at_scan_points(UB_mats)
+    if len(B_cov) > 0:
+        B_cov = B_cov[beg:end, 0:9, 0:9]
+        crystal.set_B_covariance_at_scan_points(B_cov)
+
+    return crystal

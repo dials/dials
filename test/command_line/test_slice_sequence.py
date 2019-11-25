@@ -83,7 +83,7 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmpdir):
         tmpdir.join("sliced.expt").strpath, check_format=False
     )[0]
 
-    assert sliced.crystal.num_scan_points == 11
+    assert sliced.crystal.num_scan_points == 12
 
     orig_UB = [
         orig.crystal.get_A_at_scan_point(i) for i in range(orig.crystal.num_scan_points)
@@ -93,5 +93,5 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmpdir):
         for i in range(sliced.crystal.num_scan_points)
     ]
 
-    for a, b in zip(orig_UB[9:20], sliced_UB):
+    for a, b in zip(orig_UB[9:21], sliced_UB):
         assert a == pytest.approx(b)
