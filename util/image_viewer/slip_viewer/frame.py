@@ -17,11 +17,13 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
+from boost.python import c_sizeof
 
 pyslip._Tiles = tile_generation._Tiles
 
-# Use minimum value for 4 byte int to indicate a masked pixel
-MASK_VAL = -(2 ** 31)
+# Use minimum value for an int to indicate a masked pixel
+int_bits = c_sizeof("int") * 8
+MASK_VAL = -(2 ** (int_bits - 1))
 
 
 class chooser_wrapper(object):
