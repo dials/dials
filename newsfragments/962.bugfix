@@ -1,0 +1,2 @@
+Correctly account for scan-varying crystals while providing a scan range to
+dials.integrate
