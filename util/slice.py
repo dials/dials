@@ -36,6 +36,21 @@ def slice_experiments(experiments, image_ranges):
         if exp.imageset is not None:
             exp.imageset = exp.imageset[beg:end]
 
+        # account for scan-varying crystal
+        if exp.crystal.num_scan_points > 0:
+            UB_mats = [
+                exp.crystal.get_A_at_scan_point(i)
+                for i in range(exp.crystal.num_scan_points)
+            ]
+            UB_mats = UB_mats[beg:end]
+            B_cov = exp.crystal.get_B_covariance_at_scan_points()
+
+            exp.crystal.reset_scan_points()
+            exp.crystal.set_A_at_scan_points(UB_mats)
+            if len(B_cov) > 0:
+                B_cov = B_cov[beg:end, 0:9, 0:9]
+                exp.crystal.set_B_covariance_at_scan_points(B_cov)
+
     return experiments
 
 
