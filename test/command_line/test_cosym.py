@@ -129,7 +129,7 @@ def test_synthetic(
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
-    joint_table.as_pickle("tmp.refl")
+    joint_table.as_file("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
     command = [

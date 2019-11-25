@@ -116,7 +116,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     reflections1.extend(reflections2)
 
     tmp_refl = tmpdir.join("tmp.refl").strpath
-    reflections1.as_pickle(tmp_refl)
+    reflections1.as_file(tmp_refl)
 
     # Can now run after creating our 'fake' multiwavelength dataset
     command = ["dials.merge", tmp_refl, tmp_expt, "truncate=True", "anomalous=True"]

@@ -58,7 +58,7 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
-    joint_table.as_pickle("tmp.refl")
+    joint_table.as_file("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
     command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
