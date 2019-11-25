@@ -205,3 +205,22 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
         ("dials.refine", expts, refls, "crystal.fix=" + fix), working_directory=tmpdir
     )
     assert not result.returncode and not result.stderr
+
+
+def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
+    # https://github.com/dials/dials/issues/994
+    location = dials_data("l_cysteine_dials_output")
+    refls = location.join("indexed.refl")
+    expts = location.join("indexed.expt")
+
+    result = procrunner.run(
+        ("dials.refine", expts, refls, "scan_varying=true"), working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+
+    el = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )
+
+    # Crystal has been copied into each experiment for scan-varying refinement
+    assert len(el.crystals) == 4
