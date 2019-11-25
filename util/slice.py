@@ -37,7 +37,7 @@ def slice_experiments(experiments, image_ranges):
             exp.imageset = exp.imageset[beg:end]
 
         # account for scan-varying crystal
-        if exp.crystal.num_scan_points > 0:
+        if exp.crystal and exp.crystal.num_scan_points > 0:
             exp.crystal = slice_crystal(exp.crystal, (beg, end))
 
     return experiments
