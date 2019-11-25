@@ -11,6 +11,7 @@ import psutil
 import boost.python
 import dials.algorithms.integration
 import libtbx
+from dials.array_family import flex
 from dials_algorithms_integration_integrator_ext import (
     Executor,
     Group,
@@ -55,6 +56,18 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
+
+
+def _average_shoebox_size(reflections):
+    """Calculate the average shoebox size for debugging"""
+
+    shoebox = reflections["shoebox"]
+    sel = flex.random_selection(len(shoebox), min(len(shoebox), 1000))
+    subset_sb = shoebox.select(sel)
+    xsize = flex.mean(flex.double([s.xsize() for s in subset_sb]))
+    ysize = flex.mean(flex.double([s.ysize() for s in subset_sb]))
+    zsize = flex.mean(flex.double([s.zsize() for s in subset_sb]))
+    return xsize, ysize, zsize
 
 
 @boost.python.inject_into(Executor)
@@ -382,7 +395,6 @@ class Task(object):
 
         :return: The processed data
         """
-        from dials.array_family import flex
         from dials.model.data import make_image
 
         # Get the start time
@@ -454,13 +466,7 @@ class Task(object):
         ), "maximum memory usage must be <= 1"
         limit_memory = total_memory * self.params.block.max_memory_usage
         if sbox_memory > limit_memory:
-            shoebox = self.reflections["shoebox"]
-            sel = flex.random_selection(len(shoebox), min(len(shoebox), 1000))
-            subset_sb = shoebox.select(sel)
-            xsize = flex.mean(flex.double([s.xsize() for s in subset_sb]))
-            ysize = flex.mean(flex.double([s.ysize() for s in subset_sb]))
-            zsize = flex.mean(flex.double([s.zsize() for s in subset_sb]))
-
+            xsize, ysize, zsize = _average_shoebox_size(self.reflections)
             raise RuntimeError(
                 """
     There was a problem allocating memory for shoeboxes. Possible solutions
@@ -777,7 +783,6 @@ class Manager(object):
         """
         Compute the number of processors
         """
-        from dials.array_family import flex
 
         # Set the memory usage per processor
         if self.params.mp.method == "multiprocessing" and self.params.mp.nproc > 1:
@@ -795,11 +800,14 @@ class Manager(object):
             limit_memory = total_memory * self.params.block.max_memory_usage
             njobs = int(math.floor(limit_memory / max_memory))
             if njobs < 1:
+                xsize, ysize, zsize = _average_shoebox_size(self.reflections)
                 raise RuntimeError(
                     """
         No enough memory to run integration jobs. Possible solutions
         include increasing the percentage of memory allowed for shoeboxes or
-        decreasing the block size.
+        decreasing the block size. This could be caused by a highly mosaic
+        crystal model.  The average shoebox size is %d * %d * %d pixels - is
+        your crystal really this mosaic?
             Total system memory: %g GB
             Limit shoebox memory: %g GB
             Max shoebox memory: %g GB
