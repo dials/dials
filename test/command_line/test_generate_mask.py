@@ -153,3 +153,48 @@ def test_generate_mask_function_with_untrusted_rectangle(input_experiment_list, 
         tmpdir.join(f).strpath for f in ("pixels4.mask", "pixels4_1.mask")
     ]
     assert imageset.external_lookup.mask.filename in associated_masks
+
+
+def test_generate_mask_trusted_range(dials_data, tmpdir):
+    # https://github.com/dials/dials/issues/978
+    image_files = dials_data("x4wide").listdir("*.cbf", sort=True)
+
+    # Import as usual
+    procrunner.run(
+        ["dials.import", "trusted_range=-1,100", "output.experiments=no-overloads.expt"]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir,
+    )
+    procrunner.run(
+        [
+            "dials.generate_mask",
+            "no-overloads.expt",
+            "output.mask=pixels1.mask",
+            "untrusted.rectangle=100,200,100,200",
+        ],
+        working_directory=tmpdir,
+    )
+
+    # Import with narrow trusted range to produce overloads
+    procrunner.run(
+        ["dials.import", "trusted_range=-1,100", "output.experiments=overloads.expt"]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir,
+    )
+    procrunner.run(
+        [
+            "dials.generate_mask",
+            "overloads.expt",
+            "output.mask=pixels2.mask",
+            "untrusted.rectangle=100,200,100,200",
+        ],
+        working_directory=tmpdir,
+    )
+
+    with tmpdir.join("pixels1.mask").open("rb") as fh:
+        mask1 = pickle.load(fh)
+    with tmpdir.join("pixels2.mask").open("rb") as fh:
+        mask2 = pickle.load(fh)
+
+    # Overloads should not be included in the mask
+    assert (mask1[0] == mask2[0]).all_eq(True)
