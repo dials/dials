@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import time
+from math import ceil
 from collections import OrderedDict
 from dials.util import tabulate
 
@@ -663,7 +664,7 @@ class SingleScaler(ScalerBase):
                 avg_multi = flex.mean(presel_block.group_multiplicities())
                 min_refl = self.params.reflection_selection.random.min_reflections
                 n_groups_in_table = presel_block.n_groups
-                n_groups_to_sel = max(int(min_refl / avg_multi), min_groups)
+                n_groups_to_sel = max(int(ceil(min_refl / avg_multi)), min_groups)
 
                 logger.debug(
                     "Average multiplicity that reflection selection is sampling from: %s",
@@ -1227,9 +1228,6 @@ class MultiScalerBase(ScalerBase):
             block = self.global_Ih_table.Ih_table_blocks[0]
             sel_block = block.select(block.calc_nh() > 1)
             avg_multi = flex.mean(sel_block.group_multiplicities())
-            n_refl_to_use = max(
-                avg_multi * random_phil.min_groups, random_phil.min_reflections
-            )
 
             block = _select_groups_on_Isigma_cutoff(
                 block, random_phil.multi_dataset.Isigma_cutoff
@@ -1240,7 +1238,11 @@ class MultiScalerBase(ScalerBase):
                     "No groups left with multiplicity >1, scaling not possible."
                 )
             avg_multi = flex.mean(block.group_multiplicities())
-            n_groups_to_sel = int(n_refl_to_use / avg_multi)
+            n_groups_to_sel = max(
+                random_phil.min_groups,
+                int(ceil(random_phil.min_reflections * avg_multi)),
+            )
+
             n_groups_in_table = block.n_groups
             if n_groups_to_sel < n_groups_in_table:
                 isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)
