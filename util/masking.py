@@ -149,6 +149,9 @@ class MaskGenerator(object):
         masks = []
         for index, (im, panel) in enumerate(zip(image, detector)):
 
+            # Build a trusted mask by looking for pixels that are always outside
+            # the trusted range. This identifies bad pixels, but does not include
+            # pixels that are overloaded on some images.
             if self.params.use_trusted_range:
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
