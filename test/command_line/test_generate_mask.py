@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import six.moves.cPickle as pickle
-import procrunner
 import pytest
 
-from dials.command_line.generate_mask import generate_mask, phil_scope
+from dials.command_line.generate_mask import generate_mask, run, phil_scope
+from dials.command_line.dials_import import Script as ImportScript
+from dials.command_line.dials_import import phil_scope as import_phil_scope
 from dxtbx.serialize import load
 
 
@@ -26,29 +27,27 @@ def input_experiment_list(request, dials_data):
 
 
 def test_generate_mask(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [dials_data("centroid_test_data").join("experiments.json").strpath],
+        )
+
     assert tmpdir.join("pixels.mask").check()
 
 
 def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels2.mask",
-            "output.experiments=masked.expt",
-            "untrusted.rectangle=100,200,100,200",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels2.mask",
+                "output.experiments=masked.expt",
+                "untrusted.rectangle=100,200,100,200",
+            ],
+        )
+
     assert tmpdir.join("pixels2.mask").check()
     assert tmpdir.join("masked.expt").check()
 
@@ -58,75 +57,75 @@ def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
 
 
 def test_generate_mask_with_untrusted_circle(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels3.mask",
-            "untrusted.circle=100,100,10",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels3.mask",
+                "untrusted.circle=100,100,10",
+            ],
+        )
+
     assert tmpdir.join("pixels3.mask").check()
 
 
 def test_generate_mask_with_resolution_range(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels4.mask",
-            "resolution_range=2,3",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels4.mask",
+                "resolution_range=2,3",
+            ],
+        )
+
     assert tmpdir.join("pixels4.mask").check()
 
 
 def test_generate_mask_with_d_min_d_max(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels5.mask",
-            "d_min=3",
-            "d_max=2",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels5.mask",
+                "d_min=3",
+                "d_max=2",
+            ],
+        )
+
     assert tmpdir.join("pixels5.mask").check()
 
 
 def test_generate_mask_with_ice_rings(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels6.mask",
-            "ice_rings{filter=True;d_min=2}",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels6.mask",
+                "ice_rings{filter=True;d_min=2}",
+            ],
+        )
+
     assert tmpdir.join("pixels6.mask").check()
 
 
 def test_generate_mask_with_untrusted_polygon_and_pixels(dials_data, tmpdir):
-    result = procrunner.run(
-        [
-            "dials.generate_mask",
-            dials_data("centroid_test_data").join("experiments.json"),
-            "output.mask=pixels3.mask",
-            "untrusted.polygon=100,100,100,200,200,200,200,100",
-            "untrusted.pixel=0,0",
-            "untrusted.pixel=1,1",
-        ],
-        working_directory=tmpdir,
-    )
-    assert not result.returncode and not result.stderr
+    with tmpdir.as_cwd():
+        run(
+            phil_scope,
+            [
+                dials_data("centroid_test_data").join("experiments.json").strpath,
+                "output.mask=pixels3.mask",
+                "untrusted.polygon=100,100,100,200,200,200,200,100",
+                "untrusted.pixel=0,0",
+                "untrusted.pixel=1,1",
+            ],
+        )
+
     assert tmpdir.join("pixels3.mask").check()
     with tmpdir.join("pixels3.mask").open("rb") as fh:
         mask = pickle.load(fh)
@@ -157,39 +156,36 @@ def test_generate_mask_function_with_untrusted_rectangle(input_experiment_list, 
 
 def test_generate_mask_trusted_range(dials_data, tmpdir):
     # https://github.com/dials/dials/issues/978
-    image_files = dials_data("x4wide").listdir("*.cbf", sort=True)
 
-    # Import as usual
-    procrunner.run(
-        ["dials.import", "trusted_range=-1,100", "output.experiments=no-overloads.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir,
-    )
-    procrunner.run(
-        [
-            "dials.generate_mask",
-            "no-overloads.expt",
-            "output.mask=pixels1.mask",
-            "untrusted.rectangle=100,200,100,200",
-        ],
-        working_directory=tmpdir,
-    )
+    image_files = [f.strpath for f in dials_data("x4wide").listdir("*.cbf", sort=True)]
+    with tmpdir.as_cwd():
+        # Import as usual
+        import_script = ImportScript(import_phil_scope)
+        import_script.run(["output.experiments=no-overloads.expt"] + image_files)
 
-    # Import with narrow trusted range to produce overloads
-    procrunner.run(
-        ["dials.import", "trusted_range=-1,100", "output.experiments=overloads.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir,
-    )
-    procrunner.run(
-        [
-            "dials.generate_mask",
-            "overloads.expt",
-            "output.mask=pixels2.mask",
-            "untrusted.rectangle=100,200,100,200",
-        ],
-        working_directory=tmpdir,
-    )
+        run(
+            phil_scope,
+            [
+                "no-overloads.expt",
+                "output.mask=pixels1.mask",
+                "untrusted.rectangle=100,200,100,200",
+            ],
+        )
+
+        # Import with narrow trusted range to produce overloads
+        import_script = ImportScript(import_phil_scope)
+        import_script.run(
+            ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files
+        )
+
+        run(
+            phil_scope,
+            [
+                "overloads.expt",
+                "output.mask=pixels2.mask",
+                "untrusted.rectangle=100,200,100,200",
+            ],
+        )
 
     with tmpdir.join("pixels1.mask").open("rb") as fh:
         mask1 = pickle.load(fh)
