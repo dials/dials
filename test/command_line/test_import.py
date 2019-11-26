@@ -285,3 +285,30 @@ def test_extrapolate_scan(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)
+
+
+def test_with_convert_sequences_to_stills(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    result = procrunner.run(
+        [
+            "dials.import",
+            "convert_sequences_to_stills=True",
+            "output.experiments=experiments_as_stills.expt",
+        ]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("experiments_as_stills.expt").check(file=1)
+
+    experiments = load.experiment_list(
+        tmpdir.join("experiments_as_stills.expt").strpath
+    )
+
+    # should be no goniometers
+    assert experiments.scans() == [None]
+    assert experiments.goniometers() == [None]
+
+    # should be same number of imagesets as images
+    assert len(experiments.imagesets()) == len(image_files)
