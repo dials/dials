@@ -312,3 +312,6 @@ def test_with_convert_sequences_to_stills(dials_data, tmpdir):
 
     # should be same number of imagesets as images
     assert len(experiments.imagesets()) == len(image_files)
+
+    # all should call out as still too
+    assert experiments.all_stills()
