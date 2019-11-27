@@ -28,7 +28,7 @@ def input_experiment_list(request, dials_data):
 
 
 def test_generate_mask(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch().extract()
     with tmpdir.as_cwd():
         generate_mask(input_experiment_list, params)
 
@@ -36,9 +36,10 @@ def test_generate_mask(input_experiment_list, tmpdir):
 
 
 def test_generate_mask_with_untrusted_rectangle(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch(
+        phil.parse("untrusted.rectangle=100,200,100,200")
+    ).extract()
     params.output.experiments = "masked.expt"
-    params.untrusted[0].rectangle = 100, 200, 100, 200
     with tmpdir.as_cwd():
         generate_mask(input_experiment_list, params)
 
@@ -51,8 +52,7 @@ def test_generate_mask_with_untrusted_rectangle(input_experiment_list, tmpdir):
 
 
 def test_generate_mask_with_untrusted_circle(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
-    params.untrusted[0].circle = 100, 100, 10
+    params = phil_scope.fetch(phil.parse("untrusted.circle=100,100,10")).extract()
     with tmpdir.as_cwd():
         generate_mask(input_experiment_list, params)
 
@@ -60,7 +60,7 @@ def test_generate_mask_with_untrusted_circle(input_experiment_list, tmpdir):
 
 
 def test_generate_mask_with_resolution_range(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch().extract()
     params.resolution_range = [(2, 3)]
     with tmpdir.as_cwd():
         generate_mask(input_experiment_list, params)
@@ -69,7 +69,7 @@ def test_generate_mask_with_resolution_range(input_experiment_list, tmpdir):
 
 
 def test_generate_mask_with_d_min_d_max(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch().extract()
     params.d_min = 3
     params.d_max = 2
     with tmpdir.as_cwd():
@@ -79,7 +79,7 @@ def test_generate_mask_with_d_min_d_max(input_experiment_list, tmpdir):
 
 
 def test_generate_mask_with_ice_rings(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch().extract()
     params.ice_rings.filter = True
     params.ice_rings.d_min = 2
     with tmpdir.as_cwd():
@@ -116,7 +116,7 @@ untrusted {
 
 
 def test_generate_mask_function_with_untrusted_rectangle(input_experiment_list, tmpdir):
-    params = phil_scope.extract()
+    params = phil_scope.fetch().extract()
     params.output.mask = tmpdir.join("pixels4.mask").strpath
     params.output.experiments = tmpdir.join("masked.expt").strpath
     params.untrusted.rectangle = [100, 200, 100, 200]
@@ -145,9 +145,10 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
         import_script.run(["output.experiments=no-overloads.expt"] + image_files)
 
         experiments = load.experiment_list(tmpdir.join("no-overloads.expt").strpath)
-        params = phil_scope.extract()
+        params = phil_scope.fetch(
+            phil.parse("untrusted.rectangle=100,200,100,200")
+        ).extract()
         params.output.mask = "pixels1.mask"
-        params.untrusted[0].rectangle = 100, 200, 100, 200
         generate_mask(experiments, params)
 
         # Import with narrow trusted range to produce overloads
@@ -157,9 +158,10 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
         )
 
         experiments = load.experiment_list(tmpdir.join("overloads.expt").strpath)
-        params = phil_scope.extract()
+        params = phil_scope.fetch(
+            phil.parse("untrusted.rectangle=100,200,100,200")
+        ).extract()
         params.output.mask = "pixels2.mask"
-        params.untrusted[0].rectangle = 100, 200, 100, 200
         generate_mask(experiments, params)
 
     with tmpdir.join("pixels1.mask").open("rb") as fh:
