@@ -534,7 +534,7 @@ class PhilCommandParser(object):
                     "dynamic_shadowing": params.format.dynamic_shadowing,
                     "multi_panel": params.format.multi_panel,
                 }
-            except Exception:
+            except AttributeError:
                 format_kwargs = None
         else:
             compare_beam = None
