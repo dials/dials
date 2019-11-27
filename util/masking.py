@@ -16,6 +16,7 @@ from dxtbx.masking import (
 
 logger = logging.getLogger(__name__)
 
+
 phil_scope = parse(
     """
   border = 0
@@ -41,33 +42,7 @@ phil_scope = parse(
     .type = floats(2)
     .help = "an untrusted resolution range"
 
-  untrusted
-    .multiple = True
-  {
-
-    panel = 0
-      .type = int
-      .help = "The panel number"
-
-    circle = None
-      .type = ints(3)
-      .help = "An untrusted circle (xc, yc, r)"
-
-    rectangle = None
-      .type = ints(4)
-      .help = "An untrusted rectangle (x0, x1, y0, y1)"
-
-    polygon = None
-      .type = ints(value_min=0)
-      .help = "The pixel coordinates (fast, slow) that define the corners "
-              "of the untrusted polygon. Spots whose centroids fall within "
-              "the bounds of the untrusted polygon will be rejected."
-
-    pixel = None
-      .type = ints(2, value_min=0)
-      .help = "An untrusted pixel (y, x)"
-
-  }
+  include scope dxtbx.masking.untrusted_phil_scope
 
   ice_rings {
     filter = False
