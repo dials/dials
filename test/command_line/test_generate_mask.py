@@ -3,10 +3,11 @@ from __future__ import absolute_import, division, print_function
 import six.moves.cPickle as pickle
 import pytest
 
-from dials.command_line.generate_mask import generate_mask, run, phil_scope
+from dials.command_line.generate_mask import generate_mask, phil_scope
 from dials.command_line.dials_import import Script as ImportScript
 from dials.command_line.dials_import import phil_scope as import_phil_scope
 from dxtbx.serialize import load
+from libtbx import phil
 
 
 @pytest.fixture(
@@ -26,108 +27,88 @@ def input_experiment_list(request, dials_data):
     return load.experiment_list(filename)
 
 
-def test_generate_mask(dials_data, tmpdir):
+def test_generate_mask(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [dials_data("centroid_test_data").join("experiments.json").strpath],
-        )
+        generate_mask(input_experiment_list, params)
 
     assert tmpdir.join("pixels.mask").check()
 
 
-def test_generate_mask_with_untrusted_rectangle(dials_data, tmpdir):
+def test_generate_mask_with_untrusted_rectangle(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
+    params.output.experiments = "masked.expt"
+    params.untrusted[0].rectangle = 100, 200, 100, 200
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels2.mask",
-                "output.experiments=masked.expt",
-                "untrusted.rectangle=100,200,100,200",
-            ],
-        )
+        generate_mask(input_experiment_list, params)
 
-    assert tmpdir.join("pixels2.mask").check()
+    assert tmpdir.join("pixels.mask").check()
     assert tmpdir.join("masked.expt").check()
 
     experiments = load.experiment_list(tmpdir.join("masked.expt").strpath)
     imageset = experiments.imagesets()[0]
-    assert imageset.external_lookup.mask.filename == tmpdir.join("pixels2.mask").strpath
+    assert imageset.external_lookup.mask.filename == tmpdir.join("pixels.mask").strpath
 
 
-def test_generate_mask_with_untrusted_circle(dials_data, tmpdir):
+def test_generate_mask_with_untrusted_circle(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
+    params.untrusted[0].circle = 100, 100, 10
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels3.mask",
-                "untrusted.circle=100,100,10",
-            ],
-        )
+        generate_mask(input_experiment_list, params)
 
-    assert tmpdir.join("pixels3.mask").check()
+    assert tmpdir.join("pixels.mask").check()
 
 
-def test_generate_mask_with_resolution_range(dials_data, tmpdir):
+def test_generate_mask_with_resolution_range(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
+    params.resolution_range = [(2, 3)]
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels4.mask",
-                "resolution_range=2,3",
-            ],
-        )
+        generate_mask(input_experiment_list, params)
 
-    assert tmpdir.join("pixels4.mask").check()
+    assert tmpdir.join("pixels.mask").check()
 
 
-def test_generate_mask_with_d_min_d_max(dials_data, tmpdir):
+def test_generate_mask_with_d_min_d_max(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
+    params.d_min = 3
+    params.d_max = 2
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels5.mask",
-                "d_min=3",
-                "d_max=2",
-            ],
-        )
+        generate_mask(input_experiment_list, params)
 
-    assert tmpdir.join("pixels5.mask").check()
+    assert tmpdir.join("pixels.mask").check()
 
 
-def test_generate_mask_with_ice_rings(dials_data, tmpdir):
+def test_generate_mask_with_ice_rings(input_experiment_list, tmpdir):
+    params = phil_scope.extract()
+    params.ice_rings.filter = True
+    params.ice_rings.d_min = 2
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels6.mask",
-                "ice_rings{filter=True;d_min=2}",
-            ],
+        generate_mask(input_experiment_list, params)
+
+    assert tmpdir.join("pixels.mask").check()
+
+
+def test_generate_mask_with_untrusted_polygon_and_pixels(input_experiment_list, tmpdir):
+    params = phil_scope.fetch(
+        phil.parse(
+            """
+untrusted {
+  polygon = 100 100 100 200 200 200 200 100
+}
+untrusted {
+  pixel = 0 0
+}
+untrusted {
+  pixel = 1 1
+}"""
         )
+    ).extract()
 
-    assert tmpdir.join("pixels6.mask").check()
-
-
-def test_generate_mask_with_untrusted_polygon_and_pixels(dials_data, tmpdir):
     with tmpdir.as_cwd():
-        run(
-            phil_scope,
-            [
-                dials_data("centroid_test_data").join("experiments.json").strpath,
-                "output.mask=pixels3.mask",
-                "untrusted.polygon=100,100,100,200,200,200,200,100",
-                "untrusted.pixel=0,0",
-                "untrusted.pixel=1,1",
-            ],
-        )
+        generate_mask(input_experiment_list, params)
 
-    assert tmpdir.join("pixels3.mask").check()
-    with tmpdir.join("pixels3.mask").open("rb") as fh:
+    assert tmpdir.join("pixels.mask").check()
+    with tmpdir.join("pixels.mask").open("rb") as fh:
         mask = pickle.load(fh)
     assert not mask[0][0, 0]
     assert not mask[0][1, 1]
@@ -163,14 +144,11 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
         import_script = ImportScript(import_phil_scope)
         import_script.run(["output.experiments=no-overloads.expt"] + image_files)
 
-        run(
-            phil_scope,
-            [
-                "no-overloads.expt",
-                "output.mask=pixels1.mask",
-                "untrusted.rectangle=100,200,100,200",
-            ],
-        )
+        experiments = load.experiment_list(tmpdir.join("no-overloads.expt").strpath)
+        params = phil_scope.extract()
+        params.output.mask = "pixels1.mask"
+        params.untrusted[0].rectangle = 100, 200, 100, 200
+        generate_mask(experiments, params)
 
         # Import with narrow trusted range to produce overloads
         import_script = ImportScript(import_phil_scope)
@@ -178,14 +156,11 @@ def test_generate_mask_trusted_range(dials_data, tmpdir):
             ["trusted_range=-1,100", "output.experiments=overloads.expt"] + image_files
         )
 
-        run(
-            phil_scope,
-            [
-                "overloads.expt",
-                "output.mask=pixels2.mask",
-                "untrusted.rectangle=100,200,100,200",
-            ],
-        )
+        experiments = load.experiment_list(tmpdir.join("overloads.expt").strpath)
+        params = phil_scope.extract()
+        params.output.mask = "pixels2.mask"
+        params.untrusted[0].rectangle = 100, 200, 100, 200
+        generate_mask(experiments, params)
 
     with tmpdir.join("pixels1.mask").open("rb") as fh:
         mask1 = pickle.load(fh)
