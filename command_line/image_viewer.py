@@ -83,6 +83,8 @@ mask = None
 
 include scope rstbx.phil.phil_preferences.iotbx_defs_viewer_detail
 
+include scope dials.util.options.format_phil_scope
+
 masking {
   include scope dials.util.masking.phil_scope
 }
