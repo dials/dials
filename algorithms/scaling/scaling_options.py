@@ -37,7 +37,7 @@ phil_scope = iotbx.phil.parse(
         .help = "The minimum number of symmetry groups to use during"
                 "minimisation."
         .expert_level=1
-      min_reflections = 40000
+      min_reflections = 50000
         .type = int
         .help = "The minimum number of reflections to use during minimisation."
         .expert_level=1
