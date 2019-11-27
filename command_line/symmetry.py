@@ -124,16 +124,31 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
 
     Returns: The experiments and reflections mapped to the minimum cell
     """
+
+    # have a look to see if all the inputs are similar before we start - if
+    # yes use only one for this
+
+    c0 = experiments[0].crystal.get_unit_cell()
+    input_similar = all(
+        c0.is_similar_to(c)
+        for c in [expt.crystal.get_unit_cell() for expt in experiments]
+    )
+
     cb_ops = []
     for expt, refl in zip(experiments, reflections):
-        groups = metric_subgroups(
-            expt.crystal.get_crystal_symmetry(),
-            max_delta,
-            enforce_max_delta_for_generated_two_folds=True,
-        )
-        group = groups.result_groups[0]
-        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
-        cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+        if input_similar and len(cb_ops):
+            cb_op_inp_min = cb_ops[0]
+        else:
+            groups = metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            group = groups.result_groups[0]
+            cb_op_best_to_min = group[
+                "best_subsym"
+            ].change_of_basis_op_to_minimum_cell()
+            cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
         refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
         expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
         expt.crystal.set_space_group(sgtbx.space_group())
