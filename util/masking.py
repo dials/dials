@@ -155,7 +155,7 @@ class MaskGenerator(object):
             if self.params.use_trusted_range:
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
-                for image_index in imageset.indices():
+                for image_index, frame_number in enumerate(imageset.indices()):
                     image_data = imageset.get_raw_data(image_index)[index].as_double()
                     frame_mask = (image_data > low) & (image_data < high)
                     if trusted_mask is None:
