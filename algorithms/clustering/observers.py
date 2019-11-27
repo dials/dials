@@ -44,7 +44,7 @@ class UnitCellAnalysisObserver(Observer):
                 self.data["dendrogram"],
                 title="Unit cell clustering",
                 xtitle="Dataset",
-                ytitle=r"Distance (Å^2)",
+                ytitle=r"Distance (Å<sup>2</sup>)",
             )
 
         graphs = {"unit_cell_graphs": d}
