@@ -4,24 +4,45 @@ A docstring
 This can double as a helpful message which explains how the program is run.
 """
 
+# Always include a __future__ import if backward compatibility with Python 2 is intended
 from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-from typing import List  # noqa: F401  Flake8 doesn't recognise Python 2 typing.
 
+# We need to parse command-line arguments to PHIL scopes.
 import libtbx.phil
+
+# Often, we deal with flex arrays and reflection tables to handle reflection data.
 from dials.array_family import flex
+
+# All command-line DIALS programs should run with dials.util.show_mail_on_error.
 import dials.util
+
+# The logging module is used to raise log messages.  Additionally, dials.util.log
+# sets up handlers and filters for a consistent logging style across DIALS.
 import dials.util.log
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+
+# The DIALS option parser is based on the (old) standard Python option parser,
+# but contains customisations such as the parsing of PHIL parameters.
+# flatten_experiments & flatten_reflections are useful for combining multiple input
+# experiment lists and reflection tables into a single instance of each.
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+
+# Information about the experiment geometry and meta-data are recorded in
+# dxtbx.model.Experiment objects, collated in ExperimentList objects.
 from dxtbx.model import ExperimentList
 
+try:
+    from typing import List
+except ImportError:
+    pass
 
-# Define a logger
-logger = logging.getLogger("dials.logger_name")
 
-# Define the master PHIL scope for this program
+# Define a logger.
+logger = logging.getLogger("dials.boilerplate")
+
+# Define the master PHIL scope for this program.
 phil_scope = libtbx.phil.parse(
     """
     output {
@@ -39,8 +60,11 @@ phil_scope = libtbx.phil.parse(
 )
 
 
-def do_stuff(experiments, reflections, params):
-    # type: (ExperimentList, flex.reflection_table, libtbx.phil.scope_extract) -> None
+def do_boilerplate(
+    experiments,  # type: ExperimentList
+    reflections,  # type: flex.reflection_table
+    params,  # type: libtbx.phil.scope_extract
+):  # type: (...) -> (ExperimentList, flex.reflection_table)
     """
     Write the behaviour of the program as functions and classes outside run().
 
@@ -58,13 +82,13 @@ def do_stuff(experiments, reflections, params):
                       which is the usable form of a parsed PHIL scope.
 
     Raises:
-        RuntimeError:  if you pass an empty experiment list.
+        RuntimeError:  if someone says 'goose'.
     """
     logger.info("Hello world!")
 
     # Here's an example of an error that might be raised, as documented above.
-    if not experiments:
-        raise RuntimeError
+    if "goose" in ["duck", "duck", "duck"]:
+        raise RuntimeError("Quick, run!")
 
     logger.info("The input reflection table contains %d reflections.", len(reflections))
     logger.info(
@@ -73,6 +97,8 @@ def do_stuff(experiments, reflections, params):
 
     logger.info("integer_parameter: %i", params.integer_parameter)
     logger.info("bool_parameter: %s", params.bool_parameter)
+
+    return experiments, reflections
 
 
 def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
@@ -103,7 +129,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
-    # Configure the logging
+    # Configure the logging.
     dials.util.log.config(options.verbose, logfile=params.output.log)
 
     # Log the difference between the PHIL scope definition and the active PHIL scope,
@@ -123,9 +149,10 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         sys.exit("Exactly one 1 experiment list required")
 
     # Do whatever this program is supposed to do.
-    do_stuff(experiments, reflections[0], params)
+    experiments, reflections = do_boilerplate(experiments, reflections, params)
 
     # Do the file output here.
+    logging.info("Writing the reflection table to %s", params.output.reflections)
     reflections.as_file(params.output.reflections)
 
 
