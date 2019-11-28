@@ -52,7 +52,11 @@ def find_constant_signal_pixels(imageset, images):
     is >= 50% of the images (say) that pixel is untrustworthy."""
 
     panels = imageset.get_detector()
-    assert len(panels) == 1
+
+    # only cope with monilithic detectors or the I23 Pilatus 12M
+    assert len(panels) in (1, 24)
+
+    # trusted range the same for all panels anyway
     detector = panels[0]
     trusted = detector.get_trusted_range()
 
@@ -63,8 +67,13 @@ def find_constant_signal_pixels(imageset, images):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
-        assert len(pixels) == 1
-        data = pixels[0]
+        if len(pixels) == 1:
+            data = pixels[0]
+        else:
+            ny, nx = pixels[0].focus()
+            data = flex.int(flex.grid(24 * ny + 23 * 17, nx), -1)
+            for j in range(24):
+                data.matrix_paste_block_in_place(pixels[j], j * (ny + 17), 0)
 
         negative = data < int(round(trusted[0]))
         hot = data > int(round(trusted[1]))
@@ -125,7 +134,6 @@ def run(args):
 
     imageset = imagesets[0]
     panels = imageset.get_detector()
-    assert len(panels) == 1
     detector = panels[0]
     trusted = detector.get_trusted_range()
 
@@ -174,7 +182,13 @@ def run(args):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
-        data = pixels[0]
+        if len(pixels) == 1:
+            data = pixels[0]
+        else:
+            ny, nx = pixels[0].focus()
+            data = flex.int(flex.grid(24 * ny + 23 * 17, nx), -1)
+            for j in range(24):
+                data.matrix_paste_block_in_place(pixels[j], j * (ny + 17), 0)
 
         for h in hot_pixels:
             capricious_pixels[h].append(data[h])
