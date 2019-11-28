@@ -7,7 +7,8 @@ import random
 import sys
 from dials.util import tabulate
 
-from cctbx import sgtbx
+from cctbx import sgtbx, uctbx
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
@@ -111,9 +112,32 @@ output {
 )
 
 
-def map_to_minimum_cell(experiments, reflections, max_delta):
+def median_unit_cell(experiments):
+    uc_params = [flex.double() for i in range(6)]
+    for c in experiments.crystals():
+        for i, p in enumerate(c.get_unit_cell().parameters()):
+            uc_params[i].append(p)
+    return uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+
+
+def unit_cells_are_similar_to(
+    experiments, unit_cell, relative_length_tolerance, absolute_angle_tolerance
+):
+    return all(
+        expt.crystal.get_unit_cell().is_similar_to(
+            unit_cell,
+            relative_length_tolerance=relative_length_tolerance,
+            absolute_angle_tolerance=absolute_angle_tolerance,
+        )
+        for expt in experiments
+    )
+
+
+def change_of_basis_ops_to_minimum_cell(
+    experiments, max_delta, relative_length_tolerance, absolute_angle_tolerance
+):
     """
-    Map experiments and reflections to the minimum cell
+    Compute change of basis ops to map experiments to the minimum cell
 
     Map to the minimum cell via the best cell, which appears to guarantee that the
     resulting minimum cells are consistent.
@@ -125,20 +149,28 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
     Returns: The experiments and reflections mapped to the minimum cell
     """
 
-    # have a look to see if all the inputs are similar before we start - if
-    # yes use only one for this
-
-    c0 = experiments[0].crystal.get_unit_cell()
-    input_similar = all(
-        c0.is_similar_to(c)
-        for c in [expt.crystal.get_unit_cell() for expt in experiments]
+    median_cell = median_unit_cell(experiments)
+    unit_cells_are_similar = unit_cells_are_similar_to(
+        experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
     )
-
-    cb_ops = []
-    for expt, refl in zip(experiments, reflections):
-        if input_similar and len(cb_ops):
-            cb_op_inp_min = cb_ops[0]
-        else:
+    centring_symbols = [
+        bravais_lattice(group=expt.crystal.get_space_group()).centring_symbol
+        for expt in experiments
+    ]
+    if unit_cells_are_similar and len(set(centring_symbols)) == 1:
+        groups = metric_subgroups(
+            experiments[0]
+            .crystal.get_crystal_symmetry()
+            .customized_copy(unit_cell=median_cell),
+            max_delta,
+            enforce_max_delta_for_generated_two_folds=True,
+        )
+        group = groups.result_groups[0]
+        cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
+        cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
+    else:
+        cb_ops = []
+        for expt in experiments:
             groups = metric_subgroups(
                 expt.crystal.get_crystal_symmetry(),
                 max_delta,
@@ -149,11 +181,27 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
                 "best_subsym"
             ].change_of_basis_op_to_minimum_cell()
             cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+            cb_ops.append(cb_op_inp_min)
+    return cb_ops
+
+
+def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
+    """
+    Apply the given change of basis ops to the input experiments and reflections
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflections (list): a list of reflection tables
+        change_of_basis_ops (list): a list of cctbx.sgtbx.change_of_basis_op
+
+    Returns: The experiments and reflections after application of the change of basis ops
+    """
+
+    for expt, refl, cb_op_inp_min in zip(experiments, reflections, change_of_basis_ops):
         refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
         expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
         expt.crystal.set_space_group(sgtbx.space_group())
-        cb_ops.append(cb_op_inp_min)
-    return experiments, reflections, cb_ops
+    return experiments, reflections
 
 
 def symmetry(experiments, reflection_tables, params=None):
@@ -175,11 +223,18 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Performing Laue group analysis")
         logger.info("")
 
-        # transform models into miller arrays
+        # Transform models into miller arrays
         n_datasets = len(experiments)
 
-        experiments, reflection_tables, cb_ops = map_to_minimum_cell(
-            experiments, reflection_tables, params.lattice_symmetry_max_delta
+        # Map experiments and reflections to minimum cell
+        cb_ops = change_of_basis_ops_to_minimum_cell(
+            experiments,
+            params.lattice_symmetry_max_delta,
+            params.relative_length_tolerance,
+            params.absolute_angle_tolerance,
+        )
+        experiments, reflection_tables = apply_change_of_basis_ops(
+            experiments, reflection_tables, cb_ops
         )
 
         datasets = filtered_arrays_from_experiments_reflections(
