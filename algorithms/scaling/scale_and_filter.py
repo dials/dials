@@ -166,8 +166,8 @@ class AnalysisResults(object):
             "initial_expids_and_image_ranges"
         ]
         results.cycle_results = [
-            dictionary["cycle_results"][key]
-            for key in sorted(dictionary["cycle_results"].iterkeys())
+            dictionary["cycle_results"][str(key)]
+            for key in sorted([int(k) for k in dictionary["cycle_results"].iterkeys()])
         ]
         results.initial_n_reflections = dictionary["initial_n_reflections"]
         results.final_stats = dictionary["final_stats"]
