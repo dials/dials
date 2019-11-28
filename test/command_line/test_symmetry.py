@@ -296,7 +296,10 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
         expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
     assert symmetry.unit_cells_are_similar_to.return_value is True
-    assert [cb_op.as_xyz() for cb_op in cb_ops] == ["x,y,z"] * len(cb_ops)
+    cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
+    assert len(set(cb_ops_as_xyz)) == 1
+    # Actual cb_ops are machine dependent (sigh)
+    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z")
 
 
 def test_median_cell():
