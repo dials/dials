@@ -495,7 +495,9 @@ class ReflectionManager(object):
             self._reflections.flags.used_in_refinement,
         )
 
-        logger.debug("%d reflections remain in the manager", len(self._reflections))
+        logger.info("%d reflections remain in the manager", len(self._reflections))
+        if len(self._reflections) == 0:
+            raise DialsRefineConfigError("No reflections available for refinement")
 
         # print summary after outlier rejection
         if rejection_occurred:
