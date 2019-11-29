@@ -13,7 +13,12 @@ from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
-from dials.command_line.symmetry import map_to_minimum_cell
+from dials.command_line import symmetry
+from dials.command_line.symmetry import (
+    apply_change_of_basis_ops,
+    change_of_basis_ops_to_minimum_cell,
+    median_unit_cell,
+)
 
 
 def test_symmetry_laue_only(dials_regression, tmpdir):
@@ -206,21 +211,21 @@ def test_map_to_minimum_cell():
         reflections.append(refl)
 
     # Actually run the method we are testing
-    expts_min, reflections_min, cb_ops = map_to_minimum_cell(
-        expts, reflections, max_delta=5
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
+    cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
+    # Actual cb_ops are machine dependent (sigh)
+    assert cb_ops_as_xyz == [
+        "-x+y,-2*y,z",
+        "-x+z,-z,-y",
+        "x+y,-2*x,z",
+    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
 
+    expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected
     for expt, uc in zip(expts, expected_ucs):
         assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
-
-    # Verify that the cb_ops map the input unit cells to the expected minimum unit cells
-    for input_uc, expected_uc, cb_op in zip(input_ucs, expected_ucs, cb_ops):
-        assert (
-            uctbx.unit_cell(input_uc)
-            .change_basis(cb_op)
-            .is_similar_to(uctbx.unit_cell(expected_uc))
-        )
 
     # Space group should be set to P1
     assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
@@ -237,10 +242,9 @@ def test_map_to_minimum_cell():
             assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
 
 
-def test_map_to_minimum_cell_1037():
+def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     # See https://github.com/dials/dials/issues/1037
 
-    # Input and expected output
     input_ucs = [
         (
             4.805202948916906,
@@ -275,56 +279,43 @@ def test_map_to_minimum_cell_1037():
             100.79522302759383,
         ),
     ]
-    input_sgs = ["P1"] * 4
-    input_hkl = [[], [], [], []]
-    expected_ucs = [
-        (4.8052, 12.8081, 16.5449, 106.458, 90.0066, 100.777),
-        (4.80801, 12.8219, 16.5573, 106.484, 90.0253, 100.773),
-        (4.80966, 12.8156, 16.5593, 106.49, 90.017, 100.804),
-        (4.80729, 12.8224, 16.5604, 106.432, 90.0207, 100.795),
-    ]
-    expected_output_hkl = [[], [], [], []]
 
     # Setup the input experiments and reflection tables
     expts = ExperimentList()
-    reflections = []
-    for uc, sg, hkl in zip(input_ucs, input_sgs, input_hkl):
+    for uc in input_ucs:
         uc = uctbx.unit_cell(uc)
-        sg = sgtbx.space_group_info(sg).group()
+        sg = sgtbx.space_group_info("P1").group()
         B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
         expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
-        refl = flex.reflection_table()
-        refl["miller_index"] = flex.miller_index(hkl)
-        reflections.append(refl)
+
+    # We want to spy on the return value of this function
+    mocker.spy(symmetry, "unit_cells_are_similar_to")
 
     # Actually run the method we are testing
-    expts_min, reflections_min, cb_ops = map_to_minimum_cell(
-        expts, reflections, max_delta=5
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
+    assert symmetry.unit_cells_are_similar_to.return_value is True
+    cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
+    assert len(set(cb_ops_as_xyz)) == 1
+    # Actual cb_ops are machine dependent (sigh)
+    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z")
 
-    # Verify that the unit cells have been transformed as expected
-    for expt, uc in zip(expts, expected_ucs):
-        assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
 
-    # Verify that the cb_ops map the input unit cells to the expected minimum unit cells
-    for input_uc, expected_uc, cb_op in zip(input_ucs, expected_ucs, cb_ops):
-        assert (
-            uctbx.unit_cell(input_uc)
-            .change_basis(cb_op)
-            .is_similar_to(uctbx.unit_cell(expected_uc))
-        )
-
-    # Space group should be set to P1
-    assert [expt.crystal.get_space_group().type().number() for expt in expts_min] == [
-        1,
-        1,
-        1,
-        1,
+def test_median_cell():
+    unit_cells = [
+        uctbx.unit_cell(uc)
+        for uc in [
+            (10, 11, 11.9, 90, 85, 90),
+            (10.1, 11.2, 12, 90, 85.5, 90),
+            (10.2, 11.1, 12, 90, 84.7, 90),
+        ]
     ]
+    expts = ExperimentList()
+    for uc in unit_cells:
+        sg = sgtbx.space_group_info("P1").group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
 
-    # Verify that the reflections have been reindexed as expected
-    # Because the exact choice of minimum cell can be platform-dependent,
-    # compare the magnitude, but not the sign of the output hkl values
-    for refl, expected_hkl in zip(reflections, expected_output_hkl):
-        for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
-            assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
+    median = median_unit_cell(expts)
+    assert median.parameters() == pytest.approx((10.1, 11.1, 12, 90, 85, 90))
