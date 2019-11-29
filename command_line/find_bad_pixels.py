@@ -5,6 +5,8 @@ from __future__ import absolute_import, division, print_function
 import concurrent.futures
 import math
 import sys
+from PIL import Image
+import numpy
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -209,8 +211,6 @@ def run(args):
     nslow, nfast = data.focus()
 
     # save the total image as a PNG
-    from PIL import Image
-    import numpy
 
     view = (~(total > (len(images) // 2))).as_int() * 255
     view.reshape(flex.grid(data.focus()))
