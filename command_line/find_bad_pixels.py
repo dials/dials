@@ -39,6 +39,12 @@ output {
     mask = pixels.mask
         .type = path
         .help = "Output mask file name"
+    png = pixels.png
+        .type = path
+        .help = "Bad pixel mask as image"
+    print_values = False
+        .type = bool
+        .help = "Print bad pixel values"
 }
 """
 )
@@ -67,6 +73,13 @@ def find_constant_signal_pixels(imageset, images):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
+
+        # apply known mask
+        for _pixel, _panel in zip(pixels, panels):
+            for f0, s0, f1, s1 in _panel.get_mask():
+                blank = flex.int(flex.grid(s1 - s0, f1 - f0), 0)
+                _pixel.matrix_paste_block_in_place(blank, s0, f0)
+
         if len(pixels) == 1:
             data = pixels[0]
         else:
@@ -195,6 +208,15 @@ def run(args):
 
     nslow, nfast = data.focus()
 
+    # save the total image as a PNG
+    from PIL import Image
+    import numpy
+
+    view = (~(total > (len(images) // 2))).as_int() * 255
+    view.reshape(flex.grid(data.focus()))
+    image = Image.fromarray(view.as_numpy_array().astype(numpy.uint8), mode="L")
+    image.save(params.output.png)
+
     ffff = 0
 
     for h in hot_pixels:
@@ -202,6 +224,8 @@ def run(args):
             ffff += 1
             continue
         print("Pixel %d at %d %d" % (total[h], h // nfast, h % nfast))
+        if not params.output.print_values:
+            continue
         if len(set(capricious_pixels[h])) >= len(capricious_pixels[h]) // 2:
             print("  ... many possible values")
             continue
