@@ -150,7 +150,7 @@ def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
     assert (
-        result.stderr.replace("\r", "")
+        result.stderr.replace(b"\r", b"")
         == b"""Sorry: intensity.scale.value not found in the reflection table.
 Only scaled data can be processed with dials.merge
 """
@@ -174,7 +174,7 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
     assert (
-        result.stderr.replace("\r", "")
+        result.stderr.replace(b"\r", b"")
         == b"""Sorry: Only data scaled together as a single reflection dataset
 can be processed with dials.merge
 """
