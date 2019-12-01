@@ -639,7 +639,9 @@ class SpotFrame(XrayFrame):
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
-            p_id = 0  # XXX beam doesn't intersect with any panels - is there a better solution?
+            p_id = (
+                0
+            )  # XXX beam doesn't intersect with any panels - is there a better solution?
         pan = detector[p_id]
 
         for tt, d, pxl in zip(twotheta, spacings, L_pixels):
@@ -831,7 +833,8 @@ class SpotFrame(XrayFrame):
                 for j, rd in enumerate(raw_data):
                     rd += raw_data_i[j]
 
-            self.pyslip.tiles.set_image_data(raw_data)
+            show_saturated = self.settings.display != "variance"
+            self.pyslip.tiles.set_image_data(raw_data, show_saturated)
 
             self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
             self.update_statusbar()  # XXX Not always working?
@@ -926,7 +929,8 @@ class SpotFrame(XrayFrame):
 
     def show_filters(self):
         raw_data = self.get_raw_data(self.pyslip.tiles.raw_image)
-        self.pyslip.tiles.set_image_data(raw_data)
+        show_saturated = self.settings.display != "variance"
+        self.pyslip.tiles.set_image_data(raw_data, show_saturated)
         self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
         self.update_statusbar()  # XXX Not always working?
         self.Layout()
