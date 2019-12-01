@@ -13,6 +13,9 @@ except ImportError:
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class ElapsedFormatter:
+    """A formatter for log files that prepends messages with the elapsed time
+    since initialisation and prefixes warning messages with 'WARNING:'"""
+
     def __init__(self):
         self.start_time = time.time()
         self.elapsed_msg = ""
@@ -22,12 +25,28 @@ class ElapsedFormatter:
         elapsed_msg = "{:6.1f}: ".format(elapsed_seconds)
         indent = len(elapsed_msg)
         msg = record.getMessage()
+
+        if record.levelno == logging.WARNING:
+            msg = "WARNING: " + msg
+
         msg = msg.replace("\n", "\n" + " " * indent)
         if elapsed_msg == self.elapsed_msg:
             return " " * indent + msg
         else:
             self.elapsed_msg = elapsed_msg
             return elapsed_msg + msg
+
+
+class LevelPrefixFormatter(logging.Formatter):
+    def format(self, record):
+
+        format_orig = self._fmt
+        if record.levelno == logging.WARNING:
+            self._fmt = "WARNING: %(msg)s"
+        result = logging.Formatter.format(self, record)
+        self._fmt = format_orig
+
+        return result
 
 
 def config(verbosity=0, logfile=None):
@@ -47,6 +66,8 @@ def config(verbosity=0, logfile=None):
     else:
         console = logging.StreamHandler(sys.stdout)
 
+    fmt = LevelPrefixFormatter()
+    console.setFormatter(fmt)
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
 
