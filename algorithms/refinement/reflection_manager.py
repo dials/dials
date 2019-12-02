@@ -134,19 +134,6 @@ class BlockCalculator(object):
         self._reflections["block"] = flex.size_t(len(self._reflections))
         self._reflections["block_centre"] = flex.double(len(self._reflections))
 
-    @staticmethod
-    def _check_scan_range(exp_phi, scan):
-        """Check that the observed reflections fill the scan-range"""
-
-        # Allow up to 5 degrees between the observed phi extrema and the
-        # scan edges
-        start, stop = scan.get_oscillation_range(deg=False)
-        if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise DialsRefineConfigError(
-                "The reflections do not fill the scan range. "
-                "A common reason for this is that the crystal has died at the end of the scan."
-            )
-
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
@@ -162,7 +149,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             start, stop = exp.scan.get_oscillation_range(deg=False)
             nblocks = int(abs(stop - start) / width) + 1
@@ -199,7 +185,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             # convert phi to integer frames
             frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
@@ -510,7 +495,9 @@ class ReflectionManager(object):
             self._reflections.flags.used_in_refinement,
         )
 
-        logger.debug("%d reflections remain in the manager", len(self._reflections))
+        logger.info("%d reflections remain in the manager", len(self._reflections))
+        if len(self._reflections) == 0:
+            raise DialsRefineConfigError("No reflections available for refinement")
 
         # print summary after outlier rejection
         if rejection_occurred:

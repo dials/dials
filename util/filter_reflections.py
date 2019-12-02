@@ -49,6 +49,7 @@ from dials.util import tabulate
 from cctbx import crystal, miller
 from dials.array_family import flex
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
+from dials.util.batch_handling import assign_batches_to_reflections
 
 logger = logging.getLogger("dials")
 
@@ -140,6 +141,7 @@ def filtered_arrays_from_experiments_reflections(
     reflections,
     outlier_rejection_after_filter=False,
     partiality_threshold=0.99,
+    return_batches=False,
 ):
     """Create a list of filtered arrays from experiments and reflections.
 
@@ -152,6 +154,12 @@ def filtered_arrays_from_experiments_reflections(
     """
     miller_arrays = []
     ids_to_del = []
+
+    if return_batches:
+        assert all(expt.scan is not None for expt in experiments)
+        batch_offsets = [expt.scan.get_batch_offset() for expt in experiments]
+        reflections = assign_batches_to_reflections(reflections, batch_offsets)
+        batch_arrays = []
 
     for idx, (expt, refl) in enumerate(zip(experiments, reflections)):
         crystal_symmetry = crystal.symmetry(
@@ -205,14 +213,18 @@ def filtered_arrays_from_experiments_reflections(
             miller_set = miller.set(
                 crystal_symmetry, refl["miller_index"], anomalous_flag=False
             )
-            intensities = miller.array(
-                miller_set, data=refl["intensity"], sigmas=flex.sqrt(refl["variance"])
+            intensities = miller_set.array(
+                data=refl["intensity"], sigmas=flex.sqrt(refl["variance"])
             )
             intensities.set_observation_type_xray_intensity()
             intensities.set_info(
                 miller.array_info(source="DIALS", source_type="pickle")
             )
             miller_arrays.append(intensities)
+            if return_batches:
+                batch_arrays.append(
+                    miller_set.array(data=refl["batch"]).set_info(intensities.info())
+                )
 
     if not miller_arrays:
         raise ValueError(
@@ -225,6 +237,8 @@ option partiality_threshold can be lowered to include partials."""
         del experiments[id_]
         del reflections[id_]
 
+    if return_batches:
+        return miller_arrays, batch_arrays
     return miller_arrays
 
 

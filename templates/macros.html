@@ -73,6 +73,18 @@
     </script>
 {%- endmacro %}
 
+{% macro plotly_graphs(graphs, styles=None) -%}
+{% for div_id, json_data in graphs.items() %}
+    {% if "img" in json_data %}
+        <img src="data:image/png;base64,{{ json_data['img'] }}">
+    {% elif styles != None %}
+        {{ plotly_graph(div_id, json_data, style=styles.get(div_id)) }}
+    {% else %}
+        {{ plotly_graph(div_id, json_data) }}
+    {% endif %}
+{% endfor %}
+{%- endmacro %}
+
 {% macro panel(panel_title, panel_id, graphs, styles=None) -%}
 <div class="panel panel-default">
     <div class="panel-heading" data-toggle="collapse" data-target="#collapse_{{ panel_id }}">
@@ -83,15 +95,7 @@
     <div id="collapse_{{ panel_id }}" class="panel-collapse collapse">
         <div class="panel-body">
             <div class="container-fluid">
-                {% for div_id, json_data in graphs.items() %}
-                    {% if "img" in json_data %}
-                        <img src="data:image/png;base64,{{ json_data['img'] }}">
-                    {% elif styles != None %}
-                        {{ plotly_graph(div_id, json_data, style=styles.get(div_id)) }}
-                    {% else %}
-                        {{ plotly_graph(div_id, json_data) }}
-                    {% endif %}
-                {% endfor %}
+                {{ plotly_graphs(graphs, styles=styles) }}
             </div>
         </div>
     </div>

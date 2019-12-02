@@ -152,6 +152,73 @@ def _copy_experiments_for_refining(experiments):
     return out_list
 
 
+def _trim_scans_to_observations(experiments, reflections):
+    """Check the range of each scan matches the range of observed data and
+    trim the scan to match if it is too wide"""
+
+    # Get observed image number (or at least observed phi)
+    obs_phi = reflections["xyzobs.mm.value"].parts()[2]
+    try:
+        obs_z = reflections["xyzobs.px.value"].parts()[2]
+    except KeyError:
+        obs_z = None
+
+    # Get z_min and z_max from shoeboxes if present
+    try:
+        shoebox = reflections["shoebox"]
+        bb = shoebox.bounding_boxes()
+        z_min, z_max = bb.parts()[4:]
+        if z_min.all_eq(0):
+            shoebox = None
+    except KeyError:
+        shoebox = None
+
+    for iexp, exp in enumerate(experiments):
+
+        sel = reflections["id"] == iexp
+        isel = sel.iselection()
+        if obs_z is not None:
+            exp_z = obs_z.select(isel)
+        else:
+            exp_phi = obs_phi.select(isel)
+            exp_z = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
+
+        start, stop = exp.scan.get_array_range()
+        min_exp_z = flex.min(exp_z)
+        max_exp_z = flex.max(exp_z)
+
+        # If observed array range is correct, skip to next experiment
+        if int(min_exp_z) == start and int(math.ceil(max_exp_z)) == stop:
+            continue
+
+        # Extend array range either by shoebox size, or 0.5 deg if shoebox not available
+        if shoebox is not None:
+            obs_start = flex.min(z_min.select(isel))
+            obs_stop = flex.max(z_max.select(isel))
+        else:
+            obs_start = int(min_exp_z)
+            obs_stop = int(math.ceil(max_exp_z))
+            half_deg_in_images = int(math.ceil(0.5 / exp.scan.get_oscillation()[1]))
+            obs_start -= half_deg_in_images
+            obs_stop += half_deg_in_images
+
+        # Convert obs_start, obs_stop from position in array range to integer image number
+        if obs_start > start or obs_stop < stop:
+            im_start = max(start, obs_start)
+            im_stop = min(obs_stop, stop)
+
+            logger.warning(
+                "The reflections do not fill the scan range. The scan will be trimmed "
+                "to images {{{0},{1}}} to match the range of observed data".format(
+                    im_start, im_stop
+                )
+            )
+
+            exp.scan.set_image_range((im_start, im_stop))
+
+    return experiments
+
+
 class RefinerFactory(object):
     """Factory class to create refiners"""
 
@@ -170,6 +237,7 @@ class RefinerFactory(object):
             "xyzcal.px",
             "xyzobs.mm.variance",
             "flags",
+            "shoebox",
             "delpsical.weights",
         ]
         # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
@@ -239,8 +307,11 @@ class RefinerFactory(object):
         if params.refinement.parameterisation.scan_varying is libtbx.Auto:
             params.refinement.parameterisation.scan_varying = False
 
-        # calculate reflection block_width if required for scan-varying refinement
+        # Trim scans and calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
+
+            experiments = _trim_scans_to_observations(experiments, reflections)
+
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
 
             block_calculator = BlockCalculator(experiments, reflections)

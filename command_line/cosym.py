@@ -6,7 +6,10 @@ import sys
 
 import iotbx.phil
 from cctbx import sgtbx
-from dials.command_line.symmetry import map_to_minimum_cell
+from dials.command_line.symmetry import (
+    apply_change_of_basis_ops,
+    change_of_basis_ops_to_minimum_cell,
+)
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -44,6 +47,12 @@ unit_cell_clustering {
 }
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
+
+relative_length_tolerance = 0.05
+  .type = float(value_min=0)
+
+absolute_angle_tolerance = 2
+  .type = float(value_min=0)
 
 min_reflections = 10
   .type = int(value_min=1)
@@ -104,8 +113,15 @@ class cosym(Subject):
             self._experiments, self._reflections
         )
 
-        self._experiments, self._reflections, _ = map_to_minimum_cell(
-            self._experiments, self._reflections, params.lattice_symmetry_max_delta
+        # Map experiments and reflections to minimum cell
+        cb_ops = change_of_basis_ops_to_minimum_cell(
+            self._experiments,
+            params.lattice_symmetry_max_delta,
+            params.relative_length_tolerance,
+            params.absolute_angle_tolerance,
+        )
+        self._experiments, self._reflections = apply_change_of_basis_ops(
+            self._experiments, self._reflections, cb_ops
         )
 
         # transform models into miller arrays

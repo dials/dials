@@ -681,9 +681,8 @@ class SingleScaler(ScalerBase):
                 self.scaling_selection = flex.bool(self.n_suitable_refl, False)
                 self.scaling_selection.set_selected(loc_indices, True)
                 logger.info(
-                    """
-    Randomly selected %s/%s groups (m>1) to use for scaling model
-    minimisation (%s reflections)""",
+                    """Randomly selected %s/%s groups (m>1) to use for scaling model
+minimisation (%s reflections)""",
                     n_groups_to_sel,
                     n_groups_in_table,
                     loc_indices.size(),
