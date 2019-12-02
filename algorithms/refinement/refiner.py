@@ -214,7 +214,8 @@ def _trim_scans_to_observations(experiments, reflections):
                 )
             )
 
-            exp.scan.set_image_range((im_start, im_stop))
+            # +1 here because image not array range
+            exp.scan.set_image_range((im_start + 1, im_stop + 1))
 
     return experiments
 
