@@ -763,11 +763,11 @@ def _select_reflections_for_sigma_calc(reflections, min_number_of_refl=10000):
     from dials.array_family import flex
 
     n_ref = reflections.size()
-    if n_ref > min_number_of_refl:
+    if n_ref >= min_number_of_refl:
         # ideally use well-sampled selection from refinement
         used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
         n_used_in_ref = used_in_ref.count(True)
-        if n_used_in_ref > min_number_of_refl:
+        if n_used_in_ref >= min_number_of_refl:
             selected_reflections = reflections.select(used_in_ref)
             logger.debug(
                 "Using %s reflections with used_in_refinement flag for sigma calculation",
