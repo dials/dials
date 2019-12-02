@@ -81,7 +81,7 @@ def test_export_best(dials_data, tmpdir):
 
     lines = tmpdir.join("best.par").read()
     assert (
-        lines.replace(b"\r", b"")
+        lines.replace("\r", "")
         == """\
 # parameter file for BEST
 TITLE          From DIALS
