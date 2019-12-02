@@ -204,7 +204,7 @@ def _trim_scans_to_observations(experiments, reflections):
 
         # Convert obs_start, obs_stop from position in array range to integer image number
         if obs_start > start or obs_stop < stop:
-            im_start = max(start, obs_start)
+            im_start = max(start, obs_start) + 1
             im_stop = min(obs_stop, stop)
 
             logger.warning(

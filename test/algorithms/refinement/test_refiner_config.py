@@ -77,10 +77,10 @@ def test_trim_scans_to_observations(dials_data):
     sliced_ranges = [(r[0] + 20, r[1] - 20) for r in image_ranges]
     sliced = slice_reflections(reflections, sliced_ranges)
 
-    # Now trimmed scans should have ranges array ranges equal to their min, max
+    # Now trimmed scans should have array ranges equal to their min, max
     # shoebox z coords
     trim_expt = _trim_scans_to_observations(deepcopy(experiments), sliced)
-    new_ranges = [e.scan.get_image_range() for e in trim_expt]
+    new_ranges = [e.scan.get_array_range() for e in trim_expt]
 
     for i, e in enumerate(trim_expt):
         refs = sliced.select(sliced["id"] == i)
