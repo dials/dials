@@ -167,7 +167,7 @@ class AnalysisResults(object):
         ]
         results.cycle_results = [
             dictionary["cycle_results"][str(key)]
-            for key in sorted([int(k) for k in dictionary["cycle_results"].iterkeys()])
+            for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
         ]
         results.initial_n_reflections = dictionary["initial_n_reflections"]
         results.final_stats = dictionary["final_stats"]
