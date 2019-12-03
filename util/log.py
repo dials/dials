@@ -4,11 +4,25 @@ import logging.config
 import os
 import six
 import sys
+import time
 
 try:
     from dlstbx.util.colorstreamhandler import ColorStreamHandler
 except ImportError:
     ColorStreamHandler = None
+
+# https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
+class ElapsedFormatter:
+    def __init__(self):
+        self.start_time = time.time()
+
+    def format(self, record):
+        elapsed_seconds = record.created - self.start_time
+        elapsed = "{:06.1f}: ".format(elapsed_seconds)
+        indent = len(elapsed)
+        msg = record.getMessage()
+        msg = msg.replace("\n", "\n" + " " * indent)
+        return elapsed + " " + msg
 
 
 def config(verbosity=0, logfile=None):
@@ -39,6 +53,7 @@ def config(verbosity=0, logfile=None):
     if logfile:
         fh = logging.FileHandler(filename=logfile, mode="w")
         fh.setLevel(loglevel)
+        fh.setFormatter(ElapsedFormatter())
         dials_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)
