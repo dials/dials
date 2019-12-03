@@ -9,11 +9,6 @@ from ._progress import progress  # noqa: F401, exported symbol
 
 from libtbx.utils import Sorry
 
-try:
-    from typing import SupportsFloat
-except ImportError:
-    pass
-
 
 # Define the default tablefmt in dials
 tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
@@ -112,20 +107,6 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
             self.log("Left %s:%s" % (call_process, call_thread))
 
     return DCM(name, log_func)
-
-
-def elapsed_time(seconds):  # type: (SupportsFloat) -> str
-    """Return an elapsed time string in the form 'Time taken: 1h 2m 3.45s'."""
-    # Convert the number of seconds to hours, minutes and seconds.
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-
-    # Only include the formatted hours and minutes if they are not zero.
-    time_elapsed = "%dh " % hours if hours else ""
-    time_elapsed += "%dm " % minutes if hours or minutes else ""
-    time_elapsed += "%.2fs" % seconds
-
-    return "Time taken: " + time_elapsed
 
 
 @contextlib.contextmanager

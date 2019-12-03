@@ -9,7 +9,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import sys
-import time
 
 # We need to parse command-line arguments to PHIL scopes.
 import libtbx.phil
@@ -117,9 +116,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         phil: The PHIL scope definition (default: phil_scope, the master PHIL scope
         for this program).
     """
-    # Record the start time, for later logging the duration.
-    start_time = time.time()
-
     usage = "dials.command_name [options] imported.expt strong.refl"
 
     parser = OptionParser(
@@ -158,9 +154,6 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     # Do the file output here.
     logger.info("Writing the reflection table to %s", params.output.reflections)
     reflections.as_file(params.output.reflections)
-
-    # Log the elapsed time.
-    logger.info(dials.util.elapsed_time(time.time() - start_time))
 
 
 # Keep this minimal.  Try to keep the command-line behaviour neatly encapsulated in run.
