@@ -93,7 +93,9 @@ def experiment():
         epochs=[0] * 20,
     )
 
-    isetdata = ImageSetData(reader=Format.Reader(["path"] * len(scan)), masker=None)
+    isetdata = ImageSetData(
+        reader=Format.Reader(None, ["path"] * len(scan)), masker=None
+    )
     iset = ImageSequence(
         isetdata, beam=beam, detector=detector, goniometer=goniometer, scan=scan
     )
