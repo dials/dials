@@ -92,7 +92,7 @@ def do_boilerplate(
 
     logger.info("The input reflection table contains %d reflections.", len(reflections))
     logger.info(
-        "The input experiment list contains %d imagesets.", len(experiments.imagesets)
+        "The input experiment list contains %d imagesets.", len(experiments.imagesets())
     )
 
     logger.info("integer_parameter: %i", params.integer_parameter)
@@ -144,15 +144,15 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
 
     # You might well wish to check here that the command-line input is appropriate.
     if len(reflections) != 1:
-        sys.exit("Exactly one reflection file needed")
+        sys.exit("Exactly one reflection file needed.")
     if len(experiments) != 1:
-        sys.exit("Exactly one 1 experiment list required")
+        sys.exit("Exactly one experiment list required.")
 
     # Do whatever this program is supposed to do.
-    experiments, reflections = do_boilerplate(experiments, reflections, params)
+    experiments, reflections = do_boilerplate(experiments, reflections[0], params)
 
     # Do the file output here.
-    logging.info("Writing the reflection table to %s", params.output.reflections)
+    logger.info("Writing the reflection table to %s", params.output.reflections)
     reflections.as_file(params.output.reflections)
 
 
