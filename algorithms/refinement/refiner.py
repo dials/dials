@@ -214,6 +214,9 @@ def _trim_scans_to_observations(experiments, reflections):
                 )
             )
 
+            # Ensure the scan is unique to this experiment
+            exp.scan = copy.deepcopy(exp.scan)
+
             exp.scan.set_image_range((im_start, im_stop))
 
     return experiments
