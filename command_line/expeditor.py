@@ -125,8 +125,7 @@ class Protocol(object):
             print("Experiment %d has %d reflections" % (j, sel.size()))
             scans = select_scans_from_reflections(sel, e.scan)
 
-            if len(scans) == 0:
-                continue
+            assert len(scans) > 0
 
             eid = len(experiments_out)
 
@@ -147,7 +146,8 @@ class Protocol(object):
                 reflections_id.set_selected(sel, eid + 1 + k)
                 experiments_out.append(f)
 
-        assert reflections_id.count(-424242) == 0, reflections_id.count(-424242)
+        assert reflections_id.count(-424242) == 0
+
         reflections["id"] = reflections_id
 
         for j, e in enumerate(experiments_out):
