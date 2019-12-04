@@ -1,18 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 from libtbx.phil import parse
-from dials.util import Sorry, show_mail_on_error
+from dials.util import show_mail_on_error
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.array_family import flex
-from dxtbx.model.experiment_list import ExperimentList
-
-from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 help_message = """
 
-Utility to wrangle experiments from indexing in preparation for refinement - 
-will look to see that the sample is centred, that there are observations for 
-the full range of every scan and rewrite the experiment lists if not. 
+Utility to wrangle experiments from indexing in preparation for refinement -
+will look to see that the sample is centred, that there are observations for
+the full range of every scan and rewrite the experiment lists if not.
 
   dials.bullseye indexed.expt indexed.refl
 
@@ -35,18 +32,18 @@ output {
 
 
 def reflections_fill_scan(reflections, scan, step_degrees):
-    """Verify that the reflections defined in the input have Z centroids which 
+    """Verify that the reflections defined in the input have Z centroids which
     fill the scan."""
 
     z = reflections["xyzobs.px.value"].parts()[2]
 
     i0, i1 = scan.get_array_range()
-    osc = scan.get_oscillation()[1]
+    slots = int(round((i1 - i0) * scan.get_oscillation()[1] / step_degrees))
 
-    step = int(round(step_degrees / osc))
+    fill = flex.histogram(z, data_min=i0, data_max=i1, n_slots=slots)
 
-    for i in range(i0, i1, step):
-        if ((z >= i) & (z < (i + step))).count(True) == 0:
+    for s in fill.slots():
+        if s == 0:
             return False
 
     return True
