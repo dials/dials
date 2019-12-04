@@ -135,7 +135,6 @@ class Protocol(object):
             # rewrite id
             i0, i1 = e.scan.get_array_range()
             sel = (reflections["id"] == j) & (z >= i0) & (z <= i1)
-            print(sel.count(True))
             reflections_id.set_selected(sel, eid)
 
             for k, s in enumerate(scans[1:]):
