@@ -42,6 +42,7 @@ def select_scans_from_reflections(reflections, scan):
 
     z0, z1 = bbox[4], bbox[5]
     i0, i1 = scan.get_array_range()
+    o0, o1 = scan.get_oscillation()
 
     coverage = flex.int(i1 - i0, 0)
 
@@ -57,6 +58,7 @@ def select_scans_from_reflections(reflections, scan):
         l = list(g)
         s = copy.deepcopy(scan)
         s.set_image_range((l[0][1] + 1, l[-1][1] + 1))
+        s.set_oscillation((o0 + o1 * (l[0][1] + 1 - i0), o1))
         scans.append(s)
 
     return scans
