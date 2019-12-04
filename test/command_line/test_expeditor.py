@@ -4,7 +4,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dials.array_family import flex
 
 
-def test_bullseye_select_scans_from_reflections_1(dials_data, tmpdir):
+def test_expeditor_select_scans_from_reflections_1(dials_data, tmpdir):
     location = dials_data("i19_1_pdteet_index")
     refls = location.join("indexed.refl")
     expts = location.join("indexed.expt")
@@ -19,7 +19,7 @@ def test_bullseye_select_scans_from_reflections_1(dials_data, tmpdir):
     sel = ((data["id"] == 0) & (z > 200)) | ((data["id"] == 1) & (z < 650))
     trimmed = data.select(sel)
 
-    from dials.command_line.bullseye import select_scans_from_reflections
+    from dials.command_line.expeditor import select_scans_from_reflections
 
     expts = ExperimentListFactory.from_json_file(expts.strpath, check_format=False)
 
@@ -33,7 +33,7 @@ def test_bullseye_select_scans_from_reflections_1(dials_data, tmpdir):
             assert scans[0].get_image_range()[0] == e.scan.get_image_range()[0]
 
 
-def test_bullseye_select_scans_from_reflections_2(dials_data, tmpdir):
+def test_expeditor_select_scans_from_reflections_2(dials_data, tmpdir):
     location = dials_data("i19_1_pdteet_index")
     refls = location.join("indexed.refl")
     expts = location.join("indexed.expt")
@@ -46,7 +46,7 @@ def test_bullseye_select_scans_from_reflections_2(dials_data, tmpdir):
     sel = ((data["id"] == 0) & (z < 200)) | ((data["id"] == 0) & (z > 650))
     trimmed = data.select(sel)
 
-    from dials.command_line.bullseye import select_scans_from_reflections
+    from dials.command_line.expeditor import select_scans_from_reflections
 
     e = ExperimentListFactory.from_json_file(expts.strpath, check_format=False)[0]
 

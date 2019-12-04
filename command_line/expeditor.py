@@ -13,7 +13,7 @@ Utility to wrangle experiments from indexing in preparation for refinement -
 will look to see that the sample is centred, that there are observations for
 the full range of every scan and rewrite the experiment lists if not.
 
-  dials.bullseye indexed.expt indexed.refl
+  dials.expeditor indexed.expt indexed.refl
 
 """
 
@@ -81,7 +81,7 @@ def reflections_fill_scan(reflections, scan, step_degrees):
 
 class Protocol(object):
     def __init__(self):
-        usage = "usage: dials.bullseye [options] indexed.expt indexed.refl"
+        usage = "usage: dials.expeditor [options] indexed.expt indexed.refl"
 
         self.parser = OptionParser(
             usage=usage,
