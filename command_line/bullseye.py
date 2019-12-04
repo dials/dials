@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+from itertools import groupby
+import copy
 from libtbx.phil import parse
 from dials.util import show_mail_on_error
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
@@ -29,6 +31,34 @@ output {
 }
 """
 )
+
+
+def select_scans_from_reflections(reflections, scan):
+    """Determine a list of valid scans where reflection shoeboxes are seen,
+    from within the bounds of the input scan."""
+
+    bbox = reflections["bbox"].parts()
+
+    z0, z1 = bbox[4], bbox[5]
+    i0, i1 = scan.get_array_range()
+
+    coverage = flex.int(i1 - i0, 0)
+
+    for _z0, _z1 in zip(z0, z1):
+        for j in range(_z0, _z1):
+            coverage[j] += 1
+
+    filled = (coverage > 0).iselection()
+
+    scans = []
+
+    for k, g in groupby(enumerate(filled), lambda n: n[0] - n[1]):
+        l = list(g)
+        s = copy.deepcopy(scan)
+        s.set_image_range((l[0][1] + 1, l[-1][1] + 1))
+        scans.append(s)
+
+    return scans
 
 
 def reflections_fill_scan(reflections, scan, step_degrees):
@@ -86,10 +116,9 @@ class Protocol(object):
             sel = reflections.select(reflections["id"] == j)
             i0, i1 = e.scan.get_image_range()
             print("Experiment %d has %d reflections" % (j, sel.size()))
-            print(
-                "Fill scan from %d to %d: %s"
-                % (i0, i1, reflections_fill_scan(sel, e.scan, 5.0))
-            )
+            scans = select_scans_from_reflections(sel, e.scan)
+            for s in scans:
+                print("Image range: %d %d" % s.get_image_range())
 
 
 if __name__ == "__main__":
