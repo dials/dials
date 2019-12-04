@@ -190,6 +190,10 @@ class Protocol(object):
                 f.scan = s
                 i0, i1 = s.get_array_range()
                 sel = (reflections["id"] == j) & (z >= i0) & (z <= i1)
+                print(
+                    "Output experiment %d has %d / %d reflections"
+                    % (eid + 1 + k, sel.count(True), nref)
+                )
                 reflections_id.set_selected(sel, eid + 1 + k)
                 experiments_out.append(f)
 
