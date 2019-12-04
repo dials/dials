@@ -146,6 +146,7 @@ class Protocol(object):
         reflections = flatten_reflections(params.input.reflections)[0]
 
         print(model_connectivity(experiments))
+        print()
 
         z = reflections["xyzobs.px.value"].parts()[2]
 
@@ -158,15 +159,13 @@ class Protocol(object):
         for j, e in enumerate(experiments):
             if e.crystal in crystal_scan:
                 if e.scan is not crystal_scan[e.crystal]:
-                    print("Duplicating crystal for experiment %d" % j)
                     e.crystal = copy.deepcopy(e.crystal)
             else:
                 crystal_scan[e.crystal] = e.scan
 
             sel = reflections.select(reflections["id"] == j)
             i0, i1 = e.scan.get_image_range()
-
-            print("Experiment %d has %d reflections" % (j, sel.size()))
+            nref = sel.size()
             scans = select_scans_from_reflections(sel, e.scan)
 
             assert len(scans) > 0
@@ -181,6 +180,11 @@ class Protocol(object):
             sel = (reflections["id"] == j) & (z >= i0) & (z <= i1)
             reflections_id.set_selected(sel, eid)
 
+            print(
+                "Output experiment %d has %d / %d reflections"
+                % (eid, sel.count(True), nref)
+            )
+
             for k, s in enumerate(scans[1:]):
                 f = copy.deepcopy(e)
                 f.scan = s
@@ -193,11 +197,7 @@ class Protocol(object):
 
         reflections["id"] = reflections_id
 
-        for j, e in enumerate(experiments_out):
-            sel = reflections.select(reflections["id"] == j)
-            i0, i1 = e.scan.get_image_range()
-            print("Output experiment %d has %d reflections" % (j, sel.size()))
-
+        print()
         print(model_connectivity(experiments_out))
         experiments_out.as_file(params.output.experiments)
         reflections.as_file(params.output.reflections)
