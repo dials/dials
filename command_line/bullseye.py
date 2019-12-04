@@ -6,6 +6,7 @@ from dials.util.options import OptionParser, flatten_reflections, flatten_experi
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList
 
+from dials.util.multi_dataset_handling import assign_unique_identifiers
 
 help_message = """
 
@@ -33,7 +34,25 @@ output {
 )
 
 
-class Script(object):
+def reflections_fill_scan(reflections, scan, step_degrees):
+    """Verify that the reflections defined in the input have Z centroids which 
+    fill the scan."""
+
+    z = reflections["xyzobs.px.value"].parts()[2]
+
+    i0, i1 = scan.get_array_range()
+    osc = scan.get_oscillation()[1]
+
+    step = int(round(step_degrees / osc))
+
+    for i in range(i0, i1, step):
+        if ((z >= i) & (z < (i + step))).count(True) == 0:
+            return False
+
+    return True
+
+
+class Protocol(object):
     def __init__(self):
         usage = "usage: dials.bullseye [options] indexed.expt indexed.refl"
 
@@ -64,10 +83,19 @@ class Script(object):
             return
 
         experiments = flatten_experiments(params.input.experiments)
-        reflections = flatten_reflections(params.input.reflections)
+        reflections = flatten_reflections(params.input.reflections)[0]
+
+        for j, e in enumerate(experiments):
+            sel = reflections.select(reflections["id"] == j)
+            i0, i1 = e.scan.get_image_range()
+            print("Experiment %d has %d reflections" % (j, sel.size()))
+            print(
+                "Fill scan from %d to %d: %s"
+                % (i0, i1, reflections_fill_scan(sel, e.scan, 5.0))
+            )
 
 
 if __name__ == "__main__":
     with show_mail_on_error():
-        script = Script()
-        script.run()
+        protocol = Protocol()
+        protocol.run()
