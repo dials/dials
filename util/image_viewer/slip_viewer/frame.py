@@ -341,8 +341,11 @@ class XrayFrame(XFBaseClass):
         @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
         returned coordinates are relative to.
         """
-        detector = self.get_detector()
-        beam = self.get_beam()
+        image = self.image_chooser.GetClientData(
+            self.image_chooser.GetSelection()
+        ).image_set
+        detector = image.get_detector()
+        beam = image.get_beam()
         if abs(detector[0].get_distance()) == 0:
             return 0.0, 0.0
 
