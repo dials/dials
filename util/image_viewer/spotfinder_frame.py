@@ -4,6 +4,7 @@ import itertools
 import math
 
 from past.builtins import basestring, unicode
+import six
 
 import wx
 from cctbx import crystal, uctbx
@@ -528,8 +529,8 @@ class SpotFrame(XrayFrame):
 
         # If given a string, we need to load and convert to a chooser_wrapper
         if isinstance(file_name_or_data, basestring):
-            # dxtbx/Boost cannot currently handle unicode here
-            if isinstance(file_name_or_data, unicode):
+            if six.PY2 and isinstance(file_name_or_data, unicode):
+                # dxtbx/Boost cannot currently handle unicode here
                 file_name_or_data = file_name_or_data.encode("utf-8")
             experiments = ExperimentListFactory.from_filenames([file_name_or_data])
             assert len(experiments) == 1
