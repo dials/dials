@@ -6,6 +6,7 @@ from libtbx.phil import parse
 from dials.util import show_mail_on_error
 from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
 from dials.array_family import flex
+from dxtbx.model.experiment_list import ExperimentList
 
 help_message = """
 
@@ -21,11 +22,11 @@ the full range of every scan and rewrite the experiment lists if not.
 phil_scope = parse(
     """
 output {
-  experiments = wrangled.expt
+  experiments = expedited.expt
     .type = path
     .help = "Filename for fixed experiment list"
 
-  reflections = wrangled.refl
+  reflections = expedited.refl
     .type = path
     .help = "Filename for fixed reflection list"
 }
@@ -112,13 +113,50 @@ class Protocol(object):
         experiments = flatten_experiments(params.input.experiments)
         reflections = flatten_reflections(params.input.reflections)[0]
 
+        z = reflections["xyzobs.px.value"].parts()[2]
+
+        experiments_out = ExperimentList()
+        reflections_id = flex.int(reflections.size(), -424242)
+        reflections_id.set_selected(reflections["id"] == -1, -1)
+
         for j, e in enumerate(experiments):
             sel = reflections.select(reflections["id"] == j)
             i0, i1 = e.scan.get_image_range()
             print("Experiment %d has %d reflections" % (j, sel.size()))
             scans = select_scans_from_reflections(sel, e.scan)
-            for s in scans:
-                print("Image range: %d %d" % s.get_image_range())
+
+            if len(scans) == 0:
+                continue
+
+            eid = len(experiments_out)
+
+            e.scan = scans[0]
+            experiments_out.append(e)
+
+            # rewrite id
+            i0, i1 = e.scan.get_array_range()
+            sel = (reflections["id"] == j) & (z >= i0) & (z <= i1)
+            print(sel.count(True))
+            reflections_id.set_selected(sel, eid)
+
+            for k, s in enumerate(scans[1:]):
+                f = copy.deepcopy(e)
+                f.scan = s
+                i0, i1 = s.get_array_range()
+                sel = (reflections["id"] == j) & (z >= i0) & (z <= i1)
+                reflections_id.set_selected(sel, eid + 1 + k)
+                experiments_out.append(f)
+
+        assert reflections_id.count(-424242) == 0, reflections_id.count(-424242)
+        reflections["id"] = reflections_id
+
+        for j, e in enumerate(experiments_out):
+            sel = reflections.select(reflections["id"] == j)
+            i0, i1 = e.scan.get_image_range()
+            print("Output experiment %d has %d reflections" % (j, sel.size()))
+
+        experiments_out.as_file(params.output.experiments)
+        reflections.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":
