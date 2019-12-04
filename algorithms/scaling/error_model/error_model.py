@@ -213,27 +213,7 @@ class BasicErrorModel(object):
         a = abs(self.parameters[0])
         b = abs(self.parameters[1])
         ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
-        if six.PY3:
-            return "\n".join(
-                (
-                    "",
-                    "Error model details:",
-                    "  Type: basic",
-                    "  Current parameters: a = %.5f, b = %.5f" % (a, b),
-                    "  Error model formula: "
-                    + u"\u03C3"
-                    + "'"
-                    + u"\xb2"
-                    + " = a"
-                    + u"\xb2"
-                    + "("
-                    + u"\u03C3\xb2"
-                    " + (bI)" + u"\xb2" + ")",
-                    "  estimated I/sigma asymptotic limit: %s" % ISa,
-                    "",
-                )
-            )
-        else:
+        if six.PY2:
             return "\n".join(
                 (
                     "",
@@ -244,6 +224,25 @@ class BasicErrorModel(object):
                     "",
                 )
             )
+        return "\n".join(
+            (
+                "",
+                "Error model details:",
+                "  Type: basic",
+                "  Current parameters: a = %.5f, b = %.5f" % (a, b),
+                "  Error model formula: "
+                + u"\u03C3"
+                + "'"
+                + u"\xb2"
+                + " = a"
+                + u"\xb2"
+                + "("
+                + u"\u03C3\xb2"
+                " + (bI)" + u"\xb2" + ")",
+                "  estimated I/sigma asymptotic limit: %s" % ISa,
+                "",
+            )
+        )
 
     def minimisation_summary(self):
         """Print a summary of minimisation."""
