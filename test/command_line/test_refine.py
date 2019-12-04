@@ -216,8 +216,6 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
     expts = location.join("indexed.expt")
 
     # first remove some reflections to keep dials.refine sharp
-    from dials.array_family import flex
-
     data = flex.reflection_table.from_file(refls.strpath)
 
     # prune only indexed reflections
