@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 from itertools import groupby
+from tabulate import tabulate
 import copy
 from libtbx.phil import parse
 from dials.util import show_mail_on_error
@@ -32,6 +33,35 @@ output {
 }
 """
 )
+
+
+def model_connectivity(experiments):
+    def model_connectivity_impl(experiments, model):
+        text = [""]
+        text.append("%s:" % model.capitalize())
+        models = getattr(experiments, "%ss" % model)()
+        rows = [[""] + [str(j) for j in range(len(models))]]
+        for j, e in enumerate(experiments):
+            row = ["Experiment %d" % j]
+            for m in models:
+                if getattr(e, model) is m:
+                    row.append("x")
+                else:
+                    row.append(".")
+            rows.append(row)
+        text.append(tabulate(rows, tablefmt="plain"))
+        return text
+
+    if len(experiments) == 1:
+        return ""
+
+    text = []
+    text.append("Experiment / Models")
+    text.extend(model_connectivity_impl(experiments, "detector"))
+    text.extend(model_connectivity_impl(experiments, "crystal"))
+    text.extend(model_connectivity_impl(experiments, "beam"))
+
+    return "\n".join(text)
 
 
 def select_scans_from_reflections(reflections, scan):
@@ -115,15 +145,27 @@ class Protocol(object):
         experiments = flatten_experiments(params.input.experiments)
         reflections = flatten_reflections(params.input.reflections)[0]
 
+        print(model_connectivity(experiments))
+
         z = reflections["xyzobs.px.value"].parts()[2]
 
         experiments_out = ExperimentList()
         reflections_id = flex.int(reflections.size(), -424242)
         reflections_id.set_selected(reflections["id"] == -1, -1)
 
+        crystal_scan = {}
+
         for j, e in enumerate(experiments):
+            if e.crystal in crystal_scan:
+                if e.scan is not crystal_scan[e.crystal]:
+                    print("Duplicating crystal for experiment %d" % j)
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_scan[e.crystal] = e.scan
+
             sel = reflections.select(reflections["id"] == j)
             i0, i1 = e.scan.get_image_range()
+
             print("Experiment %d has %d reflections" % (j, sel.size()))
             scans = select_scans_from_reflections(sel, e.scan)
 
@@ -156,6 +198,7 @@ class Protocol(object):
             i0, i1 = e.scan.get_image_range()
             print("Output experiment %d has %d reflections" % (j, sel.size()))
 
+        print(model_connectivity(experiments_out))
         experiments_out.as_file(params.output.experiments)
         reflections.as_file(params.output.reflections)
 
