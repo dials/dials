@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 import copy
 import sys
 import logging
-from time import time
 import dials.util
 import libtbx.phil
 from libtbx import Auto
@@ -317,7 +316,6 @@ def run(args=None, phil=working_phil):
     Returns:
         None
     """
-    start_time = time()
 
     # The script usage
     usage = (
@@ -475,9 +473,6 @@ def run(args=None, phil=working_phil):
             "Saving refinement step history to {}".format(params.output.history)
         )
         history.to_json_file(params.output.history)
-
-    # Log the total time taken
-    logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

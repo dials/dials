@@ -1,6 +1,5 @@
 # coding: utf-8
 from __future__ import absolute_import, division, print_function
-import time
 import logging
 import sys
 import gc
@@ -188,7 +187,6 @@ class Script(Subject):
     @Subject.notify_event(event="run_script")
     def run(self):
         """Run the scaling script."""
-        start_time = time.time()
         self.scale()
         self.remove_bad_data()
         self.scaled_miller_array = scaled_data_as_miller_array(
@@ -198,10 +196,6 @@ class Script(Subject):
             self.calculate_merging_stats()
         except DialsMergingStatisticsError as e:
             logger.info(e)
-
-        # All done!
-        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     @Subject.notify_event(event="run_script")
     def run_scaling_cycle(self):
@@ -224,7 +218,6 @@ class Script(Subject):
     @Subject.notify_event(event="run_scale_and_filter")
     def run_scale_and_filter(self):
         """Run cycles of scaling and filtering."""
-        start_time = time.time()
         results = AnalysisResults()
 
         for counter in range(1, self.params.filtering.deltacchalf.max_cycles + 1):
@@ -314,10 +307,6 @@ class Script(Subject):
         self.filtering_results = results
         # Print summary of results
         logger.info(results.make_summary())
-
-        # All done!
-        logger.info("\nTotal time taken: {:.4f}s ".format(time.time() - start_time))
-        logger.info("%s%s%s", "\n", "=" * 80, "\n")
 
     def _run_final_scale_cycle(self, results):
         self._create_model_and_scaler()

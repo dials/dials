@@ -4,8 +4,6 @@ import math
 import logging
 import sys
 
-from libtbx.utils import show_times_at_exit
-
 import iotbx.phil
 from cctbx import sgtbx
 from cctbx.crystal import symmetry as crystal_symmetry
@@ -353,5 +351,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    show_times_at_exit()
     run(sys.argv[1:])

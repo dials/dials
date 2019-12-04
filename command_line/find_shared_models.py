@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 from collections import Counter
-from time import time
 
 from libtbx.phil import parse
 
@@ -60,7 +59,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        start_time = time()
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=False)
@@ -150,9 +148,6 @@ class Script(object):
             ]
             rows.append(row)
         logger.info(tabulate(rows, headers="firstrow"))
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == "__main__":
