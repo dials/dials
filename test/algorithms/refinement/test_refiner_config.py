@@ -104,13 +104,14 @@ def test_trim_scans_to_observations(dials_data):
     # range by >0.5 deg at each end
     del sliced["shoebox"]
     trim_expt = _trim_scans_to_observations(deepcopy(experiments), sliced)
-    new_ranges = [e.scan.get_image_range() for e in trim_expt]
+    new_array_ranges = [e.scan.get_array_range() for e in trim_expt]
+
     for i, e in enumerate(trim_expt):
         refs = sliced.select(sliced["id"] == i)
         z = refs["xyzobs.px.value"].parts()[2]
         im_width = e.scan.get_oscillation()[1]
-        assert ((min(z) - new_ranges[i][0]) / im_width) > 0.5
-        assert ((new_ranges[i][1] - max(z)) / im_width) > 0.5
+        assert ((min(z) - new_array_ranges[i][0]) / im_width) > 0.5
+        assert ((new_array_ranges[i][1] - max(z)) / im_width) > 0.5
 
     # Oscillation ranges should be trimmed so that the associated angle is the
     # same in the original and trimmed scans
