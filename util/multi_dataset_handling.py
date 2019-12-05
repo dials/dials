@@ -250,6 +250,36 @@ def assign_unique_identifiers(experiments, reflections, identifiers=None):
 def select_datasets_on_ids(
     experiments, reflection_table_list, exclude_datasets=None, use_datasets=None
 ):
+    # transform dataset ids to identifiers
+    if not use_datasets and not exclude_datasets:
+        return experiments, reflection_table_list
+    if use_datasets and exclude_datasets:
+        raise ValueError(
+            "The options use_datasets and exclude_datasets cannot be used in conjuction."
+        )
+
+    id_map = {}
+    for table in reflection_table_list:
+        id_map.update(table.experiment_identifiers())
+    if exclude_datasets:
+        identifiers_to_exclude = []
+        for k in exclude_datasets:
+            identifiers_to_exclude.append(id_map[int(k)])
+        return select_datasets_on_identifiers(
+            experiments, reflection_table_list, exclude_datasets=identifiers_to_exclude
+        )
+    elif use_datasets:
+        identifiers_to_use = []
+        for k in use_datasets:
+            identifiers_to_use.append(id_map[int(k)])
+        return select_datasets_on_identifiers(
+            experiments, reflection_table_list, use_datasets=identifiers_to_use
+        )
+
+
+def select_datasets_on_identifiers(
+    experiments, reflection_table_list, exclude_datasets=None, use_datasets=None
+):
     """
     Select a subset of experiments and reflection tables based on identifiers.
 

@@ -1210,7 +1210,7 @@ class MultiScalerBase(ScalerBase):
                 n = scaler.scaling_selection.count(True)
                 rows.append(
                     [
-                        scaler.experiment.identifier,
+                        i,
                         str(n_connected_by_dataset[i]),
                         str(total_indiv_dataset[i]),
                         str(loc_indices.size()),

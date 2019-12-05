@@ -220,9 +220,8 @@ class ScalingModelObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers", False)
         if not active_scalers:
             active_scalers = [scaler]
-        for s in active_scalers:
-            id_ = s.experiment.identifier
-            self.data[id_] = s.experiment.scaling_model.to_dict()
+        for i, s in enumerate(active_scalers):
+            self.data[i] = s.experiment.scaling_model.to_dict()
 
     def make_plots(self):
         """Generate scaling model component plot data."""
@@ -280,15 +279,14 @@ class ScalingOutlierObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
-        for scaler in active_scalers:
-            id_ = scaler.experiment.identifier
+        for j, scaler in enumerate(active_scalers):
             outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
                 scaler.outliers
             )
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
-            self.data[id_] = {
+            self.data[j] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),
