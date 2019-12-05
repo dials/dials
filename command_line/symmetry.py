@@ -33,11 +33,16 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
+from dials.util.exclude_images import (
+    exclude_image_ranges_from_scans,
+    get_selection_for_valid_image_ranges,
+)
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
 phil_scope = iotbx.phil.parse(
     """\
+include scope dials.util.exclude_images.phil_scope
 d_min = Auto
   .type = float(value_min=0)
 
@@ -46,10 +51,6 @@ min_i_mean_over_sigma_mean = 4
 
 min_cc_half = 0.6
   .type = float(value_min=0, value_max=1)
-
-batch = None
-  .type = ints(value_min=0, size=2)
-  .help = "Limit batch range for analysis: manually apply results afterwards"
 
 normalisation = kernel quasi ml_iso *ml_aniso
   .type = choice
@@ -216,6 +217,21 @@ def symmetry(experiments, reflection_tables, params=None):
     result = None
     if params is None:
         params = phil_scope.extract()
+    refls_for_sym = []
+
+    def get_refl_for_sym(params, experiments, reflection_tables):
+        """Optionally apply exclude images"""
+        refls_for_sym = []
+        if params.exclude_images:
+            experiments = exclude_image_ranges_from_scans(
+                experiments, params.exclude_images
+            )
+            for refl, exp in zip(reflection_tables, experiments):
+                sel = get_selection_for_valid_image_ranges(refl, exp)
+                refls_for_sym.append(refl.select(sel))
+        else:
+            refls_for_sym = reflection_tables
+        return refls_for_sym
 
     if params.laue_group is Auto:
         logger.info("=" * 80)
@@ -237,9 +253,11 @@ def symmetry(experiments, reflection_tables, params=None):
             experiments, reflection_tables, cb_ops
         )
 
+        refls_for_sym = get_refl_for_sym(params, experiments, reflection_tables)
+
         datasets = filtered_arrays_from_experiments_reflections(
             experiments,
-            reflection_tables,
+            refls_for_sym,
             outlier_rejection_after_filter=True,
             partiality_threshold=params.partiality_threshold,
         )
@@ -310,11 +328,14 @@ def symmetry(experiments, reflection_tables, params=None):
         if laue_group not in laue_groups_for_absence_analysis:
             logger.info("No absences to check for this laue group\n")
         else:
+            if not refls_for_sym:
+                refls_for_sym = get_refl_for_sym(params, experiments, reflection_tables)
+
             if (params.d_min is Auto) and (result is not None):
                 d_min = result.intensities.resolution_range()[1]
             elif params.d_min is Auto:
                 d_min = resolution_filter_from_reflections_experiments(
-                    reflection_tables,
+                    refls_for_sym,
                     experiments,
                     params.min_i_mean_over_sigma_mean,
                     params.min_cc_half,
@@ -326,10 +347,10 @@ def symmetry(experiments, reflection_tables, params=None):
             # multiple input files.
             if len(reflection_tables) > 1:
                 joint_reflections = flex.reflection_table()
-                for table in reflection_tables:
+                for table in refls_for_sym:
                     joint_reflections.extend(table)
             else:
-                joint_reflections = reflection_tables[0]
+                joint_reflections = refls_for_sym[0]
 
             merged_reflections = prepare_merged_reflection_table(
                 experiments, joint_reflections, d_min
@@ -445,17 +466,6 @@ def run(args=None):
     reflections = flatten_reflections(params.input.reflections)
 
     reflections = parse_multiple_datasets(reflections)
-
-    # Cut down reflection lists according to input batch range if set
-    if params.batch is not None:
-        z0, z1 = map(float, params.batch)
-        logger.info("Cutting reflection lists to batch range %d to %d" % (z0, z1))
-        trimmed_reflections = []
-        for refl in reflections:
-            z = refl["xyzcal.px"].parts()[2]
-            keep = (z >= z0) & (z <= z1)
-            trimmed_reflections.append(refl.select(keep))
-        reflections = trimmed_reflections
 
     if len(experiments) != len(reflections):
         sys.exit(

@@ -90,19 +90,21 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
         )
 
 
-def test_symmetry_with_absences(dials_data, tmpdir):
+@pytest.mark.parametrize("option", ["", "exclude_images=0:1500:1800"])
+def test_symmetry_with_absences(dials_data, tmpdir, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    result = procrunner.run(
-        [
-            "dials.symmetry",
-            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
-            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
-            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
-        ],
-        working_directory=tmpdir,
-    )
+    cmd = [
+        "dials.symmetry",
+        dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+        dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+    ]
+    if option:
+        cmd.append(option)
+
+    result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check()
     assert tmpdir.join("symmetrized.expt").check()
