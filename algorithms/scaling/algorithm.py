@@ -52,14 +52,6 @@ def prepare_input(params, experiments, reflections):
 
     """
 
-    if params.scaling_options.space_group:
-        logger.warning(
-            """
-Warning: the command line option space_group has been deprecated,
-please use dials.reindex, dials.symmetry or dials.cosym to
-prepare the data in the correct space group.\n"""
-        )
-
     #### First exclude any datasets, before the dataset is split into
     #### individual reflection tables and expids set.
     if (
