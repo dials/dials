@@ -17,8 +17,13 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
+from boost.python import c_sizeof
 
 pyslip._Tiles = tile_generation._Tiles
+
+# Use minimum value for an int to indicate a masked pixel
+int_bits = c_sizeof("int") * 8
+MASK_VAL = -(2 ** (int_bits - 1))
 
 
 class chooser_wrapper(object):
@@ -228,10 +233,13 @@ class XrayFrame(XFBaseClass):
                 if possible_intensity is not None:
                     if possible_intensity == 0:
                         format_str = " I=%6.4f"
+                        posn_str += format_str % possible_intensity
+                    elif possible_intensity == MASK_VAL:
+                        posn_str += " I=mask"
                     else:
                         yaya = int(math.ceil(math.log10(abs(possible_intensity))))
                         format_str = " I=%%6.%df" % (max(0, 5 - yaya))
-                    posn_str += format_str % possible_intensity
+                        posn_str += format_str % possible_intensity
 
                 if (
                     len(coords) > 2 and readout >= 0

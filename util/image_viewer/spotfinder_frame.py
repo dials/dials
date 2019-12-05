@@ -35,7 +35,7 @@ from wxtbx.phil_controls.intctrl import IntCtrl as PhilIntCtrl
 from wxtbx.phil_controls.ints import IntsCtrl
 from wxtbx.phil_controls.strctrl import StrCtrl
 
-from .slip_viewer.frame import XrayFrame
+from .slip_viewer.frame import XrayFrame, MASK_VAL
 from .viewer_tools import (
     ImageChooserControl,
     ImageCollectionWithSelection,
@@ -640,7 +640,8 @@ class SpotFrame(XrayFrame):
         # FIXME Currently assuming that all panels are in same plane
         p_id = detector.get_panel_intersection(beam.get_s0())
         if p_id == -1:
-            p_id = 0  # XXX beam doesn't intersect with any panels - is there a better solution?
+            # XXX beam doesn't intersect with any panels - is there a better solution?
+            p_id = 0
         pan = detector[p_id]
 
         for tt, d, pxl in zip(twotheta, spacings, L_pixels):
@@ -1172,7 +1173,7 @@ class SpotFrame(XrayFrame):
     def mask_raw_data(self, raw_data):
         mask = self.get_mask(self.pyslip.tiles.raw_image)
         for rd, m in zip(raw_data, mask):
-            rd.set_selected(~m, -2)
+            rd.set_selected(~m, MASK_VAL)
 
     def __get_imageset_filter(self, reflections, imageset):
         # type: (flex.reflection_table, ImageSet) -> Optional[flex.bool]
