@@ -214,10 +214,14 @@ def _trim_scans_to_observations(experiments, reflections):
                 )
             )
 
-            # Ensure the scan is unique to this experiment
+            # Ensure the scan is unique to this experiment and set trimmed limits
             exp.scan = copy.deepcopy(exp.scan)
-
+            new_oscillation = (
+                exp.scan.get_angle_from_image_index(im_start),
+                exp.scan.get_oscillation()[1],
+            )
             exp.scan.set_image_range((im_start, im_stop))
+            exp.scan.set_oscillation(new_oscillation)
 
     return experiments
 
