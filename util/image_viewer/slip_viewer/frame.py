@@ -440,6 +440,7 @@ class XrayFrame(XFBaseClass):
             file_name_or_data=img,
             metrology_matrices=self.metrology_matrices,
             get_raw_data=get_raw_data,
+            show_saturated=(self.settings.display == "image"),
         )
 
         # Initialise position zoom level for first image.  XXX Why do we

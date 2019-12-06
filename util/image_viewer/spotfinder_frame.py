@@ -833,7 +833,8 @@ class SpotFrame(XrayFrame):
                 for j, rd in enumerate(raw_data):
                     rd += raw_data_i[j]
 
-            self.pyslip.tiles.set_image_data(raw_data)
+            # Don't show summed images with overloads
+            self.pyslip.tiles.set_image_data(raw_data, show_saturated=False)
 
             self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
             self.update_statusbar()  # XXX Not always working?
@@ -928,7 +929,8 @@ class SpotFrame(XrayFrame):
 
     def show_filters(self):
         raw_data = self.get_raw_data(self.pyslip.tiles.raw_image)
-        self.pyslip.tiles.set_image_data(raw_data)
+        show_saturated = self.settings.display == "image"
+        self.pyslip.tiles.set_image_data(raw_data, show_saturated)
         self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
         self.update_statusbar()  # XXX Not always working?
         self.Layout()
