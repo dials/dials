@@ -205,6 +205,25 @@ def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
     return experiments, reflections
 
 
+def eliminate_sys_absent(experiments, reflections):
+    for i, expt in enumerate(experiments):
+        if expt.crystal.get_space_group().n_ltr() > 1:
+            effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
+                anomalous_flag=True
+            )
+            sys_absent_flags = effective_group.is_sys_absent(
+                reflections[i]["miller_index"]
+            )
+            if sys_absent_flags.count(True):
+                reflections[i] = reflections[i].select(~sys_absent_flags)
+                logger.info(
+                    "Eliminating %i systematic absences for experiment %s",
+                    sys_absent_flags.count(True),
+                    expt.identifier,
+                )
+    return reflections
+
+
 def symmetry(experiments, reflection_tables, params=None):
     """
     Run symmetry analysis
@@ -243,12 +262,16 @@ def symmetry(experiments, reflection_tables, params=None):
         n_datasets = len(experiments)
 
         # Map experiments and reflections to minimum cell
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
         cb_ops = change_of_basis_ops_to_minimum_cell(
             experiments,
             params.lattice_symmetry_max_delta,
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
         experiments, reflection_tables = apply_change_of_basis_ops(
             experiments, reflection_tables, cb_ops
         )
