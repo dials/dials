@@ -10,7 +10,7 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 
 matplotlib.use("Agg")
 from matplotlib import pylab
@@ -375,7 +375,6 @@ class Script(object):
                 exp_id, image_range = image_group_to_expid_and_range[
                     id_
                 ]  # numerical id
-                identifier = reflections.experiment_identifiers()[exp_id]
                 if (
                     expid_to_image_groups[exp_id][-1] == id_
                     or expid_to_image_groups[exp_id][0] == id_
@@ -384,11 +383,11 @@ class Script(object):
                     logger.info(
                         "Removing image range %s from experiment %s",
                         image_range,
-                        identifier,
+                        exp_id,
                     )
                     exclude_images.append(
                         [
-                            identifier
+                            str(exp_id)
                             + ":"
                             + str(image_range[0])
                             + ":"
@@ -405,11 +404,10 @@ class Script(object):
             ids_to_remove = other_potential_ids_to_remove
         for id_ in other_potential_ids_to_remove:
             exp_id, image_range = image_group_to_expid_and_range[id_]
-            identifier = reflections.experiment_identifiers()[exp_id]
             logger.info(
                 """Image range %s from experiment %s is below the cutoff, but not at the edge of a sweep.""",
                 image_range,
-                identifier,
+                exp_id,
             )
 
         # Now remove individual batches
@@ -443,7 +441,7 @@ class Script(object):
             ):  # if all removed above
                 experiments_to_delete.append(exp.identifier)
         if experiments_to_delete:
-            experiments, reflection_list = select_datasets_on_ids(
+            experiments, reflection_list = select_datasets_on_identifiers(
                 experiments, reflection_list, exclude_datasets=experiments_to_delete
             )
         assert len(reflection_list) == len(experiments)
