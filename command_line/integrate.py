@@ -330,7 +330,10 @@ class Script(object):
         ):
             experiments = ProfileModelFactory.create(params, experiments, reference)
         else:
-            experiments = ProfileModelFactory.create(params, experiments)
+            try:
+                experiments = ProfileModelFactory.create(params, experiments)
+            except RuntimeError as e:
+                raise Sorry(e)
             for expr in experiments:
                 if expr.profile is None:
                     raise Sorry("No profile information in experiment list")
