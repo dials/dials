@@ -17,6 +17,7 @@ from dials.command_line import symmetry
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
     median_unit_cell,
 )
 
@@ -319,3 +320,20 @@ def test_median_cell():
 
     median = median_unit_cell(expts)
     assert median.parameters() == pytest.approx((10.1, 11.1, 12, 90, 85, 90))
+
+
+def test_eliminate_sys_absent():
+    refl = flex.reflection_table()
+    refl["miller_index"] = flex.miller_index(
+        [(-31, -5, -3), (-25, -3, -3), (0, 1, 0), (-42, -8, -2)]
+    )
+    sgi = sgtbx.space_group_info("C121")
+    uc = sgi.any_compatible_unit_cell(volume=1000)
+    B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+    expt = Experiment(crystal=Crystal(B, space_group=sgi.group(), reciprocal=True))
+    reflections = eliminate_sys_absent([expt], [refl])
+    assert list(reflections[0]["miller_index"]) == [
+        (-31, -5, -3),
+        (-25, -3, -3),
+        (-42, -8, -2),
+    ]
