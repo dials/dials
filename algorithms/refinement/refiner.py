@@ -204,7 +204,7 @@ def _trim_scans_to_observations(experiments, reflections):
 
         # Convert obs_start, obs_stop from position in array range to integer image number
         if obs_start > start or obs_stop < stop:
-            im_start = max(start, obs_start)
+            im_start = max(start, obs_start) + 1
             im_stop = min(obs_stop, stop)
 
             logger.warning(
@@ -214,7 +214,14 @@ def _trim_scans_to_observations(experiments, reflections):
                 )
             )
 
+            # Ensure the scan is unique to this experiment and set trimmed limits
+            exp.scan = copy.deepcopy(exp.scan)
+            new_oscillation = (
+                exp.scan.get_angle_from_image_index(im_start),
+                exp.scan.get_oscillation()[1],
+            )
             exp.scan.set_image_range((im_start, im_stop))
+            exp.scan.set_oscillation(new_oscillation)
 
     return experiments
 

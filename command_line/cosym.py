@@ -9,6 +9,7 @@ from cctbx import sgtbx
 from dials.command_line.symmetry import (
     apply_change_of_basis_ops,
     change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
 )
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
@@ -106,20 +107,18 @@ class cosym(Subject):
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
+        # Map experiments and reflections to minimum cell
         # Eliminate reflections that are systematically absent due to centring
         # of the lattice, otherwise they would lead to non-integer miller indices
         # when reindexing to a primitive setting
-        self._reflections = self._eliminate_sys_absent(
-            self._experiments, self._reflections
-        )
-
-        # Map experiments and reflections to minimum cell
         cb_ops = change_of_basis_ops_to_minimum_cell(
             self._experiments,
             params.lattice_symmetry_max_delta,
             params.relative_length_tolerance,
             params.absolute_angle_tolerance,
         )
+        self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
+
         self._experiments, self._reflections = apply_change_of_basis_ops(
             self._experiments, self._reflections, cb_ops
         )
@@ -218,25 +217,6 @@ class cosym(Subject):
                     )
                 )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-
-    @staticmethod
-    def _eliminate_sys_absent(experiments, reflections):
-        for i, expt in enumerate(experiments):
-            if expt.crystal.get_space_group().n_ltr() > 1:
-                effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
-                    anomalous_flag=True
-                )
-                sys_absent_flags = effective_group.is_sys_absent(
-                    reflections[i]["miller_index"]
-                )
-                if sys_absent_flags.count(True):
-                    reflections[i] = reflections[i].select(~sys_absent_flags)
-                    logger.info(
-                        "Eliminating %i systematic absences for experiment %s",
-                        sys_absent_flags.count(True),
-                        expt.identifier,
-                    )
-        return reflections
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []

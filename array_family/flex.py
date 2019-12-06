@@ -1445,6 +1445,16 @@ Found %s"""
 
         self["entering"] = enterings
 
+    def get(self, key, default=None):
+        """
+        Get item from object for given key (ex: reflection_table column).
+
+        Returns default value if not found.
+        """
+        if key in self:
+            return self[key]
+        return default
+
 
 class reflection_table_selector(object):
     """

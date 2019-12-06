@@ -34,8 +34,12 @@ div.footer {
   width: auto;
 }
 
+.footer a {
+  display: inline-block;
+  max-width: 20%;
+}
 img.logofooter {
-  height: 50px;
+  max-height: 50px;
   margin: 5px;
   padding: 5px;
 }
