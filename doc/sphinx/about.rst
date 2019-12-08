@@ -70,23 +70,22 @@ Acknowledgements
 ================
 
 We are grateful to the following people who have contributed to the development
-of DIALS either in the form of code, or through numerous intellectual discussions:
+of DIALS:
 
-Muhamed Amin,
+.. include ../../AUTHORS
+
+In addition, we acknowledge guidance and ideas gained through numerous
+intellectual discussions with the following:
+
 Alun Ashton,
 Gleb Bourenkov,
 Gerard Bricogne,
 Phil Evans,
-Nat Echols,
-Johan Hattne,
 Andrew Leslie,
-Tara Michels-Clark,
 Nigel Moriarty,
-Garib Murshadov,
-Takanori Nakane,
+Garib Murshudov,
 Jim Pflugrath,
 Harry Powell,
-Ian Rees,
 Jon Schuermann
 and
 Matthew Webber.
