@@ -37,9 +37,8 @@ Contact
 =======
 
 For feature requests, bug reports or any other information, please contact
-the DIALS developers at dials-support@lists.sourceforge.net. For wider
-discussion about the project you may sign up to the `dials-general`_ mailing
-list.
+the DIALS developers at dials-support@lists.sourceforge.net, or post an
+`issue`_.
 
 Funding
 =======
@@ -52,6 +51,7 @@ supported by `National Institutes of Health`_ / `National Institute of General M
 grant R01-GM117126.  Work at LBNL is performed under
 `Department of Energy`_ contract DE-AC02-05CH11231.
 
+.. _`issue`: https://github.com/dials/dials/issues
 .. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/
