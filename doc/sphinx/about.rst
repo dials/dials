@@ -23,7 +23,7 @@ position sensitive detector software [#Lure]_. Continuing in the spirit of these
 workshops we hold regular meetings, with talks from invited speakers, and code
 camps in which specific problems are addressed by intensive effort across the
 collaboration. Summaries of these meetings and copies of slides given as
-presentations are available :doc:`here </links>`. We have begun by reproducing
+presentations are available :doc:`here </workshops>`. We have begun by reproducing
 published spot finding and integration algorithms used by integration packages
 such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. We expect new research to lead to more
 advanced or case-specific algorithms in future, which may either be implemented
