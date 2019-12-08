@@ -22,7 +22,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
 X-ray crystallography for structural biology has benefited greatly
 from a number of advances in recent years including high performance
 pixel array detectors, new beamlines capable of delivering micron and
-sub-micron focus and new light sources such as X-FELs. The DIALS
+sub-micron focus and new light sources such as XFELs. The DIALS
 project is a collaborative endeavour to develop new diffraction integration
 software to meet the data analysis requirements presented by these
 recent advances. There are three end goals: to develop an extensible
