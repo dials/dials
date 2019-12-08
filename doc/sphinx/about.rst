@@ -69,8 +69,8 @@ DE-AC02-05CH11231. Developers include Aaron Brewster and Iris Young.
 Acknowledgements
 ================
 
-We are grateful to the following people who have contributed to the development
-of DIALS:
+We are grateful to all those who have contributed to the development
+of DIALS.
 
 .. include ../../AUTHORS
 
