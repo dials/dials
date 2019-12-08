@@ -45,7 +45,7 @@ Development Teams
 DIALS East
 ----------
 
-Development of DIALS in the UK is funded by the `BioStruct-X`_ EU grant,
+Development of DIALS in the UK is funded by the `Wellcome Trust`_,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
 Developers include
 James Beilsten-Edmands,
@@ -96,7 +96,7 @@ Matthew Webber.
 .. [#MOSFLM] `Leslie, A. G. W. and Powell H. R. (2007), Evolving Methods for Macromolecular Crystallography, 245, 41-51. ISBN 978-1-4020-6314-5.`
 .. [#RWGK] `Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W., & Adams, P. D. (2002). Journal of Applied Crystallography. 35, 126–136.`
 
-.. _`BioStruct-X`: http://www.biostruct-x.org/
+.. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
 .. _`cctbx`: http://cctbx.sourceforge.net/
 .. _`CCP4`: http://www.ccp4.ac.uk/

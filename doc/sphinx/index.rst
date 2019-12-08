@@ -44,7 +44,7 @@ list.
 Funding
 =======
 
-DIALS development at `Diamond Light Source`_ is supported by the `BioStruct-X`_ EU grant,
+DIALS development at `Diamond Light Source`_ is supported by the `Wellcome Trust`_,
 `Diamond Light Source`_, and `CCP4`_.
 
 DIALS development at `Lawrence Berkeley National Laboratory`_ is
@@ -52,7 +52,7 @@ supported by `National Institutes of Health`_ / `National Institute of General M
 grant R01-GM117126.  Work at LBNL is performed under
 `Department of Energy`_ contract DE-AC02-05CH11231.
 
-.. _`BioStruct-X`: http://www.biostruct-x.org/
+.. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
