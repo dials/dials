@@ -17,7 +17,6 @@ DIALS: Diffraction Integration for Advanced Light Sources
    How-to <howto>
    workshops/index
    publications
-   links
    License <license>
 
 X-ray crystallography for structural biology has benefited greatly
@@ -51,6 +50,8 @@ supported by `National Institutes of Health`_ / `National Institute of General M
 grant R01-GM117126.  Work at LBNL is performed under
 `Department of Energy`_ contract DE-AC02-05CH11231.
 
+Mirror sites: `DIALS-East`_, `DIALS-West`_, `dials.github.io`_.
+
 .. _`issue`: https://github.com/dials/dials/issues
 .. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`CCP4`: http://www.ccp4.ac.uk/
@@ -59,4 +60,7 @@ grant R01-GM117126.  Work at LBNL is performed under
 .. _`National Institutes of Health`: http://www.nih.gov/
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/
 .. _`Department of Energy`: http://www.energy.gov/
-.. _`dials-general`: https://www.jiscmail.ac.uk/cgi-bin/webadmin?A0=DIALS-GENERAL
+.. _dials.github.io: https://dials.github.io/
+.. _`DIALS-East`: http://dials.diamond.ac.uk/
+.. _`DIALS-West`: http://dials.lbl.gov/
+
