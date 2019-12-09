@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 import time
+from math import ceil
 from collections import OrderedDict
 from dials.util import tabulate
 
@@ -49,6 +50,7 @@ from dials.algorithms.scaling.reflection_selection import (
     calculate_scaling_subset_ranges_with_E2,
     calculate_scaling_subset_ranges,
     select_connected_reflections_across_datasets,
+    _select_groups_on_Isigma_cutoff,
 )
 from dials.util.observer import Subject
 from libtbx import Auto
@@ -662,7 +664,7 @@ class SingleScaler(ScalerBase):
                 avg_multi = flex.mean(presel_block.group_multiplicities())
                 min_refl = self.params.reflection_selection.random.min_reflections
                 n_groups_in_table = presel_block.n_groups
-                n_groups_to_sel = max(int(min_refl / avg_multi), min_groups)
+                n_groups_to_sel = max(int(ceil(min_refl / avg_multi)), min_groups)
 
                 logger.debug(
                     "Average multiplicity that reflection selection is sampling from: %s",
@@ -679,9 +681,8 @@ class SingleScaler(ScalerBase):
                 self.scaling_selection = flex.bool(self.n_suitable_refl, False)
                 self.scaling_selection.set_selected(loc_indices, True)
                 logger.info(
-                    """
-    Randomly selected %s/%s groups (m>1) to use for scaling model
-    minimisation (%s reflections)""",
+                    """Randomly selected %s/%s groups (m>1) to use for scaling model
+minimisation (%s reflections)""",
                     n_groups_to_sel,
                     n_groups_in_table,
                     loc_indices.size(),
@@ -1084,46 +1085,40 @@ class MultiScalerBase(ScalerBase):
             "quasi_random",
         ):
             random_phil = self.params.reflection_selection.random
-            min_per_dataset = random_phil.multi_dataset.refl_per_param
-            n_params = [
-                s.experiment.scaling_model.n_params for s in self.active_scalers
-            ]
-            avg_n_param = sum(n_params) / len(n_params)
-            min_cross_dataset = int(min_per_dataset * avg_n_param / 2.0)
-            # First select cross-dataset connected reflections.
-            indices, dataset_ids = select_connected_reflections_across_datasets(
-                self.global_Ih_table,
-                self.active_scalers[0].experiment,
-                min_cross_dataset,
-                random_phil.multi_dataset.Isigma_cutoff,
-                random_phil.multi_dataset.min_reflections,
+            block = self.global_Ih_table.Ih_table_blocks[0]
+            sel_block = block.select(block.calc_nh() > 1)
+            avg_multi = flex.mean(sel_block.group_multiplicities())
+            total_target = max(
+                avg_multi * random_phil.min_groups, random_phil.min_reflections
             )
-            header = [
-                "Dataset id",
-                "reflections \nconnected to \nother datasets",
-                "randomly selected \nreflections \nwithin dataset",
-                "combined number \nof reflections",
-            ]
-            rows = []
-            total_across_datasets = 0
+            n_datasets = len(self.active_scalers)
+            min_cross_dataset = total_target / (2.0 * n_datasets)
+
+            # first select individual dataset reflections, so that we an know
+            # how many this procedure selects.
+            total_individual_selection = 0
+            total_this_dataset = flex.double()
+
+            global_block = _select_groups_on_Isigma_cutoff(
+                self.global_Ih_table.Ih_table_blocks[0],
+                random_phil.multi_dataset.Isigma_cutoff,
+            )
+
             for i, scaler in enumerate(self.active_scalers):
                 # first set cross dataset connected reflections identified.
-                sel = dataset_ids == i
-                indices_for_dataset = indices.select(sel)
                 scaler.scaling_selection = flex.bool(scaler.n_suitable_refl, False)
-                scaler.scaling_selection.set_selected(indices_for_dataset, True)
-                # now select randomly within dataset
-                # first do preselection.
-                sel = (
-                    self.global_Ih_table.Ih_table_blocks[0].Ih_table["dataset_id"] == i
+                # now select randomly within dataset, first do preselection.
+                indiv_Ih_block = global_block.select(
+                    global_block.Ih_table["dataset_id"] == i
                 )
-                indiv_Ih_block = self.global_Ih_table.Ih_table_blocks[0].select(sel)
                 suitable_table = scaler.reflection_table.select(
                     scaler.suitable_refl_for_scaling_sel
                 )
                 presel = calculate_scaling_subset_ranges(suitable_table, self.params)
                 preselection = presel.select(indiv_Ih_block.Ih_table["loc_indices"])
                 block = indiv_Ih_block.select(preselection)
+                # have a block of individual dataset to chose from.
+
                 # now select multi > 1
                 n_h_over_1 = block.calc_nh() > 1
                 block = block.select(n_h_over_1)
@@ -1144,21 +1139,57 @@ class MultiScalerBase(ScalerBase):
                     n_refl = loc_indices.size()
                 else:  # no refl with multiplicity > 1.
                     n_refl = 0
-                total_this_dataset = scaler.scaling_selection.count(True)
+                total_individual_selection += n_refl
+                total_this_dataset.append(n_refl)
+
+            # now do cross dataset selection.
+            target_left = total_target - total_individual_selection
+            min_total = max(
+                random_phil.min_reflections - total_individual_selection, target_left
+            )
+
+            indices, dataset_ids = select_connected_reflections_across_datasets(
+                self.global_Ih_table,
+                self.active_scalers[0].experiment,
+                min_cross_dataset,
+                random_phil.multi_dataset.Isigma_cutoff,
+                min_total,
+            )
+            header = [
+                "Dataset id",
+                "reflections \nconnected to \nother datasets",
+                "randomly selected \nreflections \nwithin dataset",
+                "combined number \nof reflections",
+            ]
+            rows = []
+            total_overall = 0
+            for i, scaler in enumerate(self.active_scalers):
+                sel = dataset_ids == i
+                indices_for_dataset = indices.select(sel)
+                scaler.scaling_selection.set_selected(indices_for_dataset, True)
+                total_combined = scaler.scaling_selection.count(True)
                 rows.append(
                     [
                         scaler.experiment.identifier,
                         str(indices_for_dataset.size()),
-                        str(n_refl),
-                        str(total_this_dataset),
+                        str(total_this_dataset[i]),
+                        str(total_combined),
                     ]
                 )
-                total_across_datasets += total_this_dataset
+                total_overall += total_combined
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
+            rows.append(
+                [
+                    "total",
+                    str(indices.size()),
+                    str(total_individual_selection),
+                    str(total_overall),
+                ]
+            )
             logger.info(
                 "Summary of reflections chosen for minimisation from each dataset (%s total):",
-                total_across_datasets,
+                total_overall,
             )
             logger.info(tabulate(rows, header))
         elif self.params.reflection_selection.method == "intensity_ranges":
@@ -1176,6 +1207,13 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_subset_sel = copy.deepcopy(scaler.scaling_selection)
                 scaler.scaling_selection &= ~scaler.outliers
         elif self.params.reflection_selection.method == "use_all":
+            block = self.global_Ih_table.Ih_table_blocks[0]
+            n_mult = (block.calc_nh() > 1).count(True)
+            logger.info(
+                "Using all reflections (%s) for minimisation (%s with m>1)",
+                block.size,
+                n_mult,
+            )
             for scaler in self.active_scalers:
                 if self._free_Ih_table:
                     scaler.scaling_selection = ~scaler.free_set_selection
@@ -1185,22 +1223,25 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_selection &= ~scaler.outliers
         elif self.params.reflection_selection.method == "random":
             # random means a random subset of groups,
-            # using random.multi_dataset.refl_per_param & min_reflections
-            n_params = sum(
-                s.experiment.scaling_model.n_params for s in self.active_scalers
-            )
-            random_phil = self.params.reflection_selection.random.multi_dataset
-            n_refl = random_phil.refl_per_param * n_params
-            n_refl_to_use = max(n_refl, random_phil.min_reflections)
-
+            random_phil = self.params.reflection_selection.random
             block = self.global_Ih_table.Ih_table_blocks[0]
+            sel_block = block.select(block.calc_nh() > 1)
+            avg_multi = flex.mean(sel_block.group_multiplicities())
+
+            block = _select_groups_on_Isigma_cutoff(
+                block, random_phil.multi_dataset.Isigma_cutoff
+            )
             block = block.select(block.calc_nh() > 1)
             if not block.size:
                 raise SystemExit(
                     "No groups left with multiplicity >1, scaling not possible."
                 )
             avg_multi = flex.mean(block.group_multiplicities())
-            n_groups_to_sel = int(n_refl_to_use / avg_multi)
+            n_groups_to_sel = max(
+                random_phil.min_groups,
+                int(ceil(random_phil.min_reflections * avg_multi)),
+            )
+
             n_groups_in_table = block.n_groups
             if n_groups_to_sel < n_groups_in_table:
                 isel = flex.random_selection(n_groups_in_table, n_groups_to_sel)

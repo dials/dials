@@ -5,7 +5,7 @@ import logging
 import scitbx.matrix
 from cctbx import crystal, sgtbx
 from cctbx.crystal_orientation import crystal_orientation
-from cctbx.sgtbx import bravais_types, change_of_basis_op, lattice_symmetry, subgroups
+from cctbx.sgtbx import change_of_basis_op, lattice_symmetry, subgroups
 from cctbx.sgtbx.bravais_types import bravais_lattice
 from rstbx.dps_core.lepage import iotbx_converter
 from scitbx.array_family import flex
@@ -28,7 +28,7 @@ def metric_supergroup(group):
 
 def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
-    target_bravais_t = bravais_types.bravais_lattice(
+    target_bravais_t = bravais_lattice(
         group=target_space_group.info().reference_setting().group()
     )
     best_subgroup = None
@@ -78,7 +78,7 @@ def find_matching_symmetry(unit_cell, target_space_group, max_delta=5):
         cb_op_minimum_ref = subsym.space_group_info().type().cb_op()
         ref_subsym = subsym.change_basis(cb_op_minimum_ref)
         # Ignore unwanted groups
-        bravais_t = bravais_types.bravais_lattice(group=ref_subsym.space_group())
+        bravais_t = bravais_lattice(group=ref_subsym.space_group())
         if bravais_t != target_bravais_t:
             continue
 

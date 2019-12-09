@@ -7,37 +7,35 @@ import pytest
 from dxtbx.serialize import load
 
 
-@pytest.mark.skip(reason="API changed so the test no longer useful")
-def test_multiple_sequence_import_fails_without_allow_parameter(dials_data, tmpdir):
+def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
     del image_files[4]  # Delete filename to force two sequences
 
     # run without allowing multiple sequences
     result = procrunner.run(
-        ["dials.import", "output.experiments=experiments_multiple_sequences.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        [
+            "dials.import",
+            "output.experiments=experiments_multiple_sequences.expt",
+            "allow_multiple_sequence=False",
+        ]
+        + image_files,
+        working_directory=tmpdir,
     )
     assert result.returncode == 1
     assert b"ore than 1 sequence" in result.stderr
     assert not tmpdir.join("experiments_multiple_sequences.expt").check()
 
 
-@pytest.mark.skip(reason="API changed so the test no longer useful")
-def test_multiple_sequence_import_suceeds_with_allow_parameter(dials_data, tmpdir):
+def test_can_import_multiple_sequences(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
     del image_files[4]  # Delete filename to force two sequences
 
     result = procrunner.run(
-        [
-            "dials.import",
-            "output.experiments=experiments_multiple_sequences.expt",
-            "allow_multiple_sequences=True",
-        ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        ["dials.import", "output.experiments=experiments_multiple_sequences.expt"]
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_multiple_sequences.expt").check(file=1)
@@ -59,8 +57,8 @@ def test_with_mask(dials_data, tmpdir):
             "mask=" + mask_filename.strpath,
             "output.experiments=experiments_with_mask.expt",
         ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_with_mask.expt").check(file=1)
@@ -114,8 +112,8 @@ def test_override_geometry(dials_data, tmpdir):
 
     result = procrunner.run(
         ["dials.import", "geometry.phil", "output.experiments=override_geometry.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("override_geometry.expt").check(file=1)
@@ -309,3 +307,33 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
     # verify scans, goniometers kept too
     assert all(exp.scan.get_oscillation() == (0.0, 0.0) for exp in imported_exp)
     assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_with_convert_sequences_to_stills(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    result = procrunner.run(
+        [
+            "dials.import",
+            "convert_sequences_to_stills=True",
+            "output.experiments=experiments_as_stills.expt",
+        ]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("experiments_as_stills.expt").check(file=1)
+
+    experiments = load.experiment_list(
+        tmpdir.join("experiments_as_stills.expt").strpath
+    )
+
+    # should be no goniometers
+    assert experiments.scans() == [None]
+    assert experiments.goniometers() == [None]
+
+    # should be same number of imagesets as images
+    assert len(experiments.imagesets()) == len(image_files)
+
+    # all should call out as still too
+    assert experiments.all_stills()

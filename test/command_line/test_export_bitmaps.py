@@ -69,7 +69,7 @@ def test_export_bitmap_with_specified_output_filename(dials_data, tmpdir):
         [
             "dials.export_bitmaps",
             dials_data("centroid_test_data").join("centroid_0001.cbf").strpath,
-            "output_file=kittens.png",
+            "output.file=kittens.png",
         ],
         working_directory=tmpdir.strpath,
     )
@@ -85,7 +85,7 @@ def test_export_multiple_bitmaps_with_specified_output_filename_fails(
         [
             "dials.export_bitmaps",
             dials_data("centroid_test_data").join("experiments.json").strpath,
-            "output_file=kittens.png",
+            "output.file=kittens.png",
         ],
         working_directory=tmpdir.strpath,
     )

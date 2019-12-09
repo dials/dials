@@ -23,7 +23,7 @@ position sensitive detector software [#Lure]_. Continuing in the spirit of these
 workshops we hold regular meetings, with talks from invited speakers, and code
 camps in which specific problems are addressed by intensive effort across the
 collaboration. Summaries of these meetings and copies of slides given as
-presentations are available :doc:`here </links>`. We have begun by reproducing
+presentations are available :doc:`here </workshops>`. We have begun by reproducing
 published spot finding and integration algorithms used by integration packages
 such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. We expect new research to lead to more
 advanced or case-specific algorithms in future, which may either be implemented
@@ -45,7 +45,7 @@ Development Teams
 DIALS East
 ----------
 
-Development of DIALS in the UK is funded by the `BioStruct-X`_ EU grant,
+Development of DIALS in the UK is funded by the `Wellcome Trust`_,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
 Developers include
 James Beilsten-Edmands,
@@ -69,24 +69,23 @@ DE-AC02-05CH11231. Developers include Aaron Brewster and Iris Young.
 Acknowledgements
 ================
 
-We are grateful to the following people who have contributed to the development
-of DIALS either in the form of code, or through numerous intellectual discussions:
+We are grateful to all those who have contributed to the development
+of DIALS.
 
-Muhamed Amin,
+.. include ../../AUTHORS
+
+In addition, we acknowledge guidance and ideas gained through numerous
+intellectual discussions with the following:
+
 Alun Ashton,
 Gleb Bourenkov,
 Gerard Bricogne,
 Phil Evans,
-Nat Echols,
-Johan Hattne,
 Andrew Leslie,
-Tara Michels-Clark,
 Nigel Moriarty,
-Garib Murshadov,
-Takanori Nakane,
+Garib Murshudov,
 Jim Pflugrath,
 Harry Powell,
-Ian Rees,
 Jon Schuermann
 and
 Matthew Webber.
@@ -96,7 +95,7 @@ Matthew Webber.
 .. [#MOSFLM] `Leslie, A. G. W. and Powell H. R. (2007), Evolving Methods for Macromolecular Crystallography, 245, 41-51. ISBN 978-1-4020-6314-5.`
 .. [#RWGK] `Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W., & Adams, P. D. (2002). Journal of Applied Crystallography. 35, 126–136.`
 
-.. _`BioStruct-X`: http://www.biostruct-x.org/
+.. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
 .. _`cctbx`: http://cctbx.sourceforge.net/
 .. _`CCP4`: http://www.ccp4.ac.uk/

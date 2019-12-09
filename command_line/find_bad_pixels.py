@@ -5,6 +5,8 @@ from __future__ import absolute_import, division, print_function
 import concurrent.futures
 import math
 import sys
+from PIL import Image
+import numpy
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -39,6 +41,12 @@ output {
     mask = pixels.mask
         .type = path
         .help = "Output mask file name"
+    png = pixels.png
+        .type = path
+        .help = "Bad pixel mask as image"
+    print_values = False
+        .type = bool
+        .help = "Print bad pixel values"
 }
 """
 )
@@ -52,7 +60,11 @@ def find_constant_signal_pixels(imageset, images):
     is >= 50% of the images (say) that pixel is untrustworthy."""
 
     panels = imageset.get_detector()
-    assert len(panels) == 1
+
+    # only cope with monilithic detectors or the I23 Pilatus 12M
+    assert len(panels) in (1, 24)
+
+    # trusted range the same for all panels anyway
     detector = panels[0]
     trusted = detector.get_trusted_range()
 
@@ -63,8 +75,20 @@ def find_constant_signal_pixels(imageset, images):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
-        assert len(pixels) == 1
-        data = pixels[0]
+
+        # apply known mask
+        for _pixel, _panel in zip(pixels, panels):
+            for f0, s0, f1, s1 in _panel.get_mask():
+                blank = flex.int(flex.grid(s1 - s0, f1 - f0), 0)
+                _pixel.matrix_paste_block_in_place(blank, s0, f0)
+
+        if len(pixels) == 1:
+            data = pixels[0]
+        else:
+            ny, nx = pixels[0].focus()
+            data = flex.int(flex.grid(24 * ny + 23 * 17, nx), -1)
+            for j in range(24):
+                data.matrix_paste_block_in_place(pixels[j], j * (ny + 17), 0)
 
         negative = data < int(round(trusted[0]))
         hot = data > int(round(trusted[1]))
@@ -125,7 +149,6 @@ def run(args):
 
     imageset = imagesets[0]
     panels = imageset.get_detector()
-    assert len(panels) == 1
     detector = panels[0]
     trusted = detector.get_trusted_range()
 
@@ -174,12 +197,25 @@ def run(args):
 
     for idx in images:
         pixels = imageset.get_raw_data(idx - 1)
-        data = pixels[0]
+        if len(pixels) == 1:
+            data = pixels[0]
+        else:
+            ny, nx = pixels[0].focus()
+            data = flex.int(flex.grid(24 * ny + 23 * 17, nx), -1)
+            for j in range(24):
+                data.matrix_paste_block_in_place(pixels[j], j * (ny + 17), 0)
 
         for h in hot_pixels:
             capricious_pixels[h].append(data[h])
 
     nslow, nfast = data.focus()
+
+    # save the total image as a PNG
+
+    view = (~(total > (len(images) // 2))).as_int() * 255
+    view.reshape(flex.grid(data.focus()))
+    image = Image.fromarray(view.as_numpy_array().astype(numpy.uint8), mode="L")
+    image.save(params.output.png)
 
     ffff = 0
 
@@ -188,6 +224,8 @@ def run(args):
             ffff += 1
             continue
         print("Pixel %d at %d %d" % (total[h], h // nfast, h % nfast))
+        if not params.output.print_values:
+            continue
         if len(set(capricious_pixels[h])) >= len(capricious_pixels[h]) // 2:
             print("  ... many possible values")
             continue

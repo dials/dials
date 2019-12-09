@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 import copy
 import logging
 from math import pi, acos
-from time import time
 
 from dials.array_family import flex
 from cctbx import miller
@@ -68,46 +67,6 @@ class Reasons(object):
             if v > 0
         ]
         return "Reflections passing individual criteria:\n" + "".join(reasonlist)
-
-
-def save_experiments(experiments, filename):
-    """Save the experiments json."""
-    st = time()
-    logger.info("Saving the experiments to %s", filename)
-    experiments.as_file(filename)
-    logger.info("Time taken: %g", (time() - st))
-
-
-def save_reflections(reflection_table, filename):
-    """Save the scaled reflections."""
-    st = time()
-    to_del = [
-        "variance",
-        "intensity",
-        "s0",
-        "s0c",
-        "s1c",
-        "prescaling_correction",
-        "batch",
-    ]
-    for col in to_del:
-        try:
-            del reflection_table[col]
-        except KeyError:
-            pass
-    logger.info("Saving the scaled reflections to %s", filename)
-    reflection_table.as_file(filename)
-    logger.info("Time taken: %g", (time() - st))
-
-
-"""def calc_sigmasq(jacobian_transpose, var_cov):
-  sigmasq = flex.float([])
-  #note: must be a faster way to do this next bit? - in c++?
-  for col in jacobian_transpose.cols(): #iterating over reflections
-    a = flex.double(col.as_dense_vector())
-    var = (a * var_cov) * a
-    sigmasq.append(flex.sum(var))
-  return sigmasq.as_double()"""
 
 
 def calc_crystal_frame_vectors(reflection_table, experiments):

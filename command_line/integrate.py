@@ -4,6 +4,7 @@ import logging
 
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
+from dials.util.slice import slice_crystal
 
 logger = logging.getLogger("dials.command_line.integrate")
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -329,7 +330,10 @@ class Script(object):
         ):
             experiments = ProfileModelFactory.create(params, experiments, reference)
         else:
-            experiments = ProfileModelFactory.create(params, experiments)
+            try:
+                experiments = ProfileModelFactory.create(params, experiments)
+            except RuntimeError as e:
+                raise Sorry(e)
             for expr in experiments:
                 if expr.profile is None:
                     raise Sorry("No profile information in experiment list")
@@ -629,12 +633,13 @@ class Script(object):
                     new_scan = None
                 else:
                     new_scan = scan[index_start:index_end]
+
                 for i, e1 in enumerate(experiments):
                     e2 = Experiment()
                     e2.beam = e1.beam
                     e2.detector = e1.detector
                     e2.goniometer = e1.goniometer
-                    e2.crystal = e1.crystal
+                    e2.crystal = slice_crystal(e1.crystal, (index_start, index_end))
                     e2.profile = e1.profile
                     e2.imageset = new_iset
                     e2.scan = new_scan

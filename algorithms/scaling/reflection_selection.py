@@ -235,6 +235,7 @@ from each dataset, with a total number between %s and %s.
         )
         if n_datasets >= 15:
             summary_rows.append([drange, str(n_groups_used), n_refl])
+        n_cols_used += n_groups_used
 
     logger.info(
         "Summary of cross-dataset reflection groups chosen (%s groups, %s reflections):",

@@ -90,4 +90,3 @@ def flex_histogram(z, char="*", width=60, height=10):
         )
     )
     return "\n".join(rows)
-

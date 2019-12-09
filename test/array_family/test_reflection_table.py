@@ -40,6 +40,9 @@ def test_reflection_table_behaves_like_a_python_dictionary():
     assert (table["A"] == flex_A).all_eq(True)
     assert (table["B"] == flex_B).all_eq(True)
 
+    assert table.get("A", -424242) == flex_A
+    assert table.get("C", -424242) == -424242
+
 
 def test_init():
     # test default

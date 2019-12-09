@@ -638,7 +638,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return rmsds
 
     def achieved(self):
-        """RMSD criterion for target achieved """
+        """RMSD criterion for target achieved"""
         r = self._rmsds if self._rmsds else self.rmsds()
 
         # reset cached rmsds to avoid getting out of step

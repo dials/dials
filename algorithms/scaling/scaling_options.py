@@ -27,54 +27,45 @@ phil_scope = iotbx.phil.parse(
               "slow for large datasets."
     random {
       multi_dataset {
-        refl_per_param = 250
-          .type = int
-          .help = "Target number of reflections per parameter to select for"
-                  "minimisation in multi-dataset case"
-        min_reflections = 40000
-          .type = int
-          .help = "Minimum number of reflections to use for minimisation across"
-                  "all datasets"
         Isigma_cutoff = 1.0
           .type = float
           .help = "Minimum average I/sigma of reflection groups to use when"
-                  "selecting cross-dataset connected reflections."
+                  "selecting random reflections for minimisation."
       }
-      min_groups = 4000
+      min_groups = 2000
         .type = int
         .help = "The minimum number of symmetry groups to use during"
-                "minimisation for single datasets."
+                "minimisation."
         .expert_level=1
-      min_reflections = 20000
+      min_reflections = 50000
         .type = int
-        .help = "The minimum number of reflections to use during minimisation"
-                "for single datasets"
+        .help = "The minimum number of reflections to use during minimisation."
         .expert_level=1
     }
     best_unit_cell = None
       .type = floats(size=6)
-      .help = "Best unit cell value, to use when performing resolution cutting
-               and merging statistics. If None, the median unit cell will be used."
+      .help = "Best unit cell value, to use when performing resolution cutting"
+              "and merging statistics. If None, the median cell will be used."
     E2_range = 0.8, 5.0
       .type = floats(size=2)
-      .help = "Minimum and maximum normalised E^2 value to used to select a
-              subset of reflections for minimising the scaling model."
+      .help = "Minimum and maximum normalised E^2 value to used to select a"
+              "subset of reflections for minimisation."
       .expert_level = 1
     Isigma_range = -5.0, 0.0
       .type = floats(size=2)
-      .help = "Minimum and maximum I/sigma values used to subset of reflections
-              to determine the scaling model. Here a value of 0.0 for the max
-              means no limit applied."
+      .help = "Minimum and maximum I/sigma values used to select a subset of"
+              "reflections for minimisation. A value of 0.0 for the maximum"
+              "indicates that no upper limit should be applied."
       .expert_level = 1
     d_range = None
       .type = floats(size=2)
-      .help = "Minimum and maximum - values used to subset of reflections
-              to determine the scaling model."
+      .help = "Minimum and maximum d-values used to select a subset of"
+              "reflections for minimisation."
       .expert_level = 1
     min_partiality = 0.95
       .type = float
-      .help = "Minimum partiality to use when selecting reflections to use
-               to determine the scaling model and error model."
+      .help = "Minimum partiality to use when selecting reflections to use"
+              "to determine the scaling model and error model."
       .expert_level = 2
     intensity_choice = profile sum *combine
       .type = choice
@@ -199,10 +190,6 @@ phil_scope = iotbx.phil.parse(
       .help = "Offset for choosing unique groups for the free set from the whole
                set of unique groups."
       .expert_level = 2
-    space_group = None
-      .type = str
-      .help = "Option to specify space group for scaling (deprecated)"
-      .expert_level = 1
     full_matrix = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

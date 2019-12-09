@@ -498,7 +498,7 @@ def insulin_spotfinding(dials_data, tmpdir_factory):
     data_dir = dials_data("insulin")
     tmpdir = tmpdir_factory.mktemp("insulin")
 
-    command = ["dials.import", "allow_multiple_sequences=True"]
+    command = ["dials.import"]
     for i, image_path in enumerate(("insulin_1_001.img", "insulin_1_045.img")):
         target = "image_00%i.img" % (i + 1)
         data_dir.join(image_path).copy(tmpdir.join(target))

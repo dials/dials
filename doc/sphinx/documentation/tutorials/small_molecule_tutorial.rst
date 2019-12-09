@@ -27,7 +27,7 @@ Usually DIALS processing is run on a sequence-by-sequence basis - for small mole
 
 .. code-block:: bash
 
-   dials.import allow_multiple_sequences=True ../data/*cbf
+   dials.import ../data/*cbf
 
 This will create a DIALS datablock.expt file with details of the 4 sequences within it.
 

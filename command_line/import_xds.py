@@ -171,7 +171,7 @@ class XDSFileImporter(object):
     """Import a data block from xds."""
 
     def __init__(self, args):
-        """ Initialise with the options"""
+        """Initialise with the options"""
         self.args = args
 
     def __call__(self, params, options):
@@ -258,7 +258,7 @@ class XDSFileImporter(object):
 
     @staticmethod
     def find_best_xds_file(xds_dir):
-        """ Find the best available file."""
+        """Find the best available file."""
 
         # The possible files to check
         paths = [

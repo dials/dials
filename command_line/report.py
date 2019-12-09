@@ -614,7 +614,7 @@ ice rings, or poor spot-finding parameters.
         }
 
     def indexed_count_xy(self, rlist):
-        """Analyse the indexed spot count in x/y. """
+        """Analyse the indexed spot count in x/y."""
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
@@ -1315,8 +1315,8 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "Log I/Sigma histogram",
-                    "xaxis": {"title": "Log I/Sigma"},
+                    "title": u"Log I/σ(I) histogram",
+                    "xaxis": {"title": u"Log I/σ(I)"},
                     "yaxis": {"title": "Number of reflections"},
                     "bargap": 0,
                 },
@@ -1362,12 +1362,12 @@ class IntensityAnalyser(object):
                         "zauto": False,
                         "type": "heatmap",
                         "name": "i_over_sigma_%s" % intensity_type,
-                        "colorbar": {"title": "Log I/Sigma", "titleside": "right"},
+                        "colorbar": {"title": u"Log I/σ(I)", "titleside": "right"},
                         "colorscale": "Jet",
                     }
                 ],
                 "layout": {
-                    "title": "Distribution of I(%s)/Sigma vs X/Y" % intensity_type,
+                    "title": u"Distribution of I(%s)/σ vs X/Y" % intensity_type,
                     "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
                     "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
                     "width": 500,
@@ -1405,9 +1405,9 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "Distribution of I/Sigma vs Z",
+                    "title": u"Distribution of I/σ(I) vs Z",
                     "xaxis": {"title": "Z", "showgrid": False},
-                    "yaxis": {"title": "Log I/Sigma", "showgrid": False},
+                    "yaxis": {"title": u"Log I/σ(I)", "showgrid": False},
                 },
             }
         }
@@ -1438,7 +1438,7 @@ class IntensityAnalyser(object):
 
 
 class ZScoreAnalyser(object):
-    """
+    u"""
     Analyse the distribution of intensity z-scores.
 
     z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
@@ -2048,8 +2048,8 @@ class ReferenceProfileAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "%s correlations vs Log I/Sigma" % filename.capitalize(),
-                    "xaxis": {"title": "Log I/Sigma", "showgrid": False},
+                    "title": u"%s correlations vs Log I/σ(I)" % filename.capitalize(),
+                    "xaxis": {"title": u"Log I/σ(I)", "showgrid": False},
                     "yaxis": {
                         "title": "Correlation with reference profile",
                         "showgrid": False,

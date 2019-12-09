@@ -62,3 +62,36 @@ def test_slice_sequence_with_first_images_missing(dials_regression, tmpdir):
     assert sliced_exp.scan.get_image_range() == (10, 20)
     assert sliced_exp.scan.get_array_range() == (9, 20)
     assert sliced_exp.scan.get_oscillation()[0] == pytest.approx(83.35)
+
+
+def test_slice_sequence_with_scan_varying_crystal(dials_data, tmpdir):
+    """test slicing keeps a scan-varying crystal"""
+
+    expt = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt"
+    procrunner.run(
+        [
+            "dials.slice_sequence",
+            "image_range=10,20",
+            "output.experiments=sliced.expt",
+            expt,
+        ],
+        working_directory=tmpdir,
+    )
+    orig = ExperimentListFactory.from_json_file(expt.strpath, check_format=False)[0]
+
+    sliced = ExperimentListFactory.from_json_file(
+        tmpdir.join("sliced.expt").strpath, check_format=False
+    )[0]
+
+    assert sliced.crystal.num_scan_points == 12
+
+    orig_UB = [
+        orig.crystal.get_A_at_scan_point(i) for i in range(orig.crystal.num_scan_points)
+    ]
+    sliced_UB = [
+        sliced.crystal.get_A_at_scan_point(i)
+        for i in range(sliced.crystal.num_scan_points)
+    ]
+
+    for a, b in zip(orig_UB[9:21], sliced_UB):
+        assert a == pytest.approx(b)

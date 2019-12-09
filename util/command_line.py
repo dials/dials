@@ -201,7 +201,7 @@ class Command(object):
 
     @classmethod
     def start(cls, string):
-        """ Print the 'start command' string."""
+        """Print the 'start command' string."""
         # from termcolor import colored
 
         # Get the command start time
@@ -222,7 +222,7 @@ class Command(object):
 
     @classmethod
     def end(cls, string):
-        """ Print the 'end of command' string."""
+        """Print the 'end of command' string."""
         # from termcolor import colored
 
         # Check if we want to print the time or not

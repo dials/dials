@@ -33,18 +33,8 @@ brightness = 100
   .type = float(value_min=0.0)
 colour_scheme = *greyscale rainbow heatmap inverse_greyscale
   .type = choice
-format = jpeg *png tiff
-  .type = choice
-prefix = "image"
-  .type = str
 padding = 4
   .type = int(value_min=0)
-output_dir = None
-  .type = path
-output_file = None
-  .type = str
-  .help = "Full name of the output file. Overrides 'prefix' and the default "
-          "file extension. Only makes sense if a single file is written."
 imageset_index = None
   .type = int
   .multiple = True
@@ -81,7 +71,21 @@ jpeg {
     .type = int(value_min=1, value_max=95)
     .help = "The image quality, on a scale from 1 (worst) to 95 (best)"
 }
-""",
+
+include scope dials.util.options.format_phil_scope
+
+output {
+  prefix = "image"
+    .type = str
+  directory = None
+    .type = path
+  file = None
+    .type = str
+    .help = "Full name of the output file. Overrides 'prefix' and the default "
+            "file extension. Only makes sense if a single file is written."
+  format = jpeg *png tiff
+    .type = choice
+}""",
     process_includes=True,
 )
 
@@ -125,7 +129,7 @@ def imageset_as_bitmaps(imageset, params):
     binning = params.binning
     if not (binning > 0 and ((binning & (binning - 1)) == 0)):
         raise Sorry("binning must be a power of 2")
-    output_dir = params.output_dir
+    output_dir = params.output.directory
     if output_dir is None:
         output_dir = "."
     elif not os.path.exists(output_dir):
@@ -150,8 +154,8 @@ def imageset_as_bitmaps(imageset, params):
         for i in range(start, end + 1)
         if not params.imageset_index or i in params.imageset_index
     ]
-    if params.output_file and len(image_range) != 1:
-        sys.exit("output_file can only be specified if a single image is exported")
+    if params.output.file and len(image_range) != 1:
+        sys.exit("output.file can only be specified if a single image is exported")
     for i_image in image_range:
         image = imageset.get_raw_data(i_image - start)
 
@@ -208,13 +212,16 @@ def imageset_as_bitmaps(imageset, params):
         pil_img = Image.frombytes(
             "RGB", (flex_image.ex_size2(), flex_image.ex_size1()), flex_image.as_bytes()
         )
-        if params.output_file:
-            path = os.path.join(output_dir, params.output_file)
+        if params.output.file:
+            path = os.path.join(output_dir, params.output.file)
         else:
             path = os.path.join(
                 output_dir,
-                "{p.prefix}{image:0{p.padding}}.{p.format}".format(
-                    p=params, image=i_image
+                "{prefix}{image:0{padding}}.{format}".format(
+                    image=i_image,
+                    prefix=params.output.prefix,
+                    padding=params.padding,
+                    format=params.output.format,
                 ),
             )
 
@@ -223,7 +230,7 @@ def imageset_as_bitmaps(imageset, params):
         with open(path, "wb") as tmp_stream:
             pil_img.save(
                 tmp_stream,
-                format=params.format,
+                format=params.output.format,
                 compress_level=params.png.compress_level,
                 quality=params.jpeg.quality,
             )
