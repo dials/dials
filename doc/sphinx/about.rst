@@ -72,7 +72,7 @@ Acknowledgements
 We are grateful to all those who have contributed to the development
 of DIALS.
 
-.. include ../../AUTHORS
+.. include:: ../../AUTHORS
 
 In addition, we acknowledge guidance and ideas gained through numerous
 intellectual discussions with the following:
