@@ -305,3 +305,7 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (0.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
