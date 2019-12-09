@@ -291,7 +291,6 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     out = "experiments_as_still.expt"
 
-    # run without allowing multiple sequences
     _ = procrunner.run(
         ["dials.import", "scan.oscillation=0,0", "output.experiments=%s" % out]
         + [f.strpath for f in image_files],
@@ -309,8 +308,50 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
     assert all(exp.goniometer is not None for exp in imported_exp)
 
 
+def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)[
+        3:6
+    ]
+
+    out = "experiments_as_still.expt"
+
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    image_files = image_files[:3] + image_files[6:]
+
+    out = "experiments_as_still.expt"
+
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 2
+
+
 def test_with_convert_sequences_to_stills(dials_data, tmpdir):
-    # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
     result = procrunner.run(
         [
