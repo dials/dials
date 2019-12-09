@@ -193,7 +193,6 @@ def test_compute_delta_cchalf_returned_results():
     assert "image_ranges_removed" in results_summary["dataset_removal"]
     assert results_summary["dataset_removal"]["experiments_fully_removed"] == ["0"]
     assert results_summary["dataset_removal"]["n_reflections_removed"] == 10
-    assert results_summary["dataset_removal"]["image_ranges_removed"] == [
-        [(6, 10), 0],
-        [(1, 5), 0],
-    ]
+    assert [(6, 10), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
+    assert [(1, 5), 0] in results_summary["dataset_removal"]["image_ranges_removed"]
+    assert len(results_summary["dataset_removal"]["image_ranges_removed"]) == 2
