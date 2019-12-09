@@ -285,3 +285,23 @@ def test_extrapolate_scan(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)
+
+
+def test_import_still_sequence_as_experiments(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
+    out = "experiments_as_still.expt"
+
+    # run without allowing multiple sequences
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=0,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 1
