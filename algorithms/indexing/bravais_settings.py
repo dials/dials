@@ -150,7 +150,9 @@ class RefinedSettingsList(list):
                 ]
             )
 
-        output = dials.util.tabulate(table_data, headers="firstrow")
+        output = dials.util.tabulate(
+            table_data, headers="firstrow", colalign=("right",)
+        )
         output = output + "\n* = recommended solution\n"
         return output
 
