@@ -138,13 +138,9 @@ class Script(object):
         # ascii spot count per image plot - per imageset
 
         imagesets = []
-        imageset_experiment = {}
         for i, experiment in enumerate(experiments):
             if experiment.imageset not in imagesets:
                 imagesets.append(experiment.imageset)
-                imageset_experiment[experiment.imageset] = [i]
-            else:
-                imageset_experiment[experiment.imageset].append(i)
 
         for imageset in imagesets:
             selected = flex.bool(reflections.nrows(), False)
