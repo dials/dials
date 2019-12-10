@@ -12,7 +12,6 @@ from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
-from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
@@ -33,6 +32,7 @@ from dials.algorithms.symmetry.absences.run_absences_checks import (
 from dials.algorithms.symmetry.absences.laue_groups_info import (
     laue_groups as laue_groups_for_absence_analysis,
 )
+from dials.command_line.reindex import reindex_experiments
 from dials.util.exclude_images import (
     exclude_image_ranges_from_scans,
     get_selection_for_valid_image_ranges,
@@ -410,26 +410,14 @@ def symmetry(experiments, reflection_tables, params=None):
 
 def _reindex_experiments_reflections(experiments, reflections, space_group, cb_op):
     """Reindex the input data."""
-    reindexed_experiments = copy.deepcopy(experiments)
+    reindexed_experiments = reindex_experiments(
+        experiments, cb_op, space_group=space_group
+    )
     reindexed_reflections = flex.reflection_table()
-    for i, expt in enumerate(reindexed_experiments):
-        # Set the space group to the best symmetry and change basis accordingly.
-        # Setting the basis to one incompatible with the initial space group is
-        # forbidden, so we must first change the space group to P1 to be safe`.
-        expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-        expt.crystal = expt.crystal.change_basis(cb_op)
-        expt.crystal.set_space_group(space_group)
-
-        S = parameter_reduction.symmetrize_reduce_enlarge(
-            expt.crystal.get_space_group()
-        )
-        S.set_orientation(expt.crystal.get_B())
-        S.symmetrize()
-        expt.crystal.set_B(S.orientation.reciprocal_matrix())
+    for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])
         reindexed_reflections.extend(reindexed_refl)
-
     return reindexed_experiments, [reindexed_reflections]
 
 
