@@ -112,8 +112,8 @@ The first step is Laue/Patterson group analysis using :samp:`dials.cosym`:
     .. dials_tutorial_include:: multi_crystal/dials.cosym.log
 
 
-As you can see, the P 4/m m m patterson group is found with the highest confidence.
-For the corresponding space group, the mirror symmetries are removed to give P 4 2 2,
+As you can see, the :math:`P\,4/m\,m\,m` Patterson group is found with the highest confidence.
+For the corresponding space group, the mirror symmetries are removed to give :math:`P\,4\,2\,2`,
 as the chiral nature of macromolecules means we have a resctricted choice of space
 groups. In this example, all datasets were indexed consistently, but this is not
 the case in general.
@@ -123,7 +123,7 @@ Next, the data can be scaled:
 .. dials_tutorial_include:: multi_crystal/dials.scale.cmd
 
 From the merging statistics it is clear that the data quality is good out to the
-furthest resolution (CC1/2 > 0.3), which can be confirmed by a resolution analysis:
+furthest resolution (:math:`CC_{1/2} > 0.3`), which can be confirmed by a resolution analysis:
 
 .. dials_tutorial_include:: multi_crystal/dials.resolutionizer.cmd
 
@@ -179,12 +179,12 @@ a version of the algorithms described in Assmann_ *et al.* :
 
     .. dials_tutorial_include:: multi_crystal/dials.compute_delta_cchalf.log
 
-It looks like we could get a significantly better CC 1/2 by excluding the final
-dataset - it has a negative Delta CC 1/2. But how bad is too bad that it warrants
+It looks like we could get a significantly better :math:`CC_{1/2}` by excluding the final
+dataset - it has a negative :math:`\Delta CC_{1/2}`. But how bad is too bad that it warrants
 exclusion? Unfortunately this is a difficult question to answer and it may be the
 case that one would need to refine several structures with different data excluded
 to properly address this question.
-If we had many datasets and only a small fraction had a very large negative Delta CC 1/2
+If we had many datasets and only a small fraction had a very large negative :math:`\Delta CC_{1/2}`
 then one could argue that these measurements are not drawn from the same population
 as the rest of the data and should be excluded.
 
@@ -224,9 +224,9 @@ through the measurement.
 
 It is also worth checking the assigned space group using :samp:`dials.symmetry`.
 In ``dials.cosym``, only the Laue/Patterson group was tested to determine a space
-group of P 4 2 2. However, a number of other MX space groups are possible for the
-Laue group (due to the possibility of screw-axes), such as P42\ :sub:`1` 2,
-P4\ :sub:`1` 22 etc. The screw-axes tests are performed by :samp:`dials.symmetry`, and we can disable the
+group of :math:`P\,4\,2\,2`. However, a number of other MX space groups are possible for the
+Laue group (due to the possibility of screw-axes), such as :math:`P\,4\,2_1\,2`,
+:math:`P\,4_1\,2\,2` etc. The screw-axes tests are performed by :samp:`dials.symmetry`, and we can disable the
 Laue group testing as we are already confident about this:
 
 .. dials_tutorial_include:: multi_crystal/dials.symmetry.cmd
@@ -244,8 +244,8 @@ Laue group testing as we are already confident about this:
     .. dials_tutorial_include:: multi_crystal/dials.symmetry.log
 
 By analysing the sets of reflections we expect to be present and absent, the
-existing of the 4\ :sub:`1` and 2\ :sub:`1`  screw axes are confirmed, hence the space group is
-assigned as P 4\ :sub:`1` 2\ :sub:`1` 2.
+existence of the :math:`4_1` and :math:`2_1`  screw axes are confirmed, hence the space group is
+assigned as :math:`P\,4_1\,2_1\,2`.
 Note that we can do this analysis before or after scaling, as we only need to know
 the Laue group for scaling, however it is preferable to do this after scaling as
 outliers may have been removed by scaling.
