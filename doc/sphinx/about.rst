@@ -50,10 +50,12 @@ Development of DIALS in the UK is funded by the `Wellcome Trust`_,
 Developers include
 James Beilsten-Edmands,
 Nick Devenish,
+Noemi Frisina,
 Luis Fuentes-Montero,
 Markus Gerstel,
 Richard Gildea,
-James Parkhurst and Graeme Winter at `Diamond Light Source`_, and David Waterman
+James Parkhurst,
+Ben Williams and Graeme Winter at `Diamond Light Source`_, and David Waterman
 at `CCP4`_.
 
 DIALS West
@@ -64,7 +66,7 @@ Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA is led by
 `National Institute of General Medical Sciences`_ grant R01-GM117126: *DIALS:
 New Computational Methods to Enable Challenging Crystallographic Experiments*.
 Work at LBNL is performed under `Department of Energy`_ contract
-DE-AC02-05CH11231. Developers include Aaron Brewster and Iris Young.
+DE-AC02-05CH11231. Developers include Aaron Brewster.
 
 Acknowledgements
 ================
