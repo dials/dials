@@ -4,9 +4,9 @@
 # Running bootstrap requires a minimum Python version of 2.6.
 
 # To download this file:
-# wget https://raw.githubusercontent.com/cctbx/cctbx_project/master/libtbx/auto_build/bootstrap.py
+# wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
 # or
-# curl https://raw.githubusercontent.com/cctbx/cctbx_project/master/libtbx/auto_build/bootstrap.py > bootstrap.py
+# curl https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py > bootstrap.py
 
 from __future__ import absolute_import, division, print_function
 
@@ -148,7 +148,6 @@ class ShellCommand(object):
         return env
 
     def run(self):
-        t0 = time.time()
         command = self.get_command()
         description = self.get_description()
         workdir = self.get_workdir()
@@ -179,11 +178,6 @@ class ShellCommand(object):
                     except OSError:
                         print("Strangely couldn't delete %s" % directory)
             return 0
-        if 0:
-            print("command", command)
-            print("workdir", workdir)
-            print("env", env)
-            print(os.environ.get("PATH", None))
         try:
             # if not os.path.isabs(command[0]):
             # executable path isn't located relative to workdir
@@ -209,12 +203,6 @@ class ShellCommand(object):
         if p.returncode != 0 and self.kwargs.get("haltOnFailure"):
             print("Process failed with return code %s" % (p.returncode))
             sys.exit(1)
-        if 0:
-            if description:
-                outl = "%s - %s" % (workdir, description)
-            else:
-                outl = "%s - %s" % (workdir, " ".join(command))
-            print("===== Time to %s : %0.1f" % (outl, time.time() - t0))
         return p.returncode
 
 
@@ -1546,13 +1534,6 @@ class Builder(object):
     def add_step(self, step):
         """Add a step."""
         self.steps.append(step)
-        if 0:
-            print("commands " * 8)
-            for step in self.steps:
-                print(step)
-                # try:    print " ".join(step.get_command())
-                # except: print '????'
-            print("commands " * 8)
 
     def add_module(self, module, workdir=None, module_directory=None):
         action = MODULES.get_module(module)().get_url(auth=self.get_auth())
