@@ -13,7 +13,7 @@ Introduction
 
 Recent additions to DIALS and xia2 have enabled multi-crystal analysis to be
 performed following integration. These tools are particularly relevant
-for analysis of many partial-datasets, which may be the only pracitical way of
+for analysis of many partial-datasets, which may be the only practical way of
 performing data collections for certain crystals. After integration, the
 space group symmetry can be investigated by testing for the presence of symmetry
 operations relating the integrated intensities of groups of reflections - the
