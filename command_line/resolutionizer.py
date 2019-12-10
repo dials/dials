@@ -33,7 +33,7 @@ output {
 
 def run(args):
     usage = (
-        "dials.resolutionizer [options] scaled.expt scaled.refl | scaled_unmerged.mtz"
+        "dials.resolutionizer [options] (scaled.expt scaled.refl | scaled_unmerged.mtz)"
     )
 
     parser = OptionParser(
