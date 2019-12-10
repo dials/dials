@@ -42,8 +42,9 @@ Have a look at the :doc:`processing_in_detail_betalactamase` tutorial if you
 want to know more about the different processing steps up to this point.
 
 ..  Note::
-    The data for this tutorial are currently only available for users at diamond
-    on BAG training.
+    To obtain the data for this tutorial you can run
+    :samp:`dials.data get vmxi_proteinase_k_sweeps`. If you are at Diamond
+    Light Source on BAG training then the data are already available.
     After typing :samp:`module load bagtraining` you'll be moved to a working
     folder, with the data already located in the :samp:`tutorial-data/ccp4/integrated_files`
     subdirectory. The processing in this tutorial will produce quite a few files,
