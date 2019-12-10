@@ -2,32 +2,25 @@
 About
 +++++
 
-The DIALS framework is being developed in a fully open-source, collaborative
-environment. In the spirit of the open source movement, we welcome
-collaboration from anyone who wishes to contribute to the project. The
-framework development is currently a joint effort between developers from
-`Diamond Light Source`_ and `CCP4`_, based in the UK, and developers at
-`Lawrence Berkeley National Laboratory`_, USA. Our common interests
-allow us to distribute effort and combine expertise effectively, greatly
-enhancing our joint productivity and allowing us to tackle the sizeable task of
-writing a new data processing package within a reasonable time frame.
+The DIALS software is developed in a fully open-source, collaborative
+environment. The main development teams are based at `Diamond Light Source`_
+and `CCP4`_, in the UK, and at `Lawrence Berkeley National Laboratory`_, USA.
+However, in the spirit of the open source movement, we welcome
+collaboration from anyone who wishes to contribute to the project.
 
 To avoid "reinventing the wheel" as much as possible, the DIALS project builds
-on knowledge accumulated over many decades in the field of data processing for
-MX. We benefit greatly from the altruism of experts who contribute their ideas
-and advice either directly or via their detailed publications on existing
-algorithms and packages. At the heart of the DIALS framework lies a design
-philosophy of hardware abstraction and a generalised model of the experiment
+on knowledge accumulated over many decades in the field of crystallographic
+data processing. We benefit greatly from the altruism of experts who contribute their ideas
+and advice, either directly or via their detailed publications on existing
+algorithms and packages such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. At the heart
+of the DIALS framework lies a design philosophy of hardware abstraction and a
+generalised model of the experiment
 that is inspired directly by material published on the seminal workshops on
 position sensitive detector software [#Lure]_. Continuing in the spirit of these
-workshops we hold regular meetings, with talks from invited speakers, and code
+workshops we held our own series of meetings, with talks from invited speakers, and code
 camps in which specific problems are addressed by intensive effort across the
 collaboration. Summaries of these meetings and copies of slides given as
-presentations are available :doc:`here </workshops/index>`. We have begun by reproducing
-published spot finding and integration algorithms used by integration packages
-such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. We expect new research to lead to more
-advanced or case-specific algorithms in future, which may either be implemented
-by us or by other groups who choose to work with the toolkit.
+presentations are available :doc:`here </workshops/index>`.
 
 DIALS is written using Python and C++, making heavy use of the `cctbx`_ [#RWGK]_
 for core crystallographic calculations and much infrastructure including a
