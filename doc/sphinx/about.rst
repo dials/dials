@@ -102,7 +102,7 @@ Matthew Webber.
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/Home.html
 .. _`Dr Gwyndaf Evans`: http://www.diamond.ac.uk/Beamlines/Mx/VMXm/Staff/Evans.html
-.. _`Dr Nicholas Sauter`: http://pbd.lbl.gov/scientists/nicholas-sauter/
+.. _`Dr Nicholas Sauter`: https://biosciences.lbl.gov/profiles/nicholas-sauter/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
 .. _`National Institutes of Health`: http://www.nih.gov/
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/
