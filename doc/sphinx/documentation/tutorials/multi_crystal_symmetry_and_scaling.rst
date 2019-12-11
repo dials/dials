@@ -114,7 +114,7 @@ The first step is Laue/Patterson group analysis using :samp:`dials.cosym`:
 
 As you can see, the :math:`P\,4/m\,m\,m` Patterson group is found with the highest confidence.
 For the corresponding space group, the mirror symmetries are removed to give :math:`P\,4\,2\,2`,
-as the chiral nature of macromolecules means we have a resctricted choice of space
+as the chiral nature of macromolecules means we have a restricted choice of space
 groups. In this example, all datasets were indexed consistently, but this is not
 the case in general.
 
