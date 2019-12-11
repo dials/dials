@@ -220,19 +220,17 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.dimensions is Auto and self.target.dim == 2:
             self.params.dimensions = 2
         elif self.params.dimensions is Auto:
+            logger.info("=" * 80)
+            logger.info(
+                "\nAutomatic determination of number of dimensions for analysis"
+            )
             dimensions = []
             functional = []
-            explained_variance = []
-            explained_variance_ratio = []
             for dim in range(1, self.target.dim + 1):
                 self.target.set_dimensions(dim)
                 self._optimise()
-                logger.info("Functional: %g" % self.minimizer.f)
-                self._principal_component_analysis()
                 dimensions.append(dim)
                 functional.append(self.minimizer.f)
-                explained_variance.append(self.explained_variance)
-                explained_variance_ratio.append(self.explained_variance_ratio)
 
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
@@ -259,8 +257,14 @@ class CosymAnalysis(symmetry_base, Subject):
 
             x_g = x[p_g + p_m]
 
+            logger.info(
+                dials.util.tabulate(
+                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+                )
+            )
             logger.info("Best number of dimensions: %i" % x_g)
             self.target.set_dimensions(int(x_g))
+            logger.info("Using %i dimensions for analysis" % self.target.dim)
 
     def run(self):
         self._intialise_target()
