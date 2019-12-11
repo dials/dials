@@ -6,11 +6,11 @@ import logging
 import random
 import sys
 
-from cctbx import sgtbx
+from cctbx import sgtbx, uctbx
+from cctbx.sgtbx.bravais_types import bravais_lattice
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from libtbx import Auto
 import iotbx.phil
-from rstbx.symmetry.constraints import parameter_reduction
 
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
@@ -28,6 +28,7 @@ from dials.algorithms.symmetry.absences.screw_axes import ScrewAxisObserver
 from dials.algorithms.symmetry.absences.run_absences_checks import (
     run_systematic_absences_checks,
 )
+from dials.command_line.reindex import reindex_experiments
 
 logger = logging.getLogger("dials.command_line.symmetry")
 
@@ -107,9 +108,32 @@ output {
 )
 
 
-def map_to_minimum_cell(experiments, reflections, max_delta):
+def median_unit_cell(experiments):
+    uc_params = [flex.double() for i in range(6)]
+    for c in experiments.crystals():
+        for i, p in enumerate(c.get_unit_cell().parameters()):
+            uc_params[i].append(p)
+    return uctbx.unit_cell(parameters=[flex.median(p) for p in uc_params])
+
+
+def unit_cells_are_similar_to(
+    experiments, unit_cell, relative_length_tolerance, absolute_angle_tolerance
+):
+    return all(
+        expt.crystal.get_unit_cell().is_similar_to(
+            unit_cell,
+            relative_length_tolerance=relative_length_tolerance,
+            absolute_angle_tolerance=absolute_angle_tolerance,
+        )
+        for expt in experiments
+    )
+
+
+def change_of_basis_ops_to_minimum_cell(
+    experiments, max_delta, relative_length_tolerance, absolute_angle_tolerance
+):
     """
-    Map experiments and reflections to the minimum cell
+    Compute change of basis ops to map experiments to the minimum cell
 
     Map to the minimum cell via the best cell, which appears to guarantee that the
     resulting minimum cells are consistent.
@@ -120,21 +144,79 @@ def map_to_minimum_cell(experiments, reflections, max_delta):
 
     Returns: The experiments and reflections mapped to the minimum cell
     """
-    cb_ops = []
-    for expt, refl in zip(experiments, reflections):
+
+    median_cell = median_unit_cell(experiments)
+    unit_cells_are_similar = unit_cells_are_similar_to(
+        experiments, median_cell, relative_length_tolerance, absolute_angle_tolerance
+    )
+    centring_symbols = [
+        bravais_lattice(group=expt.crystal.get_space_group()).centring_symbol
+        for expt in experiments
+    ]
+    if unit_cells_are_similar and len(set(centring_symbols)) == 1:
         groups = metric_subgroups(
-            expt.crystal.get_crystal_symmetry(),
+            experiments[0]
+            .crystal.get_crystal_symmetry()
+            .customized_copy(unit_cell=median_cell),
             max_delta,
             enforce_max_delta_for_generated_two_folds=True,
         )
         group = groups.result_groups[0]
         cb_op_best_to_min = group["best_subsym"].change_of_basis_op_to_minimum_cell()
-        cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+        cb_ops = [cb_op_best_to_min * group["cb_op_inp_best"]] * len(experiments)
+    else:
+        cb_ops = []
+        for expt in experiments:
+            groups = metric_subgroups(
+                expt.crystal.get_crystal_symmetry(),
+                max_delta,
+                enforce_max_delta_for_generated_two_folds=True,
+            )
+            group = groups.result_groups[0]
+            cb_op_best_to_min = group[
+                "best_subsym"
+            ].change_of_basis_op_to_minimum_cell()
+            cb_op_inp_min = cb_op_best_to_min * group["cb_op_inp_best"]
+            cb_ops.append(cb_op_inp_min)
+    return cb_ops
+
+
+def apply_change_of_basis_ops(experiments, reflections, change_of_basis_ops):
+    """
+    Apply the given change of basis ops to the input experiments and reflections
+
+    Args:
+        experiments (ExperimentList): a list of experiments.
+        reflections (list): a list of reflection tables
+        change_of_basis_ops (list): a list of cctbx.sgtbx.change_of_basis_op
+
+    Returns: The experiments and reflections after application of the change of basis ops
+    """
+
+    for expt, refl, cb_op_inp_min in zip(experiments, reflections, change_of_basis_ops):
         refl["miller_index"] = cb_op_inp_min.apply(refl["miller_index"])
         expt.crystal = expt.crystal.change_basis(cb_op_inp_min)
         expt.crystal.set_space_group(sgtbx.space_group())
-        cb_ops.append(cb_op_inp_min)
-    return experiments, reflections, cb_ops
+    return experiments, reflections
+
+
+def eliminate_sys_absent(experiments, reflections):
+    for i, expt in enumerate(experiments):
+        if expt.crystal.get_space_group().n_ltr() > 1:
+            effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
+                anomalous_flag=True
+            )
+            sys_absent_flags = effective_group.is_sys_absent(
+                reflections[i]["miller_index"]
+            )
+            if sys_absent_flags.count(True):
+                reflections[i] = reflections[i].select(~sys_absent_flags)
+                logger.info(
+                    "Eliminating %i systematic absences for experiment %s",
+                    sys_absent_flags.count(True),
+                    expt.identifier,
+                )
+    return reflections
 
 
 def symmetry(experiments, reflection_tables, params=None):
@@ -156,11 +238,22 @@ def symmetry(experiments, reflection_tables, params=None):
         logger.info("Performing Laue group analysis")
         logger.info("")
 
-        # transform models into miller arrays
+        # Transform models into miller arrays
         n_datasets = len(experiments)
 
-        experiments, reflection_tables, cb_ops = map_to_minimum_cell(
-            experiments, reflection_tables, params.lattice_symmetry_max_delta
+        # Map experiments and reflections to minimum cell
+        # Eliminate reflections that are systematically absent due to centring
+        # of the lattice, otherwise they would lead to non-integer miller indices
+        # when reindexing to a primitive setting
+        cb_ops = change_of_basis_ops_to_minimum_cell(
+            experiments,
+            params.lattice_symmetry_max_delta,
+            params.relative_length_tolerance,
+            params.absolute_angle_tolerance,
+        )
+        reflection_tables = eliminate_sys_absent(experiments, reflection_tables)
+        experiments, reflection_tables = apply_change_of_basis_ops(
+            experiments, reflection_tables, cb_ops
         )
 
         datasets = filtered_arrays_from_experiments_reflections(
@@ -275,26 +368,14 @@ def symmetry(experiments, reflection_tables, params=None):
 
 def _reindex_experiments_reflections(experiments, reflections, space_group, cb_op):
     """Reindex the input data."""
-    reindexed_experiments = copy.deepcopy(experiments)
+    reindexed_experiments = reindex_experiments(
+        experiments, cb_op, space_group=space_group
+    )
     reindexed_reflections = flex.reflection_table()
-    for i, expt in enumerate(reindexed_experiments):
-        # Set the space group to the best symmetry and change basis accordingly.
-        # Setting the basis to one incompatible with the initial space group is
-        # forbidden, so we must first change the space group to P1 to be safe`.
-        expt.crystal.set_space_group(sgtbx.space_group("P 1"))
-        expt.crystal = expt.crystal.change_basis(cb_op)
-        expt.crystal.set_space_group(space_group)
-
-        S = parameter_reduction.symmetrize_reduce_enlarge(
-            expt.crystal.get_space_group()
-        )
-        S.set_orientation(expt.crystal.get_B())
-        S.symmetrize()
-        expt.crystal.set_B(S.orientation.reciprocal_matrix())
+    for i in range(len(reindexed_experiments)):
         reindexed_refl = copy.deepcopy(reflections[i])
         reindexed_refl["miller_index"] = cb_op.apply(reindexed_refl["miller_index"])
         reindexed_reflections.extend(reindexed_refl)
-
     return reindexed_experiments, [reindexed_reflections]
 
 
