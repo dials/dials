@@ -12,6 +12,7 @@ from libtbx.utils import Sorry
 
 # Define the default tablefmt in dials
 tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
+functools.update_wrapper(tabulate, _tabulate.tabulate)
 
 
 def debug_console():
