@@ -1117,8 +1117,8 @@ class MultiScalerBase(ScalerBase):
 
             min_cross_dataset = (total_target - total_qr_sel) / (2.0 * n_datasets)
 
-            # first select individual dataset reflections, so that we an know
-            # how many this procedure selects.
+            # first select individual dataset reflections, as we can then
+            # calculate how many this procedure selects.
             total_individual_selection = 0
             total_indiv_dataset = flex.double()
             total_used_so_far = 0
@@ -1283,7 +1283,7 @@ class MultiScalerBase(ScalerBase):
             avg_multi = flex.mean(block.group_multiplicities())
             n_groups_to_sel = max(
                 random_phil.min_groups,
-                int(ceil(random_phil.min_reflections * avg_multi)),
+                int(ceil(random_phil.min_reflections / avg_multi)),
             )
 
             n_groups_in_table = block.n_groups
