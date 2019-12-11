@@ -45,14 +45,25 @@ Funding
 =======
 
 DIALS development at `Diamond Light Source`_ is performed by employees of
-`Diamond Light Source`_, and `STFC`_ via `CCP4`_. We are supported by funding
-from `Wellcome`_ for grant 218270/Z/19/Z: *DIALS: making serial crystallography
-data analysis accessible for biomedical researchers.*
+`Diamond Light Source`_, and `STFC`_ via `CCP4`_.
 
-.. image:: https://dials.github.io/images/logos/wellcome.png
-    :height: 50px
-    :alt: Wellcome
-    :target: `Wellcome`_
+.. container:: twocol
+
+   .. container:: leftside
+
+        .. image:: https://dials.github.io/images/logos/wellcome.png
+           :alt: Wellcome
+           :target: `Wellcome`_
+           :height: 70px
+
+   .. container:: rightside
+
+        We are supported by funding
+        from `Wellcome`_ for grant 218270/Z/19/Z: *DIALS: making serial crystallography
+        data analysis accessible for biomedical researchers.*
+
+.. rst-class:: clear-both
+
 
 DIALS development at `Lawrence Berkeley National Laboratory`_ is
 supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_

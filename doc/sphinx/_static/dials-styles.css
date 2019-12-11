@@ -145,3 +145,17 @@ a.button {
 a.button:hover {
   text-decoration:none;
 }
+
+div.twocol {
+  overflow: auto;
+}
+
+div.leftside {
+  height: 80px;
+  padding: 0px 10px 0px 0px;
+  float: left;
+}
+
+div.rightside {
+  margin-left: 10px;
+}
