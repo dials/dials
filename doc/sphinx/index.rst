@@ -39,21 +39,22 @@ For feature requests, bug reports or any other information, please contact
 the DIALS developers at dials-support@lists.sourceforge.net, or post an
 `issue`_.
 
+Mirror sites: `DIALS-East`_, `DIALS-West`_, `dials.github.io`_.
+
 Funding
 =======
 
 DIALS development at `Diamond Light Source`_ is supported by the `Wellcome Trust`_,
-`Diamond Light Source`_, and `CCP4`_.
+`Diamond Light Source`_, and `STFC`_ via `CCP4`_.
 
 DIALS development at `Lawrence Berkeley National Laboratory`_ is
 supported by `National Institutes of Health`_ / `National Institute of General Medical Sciences`_
 grant R01-GM117126.  Work at LBNL is performed under
 `Department of Energy`_ contract DE-AC02-05CH11231.
 
-Mirror sites: `DIALS-East`_, `DIALS-West`_, `dials.github.io`_.
-
 .. _`issue`: https://github.com/dials/dials/issues
 .. _`Wellcome Trust`: https://wellcome.ac.uk/
+.. _`STFC`: https://stfc.ukri.org/
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
