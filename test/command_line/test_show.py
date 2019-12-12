@@ -404,11 +404,11 @@ Experiment 3  x"""
     )
 
 
-def test_dials_show_model_connectivity(dials_data, capsys):
+def test_dials_show_shared_models(dials_data, capsys):
     """Test that dials.show experiments_has_model option."""
     location = dials_data("l_cysteine_dials_output")
     expt = location.join("indexed.expt")
-    run([expt.strpath, "show_model_connectivity=True"])
+    run([expt.strpath, "show_shared_models=True"])
     stdout, stderr = capsys.readouterr()
     assert not stderr
     assert b"Experiment / Models" in stdout

@@ -26,7 +26,7 @@ phil_scope = iotbx.phil.parse(
 show_scan_varying = False
   .type = bool
   .help = "Whether or not to show the crystal at each scan point."
-show_model_connectivity = False
+show_shared_models = False
   .type = bool
   .help = "Show which models are linked to which experiments"
 show_all_reflection_data = False
@@ -215,7 +215,7 @@ def run(args):
             )
         )
 
-        if params.show_model_connectivity:
+        if params.show_shared_models:
             print()
             print(model_connectivity(experiments))
 
