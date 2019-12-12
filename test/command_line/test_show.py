@@ -411,4 +411,4 @@ def test_dials_show_shared_models(dials_data, capsys):
     run([expt.strpath, "show_shared_models=True"])
     stdout, stderr = capsys.readouterr()
     assert not stderr
-    assert b"Experiment / Models" in stdout
+    assert "Experiment / Models" in stdout
