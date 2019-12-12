@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import json
 import logging
 from collections import OrderedDict
+from dials.util import tabulate
 
 import six
 from cctbx import uctbx
@@ -20,6 +21,10 @@ from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
 )
+from dials.algorithms.scaling.error_model.error_model import (
+    calc_sigmaprime,
+    calc_deltahl,
+)
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
     i_over_sig_i_vs_batch_plot,
@@ -32,7 +37,6 @@ from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plo
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
@@ -139,8 +143,7 @@ class ScalingSummaryGenerator(Observer):
             ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
             ["p < 0.01", str(not_zero_sel.count(False))],
         ]
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
         logger.info(
             """
 Reflections below a partiality_cutoff of %s are not considered for any
@@ -199,7 +202,7 @@ class ScalingHTMLGenerator(Observer):
                 filter_plots=self.data["filter_plots"],
             )
             with open(html_file, "wb") as f:
-                f.write(html.encode("ascii", "xmlcharrefreplace"))
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
         if json_file:
             logger.info("Writing html report data to: %s", json_file)
             with open(json_file, "w") as outfile:
@@ -317,12 +320,15 @@ class ErrorModelObserver(Observer):
     """
 
     def update(self, scaler):
-        if scaler.error_model:
-            self.data["delta_hl"] = list(scaler.error_model.delta_hl)
-            self.data["intensity"] = scaler.error_model.intensities
-            self.data["inv_scale"] = scaler.error_model.inverse_scale_factors
-            self.data["sigma"] = scaler.error_model.sigmaprime * self.data["inv_scale"]
-            self.data["binning_info"] = scaler.error_model.binning_info
+        if scaler.error_model.filtered_Ih_table:
+            table = scaler.error_model.filtered_Ih_table
+            self.data["intensity"] = table.intensities
+            sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
+            self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+            self.data["inv_scale"] = table.inverse_scale_factors
+            self.data["sigma"] = sigmaprime * self.data["inv_scale"]
+            self.data["binning_info"] = scaler.error_model.components["b"].binning_info
+            scaler.error_model.clear_Ih_table()
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -375,7 +381,13 @@ class MergingStatisticsObserver(Observer):
                 "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
             # Now calculate batch data
-            batches, rvb, isigivb, svb, batch_data = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            (
+                batches,
+                rvb,
+                isigivb,
+                svb,
+                batch_data,
+            ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
                 scaling_script.reflections,
                 scaling_script.experiments,
                 scaling_script.scaled_miller_array,

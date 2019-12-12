@@ -3,8 +3,20 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+from time import time
+from six.moves import cStringIO as StringIO
 
+from libtbx.phil import parse
+
+from dials.array_family import flex
+from dials.algorithms.shoebox import MaskCode
+from dials.algorithms.spot_finding import per_image_analysis
+from dials.util import log
 from dials.util import show_mail_on_error
+from dials.util.ascii_art import spot_counts_per_image_plot
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_spots")
 
@@ -36,8 +48,6 @@ Examples::
 """
 
 # Set the phil scope
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
 
@@ -75,13 +85,10 @@ class Script(object):
 
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "{models.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "usage: dials.find_spots [options] [param.phil] "
+            "{models.expt | image1.file [image2.file ...]}"
         )
 
         # Initialise the base class
@@ -95,11 +102,6 @@ class Script(object):
 
     def run(self, args=None):
         """Execute the script."""
-        from dials.array_family import flex
-        from dials.util.options import flatten_experiments
-        from time import time
-        from dials.util import log
-
         start_time = time()
 
         # Parse the command line
@@ -108,9 +110,6 @@ class Script(object):
         if __name__ == "__main__":
             # Configure the logging
             log.config(verbosity=options.verbose, logfile=params.output.log)
-
-        from dials.util.version import dials_version
-
         logger.info(dials_version())
 
         # Log the diff phil
@@ -129,8 +128,6 @@ class Script(object):
         reflections = flex.reflection_table.from_observations(experiments, params)
 
         # Add n_signal column - before deleting shoeboxes
-        from dials.algorithms.shoebox import MaskCode
-
         good = MaskCode.Foreground | MaskCode.Valid
         reflections["n_signal"] = reflections["shoebox"].count_mask_values(good)
 
@@ -138,13 +135,20 @@ class Script(object):
         if not params.output.shoeboxes:
             del reflections["shoebox"]
 
-        # ascii spot count per image plot
-        from dials.util.ascii_art import spot_counts_per_image_plot
+        # ascii spot count per image plot - per imageset
 
+        imagesets = []
         for i, experiment in enumerate(experiments):
-            ascii_plot = spot_counts_per_image_plot(
-                reflections.select(reflections["id"] == i)
-            )
+            if experiment.imageset not in imagesets:
+                imagesets.append(experiment.imageset)
+
+        for imageset in imagesets:
+            selected = flex.bool(reflections.nrows(), False)
+            for i, experiment in enumerate(experiments):
+                if experiment.imageset is not imageset:
+                    continue
+                selected.set_selected(reflections["id"] == i, True)
+            ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
                 logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
                 logger.info(ascii_plot)
@@ -165,9 +169,6 @@ class Script(object):
 
         # Print some per image statistics
         if params.per_image_statistics:
-            from dials.algorithms.spot_finding import per_image_analysis
-            from six.moves import cStringIO as StringIO
-
             s = StringIO()
             for i, experiment in enumerate(experiments):
                 print("Number of centroids per image for imageset %i:" % i, file=s)

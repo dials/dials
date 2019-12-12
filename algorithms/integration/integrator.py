@@ -4,6 +4,7 @@ import collections
 import logging
 import math
 import random
+from dials.util import tabulate
 
 import six
 import six.moves.cPickle as pickle
@@ -301,7 +302,7 @@ def frame_hist(bbox, width=80, symbol="#", prefix=""):
     :return: The histogram string
     """
     return hist(
-        [z for b in bbox for z in range(b[4], b[5])],
+        [(z + 1) for b in bbox for z in range(b[4], b[5])],
         width=width,
         symbol=symbol,
         prefix=prefix,
@@ -1269,9 +1270,7 @@ class Integrator(object):
         return result
 
     def summary(self, block_size, block_size_units):
-        """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
+        """Print a summary of the integration stuff."""
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1293,7 +1292,7 @@ class Integrator(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+        return tabulate(rows, headers="firstrow")
 
 
 class Integrator3D(Integrator):
@@ -1510,9 +1509,7 @@ class Integrator3DThreaded(object):
         return result
 
     def summary(self, block_size, block_size_units):
-        """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
+        """Print a summary of the integration stuff."""
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1534,7 +1531,7 @@ class Integrator3DThreaded(object):
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
             raise RuntimeError("Experiments must be all sequences or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+        return tabulate(rows, headers="firstrow")
 
 
 class IntegratorFactory(object):

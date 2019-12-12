@@ -5,11 +5,11 @@ import json
 import logging
 import math
 
+import dials.util
 import libtbx
 import scipy.stats
 from cctbx import crystal, sgtbx
 from dials.algorithms.symmetry import symmetry_base
-from libtbx import table_utils
 from scitbx.array_family import flex
 from scitbx.math import five_number_summary
 
@@ -291,7 +291,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring individual symmetry elements\n")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        output.append(dials.util.tabulate(rows, headers="firstrow"))
 
         header = (
             "Patterson group",
@@ -331,7 +331,7 @@ class LaueGroupAnalysis(symmetry_base):
             )
         output.append("\n" + "-" * 80 + "\n")
         output.append("Scoring all possible sub-groups\n")
-        output.append(table_utils.format(rows, has_header=True, delim="  "))
+        output.append(dials.util.tabulate(rows, headers="firstrow"))
 
         output.append(
             "\nBest solution: %s"
@@ -689,12 +689,12 @@ class ScoreSubGroup(object):
             .hall_symbol(),
             "likelihood": self.likelihood,
             "confidence": self.confidence,
-            "z_cc_net": "% .2f" % self.z_cc_net,
-            "z_cc_for": "% .2f" % self.z_cc_for,
-            "z_cc_against": "% .2f" % self.z_cc_against,
-            "cc_for": "% .2f" % self.cc_for.coefficient(),
-            "cc_against": "% .2f" % self.cc_against.coefficient(),
-            "max_angular_difference": "%.1f" % self.subgroup["max_angular_difference"],
+            "z_cc_net": self.z_cc_net,
+            "z_cc_for": self.z_cc_for,
+            "z_cc_against": self.z_cc_against,
+            "cc_for": self.cc_for.coefficient(),
+            "cc_against": self.cc_against.coefficient(),
+            "max_angular_difference": self.subgroup["max_angular_difference"],
             "cb_op": "%s" % (self.subgroup["cb_op_inp_best"]),
         }
 

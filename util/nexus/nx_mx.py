@@ -121,13 +121,13 @@ def polarization_stokes_to_normal(S0, S1, S2, S3):
     return n, p
 
 
-def get_nx_class(handle, klass, path):
+def get_nx_class(handle, nx_class, path):
     if path in handle:
         group = handle[path]
-        assert group.attrs["NX_class"] == klass
+        assert group.attrs["NX_class"] == nx_class
     else:
         group = handle.create_group(path)
-        group.attrs["NX_class"] = klass
+        group.attrs["NX_class"] = nx_class
     return group
 
 
@@ -173,7 +173,7 @@ def get_nx_dials(handle, path):
 
 
 def dump_beam(entry, beam):
-    """ Export the beam model. """
+    """Export the beam model."""
     EPS = 1e-7
 
     # Get the nx_beam
@@ -298,7 +298,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
 
 def dump_goniometer(entry, goniometer, scan):
-    """ Export the goniometer model. """
+    """Export the goniometer model."""
     if scan is None or goniometer is None:
         return
 
@@ -343,7 +343,7 @@ def dump_goniometer(entry, goniometer, scan):
 
 
 def dump_crystal(entry, crystal, scan):
-    """ Export the crystal model. """
+    """Export the crystal model."""
     from scitbx.array_family import flex
 
     # Get the sample

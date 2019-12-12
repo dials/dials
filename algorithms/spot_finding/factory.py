@@ -224,7 +224,7 @@ class PeakCentroidDistanceFilter(object):
         return flags.__and__((peak - cent).norms() <= self.maxd)
 
     def __call__(self, flags, **kwargs):
-        """ Call the filter and print information. """
+        """Call the filter and print information."""
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
@@ -318,7 +318,7 @@ class BackgroundGradientFilter(object):
         return flags
 
     def __call__(self, flags, **kwargs):
-        """ Call the filter and print information. """
+        """Call the filter and print information."""
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)
@@ -389,7 +389,7 @@ class SpotDensityFilter(object):
         return flags
 
     def __call__(self, flags, **kwargs):
-        """ Call the filter and print information. """
+        """Call the filter and print information."""
         num_before = flags.count(True)
         flags = self.run(flags, **kwargs)
         num_after = flags.count(True)

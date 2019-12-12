@@ -8,6 +8,7 @@ import logging
 import math
 import random
 
+import dials.util
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -21,7 +22,6 @@ from dials.algorithms.refinement.refinement_helpers import (
 from dials.array_family import flex
 import libtbx
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 from scitbx import matrix
 from scitbx.math import five_number_summary
 
@@ -134,19 +134,6 @@ class BlockCalculator(object):
         self._reflections["block"] = flex.size_t(len(self._reflections))
         self._reflections["block_centre"] = flex.double(len(self._reflections))
 
-    @staticmethod
-    def _check_scan_range(exp_phi, scan):
-        """Check that the observed reflections fill the scan-range"""
-
-        # Allow up to 5 degrees between the observed phi extrema and the
-        # scan edges
-        start, stop = scan.get_oscillation_range(deg=False)
-        if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise DialsRefineConfigError(
-                "The reflections do not fill the scan range. "
-                "A common reason for this is that the crystal has died at the end of the scan."
-            )
-
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
@@ -162,7 +149,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             start, stop = exp.scan.get_oscillation_range(deg=False)
             nblocks = int(abs(stop - start) / width) + 1
@@ -199,7 +185,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             # convert phi to integer frames
             frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
@@ -510,7 +495,9 @@ class ReflectionManager(object):
             self._reflections.flags.used_in_refinement,
         )
 
-        logger.debug("%d reflections remain in the manager", len(self._reflections))
+        logger.info("%d reflections remain in the manager", len(self._reflections))
+        if len(self._reflections) == 0:
+            raise DialsRefineConfigError("No reflections available for refinement")
 
         # print summary after outlier rejection
         if rejection_occurred:
@@ -731,11 +718,9 @@ class ReflectionManager(object):
         rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
         row_data = five_number_summary(w_phi)
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
-        st = simple_table(rows, header)
 
         logger.info(msg)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -798,7 +783,6 @@ class StillsReflectionManager(ReflectionManager):
             )
             return
 
-        from libtbx.table_utils import simple_table
         from scitbx.math import five_number_summary
 
         try:
@@ -832,6 +816,4 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        st = simple_table(rows, header)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(dials.util.tabulate(rows, header) + "\n")

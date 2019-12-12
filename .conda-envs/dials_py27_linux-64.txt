@@ -1,4 +1,4 @@
-cctbx::hdf5_plugins
+conda-forge::hdf5-external-filter-plugins
 cctbx::wxpython<4
 
 conda-forge::dials-data

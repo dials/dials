@@ -40,17 +40,17 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
                     "y": rmerge_vs_b,
                     "yaxis": "y2",
                     "type": "scatter",
-                    "name": "Rmerge",
+                    "name": "R<sub>merge</sub>",
                     "opacity": 0.75,
                     "text": text,
                 },
             ],
             "layout": {
-                "title": "Scale and Rmerge vs batch",
+                "title": "Scale and R<sub>merge</sub> vs batch",
                 "xaxis": {"title": "N"},
                 "yaxis": {"title": "Scale", "rangemode": "tozero"},
                 "yaxis2": {
-                    "title": "Rmerge",
+                    "title": "R<sub>merge</sub>",
                     "overlaying": "y",
                     "side": "right",
                     "rangemode": "tozero",
@@ -82,9 +82,9 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
                 }
             ],
             "layout": {
-                "title": "<I/sig(I)> vs batch",
+                "title": u"<I/σ(I)> vs batch",
                 "xaxis": {"title": "N"},
-                "yaxis": {"title": "<I/sig(I)>", "rangemode": "tozero"},
+                "yaxis": {"title": u"<I/σ(I)>", "rangemode": "tozero"},
                 "shapes": shapes,
                 "annotations": annotations,
             },
@@ -125,13 +125,13 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas):
                 }
             ],
             "layout": {
-                "title": "I/sig(I) vs I",
+                "title": u"I/σ(I) vs I",
                 "xaxis": {"title": "log I"},
-                "yaxis": {"title": "I/sig(I)"},
+                "yaxis": {"title": u"I/σ(I)"},
             },
-            "help": """\
-This plot shows the distribution of I/sigma as a function of I, which can
-give indication of the errors within the dataset. The I/sigma asymptotic
+            "help": u"""\
+This plot shows the distribution of I/σ(I) as a function of I, which can
+give indication of the errors within the dataset. The I/σ(I) asymptotic
 limit can be seen at the plateau in the top-right of the plot, if the measured
 data are strong enough.
 
@@ -421,7 +421,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
                             ),  # d_star_sq
                             "y": second_moments_acentric.data[1:-1],
                             "type": "scatter",
-                            "name": "<I^2> acentric",
+                            "name": "<I<sup>2</sub>> acentric",
                         }
                         if acentric.size()
                         else {}
@@ -433,7 +433,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
                             ),  # d_star_sq
                             "y": second_moments_centric.data[1:-1],
                             "type": "scatter",
-                            "name": "<I^2> centric",
+                            "name": "<I<sup>2</sub>> centric",
                         }
                         if centric.size()
                         else {}
@@ -446,7 +446,7 @@ class IntensityStatisticsPlots(ResolutionPlotterMixin):
                         "tickvals": tickvals_2nd_moment,
                         "ticktext": ticktext_2nd_moment,
                     },
-                    "yaxis": {"title": "<I^2>", "rangemode": "tozero"},
+                    "yaxis": {"title": "<I<sup>2</sub>>", "rangemode": "tozero"},
                 },
             }
         }
@@ -529,7 +529,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                         "x": self.d_star_sq_bins,  # d_star_sq
                         "y": cc_one_half_bins,
                         "type": "scatter",
-                        "name": "CC-half",
+                        "name": u"CC<sub>½</sub>",
                         "mode": "lines",
                         "line": {"color": "rgb(31, 119, 180)"},
                     },
@@ -537,7 +537,7 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                         "x": self.d_star_sq_bins,  # d_star_sq
                         "y": cc_one_half_critical_value_bins,
                         "type": "scatter",
-                        "name": "CC-half critical value (p=0.01)",
+                        "name": u"CC<sub>½</sub> critical value (p=0.01)",
                         "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
                     },
                     (
@@ -566,22 +566,22 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                     ),
                 ],
                 "layout": {
-                    "title": "CC-half vs resolution",
+                    "title": u"CC<sub>½</sub> vs resolution",
                     "xaxis": {
                         "title": u"Resolution (Å)",
                         "tickvals": self.d_star_sq_tickvals,
                         "ticktext": self.d_star_sq_ticktext,
                     },
                     "yaxis": {
-                        "title": "CC-half",
+                        "title": u"CC<sub>½</sub>",
                         "range": [min(cc_one_half_bins + cc_anom_bins + [0]), 1],
                     },
                 },
-                "help": """\
-    The correlation coefficients, CC1/2, between random half-datasets. A correlation
+                "help": u"""\
+    The correlation coefficients, CC<sub>½</sub>, between random half-datasets. A correlation
     coefficient of +1 indicates good correlation, and 0 indicates no correlation.
-    CC1/2 is typically close to 1 at low resolution, falling off to close to zero at
-    higher resolution. A typical resolution cutoff based on CC1/2 is around 0.3-0.5.
+    CC<sub>½</sub> is typically close to 1 at low resolution, falling off to close to zero at
+    higher resolution. A typical resolution cutoff based on CC<sub>½</sub> is around 0.3-0.5.
 
     [1] Karplus, P. A., & Diederichs, K. (2012). Science, 336(6084), 1030-1033.
         https://doi.org/10.1126/science.1218231
@@ -610,13 +610,13 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
                     }
                 ],
                 "layout": {
-                    "title": "<I/sig(I)> vs resolution",
+                    "title": u"<I/σ(I)> vs resolution",
                     "xaxis": {
                         "title": u"Resolution (Å)",
                         "tickvals": self.d_star_sq_tickvals,
                         "ticktext": self.d_star_sq_ticktext,
                     },
-                    "yaxis": {"title": "<I/sig(I)>", "rangemode": "tozero"},
+                    "yaxis": {"title": u"<I/σ(I)>", "rangemode": "tozero"},
                 },
             }
         }
@@ -713,15 +713,15 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
             "N(unique)",
             "Multiplicity",
             "Completeness",
-            "Mean(I)",
-            "Mean(I/sigma)",
-            "Rmerge",
-            "Rmeas",
-            "Rpim",
-            "CC1/2",
+            "Mean I",
+            u"Mean I/σ(I)",
+            "R<sub>merge</sub>",
+            "R<sub>meas</sub>",
+            "R<sub>pim</sub>",
+            u"CC<sub>½</sub>",
         ]
         if not self.is_centric:
-            headers.append("CCano")
+            headers.append("CC<sub>ano</sub>")
         rows = []
 
         def safe_format(format_str, item):
@@ -786,16 +786,18 @@ class ResolutionPlotsAndStats(ResolutionPlotterMixin):
             ["Multiplicity"] + ["%.1f" % s.mean_redundancy for s in stats],
             ["Completeness"] + ["%.2f%%" % (s.completeness * 100) for s in stats],
             # ['Mean intensity'] + ['%.1f' %s.i_mean for s in stats],
-            ["Mean I/sigma(I)"] + ["%.1f" % s.i_over_sigma_mean for s in stats],
-            ["Rmerge"] + ["%.3f" % s.r_merge for s in stats],
-            ["Rmeas"] + ["%.3f" % s.r_meas for s in stats],
-            ["Rpim"] + ["%.3f" % s.r_pim for s in stats],
+            [u"Mean I/σ(I)"] + ["%.1f" % s.i_over_sigma_mean for s in stats],
+            ["R<sub>merge</sub>"] + ["%.3f" % s.r_merge for s in stats],
+            ["R<sub>meas</sub>"] + ["%.3f" % s.r_meas for s in stats],
+            ["R<sub>pim</sub>"] + ["%.3f" % s.r_pim for s in stats],
         ]
 
         if cc_half_method == "sigma_tau":
-            rows.append(["CC1/2"] + ["%.3f" % s.cc_one_half_sigma_tau for s in stats])
+            rows.append(
+                [u"CC<sub>½</sub>"] + ["%.3f" % s.cc_one_half_sigma_tau for s in stats]
+            )
         else:
-            rows.append(["CC1/2"] + ["%.3f" % s.cc_one_half for s in stats])
+            rows.append([u"CC<sub>½</sub>"] + ["%.3f" % s.cc_one_half for s in stats])
         rows = [[u"<strong>%s</strong>" % r[0]] + r[1:] for r in rows]
 
         overall_stats_table = [headers]

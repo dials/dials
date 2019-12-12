@@ -13,6 +13,7 @@ import logging
 import math
 from collections import OrderedDict
 
+import dials.util
 import iotbx.phil
 from cctbx import sgtbx
 from dials.algorithms.indexing.symmetry import find_matching_symmetry
@@ -22,7 +23,6 @@ from dials.algorithms.symmetry import symmetry_base
 from dials.algorithms.symmetry.laue_group import ScoreCorrelationCoefficient
 from dials.util.observer import Subject
 from libtbx import Auto
-from libtbx import table_utils
 from scitbx import matrix
 from scitbx.array_family import flex
 
@@ -220,19 +220,17 @@ class CosymAnalysis(symmetry_base, Subject):
         if self.params.dimensions is Auto and self.target.dim == 2:
             self.params.dimensions = 2
         elif self.params.dimensions is Auto:
+            logger.info("=" * 80)
+            logger.info(
+                "\nAutomatic determination of number of dimensions for analysis"
+            )
             dimensions = []
             functional = []
-            explained_variance = []
-            explained_variance_ratio = []
             for dim in range(1, self.target.dim + 1):
                 self.target.set_dimensions(dim)
                 self._optimise()
-                logger.info("Functional: %g" % self.minimizer.f)
-                self._principal_component_analysis()
                 dimensions.append(dim)
                 functional.append(self.minimizer.f)
-                explained_variance.append(self.explained_variance)
-                explained_variance_ratio.append(self.explained_variance_ratio)
 
             # Find the elbow point of the curve, in the same manner as that used by
             # distl spotfinder for resolution method 1 (Zhang et al 2006).
@@ -259,8 +257,14 @@ class CosymAnalysis(symmetry_base, Subject):
 
             x_g = x[p_g + p_m]
 
+            logger.info(
+                dials.util.tabulate(
+                    zip(dimensions, functional), headers=("Dimensions", "Functional")
+                )
+            )
             logger.info("Best number of dimensions: %i" % x_g)
             self.target.set_dimensions(int(x_g))
+            logger.info("Using %i dimensions for analysis" % self.target.dim)
 
     def run(self):
         self._intialise_target()
@@ -696,14 +700,10 @@ class SymmetryAnalysis(object):
         output = []
         output.append("Scoring individual symmetry elements")
         d = self.as_dict()
-        output.append(
-            table_utils.format(self.sym_ops_table(d), has_header=True, delim="  ")
-        )
+        output.append(dials.util.tabulate(self.sym_ops_table(d), headers="firstrow"))
 
         output.append("Scoring all possible sub-groups")
-        output.append(
-            table_utils.format(self.subgroups_table(d), has_header=True, delim="  ")
-        )
+        output.append(dials.util.tabulate(self.subgroups_table(d), headers="firstrow"))
 
         output.append(
             "Best solution: %s"

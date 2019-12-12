@@ -11,7 +11,6 @@ import sys
 from dials.util import Sorry, show_mail_on_error
 from dials.util.options import OptionParser
 
-# from libtbx.table_utils import simple_table
 import matplotlib
 
 matplotlib.use("Agg")

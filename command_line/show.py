@@ -3,13 +3,12 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
 import iotbx.phil
 import numpy
-from tabulate import tabulate
-from libtbx import table_utils
+from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
-from dials.util import Sorry
 
 help_message = """
 
@@ -175,7 +174,10 @@ def show_goniometer(goniometer):
 
 
 def run(args):
-    import dials.util.banner  # noqa: F401 - Importing means that it prints
+    import dials.util.log
+
+    dials.util.log.print_banner()
+
     from dials.util.options import OptionParser
     from dials.util.options import flatten_experiments
     from dials.util.options import flatten_reflections
@@ -236,6 +238,20 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
 
     text = []
 
+    # To show image statistics, check_format has to be true. So we have to reinstatiate
+    # the experiment list here
+    if show_image_statistics:
+        try:
+            experiments = ExperimentListFactory.from_json(
+                experiments.as_json(), check_format=True
+            )
+        except IOError as e:
+            raise Sorry(
+                "Unable to read image data. Please check {0} is accessible".format(
+                    e.filename
+                )
+            )
+
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         if expt.identifier != "":
@@ -265,9 +281,14 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                 abc = flex.vec3_double()
                 angles = flex.vec3_double()
                 for n in range(expt.crystal.num_scan_points):
-                    a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(
-                        n
-                    ).parameters()
+                    (
+                        a,
+                        b,
+                        c,
+                        alpha,
+                        beta,
+                        gamma,
+                    ) = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
                     abc.append((a, b, c))
                     angles.append((alpha, beta, gamma))
                 a, b, c = abc.mean()
@@ -279,31 +300,21 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.scaling_model is not None:
             text.append(str(expt.scaling_model))
 
-        if expt.imageset is not None and show_image_statistics:
-            # XXX This is gross, gross gross!
-            # check_format=False, so we can't get the image data from the imageset
-            i = 0
-            while i < len(expt.imageset):
-                filename = expt.imageset.get_path(i)
-                el = ExperimentListFactory.from_filenames((filename,))
-                if len(el) == 0:
-                    raise Sorry("Cannot find image {0}".format(filename))
-                imageset = el.imagesets()[0]
-                for j in range(len(imageset)):
-                    identifier = os.path.basename(imageset.get_image_identifier(j))
-                    pnl_data = imageset.get_raw_data(j)
-                    if not isinstance(pnl_data, tuple):
-                        pnl_data = (pnl_data,)
-                    flat_data = pnl_data[0].as_1d()
-                    for p in pnl_data[1:]:
-                        flat_data.extend(p.as_1d())
-                    fns = five_number_summary(flat_data)
-                    text.append(
-                        "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
-                            identifier, *fns
-                        )
+        if show_image_statistics:
+            for i in range(len(expt.imageset)):
+                identifier = os.path.basename(expt.imageset.get_image_identifier(i))
+                pnl_data = expt.imageset.get_raw_data(i)
+                if not isinstance(pnl_data, tuple):
+                    pnl_data = (pnl_data,)
+                flat_data = pnl_data[0].as_1d()
+                for p in pnl_data[1:]:
+                    flat_data.extend(p.as_1d())
+                fns = five_number_summary(flat_data)
+                text.append(
+                    "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
+                        identifier, *fns
                     )
-                    i += 1
+                )
     return "\n".join(text)
 
 
@@ -376,9 +387,7 @@ def _create_flag_count_table(table):
     # Build the array of output strings
     text = []
     text.append("Reflection flags:")
-    text.append(
-        table_utils.format(flag_rows, has_header=True, prefix="| ", postfix=" |")
-    )
+    text.append(tabulate(flag_rows, headers="firstrow"))
     return "\n".join(text)
 
 
@@ -532,9 +541,7 @@ def show_reflections(
                     ]
                 )
 
-        text.append(
-            table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-        )
+        text.append(tabulate(rows, headers="firstrow"))
 
         if show_flags:
             text.append(_create_flag_count_table(rlist))

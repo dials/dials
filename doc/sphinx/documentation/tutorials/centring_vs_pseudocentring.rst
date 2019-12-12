@@ -17,7 +17,7 @@ The second part of this tutorial continues from the results obtained in the
 :doc:`correcting_poor_initial_geometry_tutorial` tutorial. You should work
 through that first to fix the incorrect beam centre recorded in the image
 headers and produce a correct indexing solution. Following those steps to the
-end, you will have two files:
+end will produce two files that we will take as the starting point here:
 
 * :file:`bravais_setting_5.expt` - the experimental geometry including a crystal
   model with a primitive orthorhombic lattice
@@ -35,7 +35,7 @@ the challenges that lie ahead.
 
 If we were to integrate this dataset using the oP solution from the first part
 and continue on to the :program:`CCP4` data reduction pipeline, we would see
-that :program:`Pointless` chooses the space group :math:`P 2_1 2_1 2_1` but
+that :program:`Pointless` chooses the space group :math:`P\,2_1\,2_1\,2_1` but
 warns that the ``data were integrated on a primitive lattice, but may belong to
 a centered lattice``. Accordingly, :program:`cTruncate` finds strong evidence
 for translational NCS, for this basis along a vector of :math:`(0.0, 0.5,
@@ -54,7 +54,7 @@ First the reciprocal lattice::
 
   dials.reciprocal_lattice_viewer bravais_setting_5.expt indexed.refl
 
-.. image:: /figures/dpf3_oP_lo_res.png
+.. image:: https://dials.github.io/images/centring_vs_pseudocentring/dpf3_oP_lo_res.png
 
 Here the view has been aligned almost down the long axis of the reciprocal
 cell, which is :math:`a^\star` for this choice of basis vectors. We see the
@@ -68,7 +68,7 @@ Now the image viewer::
 
   dials.image_viewer bravais_setting_5.expt indexed.refl
 
-.. image:: /figures/dpf3_oP_im5.png
+.. image:: https://dials.github.io/images/centring_vs_pseudocentring/dpf3_oP_im5.png
 
 Here we have zoomed in on a region of the central module on the 5th image. The
 line of indexed spots have Miller indices in :math:`(3,-13,l)`. Looking closely
@@ -95,15 +95,14 @@ Here is part of the output::
 
   New crystal:
   Crystal:
-      Unit cell: (56.312, 99.662, 121.361, 90.000, 90.000, 90.000)
+      Unit cell: (56.277, 99.550, 121.252, 90.000, 90.000, 90.000)
       Space group: A 2 2 2
 
-We now have a face centred space group, but the indexed reflections still
-include those which are now disallowed by the centring operation. An easy
-way to fix this is simply to reindex the spot list using the new model. We
-also request output of the unindexed reflections to explore later::
 
-  dials.index reindexed.expt strong.refl output.unindexed_reflections=unindexed.refl
+We now have a face centred space group, which we can use to index the strong
+reflections as follows::
+
+  dials.index reindexed.expt strong.refl
 
 This produces a properly indexed spot list, but the space group is in an
 unconventional setting. We can fix this as follows::
@@ -115,125 +114,21 @@ Solution 5 is what we want::
   ----------------------------------------------------------------------------------------------------------------
   Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
   ----------------------------------------------------------------------------------------------------------------
-  *      5     0.0000 0.096 0.760/0.855  20000      oC  99.64 121.38  56.32  90.00  90.00  90.00 681108  b-c,b+c,a
-  *      4     0.0000 0.095 0.768/0.768  20000      mC  99.64 121.38  56.32  90.00  90.01  90.00 681106  b-c,b+c,a
-  *      3     0.0000 0.095 0.760/0.760  20000      mC 121.35  99.61  56.30  90.00  89.98  90.00 680582 b+c,-b+c,a
-  *      2     0.0000 0.095 0.855/0.855  20000      mP  78.43  56.27  78.48  90.00 101.23  90.00 339743     -b,a,c
-  *      1     0.0000 0.096         -/-  20000      aP  56.26  78.41  78.46  78.77  89.99  90.00 339502      a,b,c
+  *      5     0.0000 0.071 0.736/0.839  20000      oC  99.51 121.24  56.27  90.00  90.00  90.00 678839  b-c,b+c,a
+  *      4     0.0000 0.072 0.739/0.739  20000      mC  99.51 121.25  56.27  90.00  90.00  90.00 678994  b-c,b+c,a
+  *      3     0.0000 0.071 0.736/0.736  20000      mC 121.23  99.49  56.26  90.00  90.02  90.00 678556 b+c,-b+c,a
+  *      2     0.0000 0.069 0.839/0.839  20000      mP  78.35  56.24  78.39  90.00 101.24  90.00 338768    -c,-a,b
+  *      1     0.0000 0.070         -/-  20000      aP  56.22  78.38  78.34  78.75  90.00  90.01 338557      a,b,c
   ----------------------------------------------------------------------------------------------------------------
+
 
 The table tells us that the indexed spots need a change of basis to be
 consistent with the conventional oC lattice::
 
   dials.reindex indexed.refl change_of_basis_op=b-c,b+c,a
 
-This gives us :file:`reindexed.refl`. Before passing this along with
-:file:`bravais_setting_5.expt` to refinement and then to integration it is worth
-exploring this result with :program:`dials.image_viewer` and
-:program:`dials.reciprocal_lattice_viewer`.
-
-Here is a view of the same region of image 5 as we saw before, but now with only
-the spots allowed by centring being indexed:
-
-.. image:: /figures/dpf3_oC_im5.png
-
-Now a view of the reciprocal lattice, aligned down the :math:`c^\star` axis to
-show off the systematic absences.
-
-.. image:: /figures/dpf3_oC_lo_res.png
-
-Exploring the unindexed reflections
------------------------------------
-
-When we indexed with the oC lattice we wrote out the unindexed reflections
-as a separate file. We know that the spots in the positions disallowed by the
-oC lattice do themselves form an orthorhombic lattice. In views from the
-:program:`dials.reciprocal_lattice_viewer` you may also have seen hints of a
-third lattice in some parts of reciprocal space. We might try to index these
-lattices now::
-
-  dials.index optimised.expt unindexed.refl output.experiments=minor.expt output.reflections=minor.refl unit_cell="99 121 56 90 90 90" space_group=P222 max_lattices=2
-
-Here is some output::
-
-  model 1 (12265 reflections):
-  Crystal:
-      Unit cell: (100.027, 121.370, 56.258, 90.000, 90.000, 90.000)
-      Space group: P 2 2 2
-
-  model 2 (2969 reflections):
-  Crystal:
-      Unit cell: (99.735, 121.858, 56.487, 90.000, 90.000, 90.000)
-      Space group: P 2 2 2
-
-The first lattice is essentially the same as our original primitive solution,
-however because we have now excluded all the reflections that were indexed by
-the centred lattice, this model now *only* indexes the spots that should be
-systematically absent with an oC lattice. The second lattice comes from a
-separate crystallite, rotated about 11 degrees from the first and therefore
-easily disentangled from the others. We can combine this result with the
-previous one::
-
-  dials.combine_experiments bravais_setting_5.expt reindexed.refl minor.expt minor.refl beam=0 detector=0 scan=0 goniometer=0 compare_models=False
-
-Here, the ``beam=0`` etc. specify that the combined result should have all
-experimental models apart from the crystal taken from the first experiment,
-which is the one described by :file:`bravais_setting_5.expt`. The option
-``compare_models=False`` is required in order to force this. The result is
-about 65000 indexed reflections, split between three lattices::
-
-  ----------------------
-  | Experiment | Nref  |
-  ----------------------
-  | 0          | 50384 |
-  | 1          | 12265 |
-  | 2          | 2969  |
-  ----------------------
-
-Here is a view of reciprocal space, aligned down the shared :math:`c^\star`
-axes of the oC lattice, and its complement, the oP lattice that indexes the
-disallowed reflections::
-
-  dials.reciprocal_lattice_viewer combined.expt combined.refl
-
-.. image:: /figures/dpf3_3lattices.png
-
-It is worth spending some time with the
-:program:`dials.reciprocal_lattice_viewer` at different zoom levels and
-orientations, and with different ``Min Z`` and ``Max Z`` limits. See how the
-lattice of 'disallowed' reflections is stronger (i.e. more sufficiently strong
-spots found) in latter half of the dataset (images 100 onwards).
-
-We can see this more directly if we create an HTML report for the combined
-experiments::
-
-  dials.report combined.expt combined.refl
-
-Load the resulting :file:`dials-report.html` in a web browser. This includes
-a useful plot of the number of indexed reflections for each lattice versus
-the image number. Unfortunately the colours of curves on this plot do not
-match the colours in the :program:`dials.reciprocal_lattice_viewer`!
-Nevertheless, the plot shows how the reflections allowed for the oC lattice
-dominate throughout the data collection. The second 'lattice', which
-consists only of the reflections of the oP solution that are disallowed by
-the oC reflection conditions, is present from the start but becomes more
-prominent in the second half of the data collection. The third lattice is a
-genuinely separate component, misaligned from the frst by about 11 degrees,
-and is present only on images in the first quarter of the dataset.
-
-.. image:: /figures/dpf3_indexed_count_3lattices.png
-
-Intriguingly, the pattern of number of found strong spots for lattice 2
-(which roughly corresponds to the intensity of those spots) follows a
-sinusoidal pattern, which is weakest around image 60 and strongest around
-image 150 (after a 90 degrees rotation of the crystal). Using the image
-viewer with the ``Basis vectors`` button ticked you can see how this
-corresponds to being weakest when the beam is approximately parallel to the
-plane of the pseudocentred C face, and stronger when the beam is orthogonal
-to that face, that is when the suggested tNCS vector is orthogonal to the
-beam:
-
-.. image:: /figures/dpf3_im60_vs_150.png
+This gives us :file:`reindexed.refl`. We can now pass this along with
+:file:`bravais_setting_5.expt` to refinement and then to integration.
 
 Centred or pseudocentred?
 -------------------------

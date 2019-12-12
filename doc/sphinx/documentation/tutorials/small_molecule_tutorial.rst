@@ -27,7 +27,7 @@ Usually DIALS processing is run on a sequence-by-sequence basis - for small mole
 
 .. code-block:: bash
 
-   dials.import allow_multiple_sequences=True ../data/*cbf
+   dials.import ../data/*cbf
 
 This will create a DIALS datablock.expt file with details of the 4 sequences within it.
 
@@ -57,7 +57,7 @@ Indexing here will depend on the model for the experiment being reasonably accur
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl split_experiments=True
+   dials.index datablock.expt strong.refl
 
 Without any additional input, the indexing will determine the most approproiate primitive lattice parameters and orientation which desctibe the observed reciprocal lattice positions.
 
@@ -77,7 +77,7 @@ Inspect the results, conclude that the oP lattice is appropriate then assign thi
 
 .. code-block:: bash
 
-   dials.index datablock.expt strong.refl split_experiments=True space_group=P222
+   dials.index datablock.expt strong.refl space_group=P222
 
 This will once again consistently index the data, this time enforcing the lattice constraints.
 

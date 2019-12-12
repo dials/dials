@@ -81,11 +81,7 @@ include scope dials.algorithms.refinement.refiner.phil_scope
 output {
   experiments = indexed.expt
     .type = path
-  split_experiments = False
-    .type = bool
   reflections = indexed.refl
-    .type = path
-  unindexed_reflections = None
     .type = path
   log = dials.index.log
     .type = str
@@ -263,11 +259,6 @@ def run(phil=working_phil, args=None):
         sys.exit(str(e))
 
     # Save experiments
-    if params.output.split_experiments:
-        logger.info("Splitting experiments before output")
-        indexed_experiments = ExperimentList(
-            [copy.deepcopy(re) for re in indexed_experiments]
-        )
     logger.info("Saving refined experiments to %s" % params.output.experiments)
     assert indexed_experiments.is_consistent()
     indexed_experiments.as_file(params.output.experiments)

@@ -1,7 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.util import show_mail_on_error
+from itertools import combinations
+
 from libtbx.phil import parse
+from scitbx import matrix
+from scitbx.math import r3_rotation_axis_and_angle_from_matrix
+
+from dials.util import show_mail_on_error
+from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser
 
 help_message = """
 
@@ -29,14 +36,8 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
-        usage = (
-            "usage: %s [options] experiment_one.expt experiment_two.expt"
-            % libtbx.env.dispatcher_name
-        )
+        usage = "usage: dials.two_theta_offset [options] experiment_one.expt experiment_two.expt"
 
         # Create the parser
         self.parser = OptionParser(
@@ -49,8 +50,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        from dials.util.options import flatten_experiments
-
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
 
@@ -62,13 +61,8 @@ class Script(object):
 
         detectors = [experiment.detector[0] for experiment in experiments]
 
-        from itertools import combinations
-
         for pair in combinations(detectors, 2):
             determine_axis(pair, params)
-
-        from scitbx import matrix
-        from scitbx.math import r3_rotation_axis_and_angle_from_matrix
 
         crystals = [experiment.crystal for experiment in experiments]
         goniometers = [experiment.goniometer for experiment in experiments]
@@ -91,8 +85,6 @@ class Script(object):
 
 
 def determine_axis(detectors, params):
-    from scitbx import matrix
-
     offset_fast = params.offset_fast
     offset_slow = params.offset_slow
     min_distance = params.min_distance

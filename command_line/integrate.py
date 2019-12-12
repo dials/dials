@@ -4,6 +4,7 @@ import logging
 
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
+from dials.util.slice import slice_crystal
 
 logger = logging.getLogger("dials.command_line.integrate")
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -116,7 +117,7 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ The integration program. """
+    """The integration program."""
 
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
@@ -135,7 +136,7 @@ class Script(object):
         )
 
     def run(self, args=None):
-        """ Perform the integration. """
+        """Perform the integration."""
         from dials.util.command_line import heading
         from dials.util.options import flatten_reflections, flatten_experiments
         from dials.util import log
@@ -329,7 +330,10 @@ class Script(object):
         ):
             experiments = ProfileModelFactory.create(params, experiments, reference)
         else:
-            experiments = ProfileModelFactory.create(params, experiments)
+            try:
+                experiments = ProfileModelFactory.create(params, experiments)
+            except RuntimeError as e:
+                raise Sorry(e)
             for expr in experiments:
                 if expr.profile is None:
                     raise Sorry("No profile information in experiment list")
@@ -413,7 +417,7 @@ class Script(object):
         return experiments, reflections
 
     def process_reference(self, reference):
-        """ Load the reference spots. """
+        """Load the reference spots."""
         from time import time
         from dials.util import Sorry
 
@@ -491,7 +495,7 @@ class Script(object):
         return reference
 
     def save_reflections(self, reflections, filename):
-        """ Save the reflections to file. """
+        """Save the reflections to file."""
         from time import time
 
         st = time()
@@ -500,7 +504,7 @@ class Script(object):
         logger.info(" time taken: %g" % (time() - st))
 
     def save_experiments(self, experiments, filename):
-        """ Save the profile model parameters. """
+        """Save the profile model parameters."""
         from time import time
 
         st = time()
@@ -509,7 +513,7 @@ class Script(object):
         logger.info(" time taken: %g" % (time() - st))
 
     def sample_predictions(self, experiments, predicted, params):
-        """ Select a random sample of the predicted reflections to integrate. """
+        """Select a random sample of the predicted reflections to integrate."""
 
         nref_per_degree = params.sampling.reflections_per_degree
         min_sample_size = params.sampling.minimum_sample_size
@@ -564,7 +568,7 @@ class Script(object):
         return experiments
 
     def split_for_scan_range(self, experiments, reference, scan_range):
-        """ Update experiments when scan range is set. """
+        """Update experiments when scan range is set."""
         from dxtbx.model.experiment_list import ExperimentList
         from dxtbx.model.experiment_list import Experiment
 
@@ -629,12 +633,13 @@ class Script(object):
                     new_scan = None
                 else:
                     new_scan = scan[index_start:index_end]
+
                 for i, e1 in enumerate(experiments):
                     e2 = Experiment()
                     e2.beam = e1.beam
                     e2.detector = e1.detector
                     e2.goniometer = e1.goniometer
-                    e2.crystal = e1.crystal
+                    e2.crystal = slice_crystal(e1.crystal, (index_start, index_end))
                     e2.profile = e1.profile
                     e2.imageset = new_iset
                     e2.scan = new_scan

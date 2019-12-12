@@ -189,19 +189,25 @@ def test_ScalingOutlierObserver():
 
 def test_ErrorModelObserver():
     """Test that the observer correctly logs data when passed a scaler."""
-    delta_hl = flex.double(range(10))
+
+    # Set some arbitrary data
+    vals = flex.double(range(1, 11))
 
     scaler = mock.Mock()
-    scaler.error_model.delta_hl = delta_hl
-    scaler.error_model.intensities = delta_hl
-    scaler.error_model.inverse_scale_factors = delta_hl
-    scaler.error_model.sigmaprime = delta_hl
-    scaler.error_model.binning_info = {}
+    scaler.error_model.filtered_Ih_table.intensities = vals
+    scaler.error_model.filtered_Ih_table.Ih_values = 2.0 * vals
+    scaler.error_model.filtered_Ih_table.variances = 3.0 * vals
+    scaler.error_model.filtered_Ih_table.calc_nh.return_value = flex.double(10, 1.0)
+    scaler.error_model.filtered_Ih_table.inverse_scale_factors = 2.0 * vals
+    scaler.error_model.parameters = [1.0, 0.02]
+    m = mock.Mock()
+    m.binning_info = {}
+    scaler.error_model.components = {"b": m}
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()
     observer.update(scaler)
-    assert observer.data["delta_hl"] == list(delta_hl)
+    assert observer.data["delta_hl"]
     mock_func = mock.Mock()
     mock_func.return_value = {"norm_plot": {}}
     mock_func2 = mock.Mock()

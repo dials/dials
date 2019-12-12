@@ -395,10 +395,11 @@ class Script(object):
             split_experiments = split_experiments2
 
             # Wrapper function
-            def do_work(i, item_list):
-                processor = Processor(
-                    copy.deepcopy(params), composite_tag="%04d" % i, rank=i
-                )
+            def do_work(i, item_list, processor=None, finalize=True):
+                if not processor:
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % i, rank=i
+                    )
 
                 for item in item_list:
                     try:
@@ -427,7 +428,9 @@ class Script(object):
                         experiment.detector = imageset.get_detector()
 
                     processor.process_experiments(item[0], item[1])
-                processor.finalize()
+                if finalize:
+                    processor.finalize()
+                return processor
 
             iterable = list(zip(tags, split_experiments))
 
@@ -452,10 +455,11 @@ class Script(object):
             all_paths = all_paths2
 
             # Wrapper function
-            def do_work(i, item_list):
-                processor = Processor(
-                    copy.deepcopy(params), composite_tag="%04d" % i, rank=i
-                )
+            def do_work(i, item_list, processor=None, finalize=True):
+                if not processor:
+                    processor = Processor(
+                        copy.deepcopy(params), composite_tag="%04d" % i, rank=i
+                    )
                 for item in item_list:
                     tag, filename = item
 
@@ -494,7 +498,9 @@ class Script(object):
                         experiments[0].detector = imageset.get_detector()
 
                     processor.process_experiments(tag, experiments)
-                processor.finalize()
+                if finalize:
+                    processor.finalize()
+                return processor
 
             iterable = list(zip(tags, all_paths))
 
@@ -556,6 +562,7 @@ class Script(object):
                     print("All stops sent.")
                 else:
                     # client process
+                    processor = None
                     while True:
                         # inform the server this process is ready for an event
                         print("Rank %d getting next task" % rank)
@@ -567,13 +574,15 @@ class Script(object):
                             break
                         print("Rank %d beginning processing" % rank)
                         try:
-                            do_work(rank, [item])
+                            processor = do_work(rank, [item], processor, finalize=False)
                         except Exception as e:
                             print(
                                 "Rank %d unhandled exception processing event" % rank,
                                 str(e),
                             )
                         print("Rank %d event processed" % rank)
+                    if processor:
+                        processor.finalize()
         else:
             from dxtbx.command_line.image_average import splitit
 
@@ -814,7 +823,7 @@ class Processor(object):
         self.debug_write("integrate_ok_%d" % len(integrated), "done")
 
     def pre_process(self, experiments):
-        """ Add any pre-processing steps here """
+        """Add any pre-processing steps here"""
         pass
 
     def find_spots(self, experiments):
@@ -1210,7 +1219,7 @@ class Processor(object):
                     easy_pickle.dump(outfile, frame)
 
     def process_reference(self, reference):
-        """ Load the reference spots. """
+        """Load the reference spots."""
         if reference is None:
             return None, None
         st = time.time()
@@ -1251,14 +1260,14 @@ class Processor(object):
         return reference, rubbish
 
     def save_reflections(self, reflections, filename):
-        """ Save the reflections to file. """
+        """Save the reflections to file."""
         st = time.time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
         reflections.as_file(filename)
         logger.info(" time taken: %g" % (time.time() - st))
 
     def finalize(self):
-        """ Perform any final operations """
+        """Perform any final operations"""
         if self.params.output.composite_output:
             if self.params.mp.composite_stride is not None:
                 assert self.params.mp.method == "mpi"
@@ -1274,9 +1283,15 @@ class Processor(object):
                     subranks = [rank + i for i in range(1, stride) if rank + i < size]
                     for i in range(len(subranks)):
                         logger.info("Rank %d waiting for sender" % rank)
-                        sender, indexed_experiments, indexed_reflections, integrated_experiments, integrated_reflections, int_pickles, int_pickle_filenames = comm.recv(
-                            source=MPI.ANY_SOURCE
-                        )
+                        (
+                            sender,
+                            indexed_experiments,
+                            indexed_reflections,
+                            integrated_experiments,
+                            integrated_reflections,
+                            int_pickles,
+                            int_pickle_filenames,
+                        ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info(
                             "Rank %d recieved data from rank %d" % (rank, sender)
                         )

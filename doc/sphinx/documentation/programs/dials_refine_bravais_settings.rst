@@ -4,7 +4,7 @@ dials.refine_bravais_settings
 Introduction
 ------------
 
-.. python_string:: dials.command_line.refine_bravais_settings.help_message
+.. python_string:: dials.command_line.refine_bravais_settings.__doc__
 
 Basic parameters
 ----------------

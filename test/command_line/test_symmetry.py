@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-
+import json
 import procrunner
 import pytest
 from cctbx import sgtbx, uctbx
@@ -13,19 +13,25 @@ from dials.array_family import flex
 from dials.algorithms.symmetry.cosym._generate_test_data import (
     generate_experiments_reflections,
 )
-from dials.command_line.symmetry import map_to_minimum_cell
+from dials.command_line import symmetry
+from dials.command_line.symmetry import (
+    apply_change_of_basis_ops,
+    change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
+    median_unit_cell,
+)
 
 
-def test_symmetry_laue_only(dials_regression, tmpdir):
+def test_symmetry_laue_only(dials_data, tmpdir):
     """Simple test to check that dials.symmetry completes"""
 
     result = procrunner.run(
         [
             "dials.symmetry",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
             "systematic_absences.check=False",
         ],
         working_directory=tmpdir,
@@ -58,10 +64,10 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     joint_table = flex.reflection_table()
     for r in reflections:
         joint_table.extend(r)
-    joint_table.as_pickle("tmp.refl")
+    joint_table.as_file("tmp.refl")
     refl_file = tmpdir.join("tmp.refl").strpath
 
-    command = ["dials.symmetry", expt_file, refl_file]
+    command = ["dials.symmetry", expt_file, refl_file, "json=symmetry.json"]
     result = procrunner.run(command, working_directory=tmpdir.strpath)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check(file=1)
@@ -73,20 +79,33 @@ def test_symmetry_basis_changes_for_C2(tmpdir):
     for v, expected in zip(expts[0].crystal.get_unit_cell().parameters(), unit_cell):
         assert v == pytest.approx(expected)
 
+    # Using the change of basis ops from the json output we should be able to
+    # reindex the input experiments to match the output experiments
+    with tmpdir.join("symmetry.json").open() as f:
+        d = json.load(f)
+        cs = experiments[0].crystal.get_crystal_symmetry()
+        cb_op_inp_min = sgtbx.change_of_basis_op(str(d["cb_op_inp_min"][0]))
+        cb_op_min_best = sgtbx.change_of_basis_op(str(d["subgroup_scores"][0]["cb_op"]))
+        assert cs.change_basis(cb_op_min_best * cb_op_inp_min).is_similar_symmetry(
+            expts[0].crystal.get_crystal_symmetry()
+        )
 
-def test_symmetry_with_absences(dials_regression, tmpdir):
+
+@pytest.mark.parametrize("option", ["", "exclude_images=0:1500:1800"])
+def test_symmetry_with_absences(dials_data, tmpdir, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    result = procrunner.run(
-        [
-            "dials.symmetry",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
-        ],
-        working_directory=tmpdir,
-    )
+    cmd = [
+        "dials.symmetry",
+        dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+        dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+        dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
+    ]
+    if option:
+        cmd.append(option)
+
+    result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("symmetrized.refl").check()
     assert tmpdir.join("symmetrized.expt").check()
@@ -96,7 +115,7 @@ def test_symmetry_with_absences(dials_regression, tmpdir):
     assert str(expts[0].crystal.get_space_group().info()) == "P 21 21 21"
 
 
-def test_symmetry_with_laue_group_override(dials_regression, tmpdir):
+def test_symmetry_with_laue_group_override(dials_data, tmpdir):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
     result = procrunner.run(
@@ -104,10 +123,10 @@ def test_symmetry_with_laue_group_override(dials_regression, tmpdir):
             "dials.symmetry",
             "laue_group=P121",
             "change_of_basis_op=-b,-a,-c",
-            os.path.join(dials_regression, "xia2-28", "20_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "20_integrated.pickle"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated_experiments.json"),
-            os.path.join(dials_regression, "xia2-28", "25_integrated.pickle"),
+            dials_data("l_cysteine_dials_output") / "20_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "20_integrated.pickle",
+            dials_data("l_cysteine_dials_output") / "25_integrated_experiments.json",
+            dials_data("l_cysteine_dials_output") / "25_integrated.pickle",
         ],
         working_directory=tmpdir,
     )
@@ -195,8 +214,18 @@ def test_map_to_minimum_cell():
         reflections.append(refl)
 
     # Actually run the method we are testing
-    expts_min, reflections_min = map_to_minimum_cell(expts, reflections, max_delta=5)
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
+    )
+    cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
+    # Actual cb_ops are machine dependent (sigh)
+    assert cb_ops_as_xyz == [
+        "-x+y,-2*y,z",
+        "-x+z,-z,-y",
+        "x+y,-2*x,z",
+    ] or cb_ops_as_xyz == ["x-y,2*y,z", "x-z,z,-y", "-x-y,2*x,z"]
 
+    expts_min, reflections = apply_change_of_basis_ops(expts, reflections, cb_ops)
     # Verify that the unit cells have been transformed as expected
     for expt, uc in zip(expts, expected_ucs):
         assert expt.crystal.get_unit_cell().parameters() == pytest.approx(uc, abs=4e-2)
@@ -214,3 +243,99 @@ def test_map_to_minimum_cell():
     for refl, expected_hkl in zip(reflections, expected_output_hkl):
         for hkl, e_hkl in zip(refl["miller_index"], expected_hkl):
             assert [abs(h) for h in hkl] == [abs(eh) for eh in e_hkl]
+
+
+def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
+    # See https://github.com/dials/dials/issues/1037
+
+    input_ucs = [
+        (
+            4.805202948916906,
+            12.808064769657364,
+            16.544899201125446,
+            106.45808502003258,
+            90.0065567098825,
+            100.77735674275475,
+        ),
+        (
+            4.808011343212577,
+            12.821894835790472,
+            16.557339561965573,
+            106.48431244651402,
+            90.0252848479048,
+            100.77252933676507,
+        ),
+        (
+            4.8096632137789985,
+            12.815648858527567,
+            16.55931712239122,
+            106.48990701341536,
+            90.01703141314147,
+            100.80397887485773,
+        ),
+        (
+            4.807294085194974,
+            12.822386757910516,
+            16.560411742466663,
+            106.43185845358086,
+            90.02067929544215,
+            100.79522302759383,
+        ),
+    ]
+
+    # Setup the input experiments and reflection tables
+    expts = ExperimentList()
+    for uc in input_ucs:
+        uc = uctbx.unit_cell(uc)
+        sg = sgtbx.space_group_info("P1").group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+
+    # We want to spy on the return value of this function
+    mocker.spy(symmetry, "unit_cells_are_similar_to")
+
+    # Actually run the method we are testing
+    cb_ops = change_of_basis_ops_to_minimum_cell(
+        expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
+    )
+    assert symmetry.unit_cells_are_similar_to.return_value is True
+    cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
+    assert len(set(cb_ops_as_xyz)) == 1
+    # Actual cb_ops are machine dependent (sigh)
+    assert cb_ops_as_xyz[0] in ("x,y,z", "-x,y,-z")
+
+
+def test_median_cell():
+    unit_cells = [
+        uctbx.unit_cell(uc)
+        for uc in [
+            (10, 11, 11.9, 90, 85, 90),
+            (10.1, 11.2, 12, 90, 85.5, 90),
+            (10.2, 11.1, 12, 90, 84.7, 90),
+        ]
+    ]
+    expts = ExperimentList()
+    for uc in unit_cells:
+        sg = sgtbx.space_group_info("P1").group()
+        B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+        expts.append(Experiment(crystal=Crystal(B, space_group=sg, reciprocal=True)))
+
+    median = median_unit_cell(expts)
+    assert median.parameters() == pytest.approx((10.1, 11.1, 12, 90, 85, 90))
+
+
+def test_eliminate_sys_absent():
+    refl = flex.reflection_table()
+    refl["miller_index"] = flex.miller_index(
+        [(-31, -5, -3), (-25, -3, -3), (0, 1, 0), (-42, -8, -2)]
+    )
+    sgi = sgtbx.space_group_info("C121")
+    uc = sgi.any_compatible_unit_cell(volume=1000)
+    B = scitbx.matrix.sqr(uc.fractionalization_matrix()).transpose()
+    expt = Experiment(crystal=Crystal(B, space_group=sgi.group(), reciprocal=True))
+    reflections = eliminate_sys_absent([expt], [refl])
+    assert list(reflections[0]["miller_index"]) == [
+        (-31, -5, -3),
+        (-25, -3, -3),
+        (-42, -8, -2),
+    ]

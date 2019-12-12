@@ -5,18 +5,17 @@ Test the command line script dials.scale, for successful completion.
 from __future__ import absolute_import, division, print_function
 
 import json
-import os
+
+import iotbx.merging_statistics
 import pytest
 import procrunner
-
 from libtbx import phil
 from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model import Crystal, Scan, Beam, Goniometer, Detector, Experiment
-from dials.util import Sorry
 from dials.array_family import flex
 from dials.util.options import OptionParser
-from dials.command_line.scale import Script
+from dials.algorithms.scaling.algorithm import ScalingAlgorithm, prepare_input
 
 
 def run_one_scaling(working_directory, argument_list):
@@ -47,7 +46,6 @@ def get_merging_stats(
     data_labels=None,
 ):
     """Return a merging statistics result from an mtz file."""
-    import iotbx.merging_statistics
 
     i_obs = iotbx.merging_statistics.select_data(
         scaled_unmerged_mtz, data_labels=data_labels
@@ -154,19 +152,19 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input()
     # try to pass in unequal number of reflections and experiments
     reflections.append(generate_test_reflections())
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
 
     params, exp, reflections = generate_test_input()
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = None
     params.dataset_selection.exclude_datasets = ["0"]
-    with pytest.raises(Sorry):
-        _ = Script(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = ScalingAlgorithm(params, exp, reflections)
 
     # Now make two experiments with identifiers and select on them
     params, exp, reflections = generate_test_input(n=2)
@@ -179,7 +177,7 @@ def test_scale_script_prepare_input():
     reflections[0].assert_experiment_identifiers_are_consistent(list1)
     reflections[1].assert_experiment_identifiers_are_consistent(list2)
     params.dataset_selection.use_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
 
@@ -190,7 +188,7 @@ def test_scale_script_prepare_input():
     exp[1].identifier = "1"
     reflections[1].experiment_identifiers()[0] = "1"
     params.dataset_selection.exclude_datasets = ["0"]
-    params, exp, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
     assert script_reflections[0] is reflections[1]
@@ -206,13 +204,13 @@ def test_scale_script_prepare_input():
     }
     crystal = Crystal.from_dict(exp_dict)
     exp[0].crystal = crystal
-    with pytest.raises(Sorry):
-        _ = Script.prepare_input(params, exp, reflections)
+    with pytest.raises(ValueError):
+        _ = prepare_input(params, exp, reflections)
 
     # Test cutting data
     params, exp, reflections = generate_test_input(n=1)
     params.cut_data.d_min = 1.5
-    params, _, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, _, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
@@ -221,7 +219,7 @@ def test_scale_script_prepare_input():
         True,
     ]
     params.cut_data.d_max = 2.25
-    params, _, script_reflections = Script.prepare_input(params, exp, reflections)
+    params, _, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         False,
@@ -233,7 +231,7 @@ def test_scale_script_prepare_input():
     params, exp, reflections = generate_test_input(n=1)
     reflections[0]["partiality"] = flex.double([0.5, 0.8, 1.0, 1.0])
     params.cut_data.partiality_cutoff = 0.75
-    _, __, script_reflections = Script.prepare_input(params, exp, reflections)
+    _, __, script_reflections = prepare_input(params, exp, reflections)
     r = script_reflections[0]
     assert list(r.get_flags(r.flags.user_excluded_in_scaling)) == [
         True,
@@ -275,21 +273,68 @@ def test_targeted_scaling_against_mtz(dials_data, tmpdir):
         None,
         "reflection_selection.method=random",
         "reflection_selection.method=intensity_ranges",
-        "reflection_selection.method=quasi_random",
         "reflection_selection.method=use_all",
         "intensity_choice=sum",
         "intensity_choice=profile",
     ],
 )
-def test_scale_single_dataset_with_options(dials_regression, tmpdir, option):
+def test_scale_single_dataset_with_options(dials_data, tmpdir, option):
     """Test different non-default command-line options with a single dataset."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
     args = [refl_1, expt_1]
     if option:
         args.append(option)
     run_one_scaling(tmpdir, args)
+
+
+@pytest.fixture
+def vmxi_protk_reindexed(dials_data, tmpdir):
+    """Reindex the protk data to be in the correct space group."""
+    location = dials_data("vmxi_proteinase_k_sweeps")
+
+    command = [
+        "dials.reindex",
+        location.join("experiments_0.json"),
+        location.join("reflections_0.pickle"),
+        "space_group=P422",
+    ]
+    procrunner.run(command, working_directory=tmpdir)
+    return tmpdir.join("reindexed.expt"), tmpdir.join("reindexed.refl")
+
+
+@pytest.mark.parametrize(
+    ("options", "expected", "tolerances"),
+    [
+        (["error_model=None"], None, None),
+        (["error_model=basic"], (0.73711, 0.04720), (0.05, 0.005)),
+        (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
+        (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
+        (
+            ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
+            (1.50, 0.02),
+            (1e-6, 1e-6),
+        ),
+    ],
+)
+def test_error_model_options(
+    vmxi_protk_reindexed, tmpdir, options, expected, tolerances
+):
+    """Test different non-default command-line options with a single dataset.
+
+    Current values taken at 14.11.19"""
+    expt_1, refl_1 = vmxi_protk_reindexed
+    args = [refl_1, expt_1] + [o for o in options]
+    run_one_scaling(tmpdir, args)
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    config = expts[0].scaling_model.configdict
+    if not expected:
+        assert "error_model_parameters" not in config
+    else:
+        params = expts[0].scaling_model.configdict["error_model_parameters"]
+        assert params[0] == pytest.approx(expected[0], abs=tolerances[0])
+        assert params[1] == pytest.approx(expected[1], abs=tolerances[1])
 
 
 @pytest.mark.parametrize(
@@ -303,25 +348,25 @@ def test_scale_single_dataset_with_options(dials_regression, tmpdir, option):
         "reflection_selection.method=use_all",
     ],
 )
-def test_scale_multiple_datasets_with_options(dials_regression, tmpdir, option):
+def test_scale_multiple_datasets_with_options(dials_data, tmpdir, option):
     """Test different non-defaul command-line options with multiple datasets."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     args = [refl_1, expt_1, refl_2, expt_2]
     if option:
         args.append(option)
     run_one_scaling(tmpdir, args)
 
 
-def test_scale_physical(dials_regression, tmpdir):
+def test_scale_physical(dials_data, tmpdir):
     """Test standard scaling of one dataset."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
     extra_args = [
         "model=physical",
         "merged_mtz=merged.mtz",
@@ -420,10 +465,9 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
         [[21, 25], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[21, 25], 3],
-        [[21, 25], 5],
+        [[21, 25], 3]
     ]
-    assert analysis_results["termination_reason"] == "no_more_removed"
+    assert analysis_results["termination_reason"] == "max_percent_removed"
 
 
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
@@ -455,27 +499,27 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
 
 
-def test_scale_array(dials_regression, tmpdir):
+def test_scale_array(dials_data, tmpdir):
     """Test a standard dataset - ideally needs a large dataset or full matrix
     round may fail. Currently turning off absorption term to avoid
     overparameterisation and failure of full matrix minimisation."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl = os.path.join(data_dir, "20_integrated.pickle")
-    expt = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl = data_dir / "20_integrated.pickle"
+    expt = data_dir / "20_integrated_experiments.json"
     extra_args = ["model=array", "array.absorption_correction=0", "full_matrix=0"]
 
     run_one_scaling(tmpdir, [refl, expt] + extra_args)
 
 
-def test_multi_scale(dials_regression, tmpdir):
+def test_multi_scale(dials_data, tmpdir):
     """Test standard scaling of two datasets."""
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     extra_args = [
         "unmerged_mtz=unmerged.mtz",
         "error_model=None",
@@ -514,13 +558,13 @@ def test_multi_scale(dials_regression, tmpdir):
     assert result.overall.cc_one_half > 0.9965  # at 07/08/18, value was 0.996925
 
 
-def test_multi_scale_exclude_images(dials_regression, tmpdir):
+def test_multi_scale_exclude_images(dials_data, tmpdir):
     """Test scaling of multiple dataset with image exclusion."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     # Expect this dataset to be given batches 1-1800 and 1901-3600
     # Try excluding last two hundred batches
     extra_args = [
@@ -558,17 +602,17 @@ def test_multi_scale_exclude_images(dials_regression, tmpdir):
     assert pytest.approx(scaling_models[1].configdict["valid_osc_range"], [-145.0, 5.0])
 
 
-def test_targeted_scaling(dials_regression, tmpdir, dials_data):
+def test_targeted_scaling(dials_data, tmpdir):
     """Test the targeted scaling workflow."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
     target_refl = location.join("scaled_35.refl").strpath
     target_expt = location.join("scaled_35.expt").strpath
 
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
 
     # Do targeted scaling, use this as a chance to test the KB model as well.
     extra_args = ["model=KB"]
@@ -585,17 +629,17 @@ def test_targeted_scaling(dials_regression, tmpdir, dials_data):
     run_one_scaling(tmpdir, [refl_2, scaled_refl, expt_2, scaled_exp] + extra_args)
 
 
-def test_incremental_scale_workflow(dials_regression, tmpdir):
+def test_incremental_scale_workflow(dials_data, tmpdir):
     """Try scale, cosym, scale, cosym, scale."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl_1 = os.path.join(data_dir, "20_integrated.pickle")
-    expt_1 = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
 
     run_one_scaling(tmpdir, [refl_1, expt_1])
 
     # test order also - first new file before scaled
-    refl_2 = os.path.join(data_dir, "25_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "25_integrated_experiments.json")
+    refl_2 = data_dir / "25_integrated.pickle"
+    expt_2 = data_dir / "25_integrated_experiments.json"
     command = ["dials.cosym", refl_2, expt_2, "scaled.refl", "scaled.expt"]
 
     result = procrunner.run(command, working_directory=tmpdir)
@@ -607,8 +651,8 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
     run_one_scaling(tmpdir, ["symmetrized.refl", "symmetrized.expt"])
 
     # test order also - first scaled file then new file
-    refl_2 = os.path.join(data_dir, "30_integrated.pickle")
-    expt_2 = os.path.join(data_dir, "30_integrated_experiments.json")
+    refl_2 = data_dir / "30_integrated.pickle"
+    expt_2 = data_dir / "30_integrated_experiments.json"
     command = [
         "dials.cosym",
         "scaled.refl",
@@ -637,13 +681,11 @@ def test_incremental_scale_workflow(dials_regression, tmpdir):
         ("multi", "model", "physical array"),
     ],
 )
-def test_scale_cross_validate(
-    dials_regression, tmpdir, mode, parameter, parameter_values
-):
+def test_scale_cross_validate(dials_data, tmpdir, mode, parameter, parameter_values):
     """Test standard scaling of one dataset."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    refl = os.path.join(data_dir, "20_integrated.pickle")
-    expt = os.path.join(data_dir, "20_integrated_experiments.json")
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl = data_dir / "20_integrated.pickle"
+    expt = data_dir / "20_integrated_experiments.json"
     extra_args = [
         "cross_validation_mode=%s" % mode,
         "nfolds=2",

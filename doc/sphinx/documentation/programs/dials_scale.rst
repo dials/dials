@@ -4,7 +4,7 @@ dials.scale
 Introduction
 ------------
 
-.. python_string:: dials.command_line.scale.help_message
+.. python_string:: dials.command_line.scale.__doc__
 
 Basic parameters
 ----------------

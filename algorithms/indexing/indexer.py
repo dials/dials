@@ -6,6 +6,7 @@ import logging
 import math
 import pkg_resources
 
+import dials.util
 import iotbx.phil
 import libtbx
 from dials.array_family import flex
@@ -850,11 +851,7 @@ class Indexer(object):
                     "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
                 ]
             )
-        from libtbx import table_utils
-
-        logger.info(
-            table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-        )
+        logger.info(dials.util.tabulate(rows, headers="firstrow"))
 
     def find_max_cell(self):
         params = self.params.max_cell_estimation

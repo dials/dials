@@ -19,6 +19,7 @@ from cctbx import miller, crystal, uctbx
 from dxtbx.model import Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
+from dials.util import Sorry
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scaling_utilities import (
@@ -423,9 +424,9 @@ def merging_stats_from_scaled_array(
             )
         else:
             anom_result = False
-    except RuntimeError:
+    except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
-            "Failure during merging statistics calculation"
+            "Error encountered during merging statistics calculation:\n%s" % e
         )
     else:
         return result, anom_result

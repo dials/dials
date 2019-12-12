@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import json
 import math
 import os
-import pickle
 import shutil
 
 from dials.array_family import flex
@@ -24,8 +23,7 @@ def test2(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask.count(True) == 1666
@@ -66,8 +64,7 @@ def test2(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask1.count(True) == 1666
@@ -108,8 +105,7 @@ def test_integration_with_sampling(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 1000
 
 
@@ -127,12 +123,11 @@ def test_integration_with_sample_size(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 500
 
 
-def test_multi_sequence(dials_regression, run_in_tmpdir):
+def test_multi_sequence(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.integrate",
@@ -149,13 +144,13 @@ def test_multi_sequence(dials_regression, run_in_tmpdir):
                 "indexed.pickle",
             ),
             "prediction.padding=0",
-        ]
+        ],
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("integrated.refl")
+    assert (tmpdir / "integrated.refl").check()
 
-    with open("integrated.refl", "rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 4020
 
     # Check the results
@@ -200,7 +195,7 @@ def test_multi_lattice(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check()
 
-    table = flex.reflection_table.from_file(tmpdir.join("integrated.refl"))
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 5605
 
     # Check output contains from two lattices
@@ -241,9 +236,7 @@ def test_output_rubbish(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check(file=1)
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
-
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert "id" in table
     for row in table.rows():
         assert row["id"] == 0
@@ -331,9 +324,9 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     results = []
     for mode in "kapton", "nokapton":
-        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.refl" % mode)
-        with open(result, "rb") as f:
-            table = pickle.load(f)
+        table = flex.reflection_table.from_file(
+            tmpdir / ("idx-20161021225550223_integrated_%s.refl" % mode)
+        )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
         test_rows = {k: millers.first_index(v) for k, v in test_indices.items()}

@@ -1,3 +1,4 @@
+# coding: utf-8
 """Methods for symmetry determination.
 
 This module provides a base class for symmetry determination algorithms.
@@ -37,7 +38,7 @@ class symmetry_base(object):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
     ):
-        """Initialise a symmetry_base object.
+        u"""Initialise a symmetry_base object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -53,7 +54,7 @@ class symmetry_base(object):
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
           min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
             automatic determination of resolution cutoff.
-          min_cc_half (float): minimum value of CC1/2 for automatic determination of
+          min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.
           relative_length_tolerance (float): Relative length tolerance in checking
             consistency of input unit cells against the median unit cell.
@@ -358,11 +359,11 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
                 min_i_mean_over_sigma_mean
             )
         except RuntimeError as e:
-            logger.info("I/sigI resolution filter failed with the following error:")
+            logger.info(u"I/σ(I) resolution filter failed with the following error:")
             logger.error(e)
         else:
             logger.info(
-                "Resolution estimate from <I>/<sigI> > %.1f : %.2f",
+                u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
                 min_i_mean_over_sigma_mean,
                 d_min_isigi,
             )
@@ -370,13 +371,11 @@ def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
         try:
             d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
         except RuntimeError as e:
-            logger.info("CChalf resolution filter failed with the following error:")
+            logger.info(u"CC½ resolution filter failed with the following error:")
             logger.error(e)
         else:
             logger.info(
-                "Resolution estimate from CC1/2 > %.2f: %.2f",
-                min_cc_half,
-                d_min_cc_half,
+                u"Resolution estimate from CC½ > %.2f: %.2f", min_cc_half, d_min_cc_half
             )
     valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
     if valid_d_mins:

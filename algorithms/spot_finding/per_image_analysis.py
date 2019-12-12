@@ -2,11 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import math
 import sys
+from dials.util import tabulate
 
 from cctbx import sgtbx, uctbx
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-from libtbx import group_args, table_utils
+from libtbx import group_args
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 from dxtbx.model import Experiment, ExperimentList
@@ -103,7 +104,7 @@ def outlier_rejection(reflections):
     p_prior = (
         1
         / math.sqrt(2 * math.pi * var_prior)
-        * math.exp(-(i_test - flex.mean(intensities_subset)) ** 2 / (2 * var_prior))
+        * math.exp(-((i_test - flex.mean(intensities_subset)) ** 2) / (2 * var_prior))
     )
     # print p_prior
 
@@ -613,18 +614,21 @@ def stats_single_image(
     filter_ice=True,
     ice_rings_width=0.004,
 ):
-    expts = ExperimentList(
-        [
-            Experiment(
-                detector=imageset.get_detector(),
-                beam=imageset.get_beam(),
-                scan=imageset.get_scan(),
-                goniometer=imageset.get_goniometer(),
-            )
-        ]
-    )
-    reflections.centroid_px_to_mm(expts)
-    reflections.map_centroids_to_reciprocal_space(expts)
+    if "rlp" not in reflections:
+        expts = ExperimentList(
+            [
+                Experiment(
+                    detector=imageset.get_detector(),
+                    beam=imageset.get_beam(),
+                    scan=imageset.get_scan(),
+                    goniometer=imageset.get_goniometer(),
+                )
+            ]
+        )
+        reflections.centroid_px_to_mm(expts)
+        reflections.map_centroids_to_reciprocal_space(expts)
+
+    reflections = reflections.select(reflections["rlp"].norms() > 0)
 
     if plot and i is not None:
         filename = "i_over_sigi_vs_resolution_%d.png" % (i + 1)
@@ -646,7 +650,7 @@ def stats_single_image(
     reflections_all = reflections
     reflections_no_ice = reflections_all
     ice_sel = None
-    if filter_ice:
+    if reflections.size() and filter_ice:
         ice_sel = ice_rings_selection(reflections_all, width=ice_rings_width)
         if ice_sel is not None:
             reflections_no_ice = reflections_all.select(~ice_sel)
@@ -666,10 +670,16 @@ def stats_single_image(
         estimated_d_min = estimate_resolution_limit(
             reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename
         )
-        d_min_distl_method_1, noisiness_method_1 = estimate_resolution_limit_distl_method1(
+        (
+            d_min_distl_method_1,
+            noisiness_method_1,
+        ) = estimate_resolution_limit_distl_method1(
             reflections_all, imageset, plot_filename=distl_method_1_filename
         )
-        d_min_distl_method_2, noisiness_method_2 = estimate_resolution_limit_distl_method2(
+        (
+            d_min_distl_method_2,
+            noisiness_method_2,
+        ) = estimate_resolution_limit_distl_method2(
             reflections_all, imageset, plot_filename=distl_method_2_filename
         )
     else:
@@ -822,9 +832,7 @@ def print_table(stats, perm=None, n_rows=None, out=None):
         out = sys.stdout
 
     rows = table(stats, perm=perm, n_rows=n_rows)
-    print(
-        table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"), file=out
-    )
+    print(tabulate(rows, headers="firstrow"), file=out)
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):

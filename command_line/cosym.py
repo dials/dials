@@ -6,7 +6,11 @@ import sys
 
 import iotbx.phil
 from cctbx import sgtbx
-from dials.command_line.symmetry import map_to_minimum_cell
+from dials.command_line.symmetry import (
+    apply_change_of_basis_ops,
+    change_of_basis_ops_to_minimum_cell,
+    eliminate_sys_absent,
+)
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
 from dials.util.options import flatten_experiments, flatten_reflections
@@ -44,6 +48,12 @@ unit_cell_clustering {
 }
 
 include scope dials.algorithms.symmetry.cosym.phil_scope
+
+relative_length_tolerance = 0.05
+  .type = float(value_min=0)
+
+absolute_angle_tolerance = 2
+  .type = float(value_min=0)
 
 min_reflections = 10
   .type = int(value_min=1)
@@ -97,15 +107,20 @@ class cosym(Subject):
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
+        # Map experiments and reflections to minimum cell
         # Eliminate reflections that are systematically absent due to centring
         # of the lattice, otherwise they would lead to non-integer miller indices
         # when reindexing to a primitive setting
-        self._reflections = self._eliminate_sys_absent(
-            self._experiments, self._reflections
+        cb_ops = change_of_basis_ops_to_minimum_cell(
+            self._experiments,
+            params.lattice_symmetry_max_delta,
+            params.relative_length_tolerance,
+            params.absolute_angle_tolerance,
         )
+        self._reflections = eliminate_sys_absent(self._experiments, self._reflections)
 
-        self._experiments, self._reflections = map_to_minimum_cell(
-            self._experiments, self._reflections, params.lattice_symmetry_max_delta
+        self._experiments, self._reflections = apply_change_of_basis_ops(
+            self._experiments, self._reflections, cb_ops
         )
 
         # transform models into miller arrays
@@ -202,25 +217,6 @@ class cosym(Subject):
                     )
                 )
                 refl["miller_index"] = cb_op.apply(refl["miller_index"])
-
-    @staticmethod
-    def _eliminate_sys_absent(experiments, reflections):
-        for i, expt in enumerate(experiments):
-            if expt.crystal.get_space_group().n_ltr() > 1:
-                effective_group = expt.crystal.get_space_group().build_derived_reflection_intensity_group(
-                    anomalous_flag=True
-                )
-                sys_absent_flags = effective_group.is_sys_absent(
-                    reflections[i]["miller_index"]
-                )
-                if sys_absent_flags.count(True):
-                    reflections[i] = reflections[i].select(~sys_absent_flags)
-                    logger.info(
-                        "Eliminating %i systematic absences for experiment %s",
-                        sys_absent_flags.count(True),
-                        expt.identifier,
-                    )
-        return reflections
 
     def _filter_min_reflections(self, experiments, reflections):
         identifiers = []

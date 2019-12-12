@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+from dials.util import tabulate
+
 
 class Array(object):
     """
@@ -83,16 +85,10 @@ class Table(object):
 
         :return: The string
         """
-        from libtbx.table_utils import format as table
-
         rows = [[col[1] for col in self.cols]]
         for i, row in enumerate(self.rows):
             rows.append([str(x) for x in row])
-        text = [
-            prefix + self.title,
-            table(rows, has_header=True, justify="left", prefix=prefix),
-            "",
-        ]
+        text = [prefix + self.title, tabulate(rows, headers="firstrow"), ""]
         return "\n".join(text)
 
 

@@ -100,10 +100,6 @@ phil_scope = parse(
         threshold will be retained. This is done after any combination of
         partials if applicable."
 
-    ignore_panels = False
-      .type = bool
-      .help = "Ignore multiple panels / detectors in output (deprecated)"
-
     min_isigi = -5
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"

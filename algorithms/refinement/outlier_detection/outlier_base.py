@@ -2,10 +2,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from math import pi
+from dials.util import tabulate
 
 from dials.array_family import flex
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 
 logger = logging.getLogger(__name__)
 
@@ -264,8 +264,7 @@ class CentroidOutlier(object):
             return False
         logger.info("{} reflections have been flagged as outliers".format(self.nreject))
         logger.debug("Outlier rejections per job:")
-        st = simple_table(rows, header)
-        logger.debug(st.format())
+        logger.debug(tabulate(rows, header))
 
         return True
 

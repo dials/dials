@@ -18,7 +18,6 @@ from annlib_ext import AnnAdaptor
 from dials.algorithms.refinement.engine import Journal
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx.test_utils import approx_equal
 
 
 def test1(dials_regression, tmpdir):
@@ -124,7 +123,8 @@ def test2(dials_regression, tmpdir):
         (0.076604576, 0.085852318, 0.001153643),
         (0.076603981, 0.085854175, 0.001153594),
     ]
-    assert approx_equal(history["rmsd"], expected_rmsds)
+    for a, b in zip(history["rmsd"], expected_rmsds):
+        assert a == pytest.approx(b, abs=1e-6)
 
     # check that the used_in_refinement flag got set correctly
     rt = flex.reflection_table.from_file(tmpdir.join("refined.refl").strpath)
@@ -170,7 +170,8 @@ def test3(dials_regression, tmpdir):
         [0.064305277, 0.071560831, 0.001165639],
         [0.062955462, 0.071315612, 0.001074453],
     ]
-    assert approx_equal(history["rmsd"], expected_rmsds)
+    for a, b in zip(history["rmsd"], expected_rmsds):
+        assert a == pytest.approx(b, abs=1e-6)
 
     # check the refined unit cell
     ref_exp = ExperimentListFactory.from_json_file(
@@ -193,3 +194,98 @@ def test3(dials_regression, tmpdir):
     ann = AnnAdaptor(data=predicted["xyzcal.px"].as_double(), dim=3, k=1)
     ann.query(refined_refl["xyzcal.px"].as_double())
     assert (ann.distances < 0.5).count(True) > (0.998 * refined_refl.size())
+
+
+@pytest.mark.parametrize("fix", ["cell", "orientation"])
+def test_scan_varying_with_fixed_crystal(fix, dials_data, tmpdir):
+    location = dials_data("multi_crystal_proteinase_k")
+    refls = location.join("reflections_1.pickle")
+    expts = location.join("experiments_1.json")
+
+    result = procrunner.run(
+        ("dials.refine", expts, refls, "crystal.fix=" + fix), working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+
+
+@pytest.mark.slow
+def test_scan_varying_missing_segments_multi_crystal(dials_data, tmpdir):
+    # https://github.com/dials/dials/issues/1053
+    location = dials_data("i19_1_pdteet_index")
+    refls = location.join("indexed.refl")
+    expts = location.join("indexed.expt")
+
+    # first remove some reflections to keep dials.refine sharp
+    data = flex.reflection_table.from_file(refls.strpath)
+
+    # prune only indexed reflections
+
+    data = data.select(data.get_flags(data.flags.indexed))
+    z = data["xyzobs.px.value"].parts()[2]
+
+    # take overlapping subsets of reflections from two lattices which do not
+    # fill the entire scan
+
+    sel = ((data["id"] == 0) & (z > 200)) | ((data["id"] == 1) & (z < 650))
+    trimmed = data.select(sel)
+
+    trimmed_filename = tmpdir.join("indexed_trim.refl").strpath
+    trimmed.as_file(trimmed_filename)
+
+    result = procrunner.run(
+        ("dials.refine", expts, trimmed_filename), working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+
+    el = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )
+
+    # verify scans start and finish correctly
+    image_ranges = [e.scan.get_image_range() for e in el]
+
+    assert image_ranges[0][1] == 850
+    assert image_ranges[1][0] == 1
+
+
+@pytest.mark.slow
+def test_scan_varying_multi_scan_one_crystal(dials_data, tmpdir):
+    # https://github.com/dials/dials/issues/994
+    location = dials_data("l_cysteine_dials_output")
+    refls = location.join("indexed.refl")
+    expts = location.join("indexed.expt")
+
+    result = procrunner.run(
+        ("dials.refine", expts, refls, "output.history=history.json"),
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+
+    el = ExperimentListFactory.from_json_file(
+        tmpdir.join("refined.expt").strpath, check_format=False
+    )
+
+    # Crystal has been copied into each experiment for scan-varying refinement
+    assert len(el.crystals()) == 4
+
+    # load and check results
+    history = Journal.from_json_file(tmpdir.join("history.json").strpath)
+
+    expected_rmsds = [
+        [0.102069933, 0.186479653, 0.000970519],
+        [0.078117368, 0.105479383, 0.000691489],
+        [0.058065104, 0.065957717, 0.000497565],
+        [0.042720574, 0.052950359, 0.000393993],
+        [0.034387246, 0.045392992, 0.000341015],
+        [0.031183632, 0.041773097, 0.000308778],
+        [0.029800047, 0.040413058, 0.000288812],
+        [0.029161629, 0.039836196, 0.000280338],
+        [0.028807767, 0.039529834, 0.000277679],
+        [0.028551526, 0.039361871, 0.000276772],
+        [0.028395222, 0.039322832, 0.000276637],
+        [0.028334067, 0.039332485, 0.000276678],
+        [0.028319859, 0.039338415, 0.000276687],
+        [0.028317563, 0.039339503, 0.000276691],
+    ]
+    for a, b in zip(history["rmsd"], expected_rmsds):
+        assert a == pytest.approx(b, abs=1e-6)

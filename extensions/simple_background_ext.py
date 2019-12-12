@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 class SimpleBackgroundExt(object):
-    """ An extension class implementing simple background subtraction. """
+    """An extension class implementing simple background subtraction."""
 
     name = "simple"
 

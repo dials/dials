@@ -256,7 +256,13 @@ class _Tiles(object):
 
         self.show_untrusted = False
 
-    def set_image(self, file_name_or_data, metrology_matrices=None, get_raw_data=None):
+    def set_image(
+        self,
+        file_name_or_data,
+        metrology_matrices=None,
+        get_raw_data=None,
+        show_saturated=True,
+    ):
         self.reset_the_cache()
         if file_name_or_data is None:
             self.raw_image = None
@@ -298,10 +304,14 @@ class _Tiles(object):
                 color_scheme=self.current_color_scheme,
             )
         else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
             self.flex_image = _get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=raw_data[0],
-                saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
+                saturation=saturation,
                 vendortype=self.raw_image.get_vendortype(),
                 show_untrusted=self.show_untrusted,
                 color_scheme=self.current_color_scheme,
@@ -310,7 +320,7 @@ class _Tiles(object):
         if self.zoom_level >= 0:
             self.flex_image.adjust(color_scheme=self.current_color_scheme)
 
-    def set_image_data(self, raw_image_data):
+    def set_image_data(self, raw_image_data, show_saturated=True):
         self.reset_the_cache()
         # XXX Since there doesn't seem to be a good way to refresh the
         # image (yet), the metrology has to be applied here, and not
@@ -329,10 +339,14 @@ class _Tiles(object):
                 beam=self.raw_image.get_beam(),
             )
         else:
+            if show_saturated:
+                saturation = self.raw_image.get_detector()[0].get_trusted_range()[1]
+            else:
+                saturation = 1e16
             self.flex_image = _get_flex_image(
                 brightness=self.current_brightness / 100,
                 data=raw_image_data,
-                saturation=self.raw_image.get_detector()[0].get_trusted_range()[1],
+                saturation=saturation,
                 vendortype=self.raw_image.get_vendortype(),
                 show_untrusted=self.show_untrusted,
             )
@@ -526,9 +540,10 @@ class _Tiles(object):
         return pic
 
     def get_flex_pixel_coordinates(self, lon, lat):
-        fast_picture_coord_pixel_scale, slow_picture_coord_pixel_scale = self.lon_lat_to_picture_fast_slow(
-            lon, lat
-        )
+        (
+            fast_picture_coord_pixel_scale,
+            slow_picture_coord_pixel_scale,
+        ) = self.lon_lat_to_picture_fast_slow(lon, lat)
         if (
             self.flex_image.supports_rotated_tiles_antialiasing_recommended
         ):  # for generic_flex_image

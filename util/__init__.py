@@ -1,12 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
 import contextlib
+import functools
 import sys
-import warnings
+import tabulate as _tabulate
 
 from ._progress import progress  # noqa: F401, exported symbol
 
 from libtbx.utils import Sorry
+
+
+# Define the default tablefmt in dials
+tabulate = functools.partial(_tabulate.tabulate, tablefmt="psql")
+functools.update_wrapper(tabulate, _tabulate.tabulate)
 
 
 def debug_console():
@@ -102,40 +108,6 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
             self.log("Left %s:%s" % (call_process, call_thread))
 
     return DCM(name, log_func)
-
-
-def halraiser(e):
-    """
-    Code:
-      try:
-        run()
-      except Exception as e:
-        halraiser(e)
-
-    can be rewritten as
-      with dials.util.show_mail_on_error():
-        run()
-
-    with the benefits of less boilerplate and that
-    halraiser() does not appear in the traceback
-    """
-    warnings.warn(
-        "halraiser() is deprecated. See https://github.com/dials/dials/commit/5c0d86142b8292f1017f5b0080b86917623dd4c9",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    text = "Please report this error to dials-support@lists.sourceforge.net:"
-
-    if len(e.args) == 0:
-        e.args = (text,)
-    elif issubclass(e.__class__, Sorry):
-        raise
-    elif len(e.args) == 1:
-        e.args = (text + " " + str(e.args[0]),)
-    else:
-        e.args = (text,) + e.args
-    raise
 
 
 @contextlib.contextmanager

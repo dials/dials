@@ -318,6 +318,9 @@ class ManualGeometryUpdater(object):
 
         if self.params.geometry.convert_sequences_to_stills:
             imageset = ImageSetFactory.imageset_from_anyset(imageset)
+            for j in imageset.indices():
+                imageset.set_scan(None, j)
+                imageset.set_goniometer(None, j)
         if not isinstance(imageset, ImageSequence):
             if self.params.geometry.convert_stills_to_sequences:
                 imageset = self.convert_stills_to_sequence(imageset)
@@ -528,16 +531,34 @@ class MetaDataUpdater(object):
 
             # Append to new imageset list
             if isinstance(imageset, ImageSequence):
-                experiments.append(
-                    Experiment(
-                        imageset=imageset,
-                        beam=imageset.get_beam(),
-                        detector=imageset.get_detector(),
-                        goniometer=imageset.get_goniometer(),
-                        scan=imageset.get_scan(),
-                        crystal=None,
+                if imageset.get_scan().is_still():
+                    # make lots of experiments all pointing at one
+                    # image set
+                    start, end = imageset.get_scan().get_array_range()
+                    for j in range(start, end):
+                        subset = imageset[j : j + 1]
+                        experiments.append(
+                            Experiment(
+                                imageset=imageset,
+                                beam=imageset.get_beam(),
+                                detector=imageset.get_detector(),
+                                goniometer=imageset.get_goniometer(),
+                                scan=subset.get_scan(),
+                                crystal=None,
+                            )
+                        )
+                else:
+                    # have just one experiment
+                    experiments.append(
+                        Experiment(
+                            imageset=imageset,
+                            beam=imageset.get_beam(),
+                            detector=imageset.get_detector(),
+                            goniometer=imageset.get_goniometer(),
+                            scan=imageset.get_scan(),
+                            crystal=None,
+                        )
                     )
-                )
             else:
                 for i in range(len(imageset)):
                     experiments.append(
@@ -676,10 +697,10 @@ class MetaDataUpdater(object):
 
 
 class Script(object):
-    """ Class to parse the command line options. """
+    """Class to parse the command line options."""
 
     def __init__(self, phil=phil_scope):
-        """ Set the expected options. """
+        """Set the expected options."""
         from dials.util.options import OptionParser
 
         # Create the option parser
@@ -693,7 +714,7 @@ class Script(object):
         )
 
     def run(self, args=None):
-        """ Parse the options. """
+        """Parse the options."""
 
         # Parse the command line arguments in two passes to set up logging early
         params, options = self.parser.parse_args(
@@ -755,7 +776,14 @@ class Script(object):
         num_still_sequences = 0
         num_stills = 0
         num_images = 0
+
+        # importing a lot of experiments all pointing at one imageset should
+        # work gracefully
+        counted_imagesets = []
+
         for e in experiments:
+            if e.imageset in counted_imagesets:
+                continue
             if isinstance(e.imageset, ImageSequence):
                 if e.imageset.get_scan().is_still():
                     num_still_sequences += 1
@@ -764,6 +792,8 @@ class Script(object):
             else:
                 num_stills += 1
             num_images += len(e.imageset)
+            counted_imagesets.append(e.imageset)
+
         format_list = {str(e.imageset.get_format_class()) for e in experiments}
 
         # Print out some bulk info

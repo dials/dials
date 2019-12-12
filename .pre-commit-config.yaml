@@ -19,3 +19,13 @@ repos:
   - id: check-merge-conflict
   - id: check-added-large-files
     args: ['--maxkb=200']
+
+- repo: local
+  hooks:
+  - id: no-images
+    name: Check for image files
+    entry: >
+      Images for documentation should go into the documentation repository
+      http://github.com/dials/dials.github.io
+    language: fail
+    files: '.*\.png$'

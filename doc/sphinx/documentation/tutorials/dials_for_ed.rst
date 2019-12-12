@@ -1,10 +1,3 @@
-.. raw:: html
-
-  <a href="https://dials.github.io/dials-1.14/documentation/tutorials/dials_for_ed.html" class="new-documentation">
-  This tutorial requires a DIALS 2.0 installation.<br/>
-  Please click here to go to the tutorial for DIALS 1.14.
-  </a>
-
 ##############################
 DIALS for Electron Diffraction
 ##############################
@@ -21,10 +14,12 @@ publication:
 
 .. pubmed:: 29872002 Electron diffraction
 
-This tutorial reproduces the data processing results described in that paper,
-which were produced by DIALS version ``1.dev.2084-g06727c3`` and CCP4 version
-``7.0.051``. Results may differ with other versions of the software. The
-commands listed here assume the use of a Bash shell on a POSIX-compliant
+.. warning::
+  This tutorial reproduces the data processing results described in that paper,
+  which were produced by DIALS version ``1.dev.2084-g06727c3`` and CCP4 version
+  ``7.0.051``. Results may differ with other versions of the software.
+
+The commands listed here assume the use of a Bash shell on a POSIX-compliant
 system, so would have to be adjusted appropriately for use on other systems
 such as Windows.
 
@@ -71,7 +66,7 @@ POSIX-compliant systems). For example (may require installation of curl):
 
 With the format class in place, we can look at images using
 :doc:`dials.image_viewer<../programs/dials_image_viewer>` and import them to
-create a ``datablock.expt``. However, for reasons outlined in the paper, the
+create a ``datablock.json``. However, for reasons outlined in the paper, the
 files have incomplete metadata. For successful processing, various aspects of
 the experimental geometry must be described during import so they override the
 dummy values supplied by the format class.
@@ -138,13 +133,13 @@ recreate that file now as follows:
   }
   EOF
 
-We can now generate the mask using the ``datablock.expt`` created earlier, then
+We can now generate the mask using the ``datablock.json`` created earlier, then
 re-import including the mask:
 
 .. code-block:: bash
 
-  dials.generate_mask mask.phil datablock.expt
-  dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=pixels.mask
+  dials.generate_mask mask.phil datablock.json
+  dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf site.phil mask=mask.pickle
 
 Dataset 2
 ---------
@@ -280,8 +275,8 @@ then the mask was generated, and used during re-import of the images
 
 .. code-block:: bash
 
-  dials.generate_mask mask.phil datablock.expt
-  dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=pixels.mask
+  dials.generate_mask mask.phil datablock.json
+  dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf site.phil mask=mask.pickle
 
 Dataset 7
 ---------
@@ -327,7 +322,7 @@ Dataset 1
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=20 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 2
 ---------
@@ -347,7 +342,7 @@ Dataset 2
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.6 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 3
 ---------
@@ -367,7 +362,7 @@ Dataset 3
   EOF
 
   dials.find_spots nproc=8 min_spot_size=10 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 4
 ---------
@@ -387,7 +382,7 @@ Dataset 4
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 5
 ---------
@@ -407,7 +402,7 @@ Dataset 5
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=2.5 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 6
 ---------
@@ -427,7 +422,7 @@ Dataset 6
   EOF
 
   dials.find_spots nproc=8 min_spot_size=8 max_spot_size=300 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Dataset 7
 ---------
@@ -447,7 +442,7 @@ Dataset 7
   EOF
 
   dials.find_spots nproc=8 min_spot_size=6 filter.d_min=3.0 filter.d_max=25 \
-    datablock.expt find_spots.phil
+    datablock.json find_spots.phil
 
 Indexing
 ========
@@ -455,7 +450,7 @@ Indexing
 Refinement of the experimental geometry was stabilised by fixing the detector
 distance, and :math:`\tau_2` and :math:`\tau_3` rotations. To do this, a PHIL
 parameter file was created in each processing directory for use in indexing and
-static refinement steps.
+refinement steps.
 
 .. code-block:: bash
 
@@ -465,7 +460,6 @@ static refinement steps.
       detector {
         fix_list = "Dist,Tau2,Tau3"
       }
-      scan_varying=false
     }
   }
   EOF
@@ -478,9 +472,9 @@ except dataset 6, with the following commands:
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil
-  dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
-  dials.refine bravais_setting_5.expt indexed.refl refine.phil
+  dials.index datablock.json strong.pickle refine.phil
+  dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
+  dials.refine bravais_setting_5.json indexed.pickle refine.phil
 
 Dataset 6
 ---------
@@ -519,8 +513,8 @@ of PHIL definitions:
 at this stage we did not impose additional lattice symmetry, so kept the
 triclinic solution from indexing and refinement::
 
-  dials.index datablock.expt strong.refl refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
-  dials.refine indexed.expt indexed.refl refine.phil restraint.phil
+  dials.index datablock.json strong.pickle refine.phil beam.fix=all restraint.phil unit_cell=32.05,68.05,104.56,90,90,90
+  dials.refine experiments.json indexed.pickle refine.phil restraint.phil
 
 Static model refinement
 =======================
@@ -528,7 +522,7 @@ Static model refinement
 For all these datasets there is significant uncertainty in the initial
 experimental model. Although indexing was successful in each case, the refined
 geometry shows some quite large differences compared with the initial geometry.
-This is immediately obvious from viewing the ``refined.expt`` with
+This is immediately obvious from viewing the ``refined_experiments.json`` with
 the :doc:`dials.image_viewer<../programs/dials_image_viewer>`. For example, here
 is one image from the first dataset:
 
@@ -549,43 +543,43 @@ differ for each dataset as follows:
 
 1. .. code-block:: bash
 
-    dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=pixels.mask \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.076
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_1/frame_value_###.cbf mask=mask.pickle \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.076
 
 2. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_2/frame_value_###.cbf \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.1615 \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.1615 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 3. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_3/frame_value_###.cbf \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0344 \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0344 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 4. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_4/frame_value_###.cbf \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 5. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_5/frame_value_###.cbf \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 6. .. code-block:: bash
 
-    dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=pixels.mask \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
+    dials.import template=$DATA_PARENT/Lys_ED_Dataset_6/frame_value_###.cbf mask=mask.pickle \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 7. .. code-block:: bash
 
     dials.import template=$DATA_PARENT/Lys_ED_Dataset_7/frame_value_###.cbf \
-      reference_geometry=refined.expt geometry.scan.oscillation=0,0.0481 \
+      reference_geometry=refined_experiments.json geometry.scan.oscillation=0,0.0481 \
       lookup.dx=$DATA_PARENT/dx.pickle lookup.dy=$DATA_PARENT/dy.pickle
 
 
@@ -597,10 +591,10 @@ Datasets 1-5 & 7
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil
-  dials.refine_bravais_settings indexed.refl indexed.expt refine.phil
-  dials.refine bravais_setting_5.expt indexed.refl refine.phil \
-    output.experiments=static.expt output.reflections=static.refl
+  dials.index datablock.json strong.pickle refine.phil
+  dials.refine_bravais_settings indexed.pickle experiments.json refine.phil
+  dials.refine bravais_setting_5.json indexed.pickle refine.phil \
+    output.experiments=static.json output.reflections=static.pickle
 
 Dataset 6
 ---------
@@ -611,10 +605,10 @@ restraint was still used.
 
 .. code-block:: bash
 
-  dials.index datablock.expt strong.refl refine.phil restraint.phil
-  dials.refine_bravais_settings indexed.expt indexed.refl refine.phil
-  dials.refine bravais_setting_5.expt indexed.refl refine.phil restraint.phil \
-    output.experiments=static.expt output.reflections=static.refl
+  dials.index datablock.json strong.pickle refine.phil restraint.phil
+  dials.refine_bravais_settings experiments.json indexed.pickle refine.phil
+  dials.refine bravais_setting_5.json indexed.pickle refine.phil restraint.phil \
+    output.experiments=static.json output.reflections=static.pickle
 
 Scan-varying refinement
 =======================
@@ -629,14 +623,14 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     beam.smoother.absolute_num_intervals=1 \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 2
 ---------
@@ -645,13 +639,13 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 3
 ---------
@@ -660,14 +654,14 @@ Varying beam and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     crystal.unit_cell.force_static=True \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 4
 ---------
@@ -676,13 +670,13 @@ Varying crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     crystal.unit_cell.force_static=True \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 5
 ---------
@@ -691,12 +685,12 @@ Varying crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 6
 ---------
@@ -705,15 +699,15 @@ Varying beam and crystal orientation with static, restrained cell:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
     crystal.unit_cell.force_static=True \
     restraint.phil \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Dataset 7
 ---------
@@ -722,13 +716,13 @@ Varying beam, unit cell and crystal orientation:
 
 .. code-block:: bash
 
-  dials.refine static.expt static.refl scan_varying=True \
+  dials.refine static.json static.pickle scan_varying=True \
     detector.fix=all \
-    parameterisation.block_width=0.25 \
+    reflections.block_width=0.25 \
     beam.fix="all in_spindle_plane out_spindle_plane *wavelength" \
     beam.force_static=False \
-    output.experiments=varying.expt \
-    output.reflections=varying.refl
+    output.experiments=varying.json \
+    output.reflections=varying.pickle
 
 Integration
 ===========
@@ -739,38 +733,38 @@ processing with CCP4.
 
 1. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.0
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_1.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.0
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_1.mtz
 
 2. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.3
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_2.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_2.mtz
 
 3. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.3
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_3.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.3
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_3.mtz
 
 4. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.2
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_4.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_4.mtz
 
 5. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.2
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_5.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.2
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_5.mtz
 
 6. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.5
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_6.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_6.mtz
 
 7. .. code-block:: bash
 
-    dials.integrate varying.expt varying.refl nproc=8 prediction.d_min=2.5
-    dials.export integrated.expt integrated.refl mtz.hklout=integrated_7.mtz
+    dials.integrate varying.json varying.pickle nproc=8 prediction.d_min=2.5
+    dials.export integrated_experiments.json integrated.pickle mtz.hklout=integrated_7.mtz
 
 Scaling and merging
 ===================

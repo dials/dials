@@ -4,12 +4,12 @@ Optimise the combination of profile and summation intensity values.
 from __future__ import absolute_import, division, print_function
 
 import logging
+from dials.util import tabulate
 
 import boost.python
 from cctbx import miller, crystal
 from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
 from dials.array_family import flex
-from libtbx.table_utils import simple_table
 
 miller_ext = boost.python.import_ext("cctbx_miller_ext")
 logger = logging.getLogger("dials")
@@ -23,7 +23,10 @@ def fast_merging_stats(array):
     """
     assert array.sigmas() is not None
     positive_sel = array.sigmas() > 0
-    array = array.select(positive_sel)
+    i_over_sigma_sel = (array.data() / array.sigmas()) > 1.0
+    array = array.select(positive_sel & i_over_sigma_sel)
+    if not array.size():
+        return -1.0, -1.0
     array = array.sort("packed_indices")
     merge_ext = miller_ext.merge_equivalents_obs(
         array.indices(), array.data(), array.sigmas(), use_internal_variance=True
@@ -107,16 +110,25 @@ class SingleDatasetIntensityCombiner(object):
             self._determine_Imids(raw_intensities)
             header = ["Combination", "CC1/2", "Rmeas"]
             rows, results = self._test_Imid_combinations()
-            st = simple_table(rows, header)
-            logger.info(st.format())
+            logger.info(tabulate(rows, header))
 
             self.max_key = min(results, key=results.get)
+            while results[self.max_key] < 0:
+                del results[self.max_key]
+                if results:
+                    self.max_key = min(results, key=results.get)
+                else:
+                    self.max_key = -1
+                    break
             if self.max_key == 0:
                 logger.info("Profile intensities determined to be best for scaling. \n")
             elif self.max_key == 1:
                 logger.info(
                     "Summation intensities determined to be best for scaling. \n"
                 )
+            elif self.max_key == -1:
+                logger.info("No good statistics found, using profile intensities. \n")
+                self.max_key = 0
             else:
                 logger.info(
                     "Combined intensities with Imid = %s determined to be best for scaling. \n",
@@ -241,17 +253,23 @@ class MultiDatasetIntensityCombiner(object):
 
         header = ["Combination", "CC1/2", "Rmeas"]
         rows, results = self._test_Imid_combinations()
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
 
         self.max_key = min(results, key=results.get)
         while results[self.max_key] < 0:
             del results[self.max_key]
-            self.max_key = min(results, key=results.get)
+            if results:
+                self.max_key = min(results, key=results.get)
+            else:
+                self.max_key = -1
+                break
         if self.max_key == 0:
             logger.info("Profile intensities determined to be best for scaling. \n")
         elif self.max_key == 1:
             logger.info("Summation intensities determined to be best for scaling. \n")
+        elif self.max_key == -1:
+            logger.info("No good statistics found, using profile intensities. \n")
+            self.max_key = 0
         else:
             logger.info(
                 "Combined intensities with Imid = %s determined to be best for scaling. \n",

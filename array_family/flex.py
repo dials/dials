@@ -255,10 +255,10 @@ class _(object):
         """
         Write the reflection table to file in either msgpack or pickle format
         """
-        if os.getenv("DIALS_USE_MESSAGEPACK"):
-            self.as_msgpack_file(filename)
-        else:
+        if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
+        else:
+            self.as_msgpack_file(filename)
 
     @staticmethod
     def from_file(filename):
@@ -1444,6 +1444,16 @@ Found %s"""
             enterings.set_selected(sel, self["s1"].dot(vec) < 0.0)
 
         self["entering"] = enterings
+
+    def get(self, key, default=None):
+        """
+        Get item from object for given key (ex: reflection_table column).
+
+        Returns default value if not found.
+        """
+        if key in self:
+            return self[key]
+        return default
 
 
 class reflection_table_selector(object):

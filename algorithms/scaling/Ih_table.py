@@ -104,7 +104,7 @@ class IhTable(object):
             "n_reflections_in_each_block": {},
             "miller_index_boundaries": [],
         }
-        self._determine_required_block_structures(reflection_tables, self.n_work_blocks)
+        self._determine_required_block_structures(reflection_tables)
         self._create_empty_Ih_table_blocks()
         for i, table in enumerate(reflection_tables):
             if indices_lists:
@@ -208,7 +208,7 @@ class IhTable(object):
             for block in self.Ih_table_blocks:
                 block.calc_Ih()
 
-    def _determine_required_block_structures(self, reflection_tables, nblocks=1):
+    def _determine_required_block_structures(self, reflection_tables):
         """
         Inspect the input to determine how to split into blocks.
 
@@ -228,8 +228,12 @@ class IhTable(object):
 
         asu_index_set = OrderedSet(sorted_joint_asu_indices)
         n_unique_groups = len(asu_index_set)
+        self.n_work_blocks = min(self.n_work_blocks, n_unique_groups)
         # also record how many unique groups go into each block
-        group_boundaries = [int(i * n_unique_groups / nblocks) for i in range(nblocks)]
+        group_boundaries = [
+            int(i * n_unique_groups / self.n_work_blocks)
+            for i in range(self.n_work_blocks)
+        ]
         group_boundaries.append(n_unique_groups)
 
         next_boundary = group_boundaries[1]
@@ -489,6 +493,10 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         self.Ih_table["weights"] = 1.0 / self.Ih_table["variance"]
         self._setup_info["setup_complete"] = True
 
+    def group_multiplicities(self):
+        """Return the multiplicities of the symmetry groups."""
+        return flex.double(self.size, 1.0) * self.h_index_matrix
+
     def select(self, sel):
         """Select a subset of the data, returning a new IhTableBlock object."""
         Ih_table = self.Ih_table.select(sel)
@@ -648,11 +656,17 @@ Not all rows of h_index_matrix appear to be filled in IhTableBlock setup."""
         return self.Ih_table.size()
 
     @property
+    def n_groups(self):
+        """Return the length of the stored Ih_table (a reflection table)."""
+        return self.h_index_matrix.n_cols
+
+    @property
     def asu_miller_index(self):
         """Return the miller indices in the asymmetric unit."""
         return self.Ih_table["asu_miller_index"]
 
     def setup_binner(self, unit_cell, space_group, n_resolution_bins):
+        """Create a binner for the reflections contained in the table."""
         ma = _reflection_table_to_iobs(self.Ih_table, unit_cell, space_group)
         # need d star sq step
         d_star_sq = ma.d_star_sq().data()

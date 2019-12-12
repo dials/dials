@@ -32,7 +32,7 @@ class ReflectionListEncoder(H5PYEncoder):
             self.encode_column(group, key, data)
 
     def encode_column(self, group, key, data):
-        """ Encode a column of data. """
+        """Encode a column of data."""
         from dials.array_family import flex
 
         if isinstance(data, flex.shoebox):
@@ -42,7 +42,7 @@ class ReflectionListEncoder(H5PYEncoder):
             group[key].attrs["flex_type"] = type(data).__name__
 
     def encode_shoebox(self, group, key, sb_data):
-        """ Encode a column of shoeboxes. """
+        """Encode a column of shoeboxes."""
         shoebox = group.create_group("shoebox")
         shoebox.attrs["flex_type"] = type(sb_data).__name__
         data = shoebox.create_group("data")
@@ -91,7 +91,7 @@ class ReflectionListDecoder(H5PYDecoder):
         return rl
 
     def decode_column(self, flex_type, data):
-        """ Decode a column for various flex types. """
+        """Decode a column for various flex types."""
         from dials.array_family import flex
 
         if flex_type == flex.int:

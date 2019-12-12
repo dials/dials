@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 
 class BackgroundAlgorithm(object):
-    """ Class to do background subtraction. """
+    """Class to do background subtraction."""
 
     def __init__(
         self, experiments, model="constant3d", tuning_constant=1.345, min_pixels=10
@@ -52,7 +52,7 @@ class BackgroundAlgorithm(object):
 
 
 class GLMBackgroundCalculatorFactory(object):
-    """ Class to do background subtraction. """
+    """Class to do background subtraction."""
 
     @classmethod
     def create(

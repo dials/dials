@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import errno
 import os
 import matplotlib
 
@@ -10,7 +11,6 @@ import matplotlib.gridspec as gridspec
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
 )
-from dials.command_line.analyse_output import ensure_directory
 
 import dials.util
 from libtbx.phil import parse
@@ -62,6 +62,15 @@ Examples::
 
   dials.plot_scan_varying_model refined.expt
 """
+
+
+def ensure_directory(path):
+    """Make the directory if not already there."""
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 
 class Script(object):

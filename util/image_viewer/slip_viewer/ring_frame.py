@@ -290,7 +290,10 @@ class RingSettingsPanel(wx.Panel):
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 
         if len(detector) > 1:
-            beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
+            (
+                beam_pixel_slow,
+                beam_pixel_fast,
+            ) = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
                 panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
             )
 

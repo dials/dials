@@ -333,9 +333,10 @@ class BasisVectorSearch(LatticeSearch):
         if self.d_min is not None:
             sel &= 1 / self.reflections["rlp"].norms() > self.d_min
         reflections = self.reflections.select(sel)
-        self.candidate_basis_vectors, used_in_indexing = self._basis_vector_search_strategy.find_basis_vectors(
-            reflections["rlp"]
-        )
+        (
+            self.candidate_basis_vectors,
+            used_in_indexing,
+        ) = self._basis_vector_search_strategy.find_basis_vectors(reflections["rlp"])
         self._used_in_indexing = sel.iselection().select(used_in_indexing)
         if self.d_min is None:
             self.d_min = flex.min(

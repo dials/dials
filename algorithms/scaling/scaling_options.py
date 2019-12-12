@@ -11,70 +11,61 @@ phil_scope = iotbx.phil.parse(
     .help = "If True, create new scaling models for all datasets"
     .expert_level = 0
   reflection_selection {
-    method = *auto quasi_random intensity_ranges use_all random
+    method = *quasi_random intensity_ranges use_all random
       .type = choice
       .help = "Method to use when choosing a reflection subset for scaling model"
-              "minimisation. auto (default) will choose use_all for small datasets"
-              "and quasi_random for large datasets, and will try to optimise the"
-              "quasi_random algorithm parameters. Manually selecting quasi-random"
-              "will use the reflection_selection.quasi_random parameters to"
-              "attempt to choose reflection groups that have a good connectedness"
-              "across reciprocal space, for all resolutions. intensity_ranges"
-              "uses the E2_range, Isigma_range and d_range options to choose a"
-              "subset of reflections. use_all uses all suitable reflections for"
-              "model minimisation, which may be slow for large datasets."
-    quasi_random {
-      min_per_area = 100
-        .type = ints
-        .help = "Numbers of reflections for each of the 12 volumes in"
-                "reciprocal space at a given resolution."
-        .expert_level = 2
-      n_resolution_bins = 20
-        .type = ints
-        .help = "Number of resolution bins for quasi random sampling."
-        .expert_level = 2
+              "minimisation."
+              "The quasi_random option randomly selects reflections groups"
+              "within a dataset, and also selects groups which have good"
+              "connectedness across datasets for multi-dataset cases. The random"
+              "option selects reflection groups randomly for both single"
+              "and multi dataset scaling, so for a single dataset"
+              "quasi_random == random."
+              "The intensity_ranges option uses the E2_range, Isigma_range and"
+              "d_range options to the subset of reflections"
+              "The use_all option uses all suitable reflections, which may be"
+              "slow for large datasets."
+    random {
       multi_dataset {
-        min_per_dataset = 500
-          .type = int
-          .help = "Minimum number of cross-dataset connected reflections in"
-                  "each dataset."
         Isigma_cutoff = 1.0
           .type = float
           .help = "Minimum average I/sigma of reflection groups to use when"
-                  "selecting cross-dataset connected reflections."
-        min_multiplicity = 2
-          .type = int
-          .help = "Minimum multiplicity of cross-dataset connected reflections"
-                  "for reflections used during minimisation."
+                  "selecting random reflections for minimisation."
       }
+      min_groups = 2000
+        .type = int
+        .help = "The minimum number of symmetry groups to use during"
+                "minimisation."
+        .expert_level=1
+      min_reflections = 50000
+        .type = int
+        .help = "The minimum number of reflections to use during minimisation."
+        .expert_level=1
     }
-    n_random = 50000
-      .type = int
-      .help = "Number of randomly chosen reflections to use"
     best_unit_cell = None
       .type = floats(size=6)
-      .help = "Best unit cell value, to use when performing resolution cutting
-               and merging statistics. If None, the median unit cell will be used."
+      .help = "Best unit cell value, to use when performing resolution cutting"
+              "and merging statistics. If None, the median cell will be used."
     E2_range = 0.8, 5.0
       .type = floats(size=2)
-      .help = "Minimum and maximum normalised E^2 value to used to select a
-              subset of reflections for minimising the scaling model."
+      .help = "Minimum and maximum normalised E^2 value to used to select a"
+              "subset of reflections for minimisation."
       .expert_level = 1
     Isigma_range = -5.0, 0.0
       .type = floats(size=2)
-      .help = "Minimum and maximum I/sigma values used to subset of reflections
-              to determine the scaling model. Here a value of 0.0 for the max
-              means no limit applied."
+      .help = "Minimum and maximum I/sigma values used to select a subset of"
+              "reflections for minimisation. A value of 0.0 for the maximum"
+              "indicates that no upper limit should be applied."
       .expert_level = 1
     d_range = None
       .type = floats(size=2)
-      .help = "Minimum and maximum - values used to subset of reflections
-              to determine the scaling model."
+      .help = "Minimum and maximum d-values used to select a subset of"
+              "reflections for minimisation."
       .expert_level = 1
     min_partiality = 0.95
       .type = float
-      .help = "Minimum partiality to use when selecting reflections to use
-               to determine the scaling model and error model."
+      .help = "Minimum partiality to use when selecting reflections to use"
+              "to determine the scaling model and error model."
       .expert_level = 2
     intensity_choice = profile sum *combine
       .type = choice
@@ -108,6 +99,16 @@ phil_scope = iotbx.phil.parse(
         .type = choice
         .help = "The error model to use."
         .expert_level = 1
+      basic {
+        a = None
+          .type = float
+          .help = "Used this fixed value for the error model 'a' parameter"
+          .expert_level = 2
+        b = None
+          .type = float
+          .help = "Used this fixed value for the error model 'b' parameter"
+          .expert_level = 2
+      }
       min_Ih = 25.0
         .type = float
         .help = "Reflections with expected intensity above this value are to."
@@ -189,10 +190,6 @@ phil_scope = iotbx.phil.parse(
       .help = "Offset for choosing unique groups for the free set from the whole
                set of unique groups."
       .expert_level = 2
-    space_group = None
-      .type = str
-      .help = "Option to specify space group for scaling (deprecated)"
-      .expert_level = 1
     full_matrix = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

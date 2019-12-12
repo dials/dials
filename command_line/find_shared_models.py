@@ -1,8 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
+import datetime
 import logging
+from collections import Counter
+from time import time
 
+from libtbx.phil import parse
+
+from dxtbx.imageset import ImageSequence
+from dials.util import log
+from dials.util import tabulate
 from dials.util import show_mail_on_error
+from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_shared_models")
 
@@ -18,8 +29,6 @@ Examples::
 """
 
 # Set the phil scope
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
   output {
@@ -37,28 +46,20 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
-        usage = (
-            "usage: %s [options] [param.phil] "
-            "models.expt " % libtbx.env.dispatcher_name
-        )
+        usage = "dials.find_shared_models [options] [param.phil] models.expt"
 
         # Initialise the base class
         self.parser = OptionParser(
-            usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
+            read_experiments=True,
+            check_format=False,
         )
 
     def run(self):
         """Execute the script."""
-        from dials.util.options import flatten_experiments
-        from dxtbx.imageset import ImageSequence
-        from time import time
-        from dials.util import log
-        import datetime
-
         start_time = time()
 
         # Parse the command line
@@ -66,9 +67,6 @@ class Script(object):
 
         # Configure the logging
         log.config(verbosity=options.verbose, logfile=params.output.log)
-
-        from dials.util.version import dials_version
-
         logger.info(dials_version())
 
         # Log the diff phil
@@ -95,8 +93,6 @@ class Script(object):
         sequences = sorted(sequences, key=lambda x: x.get_scan().get_epochs()[0])
 
         # Count the number of datasets from each day
-        from collections import Counter
-
         counter = Counter()
         for s in sequences:
             timestamp = s.get_scan().get_epochs()[0]
@@ -137,8 +133,6 @@ class Script(object):
             g_index.append(gn)
 
         # Print a table of possibly shared models
-        from libtbx.table_utils import format as table
-
         rows = [["Sequence", "ID", "Beam", "Detector", "Goniometer", "Date", "Time"]]
         for i in range(len(sequences)):
             timestamp = sequences[i].get_scan().get_epochs()[0]
@@ -155,7 +149,7 @@ class Script(object):
                 "%s" % time_str,
             ]
             rows.append(row)
-        logger.info(table(rows, has_header=True, justify="left", prefix=" "))
+        logger.info(tabulate(rows, headers="firstrow"))
 
         # Print the time
         logger.info("Time Taken: %f" % (time() - start_time))

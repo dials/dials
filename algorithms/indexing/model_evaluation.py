@@ -5,6 +5,7 @@ import copy
 import logging
 import math
 
+import dials.util
 import libtbx
 from libtbx import group_args
 from scitbx import matrix
@@ -195,9 +196,7 @@ class ModelRankFilter(ModelRank):
                 ]
             )
 
-        from libtbx import table_utils
-
-        return table_utils.format(rows=rows, has_header=True)
+        return dials.util.tabulate(rows, headers="firstrow")
 
 
 class ModelRankWeighted(ModelRank):
@@ -297,9 +296,7 @@ class ModelRankWeighted(ModelRank):
                 ]
             )
 
-        from libtbx import table_utils
-
-        return table_utils.format(rows=rows, has_header=True)
+        return dials.util.tabulate(rows, headers="firstrow")
 
 
 class Strategy(object):

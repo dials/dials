@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
-import six.moves.cPickle as pickle
 import os
 
 import procrunner
+from dials.array_family import flex
 
 
 def plausible(table):
@@ -18,7 +18,7 @@ def plausible(table):
     return True
 
 
-def test_static_prediction(dials_regression, run_in_tmpdir):
+def test_static_prediction(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",
@@ -27,17 +27,17 @@ def test_static_prediction(dials_regression, run_in_tmpdir):
                 "prediction_test_data",
                 "experiments_scan_static_crystal.json",
             ),
-        ]
+        ],
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
 
-    with open("predicted.refl", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
     assert len(table) == 1996
     assert plausible(table)
 
 
-def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
+def test_scan_varying_prediction(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",
@@ -46,17 +46,17 @@ def test_scan_varying_prediction(dials_regression, run_in_tmpdir):
                 "prediction_test_data",
                 "experiments_scan_varying_crystal.json",
             ),
-        ]
+        ],
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
 
-    with open("predicted.refl", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
     assert len(table) == 1934
     assert plausible(table)
 
 
-def test_force_static_prediction(dials_regression, run_in_tmpdir):
+def test_force_static_prediction(dials_regression, tmpdir):
     result = procrunner.run(
         [
             "dials.predict",
@@ -66,11 +66,11 @@ def test_force_static_prediction(dials_regression, run_in_tmpdir):
                 "experiments_scan_varying_crystal.json",
             ),
             "force_static=True",
-        ]
+        ],
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
 
-    with open("predicted.refl", "rb") as f:
-        table = pickle.load(f)
+    table = flex.reflection_table.from_file(tmpdir / "predicted.refl")
     assert len(table) == 1996
     assert plausible(table)

@@ -166,8 +166,8 @@ class AnalysisResults(object):
             "initial_expids_and_image_ranges"
         ]
         results.cycle_results = [
-            dictionary["cycle_results"][key]
-            for key in sorted(dictionary["cycle_results"].iterkeys())
+            dictionary["cycle_results"][str(key)]
+            for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
         ]
         results.initial_n_reflections = dictionary["initial_n_reflections"]
         results.final_stats = dictionary["final_stats"]
@@ -254,9 +254,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "CC-half vs cycle",
+                    "title": u"CC<sub>½</sub> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "CC-half"},
+                    "yaxis": {"title": u"CC<sub>½</sub>"},
                 },
             }
         }
@@ -292,9 +292,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "<I/sigma> vs cycle",
+                    "title": u"<I/σ(I)> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "<I/sigma>"},
+                    "yaxis": {"title": u"<I/σ(I)>"},
                 },
             }
         }
@@ -337,13 +337,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "CC-half vs resolution",
+                    "title": u"CC<sub>½</sub> vs resolution",
                     "xaxis": {
                         "title": u"Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": "CC-half", "range": [0, 1]},
+                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -461,9 +461,9 @@ def make_histogram_plots(cycle_results):
                     }
                 ],
                 "layout": {
-                    "title": "Resolution-averaged CC-half (sigma-tau) vs cycle",
+                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "Resolution-averaged CC-half (sigma-tau)"},
+                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
                 },
             }
         }
@@ -503,7 +503,7 @@ def make_histogram_plots(cycle_results):
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": "Delta CC-half"},
+                        "xaxis": {"title": u"Delta CC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],

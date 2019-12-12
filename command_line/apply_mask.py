@@ -42,10 +42,10 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ A class to encapsulate the script. """
+    """A class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         from dials.util.options import OptionParser
 
         # Create the parser
@@ -55,7 +55,7 @@ class Script(object):
         )
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
         from dials.util.options import flatten_experiments
         from dials.util import Sorry
 

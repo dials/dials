@@ -7,6 +7,8 @@ import copy
 import logging
 import math
 
+import dials.util
+import libtbx
 import psutil
 
 from dxtbx.model.experiment_list import ExperimentList
@@ -14,7 +16,22 @@ from dials.array_family import flex
 from dials.algorithms.refinement.refinement_helpers import ordinal_number
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
-import libtbx
+from dials.algorithms.refinement.reflection_manager import ReflectionManagerFactory
+from dials.algorithms.refinement.prediction.managed_predictors import (
+    ExperimentsPredictorFactory,
+)
+from dials.algorithms.refinement.parameterisation import (
+    build_prediction_parameterisation,
+)
+from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+from dials.algorithms.refinement.parameterisation.autoreduce import AutoReduce
+from dials.algorithms.refinement.parameterisation.parameter_report import (
+    ParameterReporter,
+)
+from dials.algorithms.refinement.engine import AdaptLstbx
+from dials.algorithms.refinement.restraints import RestraintsParameterisation
+from dials.algorithms.refinement.target import TargetFactory
+from dials.algorithms.refinement.refinement_helpers import string_sel
 
 # The include scope directive does not work here. For example:
 #
@@ -135,6 +152,80 @@ def _copy_experiments_for_refining(experiments):
     return out_list
 
 
+def _trim_scans_to_observations(experiments, reflections):
+    """Check the range of each scan matches the range of observed data and
+    trim the scan to match if it is too wide"""
+
+    # Get observed image number (or at least observed phi)
+    obs_phi = reflections["xyzobs.mm.value"].parts()[2]
+    try:
+        obs_z = reflections["xyzobs.px.value"].parts()[2]
+    except KeyError:
+        obs_z = None
+
+    # Get z_min and z_max from shoeboxes if present
+    try:
+        shoebox = reflections["shoebox"]
+        bb = shoebox.bounding_boxes()
+        z_min, z_max = bb.parts()[4:]
+        if z_min.all_eq(0):
+            shoebox = None
+    except KeyError:
+        shoebox = None
+
+    for iexp, exp in enumerate(experiments):
+
+        sel = reflections["id"] == iexp
+        isel = sel.iselection()
+        if obs_z is not None:
+            exp_z = obs_z.select(isel)
+        else:
+            exp_phi = obs_phi.select(isel)
+            exp_z = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
+
+        start, stop = exp.scan.get_array_range()
+        min_exp_z = flex.min(exp_z)
+        max_exp_z = flex.max(exp_z)
+
+        # If observed array range is correct, skip to next experiment
+        if int(min_exp_z) == start and int(math.ceil(max_exp_z)) == stop:
+            continue
+
+        # Extend array range either by shoebox size, or 0.5 deg if shoebox not available
+        if shoebox is not None:
+            obs_start = flex.min(z_min.select(isel))
+            obs_stop = flex.max(z_max.select(isel))
+        else:
+            obs_start = int(min_exp_z)
+            obs_stop = int(math.ceil(max_exp_z))
+            half_deg_in_images = int(math.ceil(0.5 / exp.scan.get_oscillation()[1]))
+            obs_start -= half_deg_in_images
+            obs_stop += half_deg_in_images
+
+        # Convert obs_start, obs_stop from position in array range to integer image number
+        if obs_start > start or obs_stop < stop:
+            im_start = max(start, obs_start) + 1
+            im_stop = min(obs_stop, stop)
+
+            logger.warning(
+                "The reflections do not fill the scan range. The scan will be trimmed "
+                "to images {{{0},{1}}} to match the range of observed data".format(
+                    im_start, im_stop
+                )
+            )
+
+            # Ensure the scan is unique to this experiment and set trimmed limits
+            exp.scan = copy.deepcopy(exp.scan)
+            new_oscillation = (
+                exp.scan.get_angle_from_image_index(im_start),
+                exp.scan.get_oscillation()[1],
+            )
+            exp.scan.set_image_range((im_start, im_stop))
+            exp.scan.set_oscillation(new_oscillation)
+
+    return experiments
+
+
 class RefinerFactory(object):
     """Factory class to create refiners"""
 
@@ -153,6 +244,7 @@ class RefinerFactory(object):
             "xyzcal.px",
             "xyzobs.mm.variance",
             "flags",
+            "shoebox",
             "delpsical.weights",
         ]
         # NB xyzobs.px.value & xyzcal.px required by SauterPoon outlier rejector
@@ -169,19 +261,7 @@ class RefinerFactory(object):
         return rt
 
     @classmethod
-    def from_parameters_data_experiments(
-        cls, params, reflections, experiments, verbosity=None
-    ):
-
-        if verbosity is not None:
-            import warnings
-
-            warnings.warn(
-                "Setting verbosity for a Refiner is deprecated. See https://github.com/dials/dials/issues/860",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
+    def from_parameters_data_experiments(cls, params, reflections, experiments):
         # TODO Checks on the input
         # E.g. does every experiment contain at least one overlapping model with at
         # least one other experiment? Are all the experiments either rotation series
@@ -234,8 +314,11 @@ class RefinerFactory(object):
         if params.refinement.parameterisation.scan_varying is libtbx.Auto:
             params.refinement.parameterisation.scan_varying = False
 
-        # calculate reflection block_width if required for scan-varying refinement
+        # Trim scans and calculate reflection block_width if required for scan-varying refinement
         if params.refinement.parameterisation.scan_varying:
+
+            experiments = _trim_scans_to_observations(experiments, reflections)
+
             from dials.algorithms.refinement.reflection_manager import BlockCalculator
 
             block_calculator = BlockCalculator(experiments, reflections)
@@ -250,10 +333,6 @@ class RefinerFactory(object):
         logger.debug("Input reflection list size = %d observations", len(reflections))
 
         # create reflection manager
-        from dials.algorithms.refinement.reflection_manager import (
-            ReflectionManagerFactory,
-        )
-
         refman = ReflectionManagerFactory.from_parameters_reflections_experiments(
             params.refinement.reflections, reflections, experiments, do_stills
         )
@@ -272,10 +351,6 @@ class RefinerFactory(object):
         do_sparse = params.refinement.parameterisation.sparse
 
         # create managed reflection predictor
-        from dials.algorithms.refinement.prediction.managed_predictors import (
-            ExperimentsPredictorFactory,
-        )
-
         ref_predictor = ExperimentsPredictorFactory.from_experiments(
             experiments,
             force_stills=do_stills,
@@ -306,13 +381,26 @@ class RefinerFactory(object):
 
         # Create model parameterisations
         logger.debug("Building prediction equation parameterisation")
-        pred_param, param_reporter = cls.config_parameterisation(
+        pred_param = build_prediction_parameterisation(
             params.refinement.parameterisation, experiments, refman, do_stills
         )
-        logger.debug("Prediction equation parameterisation built")
-        logger.debug("Parameter order : name mapping")
-        for i, e in enumerate(pred_param.get_param_names()):
-            logger.debug("Parameter %03d : %s", i + 1, e)
+
+        # Build a constraints manager, if requested
+        cmf = ConstraintManagerFactory(params, pred_param)
+        constraints_manager = cmf()
+
+        # Test for parameters that have too little data to refine and act accordingly
+        autoreduce = AutoReduce(
+            params.refinement.parameterisation.auto_reduction,
+            pred_param,
+            refman,
+            constraints_manager,
+            cmf,
+        )
+        autoreduce()
+
+        # if reduction was done, constraints_manager will have changed
+        constraints_manager = autoreduce.constraints_manager
 
         # Build a restraints parameterisation (if requested).
         # Only unit cell restraints are supported at the moment.
@@ -320,11 +408,19 @@ class RefinerFactory(object):
             params.refinement.parameterisation, pred_param
         )
 
-        # Build a constraints manager, if requested
-        from dials.algorithms.refinement.constraints import ConstraintManagerFactory
+        # Parameter reporting
+        logger.debug("Prediction equation parameterisation built")
+        logger.debug("Parameter order : name mapping")
+        for i, e in enumerate(pred_param.get_param_names()):
+            logger.debug("Parameter %03d : %s", i + 1, e)
 
-        cmf = ConstraintManagerFactory(params, pred_param)
-        constraints_manager = cmf()
+        param_reporter = ParameterReporter(
+            pred_param.get_detector_parameterisations(),
+            pred_param.get_beam_parameterisations(),
+            pred_param.get_crystal_orientation_parameterisations(),
+            pred_param.get_crystal_unit_cell_parameterisations(),
+            pred_param.get_goniometer_parameterisations(),
+        )
 
         # Create target function
         logger.debug("Building target function")
@@ -353,7 +449,6 @@ class RefinerFactory(object):
                 nparam, nref, ndim
             )
         )
-        from dials.algorithms.refinement.engine import AdaptLstbx
 
         if not params.refinement.parameterisation.sparse and isinstance(
             refinery, AdaptLstbx
@@ -413,31 +508,6 @@ class RefinerFactory(object):
         return params
 
     @staticmethod
-    def config_parameterisation(params, experiments, refman, do_stills=False):
-        from dials.algorithms.refinement.parameterisation import (
-            build_prediction_parameterisation,
-        )
-
-        pred_param = build_prediction_parameterisation(
-            params, experiments, refman, do_stills
-        )
-
-        # Parameter reporting
-        from dials.algorithms.refinement.parameterisation.parameter_report import (
-            ParameterReporter,
-        )
-
-        param_reporter = ParameterReporter(
-            pred_param.get_detector_parameterisations(),
-            pred_param.get_beam_parameterisations(),
-            pred_param.get_crystal_orientation_parameterisations(),
-            pred_param.get_crystal_unit_cell_parameterisations(),
-            pred_param.get_goniometer_parameterisations(),
-        )
-
-        return pred_param, param_reporter
-
-    @staticmethod
     def config_restraints(params, pred_param):
         """Given a set of user parameters plus a model parameterisation, create
         restraints plus a parameterisation of these restraints
@@ -466,8 +536,6 @@ class RefinerFactory(object):
         xl_ori_params = pred_param.get_crystal_orientation_parameterisations()
         xl_uc_params = pred_param.get_crystal_unit_cell_parameterisations()
         gon_params = pred_param.get_goniometer_parameterisations()
-
-        from dials.algorithms.refinement.restraints import RestraintsParameterisation
 
         rp = RestraintsParameterisation(
             detector_parameterisations=det_params,
@@ -590,8 +658,6 @@ class RefinerFactory(object):
         do_sparse,
     ):
 
-        from dials.algorithms.refinement.target import TargetFactory
-
         target = TargetFactory.from_parameters_and_experiments(
             params,
             experiments,
@@ -708,7 +774,6 @@ class Refiner(object):
             return None, None
 
         all_labels = self._pred_param.get_param_names()
-        from dials.algorithms.refinement.refinement_helpers import string_sel
 
         if col_select is None:
             col_select = list(range(len(all_labels)))
@@ -741,8 +806,6 @@ class Refiner(object):
     def print_step_table(self):
         """print useful output about refinement steps in the form of a simple table"""
 
-        from libtbx.table_utils import simple_table
-
         logger.info("\nRefinement steps:")
 
         rmsd_multipliers = []
@@ -768,16 +831,13 @@ class Refiner(object):
                 + ["%.5g" % r for r in rmsds]
             )
 
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(dials.util.tabulate(rows, header))
         logger.info(self._refinery.history.reason_for_termination)
 
         return
 
     def print_out_of_sample_rmsd_table(self):
         """print out-of-sample RSMDs per step, if these were tracked"""
-
-        from libtbx.table_utils import simple_table
 
         # check if it makes sense to proceed
         if "out_of_sample_rmsd" not in self._refinery.history:
@@ -810,15 +870,12 @@ class Refiner(object):
             ]
             rows.append([str(i), str(nref)] + ["%.5g" % e for e in rmsds])
 
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(dials.util.tabulate(rows, header))
 
         return
 
     def print_exp_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
-
-        from libtbx.table_utils import simple_table
 
         logger.info("\nRMSDs by experiment:")
 
@@ -876,15 +933,12 @@ class Refiner(object):
             rows.append([str(iexp), str(num)] + ["%.5g" % r for r in rmsds])
 
         if len(rows) > 0:
-            st = simple_table(rows, header)
-            logger.info(st.format())
+            logger.info(dials.util.tabulate(rows, header))
 
         return
 
     def print_panel_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""
-
-        from libtbx.table_utils import simple_table
 
         if len(self._experiments.scans()) > 1:
             logger.warning(
@@ -943,8 +997,7 @@ class Refiner(object):
                 rows.append([str(ipanel), str(num)] + ["%.5g" % r for r in rmsds])
 
             if len(rows) > 0:
-                st = simple_table(rows, header)
-                logger.info(st.format())
+                logger.info(dials.util.tabulate(rows, header))
 
         return
 
@@ -1017,8 +1070,6 @@ class Refiner(object):
         """Return a selection as a flex.bool in terms of the input reflection
         data of those reflections that were used in the final step of
         refinement."""
-
-        from scitbx.array_family import flex
 
         matches = self._refman.get_matches()
         selection = flex.bool(len(self._refman.get_indexed()), False)

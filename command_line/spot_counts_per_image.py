@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import sys
-
+from dials.util import tabulate
+from dials.array_family import flex
 import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
@@ -66,15 +67,33 @@ def run(args):
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
     expts = set(reflections["id"])
-    if max(expts) >= len(experiments.imagesets()):
+    if len(expts) and max(expts) >= len(experiments.imagesets()):
         sys.exit("Unknown experiments in reflection list")
+
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    imageset_expts = {}
+    imageset_scans = {}
+    for j, experiment in enumerate(experiments):
+        imageset = experiment.imageset
+        if imageset in imageset_expts:
+            imageset_expts[imageset].append(j)
+            imageset_scans[imageset] += experiment.scan
+        else:
+            imageset_expts[imageset] = [j]
+            imageset_scans[imageset] = experiment.scan
 
     if params.id is not None:
         reflections = reflections.select(reflections["id"] == params.id)
 
     all_stats = []
-    for j, imageset in enumerate(experiments.imagesets()):
-        refl = reflections.select(reflections["id"] == j)
+    for imageset in imageset_expts:
+        imageset.set_scan(imageset_scans[imageset])
+
+        selected = flex.bool(reflections.size(), False)
+        for j in imageset_expts[imageset]:
+            selected.set_selected(reflections["id"] == j, True)
+        refl = reflections.select(selected)
         stats = per_image_analysis.stats_imageset(
             imageset,
             refl,
@@ -97,7 +116,6 @@ def run(args):
             getattr(e, k).extend(getattr(s, k))
 
     per_image_analysis.print_table(e)
-    from libtbx import table_utils
 
     # FIXME this is now probably nonsense...
     overall_stats = per_image_analysis.stats_single_image(
@@ -119,7 +137,7 @@ def run(args):
             % (overall_stats.d_min_distl_method_1, overall_stats.noisiness_method_1),
         ),
     ]
-    print(table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"))
+    print(tabulate(rows, headers="firstrow"))
 
     if params.json:
         import json

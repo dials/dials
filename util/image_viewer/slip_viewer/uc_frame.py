@@ -6,6 +6,7 @@ import cctbx.miller
 import wx
 from cctbx.crystal import symmetry
 from wx.lib.agw.floatspin import EVT_FLOATSPIN, FloatSpin
+from scitbx.matrix import col
 
 
 class UCSettingsFrame(wx.MiniFrame):
@@ -279,9 +280,13 @@ class UCSettingsPanel(wx.Panel):
             wx.ALL | wx.ALIGN_CENTER_VERTICAL,
             5,
         )
+        origin_box = wx.BoxSizer(wx.HORIZONTAL)
+        self.origin = wx.StaticText(self, label="")
+        origin_box.Add(self.origin, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(EVT_FLOATSPIN, self.OnSpinCenter, self.spinner_slow)
 
         sizer.Add(box)
+        sizer.Add(origin_box)
 
         self.DrawRings()
 
@@ -399,7 +404,10 @@ class UCSettingsPanel(wx.Panel):
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 
         if len(detector) > 1:
-            beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
+            (
+                beam_pixel_slow,
+                beam_pixel_fast,
+            ) = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
                 panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
             )
 
@@ -424,3 +432,12 @@ class UCSettingsPanel(wx.Panel):
             renderer=self._draw_rings_layer,
             name="<ring_layer>",
         )
+        panel = detector[0]
+        fast = col(panel.get_fast_axis())
+        slow = col(panel.get_slow_axis())
+        norm = col(panel.get_normal())
+        x = -panel.pixel_to_millimeter(self._center)[0]
+        y = -panel.pixel_to_millimeter(self._center)[1]
+        z = -(panel.get_distance() - distance)
+        origin = (fast * x + slow * y + norm * z) + col(panel.get_origin())
+        self.origin.SetLabel("Panel 0 origin: %f, %f, %f" % origin.elems)

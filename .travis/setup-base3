@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EXPECTED_CACHE_REVISION=20190705-python3
+EXPECTED_CACHE_REVISION=20191115-python3
 
 if [ "$TRAVIS_EVENT_TYPE" == "cron" ]; then
   echo -e "\e[31;1mCron job build detected. Invalidating cache.\e[0m"

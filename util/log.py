@@ -4,7 +4,6 @@ import logging.config
 import os
 import six
 import sys
-import warnings
 
 try:
     from dlstbx.util.colorstreamhandler import ColorStreamHandler
@@ -12,7 +11,7 @@ except ImportError:
     ColorStreamHandler = None
 
 
-def config(verbosity=0, name=None, info=None, debug=None, logfile=None):
+def config(verbosity=0, logfile=None):
     """
     Configure the logging.
 
@@ -23,21 +22,6 @@ def config(verbosity=0, name=None, info=None, debug=None, logfile=None):
     :param logfile: Filename for log output.  If False, no log file is written.
     :type logfile: str
     """
-
-    if info:
-        warnings.warn(
-            "info= parameter is deprecated, use logfile=",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    if debug:
-        warnings.warn(
-            "debug= parameter is deprecated, use logfile= and verbosity=",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-    if name:
-        warnings.warn("name= parameter is deprecated", DeprecationWarning, stacklevel=2)
 
     if os.getenv("COLOURLOG") and ColorStreamHandler:
         console = ColorStreamHandler(sys.stdout)
@@ -52,9 +36,8 @@ def config(verbosity=0, name=None, info=None, debug=None, logfile=None):
     else:
         loglevel = logging.INFO
 
-    logfilename = logfile or info or debug
-    if logfilename:
-        fh = logging.FileHandler(filename=logfilename, mode="w")
+    if logfile:
+        fh = logging.FileHandler(filename=logfile, mode="w")
         fh.setLevel(loglevel)
         dials_logger.addHandler(fh)
 
@@ -65,41 +48,8 @@ def config(verbosity=0, name=None, info=None, debug=None, logfile=None):
     print_banner(use_logging=True)
 
 
-def config_simple_stdout(name="dials"):
-    warnings.warn(
-        "config_simple_stdout is deprecated, use config",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    """
-    Configure the logging to just go to stdout
-    """
-
-    # Configure the logging
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {"standard": {"format": "%(message)s"}},
-            "handlers": {
-                "stream": {
-                    "level": "DEBUG",
-                    "class": "logging.StreamHandler",
-                    "formatter": "standard",
-                    "stream": "ext://sys.stdout",
-                }
-            },
-            "loggers": {
-                name: {"handlers": ["stream"], "level": "DEBUG", "propagate": True}
-            },
-        }
-    )
-
-    print_banner(use_logging=True)
-
-
 class CacheHandler(logging.Handler):
-    """ A simple class to store log messages. """
+    """A simple class to store log messages."""
 
     def __init__(self):
         """

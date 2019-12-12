@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessorImageBase(object):
-    """ Processor interface class. """
+    """Processor interface class."""
 
     def __init__(self, manager):
         """
@@ -407,10 +407,10 @@ class ManagerImage(object):
 
 
 class ProcessorImage(ProcessorImageBase):
-    """ Top level processor for per image processing. """
+    """Top level processor for per image processing."""
 
     def __init__(self, experiments, reflections, params):
-        """ Initialise the manager and the processor. """
+        """Initialise the manager and the processor."""
 
         # Create the processing manager
         manager = ManagerImage(experiments, reflections, params)
