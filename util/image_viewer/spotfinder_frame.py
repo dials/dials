@@ -843,7 +843,10 @@ class SpotFrame(XrayFrame):
     def get_image_data(self, image):
         detector = image.get_detector()
         image.set_image_data(None)
-        image_data = image.get_image_data()
+        if self.settings.image_type == "corrected":
+            image_data = image.get_image_data()
+        else:
+            image_data = image.get_image_data(corrected=False)
         if not isinstance(image_data, tuple):
             image_data = (image_data,)
 
@@ -929,7 +932,9 @@ class SpotFrame(XrayFrame):
 
     def show_filters(self):
         image_data = self.get_image_data(self.pyslip.tiles.raw_image)
-        show_saturated = self.settings.display == "image"
+        show_saturated = (
+            self.settings.display == "image" and self.settings.image_type == "corrected"
+        )
         self.pyslip.tiles.set_image_data(image_data, show_saturated)
         self.pyslip.ZoomToLevel(self.pyslip.tiles.zoom_level)
         self.update_statusbar()  # XXX Not always working?
@@ -1648,6 +1653,7 @@ class SpotSettingsPanel(wx.Panel):
         self.params = self.GetParent().params
 
         # CONTROLS 4: additional settings for derived class
+        self.settings.image_type = "corrected"
         self.settings.brightness = self.params.brightness
         self.settings.color_scheme = self.params.color_scheme
         self.settings.show_spotfinder_spots = False
@@ -1680,6 +1686,7 @@ class SpotSettingsPanel(wx.Panel):
         self._sizer = wx.BoxSizer(wx.VERTICAL)
         s = self._sizer
         self.SetSizer(self._sizer)
+
         grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
         s.Add(grid)
         txt1 = wx.StaticText(self, -1, "Zoom level:")
@@ -1809,6 +1816,18 @@ class SpotSettingsPanel(wx.Panel):
         # txtd = wx.StaticText(self, -1,  "Minimum spot area (pxls)",)
         # box.Add(txtd, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
         # s.Add(box)
+
+        # Image type choice
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        txt1 = wx.StaticText(self, -1, "Image type:")
+        grid.Add(txt1, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.image_types = ["corrected", "raw"]
+        self.image_type_ctrl = wx.Choice(self, -1, choices=self.image_types)
+        self.image_type_ctrl.SetSelection(
+            self.image_types.index(self.settings.image_type)
+        )
+        grid.Add(self.image_type_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        s.Add(grid)
 
         # DispersionThreshold thresholding parameters
         grid = wx.FlexGridSizer(cols=1, rows=1, vgap=0, hgap=0)
@@ -1943,6 +1962,7 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_txt_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateBrightness)
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.image_type_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
@@ -1968,6 +1988,9 @@ class SpotSettingsPanel(wx.Panel):
     # CONTROLS 2:  Fetch values from widgets
     def collect_values(self):
         if self.settings.enable_collect_values:
+            self.settings.image_type = self.image_types[
+                self.image_type_ctrl.GetSelection()
+            ]
             self.settings.show_resolution_rings = self.resolution_rings_ctrl.GetValue()
             self.settings.show_ice_rings = self.ice_rings_ctrl.GetValue()
             self.settings.zoom_level = self.levels[self.zoom_ctrl.GetSelection()]

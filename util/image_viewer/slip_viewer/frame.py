@@ -443,7 +443,10 @@ class XrayFrame(XFBaseClass):
             file_name_or_data=img,
             metrology_matrices=self.metrology_matrices,
             get_image_data=get_image_data,
-            show_saturated=(self.settings.display == "image"),
+            show_saturated=(
+                self.settings.display == "image"
+                and self.settings.image_type == "corrected"
+            ),
         )
 
         # Initialise position zoom level for first image.  XXX Why do we
