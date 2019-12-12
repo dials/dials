@@ -1,15 +1,15 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.show
-
 from __future__ import absolute_import, division, print_function
 
+import collections
 import os
+
 import iotbx.phil
 import numpy
-from dials.util import tabulate
-
+from cctbx import uctbx
+from dials.array_family import flex
+from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
-from dials.util import Sorry
 
 help_message = """
 
@@ -27,6 +27,9 @@ phil_scope = iotbx.phil.parse(
 show_scan_varying = False
   .type = bool
   .help = "Whether or not to show the crystal at each scan point."
+show_shared_models = False
+  .type = bool
+  .help = "Show which models are linked to which experiments"
 show_all_reflection_data = False
   .type = bool
   .help = "Whether or not to print individual reflections"
@@ -192,7 +195,7 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
     experiments = flatten_experiments(params.input.experiments)
     reflections = flatten_reflections(params.input.reflections)
 
@@ -213,6 +216,10 @@ def run(args):
             )
         )
 
+        if params.show_shared_models:
+            print()
+            print(model_connectivity(experiments))
+
     if len(reflections):
         print(
             show_reflections(
@@ -229,9 +236,6 @@ def run(args):
 
 
 def show_experiments(experiments, show_scan_varying=False, show_image_statistics=False):
-
-    text = []
-
     # To show image statistics, check_format has to be true. So we have to reinstatiate
     # the experiment list here
     if show_image_statistics:
@@ -246,6 +250,7 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                 )
             )
 
+    text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         if expt.identifier != "":
@@ -269,9 +274,6 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.crystal is not None:
             text.append(expt.crystal.as_str(show_scan_varying=show_scan_varying))
             if expt.crystal.num_scan_points:
-                from scitbx.array_family import flex
-                from cctbx import uctbx
-
                 abc = flex.vec3_double()
                 angles = flex.vec3_double()
                 for n in range(expt.crystal.num_scan_points):
@@ -309,6 +311,35 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                         identifier, *fns
                     )
                 )
+    return "\n".join(text)
+
+
+def model_connectivity(experiments):
+    def model_connectivity_impl(experiments, model):
+        text = [""]
+        text.append("%s:" % model.capitalize())
+        models = getattr(experiments, "%ss" % model)()
+        rows = [[""] + [str(j) for j in range(len(models))]]
+        for j, e in enumerate(experiments):
+            row = ["Experiment %d" % j]
+            for m in models:
+                if getattr(e, model) is m:
+                    row.append("x")
+                else:
+                    row.append(".")
+            rows.append(row)
+        text.append(tabulate(rows, tablefmt="plain"))
+        return text
+
+    if len(experiments) == 1:
+        return ""
+
+    text = []
+    text.append("Experiment / Models")
+    text.extend(model_connectivity_impl(experiments, "detector"))
+    text.extend(model_connectivity_impl(experiments, "crystal"))
+    text.extend(model_connectivity_impl(experiments, "beam"))
+
     return "\n".join(text)
 
 
@@ -369,7 +400,6 @@ def show_reflections(
 
     text = []
 
-    import collections
     from orderedset import OrderedSet
 
     formats = collections.OrderedDict(
@@ -431,7 +461,6 @@ def show_reflections(
     )
 
     for rlist in reflections:
-        from dials.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
         foreground_valid = MaskCode.Valid | MaskCode.Foreground
@@ -625,9 +654,7 @@ def show_reflections(
             line.append("%%%is" % width % key)
         text.append(" ".join(line))
         for i in range(max_reflections):
-            line = []
-            for j in range(len(columns)):
-                line.append(columns[j][i])
+            line = (c[i] for c in columns)
             text.append(" ".join(line))
 
     return "\n".join(text)

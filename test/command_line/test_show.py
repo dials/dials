@@ -4,6 +4,9 @@ import os
 
 import procrunner
 
+from dials.command_line.show import model_connectivity, run
+from dxtbx.serialize import load
+
 
 def test_dials_show(dials_regression):
     path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
@@ -360,8 +363,52 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
 def test_dials_show_on_scaled_data(dials_data):
     """Test that dials.show works on scaled data."""
     location = dials_data("l_cysteine_4_sweeps_scaled")
-    refl = location.join("scaled_30.refl").strpath
-    expt = location.join("scaled_30.expt").strpath
+    refl = location.join("scaled_30.refl")
+    expt = location.join("scaled_30.expt")
 
     result = procrunner.run(["dials.show", refl, expt])
     assert not result.returncode and not result.stderr
+
+
+def test_model_connectivity(dials_data):
+    """Test that dials.show experiments_has_model option."""
+    location = dials_data("l_cysteine_dials_output")
+    expts = load.experiment_list(
+        location.join("indexed.expt").strpath, check_format=False
+    )
+    assert (
+        model_connectivity(expts)
+        == """\
+Experiment / Models
+
+Detector:
+              0  1
+Experiment 0  x  .
+Experiment 1  x  .
+Experiment 2  x  .
+Experiment 3  .  x
+
+Crystal:
+              0
+Experiment 0  x
+Experiment 1  x
+Experiment 2  x
+Experiment 3  x
+
+Beam:
+              0
+Experiment 0  x
+Experiment 1  x
+Experiment 2  x
+Experiment 3  x"""
+    )
+
+
+def test_dials_show_shared_models(dials_data, capsys):
+    """Test that dials.show experiments_has_model option."""
+    location = dials_data("l_cysteine_dials_output")
+    expt = location.join("indexed.expt")
+    run([expt.strpath, "show_shared_models=True"])
+    stdout, stderr = capsys.readouterr()
+    assert not stderr
+    assert b"Experiment / Models" in stdout
