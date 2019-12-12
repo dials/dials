@@ -1,2 +1,0 @@
-Don't use -2 to indicate masked pixels, except for DECTRIS detectors where this
-is to be expected.

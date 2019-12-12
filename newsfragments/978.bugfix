@@ -1,2 +1,0 @@
-Ensure that generated masks do not include pixels that are overloaded on a few
-images, but only pixels that are always outside the trusted range.

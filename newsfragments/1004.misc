@@ -1,5 +1,0 @@
-Use tabulate in place of libtbx.table_utils:
-- Replace libtbx.table_utils.simple_table with tabulate
-- Replace libtbx.table_utils.format with tabulate
-- Centralise default format for tabulate
-- Default tablefmt="psql"

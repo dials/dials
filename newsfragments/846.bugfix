@@ -1,2 +1,0 @@
-No longer show pixels that are above the trusted range upper bound as
-"saturated" on the "variance" image.

@@ -1,2 +1,0 @@
-Respect batch= option to dials.symmetry - can reduce time taken for finding
-the symmetry for large data sets.

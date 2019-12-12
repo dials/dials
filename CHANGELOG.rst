@@ -1,4 +1,69 @@
-Dials 2.0 (2019-10-23)
+DIALS 2.1 (2019-12-12)
+======================
+
+Features
+--------
+
+- We now fully support Python 3 environments.
+- MessagePack is now the default reflection table file format. Temporarily, the
+  environment variable ``DIALS_USE_PICKLE`` can be used to revert to the previous
+  pickle-based format, however this will be removed in a future version. (#986)
+- new option for dials.show 'show_shared_models=True' displays which beam, crystal, and detector models are used across experiments (#996)
+- Import still image sequence as N experiments dereferencing into one image set
+  rather than one experiment. (#1014)
+- Add `reflection_table.get` method for defaulted column access (#1031)
+
+
+Bugfixes
+--------
+
+- Don't use -2 to indicate masked pixels, except for DECTRIS detectors where this
+  is to be expected. (#536)
+- No longer show pixels that are above the trusted range upper bound as
+  "saturated" on the "variance" image. (#846)
+- Correctly account for scan-varying crystals while providing a scan range to
+  dials.integrate (#962)
+- Ensure that generated masks do not include pixels that are overloaded on a few
+  images, but only pixels that are always outside the trusted range. (#978)
+- Rewritten parameter auto-reduction code for dials.refine provides finer-grained
+  fixing of individual parameters rather than whole parameterisations and
+  correctly takes constrained parameters into account (#990)
+- Fix output of predictions in dials.refine.
+  A recently-introduced bug meant that the updated predictions weren't
+  being copied to the output reflections file. (#991)
+- Allow scan-varying refinement where either the crystal cell or
+  orientation is fixed. (#999)
+- Respect batch= option to dials.symmetry - can reduce time taken for finding
+  the symmetry for large data sets. (#1000)
+- Scan-varying refinement no longer fails when the scan is wider than the
+  observed reflections (e.g. when the crystal has died). Instead, the scan
+  is first trimmed to match the range of the diffraction. (#1025)
+- If convert_sequences_to_stills then delete the goniometer and scan. (#1035)
+- Correctly account for scan-varying crystals in dials.slice_sequence (#1040)
+- Eliminate systematic absences before applying change of basis op to minimum 
+  cell in dials.symmetry. (#1064)
+
+
+Improved Documentation
+----------------------
+
+- Add "Extending DIALS" page to developer documentation (#893)
+
+
+Deprecations and Removals
+-------------------------
+
+- The command dials.analyse_output was removed.
+  Its replacement, dials.report, will give you more useful output. (#1009)
+
+
+Misc
+----
+
+- #983, #1004
+
+
+DIALS 2.0 (2019-10-23)
 ======================
 
 Features
