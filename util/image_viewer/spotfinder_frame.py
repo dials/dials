@@ -1962,7 +1962,7 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_txt_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdateBrightness)
 
         self.Bind(wx.EVT_CHOICE, self.OnUpdateZoomLevel, self.zoom_ctrl)
-        self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.image_type_ctrl)
+        self.Bind(wx.EVT_CHOICE, self.OnUpdateImage, self.image_type_ctrl)
         self.Bind(wx.EVT_CHOICE, self.OnUpdate, self.color_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.resolution_rings_ctrl)
         self.Bind(wx.EVT_CHECKBOX, self.OnUpdate, self.ice_rings_ctrl)
@@ -2035,6 +2035,11 @@ class SpotSettingsPanel(wx.Panel):
         """Collects all settings from the GUI and forwards to the viewer"""
         self.collect_values()
         self.GetParent().GetParent().update_settings()
+
+    def OnUpdateImage(self, event):
+        """Forces an update of the image"""
+        self.OnUpdate(event)
+        self.GetParent().GetParent().reload_image()
 
     def OnUpdateBrightness(self, event):
         """Handle updates from the brightness-related controls"""
