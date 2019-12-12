@@ -1,11 +1,12 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.show
-
 from __future__ import absolute_import, division, print_function
 
+import collections
 import os
 
 import iotbx.phil
 import numpy
+from cctbx import uctbx
+from dials.array_family import flex
 from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
@@ -235,9 +236,6 @@ def run(args):
 
 
 def show_experiments(experiments, show_scan_varying=False, show_image_statistics=False):
-
-    text = []
-
     # To show image statistics, check_format has to be true. So we have to reinstatiate
     # the experiment list here
     if show_image_statistics:
@@ -252,6 +250,7 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
                 )
             )
 
+    text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
         if expt.identifier != "":
@@ -275,9 +274,6 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.crystal is not None:
             text.append(expt.crystal.as_str(show_scan_varying=show_scan_varying))
             if expt.crystal.num_scan_points:
-                from scitbx.array_family import flex
-                from cctbx import uctbx
-
                 abc = flex.vec3_double()
                 angles = flex.vec3_double()
                 for n in range(expt.crystal.num_scan_points):
@@ -404,7 +400,6 @@ def show_reflections(
 
     text = []
 
-    import collections
     from orderedset import OrderedSet
 
     formats = collections.OrderedDict(
@@ -466,7 +461,6 @@ def show_reflections(
     )
 
     for rlist in reflections:
-        from dials.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
         foreground_valid = MaskCode.Valid | MaskCode.Foreground
@@ -660,9 +654,7 @@ def show_reflections(
             line.append("%%%is" % width % key)
         text.append(" ".join(line))
         for i in range(max_reflections):
-            line = []
-            for j in range(len(columns)):
-                line.append(columns[j][i])
+            line = (c[i] for c in columns)
             text.append(" ".join(line))
 
     return "\n".join(text)
