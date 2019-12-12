@@ -1,4 +1,0 @@
-Fix output of predictions in dials.refine.
-A recently-introduced bug meant that the updated predictions weren't
-being copied to the output reflections file.
-
