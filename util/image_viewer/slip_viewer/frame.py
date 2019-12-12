@@ -49,9 +49,12 @@ class chooser_wrapper(object):
     def get_mask(self):
         return self.image_set.get_mask(self.index)
 
-    def get_image_data(self):
+    def get_image_data(self, corrected=True):
         if self._image_data is None:
-            return self.image_set[self.index]
+            if corrected:
+                return self.image_set.get_corrected_data(self.index)
+            else:
+                return self.image_set.get_raw_data(self.index)
         return self._image_data
 
     def set_image_data(self, image_data):
