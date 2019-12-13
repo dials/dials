@@ -95,7 +95,8 @@ to explore the different steps and address this issue.
 
 Manual reprocessing
 -------------------
-The first step is Laue/Patterson group analysis using :samp:`dials.cosym`:
+The first step is Laue/Patterson group analysis using
+:doc:`dials.cosym <../programs/dials_cosym>`:
 
 .. dials_tutorial_include:: multi_crystal/dials.cosym.cmd
 
