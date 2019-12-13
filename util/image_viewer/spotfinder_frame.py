@@ -810,7 +810,7 @@ class SpotFrame(XrayFrame):
                 selectable=False,
                 name="<resolution_text_layer>",
                 colour="red",
-                fontsize=15,
+                fontsize=self.settings.fontsize,
                 update=False,
             )
 
@@ -1007,6 +1007,7 @@ class SpotFrame(XrayFrame):
                     visible=True,
                     show_levels=[-3, -2, -1, 0, 1, 2, 3, 4, 5],
                     selectable=False,
+                    fontsize=self.settings.fontsize,
                     name="<miller_indices_layer>",
                     update=False,
                 )
@@ -1147,6 +1148,7 @@ class SpotFrame(XrayFrame):
                     name="<vector_text_layer>",
                     colour="#F62817",
                     update=False,
+                    fontsize=self.settings.fontsize,
                 )
 
         self.sum_images()
@@ -1574,7 +1576,11 @@ class SpotFrame(XrayFrame):
                                 x,
                                 y,
                                 ("a*", "b*", "c*")[i],
-                                {"placement": "ne", "fontsize": 20, "color": "#F62817"},
+                                {
+                                    "placement": "ne",
+                                    "fontsize": self.settings.fontsize,
+                                    "color": "#F62817",
+                                },
                             )
                         )
 
@@ -1664,6 +1670,7 @@ class SpotSettingsPanel(wx.Panel):
         self.settings.show_integrated = self.params.show_integrated
         self.settings.show_predictions = self.params.show_predictions
         self.settings.show_miller_indices = self.params.show_miller_indices
+        self.settings.fontsize = 10
         self.settings.show_mask = self.params.show_mask
         self.settings.show_basis_vectors = self.params.show_basis_vectors
         self.settings.display = self.params.display
@@ -1724,6 +1731,22 @@ class SpotSettingsPanel(wx.Panel):
         self.brightness_ctrl.SetValue(self.settings.brightness)
         self.brightness_ctrl.SetTickFreq(25)
         box.Add(self.brightness_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        grid = wx.FlexGridSizer(cols=2, rows=1, vgap=0, hgap=0)
+        s.Add(grid)
+        # Font size control
+        txt = wx.StaticText(self, -1, "Font size:")
+        grid.Add(txt, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        # Add a textual brightness control
+        self.fontsize_ctrl = IntCtrl(
+            self,
+            value=self.settings.fontsize,
+            min=8,
+            max=32,
+            name="Font size",
+            style=wx.TE_PROCESS_ENTER,
+        )
+        grid.Add(self.fontsize_ctrl, 0, wx.ALL, 5)
 
         grid = wx.FlexGridSizer(cols=2, rows=8, vgap=0, hgap=0)
         s.Add(grid)
@@ -1936,6 +1959,9 @@ class SpotSettingsPanel(wx.Panel):
 
         # CONTROLS 3:  Bind events to actions
 
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnUpdate, self.fontsize_ctrl)
+        self.fontsize_ctrl.Bind(wx.EVT_KILL_FOCUS, self.OnUpdate)
+
         # Brightness-related events
         self.Bind(wx.EVT_SCROLL_CHANGED, self.OnUpdateBrightness, self.brightness_ctrl)
         self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
@@ -1990,6 +2016,7 @@ class SpotSettingsPanel(wx.Panel):
             self.settings.show_integrated = self.integrated.GetValue()
             self.settings.show_predictions = self.predictions.GetValue()
             self.settings.show_miller_indices = self.miller_indices.GetValue()
+            self.settings.fontsize = self.fontsize_ctrl.GetValue()
             self.settings.show_mask = self.show_mask.GetValue()
             self.settings.show_basis_vectors = self.show_basis_vectors.GetValue()
             self.settings.dispersion_extended = self.threshold_algorithm.GetValue()
