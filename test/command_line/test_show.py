@@ -337,7 +337,7 @@ def test_dials_show_image_statistics(dials_regression):
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
     result = procrunner.run(
-        ["dials.show", "show_image_statistics=true", path],
+        ["dials.show", "image_statistics.show_raw=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
@@ -355,7 +355,7 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
         dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
     )
     result = procrunner.run(
-        ["dials.show", "show_image_statistics=true", path],
+        ["dials.show", "image_statistics.show_raw=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert result.returncode == 1 and result.stderr
