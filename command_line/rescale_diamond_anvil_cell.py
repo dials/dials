@@ -48,7 +48,7 @@ phil_scope = libtbx.phil.parse(
     {
         density = 3510
             .type = float
-            .help = "The density in kg·m⁻³ of the anvil material.  "
+            .help = "The density of the anvil material in kg per cubic metre.  "
                     "The default is the typical density of diamond."
 
         thickness = 1.5925
@@ -61,7 +61,8 @@ phil_scope = libtbx.phil.parse(
             .type = floats(size=3)
             .help = "A 3-vector representing the normal to the anvil surfaces in the "
                     "laboratory frame when the goniometer is at zero datum, i.e. the "
-                    "axes are all at 0°.  The vector may be given un-normalised."
+                    "axes are all at zero degrees.  The vector may be given "
+                    "un-normalised."
     }
 
     output {
