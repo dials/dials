@@ -244,6 +244,19 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     if diff_phil:
         logger.info("The following parameters have been modified:\n%s", diff_phil)
 
+    # Check that at least one reflection table and experiment list have been provided.
+    input_errors = []
+    if not params.input.experiments:
+        input_errors.append(
+            "Please provide at least one valid experiment list (.expt) file."
+        )
+    if not params.input.reflections:
+        input_errors.append(
+            "Please provide at least one valid reflection table (.refl) file."
+        )
+    if input_errors:
+        sys.exit("\n".join([parser.format_help()] + input_errors))
+
     # These functions are commonly used to collate the input.
     experiments = flatten_experiments(params.input.experiments)
     reflections_list = flatten_reflections(params.input.reflections)
