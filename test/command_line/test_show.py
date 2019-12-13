@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import shutil
 
 import procrunner
 
@@ -412,3 +413,18 @@ def test_dials_show_shared_models(dials_data, capsys):
     stdout, stderr = capsys.readouterr()
     assert not stderr
     assert "Experiment / Models" in stdout
+
+
+def test_dials_show_centroid_test_data_image_zero(dials_data, tmpdir):
+    """Integration test: import image 0; show import / show works"""
+
+    im1 = dials_data("centroid_test_data").join("centroid_0001.cbf").strpath
+    im0 = tmpdir.join("centroid_0000.cbf").strpath
+
+    shutil.copyfile(im1, im0)
+
+    result = procrunner.run(("dials.import", im0), working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    result = procrunner.run(("dials.show", "imported.expt"), working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
