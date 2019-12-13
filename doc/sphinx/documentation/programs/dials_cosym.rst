@@ -37,20 +37,20 @@ In this case, the unit cell analysis found 1 cluster of 4 datasets in :math:`P\,
 As a result, all datasets will be carried forward for symmetry analysis.
 
 Each dataset is then normalised using maximum likelihood isotropic Wilson scaling,
-reporting an estimated Wilson :math:`B` value and scaled factor for each dataset:
+reporting an estimated Wilson :math:`B` value and scale factor for each dataset:
 
 .. dials_tutorial_include:: multi_crystal/dials.cosym.log
    :start-at: Normalising intensities for dataset
    :end-at: -2.67
 
 A high resolution cutoff is then determined by analysis of CC½ and <I>/<σ(I)> as a
-function of resolution.
+function of resolution:
 
 .. dials_tutorial_include:: multi_crystal/dials.cosym.log
    :start-at: Estimation of resolution
    :end-at: reflections with d
 
-Next, the programs performs automatic determination of the number of dimensions for
+Next, the program performs automatic determination of the number of dimensions for
 analysis. This calculates the functional of equation 2 of
 `Gildea, R. J. & Winter, G. (2018)`_ for each dimension from 2 up to the number of
 symmetry operations in the lattice group. The analysis needs to use sufficient
