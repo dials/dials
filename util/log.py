@@ -26,7 +26,7 @@ class DialsLogfileFormatter:
         indent = len(prefix)
         msg = record.getMessage()
 
-        if record.levelno == logging.WARNING:
+        if record.levelno >= logging.WARNING:
             prefix = "WARN: "
             prefix = (indent - len(prefix)) * " " + prefix
 
