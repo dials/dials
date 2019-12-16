@@ -26,7 +26,7 @@ class ElapsedFormatter:
         indent = len(elapsed_msg)
         msg = record.getMessage()
 
-        if record.levelno == logging.WARNING:
+        if record.levelno >= logging.WARNING:
             msg = "WARNING: " + msg
 
         msg = msg.replace("\n", "\n" + " " * indent)
