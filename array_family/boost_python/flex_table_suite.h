@@ -16,6 +16,7 @@
 #include <iterator>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/slice.hpp>
@@ -28,6 +29,8 @@
 #include <dials/array_family/flex_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
+#include <dxtbx/model/experiment.h>
+#include <dxtbx/model/experiment_list.h>
 
 namespace dials { namespace af { namespace boost_python { namespace flex_table_suite {
 
@@ -557,6 +560,26 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
   }
 
   /**
+   * Extend the identifiers
+   */
+  template <typename T>
+  void reflection_table_extend_identifiers(T &self,
+                                           const T &other) {
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    typedef typename T::experiment_map_type::iterator iterator;
+    for (const_iterator it = other.experiment_identifiers()->begin();
+         it != other.experiment_identifiers()->end();
+         ++it) {
+      iterator found = self.experiment_identifiers()->find(it->first);
+      if (found == self.experiment_identifiers()->end()) {
+        (*self.experiment_identifiers())[it->first] = it->second;
+      } else if (it->second != found->second) {
+        throw DIALS_ERROR("Experiment identifiers do not match");
+      }
+    }
+  }
+
+  /**
    * Extend the table with column data from another table. This will add
    * all the columns from the other table onto the end of the current table.
    * @param self The current table
@@ -572,6 +595,8 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       extend_column_visitor<T> visitor(self, it->first, ns, no);
       it->second.apply_visitor(visitor);
     }
+    //now extend identifiers
+    reflection_table_extend_identifiers(self, other);
   }
 
   /**
@@ -615,6 +640,23 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       it->second.apply_visitor(visitor);
     }
 
+    // Get the id column (if it exists) and make a set of unique values
+    if (self.contains("id")){
+      af::shared<int> col = result["id"];
+      std::unordered_set<int> new_ids(col.begin(), col.end());
+
+      // Copy across identifiers for ids in new table
+      typedef typename T::experiment_map_type::const_iterator const_iterator;
+      for (const int &i: new_ids){
+        for (const_iterator it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end();
+          ++it) {
+          if (it->first == i){
+            (*result.experiment_identifiers())[it->first] = it->second;
+          }
+        }
+      }
+    }
     // Return new table
     return result;
   }
@@ -667,6 +709,80 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     }
     return select_cols_keys(self, keys_array.const_ref());
   }
+
+  template <typename T>
+  T select_using_experiment(T &self, dxtbx::model::Experiment expt){
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+
+    std::string identifier = expt.get_identifier();
+    int id_value = -1;
+    for (const_iterator it = self.experiment_identifiers()->begin();
+         it != self.experiment_identifiers()->end();
+         ++it) {
+           if (identifier == it->second){
+             id_value = it->first;
+             break;
+           }
+         }
+
+    T result;
+    if (self.contains("id") && id_value != -1){
+      af::shared<int> col1 = self["id"];
+      af::shared<std::size_t> sel;
+      for (int i=0; i< col1.size(); ++i){
+        if (col1[i] == id_value){
+          sel.push_back(i);
+        }
+      }
+      af::const_ref<std::size_t> idx = sel.const_ref();
+
+      result = select_rows_index(self, idx);
+    }
+
+    return result;
+
+  }
+
+  template <typename T>
+  T select_using_experiments(T &self, dxtbx::model::ExperimentList expts){
+    typedef typename T::experiment_map_type::const_iterator const_iterator;
+    typedef dxtbx::model::ExperimentList::shared_type::const_iterator expt_const_iterator;
+    T result;
+    for (expt_const_iterator expt = expts.begin(); expt != expts.end(); ++expt) {
+
+      std::string identifier = expt->get_identifier();
+      std::cout << identifier << std::endl;
+      int id_value = -1;
+      for (const_iterator it = self.experiment_identifiers()->begin();
+          it != self.experiment_identifiers()->end();
+          ++it) {
+            if (identifier == it->second){
+              id_value = it->first;
+              break;
+            }
+          }
+
+      if (self.contains("id") && id_value != -1){
+        af::shared<int> col1 = self["id"];
+        af::shared<std::size_t> sel;
+        for (int i=0; i< col1.size(); ++i){
+          if (col1[i] == id_value){
+            sel.push_back(i);
+          }
+        }
+        af::const_ref<std::size_t> idx = sel.const_ref();
+
+        T sel_refl = select_rows_index(self, idx);
+        extend(result, sel_refl);
+      }
+
+    }
+
+    return result;
+
+  }
+
+
 
   /**
    * Set the selected number of rows from the table via an index array
@@ -1186,6 +1302,8 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
         .def("select", &select_rows_flags<flex_table_type>)
         .def("select", &select_cols_keys<flex_table_type>)
         .def("select", &select_cols_tuple<flex_table_type>)
+        .def("select", &select_using_experiment<flex_table_type>)
+        .def("select", &select_using_experiments<flex_table_type>)
         .def("set_selected", &set_selected_rows_index<flex_table_type>)
         .def("set_selected", &set_selected_rows_flags<flex_table_type>)
         .def("set_selected", &set_selected_cols_keys<flex_table_type>)
