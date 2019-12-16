@@ -114,6 +114,7 @@ def _index_experiments(experiments, reflections, params, known_crystal_models=No
             params=params,
         )
         idxr.index()
+        assert idxr.refined_reflections.size() > 0
         idx_refl = copy.deepcopy(idxr.refined_reflections)
         idx_refl.extend(idxr.unindexed_reflections)
         return idxr.refined_experiments, idx_refl
