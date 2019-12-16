@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from time import time
 from six.moves import cStringIO as StringIO
 
 from libtbx.phil import parse
@@ -102,7 +101,6 @@ class Script(object):
 
     def run(self, args=None):
         """Execute the script."""
-        start_time = time()
 
         # Parse the command line
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
@@ -180,9 +178,6 @@ class Script(object):
                 )
                 per_image_analysis.print_table(stats, out=s)
             logger.info(s.getvalue())
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
 
         if params.output.experiments:
             return experiments, reflections

@@ -3,6 +3,7 @@ Error model classes for scaling.
 """
 from __future__ import absolute_import, division, print_function
 import logging
+import six
 from math import log, exp
 from dials.util import tabulate
 from dials.array_family import flex
@@ -212,6 +213,17 @@ class BasicErrorModel(object):
         a = abs(self.parameters[0])
         b = abs(self.parameters[1])
         ISa = "%.3f" % (1.0 / (b * a)) if (b * a) > 0 else "Unable to estimate"
+        if six.PY2:
+            return "\n".join(
+                (
+                    "",
+                    "Error model details:",
+                    "  Type: basic",
+                    "  Current parameters: a = %.5f, b = %.5f" % (a, b),
+                    "  estimated I/sigma asymptotic limit: %s" % ISa,
+                    "",
+                )
+            )
         return "\n".join(
             (
                 "",
