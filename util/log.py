@@ -37,18 +37,6 @@ class ElapsedFormatter:
             return elapsed_msg + msg
 
 
-class LevelPrefixFormatter(logging.Formatter):
-    def format(self, record):
-
-        format_orig = self._fmt
-        if record.levelno == logging.WARNING:
-            self._fmt = "WARNING: %(msg)s"
-        result = logging.Formatter.format(self, record)
-        self._fmt = format_orig
-
-        return result
-
-
 def config(verbosity=0, logfile=None):
     """
     Configure the logging.
@@ -66,8 +54,6 @@ def config(verbosity=0, logfile=None):
     else:
         console = logging.StreamHandler(sys.stdout)
 
-    fmt = LevelPrefixFormatter()
-    console.setFormatter(fmt)
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
 
