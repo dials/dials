@@ -22,7 +22,7 @@ class ElapsedFormatter:
         indent = len(elapsed)
         msg = record.getMessage()
         msg = msg.replace("\n", "\n" + " " * indent)
-        return elapsed + " " + msg
+        return elapsed + msg
 
 
 def config(verbosity=0, logfile=None):
