@@ -106,16 +106,21 @@ working_phil = phil_scope.fetch(sources=[phil_overrides])
 
 
 def _index_experiments(experiments, reflections, params, known_crystal_models=None):
-    idxr = indexer.Indexer.from_parameters(
-        reflections,
-        experiments,
-        known_crystal_models=known_crystal_models,
-        params=params,
-    )
-    idxr.index()
-    idx_refl = copy.deepcopy(idxr.refined_reflections)
-    idx_refl.extend(idxr.unindexed_reflections)
-    return idxr.refined_experiments, idx_refl
+    try:
+        idxr = indexer.Indexer.from_parameters(
+            reflections,
+            experiments,
+            known_crystal_models=known_crystal_models,
+            params=params,
+        )
+        idxr.index()
+        idx_refl = copy.deepcopy(idxr.refined_reflections)
+        idx_refl.extend(idxr.unindexed_reflections)
+        return idxr.refined_experiments, idx_refl
+    except Exception as e:
+        print(e)
+        reflections["id"] = flex.int(reflections.size(), -1)
+        return None, reflections
 
 
 def index(experiments, reflections, params):
@@ -159,6 +164,9 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
+    # using imageset id as an ersatz experiment id
+    reflections["origin_id"] = copy.deepcopy(reflections["imageset_id"])
+
     if len(experiments) == 1 or params.indexing.joint_indexing:
         indexed_experiments, indexed_reflections = _index_experiments(
             experiments,
@@ -194,6 +202,7 @@ def index(experiments, reflections, params):
                     print(e)
                 else:
                     if idx_expts is None:
+                        indexed_reflections.extend(idx_refl)
                         continue
                     for j_expt, _ in enumerate(idx_expts):
                         sel = idx_refl["id"] == j_expt
@@ -203,7 +212,15 @@ def index(experiments, reflections, params):
                     idx_refl["imageset_id"] = flex.size_t(len(idx_refl), i_expt)
                     indexed_reflections.extend(idx_refl)
                     indexed_experiments.extend(idx_expts)
-    return indexed_experiments, indexed_reflections
+
+    sel = indexed_reflections["id"] != -1
+    indexed_reflections["id"].set_selected(
+        sel, indexed_reflections["id"] + len(experiments)
+    )
+    indexed_reflections["id"].set_selected(~sel, indexed_reflections["origin_id"])
+    experiments.extend(indexed_experiments)
+
+    return experiments, indexed_reflections
 
 
 def run(phil=working_phil, args=None):
