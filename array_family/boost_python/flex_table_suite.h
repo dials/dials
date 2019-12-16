@@ -16,7 +16,7 @@
 #include <iterator>
 #include <iostream>
 #include <sstream>
-#include <unordered_set>
+#include <set>
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/slice.hpp>
@@ -643,7 +643,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     // Get the id column (if it exists) and make a set of unique values
     if (self.contains("id")){
       af::shared<int> col = result["id"];
-      std::unordered_set<int> new_ids(col.begin(), col.end());
+      std::set<int> new_ids(col.begin(), col.end());
 
       // Copy across identifiers for ids in new table
       typedef typename T::experiment_map_type::const_iterator const_iterator;
