@@ -133,11 +133,20 @@ class Script(object):
         if not params.output.shoeboxes:
             del reflections["shoebox"]
 
-        # ascii spot count per image plot
+        # ascii spot count per image plot - per imageset
+
+        imagesets = []
         for i, experiment in enumerate(experiments):
-            ascii_plot = spot_counts_per_image_plot(
-                reflections.select(reflections["id"] == i)
-            )
+            if experiment.imageset not in imagesets:
+                imagesets.append(experiment.imageset)
+
+        for imageset in imagesets:
+            selected = flex.bool(reflections.nrows(), False)
+            for i, experiment in enumerate(experiments):
+                if experiment.imageset is not imageset:
+                    continue
+                selected.set_selected(reflections["id"] == i, True)
+            ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
                 logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
                 logger.info(ascii_plot)

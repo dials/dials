@@ -17,8 +17,13 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
+from boost.python import c_sizeof
 
 pyslip._Tiles = tile_generation._Tiles
+
+# Use minimum value for an int to indicate a masked pixel
+int_bits = c_sizeof("int") * 8
+MASK_VAL = -(2 ** (int_bits - 1))
 
 
 class chooser_wrapper(object):
@@ -228,10 +233,13 @@ class XrayFrame(XFBaseClass):
                 if possible_intensity is not None:
                     if possible_intensity == 0:
                         format_str = " I=%6.4f"
+                        posn_str += format_str % possible_intensity
+                    elif possible_intensity == MASK_VAL:
+                        posn_str += " I=mask"
                     else:
                         yaya = int(math.ceil(math.log10(abs(possible_intensity))))
                         format_str = " I=%%6.%df" % (max(0, 5 - yaya))
-                    posn_str += format_str % possible_intensity
+                        posn_str += format_str % possible_intensity
 
                 if (
                     len(coords) > 2 and readout >= 0
@@ -341,8 +349,11 @@ class XrayFrame(XFBaseClass):
         @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
         returned coordinates are relative to.
         """
-        detector = self.get_detector()
-        beam = self.get_beam()
+        image = self.image_chooser.GetClientData(
+            self.image_chooser.GetSelection()
+        ).image_set
+        detector = image.get_detector()
+        beam = image.get_beam()
         if abs(detector[0].get_distance()) == 0:
             return 0.0, 0.0
 
@@ -429,6 +440,7 @@ class XrayFrame(XFBaseClass):
             file_name_or_data=img,
             metrology_matrices=self.metrology_matrices,
             get_raw_data=get_raw_data,
+            show_saturated=(self.settings.display == "image"),
         )
 
         # Initialise position zoom level for first image.  XXX Why do we

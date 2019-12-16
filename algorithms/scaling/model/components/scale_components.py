@@ -65,6 +65,10 @@ class ScaleComponentBase(object):
     def data(self, data):
         self._data = data
 
+    @data.deleter
+    def data(self):
+        self._data = {}
+
     @property
     def parameter_restraints(self):
         """Restraint weights for the component parameters."""

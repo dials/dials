@@ -376,7 +376,10 @@ class Script(object):
                     id_
                 ]  # numerical id
                 identifier = reflections.experiment_identifiers()[exp_id]
-                if expid_to_image_groups[exp_id][-1] == id_:  # is last group
+                if (
+                    expid_to_image_groups[exp_id][-1] == id_
+                    or expid_to_image_groups[exp_id][0] == id_
+                ):  # is at edge of scan.
                     image_ranges_removed.append([image_range, exp_id])
                     logger.info(
                         "Removing image range %s from experiment %s",
@@ -392,7 +395,10 @@ class Script(object):
                             + str(image_range[1])
                         ]
                     )
-                    del expid_to_image_groups[exp_id][-1]
+                    if expid_to_image_groups[exp_id][-1] == id_:
+                        del expid_to_image_groups[exp_id][-1]
+                    else:
+                        del expid_to_image_groups[exp_id][0]
                     n_removed_this_cycle += 1
                 else:
                     other_potential_ids_to_remove.append(id_)
@@ -401,7 +407,7 @@ class Script(object):
             exp_id, image_range = image_group_to_expid_and_range[id_]
             identifier = reflections.experiment_identifiers()[exp_id]
             logger.info(
-                """Image range %s from experiment %s is below the cutoff, but not at the end of a sequence.""",
+                """Image range %s from experiment %s is below the cutoff, but not at the edge of a sweep.""",
                 image_range,
                 identifier,
             )

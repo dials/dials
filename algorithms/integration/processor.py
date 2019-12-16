@@ -412,24 +412,30 @@ class Task(object):
             ), "Task can only handle 1 imageset"
 
         # Get the sub imageset
-        frame00, frame01 = self.job
+        frame0, frame1 = self.job
+
         try:
-            frame10, frame11 = imageset.get_array_range()
+            allowed_range = imageset.get_array_range()
         except Exception:
-            frame10, frame11 = (0, len(imageset))
+            allowed_range = 0, len(imageset)
+
         try:
-            assert frame00 < frame01
-            assert frame10 < frame11
-            assert frame00 >= frame10
-            assert frame01 <= frame11
-            index0 = frame00 - frame10
-            index1 = index0 + (frame01 - frame00)
-            assert index0 < index1
-            assert index0 >= 0
-            assert index1 <= len(imageset)
-            imageset = imageset[index0:index1]
-        except Exception:
-            raise RuntimeError("Programmer Error: bad array range")
+            # range increasing
+            assert frame0 < frame1
+
+            # within an increasing range
+            assert allowed_range[1] > allowed_range[0]
+
+            # we are processing data which is within range
+            assert frame0 >= allowed_range[0]
+            assert frame1 <= allowed_range[1]
+
+            # I am 99% sure this is implied by all the code above
+            assert (frame1 - frame0) <= len(imageset)
+            imageset = imageset[frame0:frame1]
+        except Exception as e:
+            raise RuntimeError("Programmer Error: bad array range: %s" % str(e))
+
         try:
             frame0, frame1 = imageset.get_array_range()
         except Exception:

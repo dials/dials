@@ -105,8 +105,10 @@ namespace dials {
      * @throws std::runtime_error if the supplied values are bad
      */
     template <typename FloatType>
-    af::versa<FloatType, af::c_grid<2> > MapFramesForward<FloatType>::
-    operator()(vec2<int> frames, double phi, double zeta) const {
+    af::versa<FloatType, af::c_grid<2> > MapFramesForward<FloatType>::operator()(
+      vec2<int> frames,
+      double phi,
+      double zeta) const {
       // Check the value of zeta
       DIALS_ASSERT(frames[1] > frames[0]);
       DIALS_ASSERT(zeta != 0.0);
@@ -250,8 +252,10 @@ namespace dials {
      * @throws std::runtime_error if the supplied values are bad
      */
     template <typename FloatType>
-    af::versa<FloatType, af::c_grid<2> > MapFramesReverse<FloatType>::
-    operator()(vec2<int> frames, double phi, double zeta) const {
+    af::versa<FloatType, af::c_grid<2> > MapFramesReverse<FloatType>::operator()(
+      vec2<int> frames,
+      double phi,
+      double zeta) const {
       // Check the value of zeta
       DIALS_ASSERT(frames[1] > frames[0]);
       DIALS_ASSERT(zeta != 0.0);

@@ -190,10 +190,6 @@ phil_scope = iotbx.phil.parse(
       .help = "Offset for choosing unique groups for the free set from the whole
                set of unique groups."
       .expert_level = 2
-    space_group = None
-      .type = str
-      .help = "Option to specify space group for scaling (deprecated)"
-      .expert_level = 1
     full_matrix = True
       .type = bool
       .help = "Option to turn off GN/LM refinement round used to determine

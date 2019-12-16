@@ -1,8 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+import glob
 import os
-
 import pytest
+
+import procrunner
+
+from cctbx import crystal
+from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
+from dials.command_line import cluster_unit_cell
 
 
 def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
@@ -12,32 +18,31 @@ def test_dials_cluster_unit_cell_command_line(dials_regression, run_in_tmpdir):
     data_dir = os.path.join(
         dials_regression, "refinement_test_data", "multi_narrow_wedges"
     )
-    import glob
-
     experiments = glob.glob(os.path.join(data_dir, "data/sweep_*/experiments.json"))
-
-    import procrunner
 
     result = procrunner.run(
         command=["dials.cluster_unit_cell", "plot.show=False"] + experiments,
         print_stdout=False,
     )
     assert not result.returncode
-
-    # print result
     assert os.path.exists("cluster_unit_cell.png")
 
-    from dxtbx.model.experiment_list import ExperimentList, ExperimentListFactory
-    from dials.command_line import cluster_unit_cell
 
+def test_cluster_unit_cell_api(dials_regression):
+    pytest.importorskip("scipy")
+    pytest.importorskip("xfel")
+
+    data_dir = os.path.join(
+        dials_regression, "refinement_test_data", "multi_narrow_wedges"
+    )
     experiments = ExperimentList(
         [
             ExperimentListFactory.from_json_file(expt, check_format=False)[0]
-            for expt in experiments
+            for expt in glob.glob(
+                os.path.join(data_dir, "data/sweep_*/experiments.json")
+            )
         ]
     )
-    from cctbx import crystal
-
     crystal_symmetries = [
         crystal.symmetry(
             unit_cell=expt.crystal.get_unit_cell(),

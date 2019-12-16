@@ -5,8 +5,12 @@ import os
 import procrunner
 import pytest
 import six
+import scitbx.matrix
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.serialize import load
+from dxtbx.model import Crystal, Experiment, ExperimentList
+from dials.command_line.reindex import reindex_experiments
 from six.moves import cPickle as pickle
 
 
@@ -80,7 +84,7 @@ def test_reindex(dials_regression, tmpdir):
         tmpdir.join("P4_reindexed.expt").strpath, check_format=False
     )
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
-        old_experiments[0].crystal.change_basis(cb_op).get_A()
+        old_experiments[0].crystal.change_basis(cb_op).get_A(), abs=1e-5
     )
 
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
@@ -209,3 +213,28 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     assert list(h1) == pytest.approx(list(h3))
     assert list(l1) != pytest.approx(list(l3))
     assert list(k1) != pytest.approx(list(k3))
+
+
+def test_reindex_experiments():
+    # See also https://github.com/cctbx/cctbx_project/issues/424
+    cs = sgtbx.space_group_info("I23").any_compatible_crystal_symmetry(volume=100000)
+    B = scitbx.matrix.sqr(cs.unit_cell().fractionalization_matrix()).transpose()
+    cryst = Crystal(B, cs.space_group())
+    n_scan_points = 10
+    A_at_scan_points = [(1, 0, 0, 0, 1, 0, 0, 0, 1)] * n_scan_points
+    cryst.set_A_at_scan_points(A_at_scan_points)
+    groups = metric_subgroups(cs, max_delta=5)
+    for group in groups.result_groups:
+        best_subsym = group["best_subsym"]
+        cb_op = group["cb_op_inp_best"]
+        expts = ExperimentList([Experiment(crystal=cryst)])
+        reindexed_expts = reindex_experiments(
+            experiments=expts, cb_op=cb_op, space_group=best_subsym.space_group()
+        )
+        assert (
+            reindexed_expts[0]
+            .crystal.get_crystal_symmetry()
+            .is_similar_symmetry(best_subsym)
+        )
+        # Check that the scan-varying A matrices have been copied as well
+        assert cryst.num_scan_points == n_scan_points

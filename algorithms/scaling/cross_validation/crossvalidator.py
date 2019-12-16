@@ -214,15 +214,15 @@ is provided. For example, physical.decay_correction rather than decay_correction
     def run_script(self, params, config_no):
         """Run the scaling script with the params, get the free/work set results
         and add to the results dict"""
-        from dials.command_line.scale import Script
+        from dials.algorithms.scaling.algorithm import ScalingAlgorithm
 
         params.scaling_options.__setattr__("use_free_set", True)
-        script = Script(
+        algorithm = ScalingAlgorithm(
             params,
             experiments=deepcopy(self.experiments),
             reflections=deepcopy(self.reflections),
         )
-        register_merging_stats_observers(script)
-        script.run()
-        results = self.get_results_from_script(script)
+        register_merging_stats_observers(algorithm)
+        algorithm.run()
+        results = self.get_results_from_script(algorithm)
         self.add_results_to_results_dict(config_no, results)

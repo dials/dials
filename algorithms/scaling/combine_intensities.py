@@ -23,7 +23,10 @@ def fast_merging_stats(array):
     """
     assert array.sigmas() is not None
     positive_sel = array.sigmas() > 0
-    array = array.select(positive_sel)
+    i_over_sigma_sel = (array.data() / array.sigmas()) > 1.0
+    array = array.select(positive_sel & i_over_sigma_sel)
+    if not array.size():
+        return -1.0, -1.0
     array = array.sort("packed_indices")
     merge_ext = miller_ext.merge_equivalents_obs(
         array.indices(), array.data(), array.sigmas(), use_internal_variance=True

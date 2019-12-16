@@ -112,7 +112,6 @@ class Target(object):
           dimensions (int): The number of dimensions to be used.
         """
         self.dim = dimensions
-        logger.info("Using %i dimensions for analysis" % self.dim)
 
     def _generate_twin_operators(self, lattice_symmetry_max_delta=5.0):
         # see also mmtbx.scaling.twin_analyses.twin_laws
