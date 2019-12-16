@@ -15,14 +15,19 @@ except ImportError:
 class ElapsedFormatter:
     def __init__(self):
         self.start_time = time.time()
+        self.elapsed_msg = ""
 
     def format(self, record):
         elapsed_seconds = record.created - self.start_time
-        elapsed = "{:6.1f}: ".format(elapsed_seconds)
-        indent = len(elapsed)
+        elapsed_msg = "{:6.1f}: ".format(elapsed_seconds)
+        indent = len(elapsed_msg)
         msg = record.getMessage()
         msg = msg.replace("\n", "\n" + " " * indent)
-        return elapsed + msg
+        if elapsed_msg == self.elapsed_msg:
+            return " " * indent + msg
+        else:
+            self.elapsed_msg = elapsed_msg
+            return elapsed_msg + msg
 
 
 def config(verbosity=0, logfile=None):
