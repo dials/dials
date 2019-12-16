@@ -18,7 +18,7 @@ class ElapsedFormatter:
 
     def format(self, record):
         elapsed_seconds = record.created - self.start_time
-        elapsed = "{:06.1f}: ".format(elapsed_seconds)
+        elapsed = "{:6.1f}: ".format(elapsed_seconds)
         indent = len(elapsed)
         msg = record.getMessage()
         msg = msg.replace("\n", "\n" + " " * indent)
