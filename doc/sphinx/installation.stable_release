@@ -1,68 +1,34 @@
-Stable Release: DIALS 2.0
+Stable Release: DIALS 2.1
 =========================
 
 The current stable release can be downloaded from `Github <https://github.com/dials/dials/releases/latest>`_,
 where you can also find further `release notes <https://github.com/dials/dials/releases/latest>`_.
 
 .. button::
-   :text: DIALS 2.0.4 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-4-linux-x86_64.tar.xz
+   :text: DIALS 2.1.0 Linux installer (Python 2)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-linux-x86_64.tar.xz
 
 .. button::
-   :text: DIALS 2.0.4 Linux installer (Python 3 preview, unsupported)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-4-linux-x86_64-conda3.tar.xz
+   :text: DIALS 2.1.0 Linux installer (Python 3)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-linux-x86_64-conda3.tar.xz
 
 .. button::
-   :text: DIALS 2.0.4 Mac installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-4-macosx.pkg
+   :text: DIALS 2.1.0 Mac installer (Python 2)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-macosx.pkg
 
 .. button::
-   :text: DIALS 2.0.2 Mac installer (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-2-macosx-10.6.pkg
+   :text: DIALS 2.1.0 Mac installer (Python 3)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-macosx-conda3.pkg
 
 .. button::
-   :text: DIALS 2.0.4 Mac tar archive
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-4-macosx.tar.gz
+   :text: DIALS 2.1.0 Mac tar archive (Python 2)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-macosx.tar.gz
 
 .. button::
-   :text: DIALS 2.0.2 Mac tar archive (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-2-macosx-10.6.tar.gz
+   :text: DIALS 2.1.0 Mac tar archive (Python 3)
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-macosx-conda3.tar.gz
 
 .. button::
-   :text: DIALS 2.0.4 Source installer
-   :link: https://github.com/dials/dials/releases/download/v2.0.0/dials-v2-0-4-source.tar.xz
-
-Stable Release: DIALS 1.14
-==========================
-
-We still support the previous stable release version of DIALS. This can be downloaded
-from `Github`__,
-where you can also find further `release notes`__.
-
-.. __: https://github.com/dials/dials/releases/tag/v1.14.0
-__ https://github.com/dials/dials/releases/tag/v1.14.0
-
-.. button::
-   :text: DIALS 1.14.13 Linux installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-linux-x86_64.tar.xz
-
-.. button::
-   :text: DIALS 1.14.13 Mac installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx.pkg
-
-.. button::
-   :text: DIALS 1.14.13 Mac installer (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx-10.6.pkg
-
-.. button::
-   :text: DIALS 1.14.13 Mac tar archive
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx.tar.gz
-
-.. button::
-   :text: DIALS 1.14.13 Mac tar archive (OS X 10.6)
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-macosx-10.6.tar.gz
-
-.. button::
-   :text: DIALS 1.14.13 Source installer
-   :link: https://github.com/dials/dials/releases/download/v1.14.0/dials-v1-14-13-source.tar.xz
+   :text: DIALS 2.1.0 Source installer
+   :link: https://github.com/dials/dials/releases/download/v2.1.0/dials-v2-1-0-source.tar.xz
 
