@@ -48,7 +48,7 @@ def config(verbosity=0, logfile=None):
     """
 
     console = logging.StreamHandler(sys.stdout)
-    if "NO_COLOR" not in os.environ:
+    if "NO_COLOR" not in os.environ and sys.stdout.isatty():
         color_formatter = ColoredFormatter(
             "%(log_color)s%(message)s",
             log_colors={
