@@ -5,24 +5,8 @@ import os
 import six
 import sys
 import time
-from termcolor import colored
 
-try:
-    from dlstbx.util.colorstreamhandler import ColorStreamHandler
-except ImportError:
-    ColorStreamHandler = None
-
-
-class RedAlertFormatter:
-    """A formatter for the console that highlights messages at warning level
-    or above by colouring them red."""
-
-    def format(self, record):
-        if record.levelno >= logging.WARNING:
-            return colored(record.getMessage(), "red")
-        else:
-            return record.getMessage()
-
+from colorlog import ColoredFormatter
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
@@ -63,11 +47,17 @@ def config(verbosity=0, logfile=None):
     :type logfile: str
     """
 
-    if os.getenv("COLOURLOG") and ColorStreamHandler:
-        console = ColorStreamHandler(sys.stdout)
-    else:
-        console = logging.StreamHandler(sys.stdout)
-        console.setFormatter(RedAlertFormatter())
+    console = logging.StreamHandler(sys.stdout)
+    if "NO_COLOR" not in os.environ:
+        color_formatter = ColoredFormatter(
+            "%(log_color)s%(message)s",
+            log_colors={
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+            },
+        )
+        console.setFormatter(color_formatter)
 
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
