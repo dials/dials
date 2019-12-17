@@ -59,6 +59,7 @@ def config(verbosity=0, logfile=None):
         color_formatter = ColoredFormatter(
             "%(log_color)s%(message)s",
             log_colors={
+                "DEBUG": "blue",
                 "WARNING": "yellow",
                 "ERROR": "red",
                 "CRITICAL": "red,bg_white",
