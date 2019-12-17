@@ -65,9 +65,9 @@ def parse_multiple_datasets(reflections):
             single_reflection_tables.append(refl_table)
     if len(dataset_id_list) != len(set(dataset_id_list)):  # need to reset some ids
         logger.warning(
-            "Duplicate dataset ids found in different reflection tables. \n"
-            "These will be treated as coming from separate datasets, and \n"
-            "new dataset ids will be assigned for the whole dataset. \n"
+            "Duplicate dataset ids found in different reflection tables. "
+            "These will be treated as coming from separate datasets, and "
+            "new dataset ids will be assigned for the whole dataset."
         )
         for new_id, (r, old_id) in enumerate(
             zip(single_reflection_tables, dataset_id_list)

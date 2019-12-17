@@ -368,9 +368,9 @@ def run(args=None, phil=working_phil):
     # Warn about potentially unhelpful options
     if params.refinement.mp.nproc > 1:
         logger.warning(
-            "WARNING: setting nproc > 1 is only helpful in rare "
+            "Setting nproc > 1 is only helpful in rare "
             "circumstances. It is not recommended for typical data processing "
-            "tasks.\n"
+            "tasks."
         )
 
     if params.refinement.parameterisation.scan_varying is not False:
