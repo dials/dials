@@ -11,13 +11,7 @@ import libtbx
 logger = logging.getLogger(__name__)
 
 _no_multiprocessing_on_windows = (
-    "\n"
-    + "*" * 80
-    + "\n"
-    + "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-    + "\n"
-    + "*" * 80
-    + "\n"
+    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
 )
 
 

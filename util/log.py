@@ -7,9 +7,9 @@ import sys
 import time
 
 try:
-    from dlstbx.util.colorstreamhandler import ColorStreamHandler
+    from colorlog import ColoredFormatter
 except ImportError:
-    ColorStreamHandler = None
+    ColoredFormatter = None
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
@@ -50,10 +50,22 @@ def config(verbosity=0, logfile=None):
     :type logfile: str
     """
 
-    if os.getenv("COLOURLOG") and ColorStreamHandler:
-        console = ColorStreamHandler(sys.stdout)
-    else:
-        console = logging.StreamHandler(sys.stdout)
+    console = logging.StreamHandler(sys.stdout)
+    if (
+        "NO_COLOR" not in os.environ
+        and sys.stdout.isatty()
+        and ColoredFormatter is not None
+    ):
+        color_formatter = ColoredFormatter(
+            "%(log_color)s%(message)s",
+            log_colors={
+                "DEBUG": "blue",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+            },
+        )
+        console.setFormatter(color_formatter)
 
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)

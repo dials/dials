@@ -65,12 +65,7 @@ class ProcessorImageBase(object):
             mp_nproc > 1 and platform.system() == "Windows"
         ):  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
             logger.warning(
-                "\n"
-                + "*" * 80
-                + "\n"
-                + "Multiprocessing is not available on windows. Setting nproc = 1\n"
-                + "*" * 80
-                + "\n"
+                "Multiprocessing is not available on windows. Setting nproc = 1\n"
             )
             mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"

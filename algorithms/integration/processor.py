@@ -261,12 +261,7 @@ class Processor(object):
             mp_njobs * mp_nproc
         ) > 1 and platform.system() == "Windows":  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
             logger.warning(
-                "\n"
-                + "*" * 80
-                + "\n"
-                + "Multiprocessing is not available on windows. Setting nproc = 1\n"
-                + "*" * 80
-                + "\n"
+                "Multiprocessing is not available on windows. Setting nproc = 1\n"
             )
             mp_nproc = 1
             mp_njobs = 1
@@ -628,7 +623,7 @@ class Manager(object):
         experiments = self.experiments  # [expr_id[0]:expr_id[1]]
         reflections = self.manager.split(index)
         if len(reflections) == 0:
-            logger.warning("*** WARNING: no reflections in job %d ***", index)
+            logger.warning("No reflections in job %d ***", index)
             task = NullTask(index=index, reflections=reflections)
         else:
             task = Task(

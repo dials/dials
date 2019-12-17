@@ -11,6 +11,7 @@ conda-forge::pyrtf
 alabaster
 biopython=1.73
 bzip2
+colorlog
 cython>=0.29,<0.30
 docutils
 future
