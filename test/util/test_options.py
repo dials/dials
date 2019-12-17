@@ -4,8 +4,14 @@ Tests for the functions in dials.util.options
 from __future__ import absolute_import, division, print_function
 
 from mock import Mock
-from dials.util.options import flatten_reflections, flatten_experiments, OptionParser
-from dials.array_family import flex
+from dials.util.options import (
+    flatten_experiments,
+    OptionParser,
+    flatten_reflections,
+    reflections_and_experiments_from_files,
+)
+from dials.test.util import mock_reflection_file_object, mock_two_reflection_file_object
+from dxtbx.model import Experiment, ExperimentList
 
 
 def test_can_read_headerless_h5_and_no_detector_is_present(dials_data):
@@ -15,28 +21,6 @@ def test_can_read_headerless_h5_and_no_detector_is_present(dials_data):
     experiments = flatten_experiments(params.input.experiments)
     assert len(experiments) == 1
     assert not experiments[0].detector
-
-
-def mock_reflection_file_object(id_=0, identifier=True):
-    """Create a mock reflection_file_object."""
-    fileobj = Mock()
-    r = flex.reflection_table()
-    r["id"] = flex.int([-1, id_, id_])
-    if identifier:
-        r.experiment_identifiers()[id_] = str(id_)
-    fileobj.data = r
-    return fileobj
-
-
-def mock_two_reflection_file_object(ids=[0, 2]):
-    """Create a mock reflection_file_object with two datasets."""
-    fileobj = Mock()
-    r = flex.reflection_table()
-    r["id"] = flex.int([-1, ids[0], ids[0], ids[1], ids[1]])
-    r.experiment_identifiers()[ids[0]] = str(ids[0])
-    r.experiment_identifiers()[ids[1]] = str(ids[1])
-    fileobj.data = r
-    return fileobj
 
 
 def test_flatten_experiments_updating_id_values():
@@ -84,3 +68,40 @@ def test_flatten_experiments_updating_id_values():
     assert list(rs[1]["id"]) == [-1, 1, 1, 2, 2]
     assert list(rs[1].experiment_identifiers().keys()) == [1, 2]
     assert list(rs[1].experiment_identifiers().values()) == ["1", "2"]
+
+
+def test_reflections_and_experiments_from_files():
+    """Test correct extracting of reflections and experiments."""
+    # Test when input reflections order matches the experiments order
+    refl_file_list = [
+        mock_two_reflection_file_object(ids=[0, 1]),
+        mock_reflection_file_object(id_=2),
+    ]
+
+    def mock_exp_obj(id_=0):
+        """Make a mock experiments file object."""
+        exp = Mock()
+        exp.data = ExperimentList()
+        exp.data.append(Experiment(identifier=str(id_)))
+        return exp
+
+    exp_file_list = [mock_exp_obj(id_=i) for i in [0, 1, 2]]
+
+    refls, expts = reflections_and_experiments_from_files(refl_file_list, exp_file_list)
+    assert refls[0] is refl_file_list[0].data
+    assert refls[1] is refl_file_list[1].data
+    assert expts[0].identifier == "0"
+    assert expts[1].identifier == "1"
+    assert expts[2].identifier == "2"
+
+    # Test when input reflections order does not match experiments order.
+    refl_file_list = [
+        mock_reflection_file_object(id_=2),
+        mock_two_reflection_file_object(ids=[0, 1]),
+    ]
+    refls, expts = reflections_and_experiments_from_files(refl_file_list, exp_file_list)
+    assert refls[0] is refl_file_list[1].data
+    assert refls[1] is refl_file_list[0].data
+    assert expts[0].identifier == "0"
+    assert expts[1].identifier == "1"
+    assert expts[2].identifier == "2"
