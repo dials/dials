@@ -168,6 +168,11 @@ def index(experiments, reflections, params):
     # using imageset id as an ersatz experiment id
     reflections["origin_id"] = copy.deepcopy(reflections["imageset_id"])
 
+    # legacy size_t map - used to be that the imageset_id table was a size_t
+    # in the datablock days, and this is still exercised in tests...
+    if hasattr(reflections["origin_id"], "as_int"):
+        reflections["origin_id"] = reflections["origin_id"].as_int()
+
     if len(experiments) == 1 or params.indexing.joint_indexing:
         indexed_experiments, indexed_reflections = _index_experiments(
             experiments,
@@ -223,6 +228,7 @@ def index(experiments, reflections, params):
     indexed_reflections["id"].set_selected(
         sel, indexed_reflections["id"] + len(experiments)
     )
+
     indexed_reflections["id"].set_selected(~sel, indexed_reflections["origin_id"])
     experiments.extend(indexed_experiments)
 
