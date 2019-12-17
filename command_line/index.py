@@ -117,11 +117,11 @@ def _index_experiments(experiments, reflections, params, known_crystal_models=No
         assert idxr.refined_reflections.size() > 0
         idx_refl = copy.deepcopy(idxr.refined_reflections)
         idx_refl.extend(idxr.unindexed_reflections)
-        return idxr.refined_experiments, idx_refl
+        return idxr.refined_experiments, idx_refl, None
     except Exception as e:
         print(e)
         reflections["id"] = flex.int(reflections.size(), -1)
-        return None, reflections
+        return None, reflections, e
 
 
 def index(experiments, reflections, params):
@@ -174,12 +174,14 @@ def index(experiments, reflections, params):
         reflections["origin_id"] = reflections["origin_id"].as_int()
 
     if len(experiments) == 1 or params.indexing.joint_indexing:
-        indexed_experiments, indexed_reflections = _index_experiments(
+        indexed_experiments, indexed_reflections, e = _index_experiments(
             experiments,
             reflections,
             copy.deepcopy(params),
             known_crystal_models=known_crystal_models,
         )
+        if e is not None:
+            raise e
     else:
         indexed_experiments = ExperimentList()
         indexed_reflections = flex.reflection_table()
@@ -205,7 +207,7 @@ def index(experiments, reflections, params):
 
             for future in concurrent.futures.as_completed(futures):
                 try:
-                    idx_expts, idx_refl = future.result()
+                    idx_expts, idx_refl, exc = future.result()
                 except Exception as e:
                     print(e)
                 else:
@@ -230,7 +232,8 @@ def index(experiments, reflections, params):
     )
 
     indexed_reflections["id"].set_selected(~sel, indexed_reflections["origin_id"])
-    experiments.extend(indexed_experiments)
+    if indexed_experiments:
+        experiments.extend(indexed_experiments)
 
     return experiments, indexed_reflections
 
