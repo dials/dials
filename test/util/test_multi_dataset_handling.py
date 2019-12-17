@@ -56,7 +56,7 @@ def reflections_024(reflections):
 
 
 def test_select_specific_datasets_using_id(experiments_024, reflections_024):
-    use_datasets = ["0", "2"]
+    use_datasets = [0, 1]
     experiments, refl = select_datasets_on_ids(
         experiments_024, reflections_024, use_datasets=use_datasets
     )
@@ -91,7 +91,7 @@ def test_raise_exception_when_excluding_non_existing_dataset(
 ):
     with pytest.raises(ValueError):
         experiments, refl = select_datasets_on_ids(
-            experiments_024, reflections_024, exclude_datasets=["1"]
+            experiments_024, reflections_024, exclude_datasets=["3"]
         )
 
 
@@ -126,7 +126,9 @@ def test_correct_handling_with_multi_dataset_table(experiments_024):
     reflections.experiment_identifiers()[1] = "2"
     reflections.experiment_identifiers()[2] = "4"
     exp, refl = select_datasets_on_ids(
-        experiments_024, [reflections], exclude_datasets=["2"]
+        experiments_024,
+        [reflections],
+        exclude_datasets=["1"],  # i.e. the second dataset
     )
     assert list(refl[0].experiment_identifiers().values()) == ["0", "4"]
     assert list(refl[0]["id"]) == [0, 2]
