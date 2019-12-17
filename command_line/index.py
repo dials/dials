@@ -226,14 +226,24 @@ def index(experiments, reflections, params):
                     indexed_reflections.extend(idx_refl)
                     indexed_experiments.extend(idx_expts)
 
-    sel = indexed_reflections["id"] != -1
-    indexed_reflections["id"].set_selected(
-        sel, indexed_reflections["id"] + len(experiments)
-    )
+    # pass through only experiments without crystals
+    input_experiments = ExperimentList()
+    for e in experiments:
+        if e.crystal is None:
+            input_experiments.append(e)
 
-    indexed_reflections["id"].set_selected(~sel, indexed_reflections["origin_id"])
+    # only reassign unindexed reflections to input experiments if there
+    # are input experiments
+    if len(input_experiments):
+        sel = indexed_reflections["id"] != -1
+        indexed_reflections["id"].set_selected(
+            sel, indexed_reflections["id"] + len(input_experiments)
+        )
+
+        indexed_reflections["id"].set_selected(~sel, indexed_reflections["origin_id"])
+
     if indexed_experiments:
-        experiments.extend(indexed_experiments)
+        input_experiments.extend(indexed_experiments)
 
     return experiments, indexed_reflections
 
