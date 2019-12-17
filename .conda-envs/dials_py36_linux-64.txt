@@ -1,5 +1,6 @@
 conda-forge::hdf5-external-filter-plugins
 
+conda-forge::colorlog
 conda-forge::dials-data
 conda-forge::mrcfile
 conda-forge::msgpack-python=0.6.2
