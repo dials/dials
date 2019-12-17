@@ -6,7 +6,10 @@ import six
 import sys
 import time
 
-from colorlog import ColoredFormatter
+try:
+    from colorlog import ColoredFormatter
+except ImportError:
+    ColoredFormatter = None
 
 # https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
 class DialsLogfileFormatter:
@@ -48,7 +51,11 @@ def config(verbosity=0, logfile=None):
     """
 
     console = logging.StreamHandler(sys.stdout)
-    if "NO_COLOR" not in os.environ and sys.stdout.isatty():
+    if (
+        "NO_COLOR" not in os.environ
+        and sys.stdout.isatty()
+        and ColoredFormatter is not None
+    ):
         color_formatter = ColoredFormatter(
             "%(log_color)s%(message)s",
             log_colors={
