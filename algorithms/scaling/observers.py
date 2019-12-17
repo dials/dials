@@ -110,14 +110,18 @@ class ScalingSummaryGenerator(Observer):
         valid_ranges = get_valid_image_ranges(scaling_script.experiments)
         image_ranges = get_image_ranges(scaling_script.experiments)
         msg = []
-        for (img, valid, exp) in zip(
-            image_ranges, valid_ranges, scaling_script.experiments
+        for (img, valid, refl) in zip(
+            image_ranges, valid_ranges, scaling_script.reflections
         ):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
-                        % (exp.identifier, list(img), list(valid))
+                        "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                        % (
+                            refl.experiment_identifiers().keys()[0],
+                            list(img),
+                            list(valid),
+                        )
                     )
         if msg:
             msg = ["Summary of image ranges removed:"] + msg

@@ -63,6 +63,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     if removal_summary["mode"] == "image_group":
         cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
     cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
+    cycle_results["removed_ids"] = removal_summary["experiment_ids_fully_removed"]
 
     cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
         "n_reflections_removed"
@@ -186,8 +187,8 @@ class AnalysisResults(object):
                     )
                     msg += "  Removed image ranges: \n    %s" % removed
             else:
-                if res["removed_datasets"]:
-                    msg += "  Removed datasets: %s\n" % res["removed_datasets"]
+                if res["removed_ids"]:
+                    msg += "  Removed datasets: %s\n" % res["removed_ids"]
             msg += (
                 "  cumulative %% of reflections removed: %.3f\n"
                 % res["cumul_percent_removed"]

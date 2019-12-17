@@ -434,12 +434,13 @@ class Script(object):
                 )
 
         # if a whole experiment has been excluded: need to remove it here
-
-        for exp in experiments:
+        ids_removed = []
+        for exp, refl in zip(experiments, reflection_list):
             if not exp.scan.get_valid_image_ranges(
                 exp.identifier
             ):  # if all removed above
                 experiments_to_delete.append(exp.identifier)
+                ids_removed.append(refl.experiment_identifiers().keys()[0])
         if experiments_to_delete:
             experiments, reflection_list = select_datasets_on_identifiers(
                 experiments, reflection_list, exclude_datasets=experiments_to_delete
@@ -457,6 +458,7 @@ class Script(object):
             {
                 "image_ranges_removed": image_ranges_removed,
                 "experiments_fully_removed": experiments_to_delete,
+                "experiment_ids_fully_removed": ids_removed,
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }
@@ -480,9 +482,11 @@ class Script(object):
         ).count(False)
 
         datasets_to_remove = []
+        ids_removed = []
         for id_ in sorted(ids_to_remove):
             logger.info("Removing dataset %d", id_)
             datasets_to_remove.append(reflections.experiment_identifiers()[id_])
+            ids_removed.append(id_)
         output_reflections = reflections.remove_on_experiment_identifiers(
             datasets_to_remove
         )
@@ -495,6 +499,7 @@ class Script(object):
         results_summary["dataset_removal"].update(
             {
                 "experiments_fully_removed": datasets_to_remove,
+                "experiment_ids_fully_removed": ids_removed,
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }
@@ -533,9 +538,7 @@ class Script(object):
 def run(args=None, phil=phil_scope):
     """Run the command-line script."""
     import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
@@ -552,8 +555,9 @@ def run(args=None, phil=phil_scope):
 
     dials.util.log.config(logfile=params.output.log)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 and not params.input.mtzfile:
         parser.print_help()
