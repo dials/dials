@@ -65,11 +65,16 @@ def run_indexing(
     assert out_refls.check()
 
     experiments_list = load.experiment_list(out_expts.strpath, check_format=False)
-    assert len(experiments_list.crystals()) == n_expected_lattices
+    assert (
+        len([c for c in experiments_list.crystals() if c is not None])
+        == n_expected_lattices
+    )
     indexed_reflections = flex.reflection_table.from_file(out_refls.strpath)
     rmsds = None
 
     for i, experiment in enumerate(experiments_list):
+        if experiment.crystal is None:
+            continue
         assert unit_cells_are_similar(
             experiment.crystal.get_unit_cell(),
             expected_unit_cell,
