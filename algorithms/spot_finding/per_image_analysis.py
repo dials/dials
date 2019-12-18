@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import math
 import sys
 from dials.util import tabulate
@@ -7,16 +8,26 @@ from dials.util import tabulate
 from cctbx import sgtbx, uctbx
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-from libtbx import group_args
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
 from dxtbx.model import Experiment, ExperimentList
 
 
-class slot(object):
-    def __init__(self, d_min, d_max):
-        self.d_min = d_min
-        self.d_max = d_max
+Slot = collections.namedtuple("Slot", "d_min d_max")
+Stats = collections.namedtuple(
+    "Stats",
+    [
+        "d_min_distl_method_1",
+        "d_min_distl_method_2",
+        "estimated_d_min",
+        "n_spots_4A",
+        "n_spots_no_ice",
+        "n_spots_total",
+        "noisiness_method_1",
+        "noisiness_method_2",
+        "total_intensity",
+    ],
+)
 
 
 class binner_equal_population(object):
@@ -33,7 +44,7 @@ class binner_equal_population(object):
         d_max = d_sorted[0]
         for i in range(n_slots):
             d_min = d_sorted[nint((i + 1) * n_per_bin) - 1]
-            self.bins.append(slot(d_min, d_max))
+            self.bins.append(Slot(d_min, d_max))
             d_max = d_min
             # print self.bins[-1].d_max, self.bins[-1].d_min
 
@@ -71,7 +82,7 @@ class binner_d_star_cubed(object):
         ds3_max = d_star_cubed_sorted[0]
         for i in range(n_slots):
             ds3_min = d_star_cubed_sorted[0] + (i + 1) * bin_step
-            self.bins.append(slot(1 / ds3_min ** (1 / 3), 1 / ds3_max ** (1 / 3)))
+            self.bins.append(Slot(1 / ds3_min ** (1 / 3), 1 / ds3_max ** (1 / 3)))
             ds3_max = ds3_min
 
 
@@ -689,7 +700,7 @@ def stats_single_image(
         d_min_distl_method_2 = -1.0
         noisiness_method_2 = -1.0
 
-    return group_args(
+    return Stats(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spot_4A,
@@ -738,7 +749,7 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
         d_min_distl_method_2.append(stats.d_min_distl_method_2)
         noisiness_method_2.append(stats.noisiness_method_2)
 
-    return group_args(
+    return Stats(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spots_4A,

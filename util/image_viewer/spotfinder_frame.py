@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import itertools
 import math
 
@@ -22,7 +23,6 @@ from dials.util.image_viewer.spotfinder_wrap import chooser_wrapper
 from dxtbx.imageset import ImageSet
 from dxtbx.model.experiment_list import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
-from libtbx import group_args
 from libtbx.utils import flat_list, time_log
 from rstbx.slip_viewer import pyslip
 from rstbx.viewer.frame import SettingsFrame
@@ -46,6 +46,21 @@ try:
     from typing import Optional
 except ImportError:
     pass
+
+SpotfinderData = collections.namedtuple(
+    "SpotfinderData",
+    [
+        "all_pix_data",
+        "all_foreground_circles",
+        "ctr_mass_data",
+        "max_pix_data",
+        "miller_indices_data",
+        "predictions_data",
+        "shoebox_data",
+        "vector_data",
+        "vector_text_data",
+    ],
+)
 
 WX3 = wx.VERSION[0] == 3
 
@@ -1589,7 +1604,7 @@ class SpotFrame(XrayFrame):
                             )
                         )
 
-        return group_args(
+        return SpotfinderData(
             all_pix_data=all_pix_data,
             all_foreground_circles=all_foreground_circles,
             shoebox_data=shoebox_data,

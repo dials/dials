@@ -1,36 +1,48 @@
 from __future__ import absolute_import, division, print_function
 
-import os
-from libtbx import easy_run
-from glob import glob
+import procrunner
 
 
-def test_spot_counts_per_image(dials_data, run_in_tmpdir):
-    path = dials_data("centroid_test_data").strpath
+def test_spot_counts_per_image(dials_data, tmpdir):
+    path = dials_data("centroid_test_data")
 
     # import the data
-    cmd = "dials.import %s output.experiments=imported.expt" % " ".join(
-        glob(os.path.join(path, "*.cbf"))
+    result = procrunner.run(
+        ["dials.import", "output.experiments=imported.expt"]
+        + [f for f in path.listdir("*.cbf")],
+        working_directory=tmpdir,
     )
-    easy_run.fully_buffered(cmd).raise_if_errors()
-    assert os.path.exists("imported.expt")
+    assert not result.returncode and not result.stderr
+
+    assert tmpdir.join("imported.expt").check()
 
     # find the spots
-    cmd = "dials.find_spots imported.expt min_spot_size=3"
-    easy_run.fully_buffered(cmd).raise_if_errors()
-    assert os.path.exists("strong.refl")
+    result = procrunner.run(
+        ["dials.find_spots", "imported.expt", "min_spot_size=3"],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check()
 
-    cmd = "dials.spot_counts_per_image imported.expt strong.refl plot=spot_counts.png"
-    result = easy_run.fully_buffered(cmd).raise_if_errors()
-    assert os.path.exists("spot_counts.png"), result.show_stdout()
+    result = procrunner.run(
+        [
+            "dials.spot_counts_per_image",
+            "imported.expt",
+            "strong.refl",
+            "plot=spot_counts.png",
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("spot_counts.png").check(), result.stdout
 
     assert all(
-        s in "\n".join(result.stdout_lines)
+        s in result.stdout
         for s in (
-            "image",
-            "#spots_no_ice",
-            "total_intensity",
-            "d_min (distl method 1)",
-            "d_min (distl method 2)",
+            b"image",
+            b"#spots_no_ice",
+            b"total_intensity",
+            b"d_min (distl method 1)",
+            b"d_min (distl method 2)",
         )
-    ), result.stdout_lines
+    ), result.stdout

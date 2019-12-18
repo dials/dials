@@ -1,9 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import sys
+
+import iotbx.phil
 from dials.util import tabulate
 from dials.array_family import flex
-import iotbx.phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_reflections, flatten_experiments
 from dials.algorithms.spot_finding import per_image_analysis
@@ -103,19 +105,11 @@ def run(args):
         all_stats.append(stats)
 
     # transpose stats
-    class empty(object):
-        pass
-
-    e = empty()
+    summary_table = {attrib: [] for attrib in per_image_analysis.Stats._fields}
     for s in all_stats:
-        for k in dir(s):
-            if k.startswith("_") or k in ["merge", "next"]:
-                continue
-            if not hasattr(e, k):
-                setattr(e, k, [])
-            getattr(e, k).extend(getattr(s, k))
-
-    per_image_analysis.print_table(e)
+        for attrib, value in s._asdict().items():
+            summary_table[attrib].extend(value)
+    per_image_analysis.print_table(per_image_analysis.Stats(**summary_table))
 
     # FIXME this is now probably nonsense...
     overall_stats = per_image_analysis.stats_single_image(
@@ -140,16 +134,14 @@ def run(args):
     print(tabulate(rows, headers="firstrow"))
 
     if params.json:
-        import json
-
         if params.split_json:
-            for k in stats.__dict__:
+            for k, v in stats._asdict().items():
                 start, end = params.json.split(".")
-                with open("%s_%s.%s" % (start, k, end), "wb") as fp:
-                    json.dump(stats.__dict__[k], fp)
+                with open("%s_%s.%s" % (start, k, end), "w") as fp:
+                    json.dump(v, fp)
         if params.joint_json:
-            with open(params.json, "wb") as fp:
-                json.dump(stats.__dict__, fp)
+            with open(params.json, "w") as fp:
+                json.dump(stats._asdict(), fp)
     if params.plot:
         import matplotlib
 
