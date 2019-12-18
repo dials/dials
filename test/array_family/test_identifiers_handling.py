@@ -17,9 +17,9 @@ def test_selection_identifier_propagation():
     refl.experiment_identifiers()[1] = "1"
     refl.experiment_identifiers()[2] = "2"
 
-    new_refl = refl.select(refl["id"] == 0)
-    assert list(new_refl.experiment_identifiers().keys()) == [0]
-    assert list(new_refl.experiment_identifiers().values()) == ["0"]
+    new_refl = refl.select(refl["id"] == 1)
+    assert list(new_refl.experiment_identifiers().keys()) == [1]
+    assert list(new_refl.experiment_identifiers().values()) == ["1"]
 
     # test with no identifiers set, but there is an id column
     refl = flex.reflection_table()
