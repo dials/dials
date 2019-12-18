@@ -751,7 +751,6 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     for (expt_const_iterator expt = expts.begin(); expt != expts.end(); ++expt) {
 
       std::string identifier = expt->get_identifier();
-      std::cout << identifier << std::endl;
       int id_value = -1;
       for (const_iterator it = self.experiment_identifiers()->begin();
           it != self.experiment_identifiers()->end();
