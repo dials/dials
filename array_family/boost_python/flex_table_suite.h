@@ -647,11 +647,11 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
 
       // Copy across identifiers for ids in new table
       typedef typename T::experiment_map_type::const_iterator const_iterator;
-      for (const int &i: new_ids){
+      for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i){
         for (const_iterator it = self.experiment_identifiers()->begin();
           it != self.experiment_identifiers()->end();
           ++it) {
-          if (it->first == i){
+          if (it->first == *i){
             (*result.experiment_identifiers())[it->first] = it->second;
           }
         }
