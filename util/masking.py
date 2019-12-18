@@ -145,7 +145,7 @@ class MaskGenerator(object):
         image = imageset.get_raw_data(0)
         assert len(detector) == len(image)
 
-        # Create the mask for each image
+        # Create the mask for each panel
         masks = []
         for index, (im, panel) in enumerate(zip(image, detector)):
 
@@ -162,6 +162,12 @@ class MaskGenerator(object):
                         trusted_mask = frame_mask
                     else:
                         trusted_mask = trusted_mask | frame_mask
+
+                    # Pixels outside the trusted mask on at least 100 images
+                    # are considered bad and masked.
+                    # https://github.com/dials/dials/issues/1061
+                    if image_index >= 100:
+                        break
 
                     if trusted_mask.count(False) == 0:
                         break
