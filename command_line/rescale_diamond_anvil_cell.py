@@ -68,8 +68,9 @@ phil_scope = libtbx.phil.parse(
     }
 
     output {
-        experiments = corrected.expt
+        experiments = None
             .type = path
+            .optional = True
             .help = "The output experiment list file name.\n"
                     "If None, don't output an experiment list file."
         reflections = corrected.refl
