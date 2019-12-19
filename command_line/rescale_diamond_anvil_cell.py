@@ -19,6 +19,7 @@ integration but before scaling.  Call it on the output of dials.integrate.
 from __future__ import absolute_import, division, print_function
 
 import logging
+import os
 import sys
 
 import numpy as np
@@ -39,7 +40,8 @@ else:
     Vector = Sequence[SupportsFloat]
 
 
-logger = logging.getLogger("dials.rescale_diamond_anvil_cell")
+filename_root = os.path.splitext(os.path.basename(__file__))[0]
+logger = logging.getLogger("dials.%s" % filename_root)
 
 phil_scope = libtbx.phil.parse(
     u"""
@@ -73,10 +75,11 @@ phil_scope = libtbx.phil.parse(
         reflections = corrected.refl
             .type = path
             .help = "The output reflection table file."
-        log = dials.command_name.log
+        log = dials.%s.log
             .type = path
     }
     """
+    % filename_root
 )
 
 # Get the tabulated NIST mass attenuation coefficient data for carbon.
@@ -210,7 +213,7 @@ def correct_intensities_for_dac_attenuation(
 
 def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
     """
-    Run dev.dials.rescale_diamond_anvil_cell as from the command line.
+    Run dials.rescale_diamond_anvil_cell as from the command line.
 
     Take integrated experiment lists and reflection tables and correct the all the
     integrated intensities for the estimated attenuation by the diamond anvils.
@@ -220,9 +223,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
         phil: The PHIL scope definition (default: phil_scope, the master PHIL scope
               for this program).
     """
-    usage = (
-        "dials.rescale_diamond_anvil_cell [options] integrated.expt " "integrated.refl"
-    )
+    usage = "dials.%s [options] integrated.expt integrated.refl" % filename_root
 
     parser = OptionParser(
         usage=usage,
