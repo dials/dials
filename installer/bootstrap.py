@@ -686,7 +686,6 @@ class SourceModule(object):
     _modules = {}
     module = None
     authenticated = None
-    authentarfile = None
     anonymous = None
 
     def __init__(self):
@@ -727,16 +726,6 @@ class SourceModule(object):
         if not self.authenticated:
             return None
         return [self.authenticated[0], self.authenticated[1] % auth]
-
-    def get_tarauthenticated(self, auth=None):
-        auth = auth or {}
-        if self.authentarfile:
-            return [
-                self.authentarfile[0] % auth,
-                self.authentarfile[1],
-                self.authentarfile[2],
-            ]
-        return None, None, None
 
     def get_anonymous(self):
         return self.anonymous
@@ -960,8 +949,6 @@ class DIALSBuilder(object):
 
     def __init__(
         self,
-        category=None,
-        platform=None,
         sep=None,
         python_base=None,
         cleanup=False,
@@ -984,53 +971,33 @@ class DIALSBuilder(object):
         """Create and add all the steps."""
         self.set_auth(auth)
         self.steps = []
-        self.category = category
-        self.platform = platform
         if self.isPlatformWindows():
             self.op = ntpath
         else:
             self.op = os.path
-        self.name = "%s-%s" % (self.category, self.platform)
+        self.name = "dials-dev"
         # Platform configuration.
         python_executable = "python3"
-        if self.platform and ("windows" in self.platform or self.platform == "win32"):
-            python_executable = python_executable + ".exe"
-        if self.platform and "windows" in self.platform:
-            self.python_base = self.opjoin(
-                *["..", "base", "bin", "python", python_executable]
-            )
-        elif sys.platform == "win32":  # assuming we run standalone without buildbot
+        if sys.platform == "win32":
             self.python_base = self.opjoin(
                 *[os.getcwd(), "base", "bin", "python", python_executable]
             )
         else:
             self.python_base = self.opjoin(*["..", "base", "bin", python_executable])
-        self.with_python = with_python
-        if self.with_python:
+        if with_python:
             self.python_base = with_python
         self.verbose = verbose
         self.download_only = download_only
         # self.config_flags are only from the command line
-        # get_libtbx_configure can still be used to always set flags specific to a
-        # builder
+        # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = config_flags
 
         # Cleanup
         self.cleanup(["dist", "tests", "tmp"])
 
-        if (
-            self.platform and "windows" in self.platform
-        ):  # only executed by buildbot master
-            from buildbot.steps.transfer import FileDownload
-
-            # download us to folder above modules on slave so we can run the utility functions defined above
-            self.add_step(
-                FileDownload(mastersrc="bootstrap.py", slavedest="../bootstrap.py")
-            )
-
         # Add 'hot' sources
         if hot:
-            list(map(self.add_module, self.get_hot()))
+            list(map(self.add_module, self.HOT))
 
         # Add sources.
         if update:
@@ -1056,33 +1023,14 @@ class DIALSBuilder(object):
         if build and not self.download_only:
             self.add_refresh()
 
-        if (
-            self.platform and "windows" in self.platform
-        ):  # only executed by buildbot master
-            self.add_rm_bootstrap_on_slave()
-
     def isPlatformWindows(self):
-        if self.platform and "windows" in self.platform:
+        if sys.platform == "win32":
             return True
-        else:
-            if self.platform == "dev" and sys.platform == "win32":
-                return True
-        return False
-
-    def isPlatformLinux(self):
-        if self.platform and "linux" in self.platform:
-            return True
-        else:
-            if self.platform == "dev" and sys.platform.startswith("linux"):
-                return True
         return False
 
     def isPlatformMacOSX(self):
-        if self.platform and "mac" in self.platform:
+        if sys.platform.startswith("darwin"):
             return True
-        else:
-            if self.platform == "dev" and sys.platform.startswith("darwin"):
-                return True
         return False
 
     def add_auth(self, account, username):
@@ -1119,12 +1067,6 @@ class DIALSBuilder(object):
             return list(rc)
         rc = self.CODEBASES
         return rc
-
-    def get_hot(self):
-        return self.HOT
-
-    def get_libtbx_configure(self):
-        return self.LIBTBX
 
     def cleanup(self, dirs=None):
         dirs = dirs or []
@@ -1204,10 +1146,6 @@ class DIALSBuilder(object):
         if len(parameters) == 1:
             parameters = parameters[0]
         tarurl, arxname, dirpath = None, None, None
-        if self.isPlatformWindows() and method == "authenticated":
-            tarurl, arxname, dirpath = MODULES.get_module(
-                module
-            )().get_tarauthenticated(auth=self.get_auth())
         if self.isPlatformWindows() and tarurl:
             # if more bootstraps are running avoid potential race condition on
             # remote server by using unique random filenames
@@ -1475,7 +1413,7 @@ class DIALSBuilder(object):
         dots = [".."] * len(workdir)
         if workdir[0] == ".":
             dots = []
-        if sys.platform == "win32":  # assuming we run standalone without buildbot
+        if sys.platform == "win32":
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
@@ -1523,7 +1461,7 @@ class DIALSBuilder(object):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
     def add_base(self):
-        flags = ["--builder={builder}".format(builder=self.category)]
+        flags = ["--builder=dials"]
         # check for existing miniconda3 installation
         if not os.path.isdir("mc3"):
             flags.append("--install_conda")
@@ -1554,7 +1492,7 @@ class DIALSBuilder(object):
                 self.python_base,  # default to using our python rather than system python
                 self.opjoin("..", "modules", "cctbx_project", "libtbx", "configure.py"),
             ]
-            + self.get_libtbx_configure()
+            + self.LIBTBX
             + self.config_flags
         )
         self.add_step(
@@ -1726,8 +1664,6 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build
     DIALSBuilder(
-        category="dials",
-        platform="dev",
         with_python=options.with_python,
         auth=auth,
         hot=("hot" in actions),
