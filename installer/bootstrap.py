@@ -616,205 +616,110 @@ def remove_files_by_extension(extension, workdir):
 
 
 ##### Modules #####
-class SourceModule(object):
-    _modules = {}
-    module = None
-    anonymous = None
-
-    def __init__(self):
-        if not self._modules:
-            self.update_subclasses()
-
-    def items(self):
-        return list(self._modules.items())
-
-    @classmethod
-    def update_subclasses(cls):
-        for i in cls.__subclasses__():
-            cls._modules[i.module] = i
-
-    def get_module(self, module):
-        if module in self._modules:
-            return self._modules[module]
-        raise KeyError("Unknown module: %s" % module)
-
-    def get_url(self):
-        repo = self.anonymous
-        if not repo:
-            raise Exception("No access method defined for module: %s" % self.module)
-        return repo
-
-
-# Core external repositories
-# The trailing slashes ARE significant.
-# These must all provide anonymous access.
-class ccp4io_module(SourceModule):
-    module = "ccp4io"
-    anonymous = [
+MODULES = {
+    # Core external repositories
+    "ccp4io": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/ccp4io.gz",
             "https://drive.google.com/uc?id=1EF6AqowSrVnse7pRtRmIsvhS6Q0dsSLT&export=download",
         ],
-    ]
-
-
-class annlib_module(SourceModule):
-    module = "annlib"
-    anonymous = [
+    ],
+    "annlib": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/annlib.gz",
             "https://drive.google.com/uc?id=1YD_KDXrfhJ5ryT97j4yxmbAPoecGLjg0&export=download",
         ],
-    ]
-
-
-class scons_module(SourceModule):
-    module = "scons"
-    anonymous = ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]
-
-
-# Core CCTBX repositories
-# These must all provide anonymous access.
-class cctbx_module(SourceModule):
-    module = "cctbx_project"
-    anonymous = [
+    ],
+    "scons": ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
+    # Core CCTBX repositories
+    "cctbx_project": [
         "git",
         "git@github.com:cctbx/cctbx_project.git",
         "https://github.com/cctbx/cctbx_project.git",
         "https://github.com/cctbx/cctbx_project/archive/master.zip",
-    ]
-
-
-class boost_module(SourceModule):
-    module = "boost"
-    anonymous = [
+    ],
+    "boost": [
         "git",
         "git@github.com:cctbx/boost.git",
         "https://github.com/cctbx/boost.git",
         "https://github.com/cctbx/boost/archive/master.zip",
-    ]
-
-
-class cbflib_module(SourceModule):
-    module = "cbflib"
-    anonymous = [
+    ],
+    "cbflib": [
         "git",
         "git@github.com:dials/cbflib.git",
         "https://github.com/dials/cbflib.git",
         "https://github.com/dials/cbflib/archive/master.zip",
-    ]
-
-
-class ccp4io_adaptbx(SourceModule):
-    module = "ccp4io_adaptbx"
-    anonymous = [
+    ],
+    "ccp4io_adaptbx": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/ccp4io_adaptbx.gz",
             "https://drive.google.com/uc?id=1X5kRE90KkV2yTEyF9zb-PHOjjRXjzYvx&export=download",
         ],
-    ]
-
-
-class annlib_adaptbx(SourceModule):
-    module = "annlib_adaptbx"
-    anonymous = [
+    ],
+    "annlib_adaptbx": [
         "git",
         "git@github.com:cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
-    ]
-
-
-class tntbx_module(SourceModule):
-    module = "tntbx"
-    anonymous = [
+    ],
+    "tntbx": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/tntbx.gz",
             "https://drive.google.com/uc?id=1bDE_rF6iL0SeyplHSTNsfJyI1G1h7ZZv&export=download",
         ],
-    ]
-
-
-class clipper_module(SourceModule):
-    module = "clipper"
-    anonymous = [
+    ],
+    "clipper": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/clipper.gz",
             "https://drive.google.com/uc?id=1xWAj59zoyVn26EoIuBrw7KLNRyGjS5wC&export=download",
         ],
-    ]
-
-
-class gui_resources_module(SourceModule):
-    module = "gui_resources"
-    anonymous = [
+    ],
+    "gui_resources": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/gui_resources.gz",
             "https://drive.google.com/uc?id=1TTibOePamkUiIvwDJF-OMmdgX8jdgNUS&export=download",
         ],
-    ]
-
-
-class eigen_module(SourceModule):
-    module = "eigen"
-    anonymous = [
+    ],
+    "eigen": [
         "curl",
         [
             "http://cci.lbl.gov/repositories/eigen.gz",
             "https://drive.google.com/uc?id=138kErrF35WbnRRARqUczWaroao2w8p1A&export=download",
         ],
-    ]
-
-
-class dials_module(SourceModule):
-    module = "dials"
-    anonymous = [
+    ],
+    "dials": [
         "git",
         "git@github.com:dials/dials.git",
         "https://github.com/dials/dials.git",
         "https://github.com/dials/dials/archive/master.zip",
-    ]
-
-
-class dxtbx_module(SourceModule):
-    module = "dxtbx"
-    anonymous = [
+    ],
+    "dxtbx": [
         "git",
         "git@github.com:cctbx/dxtbx.git",
         "https://github.com/cctbx/dxtbx.git",
         "https://github.com/cctbx/dxtbx/archive/master.zip",
-    ]
-
-
-class msgpack_module(SourceModule):
-    module = "msgpack"
-    anonymous = [
+    ],
+    "msgpack": [
         "curl",
         [
             "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
             "https://gitcdn.link/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
             "https://github.com/dials/dependencies/raw/dials-1.13/msgpack-3.1.1.tar.gz",
         ],
-    ]
-
-
-class xia2_module(SourceModule):
-    module = "xia2"
-    anonymous = [
+    ],
+    "xia2": [
         "git",
         "git@github.com:xia2/xia2.git",
         "https://github.com/xia2/xia2.git",
         "https://github.com/xia2/xia2/archive/master.zip",
-    ]
-
-
-MODULES = SourceModule()
+    ],
+}
 
 ###################################
 ##### Base Configuration      #####
@@ -967,7 +872,7 @@ class DIALSBuilder(object):
         self.steps.append(step.run)
 
     def add_module(self, module, workdir=None, module_directory=None):
-        action = MODULES.get_module(module)().get_url()
+        action = MODULES[module]
         method, parameters = action[0], action[1:]
         if len(parameters) == 1:
             parameters = parameters[0]
