@@ -1021,20 +1021,41 @@ MODULES = SourceModule()
 ###################################
 
 
-class Builder(object):
+class DIALSBuilder(object):
     """Create buildbot configurations for CCI and CCTBX-like software."""
 
     # Base packages
     BASE_PACKAGES = "all"
     # Checkout these codebases
-    CODEBASES = ["cctbx_project"]
-    CODEBASES_EXTRA = []
+    CODEBASES = [
+        "boost",
+        "cbflib",
+        "cctbx_project",
+        "dxtbx",
+        "gui_resources",
+        "ccp4io_adaptbx",
+        "annlib_adaptbx",
+        "tntbx",
+        "clipper",
+    ]
+    CODEBASES_EXTRA = ["dials", "xia2"]
     # Copy these sources from cci.lbl.gov
-    HOT = []
-    HOT_EXTRA = []
+    HOT = ["annlib", "scons", "ccp4io", "eigen"]
+    HOT_EXTRA = ["msgpack"]
     # Configure for these cctbx packages
-    LIBTBX = ["cctbx"]
-    LIBTBX_EXTRA = []
+    LIBTBX = [
+        "cctbx",
+        "cbflib",
+        "dxtbx",
+        "scitbx",
+        "libtbx",
+        "iotbx",
+        "mmtbx",
+        "smtbx",
+        "gltbx",
+        "wxtbx",
+    ]
+    LIBTBX_EXTRA = ["dials", "xia2", "prime", "iota", "--skip_phenix_dispatchers"]
 
     def __init__(
         self,
@@ -1721,8 +1742,9 @@ environment exists in or is defined by {conda_env}.
     def add_refresh(self):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
-    # Override these methods.
     def add_base(self, extra_opts=[]):
+        extra_opts = ["--dials", "--xia2"] + extra_opts
+
         """Build the base dependencies, e.g. Python, HDF5, etc."""
         if self.with_python:
             extra_opts = ["--with-python", self.with_python]
@@ -1860,67 +1882,13 @@ environment exists in or is defined by {conda_env}.
             )
 
     def add_make(self):
-        self.add_command(
-            "libtbx.scons",
-            args=[
-                "-j",
-                str(self.nproc),
-                #                                          #"--skip-version", # for Phaser
-            ],
-        )
+        self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
         # run build again to make sure everything is built
-        self.add_command(
-            "libtbx.scons",
-            args=[
-                "-j",
-                str(self.nproc),
-                #                                          #"--skip-version", # for Phaser
-            ],
-        )
+        self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
 
     def add_install(self):
         """Run after compile, before tests."""
         self.add_command("mmtbx.rebuild_rotarama_cache", name="rebuild rotarama")
-
-    def add_tests(self):
-        """Run the unit tests."""
-        pass
-
-
-class DIALSBuilder(Builder):
-    # Base packages
-    BASE_PACKAGES = "all"
-    # Checkout these codebases
-    CODEBASES = [
-        "boost",
-        "cbflib",
-        "cctbx_project",
-        "dxtbx",
-        "gui_resources",
-        "ccp4io_adaptbx",
-        "annlib_adaptbx",
-        "tntbx",
-        "clipper",
-    ]
-    # Copy these sources from cci.lbl.gov
-    HOT = ["annlib", "scons", "ccp4io", "eigen"]
-    # Configure for these cctbx packages
-    LIBTBX = [
-        "cctbx",
-        "cbflib",
-        "dxtbx",
-        "scitbx",
-        "libtbx",
-        "iotbx",
-        "mmtbx",
-        "smtbx",
-        "gltbx",
-        "wxtbx",
-    ]
-
-    CODEBASES_EXTRA = ["dials", "xia2"]
-    LIBTBX_EXTRA = ["dials", "xia2", "prime", "iota", "--skip_phenix_dispatchers"]
-    HOT_EXTRA = ["msgpack"]
 
     def add_tests(self):
         self.add_test_command(
@@ -1934,11 +1902,6 @@ class DIALSBuilder(Builder):
             args=["--regression", "-n", "auto"],
             workdir=["modules", "dials"],
             haltOnFailure=True,
-        )
-
-    def add_base(self, extra_opts=[]):
-        super(DIALSBuilder, self).add_base(
-            extra_opts=["--dials", "--xia2"] + extra_opts
         )
 
 
