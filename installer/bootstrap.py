@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- mode: python; coding: utf-8; indent-tabs-mode: nil; python-indent: 2 -*-
 
-# Running bootstrap requires a minimum Python version of 2.6.
+# Running bootstrap requires a minimum Python version of 2.7.
 
 # To download this file:
 # wget https://raw.githubusercontent.com/dials/dials/master/installer/bootstrap.py
@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import argparse
 import functools
 import ntpath
 import os
@@ -32,20 +33,6 @@ except ImportError:  # Python 2
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
 import zipfile
-
-try:
-    import argparse
-except ImportError:
-    raise RuntimeError(
-        """
-The argparse module is required. If you are using Python 2.6, you may
-need to install it separately. On CentOS 6, you can run
-
-  yum install python-argpase
-
-with administrative privileges.
-"""
-    )
 
 _BUILD_DIR = "build"  # set by arg parser further on down
 
