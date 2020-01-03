@@ -525,14 +525,6 @@ class Toolbox(object):
                 "Existing non-git directory -- don't know what to do. skipping: %s"
                 % module
             )
-            if "cctbx_project.git" in parameters[0]:
-                print(
-                    "\n"
-                    + "=" * 80
-                    + '\nCCTBX moved to git on November 22, 2016.\n\nTo update cctbx_project to the last available subversion revision please run "svn update" while in the cctbx_project directory.\n'
-                    + "*" * 80
-                    + "\n"
-                )
             return
         if isinstance(parameters, str):
             parameters = [parameters]
@@ -831,7 +823,6 @@ class ccp4io_adaptbx(SourceModule):
             "https://drive.google.com/uc?id=1X5kRE90KkV2yTEyF9zb-PHOjjRXjzYvx&export=download",
         ],
     ]
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/ccp4io_adaptbx/trunk"]
 
 
 class annlib_adaptbx(SourceModule):
@@ -853,7 +844,6 @@ class tntbx_module(SourceModule):
             "https://drive.google.com/uc?id=1bDE_rF6iL0SeyplHSTNsfJyI1G1h7ZZv&export=download",
         ],
     ]
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/tntbx/trunk"]
 
 
 class clipper_module(SourceModule):
@@ -865,7 +855,6 @@ class clipper_module(SourceModule):
             "https://drive.google.com/uc?id=1xWAj59zoyVn26EoIuBrw7KLNRyGjS5wC&export=download",
         ],
     ]
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/clipper/trunk"]
 
 
 class gui_resources_module(SourceModule):
@@ -877,7 +866,6 @@ class gui_resources_module(SourceModule):
             "https://drive.google.com/uc?id=1TTibOePamkUiIvwDJF-OMmdgX8jdgNUS&export=download",
         ],
     ]
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/gui_resources/trunk"]
 
 
 class eigen_module(SourceModule):
@@ -894,12 +882,6 @@ class eigen_module(SourceModule):
         "eigen.tar.gz",
         "/net/cci/auto_build/repositories/eigen",
     ]
-
-
-# Phenix repositories
-class phenix_module(SourceModule):
-    module = "phenix"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/phenix/trunk"]
 
 
 class dials_module(SourceModule):
@@ -1073,7 +1055,7 @@ class DIALSBuilder(object):
         if hot:
             list(map(self.add_module, self.get_hot()))
 
-        # Add svn sources.
+        # Add sources.
         self.revert = revert
         if update:
             list(map(self.add_module, self.get_codebases()))
@@ -1266,8 +1248,6 @@ class DIALSBuilder(object):
             self._add_scp(module, parameters)
         elif method == "curl":
             self._add_curl(module, parameters)
-        elif method == "svn":
-            self._add_svn(module, parameters)
         elif method == "git":
             self._add_git(module, parameters)
         else:
@@ -1393,45 +1373,6 @@ class DIALSBuilder(object):
                 Toolbox().unzip(archive, directory, trim_directory)
 
         self.add_step(_indirection())
-
-    def _add_svn(self, module, url):
-        update_list = ["update"]
-        if module in ["reduce", "probe", "king", "suitename"]:
-            pass
-        elif self.revert:
-            update_list = ["update", "-r", self.revert]
-        thisworkdir = "modules"
-        if module == "molprobity":
-            thisworkdir = "."
-        # avoid stalling bootstrap with prompts
-        # or when encountering unknown server certificates
-        svnflags = ["--non-interactive", "--trust-server-cert"]
-        if os.path.exists(self.opjoin(*[thisworkdir, module, ".svn"])):
-            self.add_step(
-                self.shell(
-                    command=["svn"] + update_list + [module] + svnflags,
-                    workdir=[thisworkdir],
-                )
-            )
-            self.add_step(
-                self.shell(
-                    command=["svn", "status", module] + svnflags,
-                    workdir=[thisworkdir],
-                    quiet=True,
-                )
-            )
-        elif os.path.exists(self.opjoin(*[thisworkdir, module])):
-            print(
-                "Existing non-svn directory -- don't know what to do. skipping: %s"
-                % module
-            )
-        else:
-            # print "fresh checkout..."
-            self.add_step(
-                self.shell(
-                    command=["svn", "co", url, module] + svnflags, workdir=[thisworkdir]
-                )
-            )
 
     def _add_git(self, module, parameters, destination=None):
         use_git_ssh = self.auth.get("git_ssh", False)
