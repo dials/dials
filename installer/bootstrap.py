@@ -1012,7 +1012,7 @@ class DIALSBuilder(object):
 
     def run(self):
         for i in self.steps:
-            i.run()
+            i()
 
     def opjoin(self, *args):
         return self.op.join(*args)
@@ -1075,7 +1075,7 @@ class DIALSBuilder(object):
 
     def add_step(self, step):
         """Add a step."""
-        self.steps.append(step)
+        self.steps.append(step.run)
 
     def add_module(self, module, workdir=None, module_directory=None):
         action = MODULES.get_module(module)().get_url()
