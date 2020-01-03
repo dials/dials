@@ -729,9 +729,12 @@ class DIALSBuilder(object):
         "clipper",
         "dials",
         "xia2",
+        "annlib",
+        "scons",
+        "ccp4io",
+        "eigen",
+        "msgpack",
     ]
-    # Copy these sources from cci.lbl.gov
-    HOT = ["annlib", "scons", "ccp4io", "eigen", "msgpack"]
     # Configure for these cctbx packages
     LIBTBX = [
         "cctbx",
@@ -754,7 +757,6 @@ class DIALSBuilder(object):
     def __init__(
         self,
         python_base=None,
-        hot=True,
         update=True,
         base=True,
         build=True,
@@ -792,11 +794,7 @@ class DIALSBuilder(object):
         # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = config_flags
 
-        # Add 'hot' sources
-        if hot:
-            list(map(self.add_module, self.HOT))
-
-        # Add sources.
+        # Add sources
         if update:
             list(map(self.add_module, self.CODEBASES))
 
@@ -1161,13 +1159,12 @@ def run():
 
     description = """
   You may specify one or more actions:
-    hot - Update static sources (scons, etc.)
     update - Update source repositories (cctbx, cbflib, etc.)
     base - Build base dependencies (python, hdf5, wxWidgets, etc.)
     build - Build
     tests - Run tests
 
-  The default action is to run: hot, update, base, build
+  The default action is to run: update, base, build
 
   You can run the compilation step in parallel by providing a
   the number of processes using "--nproc".
@@ -1178,7 +1175,7 @@ def run():
 
   Example:
 
-    python bootstrap.py hot update build tests
+    python bootstrap.py update build tests
   """
 
     parser = argparse.ArgumentParser(
@@ -1239,8 +1236,8 @@ be passed separately with quotes to avoid confusion (e.g
     )  # TODO: this is probably ok way to go with globalvar, but check and see
 
     # Check actions
-    allowedargs = ["hot", "update", "base", "build", "tests"]
-    args = args or ["hot", "update", "base", "build"]
+    allowedargs = ["update", "base", "build", "tests"]
+    args = args or ["update", "base", "build"]
     actions = []
     for arg in args:
         if arg not in allowedargs:
@@ -1257,7 +1254,6 @@ be passed separately with quotes to avoid confusion (e.g
     DIALSBuilder(
         with_python=options.with_python,
         auth=auth,
-        hot=("hot" in actions),
         update=("update" in actions),
         base=("base" in actions),
         build=("build" in actions),
