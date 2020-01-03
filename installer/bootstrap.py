@@ -1015,7 +1015,6 @@ class DIALSBuilder(object):
         mpi_build=False,
         python3=False,
         config_flags=[],
-        use_conda=None,
     ):
         if nproc is None:
             self.nproc = 1
@@ -1060,7 +1059,6 @@ class DIALSBuilder(object):
         # get_libtbx_configure can still be used to always set flags specific to a
         # builder
         self.config_flags = config_flags
-        self.use_conda = use_conda
 
         # Cleanup
         self.cleanup(["dist", "tests", "tmp"])
@@ -1506,22 +1504,14 @@ class DIALSBuilder(object):
         log = open(os.devnull, "w")
 
         # environment is provided, so do check that it exists
-        if os.path.isdir(self.use_conda):
-            check_file = True
-            self.use_conda = os.path.abspath(self.use_conda)
-        # no path provided or file provided
-        else:
-            check_file = False
-            # base step has not run yet, so do not check if files exist
-            self.use_conda = os.path.join("..", "conda_base")
-            if self.isPlatformWindows():
-                self.use_conda = os.path.join(os.getcwd(), "conda_base")
+        check_file = False
+        # base step has not run yet, so do not check if files exist
+        conda_base = os.path.join("..", "conda_base")
+        if self.isPlatformWindows():
+            conda_base = os.path.join(os.getcwd(), "conda_base")
         # basic checks for python and conda
         m = conda_manager(
-            root_dir=os.getcwd(),
-            conda_env=self.use_conda,
-            check_file=check_file,
-            log=log,
+            root_dir=os.getcwd(), conda_env=conda_base, check_file=check_file, log=log
         )
 
         return m
@@ -1555,7 +1545,7 @@ class DIALSBuilder(object):
 
             # (case 1)
             # use default location or file provided to --use-conda
-            if self.use_conda == "" or os.path.isfile(self.use_conda):
+            if True:
                 conda_python = self.op.join(
                     "..", "conda_base", m_get_conda_python(self)
                 )
@@ -1563,21 +1553,6 @@ class DIALSBuilder(object):
                     conda_python = self.op.join(
                         os.getcwd(), "conda_base", m_get_conda_python(self)
                     )
-            # (case 2)
-            # use path provided to --use-conda
-            elif os.path.isdir(self.use_conda):
-                self.use_conda = os.path.abspath(self.use_conda)
-                conda_python = os.path.join(self.use_conda, m_get_conda_python(self))
-            else:
-                raise RuntimeError(
-                    """
-The --use-conda flag can accept a directory to a conda environment or a
-file that defines a conda environment. Please make sure a valid conda
-environment exists in or is defined by {conda_env}.
-""".format(
-                        conda_env=self.use_conda
-                    )
-                )
 
             if conda_python is None:
                 raise RuntimeError("A conda version of python could not be found.")
@@ -1684,17 +1659,13 @@ environment exists in or is defined by {conda_env}.
         #      on the environment. The environment files for the build should be
         #      used to construct the starting environment and the developer is
         #      responsible for maintaining it.
-        if self.use_conda is not None:  # --use-conda flag is set
+        if True:
             # reset command
             command = []
 
             # file or no path provided (case 1), case 2 handled in _get_conda_python
-            if self.use_conda == "" or os.path.isfile(self.use_conda):
+            if True:
                 flags = ["--builder={builder}".format(builder=self.category)]
-                # check if a file was an argument
-                if os.path.isfile(self.use_conda):
-                    filename = os.path.abspath(self.use_conda)
-                    flags.append("--install_env={filename}".format(filename=filename))
                 # check for existing miniconda3 installation
                 if not os.path.isdir("mc3"):
                     flags.append("--install_conda")
@@ -1719,17 +1690,12 @@ environment exists in or is defined by {conda_env}.
     def add_configure(self):
         env = None
 
-        if self.use_conda is not None:
-            if "--use_conda" not in self.config_flags:
-                self.config_flags.append("--use_conda")
-            self.python_base = self._get_conda_python()
-            # conda python prefers no environment customizations
-            # the get_environment function in ShellCommand updates the environment
-            env = {
-                "PYTHONPATH": None,
-                "LD_LIBRARY_PATH": None,
-                "DYLD_LIBRARY_PATH": None,
-            }
+        if "--use_conda" not in self.config_flags:
+            self.config_flags.append("--use_conda")
+        self.python_base = self._get_conda_python()
+        # conda python prefers no environment customizations
+        # the get_environment function in ShellCommand updates the environment
+        env = {"PYTHONPATH": None, "LD_LIBRARY_PATH": None, "DYLD_LIBRARY_PATH": None}
 
         configcmd = (
             [
@@ -1750,9 +1716,6 @@ environment exists in or is defined by {conda_env}.
         # Prepare saving configure.py command to file should user want to manually recompile Phenix
         fname = self.opjoin("config_modules.cmd")
         ldlibpath = ""
-        if self.isPlatformLinux() and self.use_conda is None:
-            ldlibpath = "export LD_LIBRARY_PATH=../base/lib\n"
-            # because that was the environment when python and base components were built during bootstrap
         confstr = ldlibpath + subprocess.list2cmdline(configcmd)
         if not self.isPlatformWindows():
             fname = self.opjoin("config_modules.sh")
@@ -1913,23 +1876,6 @@ be passed separately with quotes to avoid confusion (e.g
         action="append",
         default=[],
     )
-    parser.add_argument(
-        "--use-conda",
-        "--use_conda",
-        metavar="ENVIRONMENT",
-        dest="use_conda",
-        help="""Use conda for dependencies. The directory to an
-existing conda environment or a file defining a conda environment can be
-provided. The build will use that environment instead of creating a default one
-for the builder. If the currently active conda environment is to be used for
-building, $CONDA_PREFIX should be the argument for this flag. Otherwise, a new
-environment will be created. The --python3 flag will be ignored when there is
-an argument for this flag. Specifying an environment is for developers that
-maintain their own conda environment.""",
-        default=None,
-        nargs="?",
-        const="",
-    )
 
     parser.add_argument(
         "--build-dir",
@@ -1960,14 +1906,6 @@ maintain their own conda environment.""",
     for arg in allowedargs:
         if arg in args:
             actions.append(arg)
-
-    # Check if an action was an argument to --use-conda
-    if options.use_conda in allowedargs:
-        if len(options.action) == 0:
-            actions = [options.use_conda]
-        else:
-            actions.append(options.use_conda)
-        options.use_conda = ""
 
     print("Performing actions:", " ".join(actions))
 
@@ -2000,7 +1938,6 @@ maintain their own conda environment.""",
         mpi_build=options.mpi_build,
         python3=options.python3,
         config_flags=options.config_flags,
-        use_conda=options.use_conda,
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
 
