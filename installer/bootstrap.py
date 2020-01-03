@@ -144,115 +144,52 @@ class conda_manager(object):
         self.environments = self.update_environments()
 
         # Clean environment for external Python processes
-        self.env = os.environ.copy()
-        self.env["PYTHONPATH"] = ""
+        self.env = {
+            key: value for key, value in os.environ.items() if key != "PYTHONPATH"
+        }
 
-        # error messages
-        self.conda_exe_not_found = """
-The conda executable cannot be found. Please make sure the correct
-directory for the base conda installation was provided. The directory
-can be found by running "conda info" and looking the "base environment"
-value."""
-
-        # try to determine base environment from $PATH
-        paths = os.environ.get("PATH")
-        if paths is not None:
-            if self.system == "Windows":
-                paths = paths.split(";")
-            else:
-                paths = paths.split(":")
-            for path in paths:
-                conda_base = os.path.abspath(os.path.join(path, ".."))
-                conda_exe = self.get_conda_exe(conda_base)
-                if os.path.isfile(conda_exe):
-                    self.conda_base = conda_base
-                    self.conda_exe = conda_exe
-                    break
-
-        # try to determine base environment from .conda/environments.txt
+        # Find relevant conda base installation
         if self.conda_base is None:
-            for environment in self.environments:
-                conda_exe = self.get_conda_exe(environment)
-                if os.path.isfile(conda_exe):
-                    self.conda_base = environment
-                    self.conda_exe = conda_exe
-                    break
-
-        # -------------------------------------------------------------------------
-        # helper function for searching for conda_exe
-        def walk_up_check(new_conda_base, new_conda_exe):
-            if new_conda_base is None:
-                new_conda_base = ""
-            if new_conda_exe is None:
-                new_conda_exe = ""
-            while not os.path.isfile(new_conda_exe):
-                # move up directory and recheck
-                new_conda_base = os.path.abspath(os.path.join(new_conda_base, ".."))
-                new_conda_exe = self.get_conda_exe(new_conda_base)
-                if os.path.isfile(new_conda_exe):
-                    return new_conda_base, new_conda_exe
-
-                # moved to root directory
-                if new_conda_base == os.path.abspath(
-                    os.path.join(new_conda_base, "..")
-                ):
-                    return "", ""
-
-        # -------------------------------------------------------------------------
-
-        # install conda if necessary
-        if self.conda_base is None:
-            install_dir = os.path.join(self.root_dir, "mc3")
-            if os.path.isdir(install_dir):
-                print("Using default conda installation")
-                self.conda_base = install_dir
-            else:
-                print("Location of conda installation not provided")
-                print("Proceeding with a fresh installation")
-                self.conda_base = self.install_miniconda(prefix=self.root_dir)
+            self.conda_base = os.path.join(self.root_dir, "miniconda")
             self.conda_exe = self.get_conda_exe(self.conda_base)
+            if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
+                print("Using miniconda installation from", self.conda_base)
+            else:
+                print("Installing miniconda into", self.conda_base)
+                self.install_miniconda(self.conda_base)
+
+        # verify consistency and check conda version
+        if not os.path.isfile(self.conda_exe):
+            sys.exit("Conda executable not found at " + self.conda_exe)
 
         self.environments = self.update_environments()
 
-        # verify consistency and check conda version
-        if self.conda_base is not None:
-
-            # maybe a conda evironment was provided instead of the base environment
-            if not os.path.isfile(self.conda_exe):
-                self.conda_base, self.conda_exe = walk_up_check(
-                    self.conda_base, self.conda_exe
-                )
-                self.environments = self.update_environments()
-
-            if not os.path.isfile(self.conda_exe):
-                raise RuntimeError(self.conda_exe_not_found)
-
-            conda_info = json.loads(
-                check_output([self.conda_exe, "info", "--json"], env=self.env)
-            )
-            consistency_check = [self.conda_base == conda_info["root_prefix"]]
-            for env in self.environments:
-                consistency_check.append(env in conda_info["envs"])
-            if False in consistency_check:
-                message = """
+        conda_info = json.loads(
+            check_output([self.conda_exe, "info", "--json"], env=self.env)
+        )
+        consistency_check = [self.conda_base == conda_info["root_prefix"]]
+        for env in self.environments:
+            consistency_check.append(env in conda_info["envs"])
+        if False in consistency_check:
+            message = """
 There is a mismatch between the conda settings in your home directory
 and what "conda info" is reporting. This is not a fatal error, but if
 an error is encountered, please check that your conda installation and
 environments exist and are working.
 """
-                warnings.warn(message, RuntimeWarning)
-            if conda_info["conda_version"] < "4.4":
-                raise RuntimeError(
-                    """
+            warnings.warn(message, RuntimeWarning)
+        if conda_info["conda_version"] < "4.4":
+            raise RuntimeError(
+                """
 CCTBX programs require conda version 4.4 and greater to make use of the
 common compilers provided by conda. Please update your version with
 "conda update conda".
 """
-                )
+            )
 
-            print("Base conda installation:\n  {base}".format(base=self.conda_base))
-            output = check_output([self.conda_exe, "info"], env=self.env)
-            print(output)
+        print("Base conda installation:\n  {base}".format(base=self.conda_base))
+        output = check_output([self.conda_exe, "info"], env=self.env)
+        print(output)
 
     # ---------------------------------------------------------------------------
     def get_conda_exe(self, prefix):
@@ -313,27 +250,9 @@ common compilers provided by conda. Please update your version with
 
         return environments
 
-    # ---------------------------------------------------------------------------
-    def install_miniconda(self, prefix):
-        """
-    Download a miniconda installer and install. The default installation
-    location is at the same directory level as the "modules" directory.
+    def install_miniconda(self, location):
+        """Download and install Miniconda3"""
 
-    Parameters
-    ----------
-    prefix: str
-      The installation directory for miniconda
-
-    Returns
-    -------
-    conda_base: str
-      The location of the "base" conda environment
-    """
-
-        if prefix is None:
-            prefix = self.root_dir
-
-        # construct Miniconda3 filename
         os_names = {"Darwin": "MacOSX", "Linux": "Linux", "Windows": "Windows"}
         filename = "Miniconda3-latest-{platform}-x86_64".format(
             platform=os_names[self.system]
@@ -344,72 +263,32 @@ common compilers provided by conda. Please update your version with
             filename += ".sh"
         url_base = "https://repo.anaconda.com/miniconda/"
         url = url_base + filename
-        filename = os.path.join(prefix, filename)
+        filename = os.path.join(location, filename)
 
-        # Download from public repository
-        if not os.path.isfile(filename):
-            print("Downloading {url}".format(url=url))
-            Toolbox.download_to_file(url, filename)
-            print("Downloaded file to {filename}".format(filename=filename))
-        else:
-            print("Using local copy at {filename}".format(filename=filename))
+        print("Downloading {url}:".format(url=url), end=" ")
+        result = Toolbox.download_to_file(url, filename)
+        if result in (0, -1):
+            sys.exit("Miniconda download failed")
 
         # run the installer
-        install_dir = os.path.join(prefix, "mc3")
         if self.system == "Windows":
-            flags = '/InstallationType=JustMe /RegisterPython=0 /AddToPath=0 /S /D="{install_dir}"'.format(
-                install_dir=install_dir
+            flags = '/InstallationType=JustMe /RegisterPython=0 /AddToPath=0 /S /D="{location}"'.format(
+                location=location
             )
             command_list = ['"' + filename + '"', flags]
         else:
-            flags = '-b -u -p "{install_dir}"'.format(install_dir=install_dir)
+            flags = '-b -u -p "{location}"'.format(location=location)
             command_list = ["/bin/sh", filename, flags]
-        print('Installing miniconda to "{install_dir}"'.format(install_dir=install_dir))
-        output = check_output(command_list, env=self.env)
-        print(output)
 
-        return install_dir
+        print()
+        ShellCommand(
+            workdir=location,
+            command=command_list,
+            description="Installing Miniconda",
+            env=self.env,
+            silent=False,
+        ).run()
 
-    # ---------------------------------------------------------------------------
-    def update_conda(self):
-        """
-    Update the version of conda, if possible. The defaults channel is
-    used because that is the default for a normal miniconda installation.
-
-    Parameters
-    ----------
-      None
-    """
-        command_list = [
-            self.conda_exe,
-            "update",
-            "-n",
-            "base",
-            "-c",
-            "defaults",
-            "-y",
-            "conda",
-        ]
-        try:
-            output = check_output(command_list, env=self.env)
-        except Exception:
-            print(
-                """
-*******************************************************************************
-There was a failure in updating your base conda installaion. To update
-manually, try running
-
-  conda update -n base -c defaults conda
-
-If you are using conda from a different channel, replace "defaults" with that
-channel
-*******************************************************************************
-"""
-            )
-        else:
-            print(output)
-
-    # ---------------------------------------------------------------------------
     def create_environment(self, python="36"):
         """
     Create the environment based on the builder and file. The
@@ -455,14 +334,24 @@ channel
         else:
             command = "create"
             text_messages = ["Installing", "installation into"]
-        command_list = [self.conda_exe, command, "--prefix", prefix, "--file", filename]
+        command_list = [
+            self.conda_exe,
+            command,
+            "--prefix",
+            prefix,
+            "--file",
+            filename,
+            "--yes",
+            "--channel",
+            "conda-forge",
+            "--override-channels",
+        ]
         if self.system == "Windows":
             command_list = [
                 os.path.join(self.conda_base, "Scripts", "activate"),
                 "base",
                 "&&",
             ] + command_list
-        command_list.append("-y")
         # RuntimeError is raised on failure
         print(
             "{text} {builder} environment with:\n  {filename}".format(
@@ -498,6 +387,13 @@ working network connection for downloading conda packages.
         print(
             "Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix)
         )
+        with open(os.path.join(prefix, ".condarc"), "w") as fh:
+            fh.write(
+                """
+channels:
+  - conda-forge
+"""
+            )
 
         # on Windows, also download the Visual C++ 2008 Redistributable
         # use the same version as conda-forge
