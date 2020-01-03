@@ -909,9 +909,9 @@ class cbflib_module(SourceModule):
     module = "cbflib"
     anonymous = [
         "git",
-        "git@github.com:yayahjb/cbflib.git",
-        "https://github.com/yayahjb/cbflib.git",
-        "https://github.com/yayahjb/cbflib/archive/master.zip",
+        "git@github.com:dials/cbflib.git",
+        "https://github.com/dials/cbflib.git",
+        "https://github.com/dials/cbflib/archive/master.zip",
     ]
 
 
