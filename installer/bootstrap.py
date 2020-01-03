@@ -13,7 +13,6 @@ from __future__ import absolute_import, division, print_function
 import ntpath
 import os
 import os.path
-import posixpath
 import re
 import shutil
 import socket as pysocket
@@ -21,7 +20,6 @@ import stat
 import subprocess
 import sys
 import tarfile
-import tempfile
 import time
 import traceback
 
@@ -602,10 +600,9 @@ class Toolbox(object):
 
 
 class cleanup_ext_class(object):
-    def __init__(self, filename_ext, workdir=None, walk=True):
+    def __init__(self, filename_ext, workdir=None):
         self.filename_ext = filename_ext
         self.workdir = workdir
-        self.walk = walk
 
     def get_command(self):
         return "delete *%s in %s" % (self.filename_ext, self.workdir).split()
@@ -617,21 +614,12 @@ class cleanup_ext_class(object):
                 os.chdir(self.workdir)
             else:
                 return
-        print(
-            "\n  removing %s files in %s, walk? %s"
-            % (self.filename_ext, os.getcwd(), self.walk)
-        )
+        print("\n  removing %s files in %s" % (self.filename_ext, os.getcwd()))
         i = 0
-        if self.walk:
-            for root, dirs, files in os.walk(".", topdown=False):
-                for name in files:
-                    if name.endswith(self.filename_ext):
-                        os.remove(os.path.join(root, name))
-                        i += 1
-        else:
-            for name in os.listdir(os.getcwd()):
+        for root, dirs, files in os.walk(".", topdown=False):
+            for name in files:
                 if name.endswith(self.filename_ext):
-                    os.remove(os.path.join(name))
+                    os.remove(os.path.join(root, name))
                     i += 1
         os.chdir(cwd)
         print("  removed %d files" % i)
@@ -685,7 +673,6 @@ class cleanup_dirs(object):
 class SourceModule(object):
     _modules = {}
     module = None
-    authenticated = None
     anonymous = None
 
     def __init__(self):
@@ -705,30 +692,11 @@ class SourceModule(object):
             return self._modules[module]
         raise KeyError("Unknown module: %s" % module)
 
-    def get_url(self, auth=None):
-        repo = None
-        try:
-            repo = self.get_authenticated(auth=auth)
-        except KeyError as e:
-            repo = self.get_anonymous()
-            if not repo:
-                raise Exception(
-                    "No anonymous access method defined for module: %s. Try with --%s"
-                    % (self.module, e.args[0])
-                )
-        repo = repo or self.get_anonymous()
+    def get_url(self):
+        repo = self.anonymous
         if not repo:
             raise Exception("No access method defined for module: %s" % self.module)
         return repo
-
-    def get_authenticated(self, auth=None):
-        auth = auth or {}
-        if not self.authenticated:
-            return None
-        return [self.authenticated[0], self.authenticated[1] % auth]
-
-    def get_anonymous(self):
-        return self.anonymous
 
 
 # Core external repositories
@@ -910,8 +878,6 @@ MODULES = SourceModule()
 class DIALSBuilder(object):
     """Create buildbot configurations for CCI and CCTBX-like software."""
 
-    # Base packages
-    BASE_PACKAGES = "all"
     # Checkout these codebases
     CODEBASES = [
         "boost",
@@ -949,9 +915,7 @@ class DIALSBuilder(object):
 
     def __init__(
         self,
-        sep=None,
         python_base=None,
-        cleanup=False,
         hot=True,
         update=True,
         base=True,
@@ -1001,7 +965,7 @@ class DIALSBuilder(object):
 
         # Add sources.
         if update:
-            list(map(self.add_module, self.get_codebases()))
+            list(map(self.add_module, self.CODEBASES))
 
         # always remove .pyc files
         self.remove_pyc()
@@ -1033,14 +997,8 @@ class DIALSBuilder(object):
             return True
         return False
 
-    def add_auth(self, account, username):
-        self.auth[account] = username
-
     def set_auth(self, auth):
         self.auth = auth or {}
-
-    def get_auth(self):
-        return self.auth
 
     def remove_pyc(self):
         self.add_step(cleanup_ext_class(".pyc", "modules"))
@@ -1060,13 +1018,6 @@ class DIALSBuilder(object):
 
     def opjoin(self, *args):
         return self.op.join(*args)
-
-    def get_codebases(self):
-        if self.isPlatformWindows():
-            rc = set(self.CODEBASES)
-            return list(rc)
-        rc = self.CODEBASES
-        return rc
 
     def cleanup(self, dirs=None):
         dirs = dirs or []
@@ -1124,111 +1075,21 @@ class DIALSBuilder(object):
         else:
             self.add_step(cleanup_dirs(dirs, "modules"))
 
-    def add_rm_bootstrap_on_slave(self):
-        # if file is not found error flag is set. Mask it with cmd shell
-        cmd = ["cmd", "/c", "del", "/Q", "bootstrap.py*", "&", "set", "ERRORLEVEL=0"]
-        self.add_step(
-            self.shell(
-                name="removing bootstrap utilities",
-                command=cmd,
-                workdir=["."],
-                description="remove temporary bootstrap.py*",
-            )
-        )
-
     def add_step(self, step):
         """Add a step."""
         self.steps.append(step)
 
     def add_module(self, module, workdir=None, module_directory=None):
-        action = MODULES.get_module(module)().get_url(auth=self.get_auth())
+        action = MODULES.get_module(module)().get_url()
         method, parameters = action[0], action[1:]
         if len(parameters) == 1:
             parameters = parameters[0]
-        tarurl, arxname, dirpath = None, None, None
-        if self.isPlatformWindows() and tarurl:
-            # if more bootstraps are running avoid potential race condition on
-            # remote server by using unique random filenames
-            randarxname = next(tempfile._get_candidate_names()) + "_" + arxname
-            self._add_remote_make_tar(module, tarurl, randarxname, dirpath)
-            self._add_scp(module, tarurl + ":" + randarxname)
-            self._add_remote_rm_tar(module, tarurl, randarxname)
-        elif method == "scp":
-            self._add_scp(module, parameters)
-        elif method == "curl":
+        if method == "curl":
             self._add_curl(module, parameters)
         elif method == "git":
             self._add_git(module, parameters)
         else:
             raise Exception("Unknown access method: %s %s" % (method, str(parameters)))
-
-    def _add_remote_make_tar(self, module, tarurl, arxname, dirpath):
-        """Windows: tar up hot packages for quick file transfer since there's no rsync and pscp is painfully slow"""
-        if dirpath[-1] == "/":
-            dirpath = dirpath[:-1]
-        basename = posixpath.basename(dirpath)
-        cmd = [
-            "ssh",
-            tarurl,
-            '"' + "cd",
-            posixpath.split(dirpath)[0],
-            "&&",
-            "tar",
-            "cfzh",
-            "~/" + arxname,
-            basename + '"',
-        ]
-        mstr = " ".join(cmd)
-        self.add_step(
-            self.shell(  # pack directory with tar on remote system
-                name="hot %s" % module,
-                command=mstr,
-                workdir=["modules"],
-                description="create remote temporary archive %s:%s" % (tarurl, arxname),
-            )
-        )
-
-    def _add_remote_rm_tar(self, module, tarurl, arxname):
-        """Windows: Delete tar file on remote system, unpack tar file locally, then delete tar file locally"""
-        self.add_step(
-            self.shell(  # delete the tarfile on remote system
-                name="hot %s" % module,
-                command=["ssh", tarurl, "rm ", arxname],
-                workdir=["modules"],
-                description="delete remote temporary archive of %s" % module,
-            )
-        )
-        self.add_step(
-            self.shell(
-                command=[
-                    "python",
-                    "-c",
-                    "import sys; sys.path.append('..'); import bootstrap; \
-      bootstrap.tar_extract('','%s', '%s')"
-                    % (arxname, module),
-                ],
-                workdir=["modules"],
-                description="extracting archive files to %s" % module,
-            )
-        )
-        self.add_step(
-            self.shell(  # delete the tarfile locally
-                # use 'cmd', '/c' as a substitute for shell=True in the subprocess.Popen call
-                command=["cmd", "/c", "del", arxname],
-                workdir=["modules"],
-                description="delete local temporary archive of %s" % module,
-            )
-        )
-
-    def _add_scp(self, module, url):
-        self.add_step(
-            self.shell(
-                name="hot %s" % module,
-                command=["scp", "-r", url, "."],
-                workdir=["modules"],
-                description="getting remote file %s" % url.split("/")[-1],
-            )
-        )
 
     def _add_download(self, url, to_file):
         if not isinstance(url, list):
@@ -1275,14 +1136,6 @@ class DIALSBuilder(object):
             )
         )
 
-    def _add_unzip(self, archive, directory, trim_directory=0):
-        class _indirection(object):
-            def run(self):
-                print("===== Installing %s into %s" % (archive, directory))
-                Toolbox().unzip(archive, directory, trim_directory)
-
-        self.add_step(_indirection())
-
     def _add_git(self, module, parameters, destination=None):
         use_git_ssh = self.auth.get("git_ssh", False)
         reference_repository_path = self.auth.get("git_reference", None)
@@ -1308,22 +1161,6 @@ class DIALSBuilder(object):
                 )
 
         self.add_step(_indirection())
-
-    def _check_for_Windows_prerequisites(self):
-        if self.isPlatformWindows():
-            # platform specific checks cannot run on buildbot master so add to build steps to run on slaves
-            self.add_step(
-                self.shell(
-                    command=[
-                        "python",
-                        "-c",
-                        "import sys; sys.path.append('..'); import bootstrap; \
-          bootstrap.CheckWindowsPrerequisites()",
-                    ],
-                    workdir=["modules"],
-                    description="Checking Windows prerequisites",
-                )
-            )
 
     def _get_conda_manager(self):
         """
@@ -1440,23 +1277,6 @@ class DIALSBuilder(object):
             **kwargs
         )
 
-    def add_test_parallel(self, module=None, nproc=None, slow_tests=False, **kwargs):
-        if nproc is None:
-            nprocstr = "nproc=auto"
-        else:
-            nprocstr = "nproc=%d" % nproc
-        args = ["module=%s" % module, nprocstr, "verbosity=1"]
-        if slow_tests:
-            args.append("slow_tests=True")
-        self.add_command(
-            "libtbx.run_tests_parallel",
-            name="test %s" % module,
-            workdir=["tests", module],
-            args=args,
-            haltOnFailure=False,
-            **kwargs
-        )
-
     def add_refresh(self):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
@@ -1555,7 +1375,7 @@ class DIALSBuilder(object):
         )
 
 
-def run(root=None):
+def run():
     prog = os.environ.get("LIBTBX_DISPATCHER_NAME")
     if prog is None or prog.startswith("python") or prog.endswith("python"):
         prog = os.path.basename(sys.argv[0])
@@ -1587,7 +1407,6 @@ def run(root=None):
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    # parser.add_argument("--root", help="Root directory; this will contain base, modules, build, etc.")
     parser.add_argument("action", nargs="*", help="Actions for building")
     parser.add_argument(
         "--git-ssh",
