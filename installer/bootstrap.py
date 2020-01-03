@@ -172,33 +172,7 @@ class conda_manager(object):
     Uses the known conda installtion to create an environment
   """
 
-    # Currently, there is one monolithic environment
-    # The key names for this dictionary must match the builder names in
-    # bootstrap.py
     env_locations = {
-        "cctbxlite": default_file,
-        "cctbx": default_file,
-        "phenix": os.path.join(
-            "phenix",
-            "conda_envs",
-            default_format.format(
-                builder="phenix",
-                version=version,
-                platform=conda_platform[platform.system()],
-            ),
-        ),
-        "phenix_tng": os.path.join(
-            "phenix",
-            "conda_envs",
-            default_format.format(
-                builder="phenix",
-                version=version,
-                platform=conda_platform[platform.system()],
-            ),
-        ),
-        "xfel": default_file,
-        "xfellegacy": default_file,
-        "labelit": default_file,
         "dials": os.path.join(
             "dials",
             ".conda-envs",
@@ -207,20 +181,7 @@ class conda_manager(object):
                 version=version,
                 platform=conda_platform[platform.system()],
             ),
-        ),
-        "external": default_file,
-        "molprobity": default_file,
-        "qrefine": default_file,
-        "phaser": default_file,
-        "phasertng": os.path.join(
-            "phaser",
-            "conda_envs",
-            default_format.format(
-                builder="phaser_tng",
-                version=version,
-                platform=conda_platform[platform.system()],
-            ),
-        ),
+        )
     }
 
     # ---------------------------------------------------------------------------
@@ -231,7 +192,7 @@ class conda_manager(object):
         conda_env=None,
         check_file=True,
         max_retries=5,
-        verbose=False,
+        verbose=True,
         log=sys.stdout,
     ):
         """
@@ -651,7 +612,7 @@ channel
 
     # ---------------------------------------------------------------------------
     def create_environment(
-        self, builder="cctbx", filename=None, python=None, copy=False, offline=False
+        self, builder="dials", filename=None, python="36", copy=False, offline=False
     ):
         """
     Create the environment based on the builder and file. The
@@ -1342,17 +1303,7 @@ def install_conda():
 
     root_path = os.path.dirname(os.path.abspath(__file__))
 
-    m = conda_manager(
-        root_dir=root_path,
-        conda_base=None,
-        conda_env=None,
-        check_file=True,
-        verbose=True,
-    )
-
-    m.create_environment(
-        builder="dials", filename=None, python="36", copy=False, offline=False
-    )
+    conda_manager(root_dir=root_path).create_environment()
 
 
 def remove_files_by_extension(extension, workdir):
