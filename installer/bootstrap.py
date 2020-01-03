@@ -925,7 +925,6 @@ class DIALSBuilder(object):
         with_python=None,
         nproc=1,
         verbose=False,
-        download_only=False,
         config_flags=[],
     ):
         if nproc is None:
@@ -951,7 +950,6 @@ class DIALSBuilder(object):
         if with_python:
             self.python_base = with_python
         self.verbose = verbose
-        self.download_only = download_only
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = config_flags
@@ -975,16 +973,16 @@ class DIALSBuilder(object):
             self.add_base()
 
         # Configure, make, get revision numbers
-        if build and not self.download_only:
+        if build:
             self.add_configure()
             self.add_make()
             self.add_install()
 
         # Tests, tests
-        if tests and not self.download_only:
+        if tests:
             self.add_tests()
 
-        if build and not self.download_only:
+        if build:
             self.add_refresh()
 
     def isPlatformWindows(self):
@@ -1425,13 +1423,6 @@ def run():
     )
     parser.add_argument("--nproc", help="number of parallel processes in compile step.")
     parser.add_argument(
-        "--download-only",
-        dest="download_only",
-        action="store_true",
-        help="Do not build, only download prerequisites",
-        default=False,
-    )
-    parser.add_argument(
         "-v",
         "--verbose",
         dest="verbose",
@@ -1492,7 +1483,6 @@ be passed separately with quotes to avoid confusion (e.g
         tests=("tests" in actions),
         nproc=options.nproc,
         verbose=options.verbose,
-        download_only=options.download_only,
         config_flags=options.config_flags,
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
