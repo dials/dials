@@ -22,7 +22,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import textwrap
 import time
 import traceback
 
@@ -2943,12 +2942,6 @@ def run(root=None):
         "phasertng": PhaserTNGBuilder,
     }
 
-    wrapper = textwrap.TextWrapper(
-        width=80, initial_indent="  ", subsequent_indent="    "
-    )
-    builders_text = ", ".join(sorted(builders.keys()))
-    builders_text = "\n".join(wrapper.wrap(builders_text))
-
     prog = os.environ.get("LIBTBX_DISPATCHER_NAME")
     if prog is None or prog.startswith("python") or prog.endswith("python"):
         prog = os.path.basename(sys.argv[0])
@@ -2964,15 +2957,9 @@ def run(root=None):
 
   The default action is to run: hot, update, base, build
 
-  You can specify which package will be downloaded, configured,
-  and built with "--builder". Current builders:
-  {builders}
-
   You can provide your SourceForge username with "--sfuser", and
   your CCI SVN username with "--cciuser". These will checkout
-  and update repositories with your credentials. Some builders,
-  like phenix, require this argument for access to certain
-  repositories.
+  and update repositories with your credentials.
 
   You can run the compilation step in parallel by providing a
   the number of processes using "--nproc".
@@ -2983,10 +2970,8 @@ def run(root=None):
 
   Example:
 
-    python bootstrap.py --builder=cctbx --sfuser=metalheadd hot update build tests
-  """.format(
-        builders=builders_text
-    )
+    python bootstrap.py --sfuser=metalheadd hot update build tests
+  """
 
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -2995,9 +2980,6 @@ def run(root=None):
     )
     # parser.add_argument("--root", help="Root directory; this will contain base, modules, build, etc.")
     parser.add_argument("action", nargs="*", help="Actions for building")
-    parser.add_argument(
-        "--builder", help="Builder: " + ",".join(list(builders.keys())), default="cctbx"
-    )
     parser.add_argument("--cciuser", help="CCI SVN username.")
     parser.add_argument("--sfuser", help="SourceForge SVN username.")
     parser.add_argument("--revert", help="SVN string to revert all SVN trees")
@@ -3112,12 +3094,6 @@ maintain their own conda environment.""",
         options.build_dir
     )  # TODO: this is probably ok way to go with globalvar, but check and see
 
-    # process external
-    options.specific_external_builder = None
-    if options.builder.lower() in ["afitt", "rosetta"]:
-        options.specific_external_builder = options.builder.lower()
-        options.builder = "external"
-
     # Root dir
     # options.root = options.root or root
 
@@ -3142,10 +3118,6 @@ maintain their own conda environment.""",
 
     print("Performing actions:", " ".join(actions))
 
-    # Check builder
-    if options.builder not in builders:
-        raise ValueError("Unknown builder: %s" % options.builder)
-
     auth = {"git_ssh": options.git_ssh, "git_reference": options.git_reference}
     if options.cciuser:
         auth["cciuser"] = options.cciuser
@@ -3155,10 +3127,10 @@ maintain their own conda environment.""",
         auth["sfmethod"] = options.sfmethod
 
     # Build
-    builder = builders[options.builder]
+    builder = builders["dials"]
     builder(
-        category=options.builder,
-        subcategory=options.specific_external_builder,
+        category="dials",
+        subcategory=None,
         platform="dev",
         with_python=options.with_python,
         auth=auth,
