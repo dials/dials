@@ -975,10 +975,6 @@ class DIALSBuilder(object):
         nproc=1,
         verbose=False,
         download_only=False,
-        skip_base="",
-        force_base_build=False,
-        enable_shared=False,
-        mpi_build=False,
         config_flags=[],
     ):
         if nproc is None:
@@ -1014,8 +1010,6 @@ class DIALSBuilder(object):
             self.python_base = with_python
         self.verbose = verbose
         self.download_only = download_only
-        self.skip_base = skip_base
-        self.force_base_build = force_base_build
         # self.config_flags are only from the command line
         # get_libtbx_configure can still be used to always set flags specific to a
         # builder
@@ -1047,12 +1041,7 @@ class DIALSBuilder(object):
 
         # Build base packages
         if base:
-            extra_opts = ["--nproc=%s" % str(self.nproc)]
-            if enable_shared:
-                extra_opts.append("--python-shared")
-            if mpi_build:
-                extra_opts.append("--mpi-build")
-            self.add_base(extra_opts=extra_opts)
+            self.add_base()
 
         # Configure, make, get revision numbers
         if build and not self.download_only:
@@ -1533,71 +1522,18 @@ class DIALSBuilder(object):
     def add_refresh(self):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
-    def add_base(self, extra_opts=[]):
-        extra_opts = ["--dials", "--xia2"] + extra_opts
-
-        """Build the base dependencies, e.g. Python, HDF5, etc."""
-        if self.with_python:
-            extra_opts = ["--with-python", self.with_python]
-        if self.verbose:
-            extra_opts.append("-v")
-        if self.download_only:
-            extra_opts.append("--download-only")
-        if self.auth.get("git_ssh", False):
-            extra_opts.append("--git-ssh")
-        if self.skip_base:
-            extra_opts.append("--skip-base=%s" % self.skip_base)
-        extra_opts.append("--python3")
-        if not self.force_base_build:
-            if "--skip-if-exists" not in extra_opts:
-                extra_opts.append("--skip-if-exists")
+    def add_base(self):
+        flags = ["--builder={builder}".format(builder=self.category)]
+        # check for existing miniconda3 installation
+        if not os.path.isdir("mc3"):
+            flags.append("--install_conda")
+        flags.append("--python=36")
         command = [
             "python",
             self.opjoin(
-                "modules",
-                "cctbx_project",
-                "libtbx",
-                "auto_build",
-                "install_base_packages.py",
+                "modules", "cctbx_project", "libtbx", "auto_build", "install_conda.py"
             ),
-            "--python-shared",
-            "--%s" % self.BASE_PACKAGES,
-        ] + extra_opts
-
-        # Override base with conda
-        #
-        # The use of conda is focused on 2 main groups
-        #   1) Developers who do not actively use conda
-        #      A basic conda installation will be created at the same level as the
-        #      "modules" and "build" directories. The default environment for the
-        #      builder will be created in the "conda_base" directory at the same
-        #      level.
-        #   2) Developers who do
-        #      A path to a conda environment should be provided. No checks are done
-        #      on the environment. The environment files for the build should be
-        #      used to construct the starting environment and the developer is
-        #      responsible for maintaining it.
-        if True:
-            # reset command
-            command = []
-
-            # file or no path provided (case 1), case 2 handled in _get_conda_python
-            if True:
-                flags = ["--builder={builder}".format(builder=self.category)]
-                # check for existing miniconda3 installation
-                if not os.path.isdir("mc3"):
-                    flags.append("--install_conda")
-                flags.append("--python=36")
-                command = [
-                    "python",
-                    self.opjoin(
-                        "modules",
-                        "cctbx_project",
-                        "libtbx",
-                        "auto_build",
-                        "install_conda.py",
-                    ),
-                ] + flags
+        ] + flags
 
         if len(command) > 0:
             print("Installing base packages using:\n  " + " ".join(command))
@@ -1747,25 +1683,6 @@ def run(root=None):
         default=False,
     )
     parser.add_argument(
-        "--skip-base-packages", dest="skip_base", action="store", default=""
-    )
-    parser.add_argument(
-        "--force-base-build",
-        dest="force_base_build",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
-        "--enable-shared", dest="enable_shared", action="store_true", default=False
-    )
-    parser.add_argument(
-        "--mpi-build",
-        dest="mpi_build",
-        help="Builds software with mpi functionality",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
         "--config-flags",
         "--config_flags",
         dest="config_flags",
@@ -1791,9 +1708,6 @@ be passed separately with quotes to avoid confusion (e.g
     _BUILD_DIR = (
         options.build_dir
     )  # TODO: this is probably ok way to go with globalvar, but check and see
-
-    # Root dir
-    # options.root = options.root or root
 
     # Check actions
     allowedargs = ["hot", "update", "base", "build", "tests"]
@@ -1824,10 +1738,6 @@ be passed separately with quotes to avoid confusion (e.g
         nproc=options.nproc,
         verbose=options.verbose,
         download_only=options.download_only,
-        skip_base=options.skip_base,
-        force_base_build=options.force_base_build,
-        enable_shared=options.enable_shared,
-        mpi_build=options.mpi_build,
         config_flags=options.config_flags,
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
