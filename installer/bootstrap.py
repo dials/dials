@@ -809,7 +809,6 @@ class DIALSBuilder(object):
         if build:
             self.add_configure()
             self.add_make()
-            self.add_install()
 
         # Tests, tests
         if tests:
@@ -1132,10 +1131,6 @@ class DIALSBuilder(object):
         self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
         # run build again to make sure everything is built
         self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
-
-    def add_install(self):
-        """Run after compile, before tests."""
-        self.add_command("mmtbx.rebuild_rotarama_cache", name="rebuild rotarama")
 
     def add_tests(self):
         self.add_test_command(
