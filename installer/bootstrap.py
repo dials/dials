@@ -130,7 +130,6 @@ conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 # =============================================================================
 class conda_manager(object):
     def __init__(self, root_dir, conda_base=None, max_retries=5):
-
         self.conda_base = None
         self.conda_exe = None
         self.max_retries = max_retries
@@ -149,6 +148,7 @@ class conda_manager(object):
         }
 
         # Find relevant conda base installation
+        print()
         if self.conda_base is None:
             self.conda_base = os.path.join(self.root_dir, "miniconda")
             self.conda_exe = self.get_conda_exe(self.conda_base)
@@ -187,11 +187,6 @@ common compilers provided by conda. Please update your version with
 """
             )
 
-        print("Base conda installation:\n  {base}".format(base=self.conda_base))
-        output = check_output([self.conda_exe, "info"], env=self.env)
-        print(output)
-
-    # ---------------------------------------------------------------------------
     def get_conda_exe(self, prefix):
         """
     Find the conda executable. This is platform-dependent
@@ -286,7 +281,6 @@ common compilers provided by conda. Please update your version with
             command=command_list,
             description="Installing Miniconda",
             env=self.env,
-            silent=False,
         ).run()
 
     def create_environment(self, python="36"):
@@ -307,14 +301,12 @@ common compilers provided by conda. Please update your version with
         filename = os.path.join(
             self.root_dir,
             "modules",
-            os.path.join(
-                "dials",
-                ".conda-envs",
-                "{builder}_py{version}_{platform}.txt".format(
-                    builder="dials",
-                    version=python,
-                    platform=conda_platform[platform.system()],
-                ),
+            "dials",
+            ".conda-envs",
+            "{builder}_py{version}_{platform}.txt".format(
+                builder="dials",
+                version=python,
+                platform=conda_platform[platform.system()],
             ),
         )
 
@@ -361,7 +353,12 @@ common compilers provided by conda. Please update your version with
         for retry in range(self.max_retries):
             retry += 1
             try:
-                output = check_output(command_list, env=self.env)
+                ShellCommand(
+                    workdir=self.root_dir,
+                    command=command_list,
+                    description="Installing base directory",
+                    env=self.env,
+                ).run()
             except Exception:
                 print(
                     """
@@ -383,7 +380,6 @@ The conda environment could not be constructed. Please check that there is a
 working network connection for downloading conda packages.
 """
             )
-        print(output)
         print(
             "Completed {text}:\n  {prefix}".format(text=text_messages[1], prefix=prefix)
         )
@@ -526,7 +522,12 @@ class ShellCommand(object):
                 print("Calling subprocess resulted in error; ", e.child_traceback)
             raise e
 
-        p.wait()
+        try:
+            p.wait()
+        except KeyboardInterrupt:
+            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+            p.terminate()
+            raise
         if p.returncode:
             sys.exit("Process failed with return code %s" % p.returncode)
         return p.returncode
