@@ -548,6 +548,46 @@ class Toolbox(object):
         raise Exception(error)
 
 
+def install_conda():
+    command = [
+        "python",
+        os.path.join(
+            "modules", "cctbx_project", "libtbx", "auto_build", "install_conda.py"
+        ),
+        "--builder=dials",
+        "--install_conda",
+        "--python=36",
+    ]
+    print("Installing base packages using:\n  " + " ".join(command))
+
+    if __package__ is None:
+        root_path = os.path.dirname(os.path.abspath(__file__))
+        paths = [
+            root_path,
+            os.path.join(root_path, "modules", "cctbx_project", "libtbx", "auto_build"),
+        ]
+        for path in paths:
+            if os.path.isfile(os.path.join(path, "install_conda.py")):
+                if path not in sys.path:
+                    sys.path.append(path)
+                    break
+        from install_conda import conda_manager
+    else:
+        from .install_conda import conda_manager
+
+    m = conda_manager(
+        root_dir=root_path,
+        conda_base=None,
+        conda_env=None,
+        check_file=True,
+        verbose=True,
+    )
+
+    m.create_environment(
+        builder="dials", filename=None, python="36", copy=False, offline=False
+    )
+
+
 def remove_files_by_extension(extension, workdir):
     cwd = os.getcwd()
     if workdir is not None:
@@ -750,7 +790,6 @@ class DIALSBuilder(object):
     def shell(self, **kwargs):
         # Convenience for ShellCommand
         kwargs["description"] = kwargs.get("description") or kwargs.get("name")
-        kwargs["timeout"] = 60 * 60 * 2  # 2 hours
         if "workdir" in kwargs:
             kwargs["workdir"] = os.path.join(*kwargs["workdir"])
         return ShellCommand(**kwargs)
@@ -896,18 +935,7 @@ class DIALSBuilder(object):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
     def add_base(self):
-        command = [
-            "python",
-            os.path.join(
-                "modules", "cctbx_project", "libtbx", "auto_build", "install_conda.py"
-            ),
-            "--builder=dials",
-            "--install_conda",
-            "--python=36",
-        ]
-
-        print("Installing base packages using:\n  " + " ".join(command))
-        self.add_step(self.shell(name="base", command=command, workdir=["."]))
+        self.steps.append(install_conda)
 
     def add_configure(self):
         if "--use_conda" not in self.config_flags:
