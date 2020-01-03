@@ -157,8 +157,6 @@ class ShellCommand(object):
                 args=command, cwd=workdir, stdout=stdout, stderr=stderr, env=env
             )
         except Exception as e:  # error handling
-            if not self.kwargs.get("haltOnFailure"):
-                return 1
             if isinstance(e, OSError):
                 if e.errno == 2:
                     executable = os.path.normpath(os.path.join(workdir, command[0]))
@@ -168,9 +166,8 @@ class ShellCommand(object):
             raise e
 
         p.wait()
-        if p.returncode != 0 and self.kwargs.get("haltOnFailure"):
-            print("Process failed with return code %s" % (p.returncode))
-            sys.exit(1)
+        if p.returncode:
+            sys.exit("Process failed with return code %s" % p.returncode)
         return p.returncode
 
 
@@ -366,10 +363,8 @@ class Toolbox(object):
 
             if remote_mtime > 0:
                 # set file timestamp if timestamp information is available
-                from stat import ST_ATIME
-
                 st = os.stat(file)
-                atime = st[ST_ATIME]  # current access time
+                atime = st[stat.ST_ATIME]  # current access time
                 os.utime(file, (atime, remote_mtime))
 
             if cache and socket.info().get("ETag"):
@@ -499,7 +494,6 @@ class Toolbox(object):
                         command=["git", "pull", "--rebase"],
                         workdir=destination,
                         silent=False,
-                        haltOnFailure=True,
                     ).run()
 
             print(
@@ -783,7 +777,6 @@ class DIALSBuilder(object):
 
     def shell(self, **kwargs):
         # Convenience for ShellCommand
-        kwargs["haltOnFailure"] = kwargs.pop("haltOnFailure", True)
         kwargs["description"] = kwargs.get("description") or kwargs.get("name")
         kwargs["timeout"] = 60 * 60 * 2  # 2 hours
         if "workdir" in kwargs:
@@ -916,9 +909,7 @@ class DIALSBuilder(object):
             )
         )
 
-    def add_test_command(
-        self, command, name=None, workdir=None, args=None, haltOnFailure=False, **kwargs
-    ):
+    def add_test_command(self, command, name=None, workdir=None, args=None, **kwargs):
         if name is None:
             name = "test %s" % command
         self.add_command(
@@ -926,7 +917,6 @@ class DIALSBuilder(object):
             name=name,
             workdir=(workdir or ["tests", command]),
             args=args,
-            haltOnFailure=haltOnFailure,
             **kwargs
         )
 
@@ -972,33 +962,6 @@ class DIALSBuilder(object):
                 env=env,
             )
         )
-        # Prepare saving configure.py command to file should user want to manually recompile Phenix
-        fname = "config_modules.cmd"
-        ldlibpath = ""
-        confstr = ldlibpath + subprocess.list2cmdline(configcmd)
-        if not self.isPlatformWindows():
-            fname = "config_modules.sh"
-            confstr = "#!/bin/sh\n\n" + confstr
-        # klonky way of writing file later on, but it works
-        self.add_step(
-            self.shell(
-                command=[
-                    "python",
-                    "-c",
-                    'open(r"%s","w").write(r"""%s""" + "\\n")' % (fname, confstr),
-                ],
-                workdir=[_BUILD_DIR],
-                description="save configure command",
-            )
-        )
-        if not self.isPlatformWindows():
-            self.add_step(
-                self.shell(
-                    command=["chmod", "+x", fname],
-                    workdir=[_BUILD_DIR],
-                    description="permit execution of config_modules.sh",
-                )
-            )
 
     def add_make(self):
         self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
@@ -1010,13 +973,11 @@ class DIALSBuilder(object):
             "libtbx.pytest",
             args=["--regression", "-n", "auto"],
             workdir=["modules", "dxtbx"],
-            haltOnFailure=True,
         )
         self.add_test_command(
             "libtbx.pytest",
             args=["--regression", "-n", "auto"],
             workdir=["modules", "dials"],
-            haltOnFailure=True,
         )
 
 
