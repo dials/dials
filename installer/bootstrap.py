@@ -852,7 +852,7 @@ class DIALSBuilder(object):
         use_git_ssh = self.auth.get("git_ssh", False)
         reference_repository_path = self.auth.get("git_reference", None)
         if reference_repository_path is None:
-            if os.name == "posix" and "diamond.ac.uk" in pysocket.gethostname():
+            if os.name == "posix" and pysocket.gethostname().endswith("diamond.ac.uk"):
                 reference_repository_path = (
                     "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
                 )
