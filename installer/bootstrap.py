@@ -10,6 +10,7 @@
 
 from __future__ import absolute_import, division, print_function
 
+import functools
 import ntpath
 import os
 import os.path
@@ -107,9 +108,6 @@ class ShellCommand(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def get_command(self):
-        return self.kwargs["command"]
-
     def get_description(self):
         if "description" in self.kwargs:
             return self.kwargs["description"]
@@ -133,7 +131,7 @@ class ShellCommand(object):
         return env
 
     def run(self):
-        command = self.get_command()
+        command = self.kwargs["command"]
         description = self.get_description()
         workdir = self.get_workdir()
         env = self.get_environment()
@@ -599,36 +597,22 @@ class Toolbox(object):
         raise Exception(error)
 
 
-class cleanup_ext_class(object):
-    def __init__(self, filename_ext, workdir=None):
-        self.filename_ext = filename_ext
-        self.workdir = workdir
-
-    def get_command(self):
-        return "delete *%s in %s" % (self.filename_ext, self.workdir).split()
-
-    def remove_ext_files(self):
-        cwd = os.getcwd()
-        if self.workdir is not None:
-            if os.path.exists(self.workdir):
-                os.chdir(self.workdir)
-            else:
-                return
-        print("\n  removing %s files in %s" % (self.filename_ext, os.getcwd()))
-        i = 0
-        for root, dirs, files in os.walk(".", topdown=False):
-            for name in files:
-                if name.endswith(self.filename_ext):
-                    os.remove(os.path.join(root, name))
-                    i += 1
-        os.chdir(cwd)
-        print("  removed %d files" % i)
-
-    def run(self):
-        self.remove_ext_files()
-
-
-
+def remove_files_by_extension(extension, workdir):
+    cwd = os.getcwd()
+    if workdir is not None:
+        if os.path.exists(workdir):
+            os.chdir(workdir)
+        else:
+            return
+    print("\n  removing %s files in %s" % (extension, os.getcwd()))
+    i = 0
+    for root, dirs, files in os.walk(".", topdown=False):
+        for name in files:
+            if name.endswith(extension):
+                os.remove(os.path.join(root, name))
+                i += 1
+    os.chdir(cwd)
+    print("  removed %d files" % i)
 
 
 ##### Modules #####
@@ -958,7 +942,9 @@ class DIALSBuilder(object):
         self.auth = auth or {}
 
     def remove_pyc(self):
-        self.add_step(cleanup_ext_class(".pyc", "modules"))
+        self.steps.append(
+            functools.partial(remove_files_by_extension, ".pyc", "modules")
+        )
 
     def shell(self, **kwargs):
         # Convenience for ShellCommand
