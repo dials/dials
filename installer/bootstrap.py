@@ -24,11 +24,11 @@ import time
 import traceback
 
 try:  # Python 3
-    from urllib.parse import urlparse
+    from urllib.parse import urljoin, urlparse
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError, URLError
 except ImportError:  # Python 2
-    from urlparse import urlparse
+    from urlparse import urljoin, urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
 import zipfile
 
@@ -39,35 +39,9 @@ import zipfile
 
 # ----------- conda-manager ----------------------------------
 
-
 import json
 import platform
 import warnings
-
-# Python 2/3 compatibility
-py2 = False
-py3 = True
-try:
-    from urllib.parse import urljoin
-    from urllib.request import urlopen
-except ImportError:
-    from urlparse import urljoin
-    from urllib2 import urlopen
-
-    py2 = True
-    py3 = False
-
-
-def check_output(*popenargs, **kwargs):
-    # Back-port of Python 2.7 subprocess.check_output.
-    process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-    output, unused_err = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        raise RuntimeError(
-            "Call to '%s' failed with exit code %d" % (popenargs, retcode)
-        )
-    return output
 
 
 def call(args, log=None, shell=True, cwd=None, verbose=False, env=None):
@@ -112,7 +86,6 @@ def call(args, log=None, shell=True, cwd=None, verbose=False, env=None):
 
 # conda on Windows seems to need cmd and the wait() in Popen
 if platform.system() == "Windows":
-    import subprocess
     import tempfile
 
     def check_output(command_list, *args, **kwargs):
@@ -133,6 +106,20 @@ if platform.system() == "Windows":
             return returncode
 
 
+else:
+
+    def check_output(*popenargs, **kwargs):
+        # Back-port of Python 2.7 subprocess.check_output.
+        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise RuntimeError(
+                "Call to '%s' failed with exit code %d" % (popenargs, retcode)
+            )
+        return output
+
+
 # =============================================================================
 # Locations for the files defining the conda environments
 # Generally, they should reside in the repository of the main program
@@ -150,33 +137,6 @@ root_dir = os.path.abspath(os.path.join(__file__, "..", "..", ".."))
 default_file = os.path.join(
     "cctbx_project", "libtbx", "auto_build", "conda_envs", default_filename
 )
-
-# =============================================================================
-def download_file(url, filename):
-    """
-  Simple function for downloading a file from a URL
-  No error checking is done since anything downloaded is necessary.
-
-  Parameters
-  ----------
-  url: str
-    The url pointing to the location of the file
-  filename: str
-    The name of the local file
-
-  Returns
-  -------
-    Nothing
-  """
-    if py3:
-        with urlopen(url) as response:
-            with open(filename, "wb") as local_file:
-                shutil.copyfileobj(response, local_file)
-    elif py2:
-        with open(filename, "wb") as local_file:
-            response = urlopen(url).read()
-            local_file.write(response)
-
 
 # =============================================================================
 class conda_manager(object):
@@ -620,7 +580,7 @@ common compilers provided by conda. Please update your version with
         # Download from public repository
         if not os.path.isfile(filename):
             print("Downloading {url}".format(url=url), file=self.log)
-            download_file(url, filename)
+            Toolbox.download_to_file(url, filename)
             print(
                 "Downloaded file to {filename}".format(filename=filename), file=self.log
             )
@@ -830,9 +790,9 @@ working network connection for downloading conda packages.
         # use the same version as conda-forge
         # https://github.com/conda-forge/vs2008_runtime-feedstock
         if self.system == "Windows" and prefix.endswith("conda_base"):
-            download_file(
-                url="https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
-                filename=os.path.join(prefix, "vcredist_x64.exe"),
+            Toolbox.download_to_file(
+                "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
+                os.path.join(prefix, "vcredist_x64.exe"),
             )
 
         # check that environment file is updated
