@@ -1198,10 +1198,6 @@ class DIALSBuilder(object):
     def __init__(
         self, options, update=True, base=True, build=True, tests=True, auth=None
     ):
-        if options.nproc is None:
-            self.nproc = 1
-        else:
-            self.nproc = options.nproc
         """Create and add all the steps."""
         self.auth = auth or {}
         self.steps = []
@@ -1421,9 +1417,15 @@ class DIALSBuilder(object):
         )
 
     def add_make(self):
-        self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
+        try:
+            nproc = len(os.sched_getaffinity(0))
+        except AttributeError:
+            import multiprocessing
+
+            nproc = multiprocessing.cpu_count()
+        self.add_command("libtbx.scons", args=["-j", str(nproc)])
         # run build again to make sure everything is built
-        self.add_command("libtbx.scons", args=["-j", str(self.nproc)])
+        self.add_command("libtbx.scons", args=["-j", str(nproc)])
 
     def add_tests(self):
         self.add_test_command(
@@ -1452,8 +1454,6 @@ def run():
 
   The default action is to run: update, base, build
 
-  You can run the compilation step in parallel by providing a
-  the number of processes using "--nproc".
   Complete build output is shown with "-v" or "--verbose".
 
   Example:
@@ -1479,7 +1479,6 @@ def run():
         dest="git_reference",
         help="Path to a directory containing reference copies of repositories for faster checkouts.",
     )
-    parser.add_argument("--nproc", help="number of parallel processes in compile step.")
     parser.add_argument(
         "-v",
         "--verbose",
