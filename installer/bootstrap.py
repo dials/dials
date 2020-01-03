@@ -50,8 +50,6 @@ with administrative privileges.
 
 _BUILD_DIR = "build"  # set by arg parser further on down
 
-windows_remove_list = []
-
 # Utility function to be executed on slave machine or called directly by standalone bootstrap script
 def tar_extract(workdir, archive, modulename=None):
     try:
@@ -755,7 +753,6 @@ class SourceModule(object):
 # Core external repositories
 # The trailing slashes ARE significant.
 # These must all provide anonymous access.
-# On Windows due to absence of rsync we use pscp from the Putty programs.
 class ccp4io_module(SourceModule):
     module = "ccp4io"
     anonymous = [
@@ -769,10 +766,6 @@ class ccp4io_module(SourceModule):
         "%(cciuser)s@cci.lbl.gov",
         "ccp4io.tar.gz",
         "/net/cci/auto_build/repositories/ccp4io",
-    ]
-    authenticated = [
-        "rsync",
-        "%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/repositories/ccp4io/",
     ]
 
 
@@ -789,10 +782,6 @@ class annlib_module(SourceModule):
         "%(cciuser)s@cci.lbl.gov",
         "annlib.tar.gz",
         "/net/cci/auto_build/repositories/annlib",
-    ]
-    authenticated = [
-        "rsync",
-        "%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/repositories/annlib/",
     ]
 
 
@@ -905,10 +894,6 @@ class eigen_module(SourceModule):
         "eigen.tar.gz",
         "/net/cci/auto_build/repositories/eigen",
     ]
-    authenticated = [
-        "rsync",
-        "%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/repositories/eigen/",
-    ]
 
 
 # Phenix repositories
@@ -937,11 +922,6 @@ class dxtbx_module(SourceModule):
     ]
 
 
-class dials_regression_module(SourceModule):
-    module = "dials_regression"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/dials_regression/trunk"]
-
-
 class msgpack_module(SourceModule):
     module = "msgpack"
     anonymous = [
@@ -954,11 +934,6 @@ class msgpack_module(SourceModule):
     ]
 
 
-class xfel_regression_module(SourceModule):
-    module = "xfel_regression"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/xfel_regression/trunk"]
-
-
 class xia2_module(SourceModule):
     module = "xia2"
     anonymous = [
@@ -966,51 +941,6 @@ class xia2_module(SourceModule):
         "git@github.com:xia2/xia2.git",
         "https://github.com/xia2/xia2.git",
         "https://github.com/xia2/xia2/archive/master.zip",
-    ]
-
-
-# Duke repositories
-class probe_module(SourceModule):
-    module = "probe"
-    anonymous = ["svn", "https://github.com/rlabduke/probe.git/trunk"]
-
-
-class suitename_module(SourceModule):
-    module = "suitename"
-    anonymous = ["svn", "https://github.com/rlabduke/suitename.git/trunk"]
-
-
-class reduce_module(SourceModule):
-    module = "reduce"
-    anonymous = ["svn", "https://github.com/rlabduke/reduce.git/trunk"]
-
-
-class king_module(SourceModule):
-    module = "king"
-    anonymous = ["svn", "https://github.com/rlabduke/phenix_king_binaries.git/trunk"]
-
-
-class molprobity_moodule(SourceModule):
-    module = "molprobity"
-    anonymous = ["svn", "https://github.com/rlabduke/MolProbity.git/trunk"]
-
-
-class uc_metrics_module(SourceModule):
-    module = "uc_metrics"
-    anonymous = [
-        "git",
-        "git@gitlab.com:cctbx/uc_metrics.git",
-        "https://gitlab.com/cctbx/uc_metrics.git",
-    ]
-
-
-class ncdist_module(SourceModule):
-    module = "ncdist"
-    anonymous = [
-        "git",
-        "git@github.com:yayahjb/ncdist.git",
-        "https://github.com/yayahjb/ncdist.git",
-        "https://github.com/yayahjb/ncdist/archive/master.zip",
     ]
 
 
@@ -1037,11 +967,11 @@ class DIALSBuilder(object):
         "annlib_adaptbx",
         "tntbx",
         "clipper",
+        "dials",
+        "xia2",
     ]
-    CODEBASES_EXTRA = ["dials", "xia2"]
     # Copy these sources from cci.lbl.gov
-    HOT = ["annlib", "scons", "ccp4io", "eigen"]
-    HOT_EXTRA = ["msgpack"]
+    HOT = ["annlib", "scons", "ccp4io", "eigen", "msgpack"]
     # Configure for these cctbx packages
     LIBTBX = [
         "cctbx",
@@ -1054,8 +984,12 @@ class DIALSBuilder(object):
         "smtbx",
         "gltbx",
         "wxtbx",
+        "dials",
+        "xia2",
+        "prime",
+        "iota",
+        "--skip_phenix_dispatchers",
     ]
-    LIBTBX_EXTRA = ["dials", "xia2", "prime", "iota", "--skip_phenix_dispatchers"]
 
     def __init__(
         self,
@@ -1234,20 +1168,16 @@ class DIALSBuilder(object):
 
     def get_codebases(self):
         if self.isPlatformWindows():
-            rc = set(self.CODEBASES + self.CODEBASES_EXTRA)
-            for r in windows_remove_list:
-                rc = rc - set([r])
+            rc = set(self.CODEBASES)
             return list(rc)
-        rc = self.CODEBASES + self.CODEBASES_EXTRA
-        if hasattr(self, "EXTERNAL_CODEBASES"):
-            rc = self.EXTERNAL_CODEBASES + rc
+        rc = self.CODEBASES
         return rc
 
     def get_hot(self):
-        return self.HOT + self.HOT_EXTRA
+        return self.HOT
 
     def get_libtbx_configure(self):
-        return self.LIBTBX + self.LIBTBX_EXTRA
+        return self.LIBTBX
 
     def cleanup(self, dirs=None):
         dirs = dirs or []
@@ -1327,23 +1257,11 @@ class DIALSBuilder(object):
         if len(parameters) == 1:
             parameters = parameters[0]
         tarurl, arxname, dirpath = None, None, None
-        if self.isPlatformWindows() and (
-            method == "authenticated" or method == "rsync"
-        ):
+        if self.isPlatformWindows() and method == "authenticated":
             tarurl, arxname, dirpath = MODULES.get_module(
                 module
             )().get_tarauthenticated(auth=self.get_auth())
-        if self.isPlatformWindows():
-            if module in windows_remove_list:
-                return
-        if method == "rsync" and not self.isPlatformWindows():
-            self._add_rsync(
-                module,
-                parameters,  # really the url
-                workdir=workdir,
-                module_directory=module_directory,
-            )
-        elif self.isPlatformWindows() and tarurl:
+        if self.isPlatformWindows() and tarurl:
             # if more bootstraps are running avoid potential race condition on
             # remote server by using unique random filenames
             randarxname = next(tempfile._get_candidate_names()) + "_" + arxname
@@ -1360,27 +1278,6 @@ class DIALSBuilder(object):
             self._add_git(module, parameters)
         else:
             raise Exception("Unknown access method: %s %s" % (method, str(parameters)))
-
-    def _add_rsync(self, module, url, workdir=None, module_directory=None):
-        """Add packages not in source control."""
-        # rsync the hot packages.
-        if not workdir:
-            workdir = ["modules"]
-        if not module_directory:
-            module_directory = module
-        self.add_step(
-            self.shell(
-                name="hot %s" % module,
-                command=[
-                    "rsync",
-                    "-rptgoDLK",  #'-aL',
-                    "--delete",
-                    url,
-                    module_directory,
-                ],
-                workdir=workdir,
-            )
-        )
 
     def _add_remote_make_tar(self, module, tarurl, arxname, dirpath):
         """Windows: tar up hot packages for quick file transfer since there's no rsync and pscp is painfully slow"""
