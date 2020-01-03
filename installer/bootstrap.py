@@ -1019,21 +1019,18 @@ class DIALSBuilder(object):
         self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
 
     def add_base(self):
-        flags = ["--builder=dials"]
-        # check for existing miniconda3 installation
-        if not os.path.isdir("mc3"):
-            flags.append("--install_conda")
-        flags.append("--python=36")
         command = [
             "python",
             self.opjoin(
                 "modules", "cctbx_project", "libtbx", "auto_build", "install_conda.py"
             ),
-        ] + flags
+            "--builder=dials",
+            "--install_conda",
+            "--python=36",
+        ]
 
-        if len(command) > 0:
-            print("Installing base packages using:\n  " + " ".join(command))
-            self.add_step(self.shell(name="base", command=command, workdir=["."]))
+        print("Installing base packages using:\n  " + " ".join(command))
+        self.add_step(self.shell(name="base", command=command, workdir=["."]))
 
     def add_configure(self):
         env = None
