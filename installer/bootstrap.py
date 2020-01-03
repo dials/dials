@@ -52,16 +52,6 @@ _BUILD_DIR = "build"  # set by arg parser further on down
 
 windows_remove_list = []
 
-rosetta_version_tar_bundle = "rosetta_src_2018.33.60351_bundle"
-rosetta_version_directory = rosetta_version_tar_bundle
-# LICENSE REQUIRED
-afitt_version = "AFITT-2.4.0.4-redhat-RHEL7-x64"  # binary specific to cci-vm-1
-envs = {
-    "PHENIX_ROSETTA_PATH": ["modules", "rosetta"],
-    "OE_EXE": ["modules", "openeye", "bin"],
-    "OE_LICENSE": ["oe_license.txt"],  # needed for license
-}
-
 # Utility function to be executed on slave machine or called directly by standalone bootstrap script
 def tar_extract(workdir, archive, modulename=None):
     try:
@@ -811,42 +801,6 @@ class scons_module(SourceModule):
     anonymous = ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]
 
 
-# external modules
-class rosetta_class(SourceModule):
-    module = "rosetta"
-    authenticated = [
-        "rsync",
-        "%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/externals/"
-        + rosetta_version_tar_bundle
-        + "/",
-    ]
-    authenticated = [
-        "scp",
-        "%(cciuser)s@cci.lbl.gov:/net/cci-filer2/raid1/auto_build/externals/"
-        + rosetta_version_tar_bundle
-        + ".tgz",
-    ]
-
-
-class afitt_class(SourceModule):
-    module = "afitt"
-    authenticated = [
-        "scp",
-        "%(cciuser)s@cci.lbl.gov:/net/cci-filer2/raid1/auto_build/externals/"
-        + afitt_version
-        + ".gz",
-    ]
-
-
-class libsvm_module(SourceModule):
-    module = "libsvm"
-    anonymous = ["curl", "http://cci.lbl.gov/repositories/libsvm.gz"]
-    authenticated = [
-        "rsync",
-        "%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/repositories/libsvm/",
-    ]
-
-
 # Core CCTBX repositories
 # These must all provide anonymous access.
 class cctbx_module(SourceModule):
@@ -857,41 +811,6 @@ class cctbx_module(SourceModule):
         "https://github.com/cctbx/cctbx_project.git",
         "https://github.com/cctbx/cctbx_project/archive/master.zip",
     ]
-
-
-class amber_adaptbx_module(SourceModule):
-    module = "amber_adaptbx"
-    anonymous = [
-        "git",
-        "git@github.com:phenix-project/amber_adaptbx.git",
-        "https://github.com/phenix-project/amber_adaptbx.git",
-    ]
-
-
-class qrefine_module(SourceModule):
-    module = "qrefine"
-    anonymous = [
-        "git",
-        "git@github.com:qrefine/qrefine.git",
-        "https://github.com/qrefine/qrefine.git",
-    ]
-
-
-class mon_lib_module(SourceModule):
-    module = "mon_lib"
-    anonymous = ["curl", "http://cci.lbl.gov/repositories/mon_lib.gz"]
-    authentarfile = [
-        "%(cciuser)s@cci.lbl.gov",
-        "mon_lib.tar.gz",
-        "/net/cci/auto_build/repositories/mon_lib",
-    ]
-    # authenticated = ['rsync', '%(cciuser)s@cci.lbl.gov:/net/cci/auto_build/repositories/annlib/']
-
-
-class geostd_module(SourceModule):
-    module = "geostd"
-    anonymous = ["svn", "svn://svn.code.sf.net/p/geostd/code/trunk"]
-    authenticated = anonymous
 
 
 class boost_module(SourceModule):
@@ -972,11 +891,6 @@ class gui_resources_module(SourceModule):
     authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/gui_resources/trunk"]
 
 
-class opt_resources_module(SourceModule):
-    module = "opt_resources"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/opt_resources/trunk"]
-
-
 class eigen_module(SourceModule):
     module = "eigen"
     anonymous = [
@@ -1001,118 +915,6 @@ class eigen_module(SourceModule):
 class phenix_module(SourceModule):
     module = "phenix"
     authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/phenix/trunk"]
-
-
-class phenix_html(SourceModule):
-    module = "phenix_html"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/phenix_html/trunk"]
-
-
-class phenix_examples(SourceModule):
-    module = "phenix_examples"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/phenix_examples/trunk"]
-
-
-class phenix_regression(SourceModule):
-    module = "phenix_regression"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/phenix_regression/trunk"]
-
-
-class plex_module(SourceModule):
-    module = "Plex"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/Plex/trunk"]
-
-
-class pyquante_module(SourceModule):
-    module = "PyQuante"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/PyQuante/trunk"]
-
-
-class chem_data_module(SourceModule):
-    module = "chem_data"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/chem_data/trunk"]
-
-
-class elbow_module(SourceModule):
-    module = "elbow"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/elbow/trunk"]
-
-
-class ksdssp_module(SourceModule):
-    module = "ksdssp"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/ksdssp/trunk"]
-
-
-class pulchra_module(SourceModule):
-    module = "pulchra"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/pulchra/trunk"]
-
-
-class solve_resolve_module(SourceModule):
-    module = "solve_resolve"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/solve_resolve/trunk"]
-
-
-class reel_module(SourceModule):
-    module = "reel"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/reel/trunk"]
-
-
-class muscle_module(SourceModule):
-    module = "muscle"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/muscle/trunk"]
-
-
-class cxi_xdr_xes_module(SourceModule):
-    module = "cxi_xdr_xes"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/cxi_xdr_xes/trunk"]
-
-
-class buildbot_module(SourceModule):
-    module = "buildbot"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/buildbot/trunk"]
-
-
-# Phaser repositories
-class phaser_module(SourceModule):
-    module = "phaser"
-    anonymous = [
-        "git",
-        "git://git.uis.cam.ac.uk/cimr-phaser/phaser.git",
-        "https://git.uis.cam.ac.uk/cimr-phaser/phaser.git",
-    ]
-
-
-class phasertng_module(SourceModule):
-    module = "phasertng"
-    anonymous = [
-        "git",
-        "git://git.uis.cam.ac.uk/cimr-phaser/phasertng.git",
-        "https://git.uis.cam.ac.uk/cimr-phaser/phasertng.git",
-    ]
-
-
-class phaser_regression_module(SourceModule):
-    module = "phaser_regression"
-    anonymous = [
-        "git",
-        "git://git.csx.cam.ac.uk/cimr-phaser/phaser_regression.git",
-        "https://git.csx.cam.ac.uk/cimr-phaser/phaser_regression.git",
-    ]
-
-
-# DIALS repositories
-class labelit_module(SourceModule):
-    module = "labelit"
-    authenticated = ["svn", "svn+ssh://%(cciuser)s@cci.lbl.gov/labelit/trunk"]
-
-
-class labelit_regression_module(SourceModule):
-    module = "labelit_regression"
-    authenticated = [
-        "svn",
-        "svn+ssh://%(cciuser)s@cci.lbl.gov/labelit_regression/trunk",
-    ]
 
 
 class dials_module(SourceModule):
@@ -2218,7 +2020,6 @@ class DIALSBuilder(Builder):
         "scons",
         "ccp4io",
         "eigen",
-        # "libsvm",
     ]
     # Configure for these cctbx packages
     LIBTBX = [
