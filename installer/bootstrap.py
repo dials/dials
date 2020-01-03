@@ -2197,12 +2197,7 @@ environment exists in or is defined by {conda_env}.
         pass
 
 
-##### Specific Configurations ######
-
-
-class CCIBuilder(Builder):
-    """Base class for packages that include CCTBX as a dependency."""
-
+class DIALSBuilder(Builder):
     # Base packages
     BASE_PACKAGES = "all"
     # Checkout these codebases
@@ -2217,7 +2212,6 @@ class CCIBuilder(Builder):
         "tntbx",
         "clipper",
     ]
-    CODEBASES_EXTRA = []
     # Copy these sources from cci.lbl.gov
     HOT = [
         "annlib",
@@ -2226,7 +2220,6 @@ class CCIBuilder(Builder):
         "eigen",
         # "libsvm",
     ]
-    HOT_EXTRA = []
     # Configure for these cctbx packages
     LIBTBX = [
         "cctbx",
@@ -2240,13 +2233,7 @@ class CCIBuilder(Builder):
         "gltbx",
         "wxtbx",
     ]
-    LIBTBX_EXTRA = []
 
-
-##### CCTBX-derived packages #####
-
-
-class DIALSBuilder(CCIBuilder):
     CODEBASES_EXTRA = ["dials", "xia2"]
     LIBTBX_EXTRA = ["dials", "xia2", "prime", "iota", "--skip_phenix_dispatchers"]
     HOT_EXTRA = ["msgpack"]
@@ -2278,10 +2265,6 @@ class DIALSBuilder(CCIBuilder):
 
 
 def run(root=None):
-    builders = {
-        "dials": DIALSBuilder,
-    }
-
     prog = os.environ.get("LIBTBX_DISPATCHER_NAME")
     if prog is None or prog.startswith("python") or prog.endswith("python"):
         prog = os.path.basename(sys.argv[0])
@@ -2467,8 +2450,7 @@ maintain their own conda environment.""",
         auth["sfmethod"] = options.sfmethod
 
     # Build
-    builder = builders["dials"]
-    builder(
+    DIALSBuilder(
         category="dials",
         subcategory=None,
         platform="dev",
