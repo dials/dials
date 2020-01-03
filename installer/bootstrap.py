@@ -1049,8 +1049,6 @@ class Builder(object):
         base=True,
         build=True,
         tests=True,
-        doc=True,
-        distribute=False,
         auth=None,
         with_python=None,
         nproc=1,
@@ -1108,24 +1106,9 @@ class Builder(object):
         # builder
         self.config_flags = config_flags
         self.use_conda = use_conda
-        self.add_init()
 
         # Cleanup
-        if cleanup:
-            self.cleanup(
-                [
-                    "dist",
-                    "tests",
-                    "doc",
-                    "tmp",
-                    "base",
-                    "base_tmp",
-                    _BUILD_DIR,
-                    "conda_base",
-                ]
-            )
-        else:
-            self.cleanup(["dist", "tests", "tmp"])
+        self.cleanup(["dist", "tests", "tmp"])
 
         if (
             self.platform and "windows" in self.platform
@@ -1168,17 +1151,7 @@ class Builder(object):
         if tests and not self.download_only:
             self.add_tests()
 
-        # docs
-        if doc:
-            self.rebuild_docs()
-
-        # Distribute
-        if distribute and not self.download_only:
-            self.add_distribute()
-
-        # Distribute does this but uses correct PHENIX_VERSION
         if build and not self.download_only:
-            self.add_dispatchers()
             self.add_refresh()
 
         if (
@@ -1254,9 +1227,6 @@ class Builder(object):
 
     def get_libtbx_configure(self):
         return self.LIBTBX + self.LIBTBX_EXTRA
-
-    def add_init(self):
-        pass
 
     def cleanup(self, dirs=None):
         dirs = dirs or []
@@ -1827,75 +1797,7 @@ environment exists in or is defined by {conda_env}.
             print("Installing base packages using:\n  " + " ".join(command))
             self.add_step(self.shell(name="base", command=command, workdir=["."]))
 
-    def add_dispatchers(self, product_name="phenix"):
-        """Write dispatcher_include file."""
-        """Generating Phenix environment additions for dispatchers..."""
-        envcmd = "export"
-        dispatcher = os.path.join("build", "dispatcher_include_%s.sh" % product_name)
-        if self.isPlatformWindows():
-            envcmd = "set"
-            dispatcher = os.path.join(
-                "build", "dispatcher_include_%s.bat" % product_name
-            )
-        if os.path.isfile(dispatcher):
-            os.remove(dispatcher)
-        env_prefix = product_name.upper()  # e.g. "Phenix" -> "PHENIX"
-        prologue = "\n".join(
-            [
-                '%s %s="%s"' % (envcmd, env_prefix, os.getcwd()),
-                "%s %s_VERSION=%s" % (envcmd, env_prefix, "dev-svn"),
-                "%s %s_ENVIRONMENT=1" % (envcmd, env_prefix),
-                # "%s %s_MTYPE=%s" % (envcmd, env_prefix, "none"),
-            ]  # + self.product_specific_dispatcher_prologue())
-        )
-        # epilogue = "\n".join(self.product_specific_dispatcher_epilogue())
-        dispatcher_opts = ["--build_dir=%s" % ".", "--suffix=%s" % "phenix"]
-        if self.use_conda is None:
-            dispatcher_opts += [
-                "--base_dir=%s" % "../base",
-                "--gtk_version=2.10.0",  # XXX this can change!
-                # "--quiet",
-            ]
-        else:
-            # default
-            base_dir = self.op.join("..", "conda_base")
-            # use path from --use-conda flag
-            # error-checking done in _get_conda_python function
-            if os.path.isdir(self.use_conda):
-                base_dir = self.use_conda
-
-            dispatcher_opts += [
-                "--base_dir=%s" % base_dir,
-                "--use_conda",
-                "--ignore_missing_dirs",
-            ]
-        # if (not self.flag_build_gui):
-        #  dispatcher_opts.append("--ignore_missing_dirs")
-        # FIXME this will happen regardless of whether the GUI modules are being
-        # distributed or not - will this be problematic?
-        self.add_step(
-            self.shell(
-                name="gui dispatcher",
-                command=[
-                    self.python_base,  #'python',
-                    self.opjoin(
-                        "..",
-                        "modules",
-                        "cctbx_project",
-                        "libtbx",
-                        "auto_build",
-                        "write_gui_dispatcher_include.py",
-                    ),
-                    "--prologue=%s" % prologue,
-                    # "--epilogue=%s"
-                ]
-                + dispatcher_opts,
-                workdir=[_BUILD_DIR],
-            )
-        )
-
     def add_configure(self):
-
         env = None
 
         if self.use_conda is not None:
@@ -1984,12 +1886,6 @@ environment exists in or is defined by {conda_env}.
         """Run the unit tests."""
         pass
 
-    def rebuild_docs(self):
-        self.add_command("phenix_html.rebuild_docs")
-
-    def add_distribute(self):
-        pass
-
 
 class DIALSBuilder(Builder):
     # Base packages
@@ -2045,12 +1941,6 @@ class DIALSBuilder(Builder):
             extra_opts=["--dials", "--xia2"] + extra_opts
         )
 
-    def add_dispatchers(self):
-        pass
-
-    def rebuild_docs(self):
-        pass
-
 
 def run(root=None):
     prog = os.environ.get("LIBTBX_DISPATCHER_NAME")
@@ -2064,7 +1954,6 @@ def run(root=None):
     base - Build base dependencies (python, hdf5, wxWidgets, etc.)
     build - Build
     tests - Run tests
-    doc - Build documentation
 
   The default action is to run: hot, update, base, build
 
@@ -2202,7 +2091,7 @@ maintain their own conda environment.""",
     # options.root = options.root or root
 
     # Check actions
-    allowedargs = ["cleanup", "hot", "update", "base", "build", "tests", "doc"]
+    allowedargs = ["hot", "update", "base", "build", "tests"]
     args = args or ["hot", "update", "base", "build"]
     actions = []
     for arg in args:
@@ -2242,8 +2131,6 @@ maintain their own conda environment.""",
         base=("base" in actions),
         build=("build" in actions),
         tests=("tests" in actions),
-        doc=("doc" in actions),
-        cleanup=("cleanup" in actions),
         nproc=options.nproc,
         verbose=options.verbose,
         download_only=options.download_only,
