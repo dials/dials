@@ -1039,7 +1039,6 @@ class Builder(object):
     def __init__(
         self,
         category=None,
-        subcategory=None,
         platform=None,
         sep=None,
         python_base=None,
@@ -1062,7 +1061,6 @@ class Builder(object):
         enable_shared=False,
         mpi_build=False,
         python3=False,
-        wxpython4=False,
         config_flags=[],
         use_conda=None,
     ):
@@ -1075,9 +1073,6 @@ class Builder(object):
         self.set_auth(auth)
         self.steps = []
         self.category = category
-        self.subcategory = subcategory
-        if self.subcategory:
-            self.EXTERNAL_CODEBASES = [self.subcategory]
         self.platform = platform
         if self.isPlatformWindows():
             self.op = ntpath
@@ -1089,7 +1084,6 @@ class Builder(object):
         self.python3 = python3
         if python3:
             python_executable = "python3"
-        self.wxpython4 = wxpython4
         if self.platform and ("windows" in self.platform or self.platform == "win32"):
             python_executable = python_executable + ".exe"
         if self.platform and "windows" in self.platform:
@@ -1772,8 +1766,6 @@ environment exists in or is defined by {conda_env}.
             extra_opts.append("--skip-base=%s" % self.skip_base)
         if self.python3:
             extra_opts.append("--python3")
-        if self.wxpython4:
-            extra_opts.append("--wxpython4")
         if not self.force_base_build:
             if "--skip-if-exists" not in extra_opts:
                 extra_opts.append("--skip-if-exists")
@@ -2015,12 +2007,7 @@ class DIALSBuilder(Builder):
         "clipper",
     ]
     # Copy these sources from cci.lbl.gov
-    HOT = [
-        "annlib",
-        "scons",
-        "ccp4io",
-        "eigen",
-    ]
+    HOT = ["annlib", "scons", "ccp4io", "eigen"]
     # Configure for these cctbx packages
     LIBTBX = [
         "cctbx",
@@ -2168,13 +2155,6 @@ def run(root=None):
         default=False,
     )
     parser.add_argument(
-        "--wxpython4",
-        dest="wxpython4",
-        help="Install wxpython4 instead of wxpython3. This is unsupported and purely for development purposes.",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
         "--config-flags",
         "--config_flags",
         dest="config_flags",
@@ -2253,7 +2233,6 @@ maintain their own conda environment.""",
     # Build
     DIALSBuilder(
         category="dials",
-        subcategory=None,
         platform="dev",
         with_python=options.with_python,
         auth=auth,
@@ -2273,7 +2252,6 @@ maintain their own conda environment.""",
         enable_shared=options.enable_shared,
         mpi_build=options.mpi_build,
         python3=options.python3,
-        wxpython4=options.wxpython4,
         config_flags=options.config_flags,
         use_conda=options.use_conda,
     ).run()
