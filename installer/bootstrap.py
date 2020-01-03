@@ -93,17 +93,9 @@ class ShellCommand(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def get_description(self):
-        if "description" in self.kwargs:
-            return self.kwargs["description"]
-        return None
-
-    def get_workdir(self):
-        return self.kwargs.get("workdir", _BUILD_DIR)
-
     def get_environment(self):
         # gets environment from kwargs
-        env = self.kwargs.get("env", None)
+        env = self.kwargs.get("env")
         if env:
             for key, item in env.items():
                 if item is None:
@@ -117,35 +109,15 @@ class ShellCommand(object):
 
     def run(self):
         command = self.kwargs["command"]
-        description = self.get_description()
-        workdir = self.get_workdir()
+        description = self.kwargs.get("description")
+        workdir = self.kwargs.get("workdir", _BUILD_DIR)
         env = self.get_environment()
-        if not self.kwargs.get("quiet", False):
-            if description:
-                print("===== Running in %s:" % workdir, description)
-            else:
-                print("===== Running in %s:" % workdir, " ".join(command))
+        print("===== Running in %s:" % workdir, description or " ".join(command))
         if workdir:
             try:
                 os.makedirs(workdir)
             except OSError:
                 pass
-        if command[0] == "tar":
-            # don't think any builders explicitly calls tar but leave it here just in case
-            modname = None
-            if len(command) > 3 and command[3]:
-                modname = command[3]
-            return tar_extract(workdir, command[2], modname)
-        if command[0] == "rm":
-            # XXX use shutil rather than rm which is not platform independent
-            for directory in command[2:]:
-                if os.path.exists(directory):
-                    print("Deleting directory : %s" % directory)
-                    try:
-                        shutil.rmtree(directory)
-                    except OSError:
-                        print("Strangely couldn't delete %s" % directory)
-            return 0
         try:
             # if not os.path.isabs(command[0]):
             # executable path isn't located relative to workdir
@@ -156,7 +128,7 @@ class ShellCommand(object):
             p = subprocess.Popen(
                 args=command, cwd=workdir, stdout=stdout, stderr=stderr, env=env
             )
-        except Exception as e:  # error handling
+        except Exception as e:
             if isinstance(e, OSError):
                 if e.errno == 2:
                     executable = os.path.normpath(os.path.join(workdir, command[0]))
