@@ -754,11 +754,6 @@ class ccp4io_module(SourceModule):
             "https://drive.google.com/uc?id=1EF6AqowSrVnse7pRtRmIsvhS6Q0dsSLT&export=download",
         ],
     ]
-    authentarfile = [
-        "%(cciuser)s@cci.lbl.gov",
-        "ccp4io.tar.gz",
-        "/net/cci/auto_build/repositories/ccp4io",
-    ]
 
 
 class annlib_module(SourceModule):
@@ -769,11 +764,6 @@ class annlib_module(SourceModule):
             "http://cci.lbl.gov/repositories/annlib.gz",
             "https://drive.google.com/uc?id=1YD_KDXrfhJ5ryT97j4yxmbAPoecGLjg0&export=download",
         ],
-    ]
-    authentarfile = [
-        "%(cciuser)s@cci.lbl.gov",
-        "annlib.tar.gz",
-        "/net/cci/auto_build/repositories/annlib",
     ]
 
 
@@ -877,11 +867,6 @@ class eigen_module(SourceModule):
             "https://drive.google.com/uc?id=138kErrF35WbnRRARqUczWaroao2w8p1A&export=download",
         ],
     ]
-    authentarfile = [
-        "%(cciuser)s@cci.lbl.gov",
-        "eigen.tar.gz",
-        "/net/cci/auto_build/repositories/eigen",
-    ]
 
 
 class dials_module(SourceModule):
@@ -982,7 +967,6 @@ class DIALSBuilder(object):
         cleanup=False,
         hot=True,
         update=True,
-        revert=None,
         base=True,
         build=True,
         tests=True,
@@ -1002,7 +986,6 @@ class DIALSBuilder(object):
         else:
             self.nproc = nproc
         """Create and add all the steps."""
-        # self.cciuser = cciuser or getpass.getuser()
         self.set_auth(auth)
         self.steps = []
         self.category = category
@@ -1056,7 +1039,6 @@ class DIALSBuilder(object):
             list(map(self.add_module, self.get_hot()))
 
         # Add sources.
-        self.revert = revert
         if update:
             list(map(self.add_module, self.get_codebases()))
 
@@ -1714,10 +1696,6 @@ def run(root=None):
 
   The default action is to run: hot, update, base, build
 
-  You can provide your SourceForge username with "--sfuser", and
-  your CCI SVN username with "--cciuser". These will checkout
-  and update repositories with your credentials.
-
   You can run the compilation step in parallel by providing a
   the number of processes using "--nproc".
   Complete build output is shown with "-v" or "--verbose".
@@ -1727,7 +1705,7 @@ def run(root=None):
 
   Example:
 
-    python bootstrap.py --sfuser=metalheadd hot update build tests
+    python bootstrap.py hot update build tests
   """
 
     parser = argparse.ArgumentParser(
@@ -1737,12 +1715,6 @@ def run(root=None):
     )
     # parser.add_argument("--root", help="Root directory; this will contain base, modules, build, etc.")
     parser.add_argument("action", nargs="*", help="Actions for building")
-    parser.add_argument("--cciuser", help="CCI SVN username.")
-    parser.add_argument("--sfuser", help="SourceForge SVN username.")
-    parser.add_argument("--revert", help="SVN string to revert all SVN trees")
-    parser.add_argument(
-        "--sfmethod", help="SourceForge SVN checkout method.", default="svn+ssh"
-    )
     parser.add_argument(
         "--git-ssh",
         dest="git_ssh",
@@ -1837,12 +1809,6 @@ be passed separately with quotes to avoid confusion (e.g
     print("Performing actions:", " ".join(actions))
 
     auth = {"git_ssh": options.git_ssh, "git_reference": options.git_reference}
-    if options.cciuser:
-        auth["cciuser"] = options.cciuser
-    if options.sfuser:
-        auth["sfuser"] = options.sfuser
-    if options.sfmethod:
-        auth["sfmethod"] = options.sfmethod
 
     # Build
     DIALSBuilder(
@@ -1852,7 +1818,6 @@ be passed separately with quotes to avoid confusion (e.g
         auth=auth,
         hot=("hot" in actions),
         update=("update" in actions),
-        revert=options.revert,
         base=("base" in actions),
         build=("build" in actions),
         tests=("tests" in actions),
