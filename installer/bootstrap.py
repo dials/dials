@@ -12,9 +12,7 @@ from __future__ import absolute_import, division, print_function
 
 import argparse
 import functools
-import ntpath
 import os
-import os.path
 import re
 import shutil
 import socket as pysocket
@@ -743,20 +741,6 @@ class DIALSBuilder(object):
         """Create and add all the steps."""
         self.auth = auth or {}
         self.steps = []
-        if self.isPlatformWindows():
-            self.op = ntpath
-        else:
-            self.op = os.path
-        # Platform configuration.
-        python_executable = "python3"
-        if sys.platform == "win32":
-            self.python_base = self.opjoin(
-                *[os.getcwd(), "base", "bin", "python", python_executable]
-            )
-        else:
-            self.python_base = self.opjoin(*["..", "base", "bin", python_executable])
-        if options.with_python:
-            self.python_base = options.with_python
         self.verbose = options.verbose
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
@@ -803,15 +787,12 @@ class DIALSBuilder(object):
         kwargs["description"] = kwargs.get("description") or kwargs.get("name")
         kwargs["timeout"] = 60 * 60 * 2  # 2 hours
         if "workdir" in kwargs:
-            kwargs["workdir"] = self.opjoin(*kwargs["workdir"])
+            kwargs["workdir"] = os.path.join(*kwargs["workdir"])
         return ShellCommand(**kwargs)
 
     def run(self):
         for i in self.steps:
             i()
-
-    def opjoin(self, *args):
-        return self.op.join(*args)
 
     def add_step(self, step):
         """Add a step."""
@@ -900,85 +881,19 @@ class DIALSBuilder(object):
 
         self.add_step(_indirection())
 
-    def _get_conda_manager(self):
-        """
-    Helper function for determining the location of the conda environment
-    """
-        if __package__ is None:
-            root_path = os.path.dirname(os.path.abspath(__file__))
-            paths = [
-                root_path,
-                os.path.join(
-                    root_path, "modules", "cctbx_project", "libtbx", "auto_build"
-                ),
-            ]
-            for path in paths:
-                if os.path.isfile(os.path.join(path, "install_conda.py")):
-                    if path not in sys.path:
-                        sys.path.append(path)
-                        break
-            from install_conda import conda_manager
-        else:
-            from .install_conda import conda_manager
-
-        # drop output
-        log = open(os.devnull, "w")
-
-        # environment is provided, so do check that it exists
-        check_file = False
-        # base step has not run yet, so do not check if files exist
-        conda_base = os.path.join("..", "conda_base")
-        if self.isPlatformWindows():
-            conda_base = os.path.join(os.getcwd(), "conda_base")
-        # basic checks for python and conda
-        m = conda_manager(
-            root_dir=os.getcwd(), conda_env=conda_base, check_file=check_file, log=log
-        )
-
-        return m
-
     def _get_conda_python(self):
         """
     Helper function for determining the location of Python for the base
     and build actions.
     """
-        try:
-            m = self._get_conda_manager()
-            return m.get_conda_python()
-        except ImportError:  # modules directory is not available
-
-            # -----------------------------------------------------------------------
-            # duplicate logic from get_conda_python function in install_conda.py
-            # since install_conda.py may not be available
-            def m_get_conda_python(self):
-                m_conda_python = os.path.join("bin", "python")
-                if self.isPlatformWindows():
-                    m_conda_python = self.op.join("python.exe")
-                elif self.isPlatformMacOSX():
-                    m_conda_python = os.path.join(
-                        "python.app", "Contents", "MacOS", "python"
-                    )
-                return m_conda_python
-
-            # -----------------------------------------------------------------------
-
-            conda_python = None
-
-            # (case 1)
-            # use default location or file provided to --use-conda
-            if True:
-                conda_python = self.op.join(
-                    "..", "conda_base", m_get_conda_python(self)
-                )
-                if self.isPlatformWindows():
-                    conda_python = self.op.join(
-                        os.getcwd(), "conda_base", m_get_conda_python(self)
-                    )
-
-            if conda_python is None:
-                raise RuntimeError("A conda version of python could not be found.")
-
-        return conda_python
+        if self.isPlatformWindows():
+            return os.path.join(os.getcwd(), "conda_base", "python.exe")
+        elif self.isPlatformMacOSX():
+            return os.path.join(
+                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+            )
+        else:
+            return os.path.join("..", "conda_base", "bin", "python")
 
     def add_command(self, command, name=None, workdir=None, args=None, **kwargs):
         if self.isPlatformWindows():
@@ -995,7 +910,7 @@ class DIALSBuilder(object):
         self.add_step(
             self.shell(
                 name=name or command,
-                command=[self.opjoin(*dots)] + (args or []),
+                command=[os.path.join(*dots)] + (args or []),
                 workdir=workdir,
                 **kwargs
             )
@@ -1021,7 +936,7 @@ class DIALSBuilder(object):
     def add_base(self):
         command = [
             "python",
-            self.opjoin(
+            os.path.join(
                 "modules", "cctbx_project", "libtbx", "auto_build", "install_conda.py"
             ),
             "--builder=dials",
@@ -1033,19 +948,18 @@ class DIALSBuilder(object):
         self.add_step(self.shell(name="base", command=command, workdir=["."]))
 
     def add_configure(self):
-        env = None
-
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
-        self.python_base = self._get_conda_python()
         # conda python prefers no environment customizations
         # the get_environment function in ShellCommand updates the environment
         env = {"PYTHONPATH": None, "LD_LIBRARY_PATH": None, "DYLD_LIBRARY_PATH": None}
 
         configcmd = (
             [
-                self.python_base,  # default to using our python rather than system python
-                self.opjoin("..", "modules", "cctbx_project", "libtbx", "configure.py"),
+                self._get_conda_python(),
+                os.path.join(
+                    "..", "modules", "cctbx_project", "libtbx", "configure.py"
+                ),
             ]
             + self.LIBTBX
             + self.config_flags
@@ -1059,11 +973,11 @@ class DIALSBuilder(object):
             )
         )
         # Prepare saving configure.py command to file should user want to manually recompile Phenix
-        fname = self.opjoin("config_modules.cmd")
+        fname = "config_modules.cmd"
         ldlibpath = ""
         confstr = ldlibpath + subprocess.list2cmdline(configcmd)
         if not self.isPlatformWindows():
-            fname = self.opjoin("config_modules.sh")
+            fname = "config_modules.sh"
             confstr = "#!/bin/sh\n\n" + confstr
         # klonky way of writing file later on, but it works
         self.add_step(
@@ -1124,9 +1038,6 @@ def run():
   the number of processes using "--nproc".
   Complete build output is shown with "-v" or "--verbose".
 
-  Finally, you may specify a specific Python interpreter
-  using "--with-python".
-
   Example:
 
     python bootstrap.py update base build tests
@@ -1149,9 +1060,6 @@ def run():
         "--git-reference",
         dest="git_reference",
         help="Path to a directory containing reference copies of repositories for faster checkouts.",
-    )
-    parser.add_argument(
-        "--with-python", dest="with_python", help="Use specified Python interpreter"
     )
     parser.add_argument("--nproc", help="number of parallel processes in compile step.")
     parser.add_argument(
