@@ -628,45 +628,7 @@ class cleanup_ext_class(object):
         self.remove_ext_files()
 
 
-class cleanup_dirs(object):
-    """Command to remove unwanted subdirectories"""
 
-    def __init__(self, dirs, workdir=None):
-        """
-    :param dirs:    List of subdirectories to remove from workdir
-    :param workdir: The root directory for everything in dirs. If None, then
-                    the command will be run in the current working directory.
-    """
-        self.dirs = dirs
-        self.workdir = workdir
-
-    def get_command(self):
-        return "cleanup dirs in %s" % (self.workdir).split()
-
-    def remove_dirs(self):
-        cwd = os.getcwd()
-        try:
-            # Move to the workdir
-            if self.workdir is not None:
-                if os.path.exists(self.workdir):
-                    os.chdir(self.workdir)
-                else:
-                    return
-
-            # Don't notify the user if we aren't doing anything
-            if any(os.path.exists(d) for d in self.dirs):
-                print("===== Removing directories in %s" % (os.getcwd()))
-
-                for d in self.dirs:
-                    if os.path.exists(d):
-                        print("      removing %s" % (os.path.join(os.getcwd(), d)))
-                        shutil.rmtree(d)
-        finally:
-            # Leave the directory untouched even if we failed
-            os.chdir(cwd)
-
-    def run(self):
-        self.remove_dirs()
 
 
 ##### Modules #####
@@ -954,9 +916,6 @@ class DIALSBuilder(object):
         # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = config_flags
 
-        # Cleanup
-        self.cleanup(["dist", "tests", "tmp"])
-
         # Add 'hot' sources
         if hot:
             list(map(self.add_module, self.HOT))
@@ -1016,62 +975,6 @@ class DIALSBuilder(object):
 
     def opjoin(self, *args):
         return self.op.join(*args)
-
-    def cleanup(self, dirs=None):
-        dirs = dirs or []
-        if self.isPlatformWindows():
-            # Delete folders by copying an empty folder with ROBOCOPY is more reliable on Windows
-            # If ROBOCOPY fails i.e. ERRORLEVEL>0 then bail to stop bootstrap. Start cmd.exe with
-            cmd = (
-                ["cmd", "/C", "mkdir", "empty", "&", "(FOR", "%b", "IN", "("]
-                + dirs
-                + [
-                    ")",
-                    "DO",
-                    "((ROBOCOPY",
-                    "empty",
-                    "%b",
-                    "/MIR",
-                    "/COPYALL",
-                    ">",
-                    "nul)",
-                    "&",
-                    "rmdir",
-                    "/S",
-                    "/Q",
-                    "%b\\",  # remove directory after robocopy
-                    "&",
-                    "@IF",
-                    "EXIST",
-                    "%b\\",  # backslash indicates it's a directory and not a file
-                    "(echo.",
-                    "&",
-                    "echo",
-                    "Error",
-                    "deleting",
-                    "%b",
-                    "&",
-                    "echo.",
-                    "&",
-                    "exit",
-                    "/B",
-                    "42",
-                    ")))",
-                    "&",
-                    "rmdir",
-                    "empty",
-                ]
-            )
-            self.add_step(
-                self.shell(
-                    name="Removing directories " + ", ".join(dirs),
-                    command=cmd,
-                    workdir=["."],
-                    description="deleting " + ", ".join(dirs),
-                )
-            )
-        else:
-            self.add_step(cleanup_dirs(dirs, "modules"))
 
     def add_step(self, step):
         """Add a step."""
