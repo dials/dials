@@ -1237,15 +1237,11 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Check actions
     allowedargs = ["update", "base", "build", "tests"]
-    args = args or ["update", "base", "build"]
-    actions = []
-    for arg in args:
-        if arg not in allowedargs:
-            raise ValueError("Unknown action: %s" % arg)
-    for arg in allowedargs:
-        if arg in args:
-            actions.append(arg)
-
+    args = set(args or ["update", "base", "build"])
+    disallowed_actions = args - set(allowedargs)
+    if disallowed_actions:
+        sys.exit("Unknown action: %s" % ", ".join(disallowed_actions))
+    actions = [arg for arg in allowedargs if arg in args]
     print("Performing actions:", " ".join(actions))
 
     auth = {"git_ssh": options.git_ssh, "git_reference": options.git_reference}
