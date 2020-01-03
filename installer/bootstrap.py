@@ -1013,7 +1013,6 @@ class DIALSBuilder(object):
         force_base_build=False,
         enable_shared=False,
         mpi_build=False,
-        python3=False,
         config_flags=[],
     ):
         if nproc is None:
@@ -1032,10 +1031,7 @@ class DIALSBuilder(object):
             self.op = os.path
         self.name = "%s-%s" % (self.category, self.platform)
         # Platform configuration.
-        python_executable = "python"
-        self.python3 = python3
-        if python3:
-            python_executable = "python3"
+        python_executable = "python3"
         if self.platform and ("windows" in self.platform or self.platform == "win32"):
             python_executable = python_executable + ".exe"
         if self.platform and "windows" in self.platform:
@@ -1628,8 +1624,7 @@ class DIALSBuilder(object):
             extra_opts.append("--git-ssh")
         if self.skip_base:
             extra_opts.append("--skip-base=%s" % self.skip_base)
-        if self.python3:
-            extra_opts.append("--python3")
+        extra_opts.append("--python3")
         if not self.force_base_build:
             if "--skip-if-exists" not in extra_opts:
                 extra_opts.append("--skip-if-exists")
@@ -1669,9 +1664,7 @@ class DIALSBuilder(object):
                 # check for existing miniconda3 installation
                 if not os.path.isdir("mc3"):
                     flags.append("--install_conda")
-                # check if --python3 is set
-                if self.python3:
-                    flags.append("--python=36")
+                flags.append("--python=36")
                 command = [
                     "python",
                     self.opjoin(
@@ -1860,13 +1853,6 @@ def run(root=None):
         default=False,
     )
     parser.add_argument(
-        "--python3",
-        dest="python3",
-        help="Install a Python3 interpreter. This is unsupported and purely for development purposes.",
-        action="store_true",
-        default=False,
-    )
-    parser.add_argument(
         "--config-flags",
         "--config_flags",
         dest="config_flags",
@@ -1936,7 +1922,6 @@ be passed separately with quotes to avoid confusion (e.g
         force_base_build=options.force_base_build,
         enable_shared=options.enable_shared,
         mpi_build=options.mpi_build,
-        python3=options.python3,
         config_flags=options.config_flags,
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
