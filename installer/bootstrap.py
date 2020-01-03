@@ -714,28 +714,7 @@ MODULES = {
 
 
 class DIALSBuilder(object):
-    """Create buildbot configurations for CCI and CCTBX-like software."""
-
-    # Checkout these codebases
-    CODEBASES = [
-        "boost",
-        "cbflib",
-        "cctbx_project",
-        "dxtbx",
-        "gui_resources",
-        "ccp4io_adaptbx",
-        "annlib_adaptbx",
-        "tntbx",
-        "clipper",
-        "dials",
-        "xia2",
-        "annlib",
-        "scons",
-        "ccp4io",
-        "eigen",
-        "msgpack",
-    ]
-    # Configure for these cctbx packages
+    # Configure these cctbx packages
     LIBTBX = [
         "cctbx",
         "cbflib",
@@ -755,30 +734,19 @@ class DIALSBuilder(object):
     ]
 
     def __init__(
-        self,
-        python_base=None,
-        update=True,
-        base=True,
-        build=True,
-        tests=True,
-        auth=None,
-        with_python=None,
-        nproc=1,
-        verbose=False,
-        config_flags=[],
+        self, options, update=True, base=True, build=True, tests=True, auth=None
     ):
-        if nproc is None:
+        if options.nproc is None:
             self.nproc = 1
         else:
-            self.nproc = nproc
+            self.nproc = options.nproc
         """Create and add all the steps."""
-        self.set_auth(auth)
+        self.auth = auth or {}
         self.steps = []
         if self.isPlatformWindows():
             self.op = ntpath
         else:
             self.op = os.path
-        self.name = "dials-dev"
         # Platform configuration.
         python_executable = "python3"
         if sys.platform == "win32":
@@ -787,16 +755,17 @@ class DIALSBuilder(object):
             )
         else:
             self.python_base = self.opjoin(*["..", "base", "bin", python_executable])
-        if with_python:
-            self.python_base = with_python
-        self.verbose = verbose
+        if options.with_python:
+            self.python_base = options.with_python
+        self.verbose = options.verbose
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
-        self.config_flags = config_flags
+        self.config_flags = options.config_flags or []
 
         # Add sources
         if update:
-            list(map(self.add_module, self.CODEBASES))
+            for m in sorted(MODULES):
+                self.add_module(m)
 
         # always remove .pyc files
         self.remove_pyc()
@@ -818,17 +787,10 @@ class DIALSBuilder(object):
             self.add_refresh()
 
     def isPlatformWindows(self):
-        if sys.platform == "win32":
-            return True
-        return False
+        return sys.platform == "win32"
 
     def isPlatformMacOSX(self):
-        if sys.platform.startswith("darwin"):
-            return True
-        return False
-
-    def set_auth(self, auth):
-        self.auth = auth or {}
+        return sys.platform.startswith("darwin")
 
     def remove_pyc(self):
         self.steps.append(
@@ -855,7 +817,7 @@ class DIALSBuilder(object):
         """Add a step."""
         self.steps.append(step.run)
 
-    def add_module(self, module, workdir=None, module_directory=None):
+    def add_module(self, module):
         action = MODULES[module]
         method, parameters = action[0], action[1:]
         if len(parameters) == 1:
@@ -1155,7 +1117,7 @@ def run():
     description = """
   You may specify one or more actions:
     update - Update source repositories (cctbx, cbflib, etc.)
-    base - Build base dependencies (python, hdf5, wxWidgets, etc.)
+    base - Create conda environment
     build - Build
     tests - Run tests
 
@@ -1170,7 +1132,7 @@ def run():
 
   Example:
 
-    python bootstrap.py update build tests
+    python bootstrap.py update base build tests
   """
 
     parser = argparse.ArgumentParser(
@@ -1205,7 +1167,6 @@ def run():
     )
     parser.add_argument(
         "--config-flags",
-        "--config_flags",
         dest="config_flags",
         help="""Pass flags to the configuration step. Flags should
 be passed separately with quotes to avoid confusion (e.g
@@ -1233,9 +1194,9 @@ be passed separately with quotes to avoid confusion (e.g
     # Check actions
     allowedargs = ["update", "base", "build", "tests"]
     args = set(args or ["update", "base", "build"])
-    disallowed_actions = args - set(allowedargs)
-    if disallowed_actions:
-        sys.exit("Unknown action: %s" % ", ".join(disallowed_actions))
+    unknown_actions = args - set(allowedargs)
+    if unknown_actions:
+        sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
     actions = [arg for arg in allowedargs if arg in args]
     print("Performing actions:", " ".join(actions))
 
@@ -1243,15 +1204,12 @@ be passed separately with quotes to avoid confusion (e.g
 
     # Build
     DIALSBuilder(
-        with_python=options.with_python,
+        options=options,
         auth=auth,
         update=("update" in actions),
         base=("base" in actions),
         build=("build" in actions),
         tests=("tests" in actions),
-        nproc=options.nproc,
-        verbose=options.verbose,
-        config_flags=options.config_flags,
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
 
