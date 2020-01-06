@@ -11,6 +11,7 @@ conda-forge::pyrtf
 conda-forge::alabaster
 conda-forge::biopython=1.73
 conda-forge::bzip2
+conda-forge::conda
 conda-forge::cython>=0.29,<0.30
 conda-forge::docutils
 conda-forge::future
