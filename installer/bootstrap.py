@@ -260,12 +260,6 @@ common compilers provided by conda. Please update your version with
             "conda-forge",
             "--override-channels",
         ]
-        if self.system == "Windows":
-            command_list = [
-                os.path.join(self.conda_base, "Scripts", "activate"),
-                "base",
-                "&&",
-            ] + command_list
         print(
             "{text} {builder} environment with:\n  {filename}".format(
                 text=text_messages[0], builder="dials", filename=filename
