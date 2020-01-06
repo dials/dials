@@ -68,14 +68,14 @@ conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 
 # =============================================================================
 class conda_manager(object):
-    def __init__(self, root_dir):
+    def __init__(self):
         print()
 
-        self.root_dir = root_dir
+        self.root_dir = "."
         self.system = platform.system()
 
         # Find relevant conda base installation
-        self.conda_base = os.path.join(self.root_dir, "miniconda")
+        self.conda_base = os.path.realpath("miniconda")
         if self.system == "Windows":
             self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
         else:
@@ -85,7 +85,6 @@ class conda_manager(object):
         self.environment_file = os.path.join(
             os.path.expanduser("~"), ".conda", "environments.txt"
         )
-        self.environments = self.update_environments()
 
         # Clean environment for external Python processes
         self.env = {
@@ -107,10 +106,18 @@ class conda_manager(object):
         conda_info = json.loads(
             check_output([self.conda_exe, "info", "--json"], env=self.env)
         )
-        consistency_check = [self.conda_base == conda_info["root_prefix"]]
+        if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
+            print(
+                "Expected base differs:",
+                self.conda_base,
+                "!=",
+                os.path.realpath(conda_info["root_prefix"]),
+            )
         for env in self.environments:
-            consistency_check.append(env in conda_info["envs"])
-        if False in consistency_check:
+            if env not in conda_info["envs"]:
+                print("Consistency check:", env, "not in environments:")
+                print(conda_info["envs"])
+        if False:
             message = """
 There is a mismatch between the conda settings in your home directory
 and what "conda info" is reporting. This is not a fatal error, but if
@@ -154,10 +161,10 @@ common compilers provided by conda. Please update your version with
         for env_dir in env_dirs:
             if os.path.isdir(env_dir):
                 dirs = os.listdir(env_dir)
-                for dir in dirs:
-                    dir = os.path.join(env_dir, dir)
-                    if os.path.isdir(dir):
-                        environments.add(dir)
+                for d in dirs:
+                    d = os.path.join(env_dir, d)
+                    if os.path.isdir(d):
+                        environments.add(d)
 
         return environments
 
@@ -183,18 +190,21 @@ common compilers provided by conda. Please update your version with
 
         # run the installer
         if self.system == "Windows":
-            flags = '/InstallationType=JustMe /RegisterPython=0 /AddToPath=0 /S /D="{location}"'.format(
-                location=location
-            )
-            command_list = ['"' + filename + '"', flags]
+            command = [
+                filename,
+                "/InstallationType=JustMe",
+                "/RegisterPython=0",
+                "/AddToPath=0",
+                "/S",
+                "/D=" + location,
+            ]
         else:
-            flags = '-b -u -p "{location}"'.format(location=location)
-            command_list = ["/bin/sh", filename, flags]
+            command = ["/bin/sh", filename, "-b", "-u", "-p", location]
 
         print()
         ShellCommand(
-            workdir=location,
-            command=command_list,
+            workdir=".",
+            command=command,
             description="Installing Miniconda",
             env=self.env,
         ).run()
@@ -815,8 +825,7 @@ class Toolbox(object):
 
 
 def install_conda():
-    root_path = os.path.dirname(os.path.abspath(__file__))
-    conda_manager(root_dir=root_path).create_environment()
+    conda_manager().create_environment()
 
 
 def remove_files_by_extension(extension, workdir):
