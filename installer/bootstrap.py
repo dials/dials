@@ -359,15 +359,7 @@ class ShellCommand(object):
             except OSError:
                 pass
         try:
-            # if not os.path.isabs(command[0]):
-            # executable path isn't located relative to workdir
-            #  command[0] = os.path.join(workdir, command[0])
-            stderr, stdout = None, None
-            if self.kwargs.get("silent", False):
-                stderr = stdout = open(os.devnull, "wb")
-            p = subprocess.Popen(
-                args=command, cwd=workdir, stdout=stdout, stderr=stderr, env=clean_env
-            )
+            p = subprocess.Popen(args=command, cwd=workdir, env=clean_env)
         except Exception as e:
             if isinstance(e, OSError):
                 if e.errno == 2:
@@ -708,9 +700,7 @@ class Toolbox(object):
                     #   git reset --hard origin/master
                     #   git clean -dffx
                     return ShellCommand(
-                        command=["git", "pull", "--rebase"],
-                        workdir=destination,
-                        silent=False,
+                        command=["git", "pull", "--rebase"], workdir=destination
                     ).run()
 
             print(
@@ -744,17 +734,13 @@ class Toolbox(object):
                 )
                 if verbose:
                     cmd = cmd + ["--progress", "--verbose"]
-                returncode = ShellCommand(
-                    command=cmd, workdir=destpath, silent=False
-                ).run()
+                returncode = ShellCommand(command=cmd, workdir=destpath).run()
                 if returncode:
                     return returncode  # no point trying to continue on error
                 if reference_parameters:
                     # Sever the link between checked out and reference repository
                     cmd = ["git", "repack", "-a", "-d"]
-                    returncode = ShellCommand(
-                        command=cmd, workdir=destination, silent=False
-                    ).run()
+                    returncode = ShellCommand(command=cmd, workdir=destination).run()
                     try:
                         os.remove(
                             os.path.join(
@@ -770,9 +756,7 @@ class Toolbox(object):
                     return returncode  # no point trying to continue on error
                 # Show the hash for the checked out commit for debugging purposes, ignore any failures.
                 ShellCommand(
-                    command=["git", "rev-parse", "HEAD"],
-                    workdir=destination,
-                    silent=False,
+                    command=["git", "rev-parse", "HEAD"], workdir=destination
                 ).run()
                 return returncode
             filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
