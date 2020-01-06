@@ -24,7 +24,6 @@ import subprocess
 import sys
 import tarfile
 import time
-import traceback
 import warnings
 import zipfile
 
@@ -331,57 +330,21 @@ ${HOME}/.conda/environments.txt.
 _BUILD_DIR = "build"  # set by arg parser further on down
 
 # Utility function to be executed on slave machine or called directly by standalone bootstrap script
-def tar_extract(workdir, archive, modulename=None):
-    try:
-        # delete tar target folder if it exists
-        if modulename and os.path.exists(modulename):
-
-            def remShut(*args):
-                func, path, _ = (
-                    args
-                )  # onerror returns a tuple containing function, path and exception info
-                os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
-                os.remove(path)
-
-            shutil.rmtree(modulename, onerror=remShut)
-            # hack to work around possible race condition on Windows where deleted files may briefly
-            # exist as phantoms and result in "access denied" error by subsequent IO operations
-            cnt = 0
-            while os.path.exists(modulename):
-                time.sleep(1)
-                cnt = cnt + 1
-                if cnt > 5:
-                    break
-        # using tarfile module rather than unix tar command which is not platform independent
-        tar = tarfile.open(os.path.join(workdir, archive), errorlevel=2)
+def tar_extract(workdir, archive):
+    # using tarfile module rather than unix tar command which is not platform independent
+    with tarfile.open(os.path.join(workdir, archive), errorlevel=2) as tar:
         tar.extractall(path=workdir)
         tarfoldername = os.path.join(
             workdir, os.path.commonprefix(tar.getnames()).split("/")[0]
         )
-        tar.close()
-        # take full permissions on all extracted files
-        module = os.path.join(workdir, tarfoldername)
-        for root, dirs, files in os.walk(module):
-            for fname in files:
-                full_path = os.path.join(root, fname)
-                os.chmod(
-                    full_path,
-                    stat.S_IREAD | stat.S_IWRITE | stat.S_IRGRP | stat.S_IROTH,
-                )
-        # rename to expected folder name, e.g. boost_hot -> boost
-        # only rename if folder names differ
-        if modulename:
-            if modulename != tarfoldername:
-                os.rename(tarfoldername, modulename)
-    except Exception as e:
-        raise Exception(
-            "Extracting tar archive resulted in error: "
-            + str(e)
-            + "\n"
-            + traceback.format_exc()
-        )
-        return 1
-    return 0
+    # take full permissions on all extracted files
+    module = os.path.join(workdir, tarfoldername)
+    for root, dirs, files in os.walk(module):
+        for fname in files:
+            full_path = os.path.join(root, fname)
+            os.chmod(
+                full_path, stat.S_IREAD | stat.S_IWRITE | stat.S_IRGRP | stat.S_IROTH
+            )
 
 
 # Mock commands to run standalone, without buildbot.
@@ -1097,18 +1060,13 @@ class DIALSBuilder(object):
         if filename == "uc":
             filename = module + ".gz"
         self._add_download(url, os.path.join("modules", filename))
-        self.add_shell(
-            name="extracting files from %s" % filename,
-            command=[
-                "python",
-                "-c",
-                "import sys; sys.path.append('..'); import bootstrap; \
-       bootstrap.tar_extract('','%s')"
-                % filename,
-            ],
-            workdir=["modules"],
-            description="extracting files from %s" % filename,
-        )
+
+        def _indirection():
+            description = "extracting files from %s" % filename
+            print("===== Running in modules:", description)
+            tar_extract("modules", filename)
+
+        self.steps.append(_indirection)
 
     def _add_git(self, module, parameters, destination=None):
         use_git_ssh = self.auth.get("git_ssh", False)
