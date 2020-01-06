@@ -12,7 +12,10 @@ from __future__ import absolute_import, division, print_function
 
 import argparse
 import functools
+import json
+import multiprocessing
 import os
+import platform
 import re
 import shutil
 import socket as pysocket
@@ -22,6 +25,8 @@ import sys
 import tarfile
 import time
 import traceback
+import warnings
+import zipfile
 
 try:  # Python 3
     from urllib.parse import urlparse
@@ -30,7 +35,6 @@ try:  # Python 3
 except ImportError:  # Python 2
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
-import zipfile
 
 
 # ----------- conda-manager ----------------------------------
@@ -38,50 +42,6 @@ import zipfile
 # ----------- conda-manager ----------------------------------
 
 # ----------- conda-manager ----------------------------------
-
-import json
-import platform
-import warnings
-
-
-def call(args, log=None, shell=True, cwd=None, verbose=False, env=None):
-    if log is None:
-        log = sys.stdout
-    # shell=True requires string as args.
-    if shell and isinstance(args, list):
-        args = " ".join(args)
-    if verbose:
-        stdout = subprocess.PIPE
-    else:
-        stdout = log
-    p = subprocess.Popen(
-        args=args,
-        shell=shell,
-        cwd=cwd,
-        bufsize=-1,
-        stdin=None,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        universal_newlines=True,
-        close_fds=False,
-        env=env,
-    )
-    if verbose:
-        while p.poll() is None:
-            line = p.stdout.readline()
-            # this will cause a deadlock if process is writing to stderr
-            # stderr is redirected to stdout, so this cannot happen
-            if line:
-                print(": " + line.strip())
-                log.write(line)
-    # o, e = p.communicate()
-    # log.write(o)
-    log.flush()
-    p.wait()
-    log.flush()
-    rc = p.returncode
-    if rc != 0:
-        raise RuntimeError("Call to '%s' failed with exit code %d" % (args, rc))
 
 
 # conda on Windows seems to need cmd and the wait() in Popen
@@ -89,36 +49,16 @@ if platform.system() == "Windows":
     import tempfile
 
     def check_output(command_list, *args, **kwargs):
-        # check for "conda info" and "activate" commands and prepend cmd
-        if "conda.exe" in command_list[0] or "activate" in command_list[0]:
-            command_list = ["cmd", "/c"] + command_list
-            output = ""
-            with tempfile.TemporaryFile() as f:
-                returncode = subprocess.check_call(
-                    command_list, stdout=f, *args, **kwargs
-                )
-                f.seek(0)
-                output = f.read()
-            return output
-        # miniconda3 installation
-        else:
-            returncode = call(command_list, *args, **kwargs)
-            return returncode
+        command_list = ["cmd", "/c"] + command_list
+        with tempfile.TemporaryFile() as f:
+            subprocess.check_call(command_list, stdout=f, *args, **kwargs)
+            f.seek(0)
+            output = f.read()
+        return output
 
 
 else:
-
-    def check_output(*popenargs, **kwargs):
-        # Back-port of Python 2.7 subprocess.check_output.
-        process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            raise RuntimeError(
-                "Call to '%s' failed with exit code %d" % (popenargs, retcode)
-            )
-        return output
-
+    from subprocess import check_output
 
 # =============================================================================
 # Locations for the files defining the conda environments
@@ -129,10 +69,7 @@ conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 
 # =============================================================================
 class conda_manager(object):
-    def __init__(self, root_dir, conda_base=None, max_retries=5):
-        self.conda_base = None
-        self.conda_exe = None
-        self.max_retries = max_retries
+    def __init__(self, root_dir):
         self.root_dir = root_dir
         self.system = platform.system()
 
@@ -149,14 +86,16 @@ class conda_manager(object):
 
         # Find relevant conda base installation
         print()
-        if self.conda_base is None:
-            self.conda_base = os.path.join(self.root_dir, "miniconda")
-            self.conda_exe = self.get_conda_exe(self.conda_base)
-            if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
-                print("Using miniconda installation from", self.conda_base)
-            else:
-                print("Installing miniconda into", self.conda_base)
-                self.install_miniconda(self.conda_base)
+        self.conda_base = os.path.join(self.root_dir, "miniconda")
+        if self.system == "Windows":
+            self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
+        else:
+            self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
+        if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
+            print("Using miniconda installation from", self.conda_base)
+        else:
+            print("Installing miniconda into", self.conda_base)
+            self.install_miniconda(self.conda_base)
 
         # verify consistency and check conda version
         if not os.path.isfile(self.conda_exe):
@@ -179,36 +118,13 @@ environments exist and are working.
 """
             warnings.warn(message, RuntimeWarning)
         if conda_info["conda_version"] < "4.4":
-            raise RuntimeError(
+            sys.exit(
                 """
 CCTBX programs require conda version 4.4 and greater to make use of the
 common compilers provided by conda. Please update your version with
 "conda update conda".
 """
             )
-
-    def get_conda_exe(self, prefix):
-        """
-    Find the conda executable. This is platform-dependent
-
-    Parameters
-    ----------
-    prefix: str
-      The path to the base conda environment
-    check_file: bool
-      Used to override the check_file attribute
-
-    Returns
-    -------
-    conda_exe: str
-      The path to the conda executable
-    """
-        if self.system == "Windows":
-            conda_exe = os.path.join(prefix, "Scripts", "conda.exe")
-        else:
-            conda_exe = os.path.join(prefix, "bin", "conda")
-
-        return conda_exe
 
     def update_environments(self):
         """
@@ -230,18 +146,17 @@ common compilers provided by conda. Please update your version with
         except IOError:
             pass
 
-        if self.conda_base is not None:
-            env_dirs = [
-                os.path.join(self.conda_base, "envs"),
-                os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-            ]
-            for env_dir in env_dirs:
-                if os.path.isdir(env_dir):
-                    dirs = os.listdir(env_dir)
-                    for dir in dirs:
-                        dir = os.path.join(env_dir, dir)
-                        if os.path.isdir(dir):
-                            environments.add(dir)
+        env_dirs = [
+            os.path.join(self.conda_base, "envs"),
+            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
+        ]
+        for env_dir in env_dirs:
+            if os.path.isdir(env_dir):
+                dirs = os.listdir(env_dir)
+                for dir in dirs:
+                    dir = os.path.join(env_dir, dir)
+                    if os.path.isdir(dir):
+                        environments.add(dir)
 
         return environments
 
@@ -295,9 +210,6 @@ common compilers provided by conda. Please update your version with
       builder is used instead of the default. Current options are
       '27' and '36' for Python 2.7 and 3.6, respectively.
     """
-        if self.conda_base is None:
-            raise RuntimeError("""A conda installation is not available.""")
-
         filename = os.path.join(
             self.root_dir,
             "modules",
@@ -344,13 +256,12 @@ common compilers provided by conda. Please update your version with
                 "base",
                 "&&",
             ] + command_list
-        # RuntimeError is raised on failure
         print(
             "{text} {builder} environment with:\n  {filename}".format(
                 text=text_messages[0], builder="dials", filename=filename
             )
         )
-        for retry in range(self.max_retries):
+        for retry in range(5):
             retry += 1
             try:
                 ShellCommand(
@@ -364,16 +275,16 @@ common compilers provided by conda. Please update your version with
                     """
 *******************************************************************************
 There was a failure in constructing the conda environment.
-Attempt {retry} of {max_retries} will start {retry} minute(s) from {t}.
+Attempt {retry} of 5 will start {retry} minute(s) from {t}.
 *******************************************************************************
 """.format(
-                        retry=retry, max_retries=self.max_retries, t=time.asctime()
+                        retry=retry, t=time.asctime()
                     )
                 )
                 time.sleep(retry * 60)
             else:
                 break
-        if retry == self.max_retries:
+        if retry == 5:
             raise RuntimeError(
                 """
 The conda environment could not be constructed. Please check that there is a
@@ -963,7 +874,6 @@ def remove_files_by_extension(extension, workdir):
 
 ##### Modules #####
 MODULES = {
-    # Core external repositories
     "ccp4io": [
         "curl",
         [
@@ -979,7 +889,6 @@ MODULES = {
         ],
     ],
     "scons": ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
-    # Core CCTBX repositories
     "cctbx_project": [
         "git",
         "git@github.com:cctbx/cctbx_project.git",
@@ -1259,15 +1168,10 @@ class DIALSBuilder(object):
             **kwargs
         )
 
-    def add_test_command(self, command, name=None, workdir=None, args=None, **kwargs):
-        if name is None:
-            name = "test %s" % command
+    def add_test_command(self, command, workdir=None, args=None):
+        name = "test %s" % command
         self.add_command(
-            command,
-            name=name,
-            workdir=(workdir or ["tests", command]),
-            args=args,
-            **kwargs
+            command, name=name, workdir=(workdir or ["tests", command]), args=args
         )
 
     def add_refresh(self):
@@ -1304,8 +1208,6 @@ class DIALSBuilder(object):
         try:
             nproc = len(os.sched_getaffinity(0))
         except AttributeError:
-            import multiprocessing
-
             nproc = multiprocessing.cpu_count()
         self.add_command("libtbx.scons", args=["-j", str(nproc)])
         # run build again to make sure everything is built
