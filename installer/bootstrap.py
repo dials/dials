@@ -42,22 +42,6 @@ clean_env = {
     if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
 }
 
-# conda on Windows seems to need cmd and the wait() in Popen
-if platform.system() == "Windows":
-    import tempfile
-
-    def check_output(command_list, *args, **kwargs):
-        command_list = ["cmd", "/c"] + command_list
-        with tempfile.TemporaryFile() as f:
-            subprocess.check_call(command_list, stdout=f, *args, **kwargs)
-            f.seek(0)
-            output = f.read()
-        return output
-
-
-else:
-    from subprocess import check_output
-
 # =============================================================================
 # Locations for the files defining the conda environments
 # Generally, they should reside in the repository of the main program
@@ -97,7 +81,7 @@ class conda_manager(object):
         self.environments = self.update_environments()
 
         conda_info = json.loads(
-            check_output([self.conda_exe, "info", "--json"], env=clean_env)
+            subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
         )
         if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
             print(
@@ -475,7 +459,7 @@ class Toolbox(object):
             # temporary fix for old OpenSSL in system Python on macOS
             # https://github.com/cctbx/cctbx_project/issues/33
             command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
-            subprocess.call(command, shell=False)
+            subprocess.call(command)
             socket = None  # prevent later socket code from being run
             try:
                 received = os.path.getsize(file)
