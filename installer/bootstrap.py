@@ -42,6 +42,12 @@ except ImportError:  # Python 2
 
 # ----------- conda-manager ----------------------------------
 
+# Clean environment for subprocesses
+clean_env = {
+    key: value
+    for key, value in os.environ.items()
+    if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
+}
 
 # conda on Windows seems to need cmd and the wait() in Popen
 if platform.system() == "Windows":
@@ -86,11 +92,6 @@ class conda_manager(object):
             os.path.expanduser("~"), ".conda", "environments.txt"
         )
 
-        # Clean environment for external Python processes
-        self.env = {
-            key: value for key, value in os.environ.items() if key != "PYTHONPATH"
-        }
-
         if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
             print("Using miniconda installation from", self.conda_base)
         else:
@@ -104,7 +105,7 @@ class conda_manager(object):
         self.environments = self.update_environments()
 
         conda_info = json.loads(
-            check_output([self.conda_exe, "info", "--json"], env=self.env)
+            check_output([self.conda_exe, "info", "--json"], env=clean_env)
         )
         if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
             print(
@@ -203,10 +204,7 @@ common compilers provided by conda. Please update your version with
 
         print()
         ShellCommand(
-            workdir=".",
-            command=command,
-            description="Installing Miniconda",
-            env=self.env,
+            workdir=".", command=command, description="Installing Miniconda"
         ).run()
 
     def create_environment(self, python="36"):
@@ -272,7 +270,6 @@ common compilers provided by conda. Please update your version with
                     workdir=self.root_dir,
                     command=command_list,
                     description="Installing base directory",
-                    env=self.env,
                 ).run()
             except Exception:
                 print(
@@ -357,25 +354,10 @@ class ShellCommand(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def get_environment(self):
-        # gets environment from kwargs
-        env = self.kwargs.get("env")
-        if env:
-            for key, item in env.items():
-                if item is None:
-                    env[key] = ""
-                else:
-                    env[key] = os.path.abspath(item)
-            rc = os.environ
-            rc.update(env)
-            env = rc
-        return env
-
     def run(self):
         command = self.kwargs["command"]
         description = self.kwargs.get("description")
         workdir = self.kwargs.get("workdir", _BUILD_DIR)
-        env = self.get_environment()
         print("===== Running in %s:" % workdir, description or " ".join(command))
         if workdir:
             try:
@@ -390,7 +372,7 @@ class ShellCommand(object):
             if self.kwargs.get("silent", False):
                 stderr = stdout = open(os.devnull, "wb")
             p = subprocess.Popen(
-                args=command, cwd=workdir, stdout=stdout, stderr=stderr, env=env
+                args=command, cwd=workdir, stdout=stdout, stderr=stderr, env=clean_env
             )
         except Exception as e:
             if isinstance(e, OSError):
@@ -1145,9 +1127,6 @@ class DIALSBuilder(object):
     def add_configure(self):
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
-        # conda python prefers no environment customizations
-        # the get_environment function in ShellCommand updates the environment
-        env = {"PYTHONPATH": None, "LD_LIBRARY_PATH": None, "DYLD_LIBRARY_PATH": None}
 
         configcmd = (
             [
@@ -1160,10 +1139,7 @@ class DIALSBuilder(object):
             + self.config_flags
         )
         self.add_shell(
-            command=configcmd,
-            workdir=[_BUILD_DIR],
-            description="run configure.py",
-            env=env,
+            command=configcmd, workdir=[_BUILD_DIR], description="run configure.py"
         )
 
     def add_make(self):
