@@ -77,7 +77,6 @@ class conda_manager(object):
     def __init__(self):
         print()
 
-        self.root_dir = "."
         self.system = platform.system()
 
         # Find relevant conda base installation
@@ -220,7 +219,6 @@ common compilers provided by conda. Please update your version with
       '27' and '36' for Python 2.7 and 3.6, respectively.
     """
         filename = os.path.join(
-            self.root_dir,
             "modules",
             "dials",
             ".conda-envs",
@@ -258,6 +256,15 @@ common compilers provided by conda. Please update your version with
             "conda-forge",
             "--override-channels",
         ]
+        if self.system == "Windows":
+            command_list = [
+                "cmd.exe",
+                "/C",
+                " ".join(
+                    [os.path.join(self.conda_base, "Scripts", "activate"), "base", "&&"]
+                    + command_list
+                ),
+            ]
         print(
             "{text} {builder} environment with:\n  {filename}".format(
                 text=text_messages[0], builder="dials", filename=filename
@@ -267,7 +274,7 @@ common compilers provided by conda. Please update your version with
             retry += 1
             try:
                 ShellCommand(
-                    workdir=self.root_dir,
+                    workdir=".",
                     command=command_list,
                     description="Installing base directory",
                 ).run()
