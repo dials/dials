@@ -84,8 +84,8 @@ class conda_manager(object):
             subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
         )
         if self.conda_base != os.path.realpath(conda_info["root_prefix"]):
-            print(
-                "Expected base differs:",
+            warnings.warn(
+                "Expected conda base differs:",
                 self.conda_base,
                 "!=",
                 os.path.realpath(conda_info["root_prefix"]),
@@ -94,14 +94,15 @@ class conda_manager(object):
             if env not in conda_info["envs"]:
                 print("Consistency check:", env, "not in environments:")
                 print(conda_info["envs"])
-        if False:
-            message = """
+                warnings.warn(
+                    """
 There is a mismatch between the conda settings in your home directory
 and what "conda info" is reporting. This is not a fatal error, but if
 an error is encountered, please check that your conda installation and
 environments exist and are working.
-"""
-            warnings.warn(message, RuntimeWarning)
+""",
+                    RuntimeWarning,
+                )
         if conda_info["conda_version"] < "4.4":
             sys.exit(
                 """
@@ -1020,7 +1021,7 @@ class DIALSBuilder(object):
         use_git_ssh = self.auth.get("git_ssh", False)
         reference_repository_path = self.auth.get("git_reference", None)
         if reference_repository_path is None:
-            if os.name == "posix" and pysocket.gethostname().endswith("diamond.ac.uk"):
+            if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
                 reference_repository_path = (
                     "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
                 )
