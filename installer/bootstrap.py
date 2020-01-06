@@ -35,13 +35,6 @@ except ImportError:  # Python 2
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError, URLError
 
-
-# ----------- conda-manager ----------------------------------
-
-# ----------- conda-manager ----------------------------------
-
-# ----------- conda-manager ----------------------------------
-
 # Clean environment for subprocesses
 clean_env = {
     key: value
@@ -329,12 +322,6 @@ ${HOME}/.conda/environments.txt.
 """
             )
 
-
-# ----------- conda-manager ----------------------------------
-
-# ----------- conda-manager ----------------------------------
-
-# ----------- conda-manager ----------------------------------
 
 _BUILD_DIR = "build"  # set by arg parser further on down
 
