@@ -69,8 +69,17 @@ conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 # =============================================================================
 class conda_manager(object):
     def __init__(self, root_dir):
+        print()
+
         self.root_dir = root_dir
         self.system = platform.system()
+
+        # Find relevant conda base installation
+        self.conda_base = os.path.join(self.root_dir, "miniconda")
+        if self.system == "Windows":
+            self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
+        else:
+            self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
 
         # default environment file for users
         self.environment_file = os.path.join(
@@ -83,13 +92,6 @@ class conda_manager(object):
             key: value for key, value in os.environ.items() if key != "PYTHONPATH"
         }
 
-        # Find relevant conda base installation
-        print()
-        self.conda_base = os.path.join(self.root_dir, "miniconda")
-        if self.system == "Windows":
-            self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
-        else:
-            self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
         if os.path.isdir(self.conda_base) and os.path.isfile(self.conda_exe):
             print("Using miniconda installation from", self.conda_base)
         else:
@@ -283,8 +285,8 @@ Attempt {retry} of 5 will start {retry} minute(s) from {t}.
                 time.sleep(retry * 60)
             else:
                 break
-        if retry == 5:
-            raise RuntimeError(
+        else:
+            sys.exit(
                 """
 The conda environment could not be constructed. Please check that there is a
 working network connection for downloading conda packages.
