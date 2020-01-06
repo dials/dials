@@ -1137,20 +1137,15 @@ class DIALSBuilder(object):
             functools.partial(remove_files_by_extension, ".pyc", "modules")
         )
 
-    def shell(self, **kwargs):
-        # Convenience for ShellCommand
+    def add_shell(self, **kwargs):
         kwargs["description"] = kwargs.get("description") or kwargs.get("name")
         if "workdir" in kwargs:
             kwargs["workdir"] = os.path.join(*kwargs["workdir"])
-        return ShellCommand(**kwargs)
+        self.steps.append(ShellCommand(**kwargs).run)
 
     def run(self):
         for i in self.steps:
             i()
-
-    def add_step(self, step):
-        """Add a step."""
-        self.steps.append(step.run)
 
     def add_module(self, module):
         action = MODULES[module]
@@ -1168,22 +1163,21 @@ class DIALSBuilder(object):
         if not isinstance(url, list):
             url = [url]
 
-        class _download(object):
-            def run(self):
-                for _url in url:
-                    for retry in (3, 3, 0):
-                        print("===== Downloading %s: " % _url, end=" ")
-                        try:
-                            Toolbox().download_to_file(_url, to_file)
-                            return
-                        except Exception as e:
-                            print("Download failed with", e)
-                            if retry:
-                                print("Retrying in %d seconds" % retry)
-                                time.sleep(retry)
-                raise RuntimeError("Could not download " + to_file)
+        def _download():
+            for _url in url:
+                for retry in (3, 3, 0):
+                    print("===== Downloading %s: " % _url, end=" ")
+                    try:
+                        Toolbox().download_to_file(_url, to_file)
+                        return
+                    except Exception as e:
+                        print("Download failed with", e)
+                        if retry:
+                            print("Retrying in %d seconds" % retry)
+                            time.sleep(retry)
+            raise RuntimeError("Could not download " + to_file)
 
-        self.add_step(_download())
+        self.steps.append(_download)
 
     def _add_curl(self, module, url):
         if isinstance(url, list):
@@ -1194,19 +1188,17 @@ class DIALSBuilder(object):
         if filename == "uc":
             filename = module + ".gz"
         self._add_download(url, os.path.join("modules", filename))
-        self.add_step(
-            self.shell(
-                name="extracting files from %s" % filename,
-                command=[
-                    "python",
-                    "-c",
-                    "import sys; sys.path.append('..'); import bootstrap; \
+        self.add_shell(
+            name="extracting files from %s" % filename,
+            command=[
+                "python",
+                "-c",
+                "import sys; sys.path.append('..'); import bootstrap; \
        bootstrap.tar_extract('','%s')"
-                    % filename,
-                ],
-                workdir=["modules"],
-                description="extracting files from %s" % filename,
-            )
+                % filename,
+            ],
+            workdir=["modules"],
+            description="extracting files from %s" % filename,
         )
 
     def _add_git(self, module, parameters, destination=None):
@@ -1222,18 +1214,17 @@ class DIALSBuilder(object):
                 os.path.join(reference_repository_path, module)
             )
 
-        class _indirection(object):
-            def run(self):
-                Toolbox().git(
-                    module,
-                    parameters,
-                    destination=destination,
-                    use_ssh=use_git_ssh,
-                    verbose=True,
-                    reference=reference_repository_path,
-                )
+        def _indirection():
+            Toolbox().git(
+                module,
+                parameters,
+                destination=destination,
+                use_ssh=use_git_ssh,
+                verbose=True,
+                reference=reference_repository_path,
+            )
 
-        self.add_step(_indirection())
+        self.steps.append(_indirection)
 
     def _get_conda_python(self):
         """
@@ -1261,13 +1252,11 @@ class DIALSBuilder(object):
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
-        self.add_step(
-            self.shell(
-                name=name or command,
-                command=[os.path.join(*dots)] + (args or []),
-                workdir=workdir,
-                **kwargs
-            )
+        self.add_shell(
+            name=name or command,
+            command=[os.path.join(*dots)] + (args or []),
+            workdir=workdir,
+            **kwargs
         )
 
     def add_test_command(self, command, name=None, workdir=None, args=None, **kwargs):
@@ -1304,13 +1293,11 @@ class DIALSBuilder(object):
             + self.LIBTBX
             + self.config_flags
         )
-        self.add_step(
-            self.shell(
-                command=configcmd,
-                workdir=[_BUILD_DIR],
-                description="run configure.py",
-                env=env,
-            )
+        self.add_shell(
+            command=configcmd,
+            workdir=[_BUILD_DIR],
+            description="run configure.py",
+            env=env,
         )
 
     def add_make(self):
