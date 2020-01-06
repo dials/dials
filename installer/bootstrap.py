@@ -239,8 +239,7 @@ common compilers provided by conda. Please update your version with
             )
 
         # make a new environment directory
-        name = "conda_base"
-        prefix = os.path.join(self.root_dir, name)
+        prefix = os.path.realpath("conda_base")
 
         # install a new environment or update and existing one
         if prefix in self.environments:
@@ -316,7 +315,7 @@ channels:
         # on Windows, also download the Visual C++ 2008 Redistributable
         # use the same version as conda-forge
         # https://github.com/conda-forge/vs2008_runtime-feedstock
-        if self.system == "Windows" and prefix.endswith("conda_base"):
+        if self.system == "Windows":
             Toolbox.download_to_file(
                 "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
                 os.path.join(prefix, "vcredist_x64.exe"),
