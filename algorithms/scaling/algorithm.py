@@ -308,10 +308,7 @@ class ScalingAlgorithm(Subject):
         n_neg = (good_sel & sel).count(True)
         if n_neg > 0:
             logger.warning(
-                """
-Warning: %s non-excluded reflections were assigned scale factors < 0.001
-during scaling. These will be set as outliers in the reflection table. It
-may be best to rerun scaling from this point for an improved model.""",
+                "%s non-excluded reflections were assigned scale factors < 0.001 during scaling. These will be set as outliers in the reflection table. It may be best to rerun scaling from this point for an improved model.",
                 n_neg,
             )
             joint_table.set_flags(sel, joint_table.flags.outlier_in_scaling)

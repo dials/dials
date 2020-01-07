@@ -6,8 +6,6 @@ class GLMBackgroundExt(object):
 
     name = "glm"
 
-    default = True
-
     @classmethod
     def phil(cls):
         from libtbx.phil import parse

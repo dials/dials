@@ -195,8 +195,11 @@ def index(experiments, reflections, params):
                 else:
                     if idx_expts is None:
                         continue
+                    orig_id = idx_refl["id"].deep_copy()
+                    # Update the experiment ids by incrementing by the number of indexed
+                    # experiments already in the list
                     for j_expt, _ in enumerate(idx_expts):
-                        sel = idx_refl["id"] == j_expt
+                        sel = orig_id == j_expt
                         idx_refl["id"].set_selected(
                             sel, len(indexed_experiments) + j_expt
                         )

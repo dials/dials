@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import functools
 import os
 import sys
+import tempfile
 from optparse import SUPPRESS_HELP, OptionParser
 
 import dials_data.download
@@ -140,17 +141,26 @@ def generate_processing_detail_text_betalactamase(options):
 def generate_multi_crystal_symmetry_and_scaling(options):
     print("Generating multi-crystal symmetry analysis and scaling output")
 
-    tmpdir = py.path.local("./tmp-multi-crystal")
+    tmpdir = py.path.local(tempfile.mkdtemp("_multi_crystal", dir="."))
     tmpdir.ensure(dir=1)
     outdir = py.path.local(options.output).join("multi_crystal")
     runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
 
     df = dials_data.download.DataFetcher()
-    experiment_files = list(df("vmxi_proteinase_k_sweeps").visit("experiments_*.expt"))
-    reflection_files = list(df("vmxi_proteinase_k_sweeps").visit("reflections_*.refl"))
-    runcmd(["xia2.multiplex"] + experiment_files + reflection_files)
+    experiment_files = sorted(
+        df("vmxi_proteinase_k_sweeps").visit("experiments_*.expt")
+    )
+    reflection_files = sorted(
+        df("vmxi_proteinase_k_sweeps").visit("reflections_*.refl")
+    )
+    input_files = []
+    for src in experiment_files + reflection_files:
+        dst = tmpdir.join(src.basename)
+        os.symlink(src.strpath, dst.strpath)
+        input_files.append(dst.basename)
+    runcmd(["xia2.multiplex"] + input_files)
     tmpdir.join("xia2.multiplex.html").copy(outdir.join("xia2.multiplex.html"))
-    runcmd(["dials.cosym"] + experiment_files + reflection_files)
+    runcmd(["dials.cosym"] + input_files)
     tmpdir.join("dials.cosym.html").copy(outdir.join("dials.cosym.html"))
     runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
     runcmd(["dials.resolutionizer", "scaled.expt", "scaled.refl"])

@@ -129,8 +129,7 @@ indexing_min_spots = 10
         plot=False,
         filter_ice=filter_ice,
         ice_rings_width=ice_rings_width,
-    )
-    stats = stats.__dict__
+    )._asdict()
     t2 = time.time()
     logger.info("Resolution analysis took %.2f seconds" % (t2 - t1))
 
