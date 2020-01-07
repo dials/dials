@@ -1127,8 +1127,6 @@ def run():
 
   The default action is to run: update, base, build
 
-  Complete build output is shown with "-v" or "--verbose".
-
   Example:
 
     python bootstrap.py update base build tests
@@ -1144,14 +1142,6 @@ def run():
         "--git-reference",
         dest="git_reference",
         help="Path to a directory containing reference copies of repositories for faster checkouts.",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        dest="verbose",
-        action="store_true",
-        help="Verbose output",
-        default=False,
     )
     parser.add_argument(
         "--config-flags",
