@@ -371,7 +371,6 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
         raise
     if p.returncode:
         sys.exit("Process failed with return code %s" % p.returncode)
-    return p.returncode
 
 
 def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
@@ -714,13 +713,11 @@ def git(module, parameters, destination=None, reference=None):
                 + reference_parameters
                 + ["--progress", "--verbose"]
             )
-            returncode = run_command(command=cmd, workdir=destpath)
-            if returncode:
-                return returncode  # no point trying to continue on error
+            run_command(command=cmd, workdir=destpath)
             if reference_parameters:
                 # Sever the link between checked out and reference repository
                 cmd = ["git", "repack", "-a", "-d"]
-                returncode = run_command(command=cmd, workdir=destination)
+                run_command(command=cmd, workdir=destination)
                 try:
                     os.remove(
                         os.path.join(
@@ -728,15 +725,16 @@ def git(module, parameters, destination=None, reference=None):
                         )
                     )
                 except OSError:
-                    returncode = 1
+                    set_git_repository_config_to_rebase(
+                        os.path.join(destination, ".git", "config")
+                    )
+                    return 1
             set_git_repository_config_to_rebase(
                 os.path.join(destination, ".git", "config")
             )
-            if returncode:
-                return returncode  # no point trying to continue on error
-            # Show the hash for the checked out commit for debugging purposes, ignore any failures.
+            # Show the hash for the checked out commit for debugging purposes
             run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
-            return returncode
+            return
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
         print("===== Downloading %s: " % source_candidate, end=" ")
