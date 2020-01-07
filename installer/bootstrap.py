@@ -49,6 +49,26 @@ clean_env = {
 # will be in the Phenix source tree.
 conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 
+devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
+
+allowed_ssh_connections = {}
+
+
+def ssh_allowed_for_connection(connection):
+    if connection not in allowed_ssh_connections:
+        try:
+            returncode = subprocess.call(
+                ["ssh", "-oBatchMode=yes", "-T", connection],
+                stdout=devnull,
+                stderr=devnull,
+            )
+            # SSH errors lead to 255
+            allowed_ssh_connections[connection] = returncode in (0, 1)
+        except OSError:
+            allowed_ssh_connections[connection] = False
+    return allowed_ssh_connections[connection]
+
+
 # =============================================================================
 class conda_manager(object):
     def __init__(self):
@@ -639,23 +659,12 @@ class Toolbox(object):
             fh.write("".join(cfg))
 
     @staticmethod
-    def git(
-        module,
-        parameters,
-        destination=None,
-        use_ssh=False,
-        verbose=False,
-        reference=None,
-    ):
+    def git(module, parameters, destination=None, verbose=False, reference=None):
         """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
         git_available = True
         try:
-            subprocess.call(
-                ["git", "--version"],
-                stdout=open(os.devnull, "wb"),
-                stderr=open(os.devnull, "wb"),
-            )
+            subprocess.call(["git", "--version"], stdout=devnull, stderr=devnull)
         except OSError:
             git_available = False
 
@@ -700,8 +709,10 @@ class Toolbox(object):
             if source_candidate.startswith("-"):
                 git_parameters = source_candidate.split(" ")
                 continue
-            if not source_candidate.lower().startswith("http") and not use_ssh:
-                continue
+            if not source_candidate.lower().startswith("http"):
+                connection = source_candidate.split(":")[0]
+                if not ssh_allowed_for_connection(connection):
+                    continue
             if source_candidate.lower().endswith(".git"):
                 if not git_available:
                     continue
@@ -1018,7 +1029,6 @@ class DIALSBuilder(object):
         self.steps.append(_indirection)
 
     def _add_git(self, module, parameters, destination=None):
-        use_git_ssh = self.auth.get("git_ssh", False)
         reference_repository_path = self.auth.get("git_reference", None)
         if reference_repository_path is None:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
@@ -1035,7 +1045,6 @@ class DIALSBuilder(object):
                 module,
                 parameters,
                 destination=destination,
-                use_ssh=use_git_ssh,
                 verbose=True,
                 reference=reference_repository_path,
             )
@@ -1155,13 +1164,6 @@ def run():
     )
     parser.add_argument("action", nargs="*", help="Actions for building")
     parser.add_argument(
-        "--git-ssh",
-        dest="git_ssh",
-        action="store_true",
-        help="Use ssh connections for git. This allows you to commit changes without changing remotes and use reference repositories.",
-        default=False,
-    )
-    parser.add_argument(
         "--git-reference",
         dest="git_reference",
         help="Path to a directory containing reference copies of repositories for faster checkouts.",
@@ -1209,7 +1211,7 @@ be passed separately with quotes to avoid confusion (e.g
     actions = [arg for arg in allowedargs if arg in args]
     print("Performing actions:", " ".join(actions))
 
-    auth = {"git_ssh": options.git_ssh, "git_reference": options.git_reference}
+    auth = {"git_reference": options.git_reference}
 
     # Build
     DIALSBuilder(
