@@ -181,7 +181,7 @@ common compilers provided by conda. Please update your version with
         filename = os.path.join(location, filename)
 
         print("Downloading {url}:".format(url=url), end=" ")
-        result = Toolbox.download_to_file(url, filename)
+        result = download_to_file(url, filename)
         if result in (0, -1):
             sys.exit("Miniconda download failed")
 
@@ -309,7 +309,7 @@ channels:
         # use the same version as conda-forge
         # https://github.com/conda-forge/vs2008_runtime-feedstock
         if os.name == "nt":
-            Toolbox.download_to_file(
+            download_to_file(
                 "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
                 os.path.join(prefix, "vcredist_x64.exe"),
             )
@@ -374,10 +374,8 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
     return p.returncode
 
 
-class Toolbox(object):
-    @staticmethod
-    def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
-        """Downloads a URL to file. Returns the file size.
+def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
+    """Downloads a URL to file. Returns the file size.
        Returns -1 if the downloaded file size does not match the expected file
        size
        Returns -2 if the download is skipped due to the file at the URL not
@@ -385,376 +383,375 @@ class Toolbox(object):
        size, or B. matching etag).
     """
 
-        # Create directory structure if necessary
-        if os.path.dirname(file):
+    # Create directory structure if necessary
+    if os.path.dirname(file):
+        try:
+            os.makedirs(os.path.dirname(file))
+        except Exception:
+            pass
+
+    localcopy = os.path.isfile(file)
+
+    # Get existing ETag, if present
+    etag = None
+    tagfile = "%s/.%s.etag" % os.path.split(os.path.abspath(file))
+    if cache and os.path.isfile(tagfile):
+        if not localcopy:
+            # Having an ETag without a file is pointless
+            os.remove(tagfile)
+        else:
+            tf = open(tagfile, "r")
+            etag = tf.readline()
+            tf.close()
+
+    try:
+        import ssl
+        from ssl import SSLError
+    except ImportError:
+        ssl = None
+        SSLError = None
+
+    # Open connection to remote server
+    try:
+        if os.name == "nt" and "lbl.gov" in url:
+            # Downloading from http://cci.lbl.gov/cctbx_dependencies caused
+            # SSL: CERTIFICATE_VERIFY_FAILED error on Windows only as of today (why?).
+            # Quick and dirty hack to disable ssl certificate verification.
             try:
-                os.makedirs(os.path.dirname(file))
-            except Exception:
+                _create_unverified_https_context = ssl._create_unverified_context
+            except AttributeError:
+                # Legacy Python that doesn't verify HTTPS certificates by default
                 pass
-
-        localcopy = os.path.isfile(file)
-
-        # Get existing ETag, if present
-        etag = None
-        tagfile = "%s/.%s.etag" % os.path.split(os.path.abspath(file))
-        if cache and os.path.isfile(tagfile):
-            if not localcopy:
-                # Having an ETag without a file is pointless
-                os.remove(tagfile)
+            except NameError:
+                # ssl module was not loaded
+                pass
             else:
-                tf = open(tagfile, "r")
-                etag = tf.readline()
-                tf.close()
-
+                # Handle target environment that doesn't support HTTPS verification
+                ssl._create_default_https_context = _create_unverified_https_context
+        url_request = Request(url)
+        if etag:
+            url_request.add_header("If-None-Match", etag)
+        if localcopy:
+            # Shorten timeout to 7 seconds if a copy of the file is already present
+            socket = urlopen(url_request, None, 7)
+        else:
+            socket = urlopen(url_request)
+    except SSLError as e:
+        # This could be a timeout
+        if localcopy:
+            # Download failed for some reason, but a valid local copy of
+            # the file exists, so use that one instead.
+            log.write("%s\n" % str(e))
+            return -2
+        # otherwise pass on the error message
+        raise
+    except (pysocket.timeout, HTTPError) as e:
+        if isinstance(e, HTTPError) and etag and e.code == 304:
+            # When using ETag. a 304 error means everything is fine
+            log.write("local copy is current (etag)\n")
+            return -2
+        if localcopy:
+            # Download failed for some reason, but a valid local copy of
+            # the file exists, so use that one instead.
+            log.write("%s\n" % str(e))
+            return -2
+        # otherwise pass on the error message
+        raise
+    except URLError as e:
+        if localcopy:
+            # Download failed for some reason, but a valid local copy of
+            # the file exists, so use that one instead.
+            log.write("%s\n" % str(e))
+            return -2
+        # if url fails to open, try using curl
+        # temporary fix for old OpenSSL in system Python on macOS
+        # https://github.com/cctbx/cctbx_project/issues/33
+        command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
+        subprocess.call(command)
+        socket = None  # prevent later socket code from being run
         try:
-            import ssl
-            from ssl import SSLError
-        except ImportError:
-            ssl = None
-            SSLError = None
+            received = os.path.getsize(file)
+        except OSError:
+            raise RuntimeError("Download failed")
 
-        # Open connection to remote server
+    if socket is not None:
         try:
-            if os.name == "nt" and "lbl.gov" in url:
-                # Downloading from http://cci.lbl.gov/cctbx_dependencies caused
-                # SSL: CERTIFICATE_VERIFY_FAILED error on Windows only as of today (why?).
-                # Quick and dirty hack to disable ssl certificate verification.
+            file_size = int(socket.info().get("Content-Length"))
+        except Exception:
+            file_size = 0
+
+        if os.path.isfile(tagfile):
+            # ETag did not match, so delete any existing ETag.
+            os.remove(tagfile)
+
+        remote_mtime = 0
+        try:
+            remote_mtime = time.mktime(socket.info().getdate("last-modified"))
+        except Exception:
+            pass
+
+        if file_size > 0:
+            if remote_mtime > 0:
+                # check if existing file matches remote size and timestamp
                 try:
-                    _create_unverified_https_context = ssl._create_unverified_context
-                except AttributeError:
-                    # Legacy Python that doesn't verify HTTPS certificates by default
+                    (
+                        mode,
+                        ino,
+                        dev,
+                        nlink,
+                        uid,
+                        gid,
+                        size,
+                        atime,
+                        mtime,
+                        ctime,
+                    ) = os.stat(file)
+                    if (size == file_size) and (remote_mtime == mtime):
+                        log.write("local copy is current\n")
+                        socket.close()
+                        return -2
+                except Exception:
+                    # proceed with download if timestamp/size check fails for any reason
                     pass
-                except NameError:
-                    # ssl module was not loaded
-                    pass
-                else:
-                    # Handle target environment that doesn't support HTTPS verification
-                    ssl._create_default_https_context = _create_unverified_https_context
-            url_request = Request(url)
-            if etag:
-                url_request.add_header("If-None-Match", etag)
-            if localcopy:
-                # Shorten timeout to 7 seconds if a copy of the file is already present
-                socket = urlopen(url_request, None, 7)
-            else:
-                socket = urlopen(url_request)
-        except SSLError as e:
-            # This could be a timeout
-            if localcopy:
-                # Download failed for some reason, but a valid local copy of
-                # the file exists, so use that one instead.
-                log.write("%s\n" % str(e))
-                return -2
-            # otherwise pass on the error message
-            raise
-        except (pysocket.timeout, HTTPError) as e:
-            if isinstance(e, HTTPError) and etag and e.code == 304:
-                # When using ETag. a 304 error means everything is fine
-                log.write("local copy is current (etag)\n")
-                return -2
-            if localcopy:
-                # Download failed for some reason, but a valid local copy of
-                # the file exists, so use that one instead.
-                log.write("%s\n" % str(e))
-                return -2
-            # otherwise pass on the error message
-            raise
-        except URLError as e:
-            if localcopy:
-                # Download failed for some reason, but a valid local copy of
-                # the file exists, so use that one instead.
-                log.write("%s\n" % str(e))
-                return -2
-            # if url fails to open, try using curl
-            # temporary fix for old OpenSSL in system Python on macOS
-            # https://github.com/cctbx/cctbx_project/issues/33
-            command = ["/usr/bin/curl", "--http1.0", "-fLo", file, "--retry", "5", url]
-            subprocess.call(command)
-            socket = None  # prevent later socket code from being run
-            try:
-                received = os.path.getsize(file)
-            except OSError:
-                raise RuntimeError("Download failed")
 
-        if socket is not None:
-            try:
-                file_size = int(socket.info().get("Content-Length"))
-            except Exception:
-                file_size = 0
+            hr_size = (file_size, "B")
+            if hr_size[0] > 500:
+                hr_size = (hr_size[0] / 1024, "kB")
+            if hr_size[0] > 500:
+                hr_size = (hr_size[0] / 1024, "MB")
+            log.write("%.1f %s\n" % hr_size)
+            if status:
+                log.write("    [0%")
+                log.flush()
 
-            if os.path.isfile(tagfile):
-                # ETag did not match, so delete any existing ETag.
-                os.remove(tagfile)
+        received = 0
+        block_size = 8192
+        progress = 1
+        # Allow for writing the file immediately so we can empty the buffer
+        tmpfile = file + ".tmp"
 
-            remote_mtime = 0
-            try:
-                remote_mtime = time.mktime(socket.info().getdate("last-modified"))
-            except Exception:
-                pass
-
-            if file_size > 0:
-                if remote_mtime > 0:
-                    # check if existing file matches remote size and timestamp
-                    try:
-                        (
-                            mode,
-                            ino,
-                            dev,
-                            nlink,
-                            uid,
-                            gid,
-                            size,
-                            atime,
-                            mtime,
-                            ctime,
-                        ) = os.stat(file)
-                        if (size == file_size) and (remote_mtime == mtime):
-                            log.write("local copy is current\n")
-                            socket.close()
-                            return -2
-                    except Exception:
-                        # proceed with download if timestamp/size check fails for any reason
-                        pass
-
-                hr_size = (file_size, "B")
-                if hr_size[0] > 500:
-                    hr_size = (hr_size[0] / 1024, "kB")
-                if hr_size[0] > 500:
-                    hr_size = (hr_size[0] / 1024, "MB")
-                log.write("%.1f %s\n" % hr_size)
-                if status:
-                    log.write("    [0%")
+        f = open(tmpfile, "wb")
+        while True:
+            block = socket.read(block_size)
+            received += len(block)
+            f.write(block)
+            if status and (file_size > 0):
+                while (100 * received / file_size) > progress:
+                    progress += 1
+                    if (progress % 20) == 0:
+                        log.write("%d%%" % progress)
+                    elif (progress % 2) == 0:
+                        log.write(".")
                     log.flush()
 
-            received = 0
-            block_size = 8192
-            progress = 1
-            # Allow for writing the file immediately so we can empty the buffer
-            tmpfile = file + ".tmp"
+            if not block:
+                break
+        f.close()
+        socket.close()
 
-            f = open(tmpfile, "wb")
-            while True:
-                block = socket.read(block_size)
-                received += len(block)
-                f.write(block)
-                if status and (file_size > 0):
-                    while (100 * received / file_size) > progress:
-                        progress += 1
-                        if (progress % 20) == 0:
-                            log.write("%d%%" % progress)
-                        elif (progress % 2) == 0:
-                            log.write(".")
-                        log.flush()
+        if status and (file_size > 0):
+            log.write("]\n")
+        else:
+            log.write("%d kB\n" % (received / 1024))
+        log.flush()
 
-                if not block:
-                    break
-            f.close()
-            socket.close()
+        # Do not overwrite file during the download. If a download temporarily fails we
+        # may still have a clean, working (yet older) copy of the file.
+        shutil.move(tmpfile, file)
 
-            if status and (file_size > 0):
-                log.write("]\n")
+        if (file_size > 0) and (file_size != received):
+            return -1
+
+        if remote_mtime > 0:
+            # set file timestamp if timestamp information is available
+            st = os.stat(file)
+            atime = st[stat.ST_ATIME]  # current access time
+            os.utime(file, (atime, remote_mtime))
+
+        if cache and socket.info().get("ETag"):
+            # If the server sent an ETAG, then keep it alongside the file
+            open(tagfile, "w").write(socket.info().get("ETag"))
+
+    return received
+
+
+def unzip(archive, directory, trim_directory=0):
+    """unzip a file into a directory."""
+    print("===== Installing %s into %s" % (archive, directory))
+    if not zipfile.is_zipfile(archive):
+        raise Exception("%s is not a valid .zip file" % archive)
+    z = zipfile.ZipFile(archive, "r")
+    for member in z.infolist():
+        is_directory = member.filename.endswith("/")
+        filename = os.path.join(*member.filename.split("/")[trim_directory:])
+        if filename != "":
+            filename = os.path.normpath(filename)
+            if "../" in filename:
+                raise Exception(
+                    "Archive %s contains invalid filename %s" % (archive, filename)
+                )
+            filename = os.path.join(directory, filename)
+            upperdirs = os.path.dirname(filename)
+            try:
+                if is_directory and not os.path.exists(filename):
+                    os.makedirs(filename)
+                elif upperdirs and not os.path.exists(upperdirs):
+                    os.makedirs(upperdirs)
+            except Exception:
+                pass
+            if not is_directory:
+                source = z.open(member)
+                target = open(filename, "wb")
+                shutil.copyfileobj(source, target)
+                target.close()
+                source.close()
+
+                # Preserve executable permission, if set
+                unix_executable = member.external_attr >> 16 & 0o111
+                # rwxrwxrwx => --x--x--x => 0o111
+                if unix_executable:
+                    mode = os.stat(filename).st_mode
+                    mode |= (mode & 0o444) >> 2  # copy R bits to X
+                    # r--r--r-- => 0o444
+                    os.chmod(filename, mode)
+    z.close()
+
+
+def set_git_repository_config_to_rebase(config):
+    with open(config, "r") as fh:
+        cfg = fh.readlines()
+
+    branch, remote, rebase = False, False, False
+    insertions = []
+    for n, line in enumerate(cfg):
+        if line.startswith("["):
+            if branch and remote and not rebase:
+                insertions.insert(0, (n, branch))
+            if line.startswith("[branch"):
+                branch = line.split('"')[1]
             else:
-                log.write("%d kB\n" % (received / 1024))
-            log.flush()
+                branch = False
+            remote, rebase = False, False
+        if re.match(r"remote\s*=", line.strip()):
+            remote = True
+        if re.match(r"rebase\s*=", line.strip()):
+            rebase = True
+    if branch and remote and not rebase:
+        insertions.insert(0, (n + 1, branch))
+    for n, branch in insertions:
+        print("  setting branch %s to rebase" % branch)
+        cfg.insert(n, "\trebase = true\n")
+    with open(config, "w") as fh:
+        fh.write("".join(cfg))
 
-            # Do not overwrite file during the download. If a download temporarily fails we
-            # may still have a clean, working (yet older) copy of the file.
-            shutil.move(tmpfile, file)
 
-            if (file_size > 0) and (file_size != received):
-                return -1
-
-            if remote_mtime > 0:
-                # set file timestamp if timestamp information is available
-                st = os.stat(file)
-                atime = st[stat.ST_ATIME]  # current access time
-                os.utime(file, (atime, remote_mtime))
-
-            if cache and socket.info().get("ETag"):
-                # If the server sent an ETAG, then keep it alongside the file
-                open(tagfile, "w").write(socket.info().get("ETag"))
-
-        return received
-
-    @staticmethod
-    def unzip(archive, directory, trim_directory=0):
-        """unzip a file into a directory."""
-        print("===== Installing %s into %s" % (archive, directory))
-        if not zipfile.is_zipfile(archive):
-            raise Exception("%s is not a valid .zip file" % archive)
-        z = zipfile.ZipFile(archive, "r")
-        for member in z.infolist():
-            is_directory = member.filename.endswith("/")
-            filename = os.path.join(*member.filename.split("/")[trim_directory:])
-            if filename != "":
-                filename = os.path.normpath(filename)
-                if "../" in filename:
-                    raise Exception(
-                        "Archive %s contains invalid filename %s" % (archive, filename)
-                    )
-                filename = os.path.join(directory, filename)
-                upperdirs = os.path.dirname(filename)
-                try:
-                    if is_directory and not os.path.exists(filename):
-                        os.makedirs(filename)
-                    elif upperdirs and not os.path.exists(upperdirs):
-                        os.makedirs(upperdirs)
-                except Exception:
-                    pass
-                if not is_directory:
-                    source = z.open(member)
-                    target = open(filename, "wb")
-                    shutil.copyfileobj(source, target)
-                    target.close()
-                    source.close()
-
-                    # Preserve executable permission, if set
-                    unix_executable = member.external_attr >> 16 & 0o111
-                    # rwxrwxrwx => --x--x--x => 0o111
-                    if unix_executable:
-                        mode = os.stat(filename).st_mode
-                        mode |= (mode & 0o444) >> 2  # copy R bits to X
-                        # r--r--r-- => 0o444
-                        os.chmod(filename, mode)
-        z.close()
-
-    @staticmethod
-    def set_git_repository_config_to_rebase(config):
-        with open(config, "r") as fh:
-            cfg = fh.readlines()
-
-        branch, remote, rebase = False, False, False
-        insertions = []
-        for n, line in enumerate(cfg):
-            if line.startswith("["):
-                if branch and remote and not rebase:
-                    insertions.insert(0, (n, branch))
-                if line.startswith("[branch"):
-                    branch = line.split('"')[1]
-                else:
-                    branch = False
-                remote, rebase = False, False
-            if re.match(r"remote\s*=", line.strip()):
-                remote = True
-            if re.match(r"rebase\s*=", line.strip()):
-                rebase = True
-        if branch and remote and not rebase:
-            insertions.insert(0, (n + 1, branch))
-        for n, branch in insertions:
-            print("  setting branch %s to rebase" % branch)
-            cfg.insert(n, "\trebase = true\n")
-        with open(config, "w") as fh:
-            fh.write("".join(cfg))
-
-    @staticmethod
-    def git(module, parameters, destination=None, reference=None):
-        """Retrieve a git repository, either by running git directly
+def git(module, parameters, destination=None, reference=None):
+    """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
-        git_available = True
-        try:
-            subprocess.call(["git", "--version"], stdout=devnull, stderr=devnull)
-        except OSError:
-            git_available = False
+    git_available = True
+    try:
+        subprocess.call(["git", "--version"], stdout=devnull, stderr=devnull)
+    except OSError:
+        git_available = False
 
-        if destination is None:
-            destination = os.path.join("modules", module)
-        destpath, destdir = os.path.split(destination)
+    if destination is None:
+        destination = os.path.join("modules", module)
+    destpath, destdir = os.path.split(destination)
 
-        if os.path.exists(destination):
-            if git_available and os.path.exists(os.path.join(destination, ".git")):
-                if (
-                    not open(os.path.join(destination, ".git", "HEAD"), "r")
-                    .read()
-                    .startswith("ref:")
-                ):
-                    print(
-                        "WARNING: Can not update existing git repository! You are not on a branch."
-                    )
-                    print(
-                        "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes"
-                    )
-                    return
-
-                else:
-                    # This may fail for unclean trees and merge problems. In this case manual
-                    # user intervention will be required.
-                    # For the record, you can clean up the tree and *discard ALL changes* with
-                    #   git reset --hard origin/master
-                    #   git clean -dffx
-                    return run_command(
-                        command=["git", "pull", "--rebase"], workdir=destination
-                    )
-
-            print(
-                "Existing non-git directory -- don't know what to do. skipping: %s"
-                % module
-            )
-            return
-        if isinstance(parameters, str):
-            parameters = [parameters]
-        git_parameters = []
-        for source_candidate in parameters:
-            if source_candidate.startswith("-"):
-                git_parameters = source_candidate.split(" ")
-                continue
-            if not source_candidate.lower().startswith("http"):
-                connection = source_candidate.split(":")[0]
-                if not ssh_allowed_for_connection(connection):
-                    continue
-            if source_candidate.lower().endswith(".git"):
-                if not git_available:
-                    continue
-                reference_parameters = []
-                if reference is not None:
-                    if os.path.exists(reference) and os.path.exists(
-                        os.path.join(reference, ".git")
-                    ):
-                        reference_parameters = ["--reference", reference]
-                cmd = (
-                    ["git", "clone", "--recursive"]
-                    + git_parameters
-                    + [source_candidate, destdir]
-                    + reference_parameters
-                    + ["--progress", "--verbose"]
+    if os.path.exists(destination):
+        if git_available and os.path.exists(os.path.join(destination, ".git")):
+            if (
+                not open(os.path.join(destination, ".git", "HEAD"), "r")
+                .read()
+                .startswith("ref:")
+            ):
+                print(
+                    "WARNING: Can not update existing git repository! You are not on a branch."
                 )
-                returncode = run_command(command=cmd, workdir=destpath)
-                if returncode:
-                    return returncode  # no point trying to continue on error
-                if reference_parameters:
-                    # Sever the link between checked out and reference repository
-                    cmd = ["git", "repack", "-a", "-d"]
-                    returncode = run_command(command=cmd, workdir=destination)
-                    try:
-                        os.remove(
-                            os.path.join(
-                                destination, ".git", "objects", "info", "alternates"
-                            )
-                        )
-                    except OSError:
-                        returncode = 1
-                Toolbox.set_git_repository_config_to_rebase(
-                    os.path.join(destination, ".git", "config")
+                print(
+                    "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes"
                 )
-                if returncode:
-                    return returncode  # no point trying to continue on error
-                # Show the hash for the checked out commit for debugging purposes, ignore any failures.
-                run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
-                return returncode
-            filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
-            filename = os.path.join(destpath, filename)
-            print("===== Downloading %s: " % source_candidate, end=" ")
-            Toolbox.download_to_file(source_candidate, filename)
-            Toolbox.unzip(filename, destination, trim_directory=1)
-            return
+                return
 
-        error = (
-            "Cannot satisfy git dependency for module %s: None of the sources are available."
-            % module
+            else:
+                # This may fail for unclean trees and merge problems. In this case manual
+                # user intervention will be required.
+                # For the record, you can clean up the tree and *discard ALL changes* with
+                #   git reset --hard origin/master
+                #   git clean -dffx
+                return run_command(
+                    command=["git", "pull", "--rebase"], workdir=destination
+                )
+
+        print(
+            "Existing non-git directory -- don't know what to do. skipping: %s" % module
         )
-        if not git_available:
-            print(error)
-            error = "A git installation has not been found."
-        raise Exception(error)
+        return
+    if isinstance(parameters, str):
+        parameters = [parameters]
+    git_parameters = []
+    for source_candidate in parameters:
+        if source_candidate.startswith("-"):
+            git_parameters = source_candidate.split(" ")
+            continue
+        if not source_candidate.lower().startswith("http"):
+            connection = source_candidate.split(":")[0]
+            if not ssh_allowed_for_connection(connection):
+                continue
+        if source_candidate.lower().endswith(".git"):
+            if not git_available:
+                continue
+            reference_parameters = []
+            if reference is not None:
+                if os.path.exists(reference) and os.path.exists(
+                    os.path.join(reference, ".git")
+                ):
+                    reference_parameters = ["--reference", reference]
+            cmd = (
+                ["git", "clone", "--recursive"]
+                + git_parameters
+                + [source_candidate, destdir]
+                + reference_parameters
+                + ["--progress", "--verbose"]
+            )
+            returncode = run_command(command=cmd, workdir=destpath)
+            if returncode:
+                return returncode  # no point trying to continue on error
+            if reference_parameters:
+                # Sever the link between checked out and reference repository
+                cmd = ["git", "repack", "-a", "-d"]
+                returncode = run_command(command=cmd, workdir=destination)
+                try:
+                    os.remove(
+                        os.path.join(
+                            destination, ".git", "objects", "info", "alternates"
+                        )
+                    )
+                except OSError:
+                    returncode = 1
+            set_git_repository_config_to_rebase(
+                os.path.join(destination, ".git", "config")
+            )
+            if returncode:
+                return returncode  # no point trying to continue on error
+            # Show the hash for the checked out commit for debugging purposes, ignore any failures.
+            run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
+            return returncode
+        filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
+        filename = os.path.join(destpath, filename)
+        print("===== Downloading %s: " % source_candidate, end=" ")
+        download_to_file(source_candidate, filename)
+        unzip(filename, destination, trim_directory=1)
+        return
+
+    error = (
+        "Cannot satisfy git dependency for module %s: None of the sources are available."
+        % module
+    )
+    if not git_available:
+        print(error)
+        error = "A git installation has not been found."
+    raise Exception(error)
 
 
 def install_conda():
@@ -908,9 +905,7 @@ class DIALSBuilder(object):
         "--skip_phenix_dispatchers",
     ]
 
-    def __init__(
-        self, actions, options
-    ):
+    def __init__(self, actions, options):
         """Create and add all the steps."""
         self.git_reference = options.git_reference
         self.steps = []
@@ -975,7 +970,7 @@ class DIALSBuilder(object):
                 for retry in (3, 3, 0):
                     print("===== Downloading %s: " % _url, end=" ")
                     try:
-                        Toolbox().download_to_file(_url, to_file)
+                        download_to_file(_url, to_file)
                         return
                     except Exception as e:
                         print("Download failed with", e)
@@ -1015,15 +1010,15 @@ class DIALSBuilder(object):
                 os.path.join(reference_repository_path, module)
             )
 
-        def _indirection():
-            Toolbox().git(
+        self.steps.append(
+            functools.partial(
+                git,
                 module,
                 parameters,
                 destination=destination,
                 reference=reference_repository_path,
             )
-
-        self.steps.append(_indirection)
+        )
 
     def _get_conda_python(self):
         """
@@ -1176,10 +1171,7 @@ be passed separately with quotes to avoid confusion (e.g
         sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
     actions = [a for a in allowed_actions if a in actions]
     print("Performing actions:", " ".join(actions))
-    DIALSBuilder(
-        actions=actions,
-        options=options,
-    ).run()
+    DIALSBuilder(actions=actions, options=options).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
 
 
