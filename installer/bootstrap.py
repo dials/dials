@@ -199,9 +199,7 @@ common compilers provided by conda. Please update your version with
             command = ["/bin/sh", filename, "-b", "-u", "-p", location]
 
         print()
-        ShellCommand(
-            workdir=".", command=command, description="Installing Miniconda"
-        ).run()
+        run_command(workdir=".", command=command, description="Installing Miniconda")
 
     def create_environment(self, python="36"):
         """
@@ -270,11 +268,11 @@ common compilers provided by conda. Please update your version with
         for retry in range(5):
             retry += 1
             try:
-                ShellCommand(
+                run_command(
                     workdir=".",
                     command=command_list,
                     description="Installing base directory",
-                ).run()
+                )
             except Exception:
                 print(
                     """
@@ -329,7 +327,7 @@ ${HOME}/.conda/environments.txt.
 
 _BUILD_DIR = "build"  # set by arg parser further on down
 
-# Utility function to be executed on slave machine or called directly by standalone bootstrap script
+
 def tar_extract(workdir, archive):
     # using tarfile module rather than unix tar command which is not platform independent
     with tarfile.open(os.path.join(workdir, archive), errorlevel=2) as tar:
@@ -347,41 +345,33 @@ def tar_extract(workdir, archive):
             )
 
 
-# Mock commands to run standalone, without buildbot.
-class ShellCommand(object):
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-
-    def run(self):
-        command = self.kwargs["command"]
-        description = self.kwargs.get("description")
-        workdir = self.kwargs.get("workdir", _BUILD_DIR)
-        print("===== Running in %s:" % workdir, description or " ".join(command))
-        if workdir:
-            try:
-                os.makedirs(workdir)
-            except OSError:
-                pass
+def run_command(command, workdir=_BUILD_DIR, description=None):
+    print("===== Running in %s:" % workdir, description or " ".join(command))
+    if workdir:
         try:
-            p = subprocess.Popen(args=command, cwd=workdir, env=clean_env)
-        except Exception as e:
-            if isinstance(e, OSError):
-                if e.errno == 2:
-                    executable = os.path.normpath(os.path.join(workdir, command[0]))
-                    raise RuntimeError("Could not run %s: File not found" % executable)
-            if "child_traceback" in dir(e):
-                print("Calling subprocess resulted in error; ", e.child_traceback)
-            raise e
+            os.makedirs(workdir)
+        except OSError:
+            pass
+    try:
+        p = subprocess.Popen(args=command, cwd=workdir, env=clean_env)
+    except Exception as e:
+        if isinstance(e, OSError):
+            if e.errno == 2:
+                executable = os.path.normpath(os.path.join(workdir, command[0]))
+                raise RuntimeError("Could not run %s: File not found" % executable)
+        if "child_traceback" in dir(e):
+            print("Calling subprocess resulted in error; ", e.child_traceback)
+        raise e
 
-        try:
-            p.wait()
-        except KeyboardInterrupt:
-            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-            p.terminate()
-            raise
-        if p.returncode:
-            sys.exit("Process failed with return code %s" % p.returncode)
-        return p.returncode
+    try:
+        p.wait()
+    except KeyboardInterrupt:
+        print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+        p.terminate()
+        raise
+    if p.returncode:
+        sys.exit("Process failed with return code %s" % p.returncode)
+    return p.returncode
 
 
 class Toolbox(object):
@@ -692,9 +682,9 @@ class Toolbox(object):
                     # For the record, you can clean up the tree and *discard ALL changes* with
                     #   git reset --hard origin/master
                     #   git clean -dffx
-                    return ShellCommand(
+                    return run_command(
                         command=["git", "pull", "--rebase"], workdir=destination
-                    ).run()
+                    )
 
             print(
                 "Existing non-git directory -- don't know what to do. skipping: %s"
@@ -729,13 +719,13 @@ class Toolbox(object):
                 )
                 if verbose:
                     cmd = cmd + ["--progress", "--verbose"]
-                returncode = ShellCommand(command=cmd, workdir=destpath).run()
+                returncode = run_command(command=cmd, workdir=destpath)
                 if returncode:
                     return returncode  # no point trying to continue on error
                 if reference_parameters:
                     # Sever the link between checked out and reference repository
                     cmd = ["git", "repack", "-a", "-d"]
-                    returncode = ShellCommand(command=cmd, workdir=destination).run()
+                    returncode = run_command(command=cmd, workdir=destination)
                     try:
                         os.remove(
                             os.path.join(
@@ -750,9 +740,7 @@ class Toolbox(object):
                 if returncode:
                     return returncode  # no point trying to continue on error
                 # Show the hash for the checked out commit for debugging purposes, ignore any failures.
-                ShellCommand(
-                    command=["git", "rev-parse", "HEAD"], workdir=destination
-                ).run()
+                run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
                 return returncode
             filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
             filename = os.path.join(destpath, filename)
@@ -969,7 +957,14 @@ class DIALSBuilder(object):
         kwargs["description"] = kwargs.get("description") or kwargs.get("name")
         if "workdir" in kwargs:
             kwargs["workdir"] = os.path.join(*kwargs["workdir"])
-        self.steps.append(ShellCommand(**kwargs).run)
+        self.steps.append(
+            functools.partial(
+                run_command,
+                command=kwargs["command"],
+                workdir=kwargs.get("workdir"),
+                description=kwargs["description"],
+            )
+        )
 
     def run(self):
         for i in self.steps:
