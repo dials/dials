@@ -953,21 +953,6 @@ class DIALSBuilder(object):
             functools.partial(remove_files_by_extension, ".pyc", "modules")
         )
 
-    def add_shell(self, **kwargs):
-        description = kwargs.get("description") or kwargs.get("name")
-        if "workdir" in kwargs:
-            workdir = os.path.join(*kwargs["workdir"])
-        else:
-            workdir = None
-        self.steps.append(
-            functools.partial(
-                run_command,
-                command=kwargs["command"],
-                workdir=workdir,
-                description=description,
-            )
-        )
-
     def run(self):
         for i in self.steps:
             i()
@@ -1070,10 +1055,13 @@ class DIALSBuilder(object):
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
-        self.add_shell(
-            command=[os.path.join(*dots)] + (args or []),
-            description=description or command,
-            workdir=workdir,
+        self.steps.append(
+            functools.partial(
+                run_command,
+                command=[os.path.join(*dots)] + (args or []),
+                description=description or command,
+                workdir=os.path.join(*workdir),
+            )
         )
 
     def add_refresh(self):
@@ -1096,8 +1084,13 @@ class DIALSBuilder(object):
             + self.LIBTBX
             + self.config_flags
         )
-        self.add_shell(
-            command=configcmd, workdir=[_BUILD_DIR], description="run configure.py"
+        self.steps.append(
+            functools.partial(
+                run_command,
+                command=configcmd,
+                description="run configure.py",
+                workdir=_BUILD_DIR,
+            )
         )
 
     def add_make(self):
