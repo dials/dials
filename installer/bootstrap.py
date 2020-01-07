@@ -69,7 +69,6 @@ def ssh_allowed_for_connection(connection):
     return allowed_ssh_connections[connection]
 
 
-# =============================================================================
 class conda_manager(object):
     def __init__(self):
         print()
@@ -78,7 +77,7 @@ class conda_manager(object):
 
         # Find relevant conda base installation
         self.conda_base = os.path.realpath("miniconda")
-        if self.system == "Windows":
+        if os.name == "nt":
             self.conda_exe = os.path.join(self.conda_base, "Scripts", "conda.exe")
         else:
             self.conda_exe = os.path.join(self.conda_base, "bin", "conda")
@@ -173,7 +172,7 @@ common compilers provided by conda. Please update your version with
         filename = "Miniconda3-latest-{platform}-x86_64".format(
             platform=os_names[self.system]
         )
-        if self.system == "Windows":
+        if os.name == "nt":
             filename += ".exe"
         else:
             filename += ".sh"
@@ -187,7 +186,7 @@ common compilers provided by conda. Please update your version with
             sys.exit("Miniconda download failed")
 
         # run the installer
-        if self.system == "Windows":
+        if os.name == "nt":
             command = [
                 filename,
                 "/InstallationType=JustMe",
@@ -254,7 +253,7 @@ common compilers provided by conda. Please update your version with
             "conda-forge",
             "--override-channels",
         ]
-        if self.system == "Windows":
+        if os.name == "nt":
             command_list = [
                 "cmd.exe",
                 "/C",
@@ -311,7 +310,7 @@ channels:
         # on Windows, also download the Visual C++ 2008 Redistributable
         # use the same version as conda-forge
         # https://github.com/conda-forge/vs2008_runtime-feedstock
-        if self.system == "Windows":
+        if os.name == "nt":
             Toolbox.download_to_file(
                 "https://download.microsoft.com/download/5/D/8/5D8C65CB-C849-4025-8E95-C3966CAFD8AE/vcredist_x64.exe",
                 os.path.join(prefix, "vcredist_x64.exe"),
@@ -958,9 +957,6 @@ class DIALSBuilder(object):
         if build:
             self.add_refresh()
 
-    def isPlatformWindows(self):
-        return sys.platform == "win32"
-
     def isPlatformMacOSX(self):
         return sys.platform.startswith("darwin")
 
@@ -1056,7 +1052,7 @@ class DIALSBuilder(object):
     Helper function for determining the location of Python for the base
     and build actions.
     """
-        if self.isPlatformWindows():
+        if os.name == "nt":
             return os.path.join(os.getcwd(), "conda_base", "python.exe")
         elif self.isPlatformMacOSX():
             return os.path.join(
@@ -1066,7 +1062,7 @@ class DIALSBuilder(object):
             return os.path.join("..", "conda_base", "bin", "python")
 
     def add_command(self, command, name=None, workdir=None, args=None, **kwargs):
-        if self.isPlatformWindows():
+        if os.name == "nt":
             command = command + ".bat"
         # Relative path to workdir.
         workdir = workdir or [_BUILD_DIR]
