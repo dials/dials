@@ -415,7 +415,7 @@ class Toolbox(object):
 
         # Open connection to remote server
         try:
-            if sys.platform == "win32" and "lbl.gov" in url:
+            if os.name == "nt" and "lbl.gov" in url:
                 # Downloading from http://cci.lbl.gov/cctbx_dependencies caused
                 # SSL: CERTIFICATE_VERIFY_FAILED error on Windows only as of today (why?).
                 # Quick and dirty hack to disable ssl certificate verification.
@@ -1051,7 +1051,7 @@ class DIALSBuilder(object):
         dots = [".."] * len(workdir)
         if workdir[0] == ".":
             dots = []
-        if sys.platform == "win32":
+        if os.name == "nt":
             dots.extend([os.getcwd(), _BUILD_DIR, "bin", command])
         else:
             dots.extend([_BUILD_DIR, "bin", command])
