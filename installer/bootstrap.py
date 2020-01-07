@@ -954,15 +954,17 @@ class DIALSBuilder(object):
         )
 
     def add_shell(self, **kwargs):
-        kwargs["description"] = kwargs.get("description") or kwargs.get("name")
+        description = kwargs.get("description") or kwargs.get("name")
         if "workdir" in kwargs:
-            kwargs["workdir"] = os.path.join(*kwargs["workdir"])
+            workdir = os.path.join(*kwargs["workdir"])
+        else:
+            workdir = None
         self.steps.append(
             functools.partial(
                 run_command,
                 command=kwargs["command"],
-                workdir=kwargs.get("workdir"),
-                description=kwargs["description"],
+                workdir=workdir,
+                description=description,
             )
         )
 
@@ -1056,7 +1058,7 @@ class DIALSBuilder(object):
         else:
             return os.path.join("..", "conda_base", "bin", "python")
 
-    def add_command(self, command, name=None, workdir=None, args=None, **kwargs):
+    def add_command(self, command, description=None, workdir=None, args=None):
         if os.name == "nt":
             command = command + ".bat"
         # Relative path to workdir.
@@ -1069,20 +1071,22 @@ class DIALSBuilder(object):
         else:
             dots.extend([_BUILD_DIR, "bin", command])
         self.add_shell(
-            name=name or command,
             command=[os.path.join(*dots)] + (args or []),
+            description=description or command,
             workdir=workdir,
-            **kwargs
         )
 
     def add_test_command(self, command, workdir=None, args=None):
         name = "test %s" % command
         self.add_command(
-            command, name=name, workdir=(workdir or ["tests", command]), args=args
+            command,
+            description=name,
+            workdir=(workdir or ["tests", command]),
+            args=args,
         )
 
     def add_refresh(self):
-        self.add_command("libtbx.refresh", name="libtbx.refresh", workdir=["."])
+        self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
 
     def add_base(self):
         self.steps.append(install_conda)
@@ -1186,7 +1190,6 @@ be passed separately with quotes to avoid confusion (e.g
     )
 
     options = parser.parse_args()
-    args = options.action
 
     global _BUILD_DIR
     _BUILD_DIR = (
@@ -1194,12 +1197,12 @@ be passed separately with quotes to avoid confusion (e.g
     )  # TODO: this is probably ok way to go with globalvar, but check and see
 
     # Check actions
-    allowedargs = ["update", "base", "build", "tests"]
-    args = set(args or ["update", "base", "build"])
-    unknown_actions = args - set(allowedargs)
+    allowed_actions = ["update", "base", "build", "tests"]
+    actions = set(options.action or ["update", "base", "build"])
+    unknown_actions = actions - set(allowed_actions)
     if unknown_actions:
         sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
-    actions = [arg for arg in allowedargs if arg in args]
+    actions = [a for a in allowed_actions if a in actions]
     print("Performing actions:", " ".join(actions))
 
     auth = {"git_reference": options.git_reference}
