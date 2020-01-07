@@ -909,17 +909,17 @@ class DIALSBuilder(object):
     ]
 
     def __init__(
-        self, options, update=True, base=True, build=True, tests=True, auth=None
+        self, actions, options
     ):
         """Create and add all the steps."""
-        self.auth = auth or {}
+        self.git_reference = options.git_reference
         self.steps = []
         # self.config_flags are only from the command line
         # LIBTBX can still be used to always set flags specific to a builder
         self.config_flags = options.config_flags or []
 
         # Add sources
-        if update:
+        if "update" in actions:
             for m in sorted(MODULES):
                 self.add_module(m)
 
@@ -927,19 +927,19 @@ class DIALSBuilder(object):
         self.remove_pyc()
 
         # Build base packages
-        if base:
+        if "base" in actions:
             self.add_base()
 
         # Configure, make, get revision numbers
-        if build:
+        if "build" in actions:
             self.add_configure()
             self.add_make()
 
         # Tests, tests
-        if tests:
+        if "tests" in actions:
             self.add_tests()
 
-        if build:
+        if "build" in actions:
             self.add_refresh()
 
     def isPlatformMacOSX(self):
@@ -1004,7 +1004,7 @@ class DIALSBuilder(object):
         self.steps.append(_indirection)
 
     def _add_git(self, module, parameters, destination=None):
-        reference_repository_path = self.auth.get("git_reference", None)
+        reference_repository_path = self.git_reference
         if reference_repository_path is None:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
                 reference_repository_path = (
@@ -1176,17 +1176,9 @@ be passed separately with quotes to avoid confusion (e.g
         sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
     actions = [a for a in allowed_actions if a in actions]
     print("Performing actions:", " ".join(actions))
-
-    auth = {"git_reference": options.git_reference}
-
-    # Build
     DIALSBuilder(
+        actions=actions,
         options=options,
-        auth=auth,
-        update=("update" in actions),
-        base=("base" in actions),
-        build=("build" in actions),
-        tests=("tests" in actions),
     ).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
 
