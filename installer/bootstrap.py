@@ -577,10 +577,9 @@ class Toolbox(object):
         return received
 
     @staticmethod
-    def unzip(archive, directory, trim_directory=0, verbose=False):
+    def unzip(archive, directory, trim_directory=0):
         """unzip a file into a directory."""
-        if verbose:
-            print("===== Installing %s into %s" % (archive, directory))
+        print("===== Installing %s into %s" % (archive, directory))
         if not zipfile.is_zipfile(archive):
             raise Exception("%s is not a valid .zip file" % archive)
         z = zipfile.ZipFile(archive, "r")
@@ -648,7 +647,7 @@ class Toolbox(object):
             fh.write("".join(cfg))
 
     @staticmethod
-    def git(module, parameters, destination=None, verbose=False, reference=None):
+    def git(module, parameters, destination=None, reference=None):
         """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
         git_available = True
@@ -716,9 +715,8 @@ class Toolbox(object):
                     + git_parameters
                     + [source_candidate, destdir]
                     + reference_parameters
+                    + ["--progress", "--verbose"]
                 )
-                if verbose:
-                    cmd = cmd + ["--progress", "--verbose"]
                 returncode = run_command(command=cmd, workdir=destpath)
                 if returncode:
                     return returncode  # no point trying to continue on error
@@ -744,10 +742,9 @@ class Toolbox(object):
                 return returncode
             filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
             filename = os.path.join(destpath, filename)
-            if verbose:
-                print("===== Downloading %s: " % source_candidate, end=" ")
+            print("===== Downloading %s: " % source_candidate, end=" ")
             Toolbox.download_to_file(source_candidate, filename)
-            Toolbox.unzip(filename, destination, trim_directory=1, verbose=verbose)
+            Toolbox.unzip(filename, destination, trim_directory=1)
             return
 
         error = (
@@ -1023,7 +1020,6 @@ class DIALSBuilder(object):
                 module,
                 parameters,
                 destination=destination,
-                verbose=True,
                 reference=reference_repository_path,
             )
 
