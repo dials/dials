@@ -1076,15 +1076,6 @@ class DIALSBuilder(object):
             workdir=workdir,
         )
 
-    def add_test_command(self, command, workdir=None, args=None):
-        name = "test %s" % command
-        self.add_command(
-            command,
-            description=name,
-            workdir=(workdir or ["tests", command]),
-            args=args,
-        )
-
     def add_refresh(self):
         self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
 
@@ -1119,14 +1110,16 @@ class DIALSBuilder(object):
         self.add_command("libtbx.scons", args=["-j", str(nproc)])
 
     def add_tests(self):
-        self.add_test_command(
+        self.add_command(
             "libtbx.pytest",
             args=["--regression", "-n", "auto"],
+            description="test dxtbx",
             workdir=["modules", "dxtbx"],
         )
-        self.add_test_command(
+        self.add_command(
             "libtbx.pytest",
             args=["--regression", "-n", "auto"],
+            description="test DIALS",
             workdir=["modules", "dials"],
         )
 
