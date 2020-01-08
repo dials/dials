@@ -64,9 +64,12 @@ def prepare_input(params, experiments, reflections):
             params.dataset_selection.exclude_datasets,
             params.dataset_selection.use_datasets,
         )
+        ids = flex.size_t()
+        for r in reflections:
+            ids.extend(r.experiment_identifiers().keys())
         logger.info(
-            "\nDataset unique identifiers for retained datasets are %s \n",
-            list(experiments.identifiers()),
+            "\nDataset ids for retained datasets are: %s \n",
+            ",".join(str(i) for i in ids),
         )
 
     #### Split the reflections tables into a list of reflection tables,
@@ -89,9 +92,10 @@ def prepare_input(params, experiments, reflections):
 
     #### Assign experiment identifiers.
     experiments, reflections = assign_unique_identifiers(experiments, reflections)
-    logger.info(
-        "\nDataset unique identifiers are %s \n", list(experiments.identifiers())
-    )
+    ids = flex.size_t()
+    for r in reflections:
+        ids.extend(r.experiment_identifiers().keys())
+    logger.info("\nDataset ids are: %s \n", ",".join(str(i) for i in ids))
     reflections, experiments = exclude_image_ranges_for_scaling(
         reflections, experiments, params.exclude_images
     )

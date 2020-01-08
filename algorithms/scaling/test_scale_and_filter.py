@@ -86,6 +86,7 @@ def test_scale_and_filter_results_logging():
             "mode": "image_group",
             "image_ranges_removed": [[(6, 10), 0]],
             "experiments_fully_removed": [],
+            "experiment_ids_fully_removed": [],
             "n_reflections_removed": 50,
         },
         "mean_cc_half": 80.0,

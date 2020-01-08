@@ -56,7 +56,7 @@ def reflections_024(reflections):
 
 
 def test_select_specific_datasets_using_id(experiments_024, reflections_024):
-    use_datasets = ["0", "2"]
+    use_datasets = [0, 1]
     experiments, refl = select_datasets_on_ids(
         experiments_024, reflections_024, use_datasets=use_datasets
     )
@@ -91,7 +91,7 @@ def test_raise_exception_when_excluding_non_existing_dataset(
 ):
     with pytest.raises(ValueError):
         experiments, refl = select_datasets_on_ids(
-            experiments_024, reflections_024, exclude_datasets=["1"]
+            experiments_024, reflections_024, exclude_datasets=["3"]
         )
 
 
@@ -126,7 +126,9 @@ def test_correct_handling_with_multi_dataset_table(experiments_024):
     reflections.experiment_identifiers()[1] = "2"
     reflections.experiment_identifiers()[2] = "4"
     exp, refl = select_datasets_on_ids(
-        experiments_024, [reflections], exclude_datasets=["2"]
+        experiments_024,
+        [reflections],
+        exclude_datasets=["1"],  # i.e. the second dataset
     )
     assert list(refl[0].experiment_identifiers().values()) == ["0", "4"]
     assert list(refl[0]["id"]) == [0, 2]
@@ -136,30 +138,22 @@ def test_assignment_of_unique_identifiers_when_refl_table_ids_are_present(
     experiments, reflections
 ):
     assert list(experiments.identifiers()) == ["", "", ""]
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-    expected_identifiers = ["0", "1", "2"]
-    expected_ids = [0, 1, 2]
-    # Check that identifiers are set in experiments and reflection table.
-    assert list(exp.identifiers()) == expected_identifiers
-    for i, refl in enumerate(rts):
-        assert refl.experiment_identifiers()[i] == expected_identifiers[i]
+    expts, rts = assign_unique_identifiers(experiments, reflections)
+    for i, (expt, refl) in enumerate(zip(expts, rts)):
         assert set(refl["id"]) == {i}
-        assert i == expected_ids[i]
+        assert expt.identifier != ""
+        assert refl.experiment_identifiers()[i] == expt.identifier
 
 
 def test_assign_identifiers_where_none_are_set_but_refl_table_ids_have_duplicates(
     experiments, reflections
 ):
     reflections[2]["id"] = flex.int([0, 0])
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-    expected_identifiers = ["0", "1", "2"]
-    # Check that identifiers are set in experiments and reflection table.
-    assert list(exp.identifiers()) == expected_identifiers
-    expected_ids = [0, 1, 2]
-    for i, refl in enumerate(rts):
-        assert refl.experiment_identifiers()[i] == expected_identifiers[i]
+    expts, rts = assign_unique_identifiers(experiments, reflections)
+    for i, (expt, refl) in enumerate(zip(expts, rts)):
         assert set(refl["id"]) == {i}
-        assert i == expected_ids[i]
+        assert expt.identifier != ""
+        assert refl.experiment_identifiers()[i] == expt.identifier
 
 
 def test_raise_exception_when_existing_identifiers_are_inconsistent(
@@ -168,7 +162,7 @@ def test_raise_exception_when_existing_identifiers_are_inconsistent(
     reflections[1].experiment_identifiers()[0] = "5"
     # should raise an assertion error for inconsistent identifiers
     with pytest.raises(ValueError):
-        exp, rts = assign_unique_identifiers(experiments_024, reflections)
+        _, __ = assign_unique_identifiers(experiments_024, reflections)
 
 
 def test_cases_where_all_set_whether_reflection_table_is_split_or_not(
@@ -197,7 +191,7 @@ def test_raise_exception_if_unequal_experiments_and_reflections(experiments_024)
     del reflections_multi[0].experiment_identifiers()[4]
     del reflections_multi[0]["id"][2]
     with pytest.raises(ValueError):
-        exp, rts = assign_unique_identifiers(experiments_024, reflections_multi)
+        _, __ = assign_unique_identifiers(experiments_024, reflections_multi)
 
 
 def test_assigned_identifiers_are_kept_when_assigning_rest(experiments, reflections):
@@ -205,15 +199,12 @@ def test_assigned_identifiers_are_kept_when_assigning_rest(experiments, reflecti
     # set for the rest
     experiments[0].identifier = "1"
     reflections[0].experiment_identifiers()[0] = "1"
-    exp, rts = assign_unique_identifiers(experiments, reflections)
-    expected_identifiers = ["1", "0", "2"]
-    assert list(exp.identifiers()) == expected_identifiers
-    expected_ids = [0, 1, 2]
-    for i, refl in enumerate(rts):
-        id_ = refl["id"][0]
-        assert refl.experiment_identifiers()[id_] == expected_identifiers[i]
-        assert set(refl["id"]) == {id_}
-        assert id_ == expected_ids[i]
+    expts, rts = assign_unique_identifiers(experiments, reflections)
+    assert expts.identifiers()[0] == "1"
+    for i, (expt, refl) in enumerate(zip(expts, rts)):
+        assert set(refl["id"]) == {i}
+        assert expt.identifier != ""
+        assert refl.experiment_identifiers()[i] == expt.identifier
 
 
 def test_assigning_specified_identifiers(experiments, reflections):

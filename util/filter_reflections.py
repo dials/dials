@@ -180,10 +180,7 @@ def filtered_arrays_from_experiments_reflections(
                 intensity_to_use = "intensity.prf"
 
         try:
-            logger.info(
-                "Filtering reflections for dataset %s"
-                % (expt.identifier if expt.identifier else idx)
-            )
+            logger.info("Filtering reflections for dataset %s" % idx)
             refl = filter_reflection_table(
                 refl,
                 intensity_choice,

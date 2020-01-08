@@ -13,11 +13,11 @@ from dials.command_line.symmetry import (
 )
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
-from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util.options import reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
-    select_datasets_on_ids,
+    select_datasets_on_identifiers,
 )
 from dials.util.observer import Subject
 from dials.util.filter_reflections import filtered_arrays_from_experiments_reflections
@@ -93,6 +93,12 @@ class cosym(Subject):
         self._experiments, self._reflections = self._filter_min_reflections(
             experiments, reflections
         )
+        self.ids_to_identifiers_map = {}
+        for table in self._reflections:
+            self.ids_to_identifiers_map.update(table.experiment_identifiers())
+        self.identifiers_to_ids_map = {
+            value: key for key, value in self.ids_to_identifiers_map.items()
+        }
 
         if len(self._experiments) > 1:
             # perform unit cell clustering
@@ -103,7 +109,7 @@ class cosym(Subject):
                     len(identifiers),
                     str(identifiers),
                 )
-                self._experiments, self._reflections = select_datasets_on_ids(
+                self._experiments, self._reflections = select_datasets_on_identifiers(
                     self._experiments, self._reflections, use_datasets=identifiers
                 )
 
@@ -225,7 +231,7 @@ class cosym(Subject):
             if len(refl) >= self.params.min_reflections:
                 identifiers.append(expt.identifier)
 
-        return select_datasets_on_ids(
+        return select_datasets_on_identifiers(
             experiments, reflections, use_datasets=identifiers
         )
 
@@ -234,7 +240,10 @@ class cosym(Subject):
         crystal_symmetries = [
             expt.crystal.get_crystal_symmetry() for expt in experiments
         ]
-        lattice_ids = experiments.identifiers()
+        # lattice ids used to label plots, so want numerical ids
+        lattice_ids = [
+            self.identifiers_to_ids_map[i] for i in experiments.identifiers()
+        ]
 
         ucs = UnitCellCluster.from_crystal_symmetries(
             crystal_symmetries, lattice_ids=lattice_ids
@@ -257,7 +266,8 @@ class cosym(Subject):
                 largest_cluster_lattice_ids = cluster_lattice_ids
 
         dataset_selection = largest_cluster_lattice_ids
-        return dataset_selection
+        # now convert to actual identifiers for selection
+        return [self.ids_to_identifiers_map[i] for i in dataset_selection]
 
 
 help_message = """
@@ -318,8 +328,9 @@ def run(args):
         parser.print_help()
         sys.exit()
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):

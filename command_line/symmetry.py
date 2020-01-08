@@ -15,7 +15,7 @@ import iotbx.phil
 
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -473,8 +473,9 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
 

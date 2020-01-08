@@ -30,20 +30,25 @@ def make_scanless_experiment(expid="1"):
 def test_parse_exclude_images_commands():
     """Test for namesake function"""
     commands = [["1:101:200"], ["0:201:300"]]
-    ranges = _parse_exclude_images_commands(commands, [])
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    tables = [r0, r1]
+    ranges = _parse_exclude_images_commands(commands, [], tables)
     assert ranges == [("1", (101, 200)), ("0", (201, 300))]
     experiments = ["1", "2"]
     short_command = [["101:200"]]
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands(short_command, experiments)
+        _ = _parse_exclude_images_commands(short_command, experiments, tables)
     mock_exp = Mock()
     mock_exp.identifier = "1"
-    ranges = _parse_exclude_images_commands(short_command, [mock_exp])
+    ranges = _parse_exclude_images_commands(short_command, [mock_exp], tables)
     assert ranges == [("1", (101, 200))]
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands([["1:101-200"]], [mock_exp])
+        _ = _parse_exclude_images_commands([["1:101-200"]], [mock_exp], tables)
     with pytest.raises(ValueError):
-        _ = _parse_exclude_images_commands([["1:101:a"]], [])
+        _ = _parse_exclude_images_commands([["1:101:a"]], [], tables)
 
 
 def test_set_get_initial_valid_image_ranges():
@@ -63,18 +68,23 @@ def test_exclude_image_ranges_from_scans():
         [make_scan_experiment(expid="0"), make_scan_experiment(expid="1")]
     )
     exclude_images = [["0:81:100"], ["1:61:80"]]
-    explist = exclude_image_ranges_from_scans(explist, exclude_images)
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    tables = [r0, r1]
+    explist = exclude_image_ranges_from_scans(tables, explist, exclude_images)
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
     assert list(explist[1].scan.get_valid_image_ranges("1")) == [(1, 60), (81, 100)]
     # Try excluding a range that already has been excluded
-    explist = exclude_image_ranges_from_scans(explist, [["1:70:80"]])
+    explist = exclude_image_ranges_from_scans(tables, explist, [["1:70:80"]])
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
     assert list(explist[1].scan.get_valid_image_ranges("1")) == [(1, 60), (81, 100)]
     scanlessexplist = ExperimentList([make_scanless_experiment()])
     with pytest.raises(ValueError):
-        _ = exclude_image_ranges_from_scans(scanlessexplist, [["0:1:100"]])
+        _ = exclude_image_ranges_from_scans(tables, scanlessexplist, [["0:1:100"]])
     # Now try excluding everything, should set an empty array
-    explist = exclude_image_ranges_from_scans(explist, [["1:1:100"]])
+    explist = exclude_image_ranges_from_scans(tables, explist, [["1:1:100"]])
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(1, 80)]
     assert list(explist[1].scan.get_valid_image_ranges("1")) == []
 
@@ -101,13 +111,15 @@ def test_exclude_image_ranges_for_scaling():
     )
     refl1.set_flags(flex.bool(5, False), refl1.flags.user_excluded_in_scaling)
     refl2 = copy.deepcopy(refl1)
+    refl1.experiment_identifiers()[0] = "0"
+    refl2.experiment_identifiers()[1] = "1"
     explist = ExperimentList(
         [
             make_scan_experiment(image_range=(2, 20), expid="0"),
             make_scan_experiment(image_range=(2, 20), expid="1"),
         ]
     )
-    refls, exps = exclude_image_ranges_for_scaling(
+    refls, explist = exclude_image_ranges_for_scaling(
         [refl1, refl2], explist, [["1:11:20"]]
     )
     assert list(explist[0].scan.get_valid_image_ranges("0")) == [(2, 20)]

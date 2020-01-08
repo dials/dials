@@ -10,7 +10,7 @@ from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
-from dials.util.multi_dataset_handling import select_datasets_on_ids
+from dials.util.multi_dataset_handling import select_datasets_on_identifiers
 
 matplotlib.use("Agg")
 from matplotlib import pylab
@@ -375,7 +375,6 @@ class Script(object):
                 exp_id, image_range = image_group_to_expid_and_range[
                     id_
                 ]  # numerical id
-                identifier = reflections.experiment_identifiers()[exp_id]
                 if (
                     expid_to_image_groups[exp_id][-1] == id_
                     or expid_to_image_groups[exp_id][0] == id_
@@ -384,11 +383,11 @@ class Script(object):
                     logger.info(
                         "Removing image range %s from experiment %s",
                         image_range,
-                        identifier,
+                        exp_id,
                     )
                     exclude_images.append(
                         [
-                            identifier
+                            str(exp_id)
                             + ":"
                             + str(image_range[0])
                             + ":"
@@ -405,11 +404,10 @@ class Script(object):
             ids_to_remove = other_potential_ids_to_remove
         for id_ in other_potential_ids_to_remove:
             exp_id, image_range = image_group_to_expid_and_range[id_]
-            identifier = reflections.experiment_identifiers()[exp_id]
             logger.info(
                 """Image range %s from experiment %s is below the cutoff, but not at the edge of a sweep.""",
                 image_range,
-                identifier,
+                exp_id,
             )
 
         # Now remove individual batches
@@ -436,14 +434,15 @@ class Script(object):
                 )
 
         # if a whole experiment has been excluded: need to remove it here
-
-        for exp in experiments:
+        ids_removed = []
+        for exp, refl in zip(experiments, reflection_list):
             if not exp.scan.get_valid_image_ranges(
                 exp.identifier
             ):  # if all removed above
                 experiments_to_delete.append(exp.identifier)
+                ids_removed.append(refl.experiment_identifiers().keys()[0])
         if experiments_to_delete:
-            experiments, reflection_list = select_datasets_on_ids(
+            experiments, reflection_list = select_datasets_on_identifiers(
                 experiments, reflection_list, exclude_datasets=experiments_to_delete
             )
         assert len(reflection_list) == len(experiments)
@@ -459,6 +458,7 @@ class Script(object):
             {
                 "image_ranges_removed": image_ranges_removed,
                 "experiments_fully_removed": experiments_to_delete,
+                "experiment_ids_fully_removed": ids_removed,
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }
@@ -482,9 +482,11 @@ class Script(object):
         ).count(False)
 
         datasets_to_remove = []
+        ids_removed = []
         for id_ in sorted(ids_to_remove):
             logger.info("Removing dataset %d", id_)
             datasets_to_remove.append(reflections.experiment_identifiers()[id_])
+            ids_removed.append(id_)
         output_reflections = reflections.remove_on_experiment_identifiers(
             datasets_to_remove
         )
@@ -497,6 +499,7 @@ class Script(object):
         results_summary["dataset_removal"].update(
             {
                 "experiments_fully_removed": datasets_to_remove,
+                "experiment_ids_fully_removed": ids_removed,
                 "n_reflections_removed": n_valid_reflections
                 - n_valid_filtered_reflections,
             }
@@ -535,9 +538,7 @@ class Script(object):
 def run(args=None, phil=phil_scope):
     """Run the command-line script."""
     import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.compute_delta_cchalf [options] scaled.expt scaled.refl"
 
@@ -554,8 +555,9 @@ def run(args=None, phil=phil_scope):
 
     dials.util.log.config(logfile=params.output.log)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 and not params.input.mtzfile:
         parser.print_help()

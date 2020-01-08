@@ -97,7 +97,7 @@ def test_ScalingModelObserver():
 
     observer = ScalingModelObserver()
     observer.update(scaler1)
-    assert observer.data["0"] == KB_dict
+    assert observer.data[0] == KB_dict
 
     msg = observer.return_model_error_summary()
     assert msg != ""
@@ -123,8 +123,8 @@ def test_ScalingModelObserver():
     multiscaler.active_scalers = [scaler1, scaler2]
     observer.data = {}
     observer.update(multiscaler)
-    assert observer.data["0"] == KB_dict
-    assert observer.data["1"] == KB_dict
+    assert observer.data[0] == KB_dict
+    assert observer.data[1] == KB_dict
 
     mock_func = mock.Mock()
     mock_func.return_value = {"plot": {"layout": {"title": ""}}}
@@ -163,7 +163,7 @@ def test_ScalingOutlierObserver():
     observer = ScalingOutlierObserver()
     observer.update(scaler)
     assert observer.data == {
-        "0": {
+        0: {
             "x": [10],
             "y": [11],
             "z": [12],
@@ -181,7 +181,7 @@ def test_ScalingOutlierObserver():
     with mock.patch("dials.algorithms.scaling.observers.plot_outliers", new=mock_func):
         r = observer.make_plots()
         assert mock_func.call_count == 1
-        assert mock_func.call_args_list == [mock.call(observer.data["0"])]
+        assert mock_func.call_args_list == [mock.call(observer.data[0])]
         assert all(
             i in r["outlier_plots"] for i in ["outlier_plot_0", "outlier_plot_z0"]
         )
