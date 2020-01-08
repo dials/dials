@@ -243,7 +243,7 @@ def symmetry(experiments, reflection_tables, params=None):
         refls_for_sym = []
         if params.exclude_images:
             experiments = exclude_image_ranges_from_scans(
-                experiments, params.exclude_images
+                reflection_tables, experiments, params.exclude_images
             )
             for refl, exp in zip(reflection_tables, experiments):
                 sel = get_selection_for_valid_image_ranges(refl, exp)
