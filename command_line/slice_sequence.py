@@ -117,12 +117,13 @@ class Script(object):
     def run(self):
         """Execute the script."""
 
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         # Try to load the models and data
         slice_exps = len(experiments) > 0

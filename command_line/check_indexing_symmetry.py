@@ -11,8 +11,7 @@ from cctbx.miller import set as miller_set
 from cctbx.sgtbx import space_group as sgtbx_space_group
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util import log
 from dials.util.version import dials_version
 from libtbx.utils import format_float_with_standard_uncertainty
@@ -321,8 +320,9 @@ def run(args):
     log.config(logfile=params.output.log)
     logger.info(dials_version())
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(reflections) == 0 or len(experiments) == 0:
         parser.print_help()
         return

@@ -4,7 +4,7 @@ import functools
 from libtbx.phil import parse
 from dials.util import Sorry, show_mail_on_error
 from dials.util.export_mtz import match_wavelengths
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentList
 
@@ -114,10 +114,11 @@ class Script(object):
                     "The number of input reflections files does not match the "
                     "number of input experiments"
                 )
-
-        experiments = flatten_experiments(params.input.experiments)
-        if params.input.reflections:
-            reflections = flatten_reflections(params.input.reflections)[0]
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
+        if reflections:
+            reflections = reflections[0]
         else:
             reflections = None
 

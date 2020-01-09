@@ -6,8 +6,7 @@ import sys
 import iotbx.phil
 from dials.util import tabulate
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.algorithms.spot_finding import per_image_analysis
 
 help_message = """
@@ -56,8 +55,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if not reflections and not experiments:
         parser.print_help()

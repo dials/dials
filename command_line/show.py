@@ -187,9 +187,7 @@ def run(args):
 
     dials.util.log.print_banner()
 
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
@@ -204,8 +202,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(args=args, show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 and len(reflections) == 0:
         parser.print_help()

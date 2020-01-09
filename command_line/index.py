@@ -15,8 +15,7 @@ from dials.algorithms.indexing import DialsIndexError
 from dials.array_family import flex
 from dials.util.slice import slice_reflections
 from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
+from dials.util.options import reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import renumber_table_id_columns
 from dials.util import log
 from dials.util.version import dials_version
@@ -248,8 +247,9 @@ def run(phil=working_phil, args=None):
         logger.info("The following parameters have been modified:\n")
         logger.info(diff_phil)
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0:
         parser.print_help()
