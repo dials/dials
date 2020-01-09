@@ -127,7 +127,6 @@ class Script(object):
             generate_experiment_identifiers(
                 experiments
             )  # add identifier e.g. if coming straight from images
-        print(experiments.identifiers())
         if len(experiments) == 0:
             self.parser.print_help()
             return

@@ -211,7 +211,6 @@ def index(experiments, reflections, params):
                         continue
                     # Update the experiment ids by incrementing by the number of indexed
                     # experiments already in the list
-                    print(list(idx_refl.experiment_identifiers().keys()))
                     ##FIXME below, is i_expt correct - or should it be the
                     # index of the 'future'?
                     idx_refl["imageset_id"] = flex.size_t(idx_refl.size(), i_expt)
