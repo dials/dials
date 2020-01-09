@@ -155,6 +155,8 @@ class _(object):
                 padding=padding,
             )
             rlist["id"] = cctbx.array_family.flex.int(len(rlist), i)
+            if e.identifier:
+                rlist.experiment_identifiers()[i] = e.identifier
             result.extend(rlist)
         return result
 
