@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 import math
+import time
 
 import dials.util.version
 from dials.util.filter_reflections import filter_reflection_table
@@ -88,22 +89,32 @@ class MMCIFOutputFile(object):
             "scale" in self.params.intensity
         ).lower()
 
-        # FIXME Haven't put in any of these bits yet
-        #
-        #  Facility/beamline proposal tracking details
-        #
-        # cif_block["_pdbx_diffrn_data_section_experiment.ordinal"] = 1
-        # cif_block["_pdbx_diffrn_data_section_experiment.data_section_id"] = "dials"
-        # cif_block["_pdbx_diffrn_data_section_experiment.proposal_id"] = "<PROPOSAL ID>
+        # FIXME finish metadata addition - detector and source details needed
+        # http://mmcif.wwpdb.org/dictionaries/mmcif_pdbx_v50.dic/Categories/index.html
 
-        # Facility/beamline details for this data collection
-        #
-        # cif_block["_pdbx_diffrn_data_section_site.data_section_id"] = 'dials'
-        # cif_block["_pdbx_diffrn_data_section_site.facility"] = "DIAMOND"
-        # cif_block["_pdbx_diffrn_data_section_site.beamline"] = "VMX-M"
-        # cif_block["_pdbx_diffrn_data_section_site.collection_date"] = scan.epochs()[0]
-        # cif_block["_pdbx_diffrn_data_section_site.detector"] = detector[0].name()
-        # cif_block["_pdbx_diffrn_data_section_site.detector_type"] = detector[0].type()
+        ## Add source information;
+        # _diffrn_source.pdbx_wavelength_list = (list of wavelengths)
+        # _diffrn_source.source = (general class of source e.g. synchrotron)
+        # _diffrn_source.type = (specific beamline or instrument e.g DIAMOND BEAMLINE I04)
+
+        wls = []
+        epochs = []
+        for exp in experiments:
+            wls.append(round(exp.beam.get_wavelength(), 5))
+            epochs.append(exp.scan.get_epochs()[0])
+        unique_wls = set(wls)
+        cif_block["_diffrn_source.pdbx_wavelength_list"] = ", ".join(
+            str(w) for w in unique_wls
+        )
+
+        ## Add detector information;
+        # _diffrn_detector.detector  = (general class e.g. PIXEL, PLATE etc)
+        # _diffrn_detector.pdbx_collection_date = (Date of collection yyyy-mm-dd)
+        # _diffrn_detector.type = (full name of detector e.g. DECTRIS PILATUS3 2M)
+        # One date is required, so if multiple just use the first date.
+        min_epoch = min(epochs)
+        date_str = time.strftime("%Y-%m-%d", time.gmtime(min_epoch))
+        cif_block["_diffrn_detector.pdbx_collection_date"] = date_str
 
         # Write the crystal information
         cif_loop = iotbx.cif.model.loop(
