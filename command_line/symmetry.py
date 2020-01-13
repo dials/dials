@@ -348,7 +348,20 @@ def symmetry(experiments, reflection_tables, params=None):
         space_group = experiments[0].crystal.get_space_group()
         laue_group = str(space_group.build_derived_patterson_group().info())
         logger.info("Laue group: %s", laue_group)
-        if laue_group not in laue_groups_for_absence_analysis:
+        if laue_group in ("I m -3", "I m m m"):
+            if laue_group == "I m -3":
+                logger.info(
+                    """Space groups I 2 3 & I 21 3 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 3, space group I 21 3 is equally likely.\n"""
+                )
+            if laue_group == "I m m m":
+                logger.info(
+                    """Space groups I 2 2 2 & I 21 21 21 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
+                )
+        elif laue_group not in laue_groups_for_absence_analysis:
             logger.info("No absences to check for this laue group\n")
         else:
             if not refls_for_sym:
