@@ -563,8 +563,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
    * Extend the identifiers
    */
   template <typename T>
-  void reflection_table_extend_identifiers(T &self,
-                                           const T &other) {
+  void reflection_table_extend_identifiers(T &self, const T &other) {
     typedef typename T::experiment_map_type::const_iterator const_iterator;
     typedef typename T::experiment_map_type::iterator iterator;
     for (const_iterator it = other.experiment_identifiers()->begin();
@@ -595,7 +594,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
       extend_column_visitor<T> visitor(self, it->first, ns, no);
       it->second.apply_visitor(visitor);
     }
-    //now extend identifiers
+    // now extend identifiers
     reflection_table_extend_identifiers(self, other);
   }
 
@@ -641,17 +640,17 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     }
 
     // Get the id column (if it exists) and make a set of unique values
-    if (self.contains("id")){
+    if (self.contains("id")) {
       af::shared<int> col = result["id"];
       std::set<int> new_ids(col.begin(), col.end());
 
       // Copy across identifiers for ids in new table
       typedef typename T::experiment_map_type::const_iterator const_iterator;
-      for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i){
+      for (std::set<int>::iterator i = new_ids.begin(); i != new_ids.end(); ++i) {
         for (const_iterator it = self.experiment_identifiers()->begin();
-          it != self.experiment_identifiers()->end();
-          ++it) {
-          if (it->first == *i){
+             it != self.experiment_identifiers()->end();
+             ++it) {
+          if (it->first == *i) {
             (*result.experiment_identifiers())[it->first] = it->second;
           }
         }
@@ -711,7 +710,7 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
   }
 
   template <typename T>
-  T select_using_experiment(T &self, dxtbx::model::Experiment expt){
+  T select_using_experiment(T &self, dxtbx::model::Experiment expt) {
     typedef typename T::experiment_map_type::const_iterator const_iterator;
 
     std::string identifier = expt.get_identifier();
@@ -719,18 +718,18 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     for (const_iterator it = self.experiment_identifiers()->begin();
          it != self.experiment_identifiers()->end();
          ++it) {
-           if (identifier == it->second){
-             id_value = it->first;
-             break;
-           }
-         }
+      if (identifier == it->second) {
+        id_value = it->first;
+        break;
+      }
+    }
 
     T result;
-    if (self.contains("id") && id_value != -1){
+    if (self.contains("id") && id_value != -1) {
       af::shared<int> col1 = self["id"];
       af::shared<std::size_t> sel;
-      for (int i=0; i< col1.size(); ++i){
-        if (col1[i] == id_value){
+      for (int i = 0; i < col1.size(); ++i) {
+        if (col1[i] == id_value) {
           sel.push_back(i);
         }
       }
@@ -740,32 +739,31 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
     }
 
     return result;
-
   }
 
   template <typename T>
-  T select_using_experiments(T &self, dxtbx::model::ExperimentList expts){
+  T select_using_experiments(T &self, dxtbx::model::ExperimentList expts) {
     typedef typename T::experiment_map_type::const_iterator const_iterator;
-    typedef dxtbx::model::ExperimentList::shared_type::const_iterator expt_const_iterator;
+    typedef dxtbx::model::ExperimentList::shared_type::const_iterator
+      expt_const_iterator;
     T result;
     for (expt_const_iterator expt = expts.begin(); expt != expts.end(); ++expt) {
-
       std::string identifier = expt->get_identifier();
       int id_value = -1;
       for (const_iterator it = self.experiment_identifiers()->begin();
-          it != self.experiment_identifiers()->end();
-          ++it) {
-            if (identifier == it->second){
-              id_value = it->first;
-              break;
-            }
-          }
+           it != self.experiment_identifiers()->end();
+           ++it) {
+        if (identifier == it->second) {
+          id_value = it->first;
+          break;
+        }
+      }
 
-      if (self.contains("id") && id_value != -1){
+      if (self.contains("id") && id_value != -1) {
         af::shared<int> col1 = self["id"];
         af::shared<std::size_t> sel;
-        for (int i=0; i< col1.size(); ++i){
-          if (col1[i] == id_value){
+        for (int i = 0; i < col1.size(); ++i) {
+          if (col1[i] == id_value) {
             sel.push_back(i);
           }
         }
@@ -774,14 +772,10 @@ namespace dials { namespace af { namespace boost_python { namespace flex_table_s
         T sel_refl = select_rows_index(self, idx);
         extend(result, sel_refl);
       }
-
     }
 
     return result;
-
   }
-
-
 
   /**
    * Set the selected number of rows from the table via an index array
