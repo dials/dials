@@ -5,6 +5,7 @@ conda-forge::libcxx
 conda-forge::hdf5-external-filter-plugins
 cctbx::wxpython<4
 
+conda-forge::colorlog
 conda-forge::dials-data
 conda-forge::mrcfile
 conda-forge::msgpack-python=0.6.2

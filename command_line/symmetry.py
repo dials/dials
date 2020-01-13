@@ -15,7 +15,7 @@ import iotbx.phil
 
 from dials.array_family import flex
 from dials.util import log, show_mail_on_error
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.version import dials_version
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -243,7 +243,7 @@ def symmetry(experiments, reflection_tables, params=None):
         refls_for_sym = []
         if params.exclude_images:
             experiments = exclude_image_ranges_from_scans(
-                experiments, params.exclude_images
+                reflection_tables, experiments, params.exclude_images
             )
             for refl, exp in zip(reflection_tables, experiments):
                 sel = get_selection_for_valid_image_ranges(refl, exp)
@@ -348,7 +348,20 @@ def symmetry(experiments, reflection_tables, params=None):
         space_group = experiments[0].crystal.get_space_group()
         laue_group = str(space_group.build_derived_patterson_group().info())
         logger.info("Laue group: %s", laue_group)
-        if laue_group not in laue_groups_for_absence_analysis:
+        if laue_group in ("I m -3", "I m m m"):
+            if laue_group == "I m -3":
+                logger.info(
+                    """Space groups I 2 3 & I 21 3 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 3, space group I 21 3 is equally likely.\n"""
+                )
+            if laue_group == "I m m m":
+                logger.info(
+                    """Space groups I 2 2 2 & I 21 21 21 cannot be distinguished with systematic absence
+analysis, due to lattice centering.
+Using space group I 2 2 2, space group I 21 21 21 is equally likely.\n"""
+                )
+        elif laue_group not in laue_groups_for_absence_analysis:
             logger.info("No absences to check for this laue group\n")
         else:
             if not refls_for_sym:
@@ -473,8 +486,9 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
 

@@ -1,17 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
 import os
+
+from iotbx.xds import spot_xds
+from scitbx import matrix
+from dxtbx.serialize import xds
+
+
+logger = logging.getLogger(__name__)
 
 
 def dump(experiments, reflections, directory):
-    """
-    Dump the files in XDS format
-    """
-    from dxtbx.serialize import xds
-    from scitbx import matrix
-
+    """Dump the files in XDS format"""
     if len(experiments) > 0:
-
         for i, experiment in enumerate(experiments):
             suffix = ""
             if len(experiments) > 1:
@@ -27,42 +29,50 @@ def dump(experiments, reflections, directory):
             imageset.set_beam(experiment.beam)
             imageset.set_goniometer(experiment.goniometer)
             imageset.set_scan(experiment.scan)
-            crystal_model = experiment.crystal
-            crystal_model = crystal_model.change_basis(
-                crystal_model.get_space_group()
-                .info()
-                .change_of_basis_op_to_reference_setting()
-            )
-            A = matrix.sqr(crystal_model.get_A())
-            A_inv = A.inverse()
-            real_space_a = A_inv.elems[:3]
-            real_space_b = A_inv.elems[3:6]
-            real_space_c = A_inv.elems[6:9]
+
+            if experiment.crystal is None:
+                space_group_number = None
+                real_space_a = None
+                real_space_b = None
+                real_space_c = None
+                job_card = "XYCORR INIT COLSPOT IDXREF DEFPIX INTEGRATE CORRECT"
+            else:
+                crystal_model = experiment.crystal
+                crystal_model = crystal_model.change_basis(
+                    crystal_model.get_space_group()
+                    .info()
+                    .change_of_basis_op_to_reference_setting()
+                )
+                space_group_number = crystal_model.get_space_group().type().number()
+                A = matrix.sqr(crystal_model.get_A())
+                A_inv = A.inverse()
+                real_space_a = A_inv.elems[:3]
+                real_space_b = A_inv.elems[3:6]
+                real_space_c = A_inv.elems[6:9]
+                job_card = ("XYCORR INIT DEFPIX INTEGRATE CORRECT",)
+
             to_xds = xds.to_xds(imageset)
             xds_inp = os.path.join(sub_dir, "XDS.INP")
             xparm_xds = os.path.join(sub_dir, "XPARM.XDS")
-            print("Exporting experiment to %s and %s" % (xds_inp, xparm_xds))
+            logger.info("Exporting experiment to %s" % xds_inp)
             with open(xds_inp, "w") as f:
                 f.write(
                     to_xds.XDS_INP(
-                        space_group_number=crystal_model.get_space_group()
-                        .type()
-                        .number(),
+                        space_group_number=space_group_number,
                         real_space_a=real_space_a,
                         real_space_b=real_space_b,
                         real_space_c=real_space_c,
-                        job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT",
+                        job_card=job_card,
                     )
                 )
-            with open(xparm_xds, "w") as f:
-                f.write(
-                    to_xds.xparm_xds(
-                        real_space_a,
-                        real_space_b,
-                        real_space_c,
-                        crystal_model.get_space_group().type().number(),
+            if space_group_number:
+                logger.info("Exporting crystal model to %s" % xparm_xds)
+                with open(xparm_xds, "w") as f:
+                    f.write(
+                        to_xds.xparm_xds(
+                            real_space_a, real_space_b, real_space_c, space_group_number
+                        )
                     )
-                )
 
             if reflections is not None and len(reflections) > 0:
                 ref_cryst = reflections.select(reflections["id"] == i)
@@ -75,8 +85,6 @@ def dump(experiments, reflections, directory):
 
 
 def export_spot_xds(reflections, filename):
-    from iotbx.xds import spot_xds
-
     if reflections is not None and len(reflections) > 0:
         centroids = reflections["xyzobs.px.value"]
         intensities = reflections["intensity.sum.value"]
@@ -93,5 +101,5 @@ def export_spot_xds(reflections, filename):
         xds_writer = spot_xds.writer(
             centroids=centroids, intensities=intensities, miller_indices=miller_indices
         )
-        print("Exporting spot list as %s" % filename)
+        logger.info("Exporting spot list as %s" % filename)
         xds_writer.write_file(filename=filename)

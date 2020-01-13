@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 import math
-from time import time
 import sys
 
 from cctbx import miller, sgtbx
@@ -422,7 +421,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        start_time = time()
 
         # Parse the command line
         params, _ = self.parser.parse_args(show_diff_phil=False)
@@ -527,9 +525,6 @@ class Script(object):
 
         if params.output.mmcif is not None:
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
-
-        # Log the total time taken
-        logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

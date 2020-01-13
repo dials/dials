@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import shutil
 
 import procrunner
 
@@ -144,6 +145,7 @@ def test_dials_show_centroid_test_data(dials_data):
         "\n".join(output[4:])
         == """
 Experiment 0:
+Format class: FormatCBFMiniPilatus
 Detector:
 Panel:
   name: Panel
@@ -200,9 +202,10 @@ def test_dials_show_multi_panel_i23(dials_regression):
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
 
     assert (
-        "\n".join(output[4:25])
+        "\n".join(output[4:26])
         == """
 Experiment 0:
+Format class: FormatCBFMiniPilatusDLS12M
 Detector:
 Panel:
   name: row-00
@@ -336,7 +339,7 @@ def test_dials_show_image_statistics(dials_regression):
         dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
     )
     result = procrunner.run(
-        ["dials.show", "show_image_statistics=true", path],
+        ["dials.show", "image_statistics.show_raw=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert not result.returncode and not result.stderr
@@ -354,7 +357,7 @@ def test_dials_show_image_statistics_with_no_image_data(dials_regression):
         dials_regression, "indexing_test_data", "i04_weak_data", "datablock_orig.json"
     )
     result = procrunner.run(
-        ["dials.show", "show_image_statistics=true", path],
+        ["dials.show", "image_statistics.show_raw=true", path],
         environment_override={"DIALS_NOBANNER": "1"},
     )
     assert result.returncode == 1 and result.stderr
@@ -412,3 +415,18 @@ def test_dials_show_shared_models(dials_data, capsys):
     stdout, stderr = capsys.readouterr()
     assert not stderr
     assert "Experiment / Models" in stdout
+
+
+def test_dials_show_centroid_test_data_image_zero(dials_data, tmpdir):
+    """Integration test: import image 0; show import / show works"""
+
+    im1 = dials_data("centroid_test_data").join("centroid_0001.cbf").strpath
+    im0 = tmpdir.join("centroid_0000.cbf").strpath
+
+    shutil.copyfile(im1, im0)
+
+    result = procrunner.run(("dials.import", im0), working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+
+    result = procrunner.run(("dials.show", "imported.expt"), working_directory=tmpdir)
+    assert not result.returncode and not result.stderr

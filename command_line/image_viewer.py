@@ -1,11 +1,14 @@
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+
 from __future__ import absolute_import, division, print_function
 
+import pickle
 import sys
 
 import dials.util.log
 import iotbx.phil
-
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
+from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
 
 help_message = """
 
@@ -114,29 +117,9 @@ load_models = True
 )
 
 
-class Script(object):
-    """Class to run script."""
-
-    def __init__(self, params, experiments, reflections):
-        """Setup the script."""
-
-        # Filename data
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
-        self.wrapper = None
-
-    def __call__(self):
-        """Run the script."""
-        from dials.array_family import flex  # noqa
-
-        self.view()
-
-    def view(self):
-        from dials.util.image_viewer.spotfinder_wrap import spot_wrapper
-
-        self.wrapper = spot_wrapper(params=self.params)
-        self.wrapper.display(experiments=self.experiments, reflections=self.reflections)
+def show_image_viewer(params, experiments, reflections):
+    wrapper = spot_wrapper(params=params)
+    wrapper.display(experiments=experiments, reflections=reflections)
 
 
 if __name__ == "__main__":
@@ -154,10 +137,6 @@ if __name__ == "__main__":
         # HACK: Monkeypatch this renamed function so we can trick wxtbx's IntCtrl
         #       without having to alter the package
         wx.SystemSettings_GetColour = wx.SystemSettings.GetColour
-
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
 
     dials.util.log.print_banner()
     usage_message = "dials.image_viewer models.expt [observations.refl]"
@@ -184,12 +163,9 @@ if __name__ == "__main__":
         if any(e.beam is None for e in flat_expts):
             sys.exit("Error: experiment has no beam")
 
+    # If given a mask, replace the path with the loaded data
     if params.mask is not None:
-        from libtbx import easy_pickle
+        with open(params.mask, "rb") as f:
+            params.mask = pickle.load(f)
 
-        params.mask = easy_pickle.load(params.mask)
-
-    runner = Script(params=params, reflections=reflections, experiments=experiments)
-
-    # Run the script
-    runner()
+    show_image_viewer(params=params, reflections=reflections, experiments=experiments)

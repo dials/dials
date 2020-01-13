@@ -110,14 +110,18 @@ class ScalingSummaryGenerator(Observer):
         valid_ranges = get_valid_image_ranges(scaling_script.experiments)
         image_ranges = get_image_ranges(scaling_script.experiments)
         msg = []
-        for (img, valid, exp) in zip(
-            image_ranges, valid_ranges, scaling_script.experiments
+        for (img, valid, refl) in zip(
+            image_ranges, valid_ranges, scaling_script.reflections
         ):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
-                        % (exp.identifier, list(img), list(valid))
+                        "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                        % (
+                            refl.experiment_identifiers().keys()[0],
+                            list(img),
+                            list(valid),
+                        )
                     )
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
@@ -220,9 +224,8 @@ class ScalingModelObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers", False)
         if not active_scalers:
             active_scalers = [scaler]
-        for s in active_scalers:
-            id_ = s.experiment.identifier
-            self.data[id_] = s.experiment.scaling_model.to_dict()
+        for i, s in enumerate(active_scalers):
+            self.data[i] = s.experiment.scaling_model.to_dict()
 
     def make_plots(self):
         """Generate scaling model component plot data."""
@@ -280,15 +283,14 @@ class ScalingOutlierObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
-        for scaler in active_scalers:
-            id_ = scaler.experiment.identifier
+        for j, scaler in enumerate(active_scalers):
             outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
                 scaler.outliers
             )
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
-            self.data[id_] = {
+            self.data[j] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),

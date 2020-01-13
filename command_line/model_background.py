@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 import six.moves.cPickle as pickle
 import sys
-from time import time
 
 import dials.util
 import dials.util.log
@@ -209,8 +208,6 @@ class Script(object):
         from dials.util.options import flatten_experiments
         from dials.algorithms.background.modeller import BackgroundModeller
 
-        start_time = time()
-
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=False)
 
@@ -276,9 +273,6 @@ class Script(object):
         image_generator.save_max(params.output.max_image_prefix)
         image_generator.save_model(params.output.model_image_prefix)
         # image_generator.save_polar_model(params.output.polar_model_image_prefix)
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
 
 
 if __name__ == "__main__":

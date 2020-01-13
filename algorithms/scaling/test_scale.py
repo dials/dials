@@ -157,12 +157,12 @@ def test_scale_script_prepare_input():
 
     params, exp, reflections = generate_test_input()
     # Try to use use_datasets when not identifiers set
-    params.dataset_selection.use_datasets = ["0"]
+    params.dataset_selection.use_datasets = [0]
     with pytest.raises(ValueError):
         _ = ScalingAlgorithm(params, exp, reflections)
     # Try to use use_datasets when not identifiers set
     params.dataset_selection.use_datasets = None
-    params.dataset_selection.exclude_datasets = ["0"]
+    params.dataset_selection.exclude_datasets = [0]
     with pytest.raises(ValueError):
         _ = ScalingAlgorithm(params, exp, reflections)
 
@@ -176,7 +176,7 @@ def test_scale_script_prepare_input():
     list2 = ExperimentList().append(exp[1])
     reflections[0].assert_experiment_identifiers_are_consistent(list1)
     reflections[1].assert_experiment_identifiers_are_consistent(list2)
-    params.dataset_selection.use_datasets = ["0"]
+    params.dataset_selection.use_datasets = [0]
     params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
@@ -186,8 +186,8 @@ def test_scale_script_prepare_input():
     exp[0].identifier = "0"
     reflections[0].experiment_identifiers()[0] = "0"
     exp[1].identifier = "1"
-    reflections[1].experiment_identifiers()[0] = "1"
-    params.dataset_selection.exclude_datasets = ["0"]
+    reflections[1].experiment_identifiers()[1] = "1"
+    params.dataset_selection.exclude_datasets = [0]
     params, exp, script_reflections = prepare_input(params, exp, reflections)
 
     assert len(script_reflections) == 1
@@ -496,7 +496,10 @@ def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     assert tmpdir.join("analysis_results.json").check()
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
-    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == ["4"]
+
+    assert analysis_results["cycle_results"]["1"]["removed_datasets"] == [
+        analysis_results["initial_expids_and_image_ranges"][4][0]
+    ]
 
 
 def test_scale_array(dials_data, tmpdir):

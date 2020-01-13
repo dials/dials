@@ -47,7 +47,15 @@ show_identifiers = False
   .help = "Show experiment identifiers map if set"
 show_image_statistics = False
   .type = bool
-  .help = "Show statistics on the distribution of values in each image"
+  .help = "Deprecated option, please use image_statistics instead"
+image_statistics{
+  show_corrected = False
+    .type = bool
+    .help = "Show statistics on the distribution of values in each corrected image"
+  show_raw = False
+    .type = bool
+    .help = "Show statistics on the distribution of values in each raw image"
+}
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
@@ -208,13 +216,19 @@ def run(args):
             sys.exit("Error: experiment has no detector")
         if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
-        print(
-            show_experiments(
-                experiments,
-                show_scan_varying=params.show_scan_varying,
-                show_image_statistics=params.show_image_statistics,
+        print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
+
+        if params.show_image_statistics:
+            print(
+                "WARNING: show_image_statistics is deprecated. Please use image_statistics.show_raw or image_statistics.show_corrected instead"
             )
-        )
+            params.image_statistics.show_raw = True
+
+        if params.image_statistics.show_raw:
+            show_image_statistics(experiments, "raw")
+
+        if params.image_statistics.show_corrected:
+            show_image_statistics(experiments, "corrected")
 
         if params.show_shared_models:
             print()
@@ -235,24 +249,14 @@ def run(args):
         )
 
 
-def show_experiments(experiments, show_scan_varying=False, show_image_statistics=False):
-    # To show image statistics, check_format has to be true. So we have to reinstatiate
-    # the experiment list here
-    if show_image_statistics:
-        try:
-            experiments = ExperimentListFactory.from_json(
-                experiments.as_json(), check_format=True
-            )
-        except IOError as e:
-            raise Sorry(
-                "Unable to read image data. Please check {0} is accessible".format(
-                    e.filename
-                )
-            )
+def show_experiments(experiments, show_scan_varying=False):
 
     text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
+        format_class = expt.imageset.get_format_class()
+        if format_class.__name__ != "Format":
+            text.append("Format class: %s" % format_class.__name__)
         if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
         text.append(str(expt.detector))
@@ -296,22 +300,50 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.scaling_model is not None:
             text.append(str(expt.scaling_model))
 
-        if show_image_statistics:
-            for i in range(len(expt.imageset)):
-                identifier = os.path.basename(expt.imageset.get_image_identifier(i))
-                pnl_data = expt.imageset.get_raw_data(i)
-                if not isinstance(pnl_data, tuple):
-                    pnl_data = (pnl_data,)
-                flat_data = pnl_data[0].as_1d()
-                for p in pnl_data[1:]:
-                    flat_data.extend(p.as_1d())
-                fns = five_number_summary(flat_data)
-                text.append(
-                    "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
-                        identifier, *fns
-                    )
-                )
     return "\n".join(text)
+
+
+def show_image_statistics(experiments, im_type):
+
+    if im_type == "raw":
+        raw = True
+    elif im_type == "corrected":
+        raw = False
+    else:
+        raise ValueError("Unknown im_type: {0}".format(im_type))
+
+    # To show image statistics, check_format has to be true. So we have to reinstatiate
+    # the experiment list here
+    try:
+        experiments = ExperimentListFactory.from_json(
+            experiments.as_json(), check_format=True
+        )
+    except IOError as e:
+        raise Sorry(
+            "Unable to read image data. Please check {0} is accessible".format(
+                e.filename
+            )
+        )
+
+    print("Five number summary of the {0} images".format(im_type))
+    for i_expt, expt in enumerate(experiments):
+        for i in range(len(expt.imageset)):
+            identifier = os.path.basename(expt.imageset.get_image_identifier(i))
+            if raw:
+                pnl_data = expt.imageset.get_raw_data(i)
+            else:
+                pnl_data = expt.imageset.get_corrected_data(i)
+            if not isinstance(pnl_data, tuple):
+                pnl_data = (pnl_data,)
+            flat_data = pnl_data[0].as_1d()
+            for p in pnl_data[1:]:
+                flat_data.extend(p.as_1d())
+            fns = five_number_summary(flat_data)
+            print(
+                "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
+                    identifier, *fns
+                )
+            )
 
 
 def model_connectivity(experiments):

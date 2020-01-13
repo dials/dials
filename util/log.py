@@ -4,11 +4,38 @@ import logging.config
 import os
 import six
 import sys
+import time
 
 try:
-    from dlstbx.util.colorstreamhandler import ColorStreamHandler
+    from colorlog import ColoredFormatter
 except ImportError:
-    ColorStreamHandler = None
+    ColoredFormatter = None
+
+# https://stackoverflow.com/questions/25194864/python-logging-time-since-start-of-program/25196134#25196134
+class DialsLogfileFormatter:
+    """A formatter for log files that prepends messages with the elapsed time
+    or messages at warning level or above with 'WARNING:'"""
+
+    def __init__(self):
+        self.start_time = time.time()
+        self.prefix = ""
+
+    def format(self, record):
+        elapsed_seconds = record.created - self.start_time
+        prefix = "{:6.1f}: ".format(elapsed_seconds)
+        indent = len(prefix)
+        msg = record.getMessage()
+
+        if record.levelno >= logging.WARNING:
+            prefix = "WARN: "
+            prefix = (indent - len(prefix)) * " " + prefix
+
+        msg = msg.replace("\n", "\n" + " " * indent)
+        if prefix == self.prefix:
+            return " " * indent + msg
+        else:
+            self.prefix = prefix
+            return prefix + msg
 
 
 def config(verbosity=0, logfile=None):
@@ -23,10 +50,22 @@ def config(verbosity=0, logfile=None):
     :type logfile: str
     """
 
-    if os.getenv("COLOURLOG") and ColorStreamHandler:
-        console = ColorStreamHandler(sys.stdout)
-    else:
-        console = logging.StreamHandler(sys.stdout)
+    console = logging.StreamHandler(sys.stdout)
+    if (
+        "NO_COLOR" not in os.environ
+        and sys.stdout.isatty()
+        and ColoredFormatter is not None
+    ):
+        color_formatter = ColoredFormatter(
+            "%(log_color)s%(message)s",
+            log_colors={
+                "DEBUG": "blue",
+                "WARNING": "yellow",
+                "ERROR": "red",
+                "CRITICAL": "red,bg_white",
+            },
+        )
+        console.setFormatter(color_formatter)
 
     dials_logger = logging.getLogger("dials")
     dials_logger.addHandler(console)
@@ -39,6 +78,7 @@ def config(verbosity=0, logfile=None):
     if logfile:
         fh = logging.FileHandler(filename=logfile, mode="w")
         fh.setLevel(loglevel)
+        fh.setFormatter(DialsLogfileFormatter())
         dials_logger.addHandler(fh)
 
     dials_logger.setLevel(loglevel)

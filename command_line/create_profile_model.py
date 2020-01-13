@@ -140,12 +140,10 @@ class Script(object):
 
     def process_reference(self, reference, params):
         """Load the reference spots."""
-        from time import time
         from dials.util import Sorry
 
         if reference is None:
             return None, None
-        st = time()
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
@@ -194,7 +192,6 @@ class Script(object):
             )
             for spot in reference:
                 spot["shoebox"].data -= spot["background.mean"]
-        logger.info(" time taken: %g" % (time() - st))
         return reference, rubbish
 
     def filter_reference_pixels(self, reference, experiments):
