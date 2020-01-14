@@ -254,6 +254,9 @@ def show_experiments(experiments, show_scan_varying=False):
     text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
+        format_class = expt.imageset.get_format_class()
+        if format_class.__name__ != "Format":
+            text.append("Format class: %s" % format_class.__name__)
         if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
         text.append(str(expt.detector))

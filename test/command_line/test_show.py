@@ -145,6 +145,7 @@ def test_dials_show_centroid_test_data(dials_data):
         "\n".join(output[4:])
         == """
 Experiment 0:
+Format class: FormatCBFMiniPilatus
 Detector:
 Panel:
   name: Panel
@@ -201,9 +202,10 @@ def test_dials_show_multi_panel_i23(dials_regression):
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
 
     assert (
-        "\n".join(output[4:25])
+        "\n".join(output[4:26])
         == """
 Experiment 0:
+Format class: FormatCBFMiniPilatusDLS12M
 Detector:
 Panel:
   name: row-00

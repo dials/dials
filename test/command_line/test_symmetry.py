@@ -298,7 +298,12 @@ def test_change_of_basis_ops_to_minimum_cell_1037(mocker):
     cb_ops = change_of_basis_ops_to_minimum_cell(
         expts, max_delta=5, relative_length_tolerance=0.05, absolute_angle_tolerance=2
     )
-    assert symmetry.unit_cells_are_similar_to.return_value is True
+    import pytest_mock
+
+    if pytest_mock.version.startswith("1."):
+        assert symmetry.unit_cells_are_similar_to.return_value is True
+    else:
+        assert symmetry.unit_cells_are_similar_to.spy_return is True
     cb_ops_as_xyz = [cb_op.as_xyz() for cb_op in cb_ops]
     assert len(set(cb_ops_as_xyz)) == 1
     # Actual cb_ops are machine dependent (sigh)

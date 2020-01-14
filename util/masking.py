@@ -22,7 +22,7 @@ phil_scope = parse(
     .type = int
     .help = "The border around the edge of the image."
 
-  use_trusted_range = True
+  use_trusted_range = False
     .type = bool
     .help = "Use the trusted range to mask bad pixels."
 

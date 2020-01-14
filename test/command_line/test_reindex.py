@@ -4,21 +4,13 @@ import os
 
 import procrunner
 import pytest
-import six
 import scitbx.matrix
 from cctbx import sgtbx
 from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.serialize import load
 from dxtbx.model import Crystal, Experiment, ExperimentList
 from dials.command_line.reindex import reindex_experiments
-from six.moves import cPickle as pickle
-
-
-def pickle_loads(data):
-    if six.PY3:
-        return pickle.loads(data, encoding="bytes")
-    else:
-        return pickle.loads(data)
+from dials.array_family import flex
 
 
 def test_reindex(dials_regression, tmpdir):
@@ -35,9 +27,11 @@ def test_reindex(dials_regression, tmpdir):
     result = procrunner.run(commands, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
-    old_reflections = pickle_loads(open(pickle_path, "rb").read())
+    old_reflections = flex.reflection_table.from_file(pickle_path)
     assert tmpdir.join("reindexed.refl").check()
-    new_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
+    new_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert tmpdir.join("reindexed.expt").check()
     new_experiments = load.experiment_list(
@@ -121,8 +115,10 @@ def test_reindex_multi_sequence(dials_regression, tmpdir):
     assert tmpdir.join("reindexed.refl").check()
     assert tmpdir.join("reindexed.expt").check()
 
-    old_reflections = pickle_loads(open(pickle_path, "rb").read())
-    new_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
+    old_reflections = flex.reflection_table.from_file(pickle_path)
+    new_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
     assert len(old_reflections) == len(new_reflections)
     new_experiments = load.experiment_list(
         tmpdir.join("reindexed.expt").strpath, check_format=False
@@ -195,9 +191,13 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
-    P4_reindexed = pickle_loads(tmpdir.join("P4_reindexed.refl").read("rb"))
-    P4_reflections = pickle_loads(tmpdir.join("P4.refl").read("rb"))
+    reindexed_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
+    P4_reindexed = flex.reflection_table.from_file(
+        tmpdir.join("P4_reindexed.refl").strpath
+    )
+    P4_reflections = flex.reflection_table.from_file(tmpdir.join("P4.refl").strpath)
 
     h1, k1, l1 = reindexed_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = P4_reindexed["miller_index"].as_vec3_double().parts()

@@ -29,7 +29,7 @@ conda-forge::pip
 conda-forge::psutil
 conda-forge::pytest>=4.5,<5.0
 conda-forge::pytest-forked
-conda-forge::pytest-mock
+conda-forge::pytest-mock<2.0
 conda-forge::pytest-xdist
 conda-forge::python>=3.6,<3.7
 conda-forge::requests

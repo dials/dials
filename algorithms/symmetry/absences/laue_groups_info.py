@@ -67,14 +67,6 @@ Cmmm = {
     ],
 }
 
-Immm = {
-    "unique_axes": [ScrewAxis21c, ScrewAxis21b, ScrewAxis21a],
-    "space_groups": [
-        ("I 2 2 2", [False, False, False]),
-        ("I 21 21 21", [True, True, True]),
-    ],
-}
-
 pmmm = {
     "unique_axes": [ScrewAxis21a, ScrewAxis21b, ScrewAxis21c],
     "space_groups": [
@@ -171,12 +163,6 @@ pm3 = {
     "space_groups": [("P 2 3", [False]), ("P 21 3", [True])],
 }
 
-Im3 = {
-    "unique_axes": [ScrewAxis21a],
-    "equivalent_axes": {ScrewAxis21a: [ScrewAxis21b, ScrewAxis21c]},
-    "space_groups": [("I 2 3", [False]), ("I 21 3", [True])],
-}
-
 pm3m = {
     "unique_axes": [ScrewAxis41a, ScrewAxis42c],
     "equivalent_axes": {ScrewAxis41a: [ScrewAxis41b, ScrewAxis41c]},
@@ -206,7 +192,7 @@ laue_groups = {
     "P 1 2/m 1": p2m,
     "P m m m": pmmm,
     "C m m m": Cmmm,
-    "I m m m": Immm,
+    # "I m m m": Immm, #space groups are special pairs due to lattice centering
     "P 4/m": p4m,
     "I 4/m": I4m,
     "P 4/m m m": p4mmm,
@@ -217,8 +203,12 @@ laue_groups = {
     "P -3 1 m": p31m,
     "P -3 m 1": p3m1,
     "P m -3": pm3,
-    "I m -3": Im3,
+    # "I m -3": Im3, #space groups are special pairs due to lattice centering
     "P m -3 m": pm3m,
     "I m -3 m": Im3m,
     "F m -3 m": Fm3m,
 }
+
+# special pairs due to centering - see either
+# https://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Space_group_determination
+# International Tables for Crystallography Vol. A sec. 3.1.5

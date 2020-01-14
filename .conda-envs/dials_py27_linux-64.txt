@@ -27,7 +27,7 @@ pip
 psutil
 pytest>=4.5,<5.0
 pytest-forked
-pytest-mock
+pytest-mock<2.0
 pytest-xdist
 python>=2.7,<2.8
 requests
