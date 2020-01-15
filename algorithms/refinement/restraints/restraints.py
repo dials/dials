@@ -305,7 +305,7 @@ class MeanUnitCellTie(object):
                     # at this position
                     if sigma[i] > 0.0:
                         logger.debug(
-                            msg.format(xlucp.get_experiment_ids()[0], pname[i])
+                            msg.format(pname, xlucp.get_experiment_ids()[0])
                         )
                         sigma[i] = 0.0
 

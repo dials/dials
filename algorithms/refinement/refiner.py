@@ -527,7 +527,8 @@ class RefinerFactory(object):
             )
         ):
             return None
-        if params.scan_varying:
+
+        if params.scan_varying and not params.crystal.unit_cell.force_static:
             logger.warning("Restraints will be ignored for scan_varying=True")
             return None
 
