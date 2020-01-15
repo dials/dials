@@ -199,17 +199,12 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
     reflections = scaler.reflection_table
     suitable = scaler.suitable_refl_for_scaling_sel
     suitable_conv = reflections["prescaling_correction"].select(suitable)
-    Ipr = reflections["intensity.prf.value"].select(suitable)
-    Vpr = reflections["intensity.prf.variance"].select(suitable)
     Isum = reflections["intensity.sum.value"].select(suitable)
     Vsum = reflections["intensity.sum.variance"].select(suitable)
     if "partiality" in reflections:
         inv_p = _determine_inverse_partiality(reflections)
         inv_p = inv_p.select(suitable)
-    if max_key == 0:
-        intensity = Ipr * suitable_conv
-        variance = Vpr * suitable_conv * suitable_conv
-    elif max_key == 1:
+    if max_key == 1:
         if "partiality" in reflections:
             intensity = Isum * suitable_conv * inv_p
             variance = Vsum * (suitable_conv * inv_p) ** 2
@@ -217,16 +212,22 @@ def _calculate_suitable_combined_intensities(scaler, max_key):
             intensity = Isum * suitable_conv
             variance = Vsum * suitable_conv * suitable_conv
     else:
-        if "partiality" in reflections:
-            Int, Var = _calculate_combined_raw_intensities(
-                Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, max_key
-            )
+        Ipr = reflections["intensity.prf.value"].select(suitable)
+        Vpr = reflections["intensity.prf.variance"].select(suitable)
+        if max_key == 0:
+            intensity = Ipr * suitable_conv
+            variance = Vpr * suitable_conv * suitable_conv
         else:
-            Int, Var = _calculate_combined_raw_intensities(
-                Ipr, Isum, Vpr, Vsum, max_key
-            )
-        intensity = Int * suitable_conv
-        variance = Var * suitable_conv * suitable_conv
+            if "partiality" in reflections:
+                Int, Var = _calculate_combined_raw_intensities(
+                    Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, max_key
+                )
+            else:
+                Int, Var = _calculate_combined_raw_intensities(
+                    Ipr, Isum, Vpr, Vsum, max_key
+                )
+            intensity = Int * suitable_conv
+            variance = Var * suitable_conv * suitable_conv
     return intensity, variance
 
 
@@ -243,6 +244,12 @@ class MultiDatasetIntensityCombiner(object):
         for i, scaler in enumerate(self.active_scalers):
             if "intensity.prf.value" in scaler.reflection_table:
                 self.good_datasets.append(i)
+        if not self.good_datasets:
+            self.max_key = 1
+            logger.info(
+                "No profile intensities found, skipping profile/summation intensity combination."
+            )
+            return
         self.datasets = [
             _make_reflection_table_from_scaler(self.active_scalers[i])
             for i in self.good_datasets

@@ -290,15 +290,19 @@ class ScalingOutlierObserver(Observer):
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
+            if scaler.experiment.scan:
+                zrange = [
+                    i / scaler.experiment.scan.get_oscillation()[1]
+                    for i in scaler.experiment.scan.get_oscillation_range()
+                ]
+            else:
+                zrange = [0, 0]
             self.data[j] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),
                 "image_size": scaler.experiment.detector[0].get_image_size(),
-                "z_range": [
-                    i / scaler.experiment.scan.get_oscillation()[1]
-                    for i in scaler.experiment.scan.get_oscillation_range()
-                ],
+                "z_range": zrange,
             }
 
     def make_plots(self):
