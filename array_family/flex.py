@@ -155,6 +155,8 @@ class _(object):
                 padding=padding,
             )
             rlist["id"] = cctbx.array_family.flex.int(len(rlist), i)
+            if e.identifier:
+                rlist.experiment_identifiers()[i] = e.identifier
             result.extend(rlist)
         return result
 
@@ -1182,7 +1184,7 @@ class _(object):
             values = list(identifiers.values())
             assert len(set(values)) == len(values), (len(set(values)), len(values))
             if "id" in self:
-                index = set(self["id"])
+                index = set(self["id"]).difference({-1})
                 for i in index:
                     assert i in identifiers, (i, list(identifiers))
         if experiments is not None:

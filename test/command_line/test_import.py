@@ -44,6 +44,8 @@ def test_can_import_multiple_sequences(dials_data, tmpdir):
         tmpdir.join("experiments_multiple_sequences.expt").strpath
     )
     assert len(experiments) == 2
+    for experiment in experiments:
+        assert experiment.identifier != ""
 
 
 def test_with_mask(dials_data, tmpdir):
@@ -66,6 +68,7 @@ def test_with_mask(dials_data, tmpdir):
     experiments = load.experiment_list(
         tmpdir.join("experiments_with_mask.expt").strpath
     )
+    assert experiments[0].identifier != ""
     assert (
         experiments[0].imageset.external_lookup.mask.filename == mask_filename.strpath
     )
@@ -119,6 +122,7 @@ def test_override_geometry(dials_data, tmpdir):
     assert tmpdir.join("override_geometry.expt").check(file=1)
 
     experiments = load.experiment_list(tmpdir.join("override_geometry.expt").strpath)
+    assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
 
     beam = imgset.get_beam()
@@ -164,6 +168,7 @@ def test_import_beam_centre(dials_data, tmpdir):
 
     experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt").strpath)
     imgset = experiments[0].imageset
+    assert experiments[0].identifier != ""
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
@@ -206,6 +211,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
 
     experiments = load.experiment_list("slow_fast_beam_centre.expt")
     imgset = experiments[0].imageset
+    assert experiments[0].identifier != ""
     # beam centre on 18th panel
     s0 = imgset.get_beam().get_s0()
     beam_centre = imgset.get_detector()[18].get_beam_centre_px(s0)
@@ -248,6 +254,9 @@ def test_from_image_files(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_from_template(dials_data, tmpdir):
@@ -265,6 +274,9 @@ def test_from_template(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_extrapolate_scan(dials_data, tmpdir):
@@ -283,6 +295,9 @@ def test_extrapolate_scan(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("import_extrapolate.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_import_still_sequence_as_experiments(dials_data, tmpdir):
@@ -299,6 +314,8 @@ def test_import_still_sequence_as_experiments(dials_data, tmpdir):
 
     imported_exp = load.experiment_list(tmpdir.join(out).strpath)
     assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
 
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 1
@@ -323,6 +340,8 @@ def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
 
     imported_exp = load.experiment_list(tmpdir.join(out).strpath)
     assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
 
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 1
@@ -346,6 +365,8 @@ def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
 
     imported_exp = load.experiment_list(tmpdir.join(out).strpath)
     assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
 
     iset = set(exp.imageset for exp in imported_exp)
     assert len(iset) == 2
@@ -368,6 +389,8 @@ def test_with_convert_sequences_to_stills(dials_data, tmpdir):
     experiments = load.experiment_list(
         tmpdir.join("experiments_as_stills.expt").strpath
     )
+    for exp in experiments:
+        assert exp.identifier != ""
 
     # should be no goniometers
     assert experiments.scans() == [None]

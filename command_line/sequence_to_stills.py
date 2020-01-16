@@ -22,7 +22,7 @@ from dials.algorithms.refinement.prediction.managed_predictors import (
 from dials.array_family import flex
 from dials.model.data import Shoebox
 from dials.util import show_mail_on_error
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.sequence_to_stills")
 
@@ -217,8 +217,9 @@ def run(args=None, phil=phil_scope):
         parser.print_help()
         return
 
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     (new_experiments, new_reflections) = sequence_to_stills(
         experiments, reflections, params
