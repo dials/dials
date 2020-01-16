@@ -2161,8 +2161,8 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
-        with open(self.settings.find_spots_phil, "wb") as f:
-            print("Saving parameters to %s" % self.settings.find_spots_phil)
+        print("Saving parameters to %s" % self.settings.find_spots_phil)
+        with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
                 f
             )
