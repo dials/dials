@@ -112,6 +112,11 @@ include scope dials.algorithms.spot_prediction.reflection_predictor.phil_scope
 load_models = True
   .type = bool
   .help = "Whether to load every model, which matters for large image files"
+
+zmq_endpoint = None
+  .type = str
+  .help = "The endpoint to bind a zeromq PULL socket to, for recieving commands"
+  .expert_level = 3
 """,
     process_includes=True,
 )
