@@ -404,29 +404,12 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
             tf.close()
 
     try:
-        import ssl
         from ssl import SSLError
     except ImportError:
-        ssl = None
         SSLError = None
 
     # Open connection to remote server
     try:
-        if os.name == "nt" and "lbl.gov" in url:
-            # Downloading from http://cci.lbl.gov/cctbx_dependencies caused
-            # SSL: CERTIFICATE_VERIFY_FAILED error on Windows only as of today (why?).
-            # Quick and dirty hack to disable ssl certificate verification.
-            try:
-                _create_unverified_https_context = ssl._create_unverified_context
-            except AttributeError:
-                # Legacy Python that doesn't verify HTTPS certificates by default
-                pass
-            except NameError:
-                # ssl module was not loaded
-                pass
-            else:
-                # Handle target environment that doesn't support HTTPS verification
-                ssl._create_default_https_context = _create_unverified_https_context
         url_request = Request(url)
         if etag:
             url_request.add_header("If-None-Match", etag)
