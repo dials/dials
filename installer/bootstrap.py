@@ -1146,20 +1146,7 @@ be passed separately with quotes to avoid confusion (e.g
         default=[],
     )
 
-    parser.add_argument(
-        "--build-dir",
-        dest="build_dir",
-        help="directory where the build will be. Should be at the same level as modules! default is 'build'",
-        default="build",
-        type=str,
-    )
-
     options = parser.parse_args()
-
-    global _BUILD_DIR
-    _BUILD_DIR = (
-        options.build_dir
-    )  # TODO: this is probably ok way to go with globalvar, but check and see
 
     # Check actions
     allowed_actions = {"update", "base", "build", "tests"}
