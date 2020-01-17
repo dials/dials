@@ -1162,12 +1162,11 @@ be passed separately with quotes to avoid confusion (e.g
     )  # TODO: this is probably ok way to go with globalvar, but check and see
 
     # Check actions
-    allowed_actions = ["update", "base", "build", "tests"]
+    allowed_actions = {"update", "base", "build", "tests"}
     actions = set(options.action or ["update", "base", "build"])
-    unknown_actions = actions - set(allowed_actions)
+    unknown_actions = actions - allowed_actions
     if unknown_actions:
         sys.exit("Unknown action: %s" % ", ".join(unknown_actions))
-    actions = [a for a in allowed_actions if a in actions]
     print("Performing actions:", " ".join(actions))
     DIALSBuilder(actions=actions, options=options).run()
     print("\nBootstrap success: %s" % ", ".join(actions))
