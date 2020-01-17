@@ -789,23 +789,11 @@ MODULES = {
         "https://github.com/cctbx/boost.git",
         "https://github.com/cctbx/boost/archive/master.zip",
     ],
-    "cbflib": [
-        "git",
-        "git@github.com:dials/cbflib.git",
-        "https://github.com/dials/cbflib.git",
-        "https://github.com/dials/cbflib/archive/master.zip",
-    ],
     "annlib_adaptbx": [
         "git",
         "git@github.com:cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
-    ],
-    "dials": [
-        "git",
-        "git@github.com:dials/dials.git",
-        "https://github.com/dials/dials.git",
-        "https://github.com/dials/dials/archive/master.zip",
     ],
     "dxtbx": [
         "git",
@@ -830,9 +818,11 @@ MODULES = {
 }
 for module in (
     "annlib",
+    "cbflib",
     "ccp4io",
     "ccp4io_adaptbx",
     "clipper",
+    "dials",
     "eigen",
     "gui_resources",
     "tntbx",
