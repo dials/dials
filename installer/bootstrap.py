@@ -891,6 +891,7 @@ class DIALSBuilder(object):
 
         if "build" in actions:
             self.add_refresh()
+            self.add_precommit()
 
     def isPlatformMacOSX(self):
         return sys.platform.startswith("darwin")
@@ -1012,6 +1013,14 @@ class DIALSBuilder(object):
 
     def add_refresh(self):
         self.add_command("libtbx.refresh", description="libtbx.refresh", workdir=["."])
+
+    def add_precommit(self):
+        self.add_command(
+            "libtbx.precommit",
+            description="libtbx.precommit install",
+            workdir=["."],
+            args=["install"],
+        )
 
     def add_base(self):
         self.steps.append(install_conda)
