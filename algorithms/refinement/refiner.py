@@ -208,9 +208,9 @@ def _trim_scans_to_observations(experiments, reflections):
             im_stop = min(obs_stop, stop)
 
             logger.warning(
-                "The reflections do not fill the scan range. The scan will be trimmed "
-                "to images {{{0},{1}}} to match the range of observed data".format(
-                    im_start, im_stop
+                "The reflections for experiment {0} do not fill the scan range. The scan will be trimmed "
+                "to images {{{1},{2}}} to match the range of observed data".format(
+                    iexp, im_start, im_stop
                 )
             )
 
