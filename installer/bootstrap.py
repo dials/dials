@@ -776,20 +776,6 @@ def remove_files_by_extension(extension, workdir):
 
 ##### Modules #####
 MODULES = {
-    "ccp4io": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/ccp4io.gz",
-            "https://drive.google.com/uc?id=1EF6AqowSrVnse7pRtRmIsvhS6Q0dsSLT&export=download",
-        ],
-    ],
-    "annlib": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/annlib.gz",
-            "https://drive.google.com/uc?id=1YD_KDXrfhJ5ryT97j4yxmbAPoecGLjg0&export=download",
-        ],
-    ],
     "scons": ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
     "cctbx_project": [
         "git",
@@ -809,46 +795,11 @@ MODULES = {
         "https://github.com/dials/cbflib.git",
         "https://github.com/dials/cbflib/archive/master.zip",
     ],
-    "ccp4io_adaptbx": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/ccp4io_adaptbx.gz",
-            "https://drive.google.com/uc?id=1X5kRE90KkV2yTEyF9zb-PHOjjRXjzYvx&export=download",
-        ],
-    ],
     "annlib_adaptbx": [
         "git",
         "git@github.com:cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
-    ],
-    "tntbx": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/tntbx.gz",
-            "https://drive.google.com/uc?id=1bDE_rF6iL0SeyplHSTNsfJyI1G1h7ZZv&export=download",
-        ],
-    ],
-    "clipper": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/clipper.gz",
-            "https://drive.google.com/uc?id=1xWAj59zoyVn26EoIuBrw7KLNRyGjS5wC&export=download",
-        ],
-    ],
-    "gui_resources": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/gui_resources.gz",
-            "https://drive.google.com/uc?id=1TTibOePamkUiIvwDJF-OMmdgX8jdgNUS&export=download",
-        ],
-    ],
-    "eigen": [
-        "curl",
-        [
-            "http://cci.lbl.gov/repositories/eigen.gz",
-            "https://drive.google.com/uc?id=138kErrF35WbnRRARqUczWaroao2w8p1A&export=download",
-        ],
     ],
     "dials": [
         "git",
@@ -877,6 +828,22 @@ MODULES = {
         "https://github.com/xia2/xia2/archive/master.zip",
     ],
 }
+for module in (
+    "annlib",
+    "ccp4io",
+    "ccp4io_adaptbx",
+    "clipper",
+    "eigen",
+    "gui_resources",
+    "tntbx",
+):
+    MODULES[module] = [
+        "git",
+        "git@github.com:dials/%s.git" % module,
+        "https://github.com/dials/%s.git" % module,
+        "https://github.com/dials/%s/archive/master.zip" % module,
+    ]
+
 
 ###################################
 ##### Base Configuration      #####
