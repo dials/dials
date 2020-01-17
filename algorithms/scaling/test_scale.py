@@ -308,13 +308,32 @@ def vmxi_protk_reindexed(dials_data, tmpdir):
     ("options", "expected", "tolerances"),
     [
         (["error_model=None"], None, None),
-        (["error_model=basic"], (0.73711, 0.04720), (0.05, 0.005)),
+        (
+            ["error_model=basic", "basic.minimisation=individual"],
+            (0.73711, 0.04720),
+            (0.05, 0.005),
+        ),
         (["error_model.basic.a=0.73711"], (0.73711, 0.04720), (1e-6, 0.005)),
         (["error_model.basic.b=0.04720"], (0.73711, 0.04720), (0.05, 1e-6)),
         (
             ["error_model.basic.b=0.02", "error_model.basic.a=1.5"],
             (1.50, 0.02),
             (1e-6, 1e-6),
+        ),
+        (
+            ["error_model=basic", "basic.minimisation=regression"],
+            (0.995, 0.051),
+            (0.05, 0.005),
+        ),
+        (
+            ["error_model.basic.a=0.99", "basic.minimisation=regression"],
+            (0.99, 0.051),
+            (1e-6, 0.005),
+        ),
+        (
+            ["error_model.basic.b=0.051", "basic.minimisation=regression"],
+            (0.99, 0.051),
+            (0.05, 1e-6),
         ),
     ],
 )
@@ -333,6 +352,7 @@ def test_error_model_options(
         assert "error_model_parameters" not in config
     else:
         params = expts[0].scaling_model.configdict["error_model_parameters"]
+        print(list(params))
         assert params[0] == pytest.approx(expected[0], abs=tolerances[0])
         assert params[1] == pytest.approx(expected[1], abs=tolerances[1])
 

@@ -108,6 +108,10 @@ phil_scope = iotbx.phil.parse(
           .type = float
           .help = "Used this fixed value for the error model 'b' parameter"
           .expert_level = 2
+        minimisation = *individual regression
+          .type = choice
+          .help = "The algorithm to use for basic error model minimisation"
+          .expert_level = 3
       }
       min_Ih = 25.0
         .type = float

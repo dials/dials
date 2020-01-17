@@ -326,15 +326,16 @@ class ErrorModelObserver(Observer):
     """
 
     def update(self, scaler):
-        if scaler.error_model.filtered_Ih_table:
-            table = scaler.error_model.filtered_Ih_table
-            self.data["intensity"] = table.intensities
-            sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
-            self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
-            self.data["inv_scale"] = table.inverse_scale_factors
-            self.data["sigma"] = sigmaprime * self.data["inv_scale"]
-            self.data["binning_info"] = scaler.error_model.components["b"].binning_info
-            scaler.error_model.clear_Ih_table()
+        if scaler.error_model:
+            if scaler.error_model.filtered_Ih_table:
+                table = scaler.error_model.filtered_Ih_table
+                self.data["intensity"] = table.intensities
+                sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
+                self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+                self.data["inv_scale"] = table.inverse_scale_factors
+                self.data["sigma"] = sigmaprime * self.data["inv_scale"]
+                self.data["binning_info"] = scaler.error_model.binner.binning_info
+                scaler.error_model.clear_Ih_table()
 
     def make_plots(self):
         """Generate normal probability plot data."""

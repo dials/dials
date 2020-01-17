@@ -28,11 +28,12 @@ from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
-from dials.algorithms.scaling.scaling_refiner import (
-    scaling_refinery,
-    error_model_refinery,
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.error_model.engine import error_model_refinery
+from dials.algorithms.scaling.error_model.error_model import (
+    get_error_model_class_and_scope,
+    get_error_parameters_to_refine,
 )
-from dials.algorithms.scaling.error_model.error_model import get_error_model
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
@@ -207,21 +208,37 @@ class ScalerBase(Subject):
         Ih_table = self.global_Ih_table
         Ih_table.reset_error_model()
         Ih_table.calc_Ih()
-        error_model = get_error_model(self.params.weighting.error_model.error_model)
+        model_class, scope = get_error_model_class_and_scope(
+            self.params.weighting.error_model
+        )
         try:
-            logger.info("Performing a round of error model refinement.")
-            refinery = error_model_refinery(
-                engine="SimpleLBFGS",
-                model=error_model(Ih_table.blocked_data_list[0], self.params),
-                max_iterations=100,
-            )
-            refinery.run()
-        except (RuntimeError, ValueError) as e:
-            logger.error(e, exc_info=True)
+            model = model_class(Ih_table.blocked_data_list[0], self.params)
+        except ValueError as e:  # insufficient reflections
+            logger.info(e)
         else:
-            logger.info(refinery.model)
-            logger.info(refinery.model.minimisation_summary())
-            self._update_error_model(refinery.model, update_Ih=update_Ih)
+            active_parameters = get_error_parameters_to_refine(model_class, scope)
+            if not active_parameters:
+                logger.info("All error model parameters fixed, skipping refinement")
+                model.finalise()
+                self._update_error_model(model, update_Ih=update_Ih)
+            else:
+                try:
+                    logger.info("Performing a round of error model refinement.")
+                    refinery = error_model_refinery(
+                        model=model,
+                        active_parameters=active_parameters,
+                        error_model_scope=scope,
+                        max_iterations=100,
+                    )
+                    refinery.run()
+                except (RuntimeError, ValueError) as e:
+                    # ValueError if or bad refined value.
+                    logger.error(e, exc_info=True)
+                else:
+                    refinery.print_step_table()
+                    logger.info(refinery.model)
+                    refinery.model.finalise()
+                    self._update_error_model(refinery.model, update_Ih=update_Ih)
 
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""
