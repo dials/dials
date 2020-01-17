@@ -221,6 +221,14 @@ def precommitbx_template(python):
     return "\n".join(file_content) + "\n"
 
 
+def install_precommit_into_conda(conda):
+    clean_run(
+        [conda.strpath, "install", "pre-commit", "-y", "-p", conda_base.strpath],
+        working_directory=conda_base.strpath,
+        stop_on_error="Error installing pre-commit to conda base",
+    )
+
+
 def install_precommitbx_hook(path, python):
     with path.join(".git", "hooks", "pre-commit").open("w") as fh:
         fh.write(precommitbx_template(python))
@@ -684,9 +692,8 @@ def main():
         conda_python = py.path.local(conda_values["sys.executable"]).realpath()
         print("Conda python: ", end="")
         if conda_python != python.realpath():
-            print(RED + conda_python.strpath)
+            print(YELLOW + conda_python.strpath)
             print("    different from running python:", python + NC)
-            sys.exit(1)
         print(conda_python.strpath)
         print("Conda version:", GREEN + conda_values["conda_version"] + NC)
         py_ver = "%s.%s.%s" % (
@@ -700,10 +707,17 @@ def main():
         try:
             import pre_commit.constants
         except ImportError:
-            print("Precommit: " + RED + "<not installed>" + NC)
-            print("Load your conda environment and run 'conda install pre-commit'")
-            sys.exit("libtbx.precommit unavailable")
-        print("Precommit: " + GREEN + pre_commit.constants.VERSION + NC)
+            if "install" in sys.argv:
+                print("Installing precommit...")
+                install_precommit_into_conda(conda)
+                import pre_commit.constants
+
+                print("Precommit: " + GREEN + pre_commit.constants.VERSION + NC)
+            else:
+                print("Precommit: " + RED + "<not installed>" + NC)
+                changes_required = True
+        else:
+            print("Precommit: " + GREEN + pre_commit.constants.VERSION + NC)
     else:
         python = install_python(check_only=True)
         if python:
