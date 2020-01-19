@@ -66,9 +66,7 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     assert params.refinement.reflections.outlier.algorithm in (
         None,
         "null",
-    ), (
-        "Cannot index, set refinement.reflections.outlier.algorithm=null"
-    )  # we do our own outlier rejection
+    ), "Cannot index, set refinement.reflections.outlier.algorithm=null"  # we do our own outlier rejection
 
     from dials.algorithms.refinement.refiner import RefinerFactory
 
