@@ -456,7 +456,7 @@ class BasicErrorModel(object):
                     "",
                     "Error model details:",
                     "  Type: basic",
-                    "  Current parameters: a = %.5f, b = %.5f" % (a, b),
+                    "  Parameters: a = %.5f, b = %.5f" % (a, b),
                     "  estimated I/sigma asymptotic limit: %s" % ISa,
                     "",
                 )
@@ -466,7 +466,7 @@ class BasicErrorModel(object):
                 "",
                 "Error model details:",
                 "  Type: basic",
-                "  Current parameters: a = %.5f, b = %.5f" % (a, b),
+                "  Parameters: a = %.5f, b = %.5f" % (a, b),
                 "  Error model formula: "
                 + u"\u03C3"
                 + "'"

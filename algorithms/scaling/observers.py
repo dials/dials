@@ -201,6 +201,7 @@ class ScalingHTMLGenerator(Observer):
                 page_title="DIALS scaling report",
                 scaling_model_graphs=self.data["scaling_model"],
                 scaling_tables=self.data["scaling_tables"],
+                error_model_summary=self.data["error_model_summary"],
                 resolution_plots=self.data["resolution_plots"],
                 scaling_outlier_graphs=self.data["outlier_plots"],
                 error_model_plots=self.data["error_model_plots"],
@@ -346,6 +347,7 @@ class ErrorModelObserver(Observer):
                 self.data["regression_y"] = y
                 self.data["model_a"] = scaler.error_model.parameters[0]
                 self.data["model_b"] = scaler.error_model.parameters[1]
+            self.data["summary"] = str(scaler.error_model)
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -358,6 +360,7 @@ class ErrorModelObserver(Observer):
             d["error_model_plots"].update(error_model_variance_plot(self.data))
             if "regression_x" in self.data:
                 d["error_model_plots"].update(error_regression_plot(self.data))
+        d["error_model_summary"] = self.data["summary"]
         return d
 
 
