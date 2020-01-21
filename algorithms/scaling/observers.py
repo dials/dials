@@ -193,6 +193,7 @@ class ScalingHTMLGenerator(Observer):
                 page_title="DIALS scaling report",
                 scaling_model_graphs=self.data["scaling_model"],
                 scaling_tables=self.data["scaling_tables"],
+                error_model_summary=self.data["error_model_summary"],
                 resolution_plots=self.data["resolution_plots"],
                 scaling_outlier_graphs=self.data["outlier_plots"],
                 error_model_plots=self.data["error_model_plots"],
@@ -329,6 +330,7 @@ class ErrorModelObserver(Observer):
             self.data["sigma"] = sigmaprime * self.data["inv_scale"]
             self.data["binning_info"] = scaler.error_model.components["b"].binning_info
             scaler.error_model.clear_Ih_table()
+        self.data["summary"] = str(scaler.error_model)
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -339,6 +341,7 @@ class ErrorModelObserver(Observer):
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
             d["error_model_plots"].update(error_model_variance_plot(self.data))
+        d["error_model_summary"] = self.data["summary"]
         return d
 
 
