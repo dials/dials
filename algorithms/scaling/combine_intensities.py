@@ -195,6 +195,28 @@ class SingleDatasetIntensityCombiner(object):
         return rows, results
 
 
+def combine_intensities(reflection_table, Imid):
+    """Take unscaled data, and apply intensity combination with a given Imid."""
+    assert "intensity.prf.value" in reflection_table
+    assert "intensity.sum.value" in reflection_table
+    assert "prescaling_correction" in reflection_table
+    conv = reflection_table["prescaling_correction"]
+    Ipr = reflection_table["intensity.prf.value"]
+    Vpr = reflection_table["intensity.prf.variance"]
+    Isum = reflection_table["intensity.sum.value"]
+    Vsum = reflection_table["intensity.sum.variance"]
+    if "partiality" in reflection_table:
+        inv_p = _determine_inverse_partiality(reflection_table)
+        Int, Var = _calculate_combined_raw_intensities(
+            Ipr, Isum * inv_p, Vpr, Vsum * inv_p * inv_p, Imid
+        )
+    else:
+        Int, Var = _calculate_combined_raw_intensities(Ipr, Isum, Vpr, Vsum, Imid)
+    intensity = Int * conv
+    variance = Var * conv * conv
+    return intensity, variance
+
+
 def _calculate_suitable_combined_intensities(scaler, max_key):
     reflections = scaler.reflection_table
     suitable = scaler.suitable_refl_for_scaling_sel
