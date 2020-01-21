@@ -8,10 +8,43 @@ from collections import OrderedDict
 from math import log, exp
 from dials.util import tabulate
 from dials.array_family import flex
+from iotbx import phil
 from scitbx import sparse
 from scitbx.math.distributions import normal_distribution
 
 logger = logging.getLogger("dials")
+
+phil_scope = phil.parse(
+    """
+    error_model = *basic None
+        .type = choice
+        .help = "The error model to use."
+        .expert_level = 1
+    basic {
+        a = None
+          .type = float
+          .help = "Used this fixed value for the error model 'a' parameter"
+          .expert_level = 2
+        b = None
+          .type = float
+          .help = "Used this fixed value for the error model 'b' parameter"
+          .expert_level = 2
+        minimisation = *individual regression
+          .type = choice
+          .help = "The algorithm to use for basic error model minimisation"
+          .expert_level = 3
+        min_Ih = 25.0
+            .type = float
+            .help = "Reflections with expected intensity above this value are to."
+                    "be used in error model minimisation."
+            .expert_level = 2
+        n_bins = 10
+            .type = int
+            .help = "The number of intensity bins to use for the error model optimisation."
+            .expert_level = 2
+    }
+    """
+)
 
 
 def get_error_model_class_and_scope(error_model_params):
@@ -320,22 +353,23 @@ class BasicErrorModel(object):
 
     id_ = "basic"
 
-    def __init__(self, Ih_table, params):
+    def __init__(self, Ih_table, basic_params, min_partiality=0.4):
 
         """Raises: ValueError if insufficient reflections left after filtering."""
 
         self.free_components = []
         self.sortedy = None
         self.sortedx = None
-        self.filtered_Ih_table = self.filter_unsuitable_reflections(Ih_table, params)
-        error_params = params.weighting.error_model
-        a = error_params.basic.a if error_params.basic.a else 1.0
-        b = error_params.basic.b if error_params.basic.b else 0.02
+        self.filtered_Ih_table = self.filter_unsuitable_reflections(
+            Ih_table, basic_params, min_partiality
+        )
+        a = basic_params.a if basic_params.a else 1.0
+        b = basic_params.b if basic_params.b else 0.02
         self.components = {"a": AComponent(a), "b": BComponent(b)}
 
         # always want binning info so that can calc for output.
         self.binner = ErrorModelBinner(
-            self.filtered_Ih_table, self.min_reflections_required, error_params.n_bins
+            self.filtered_Ih_table, self.min_reflections_required, basic_params.n_bins
         )
 
         # need to calculate sorted deltahl for norm dev plotting (and used by
@@ -365,13 +399,13 @@ class BasicErrorModel(object):
         return self.filtered_Ih_table.size
 
     @classmethod
-    def filter_unsuitable_reflections(cls, Ih_table, params):
+    def filter_unsuitable_reflections(cls, Ih_table, error_params, min_partiality):
         """Filter suitable reflections for minimisation."""
         return filter_unsuitable_reflections(
             Ih_table,
             cutoff=12.0,
-            min_Ih=params.weighting.error_model.min_Ih,
-            min_partiality=params.reflection_selection.min_partiality,
+            min_Ih=error_params.min_Ih,
+            min_partiality=min_partiality,
             min_reflections_required=cls.min_reflections_required,
         )
 

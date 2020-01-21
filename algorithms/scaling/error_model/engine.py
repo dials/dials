@@ -1,5 +1,12 @@
+"""
+Refinement engine and functions for error model refinement.
+"""
 import logging
 
+from dials.algorithms.scaling.error_model.error_model import (
+    get_error_model_class_and_scope,
+    get_error_parameters_to_refine,
+)
 from dials.algorithms.refinement.engine import SimpleLBFGS
 from dials.algorithms.scaling.scaling_refiner import print_step_table
 from dials.algorithms.scaling.error_model.error_model_target import (
@@ -8,13 +15,41 @@ from dials.algorithms.scaling.error_model.error_model_target import (
     ErrorModelTargetRegression,
 )
 from dials.algorithms.scaling.error_model.error_model import (
-    # BasicErrorModelParameterisation,
     ErrorModelRegressionAPM,
     ErrorModelA_APM,
     ErrorModelB_APM,
 )
 
 logger = logging.getLogger("dials")
+
+
+def run_error_model_refinement(error_model_phil_scope, Ih_table):
+    """
+    Refine an error model for the input data, returning the model.
+
+    Raises:
+        ValueError: if insufficient reflections or bad refined value.
+        RuntimeError: can be raised in LBFGS minimiser.
+    """
+    assert Ih_table.n_work_blocks == 1
+    model_class, scope = get_error_model_class_and_scope(error_model_phil_scope)
+    model = model_class(Ih_table.blocked_data_list[0], scope)
+    active_parameters = get_error_parameters_to_refine(model_class, scope)
+    if not active_parameters:
+        logger.info("All error model parameters fixed, skipping refinement")
+    else:
+        logger.info("Performing a round of error model refinement.")
+        refinery = error_model_refinery(
+            model=model,
+            active_parameters=active_parameters,
+            error_model_scope=scope,
+            max_iterations=100,
+        )
+        refinery.run()
+        refinery.print_step_table()
+        logger.info(model)
+    model.finalise()
+    return model
 
 
 def error_model_refinery(model, active_parameters, error_model_scope, max_iterations):

@@ -95,33 +95,7 @@ phil_scope = iotbx.phil.parse(
               engines (LBFGS)."
       .expert_level = 2
     error_model {
-      error_model = *basic None
-        .type = choice
-        .help = "The error model to use."
-        .expert_level = 1
-      basic {
-        a = None
-          .type = float
-          .help = "Used this fixed value for the error model 'a' parameter"
-          .expert_level = 2
-        b = None
-          .type = float
-          .help = "Used this fixed value for the error model 'b' parameter"
-          .expert_level = 2
-        minimisation = *individual regression
-          .type = choice
-          .help = "The algorithm to use for basic error model minimisation"
-          .expert_level = 3
-      }
-      min_Ih = 25.0
-        .type = float
-        .help = "Reflections with expected intensity above this value are to."
-                "be used in error model minimisation."
-        .expert_level = 2
-      n_bins = 10
-        .type = int
-        .help = "The number of intensity bins to use for the error model optimisation."
-        .expert_level = 2
+      include scope dials.algorithms.scaling.error_model.error_model.phil_scope
     }
   }
   cut_data {
