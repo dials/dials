@@ -6,6 +6,21 @@ from __future__ import absolute_import, division, print_function
 from dials.array_family import flex
 
 
+def calculate_regression_x_y(Ih_table):
+    """Calculate regression data points."""
+    n = Ih_table.group_multiplicities() - 1.0
+    group_variances = (
+        (Ih_table.intensities - (Ih_table.inverse_scale_factors * Ih_table.Ih_values))
+        ** 2
+        * Ih_table.h_index_matrix
+    ) / n
+    sigmasq_obs = group_variances * Ih_table.h_expand_matrix
+    isq = Ih_table.intensities ** 2
+    y = sigmasq_obs / isq
+    x = Ih_table.variances / isq
+    return x, y
+
+
 class ErrorModelTarget(object):
 
     """Error model target for finding slope of norm distribution.
@@ -56,18 +71,8 @@ class ErrorModelTargetRegression(ErrorModelTarget):
     def __init__(self, error_model):
         super(ErrorModelTargetRegression, self).__init__(error_model)
         # calculate variances needed for minimisation.
-        data = self.error_model.filtered_Ih_table
-        n = data.group_multiplicities() - 1.0
-        group_variances = (
-            (data.intensities - (data.inverse_scale_factors * data.Ih_values)) ** 2
-            * data.h_index_matrix
-        ) / n
-        sigmasq_obs = group_variances * data.h_expand_matrix
-        isq = data.intensities ** 2
-        y = sigmasq_obs / isq
-        x = data.variances / isq
-        self.n_refl = y.size()
-        self.x, self.y = x, y
+        self.x, self.y = calculate_regression_x_y(self.error_model.filtered_Ih_table)
+        self.n_refl = self.y.size()
 
     def calculate_residuals(self, apm):
         """Return the residual vector"""

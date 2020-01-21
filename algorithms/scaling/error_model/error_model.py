@@ -445,7 +445,6 @@ class BasicErrorModel(object):
     def clear_Ih_table(self):
         """Delete the Ih_table, to free memory."""
         del self.binner.Ih_table
-        del self.filtered_Ih_table
 
     def __str__(self):
         a = abs(self.parameters[0])

@@ -28,6 +28,10 @@ from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
 from dials.algorithms.scaling.plots import (
     normal_probability_plot,
     error_model_variance_plot,
+    error_regression_plot,
+)
+from dials.algorithms.scaling.error_model.error_model_target import (
+    calculate_regression_x_y,
 )
 from dials.report.plots import i_over_sig_i_vs_i_plot
 from dials.algorithms.scaling.combine_intensities import combine_intensities
@@ -102,10 +106,10 @@ def refine_error_model(params, experiments, reflection_tables):
         return model
 
 
-def make_output(model, output):
+def make_output(model, params):
     """Get relevant data from the model and make html report."""
 
-    if not (output.html or output.json):
+    if not (params.output.html or params.output.json):
         return
 
     data = {}
@@ -123,8 +127,16 @@ def make_output(model, output):
     )
     d["error_model_plots"].update(error_model_variance_plot(data))
 
-    if output.html:
-        logger.info("Writing html report to: %s", output.html)
+    if params.basic.minimisation == "regression":
+        x, y = calculate_regression_x_y(model.filtered_Ih_table)
+        data["regression_x"] = x
+        data["regression_y"] = y
+        data["model_a"] = model.parameters[0]
+        data["model_b"] = model.parameters[1]
+        d["error_model_plots"].update(error_regression_plot(data))
+
+    if params.output.html:
+        logger.info("Writing html report to: %s", params.output.html)
         loader = ChoiceLoader(
             [
                 PackageLoader("dials", "templates"),
@@ -137,12 +149,12 @@ def make_output(model, output):
             page_title="DIALS error model refinement report",
             error_model_plots=d["error_model_plots"],
         )
-        with open(output.html, "wb") as f:
+        with open(params.output.html, "wb") as f:
             f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
-    if output.json:
-        logger.info("Writing html report data to: %s", output.json)
-        with open(output.json, "w") as outfile:
+    if params.output.json:
+        logger.info("Writing html report data to: %s", params.output.json)
+        with open(params.output.json, "w") as outfile:
             json.dump(d, outfile)
 
 
@@ -178,7 +190,7 @@ def run(args=None, phil=phil_scope):  # type: (List[str], phil.scope) -> None
     model = refine_error_model(params, experiments, reflections)
 
     if model:
-        make_output(model, params.output)
+        make_output(model, params)
     logger.info("Finished")
 
 

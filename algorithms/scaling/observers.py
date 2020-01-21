@@ -15,6 +15,7 @@ from dials.algorithms.scaling.plots import (
     plot_outliers,
     normal_probability_plot,
     error_model_variance_plot,
+    error_regression_plot,
 )
 from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
@@ -24,6 +25,9 @@ from dials.report.analysis import (
 from dials.algorithms.scaling.error_model.error_model import (
     calc_sigmaprime,
     calc_deltahl,
+)
+from dials.algorithms.scaling.error_model.error_model_target import (
+    calculate_regression_x_y,
 )
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
@@ -336,6 +340,12 @@ class ErrorModelObserver(Observer):
                 self.data["sigma"] = sigmaprime * self.data["inv_scale"]
                 self.data["binning_info"] = scaler.error_model.binner.binning_info
                 scaler.error_model.clear_Ih_table()
+            if scaler.params.weighting.error_model.basic.minimisation == "regression":
+                x, y = calculate_regression_x_y(scaler.error_model.filtered_Ih_table)
+                self.data["regression_x"] = x
+                self.data["regression_y"] = y
+                self.data["model_a"] = scaler.error_model.parameters[0]
+                self.data["model_b"] = scaler.error_model.parameters[1]
 
     def make_plots(self):
         """Generate normal probability plot data."""
@@ -346,6 +356,8 @@ class ErrorModelObserver(Observer):
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
             d["error_model_plots"].update(error_model_variance_plot(self.data))
+            if "regression_x" in self.data:
+                d["error_model_plots"].update(error_regression_plot(self.data))
         return d
 
 
