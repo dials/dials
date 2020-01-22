@@ -320,7 +320,7 @@ ${HOME}/.conda/environments.txt.
             )
 
 
-_BUILD_DIR = "build"  # set by arg parser further on down
+_BUILD_DIR = "build"
 
 
 def tar_extract(workdir, archive):
@@ -754,33 +754,28 @@ def remove_files_by_extension(extension, workdir):
 
 ##### Modules #####
 MODULES = {
-    "scons": ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
+    "scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
     "cctbx_project": [
-        "git",
         "git@github.com:cctbx/cctbx_project.git",
         "https://github.com/cctbx/cctbx_project.git",
         "https://github.com/cctbx/cctbx_project/archive/master.zip",
     ],
     "boost": [
-        "git",
         "git@github.com:cctbx/boost.git",
         "https://github.com/cctbx/boost.git",
         "https://github.com/cctbx/boost/archive/master.zip",
     ],
     "annlib_adaptbx": [
-        "git",
         "git@github.com:cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx.git",
         "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
     ],
     "dxtbx": [
-        "git",
         "git@github.com:cctbx/dxtbx.git",
         "https://github.com/cctbx/dxtbx.git",
         "https://github.com/cctbx/dxtbx/archive/master.zip",
     ],
     "xia2": [
-        "git",
         "git@github.com:xia2/xia2.git",
         "https://github.com/xia2/xia2.git",
         "https://github.com/xia2/xia2/archive/master.zip",
@@ -798,7 +793,6 @@ for module in (
     "tntbx",
 ):
     MODULES[module] = [
-        "git",
         "git@github.com:dials/%s.git" % module,
         "https://github.com/dials/%s.git" % module,
         "https://github.com/dials/%s/archive/master.zip" % module,
@@ -876,16 +870,10 @@ class DIALSBuilder(object):
             i()
 
     def add_module(self, module):
-        action = MODULES[module]
-        method, parameters = action[0], action[1:]
+        parameters = MODULES[module]
         if len(parameters) == 1:
             parameters = parameters[0]
-        if method == "curl":
-            self._add_curl(module, parameters)
-        elif method == "git":
-            self._add_git(module, parameters)
-        else:
-            raise Exception("Unknown access method: %s %s" % (method, str(parameters)))
+        self._add_git(module, parameters)
 
     def _add_download(self, url, to_file):
         if not isinstance(url, list):
@@ -906,23 +894,6 @@ class DIALSBuilder(object):
             raise RuntimeError("Could not download " + to_file)
 
         self.steps.append(_download)
-
-    def _add_curl(self, module, url):
-        if isinstance(url, list):
-            filename = urlparse(url[0])[2].split("/")[-1]
-        else:
-            filename = urlparse(url)[2].split("/")[-1]
-        # Google Drive URL does not contain the module name
-        if filename == "uc":
-            filename = module + ".gz"
-        self._add_download(url, os.path.join("modules", filename))
-
-        def _indirection():
-            description = "extracting files from %s" % filename
-            print("===== Running in modules:", description)
-            tar_extract("modules", filename)
-
-        self.steps.append(_indirection)
 
     def _add_git(self, module, parameters, destination=None):
         reference_repository_path = self.git_reference
