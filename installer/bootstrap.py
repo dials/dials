@@ -841,7 +841,7 @@ class DIALSBuilder(object):
 
         # Build base packages
         if "base" in actions:
-            self.add_base()
+            install_conda()
 
         # Configure, make, get revision numbers
         if "build" in actions:
@@ -978,9 +978,6 @@ class DIALSBuilder(object):
             workdir=["."],
             args=["install"],
         )
-
-    def add_base(self):
-        self.steps.append(install_conda)
 
     def add_configure(self):
         if os.name == "nt":
