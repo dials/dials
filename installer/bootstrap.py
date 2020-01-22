@@ -636,37 +636,62 @@ def git(module, parameters, destination=None, reference=None):
     destpath, destdir = os.path.split(destination)
 
     if os.path.exists(destination):
-        if git_available and os.path.exists(os.path.join(destination, ".git")):
-            if (
-                not open(os.path.join(destination, ".git", "HEAD"), "r")
-                .read()
-                .startswith("ref:")
-            ):
-                print(
-                    "WARNING: Can not update existing git repository! You are not on a branch."
-                )
-                print(
-                    "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes"
-                )
-                return
+        if not os.path.exists(os.path.join(destination, ".git")):
+            return module, "WARNING", "Existing non-git directory -- skipping"
+        if not git_available:
+            return module, "WARNING", "can not update module, git command not found"
 
-            else:
-                # This may fail for unclean trees and merge problems. In this case manual
-                # user intervention will be required.
-                # For the record, you can clean up the tree and *discard ALL changes* with
-                #   git reset --hard origin/master
-                #   git clean -dffx
-                return run_command(
-                    command=["git", "pull", "--rebase"], workdir=destination
+        with open(os.path.join(destination, ".git", "HEAD"), "r") as fh:
+            if fh.read(4) != "ref:":
+                return (
+                    module,
+                    "WARNING",
+                    "Can not update existing git repository! You are not on a branch.\n"
+                    "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
-        print(
-            "Existing non-git directory -- don't know what to do. skipping: %s" % module
+        p = subprocess.Popen(
+            args=["git", "pull", "--rebase"],
+            cwd=destination,
+            env=clean_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
-        return
-    if isinstance(parameters, str):
-        parameters = [parameters]
+        # This may fail for unclean trees and merge problems. In this case manual
+        # user intervention will be required.
+        # For the record, you can clean up the tree and *discard ALL changes* with
+        #   git reset --hard origin/master
+        #   git clean -dffx
+        try:
+            output, _ = p.communicate()
+        except KeyboardInterrupt:
+            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+            p.terminate()
+            raise
+        if p.returncode:
+            return (
+                module,
+                "WARNING",
+                "Can not update existing git repository! Unclean tree or merge problems.\n"
+                + output,
+            )
+        # Show the hash for the checked out commit for debugging purposes
+        p = subprocess.Popen(
+            args=["git", "rev-parse", "HEAD"],
+            cwd=destination,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        output, _ = p.communicate()
+        if p.returncode:
+            return (module, "WARNING", "Can not get git repository revision\n" + output)
+        return module, "OK", "Checked out revision " + output.strip()
+
     git_parameters = []
+    try:
+        os.makedirs(destpath)
+    except OSError:
+        pass
     for source_candidate in parameters:
         if source_candidate.startswith("-"):
             git_parameters = source_candidate.split(" ")
@@ -678,56 +703,80 @@ def git(module, parameters, destination=None, reference=None):
         if source_candidate.lower().endswith(".git"):
             if not git_available:
                 continue
-            reference_parameters = []
-            if reference is not None:
-                if os.path.exists(reference) and os.path.exists(
-                    os.path.join(reference, ".git")
-                ):
-                    reference_parameters = ["--reference", reference]
-            cmd = (
-                ["git", "clone", "--recursive"]
+            if (
+                reference
+                and os.path.exists(reference)
+                and os.path.exists(os.path.join(reference, ".git"))
+            ):
+                reference_parameters = ["--reference", reference]
+            else:
+                reference_parameters = []
+            p = subprocess.Popen(
+                args=["git", "clone", "--recursive"]
                 + git_parameters
                 + [source_candidate, destdir]
-                + reference_parameters
-                + ["--progress", "--verbose"]
+                + reference_parameters,
+                cwd=destpath,
+                env=clean_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
             )
-            run_command(command=cmd, workdir=destpath)
+            try:
+                output, _ = p.communicate()
+            except KeyboardInterrupt:
+                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                p.terminate()
+                raise
+            if p.returncode:
+                return (module, "ERROR", "Can not checkout git repository\n" + output)
             if reference_parameters:
                 # Sever the link between checked out and reference repository
-                cmd = ["git", "repack", "-a", "-d"]
-                run_command(command=cmd, workdir=destination)
-                try:
-                    os.remove(
-                        os.path.join(
-                            destination, ".git", "objects", "info", "alternates"
-                        )
+                returncode = subprocess.call(
+                    ["git", "repack", "-a", "-d"],
+                    cwd=destination,
+                    env=clean_env,
+                    stdout=devnull,
+                    stderr=devnull,
+                )
+                if returncode:
+                    return (
+                        module,
+                        "ERROR",
+                        "Could not detach git repository from reference. Repository may be in invalid state!\n"
+                        "Run 'git repack -a -d' in the repository, or delete and recreate it",
                     )
-                except OSError:
-                    set_git_repository_config_to_rebase(
-                        os.path.join(destination, ".git", "config")
-                    )
-                    return 1
+                alternates = os.path.join(
+                    destination, ".git", "objects", "info", "alternates"
+                )
+                if os.path.exists(alternates):
+                    os.remove(alternates)
             set_git_repository_config_to_rebase(
                 os.path.join(destination, ".git", "config")
             )
             # Show the hash for the checked out commit for debugging purposes
-            run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
-            return
+            p = subprocess.Popen(
+                args=["git", "rev-parse", "HEAD"],
+                cwd=destination,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            output, _ = p.communicate()
+            if p.returncode:
+                return (
+                    module,
+                    "WARNING",
+                    "Can not get git repository revision\n" + output,
+                )
+            return module, "OK", "Checked out revision " + output.strip()
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
-        print("===== Downloading %s: " % source_candidate, end=" ")
         download_to_file(source_candidate, filename)
         unzip(filename, destination, trim_directory=1)
-        return
+        return module, "OK", "Downloaded from static archive"
 
-    error = (
-        "Cannot satisfy git dependency for module %s: None of the sources are available."
-        % module
-    )
-    if not git_available:
-        print(error)
-        error = "A git installation has not been found."
-    raise Exception(error)
+    if git_available:
+        return module, "ERROR", "Sources not available"
+    return module, "ERROR", "Sources not available. No git installation available"
 
 
 def install_conda():
@@ -834,8 +883,7 @@ class DIALSBuilder(object):
 
         # Add sources
         if "update" in actions:
-            for m in sorted(MODULES):
-                self._add_git(m, MODULES[m])
+            self.update_sources()
 
         # always remove .pyc files
         self.remove_pyc()
@@ -867,7 +915,9 @@ class DIALSBuilder(object):
 
     def run(self):
         for i in self.steps:
-            i()
+            result = i()
+            if result:
+                print(result)
 
     def _add_download(self, url, to_file):
         if not isinstance(url, list):
@@ -889,23 +939,26 @@ class DIALSBuilder(object):
 
         self.steps.append(_download)
 
-    def _add_git(self, module, parameters):
-        reference_repository_path = self.git_reference
-        if reference_repository_path is None:
+    def update_sources(self):
+        if self.git_reference:
+            reference_repository_base = os.path.expanduser(self.git_reference)
+        else:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
-                reference_repository_path = (
+                reference_repository_base = (
                     "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
                 )
-        if reference_repository_path:
-            reference_repository_path = os.path.expanduser(
-                os.path.join(reference_repository_path, module)
+            else:
+                reference_repository_base = None
+                reference_repository_path = None
+        for module in sorted(MODULES):
+            if reference_repository_base:
+                reference_repository_path = os.path.join(
+                    reference_repository_base, module
+                )
+            module, result, output = git(
+                module, MODULES[module], reference=reference_repository_path
             )
-
-        self.steps.append(
-            functools.partial(
-                git, module, parameters, reference=reference_repository_path
-            )
-        )
+            print(module, result, output)
 
     def _get_conda_python(self):
         """
