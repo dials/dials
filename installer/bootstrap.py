@@ -208,8 +208,8 @@ common compilers provided by conda. Please update your version with
             "modules",
             "dials",
             ".conda-envs",
-            "{builder}_py{version}_{platform}.txt".format(
-                builder="dials", version=python, platform=conda_platform
+            "dials_py{version}_{platform}.txt".format(
+                version=python, platform=conda_platform
             ),
         )
 
@@ -250,8 +250,8 @@ common compilers provided by conda. Please update your version with
                 ),
             ]
         print(
-            "{text} {builder} environment with:\n  {filename}".format(
-                text=text_messages[0], builder="dials", filename=filename
+            "{text} dials environment with:\n  {filename}".format(
+                text=text_messages[0], filename=filename
             )
         )
         for retry in range(5):
@@ -304,8 +304,7 @@ channels:
             )
 
         # check that environment file is updated
-        self.environments = self.get_environments()
-        if prefix not in self.environments:
+        if prefix not in self.get_environments():
             raise RuntimeError(
                 """
 The newly installed environment cannot be found in
