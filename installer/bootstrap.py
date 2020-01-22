@@ -97,7 +97,7 @@ class conda_manager(object):
         if not os.path.isfile(self.conda_exe):
             sys.exit("Conda executable not found at " + self.conda_exe)
 
-        self.environments = self.update_environments()
+        self.environments = self.get_environments()
 
         conda_info = json.loads(
             subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
@@ -131,15 +131,10 @@ common compilers provided by conda. Please update your version with
 """
             )
 
-    def update_environments(self):
+    def get_environments(self):
         """
-    Read and check for existence of environment directories
-
-    Returns
-    -------
-    environments: list
-      List of paths that exist on the filesystem
-    """
+        Return a set of existing conda environment paths
+        """
         environments = set()
         try:
             with open(self.environment_file) as f:
@@ -315,7 +310,7 @@ channels:
             )
 
         # check that environment file is updated
-        self.environments = self.update_environments()
+        self.environments = self.get_environments()
         if prefix not in self.environments:
             raise RuntimeError(
                 """
