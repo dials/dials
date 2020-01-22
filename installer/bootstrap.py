@@ -73,17 +73,17 @@ def ssh_allowed_for_connection(connection):
 
 def install_miniconda(location):
     """Download and install Miniconda3"""
-
-    os_names = {"Darwin": "MacOSX", "Linux": "Linux", "Windows": "Windows"}
-    filename = "Miniconda3-latest-{platform}-x86_64".format(
-        platform=os_names[platform.system()]
-    )
-    if os.name == "nt":
-        filename += ".exe"
+    if sys.platform.startswith("linux"):
+        filename = "Miniconda3-latest-Linux-x86_64.sh"
+    elif sys.platform == "darwin":
+        filename = "Miniconda3-latest-MacOSX-x86_64.sh"
+    elif os.name == "nt":
+        filename = "Miniconda3-latest-Windows-x86_64.exe"
     else:
-        filename += ".sh"
-    url_base = "https://repo.anaconda.com/miniconda/"
-    url = url_base + filename
+        raise NotImplementedError(
+            "Unsupported platform %s / %s" % (os.name, sys.platform)
+        )
+    url = "https://repo.anaconda.com/miniconda/" + filename
     filename = os.path.join(location, filename)
 
     print("Downloading {url}:".format(url=url), end=" ")
@@ -111,8 +111,6 @@ def install_miniconda(location):
 class conda_manager(object):
     def __init__(self):
         print()
-
-        self.system = platform.system()
 
         # Find relevant conda base installation
         self.conda_base = os.path.realpath("miniconda")
