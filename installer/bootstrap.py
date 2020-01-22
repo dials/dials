@@ -160,43 +160,8 @@ common compilers provided by conda. Please update your version with
 """
             )
 
-    def get_environments(self):
-        """
-        Return a set of existing conda environment paths
-        """
-        try:
-            with open(self.environment_file) as f:
-                paths = f.readlines()
-        except IOError:
-            paths = []
-        environments = set(
-            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
-        )
-        env_dirs = (
-            os.path.join(self.conda_base, "envs"),
-            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-        )
-        for env_dir in env_dirs:
-            if os.path.isdir(env_dir):
-                for d in os.listdir(env_dir):
-                    d = os.path.join(env_dir, d)
-                    if os.path.isdir(d):
-                        environments.add(d)
-
-        return environments
-
-    def create_environment(self, python="36"):
-        """
-    Create the environment based on the builder and file. The
-    environment name is "conda_base".
-
-    Parameters
-    ----------
-    python: str
-      If set, the specific Python version of the environment for the
-      builder is used instead of the default. Current options are
-      '27' and '36' for Python 2.7 and 3.6, respectively.
-    """
+        # create environment
+        python = "36"
         if os.name == "nt":
             conda_platform = "win-64"
         elif sys.platform == "darwin":
@@ -311,6 +276,31 @@ The newly installed environment cannot be found in
 ${HOME}/.conda/environments.txt.
 """
             )
+
+    def get_environments(self):
+        """
+        Return a set of existing conda environment paths
+        """
+        try:
+            with open(self.environment_file) as f:
+                paths = f.readlines()
+        except IOError:
+            paths = []
+        environments = set(
+            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
+        )
+        env_dirs = (
+            os.path.join(self.conda_base, "envs"),
+            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
+        )
+        for env_dir in env_dirs:
+            if os.path.isdir(env_dir):
+                for d in os.listdir(env_dir):
+                    d = os.path.join(env_dir, d)
+                    if os.path.isdir(d):
+                        environments.add(d)
+
+        return environments
 
 
 _BUILD_DIR = "build"
@@ -777,7 +767,7 @@ def git(
 
 
 def install_conda():
-    conda_manager().create_environment()
+    conda_manager()
 
 
 def remove_files_by_extension(extension, workdir):
