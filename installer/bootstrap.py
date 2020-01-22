@@ -617,7 +617,6 @@ def set_git_repository_config_to_rebase(config):
     if branch and remote and not rebase:
         insertions.insert(0, (n + 1, branch))
     for n, branch in insertions:
-        print("  setting branch %s to rebase" % branch)
         cfg.insert(n, "\trebase = true\n")
     with open(config, "w") as fh:
         fh.write("".join(cfg))
