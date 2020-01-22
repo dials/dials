@@ -149,17 +149,17 @@ def color_repeats(n=1):
     """Set up a cycle through default Plotly colors, repeating each n times"""
 
     color_list = (
-        ["#1f77b4"] * n
-        + ["#ff7f0e"] * n  # muted blue
-        + ["#2ca02c"] * n  # safety orange
-        + ["#d62728"] * n  # cooked asparagus green
-        + ["#9467bd"] * n  # brick red
-        + ["#8c564b"] * n  # muted purple
-        + ["#e377c2"] * n  # chestnut brown
-        + ["#7f7f7f"] * n  # raspberry yogurt pink
-        + ["#bcbd22"] * n  # middle gray
-        + ["#17becf"] * n  # curry yellow-green
-    )  # blue-teal
+        ["#1f77b4"] * n  # muted blue
+        + ["#ff7f0e"] * n  # safety orange
+        + ["#2ca02c"] * n  # cooked asparagus green
+        + ["#d62728"] * n  # brick red
+        + ["#9467bd"] * n  # muted purple
+        + ["#8c564b"] * n  # chestnut brown
+        + ["#e377c2"] * n  # raspberry yogurt pink
+        + ["#7f7f7f"] * n  # middle gray
+        + ["#bcbd22"] * n  # curry yellow-green
+        + ["#17becf"] * n  # blue-teal
+    )
     return itertools.cycle(color_list)
 
 
