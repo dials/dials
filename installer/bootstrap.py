@@ -622,7 +622,7 @@ def set_git_repository_config_to_rebase(config):
         fh.write("".join(cfg))
 
 
-def git(module, parameters, destination=None, reference=None):
+def git(module, parameters, destination=None, reference=None, reference_base=None):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
     git_available = True
@@ -634,6 +634,9 @@ def git(module, parameters, destination=None, reference=None):
     if destination is None:
         destination = os.path.join("modules", module)
     destpath, destdir = os.path.split(destination)
+
+    if reference_base and not reference:
+        reference = os.path.join(reference_base, module)
 
     if os.path.exists(destination):
         if not os.path.exists(os.path.join(destination, ".git")):
@@ -941,22 +944,19 @@ class DIALSBuilder(object):
 
     def update_sources(self):
         if self.git_reference:
-            reference_repository_base = os.path.expanduser(self.git_reference)
+            reference_base = os.path.expanduser(self.git_reference)
         else:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
-                reference_repository_base = (
+                reference_base = (
                     "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
                 )
             else:
-                reference_repository_base = None
-                reference_repository_path = None
+                reference_base = None
+
+
         for module in sorted(MODULES):
-            if reference_repository_base:
-                reference_repository_path = os.path.join(
-                    reference_repository_base, module
-                )
             module, result, output = git(
-                module, MODULES[module], reference=reference_repository_path
+                module, MODULES[module], reference_base=reference_base
             )
             print(module, result, output)
 
