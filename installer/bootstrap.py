@@ -906,9 +906,6 @@ class DIALSBuilder(object):
             self.add_refresh()
             self.add_precommit()
 
-    def isPlatformMacOSX(self):
-        return sys.platform.startswith("darwin")
-
     def remove_pyc(self):
         self.steps.append(
             functools.partial(remove_files_by_extension, ".pyc", "modules")
@@ -990,20 +987,6 @@ class DIALSBuilder(object):
         update_pool.close()
         update_pool.join()
 
-    def _get_conda_python(self):
-        """
-    Helper function for determining the location of Python for the base
-    and build actions.
-    """
-        if os.name == "nt":
-            return os.path.join(os.getcwd(), "conda_base", "python.exe")
-        elif self.isPlatformMacOSX():
-            return os.path.join(
-                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
-            )
-        else:
-            return os.path.join("..", "conda_base", "bin", "python")
-
     def add_command(self, command, description=None, workdir=None, args=None):
         if os.name == "nt":
             command = command + ".bat"
@@ -1040,12 +1023,21 @@ class DIALSBuilder(object):
         self.steps.append(install_conda)
 
     def add_configure(self):
+        if os.name == "nt":
+            conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
+        elif sys.platform.startswith("darwin"):
+            conda_python = os.path.join(
+                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+            )
+        else:
+            conda_python = os.path.join("..", "conda_base", "bin", "python")
+
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
 
         configcmd = (
             [
-                self._get_conda_python(),
+                conda_python,
                 os.path.join(
                     "..", "modules", "cctbx_project", "libtbx", "configure.py"
                 ),
