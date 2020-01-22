@@ -71,6 +71,43 @@ def ssh_allowed_for_connection(connection):
     return allowed_ssh_connections[connection]
 
 
+def install_miniconda(location):
+    """Download and install Miniconda3"""
+
+    os_names = {"Darwin": "MacOSX", "Linux": "Linux", "Windows": "Windows"}
+    filename = "Miniconda3-latest-{platform}-x86_64".format(
+        platform=os_names[platform.system()]
+    )
+    if os.name == "nt":
+        filename += ".exe"
+    else:
+        filename += ".sh"
+    url_base = "https://repo.anaconda.com/miniconda/"
+    url = url_base + filename
+    filename = os.path.join(location, filename)
+
+    print("Downloading {url}:".format(url=url), end=" ")
+    result = download_to_file(url, filename)
+    if result in (0, -1):
+        sys.exit("Miniconda download failed")
+
+    # run the installer
+    if os.name == "nt":
+        command = [
+            filename,
+            "/InstallationType=JustMe",
+            "/RegisterPython=0",
+            "/AddToPath=0",
+            "/S",
+            "/D=" + location,
+        ]
+    else:
+        command = ["/bin/sh", filename, "-b", "-u", "-p", location]
+
+    print()
+    run_command(workdir=".", command=command, description="Installing Miniconda")
+
+
 class conda_manager(object):
     def __init__(self):
         print()
@@ -93,7 +130,7 @@ class conda_manager(object):
             print("Using miniconda installation from", self.conda_base)
         else:
             print("Installing miniconda into", self.conda_base)
-            self.install_miniconda(self.conda_base)
+            install_miniconda(self.conda_base)
 
         # verify consistency and check conda version
         if not os.path.isfile(self.conda_exe):
@@ -161,42 +198,6 @@ common compilers provided by conda. Please update your version with
                         environments.add(d)
 
         return environments
-
-    def install_miniconda(self, location):
-        """Download and install Miniconda3"""
-
-        os_names = {"Darwin": "MacOSX", "Linux": "Linux", "Windows": "Windows"}
-        filename = "Miniconda3-latest-{platform}-x86_64".format(
-            platform=os_names[self.system]
-        )
-        if os.name == "nt":
-            filename += ".exe"
-        else:
-            filename += ".sh"
-        url_base = "https://repo.anaconda.com/miniconda/"
-        url = url_base + filename
-        filename = os.path.join(location, filename)
-
-        print("Downloading {url}:".format(url=url), end=" ")
-        result = download_to_file(url, filename)
-        if result in (0, -1):
-            sys.exit("Miniconda download failed")
-
-        # run the installer
-        if os.name == "nt":
-            command = [
-                filename,
-                "/InstallationType=JustMe",
-                "/RegisterPython=0",
-                "/AddToPath=0",
-                "/S",
-                "/D=" + location,
-            ]
-        else:
-            command = ["/bin/sh", filename, "-b", "-u", "-p", location]
-
-        print()
-        run_command(workdir=".", command=command, description="Installing Miniconda")
 
     def create_environment(self, python="36"):
         """
