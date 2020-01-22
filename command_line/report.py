@@ -6,6 +6,7 @@ import copy
 import math
 from collections import OrderedDict
 
+import itertools
 import numpy as np
 import dials.util.log
 from cctbx import uctbx
@@ -144,6 +145,24 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
+def color_repeats(n=1):
+    """Set up a cycle through default Plotly colors, repeating each n times"""
+
+    color_list = (
+        ["#1f77b4"] * n
+        + ["#ff7f0e"] * n  # muted blue
+        + ["#2ca02c"] * n  # safety orange
+        + ["#d62728"] * n  # cooked asparagus green
+        + ["#9467bd"] * n  # brick red
+        + ["#8c564b"] * n  # muted purple
+        + ["#e377c2"] * n  # chestnut brown
+        + ["#7f7f7f"] * n  # raspberry yogurt pink
+        + ["#bcbd22"] * n  # middle gray
+        + ["#17becf"] * n  # curry yellow-green
+    )  # blue-teal
+    return itertools.cycle(color_list)
+
+
 class ScanVaryingCrystalAnalyser(object):
     """Analyse a scan-varying crystal."""
 
@@ -225,8 +244,8 @@ class ScanVaryingCrystalAnalyser(object):
                         "anchor": "y7",
                         "title": "rotation angle (°)",
                     },
-                    "xaxis2": {"domain": [0.55, 1], "anchor": "y6"},
-                    "xaxis": {"domain": [0, 0.45], "anchor": "y3"},
+                    "xaxis2": {"domain": [0.53, 1], "anchor": "y6"},
+                    "xaxis": {"domain": [0, 0.47], "anchor": "y3"},
                     "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 5},
                     "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 5},
                     "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 5},
@@ -246,6 +265,11 @@ the refinement algorithm accounting for unmodelled features in the data.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(7)
+
         for cell_dat in dat:
             d["scan_varying_cell"]["data"].extend(
                 [
@@ -254,6 +278,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "y": cell_dat["a"],
                         "type": "scatter",
                         "name": "a (Å)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -262,6 +287,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "b (Å)",
                         "xaxis": "x",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -270,6 +296,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "c (Å)",
                         "xaxis": "x",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -278,6 +305,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "α (°)",
                         "xaxis": "x2",
                         "yaxis": "y4",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -286,6 +314,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "β (°)",
                         "xaxis": "x2",
                         "yaxis": "y5",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -294,14 +323,16 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "γ (°)",
                         "xaxis": "x2",
                         "yaxis": "y6",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
                         "y": cell_dat["volume"],
                         "type": "scatter",
-                        "name": "volume (Å^3)",
+                        "name": "volume (Å³)",
                         "xaxis": "x3",
                         "yaxis": "y7",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
@@ -386,6 +417,10 @@ incorrectly.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(3)
         for ori in dat:
             d["scan_varying_orientation"]["data"].extend(
                 [
@@ -394,6 +429,7 @@ incorrectly.
                         "y": ori["phi1"],
                         "type": "scatter",
                         "name": "Φ1 (°)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -402,6 +438,7 @@ incorrectly.
                         "name": "Φ2 (°)",
                         "xaxis": "x2",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -410,6 +447,7 @@ incorrectly.
                         "name": "Φ3 (°)",
                         "xaxis": "x3",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
