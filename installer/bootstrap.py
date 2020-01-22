@@ -13,7 +13,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import functools
 import json
-import multiprocessing
+import multiprocessing.pool
 import os
 import platform
 import re
@@ -23,6 +23,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 import warnings
 import zipfile
@@ -52,6 +53,7 @@ conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
 allowed_ssh_connections = {}
+concurrent_git_connection_limit = threading.Semaphore(5)
 
 
 def ssh_allowed_for_connection(connection):
@@ -555,7 +557,9 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
 def unzip(archive, directory, trim_directory=0):
     """unzip a file into a directory."""
     if not zipfile.is_zipfile(archive):
-        raise Exception("Can not install %s: %s is not a valid .zip file" % (directory, archive))
+        raise Exception(
+            "Can not install %s: %s is not a valid .zip file" % (directory, archive)
+        )
     z = zipfile.ZipFile(archive, "r")
     for member in z.infolist():
         is_directory = member.filename.endswith("/")
@@ -577,8 +581,8 @@ def unzip(archive, directory, trim_directory=0):
                 pass
             if not is_directory:
                 with z.open(member) as source:
-                  with open(filename, "wb") as target:
-                   shutil.copyfileobj(source, target)
+                    with open(filename, "wb") as target:
+                        shutil.copyfileobj(source, target)
 
                 # Preserve executable permission, if set
                 unix_executable = member.external_attr >> 16 & 0o111
@@ -619,15 +623,16 @@ def set_git_repository_config_to_rebase(config):
         fh.write("".join(cfg))
 
 
-def git(module, parameters, destination=None, reference=None, reference_base=None):
+def git(
+    module,
+    parameters,
+    git_available,
+    destination=None,
+    reference=None,
+    reference_base=None,
+):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
-    git_available = True
-    try:
-        subprocess.call(["git", "--version"], stdout=devnull, stderr=devnull)
-    except OSError:
-        git_available = False
-
     if destination is None:
         destination = os.path.join("modules", module)
     destpath, destdir = os.path.split(destination)
@@ -650,24 +655,25 @@ def git(module, parameters, destination=None, reference=None, reference_base=Non
                     "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
-        p = subprocess.Popen(
-            args=["git", "pull", "--rebase"],
-            cwd=destination,
-            env=clean_env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        # This may fail for unclean trees and merge problems. In this case manual
-        # user intervention will be required.
-        # For the record, you can clean up the tree and *discard ALL changes* with
-        #   git reset --hard origin/master
-        #   git clean -dffx
-        try:
-            output, _ = p.communicate()
-        except KeyboardInterrupt:
-            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-            p.terminate()
-            raise
+        with concurrent_git_connection_limit:
+            p = subprocess.Popen(
+                args=["git", "pull", "--rebase"],
+                cwd=destination,
+                env=clean_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            # This may fail for unclean trees and merge problems. In this case manual
+            # user intervention will be required.
+            # For the record, you can clean up the tree and *discard ALL changes* with
+            #   git reset --hard origin/master
+            #   git clean -dffx
+            try:
+                output, _ = p.communicate()
+            except KeyboardInterrupt:
+                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                p.terminate()
+                raise
         if p.returncode:
             return (
                 module,
@@ -711,22 +717,23 @@ def git(module, parameters, destination=None, reference=None, reference_base=Non
                 reference_parameters = ["--reference", reference]
             else:
                 reference_parameters = []
-            p = subprocess.Popen(
-                args=["git", "clone", "--recursive"]
-                + git_parameters
-                + [source_candidate, destdir]
-                + reference_parameters,
-                cwd=destpath,
-                env=clean_env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            try:
-                output, _ = p.communicate()
-            except KeyboardInterrupt:
-                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-                p.terminate()
-                raise
+            with concurrent_git_connection_limit:
+                p = subprocess.Popen(
+                    args=["git", "clone", "--recursive"]
+                    + git_parameters
+                    + [source_candidate, destdir]
+                    + reference_parameters,
+                    cwd=destpath,
+                    env=clean_env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                )
+                try:
+                    output, _ = p.communicate()
+                except KeyboardInterrupt:
+                    print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                    p.terminate()
+                    raise
             if p.returncode:
                 return (module, "ERROR", "Can not checkout git repository\n" + output)
             if reference_parameters:
@@ -949,13 +956,45 @@ class DIALSBuilder(object):
                 )
             else:
                 reference_base = None
-
-
-        for module in sorted(MODULES):
-            module, result, output = git(
-                module, MODULES[module], reference_base=reference_base
+        try:
+            git_available = not subprocess.call(
+                ["git", "--version"], stdout=devnull, stderr=devnull
             )
-            print(module, result, output)
+        except OSError:
+            git_available = False
+
+        def git_fn(module):
+            return git(
+                module,
+                MODULES[module],
+                git_available=git_available,
+                reference_base=reference_base,
+            )
+
+        update_pool = multiprocessing.pool.ThreadPool(20)
+        try:
+            for result in update_pool.imap_unordered(git_fn, MODULES):
+                module, result, output = result
+                output = (result + " - " + output).replace(
+                    "\n", "\n" + " " * (len(module + result) + 5)
+                )
+                if os.name == "posix" and sys.stdout.isatty():
+                    if result == "OK":
+                        output = "\x1b[32m" + output + "\x1b[0m"
+                    elif result == "WARNING":
+                        output = "\x1b[33m" + output + "\x1b[0m"
+                    elif result == "ERROR":
+                        output = "\x1b[31m" + output + "\x1b[0m"
+                print(module + ": " + output)
+        # results = update_pool.map(git_fn, MODULES)
+        except KeyboardInterrupt:
+            update_pool.terminate()
+            sys.exit("\naborted with Ctrl+C")
+        except Exception:
+            update_pool.terminate()
+            raise
+        update_pool.close()
+        update_pool.join()
 
     def _get_conda_python(self):
         """
