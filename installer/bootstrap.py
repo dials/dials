@@ -554,9 +554,8 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
 
 def unzip(archive, directory, trim_directory=0):
     """unzip a file into a directory."""
-    print("===== Installing %s into %s" % (archive, directory))
     if not zipfile.is_zipfile(archive):
-        raise Exception("%s is not a valid .zip file" % archive)
+        raise Exception("Can not install %s: %s is not a valid .zip file" % (directory, archive))
     z = zipfile.ZipFile(archive, "r")
     for member in z.infolist():
         is_directory = member.filename.endswith("/")
@@ -577,11 +576,9 @@ def unzip(archive, directory, trim_directory=0):
             except Exception:
                 pass
             if not is_directory:
-                source = z.open(member)
-                target = open(filename, "wb")
-                shutil.copyfileobj(source, target)
-                target.close()
-                source.close()
+                with z.open(member) as source:
+                  with open(filename, "wb") as target:
+                   shutil.copyfileobj(source, target)
 
                 # Preserve executable permission, if set
                 unix_executable = member.external_attr >> 16 & 0o111
@@ -773,7 +770,7 @@ def git(module, parameters, destination=None, reference=None, reference_base=Non
             return module, "OK", "Checked out revision " + output.strip()
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
-        download_to_file(source_candidate, filename)
+        download_to_file(source_candidate, filename, log=devnull)
         unzip(filename, destination, trim_directory=1)
         return module, "OK", "Downloaded from static archive"
 
