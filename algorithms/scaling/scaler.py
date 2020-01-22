@@ -193,7 +193,7 @@ class ScalerBase(Subject):
                 refinery.run()
             except RuntimeError as e:
                 logger.error(e, exc_info=True)
-            logger.info("Time taken for refinement %s", (time.time() - st))
+            logger.info("Time taken for refinement %.2f", (time.time() - st))
             refinery.print_step_table()
             self._update_after_minimisation(apm)
             logger.info("\n" + "=" * 80 + "\n")
