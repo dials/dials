@@ -784,14 +784,6 @@ MODULES = {
         "https://github.com/cctbx/dxtbx.git",
         "https://github.com/cctbx/dxtbx/archive/master.zip",
     ],
-    "msgpack": [
-        "curl",
-        [
-            "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
-            "https://gitcdn.link/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
-            "https://github.com/dials/dependencies/raw/dials-1.13/msgpack-3.1.1.tar.gz",
-        ],
-    ],
     "xia2": [
         "git",
         "git@github.com:xia2/xia2.git",

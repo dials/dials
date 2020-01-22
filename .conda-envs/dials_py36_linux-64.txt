@@ -3,6 +3,7 @@ conda-forge::hdf5-external-filter-plugins
 conda-forge::colorlog
 conda-forge::dials-data
 conda-forge::mrcfile
+conda-forge::msgpack-c=3.1.1
 conda-forge::msgpack-python=0.6.2
 conda-forge::orderedset
 conda-forge::procrunner>=1.0.2
