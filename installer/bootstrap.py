@@ -785,34 +785,20 @@ def remove_files_by_extension(extension, workdir):
 
 
 ##### Modules #####
-MODULES = {
-    "scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
-    "cctbx_project": [
-        "git@github.com:cctbx/cctbx_project.git",
-        "https://github.com/cctbx/cctbx_project.git",
-        "https://github.com/cctbx/cctbx_project/archive/master.zip",
-    ],
-    "boost": [
-        "git@github.com:cctbx/boost.git",
-        "https://github.com/cctbx/boost.git",
-        "https://github.com/cctbx/boost/archive/master.zip",
-    ],
-    "annlib_adaptbx": [
-        "git@github.com:cctbx/annlib_adaptbx.git",
-        "https://github.com/cctbx/annlib_adaptbx.git",
-        "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
-    ],
-    "dxtbx": [
-        "git@github.com:cctbx/dxtbx.git",
-        "https://github.com/cctbx/dxtbx.git",
-        "https://github.com/cctbx/dxtbx/archive/master.zip",
-    ],
-    "xia2": [
-        "git@github.com:xia2/xia2.git",
-        "https://github.com/xia2/xia2.git",
-        "https://github.com/xia2/xia2/archive/master.zip",
-    ],
-}
+MODULES = {"scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]}
+for module in (
+    "cctbx/annlib_adaptbx",
+    "cctbx/boost",
+    "cctbx/cctbx_project",
+    "cctbx/dxtbx",
+    "xia2/xia2",
+):
+    modulename = module.split("/")[1]
+    MODULES[modulename] = [
+        "git@github.com:%s.git" % module,
+        "https://github.com/%s.git" % module,
+        "https://github.com/%s/archive/master.zip" % module,
+    ]
 for module in (
     "annlib",
     "cbflib",
