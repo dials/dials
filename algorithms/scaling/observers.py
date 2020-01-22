@@ -17,7 +17,10 @@ from dials.algorithms.scaling.plots import (
     error_model_variance_plot,
     error_regression_plot,
 )
-from dials.algorithms.scaling.model.model import plot_scaling_models
+from dials.algorithms.scaling.model.model import (
+    plot_scaling_models,
+    make_combined_plots,
+)
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
@@ -237,6 +240,9 @@ class ScalingModelObserver(Observer):
     def make_plots(self):
         """Generate scaling model component plot data."""
         d = OrderedDict()
+        combined_plots = make_combined_plots(self.data)
+        if combined_plots:
+            d.update(combined_plots)
         for key in sorted(self.data.keys()):
             scaling_model_plots = plot_scaling_models(self.data[key])
             for plot in scaling_model_plots.values():

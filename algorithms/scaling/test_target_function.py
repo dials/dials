@@ -321,7 +321,10 @@ def test_target_gradient_calculation_finite_difference(
     model.components["scale"].update_reflection_data()
     model.components["decay"].update_reflection_data()
     apm = multi_active_parameter_manager(
-        [model.components], [["scale", "decay"]], scaling_active_parameter_manager
+        ScalingTarget(),
+        [model.components],
+        [["scale", "decay"]],
+        scaling_active_parameter_manager,
     )
     model.components["scale"].inverse_scales = flex.double([2.0, 1.0, 2.0])
     model.components["decay"].inverse_scales = flex.double([1.0, 1.0, 0.4])
@@ -368,7 +371,10 @@ def test_target_jacobian_calculation_finite_difference(
     model.configure_components(large_reflection_table, single_exp, physical_param)
     model.components["scale"].update_reflection_data()
     apm = multi_active_parameter_manager(
-        [model.components], [["scale"]], scaling_active_parameter_manager
+        ScalingTarget(),
+        [model.components],
+        [["scale"]],
+        scaling_active_parameter_manager,
     )
     Ih_table = IhTable([large_reflection_table], single_exp.crystal.get_space_group())
 

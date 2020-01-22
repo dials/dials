@@ -10,11 +10,13 @@ from dials.algorithms.scaling.active_parameter_managers import (
     multi_active_parameter_manager,
     active_parameter_manager,
     ParameterManagerGenerator,
+    shared_active_parameter_manager,
 )
 from dials.algorithms.scaling.parameter_handler import (
     scaling_active_parameter_manager,
     ScalingParameterManagerGenerator,
 )
+from dials.algorithms.scaling.target_function import ScalingTarget
 
 
 def mock_component():
@@ -109,6 +111,7 @@ def test_multi_apm():
     components_2 = {"scale": mock_component(), "decay": mock_component()}
 
     multi_apm = multi_active_parameter_manager(
+        ScalingTarget(),
         [components_1, components_2],
         [["scale", "decay"], ["scale"]],
         active_parameter_manager,
@@ -144,6 +147,52 @@ def test_multi_apm():
     assert components_2["scale"].var_cov_matrix[0, 0] == 3.0
 
 
+def test_shared_apm():
+    components_1 = {
+        "scale": mock_component(),
+        "decay": mock_component(),
+        "absorption": mock_component(),
+    }
+    components_2 = {"scale": mock_component(), "decay": mock_component()}
+
+    multi_apm = shared_active_parameter_manager(
+        ScalingTarget(),
+        [components_1, components_2],
+        [["scale", "decay"], ["scale", "decay"]],
+        active_parameter_manager,
+        shared="decay",
+    )
+
+    # Test correct setup of apm_list attribute.
+    for apm in multi_apm.apm_list:
+        assert isinstance(apm, active_parameter_manager)
+    assert len(multi_apm.apm_list) == 2
+    assert multi_apm.components_list == ["scale", "decay", "scale", "decay"]
+    assert multi_apm.n_active_params == 4
+    # assert multi_apm.apm_data[0] == {"start_idx": 0, "end_idx": 2}
+    # assert multi_apm.apm_data[1] == {"start_idx": 2, "end_idx": 4}
+    assert list(multi_apm.reducing_matrix.as_dense_matrix()) == [
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+    ]
+    assert multi_apm.apm_data[0]["start_idx"] == 0
+    assert multi_apm.apm_data[0]["end_idx"] == 2
+    assert multi_apm.apm_data[1]["start_idx"] == 2
+    assert multi_apm.apm_data[1]["end_idx"] == 4
+    assert list(multi_apm.apm_data[0]["apm_sel"]) == [0, 1]
+    assert list(multi_apm.apm_data[1]["apm_sel"]) == [2, 1]
+
+
 def test_ParameterManagerGenerator_concurrent():
     """Test the apm factory for concurrent refinement."""
     components_1 = {
@@ -154,7 +203,10 @@ def test_ParameterManagerGenerator_concurrent():
     data_manager = mock_data_manager(components_1)
 
     pmg = ParameterManagerGenerator(
-        [data_manager], apm_type=active_parameter_manager, mode="concurrent"
+        [data_manager],
+        apm_type=active_parameter_manager,
+        target=ScalingTarget(),
+        mode="concurrent",
     )
     apms = pmg.parameter_managers()
     assert len(apms) == 1
@@ -176,6 +228,7 @@ def test_ParameterManagerGenerator_concurrent():
     pmg = ParameterManagerGenerator(
         [data_manager_1, data_manager_2],
         apm_type=active_parameter_manager,
+        target=ScalingTarget(),
         mode="concurrent",
     )
     multi_apms = pmg.parameter_managers()
@@ -204,7 +257,10 @@ def test_ParameterManagerGenerator_consecutive():
 
     # Test single dataset case.
     pmg = ParameterManagerGenerator(
-        [data_manager], apm_type=active_parameter_manager, mode="consecutive"
+        [data_manager],
+        apm_type=active_parameter_manager,
+        target=ScalingTarget(),
+        mode="consecutive",
     )
     apms = list(pmg.parameter_managers())
     assert len(apms) == 2
@@ -227,6 +283,7 @@ def test_ParameterManagerGenerator_consecutive():
     pmg = ParameterManagerGenerator(
         [data_manager, data_manager_2],
         apm_type=active_parameter_manager,
+        target=ScalingTarget(),
         mode="consecutive",
     )
     apms = list(pmg.parameter_managers())
@@ -250,6 +307,7 @@ def test_ParameterManagerGenerator_consecutive():
     pmg = ParameterManagerGenerator(
         [data_manager, data_manager_2],
         apm_type=active_parameter_manager,
+        target=ScalingTarget(),
         mode="consecutive",
     )
     assert pmg.param_lists[0] == [["scale", "decay"], ["absorption"]]
@@ -294,5 +352,7 @@ def test_scaling_active_parameter_manager():
         scaling_apm = scaling_active_parameter_manager(components_2, ["1"])
 
     data_manager = mock_data_manager(components_2)
-    pmg = ScalingParameterManagerGenerator([data_manager], mode="concurrent")
+    pmg = ScalingParameterManagerGenerator(
+        [data_manager], target=ScalingTarget(), mode="concurrent"
+    )
     assert isinstance(pmg.apm_type, type(scaling_active_parameter_manager))

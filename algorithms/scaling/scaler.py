@@ -158,6 +158,9 @@ class ScalerBase(Subject):
         """Make the scaler in a prepared state for scaling."""
         raise NotImplementedError()
 
+    def determine_shared_model_components(self):
+        return None
+
     @Subject.notify_event(event="performed_scaling")
     def perform_scaling(self, engine=None, max_iterations=None, tolerance=None):
         """Minimise the scaling model."""
@@ -171,8 +174,14 @@ class ScalerBase(Subject):
     def _perform_scaling(
         self, target_type, engine=None, max_iterations=None, tolerance=None
     ):
+        target = target_type()
+        # find if any components to share
+        shared = self.determine_shared_model_components()
         pmg = ScalingParameterManagerGenerator(
-            self.active_scalers, self.params.scaling_refinery.refinement_order
+            self.active_scalers,
+            target,
+            self.params.scaling_refinery.refinement_order,
+            shared=shared,
         )
         for apm in pmg.parameter_managers():
             if not engine:
@@ -183,7 +192,7 @@ class ScalerBase(Subject):
             refinery = scaling_refinery(
                 engine=engine,
                 scaler=self,
-                target=target_type(),
+                target=target,
                 prediction_parameterisation=apm,
                 max_iterations=max_iterations,
             )
@@ -1300,6 +1309,16 @@ class MultiScalerBase(ScalerBase):
                 scaler.scaling_selection &= ~scaler.outliers
         else:
             raise ValueError("Invalid choice for 'reflection_selection.method'.")
+
+    def determine_shared_model_components(self):
+        shared_components = set()
+        for scaler in self.active_scalers:
+            shared_components.add(
+                scaler.experiment.scaling_model.get_shared_components()
+            )
+        if len(shared_components) == 1:
+            return list(shared_components)[0]
+        return None
 
 
 class MultiScaler(MultiScalerBase):

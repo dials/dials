@@ -11,6 +11,8 @@ from dials.algorithms.scaling.model.components.scale_components import (
 from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.parameter_handler import scaling_active_parameter_manager
 
+# from dials.algorithms.scaling.target_function import ScalingTarget
+
 
 @pytest.fixture
 def small_reflection_table():
@@ -40,7 +42,7 @@ def test_RefinerCalculator(small_reflection_table):
         "abs": SingleScaleFactor(flex.double([1.0])),
     }  # Create empty components.
     components["scale"].data = {"id": rt["id"]}
-    components["decay"].data = {"d": rt["d"], "id": rt["id"]}
+    components["decay"].data = {"d": rt["d"]}
     components["abs"].data = {"id": rt["id"]}
     for component in components.values():
         component.update_reflection_data()  # Add some data to components.

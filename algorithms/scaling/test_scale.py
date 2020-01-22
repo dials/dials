@@ -492,6 +492,27 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
 
+def test_scale_dose_decay_model(dials_data, tmpdir):
+    """Test the scale and filter command line program."""
+    location = dials_data("multi_crystal_proteinase_k")
+    command = [
+        "dials.scale",
+        "d_min=2.0",
+        "model=dose_decay",
+    ]
+    for i in [1, 2, 3, 4, 5, 7, 10]:
+        command.append(location.join("experiments_" + str(i) + ".json").strpath)
+        command.append(location.join("reflections_" + str(i) + ".pickle").strpath)
+
+    result = procrunner.run(command, working_directory=tmpdir)
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("scaled.refl").check()
+    assert tmpdir.join("scaled.expt").check()
+    assert tmpdir.join("scaling.html").check()
+    expts = load.experiment_list(tmpdir.join("scaled.expt").strpath, check_format=False)
+    assert expts[0].scaling_model.id_ == "dose_decay"
+
+
 def test_scale_and_filter_dataset_mode(dials_data, tmpdir):
     """Test the scale and filter command line program."""
     location = dials_data("multi_crystal_proteinase_k")
