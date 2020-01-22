@@ -172,25 +172,21 @@ common compilers provided by conda. Please update your version with
         """
         Return a set of existing conda environment paths
         """
-        environments = set()
         try:
             with open(self.environment_file) as f:
                 paths = f.readlines()
-            for env in paths:
-                env = env.strip()
-                if os.path.isdir(env):
-                    environments.add(os.path.normpath(env))
         except IOError:
-            pass
-
-        env_dirs = [
+            paths = []
+        environments = set(
+            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
+        )
+        env_dirs = (
             os.path.join(self.conda_base, "envs"),
             os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-        ]
+        )
         for env_dir in env_dirs:
             if os.path.isdir(env_dir):
-                dirs = os.listdir(env_dir)
-                for d in dirs:
+                for d in os.listdir(env_dir):
                     d = os.path.join(env_dir, d)
                     if os.path.isdir(d):
                         environments.add(d)
