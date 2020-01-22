@@ -858,19 +858,17 @@ class DIALSBuilder(object):
 
     @staticmethod
     def remove_pycs():
-        cwd = os.getcwd()
-        if os.path.exists("modules"):
-            os.chdir("modules")
-        else:
+        if not os.path.exists("modules"):
             return
-        print("\n  removing .pyc files in %s" % os.getcwd())
+        print("\n  removing .pyc files in %s" % os.path.join(os.getcwd(), "modules"))
         i = 0
-        for root, dirs, files in os.walk(".", topdown=False):
+        for root, dirs, files in os.walk("modules"):
+            if ".git" in dirs:
+                del dirs[dirs.index(".git")]
             for name in files:
                 if name.endswith(".pyc"):
                     os.remove(os.path.join(root, name))
                     i += 1
-        os.chdir(cwd)
         print("  removed %d files" % i)
 
     def run(self):
