@@ -15,6 +15,7 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
 )
 from dials.util.filter_reflections import filter_reflection_table
+from dials.util.merging_statistics import dataset_statistics
 
 logger = logging.getLogger(__name__)
 
@@ -369,9 +370,7 @@ class Resolutionizer(object):
 
         self._intensities = i_obs
 
-        import iotbx.merging_statistics
-
-        self._merging_statistics = iotbx.merging_statistics.dataset_statistics(
+        self._merging_statistics = dataset_statistics(
             i_obs=i_obs,
             n_bins=self._params.nbins,
             cc_one_half_significance_level=self._params.cc_half_significance_level,
