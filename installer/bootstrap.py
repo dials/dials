@@ -689,7 +689,7 @@ def git(
         )
         output, _ = p.communicate()
         if p.returncode:
-            return (module, "WARNING", "Can not get git repository revision\n" + output)
+            return module, "WARNING", "Can not get git repository revision\n" + output
         return module, "OK", "Checked out revision " + output.strip()
 
     git_parameters = []
