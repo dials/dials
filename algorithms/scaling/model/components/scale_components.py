@@ -316,11 +316,8 @@ class LinearDoseDecay(ScaleComponentBase):
 
     For the dose dependent, the form is I = I0 exp(-ln(2) D/ Hd).
     Parameterise this as linear function of rotation with an overall factor
-    to refine.
-    Including an overall B-factor for nonisomorphism i.e. exp(B0 / 2d^2),
-    gives a scale factor :
-    T(r) = exp(Cr/d + B0/2d^2) - i.e. a two parameter model with the overall
-    'dose' proportional factor C and B0.
+    to refine. T(r) = exp(Cr/d - i.e. a one parameter model with the overall
+    'dose' proportional factor C.
     """
 
     null_parameter_value = 0.0

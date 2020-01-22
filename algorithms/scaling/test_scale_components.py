@@ -76,8 +76,8 @@ def test_SingleBScaleFactor():
     assert list(BSF.parameters) == [0.0]
     rt = flex.reflection_table()
     rt["d"] = flex.double([1.0, 1.0])
-    rt["id"] = flex.int([0, 0])
-    BSF.data = {"d": rt["d"], "id": rt["id"]}
+    # rt["id"] = flex.int([0, 0])
+    BSF.data = {"d": rt["d"]}
     BSF.update_reflection_data()
     assert BSF.n_refl == [2]
     assert list(BSF.d_values[0]) == [1.0, 1.0]

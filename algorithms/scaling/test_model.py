@@ -12,6 +12,7 @@ from dials.algorithms.scaling.model.model import (
     KBScalingModel,
     PhysicalScalingModel,
     ArrayScalingModel,
+    DoseDecay,
     calc_n_param_from_bins,
     initialise_smooth_input,
 )
@@ -439,6 +440,41 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     ]
     assert physical.configdict["valid_osc_range"] == (4, 45)
     assert physical.configdict["valid_image_range"] == (5, 45)
+
+
+def test_DoseDecayModel(test_reflections, mock_exp):
+    """Test the DoseDecay class."""
+    configdict = {
+        "corrections": ["scale", "decay", "relative_B"],
+        "s_norm_fac": 1.0,
+        "scale_rot_interval": 2.0,
+    }
+
+    parameters_dict = {
+        "scale": {"parameters": flex.double([1.2, 1.1]), "parameter_esds": None},
+        "decay": {"parameters": flex.double([0.1]), "parameter_esds": None},
+        "relative_B": {"parameters": flex.double([-0.1]), "parameter_esds": None},
+    }
+
+    def test_setup(model):
+        assert model.id_ == "dose_decay"
+        assert set(model.components.keys()) == set(["scale", "decay", "relative_B"])
+        assert list(model.components["scale"].parameters) == [1.2, 1.1]
+        assert list(model.components["decay"].parameters) == [0.1]
+        assert list(model.components["relative_B"].parameters) == [-0.1]
+
+    # Test standard factory initialisation
+    model = DoseDecay(parameters_dict, configdict)
+    test_setup(model)
+
+    # Test configure reflection table - adds data to components
+    mock_params = Mock()
+    model.configure_components(test_reflections, mock_exp, mock_params)
+    assert list(model.components["decay"].data["d"]) == list(test_reflections["d"])
+
+    d = model.to_dict()
+    model_from_dict = DoseDecay.from_dict(d)
+    test_setup(model_from_dict)
 
 
 def test_ArrayScalingModel(test_reflections, mock_exp):

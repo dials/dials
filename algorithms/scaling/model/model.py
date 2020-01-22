@@ -32,6 +32,7 @@ from dials.algorithms.scaling.plots import (
     plot_array_modulation_plot,
     plot_array_absorption_plot,
     plot_dose_decay,
+    plot_relative_Bs,
 )
 from dials_scaling_ext import (
     calc_theta_phi,
@@ -66,6 +67,10 @@ relative_B_correction = True
 decay_correction = True
     .type = bool
     .help = "Option to turn off decay correction."
+    .expert_level = 1
+share.decay = True
+    .type = bool
+    .help = "Share the decay model between sweeps."
     .expert_level = 1
 absorption_correction = False
     .type = bool
@@ -302,6 +307,9 @@ class ScalingModelBase(object):
         """Record the intensity combination Imid value."""
         self._configdict["Imid"] = Imid
 
+    def get_shared_components(self):
+        return None
+
     def __str__(self):
         """:obj:`str`: Return a string representation of a scaling model."""
         msg = ["Scaling model:"]
@@ -365,6 +373,10 @@ def _add_absorption_component_to_physically_derived_model(model, reflection_tabl
 
 class DoseDecay(ScalingModelBase):
 
+    """A model similar to the physical model, where an exponential decay
+    component is used plus a relative B-factor per sweep, with no absorption
+    surface by default. Most suitable for multi-crystal datasets."""
+
     id_ = "dose_decay"
 
     phil_scope = phil.parse(dose_decay_model_phil_str)
@@ -402,6 +414,12 @@ class DoseDecay(ScalingModelBase):
         if "scale" in self.components and params.dose_decay.fix_initial:
             self.components["scale"].fix_initial_parameter()
         return True
+
+    def get_shared_components(self):
+        if "shared" in self.configdict:
+            if "decay" in self.configdict["shared"]:
+                return "decay"
+        return None
 
     def configure_components(self, reflection_table, experiment, params):
         """Add the required reflection table data to the model components."""
@@ -476,6 +494,8 @@ class DoseDecay(ScalingModelBase):
         osc_range = experiment.scan.get_oscillation_range()
         one_osc_width = experiment.scan.get_oscillation()[1]
         configdict.update({"valid_osc_range": osc_range})
+        if params.share.decay:
+            configdict.update({"shared": ["decay"]})
 
         configdict["corrections"].append("scale")
         n_scale_param, s_norm_fac, scale_rot_int = initialise_smooth_input(
@@ -522,8 +542,8 @@ class DoseDecay(ScalingModelBase):
         """Create a :obj:`PhysicalScalingModel` from a dictionary."""
         if obj["__id__"] != cls.id_:
             raise RuntimeError("expected __id__ %s, got %s" % (cls.id_, obj["__id__"]))
-        (s_params, d_params, abs_params) = (None, None, None)
-        (s_params_sds, d_params_sds, a_params_sds) = (None, None, None)
+        (s_params, d_params, abs_params, B) = (None, None, None, None)
+        (s_params_sds, d_params_sds, a_params_sds, B_sd) = (None, None, None, None)
         configdict = obj["configuration_parameters"]
         is_scaled = obj["is_scaled"]
         if "scale" in configdict["corrections"]:
@@ -1081,7 +1101,6 @@ class KBScalingModel(ScalingModelBase):
         if "decay" in self.components:
             self.components["decay"].data = {
                 "d": reflection_table["d"],
-                "id": reflection_table["id"],
             }
 
     @property
@@ -1236,3 +1255,11 @@ def plot_scaling_models(model_dict):
         model = entry_point.load().from_dict(model_dict)
         return model.plot_model_components()
     return OrderedDict()
+
+
+def make_combined_plots(data):
+    """Make any plots that require evaluation of all models."""
+    if all(d["__id__"] == "dose_decay" for d in data.values()):
+        relative_Bs = [d["relative_B"]["parameters"][0] for d in data.values()]
+        return plot_relative_Bs(relative_Bs)
+    return {}
