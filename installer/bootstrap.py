@@ -15,7 +15,6 @@ import functools
 import json
 import multiprocessing.pool
 import os
-import platform
 import re
 import shutil
 import socket as pysocket
@@ -42,13 +41,6 @@ clean_env = {
     for key, value in os.environ.items()
     if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
 }
-
-# =============================================================================
-# Locations for the files defining the conda environments
-# Generally, they should reside in the repository of the main program
-# defined by the builder. For example, the environment file for Phenix
-# will be in the Phenix source tree.
-conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
 
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
@@ -205,14 +197,19 @@ common compilers provided by conda. Please update your version with
       builder is used instead of the default. Current options are
       '27' and '36' for Python 2.7 and 3.6, respectively.
     """
+        if os.name == "nt":
+            conda_platform = "win-64"
+        elif sys.platform == "darwin":
+            conda_platform = "osx-64"
+        else:
+            conda_platform = "linux-64"
+
         filename = os.path.join(
             "modules",
             "dials",
             ".conda-envs",
             "{builder}_py{version}_{platform}.txt".format(
-                builder="dials",
-                version=python,
-                platform=conda_platform[platform.system()],
+                builder="dials", version=python, platform=conda_platform
             ),
         )
 
