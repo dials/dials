@@ -835,7 +835,7 @@ class DIALSBuilder(object):
         # Add sources
         if "update" in actions:
             for m in sorted(MODULES):
-                self.add_module(m)
+                self._add_git(m, MODULES[m])
 
         # always remove .pyc files
         self.remove_pyc()
@@ -869,12 +869,6 @@ class DIALSBuilder(object):
         for i in self.steps:
             i()
 
-    def add_module(self, module):
-        parameters = MODULES[module]
-        if len(parameters) == 1:
-            parameters = parameters[0]
-        self._add_git(module, parameters)
-
     def _add_download(self, url, to_file):
         if not isinstance(url, list):
             url = [url]
@@ -895,7 +889,7 @@ class DIALSBuilder(object):
 
         self.steps.append(_download)
 
-    def _add_git(self, module, parameters, destination=None):
+    def _add_git(self, module, parameters):
         reference_repository_path = self.git_reference
         if reference_repository_path is None:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
@@ -909,11 +903,7 @@ class DIALSBuilder(object):
 
         self.steps.append(
             functools.partial(
-                git,
-                module,
-                parameters,
-                destination=destination,
-                reference=reference_repository_path,
+                git, module, parameters, reference=reference_repository_path
             )
         )
 
