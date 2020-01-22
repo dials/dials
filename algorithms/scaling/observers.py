@@ -351,7 +351,7 @@ class ErrorModelObserver(Observer):
 
     def make_plots(self):
         """Generate normal probability plot data."""
-        d = {"error_model_plots": {}}
+        d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
         if "delta_hl" in self.data:
             d["error_model_plots"].update(normal_probability_plot(self.data))
             d["error_model_plots"].update(
@@ -360,7 +360,8 @@ class ErrorModelObserver(Observer):
             d["error_model_plots"].update(error_model_variance_plot(self.data))
             if "regression_x" in self.data:
                 d["error_model_plots"].update(error_regression_plot(self.data))
-        d["error_model_summary"] = self.data["summary"]
+        if "summary" in self.data:
+            d["error_model_summary"] = self.data["summary"]
         return d
 
 
