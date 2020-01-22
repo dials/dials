@@ -100,7 +100,7 @@ def install_miniconda(location):
     run_command(workdir=".", command=command, description="Installing Miniconda")
 
 
-class conda_manager(object):
+class install_conda(object):
     def __init__(self):
         print()
 
@@ -764,10 +764,6 @@ def git(
     if git_available:
         return module, "ERROR", "Sources not available"
     return module, "ERROR", "Sources not available. No git installation available"
-
-
-def install_conda():
-    conda_manager()
 
 
 def remove_files_by_extension(extension, workdir):
