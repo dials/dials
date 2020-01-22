@@ -766,24 +766,6 @@ def git(
     return module, "ERROR", "Sources not available. No git installation available"
 
 
-def remove_files_by_extension(extension, workdir):
-    cwd = os.getcwd()
-    if workdir is not None:
-        if os.path.exists(workdir):
-            os.chdir(workdir)
-        else:
-            return
-    print("\n  removing %s files in %s" % (extension, os.getcwd()))
-    i = 0
-    for root, dirs, files in os.walk(".", topdown=False):
-        for name in files:
-            if name.endswith(extension):
-                os.remove(os.path.join(root, name))
-                i += 1
-    os.chdir(cwd)
-    print("  removed %d files" % i)
-
-
 ##### Modules #####
 MODULES = {"scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]}
 for module in (
@@ -855,7 +837,7 @@ class DIALSBuilder(object):
             self.update_sources()
 
         # always remove .pyc files
-        self.remove_pyc()
+        self.remove_pycs()
 
         # Build base packages
         if "base" in actions:
@@ -874,10 +856,22 @@ class DIALSBuilder(object):
             self.add_refresh()
             self.add_precommit()
 
-    def remove_pyc(self):
-        self.steps.append(
-            functools.partial(remove_files_by_extension, ".pyc", "modules")
-        )
+    @staticmethod
+    def remove_pycs():
+        cwd = os.getcwd()
+        if os.path.exists("modules"):
+            os.chdir("modules")
+        else:
+            return
+        print("\n  removing .pyc files in %s" % os.getcwd())
+        i = 0
+        for root, dirs, files in os.walk(".", topdown=False):
+            for name in files:
+                if name.endswith(".pyc"):
+                    os.remove(os.path.join(root, name))
+                    i += 1
+        os.chdir(cwd)
+        print("  removed %d files" % i)
 
     def run(self):
         for i in self.steps:
