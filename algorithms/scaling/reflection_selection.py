@@ -174,8 +174,8 @@ def select_connected_reflections_across_datasets(
     logger.info(
         """
 Using quasi-random reflection selection. Selecting from %s symmetry groups
-with <I/sI> > %s (%s reflections)). Selection target of %s reflections
-from each dataset, with a total number between %s and %s.
+with <I/sI> > %s (%s reflections)). Selection target of %.2f reflections
+from each dataset, with a total number between %.2f and %.2f.
 """,
         sel_Ih_table.n_groups,
         Isigma_cutoff,

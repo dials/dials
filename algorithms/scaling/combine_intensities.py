@@ -131,7 +131,7 @@ class SingleDatasetIntensityCombiner(object):
                 self.max_key = 0
             else:
                 logger.info(
-                    "Combined intensities with Imid = %s determined to be best for scaling. \n",
+                    "Combined intensities with Imid = %.2f determined to be best for scaling. \n",
                     self.max_key,
                 )
 
@@ -301,7 +301,7 @@ class MultiDatasetIntensityCombiner(object):
             self.max_key = 0
         else:
             logger.info(
-                "Combined intensities with Imid = %s determined to be best for scaling. \n",
+                "Combined intensities with Imid = %.2f determined to be best for scaling. \n",
                 self.max_key,
             )
 

@@ -692,9 +692,12 @@ def main():
         conda_python = py.path.local(conda_values["sys.executable"]).realpath()
         print("Conda python: ", end="")
         if conda_python != python.realpath():
+            # Not convinced this is actually a problem. This indicates such a
+            # broken environment I don't think we should even check for it.
             print(YELLOW + conda_python.strpath)
             print("    different from running python:", python + NC)
-        print(conda_python.strpath)
+        else:
+            print(conda_python.strpath)
         print("Conda version:", GREEN + conda_values["conda_version"] + NC)
         py_ver = "%s.%s.%s" % (
             sys.version_info.major,
