@@ -179,7 +179,7 @@ class ScalingRefinery(object):
         except IndexError:
             return False
 
-        if r2 > 0:
+        if r2[0] > 0:
             return abs((r2[0] - r1[0]) / r2[0]) < self._rmsd_tolerance
         else:
             return True
