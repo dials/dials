@@ -5,13 +5,13 @@ import logging
 import math
 import time
 
-import dials.util.version
-from dials.util.filter_reflections import filter_reflection_table
-import iotbx.cif.model
-from cctbx.sgtbx import bravais_types
-from cctbx import miller
 from cctbx import crystal as cctbxcrystal
-from iotbx.merging_statistics import dataset_statistics
+from cctbx import miller
+from cctbx.sgtbx import bravais_types
+from dials.util.filter_reflections import filter_reflection_table
+from dials.util.merging_statistics import dataset_statistics
+import dials.util.version
+import iotbx.cif.model
 from libtbx import Auto
 
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@ from dials.report.plots import (
     AnomalousPlotter,
 )
 from dials.util.batch_handling import batch_manager
-from iotbx.merging_statistics import dataset_statistics
+from dials.util.merging_statistics import dataset_statistics
 
 
 @pytest.fixture

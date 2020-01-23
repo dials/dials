@@ -15,18 +15,18 @@ import uuid
 import pkg_resources
 from copy import deepcopy
 
-import iotbx.merging_statistics
 from cctbx import miller, crystal, uctbx
 from dxtbx.model import Experiment
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util import Sorry
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
     DialsMergingStatisticsError,
 )
+from dials.util.merging_statistics import dataset_statistics
+from dials.util.options import OptionParser
+from dials.util import Sorry
 from iotbx import cif, mtz
 from libtbx import phil
 from mock import Mock
@@ -399,7 +399,7 @@ def merging_stats_from_scaled_array(
             "Dataset contains no equivalent reflections, merging statistics cannot be calculated."
         )
     try:
-        result = iotbx.merging_statistics.dataset_statistics(
+        result = dataset_statistics(
             i_obs=scaled_miller_array,
             n_bins=n_bins,
             anomalous=False,
@@ -413,7 +413,7 @@ def merging_stats_from_scaled_array(
             intensities_anom = intensities_anom.map_to_asu().customized_copy(
                 info=scaled_miller_array.info()
             )
-            anom_result = iotbx.merging_statistics.dataset_statistics(
+            anom_result = dataset_statistics(
                 i_obs=intensities_anom,
                 n_bins=n_bins,
                 anomalous=True,
