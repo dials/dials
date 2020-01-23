@@ -179,11 +179,10 @@ class ScalingRefinery(object):
         except IndexError:
             return False
 
-        tests = [
-            abs((r2[0] - r1[0]) / r2[0]) < self._rmsd_tolerance if r2[0] > 0 else True
-        ]
-
-        return all(tests)
+        if r2 > 0:
+            return abs((r2[0] - r1[0]) / r2[0]) < self._rmsd_tolerance
+        else:
+            return True
 
     def prepare_for_step(self):
         """Update the parameterisation and prepare the target function. Overwrites

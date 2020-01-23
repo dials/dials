@@ -172,9 +172,10 @@ class ErrorModelRefinery(object):
         except IndexError:
             return False
 
-        tests = [abs((r2 - r1) / r2) < self._avals_tolerance if r2 > 0 else True]
-
-        return all(tests)
+        if r2 > 0:
+            return abs((r2 - r1) / r2) < self._avals_tolerance
+        else:
+            return True
 
     def _refine_a(self):
         parameterisation = ErrorModelA_APM(self.model)
