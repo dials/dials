@@ -217,7 +217,7 @@ class BasicErrorModel(object):
                 "",
                 "Error model details:",
                 "  Type: basic",
-                "  Parameters: a = %.5f, b = %.5f" % (a, b),
+                "  Current parameters: a = %.5f, b = %.5f" % (a, b),
                 "  Error model formula: "
                 + u"\u03C3"
                 + "'"
