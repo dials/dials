@@ -1320,7 +1320,6 @@ class IntensityAnalyser(object):
 
         d = OrderedDict()
 
-        # Look at distribution of I/Sigma
         print(" Analysing distribution of I/Sigma")
         d.update(self.i_over_s_hist(rlist))
         print(" Analysing distribution of I/Sigma vs xy")
@@ -1332,6 +1331,8 @@ class IntensityAnalyser(object):
         d.update(self.i_over_s_vs_z(rlist))
         print(" Analysing distribution of partialities")
         d.update(self.partiality_hist(rlist))
+        print(" Analysing QE map")
+        d.update(self.qe_xy(rlist))
         return {"intensity": d}
 
     def i_over_s_hist(self, rlist):
@@ -1473,6 +1474,62 @@ class IntensityAnalyser(object):
                 },
             }
         }
+
+    def qe_xy(self, rlist):
+        """Look at the QE map in x, y"""
+
+        if "qe" not in rlist:
+            return {}
+
+        assert len(rlist) > 0
+        qe = rlist["qe"]
+
+        xc, yc, zc = rlist["xyzcal.px"].parts()
+
+        d = OrderedDict()
+
+        nbinsx, nbinsy = tuple(
+            int(math.ceil(i))
+            for i in (
+                flex.max(xc) / self.pixels_per_bin,
+                flex.max(yc) / self.pixels_per_bin,
+            )
+        )
+
+        xc = xc.as_numpy_array()
+        yc = yc.as_numpy_array()
+        qe = qe.as_numpy_array()
+
+        H, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy))
+        H1, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=qe)
+
+        nonzeros = np.nonzero(H)
+        z1 = np.empty(H.shape)
+        z1[:] = np.NAN
+        z1[nonzeros] = H1[nonzeros] / H[nonzeros]
+
+        d["qe_map"] = {
+            "data": [
+                {
+                    "name": "qe_map",
+                    "x": xedges.tolist(),
+                    "y": yedges.tolist(),
+                    "z": z1.transpose().tolist(),
+                    "type": "heatmap",
+                    "colorbar": {"title": "QE", "titleside": "right"},
+                    "colorscale": "Jet",
+                }
+            ],
+            "layout": {
+                "title": "Calculated Quantum Efficiency",
+                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                "width": 500,
+                "height": 450,
+            },
+        }
+
+        return d
 
 
 class ZScoreAnalyser(object):
