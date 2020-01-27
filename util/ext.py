@@ -7,4 +7,6 @@ __all__ = (  # noqa: F405
     "add_dials_batches",
     "dials_u_to_mosflm",
     "scale_down_array",
+    "streambuf",
+    "ostream",
 )
