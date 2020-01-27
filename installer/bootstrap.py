@@ -13,9 +13,8 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import functools
 import json
-import multiprocessing
+import multiprocessing.pool
 import os
-import platform
 import re
 import shutil
 import socket as pysocket
@@ -23,6 +22,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import threading
 import time
 import warnings
 import zipfile
@@ -42,16 +42,10 @@ clean_env = {
     if key not in ("PYTHONPATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH")
 }
 
-# =============================================================================
-# Locations for the files defining the conda environments
-# Generally, they should reside in the repository of the main program
-# defined by the builder. For example, the environment file for Phenix
-# will be in the Phenix source tree.
-conda_platform = {"Darwin": "osx-64", "Linux": "linux-64", "Windows": "win-64"}
-
 devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 
 allowed_ssh_connections = {}
+concurrent_git_connection_limit = threading.Semaphore(5)
 
 
 def ssh_allowed_for_connection(connection):
@@ -69,11 +63,46 @@ def ssh_allowed_for_connection(connection):
     return allowed_ssh_connections[connection]
 
 
-class conda_manager(object):
+def install_miniconda(location):
+    """Download and install Miniconda3"""
+    if sys.platform.startswith("linux"):
+        filename = "Miniconda3-latest-Linux-x86_64.sh"
+    elif sys.platform == "darwin":
+        filename = "Miniconda3-latest-MacOSX-x86_64.sh"
+    elif os.name == "nt":
+        filename = "Miniconda3-latest-Windows-x86_64.exe"
+    else:
+        raise NotImplementedError(
+            "Unsupported platform %s / %s" % (os.name, sys.platform)
+        )
+    url = "https://repo.anaconda.com/miniconda/" + filename
+    filename = os.path.join(location, filename)
+
+    print("Downloading {url}:".format(url=url), end=" ")
+    result = download_to_file(url, filename)
+    if result in (0, -1):
+        sys.exit("Miniconda download failed")
+
+    # run the installer
+    if os.name == "nt":
+        command = [
+            filename,
+            "/InstallationType=JustMe",
+            "/RegisterPython=0",
+            "/AddToPath=0",
+            "/S",
+            "/D=" + location,
+        ]
+    else:
+        command = ["/bin/sh", filename, "-b", "-u", "-p", location]
+
+    print()
+    run_command(workdir=".", command=command, description="Installing Miniconda")
+
+
+class install_conda(object):
     def __init__(self):
         print()
-
-        self.system = platform.system()
 
         # Find relevant conda base installation
         self.conda_base = os.path.realpath("miniconda")
@@ -91,13 +120,13 @@ class conda_manager(object):
             print("Using miniconda installation from", self.conda_base)
         else:
             print("Installing miniconda into", self.conda_base)
-            self.install_miniconda(self.conda_base)
+            install_miniconda(self.conda_base)
 
         # verify consistency and check conda version
         if not os.path.isfile(self.conda_exe):
             sys.exit("Conda executable not found at " + self.conda_exe)
 
-        self.environments = self.update_environments()
+        self.environments = self.get_environments()
 
         conda_info = json.loads(
             subprocess.check_output([self.conda_exe, "info", "--json"], env=clean_env)
@@ -131,96 +160,21 @@ common compilers provided by conda. Please update your version with
 """
             )
 
-    def update_environments(self):
-        """
-    Read and check for existence of environment directories
-
-    Returns
-    -------
-    environments: list
-      List of paths that exist on the filesystem
-    """
-        environments = set()
-        try:
-            with open(self.environment_file) as f:
-                paths = f.readlines()
-            for env in paths:
-                env = env.strip()
-                if os.path.isdir(env):
-                    environments.add(os.path.normpath(env))
-        except IOError:
-            pass
-
-        env_dirs = [
-            os.path.join(self.conda_base, "envs"),
-            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
-        ]
-        for env_dir in env_dirs:
-            if os.path.isdir(env_dir):
-                dirs = os.listdir(env_dir)
-                for d in dirs:
-                    d = os.path.join(env_dir, d)
-                    if os.path.isdir(d):
-                        environments.add(d)
-
-        return environments
-
-    def install_miniconda(self, location):
-        """Download and install Miniconda3"""
-
-        os_names = {"Darwin": "MacOSX", "Linux": "Linux", "Windows": "Windows"}
-        filename = "Miniconda3-latest-{platform}-x86_64".format(
-            platform=os_names[self.system]
-        )
+        # create environment
+        python = "36"
         if os.name == "nt":
-            filename += ".exe"
+            conda_platform = "win-64"
+        elif sys.platform == "darwin":
+            conda_platform = "osx-64"
         else:
-            filename += ".sh"
-        url_base = "https://repo.anaconda.com/miniconda/"
-        url = url_base + filename
-        filename = os.path.join(location, filename)
+            conda_platform = "linux-64"
 
-        print("Downloading {url}:".format(url=url), end=" ")
-        result = download_to_file(url, filename)
-        if result in (0, -1):
-            sys.exit("Miniconda download failed")
-
-        # run the installer
-        if os.name == "nt":
-            command = [
-                filename,
-                "/InstallationType=JustMe",
-                "/RegisterPython=0",
-                "/AddToPath=0",
-                "/S",
-                "/D=" + location,
-            ]
-        else:
-            command = ["/bin/sh", filename, "-b", "-u", "-p", location]
-
-        print()
-        run_command(workdir=".", command=command, description="Installing Miniconda")
-
-    def create_environment(self, python="36"):
-        """
-    Create the environment based on the builder and file. The
-    environment name is "conda_base".
-
-    Parameters
-    ----------
-    python: str
-      If set, the specific Python version of the environment for the
-      builder is used instead of the default. Current options are
-      '27' and '36' for Python 2.7 and 3.6, respectively.
-    """
         filename = os.path.join(
             "modules",
             "dials",
             ".conda-envs",
-            "{builder}_py{version}_{platform}.txt".format(
-                builder="dials",
-                version=python,
-                platform=conda_platform[platform.system()],
+            "dials_py{version}_{platform}.txt".format(
+                version=python, platform=conda_platform
             ),
         )
 
@@ -261,8 +215,8 @@ common compilers provided by conda. Please update your version with
                 ),
             ]
         print(
-            "{text} {builder} environment with:\n  {filename}".format(
-                text=text_messages[0], builder="dials", filename=filename
+            "{text} dials environment with:\n  {filename}".format(
+                text=text_messages[0], filename=filename
             )
         )
         for retry in range(5):
@@ -315,8 +269,7 @@ channels:
             )
 
         # check that environment file is updated
-        self.environments = self.update_environments()
-        if prefix not in self.environments:
+        if prefix not in self.get_environments():
             raise RuntimeError(
                 """
 The newly installed environment cannot be found in
@@ -324,8 +277,33 @@ ${HOME}/.conda/environments.txt.
 """
             )
 
+    def get_environments(self):
+        """
+        Return a set of existing conda environment paths
+        """
+        try:
+            with open(self.environment_file) as f:
+                paths = f.readlines()
+        except IOError:
+            paths = []
+        environments = set(
+            os.path.normpath(env.strip()) for env in paths if os.path.isdir(env.strip())
+        )
+        env_dirs = (
+            os.path.join(self.conda_base, "envs"),
+            os.path.join(os.path.expanduser("~"), ".conda", "envs"),
+        )
+        for env_dir in env_dirs:
+            if os.path.isdir(env_dir):
+                for d in os.listdir(env_dir):
+                    d = os.path.join(env_dir, d)
+                    if os.path.isdir(d):
+                        environments.add(d)
 
-_BUILD_DIR = "build"  # set by arg parser further on down
+        return environments
+
+
+_BUILD_DIR = "build"
 
 
 def tar_extract(workdir, archive):
@@ -559,9 +537,10 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
 
 def unzip(archive, directory, trim_directory=0):
     """unzip a file into a directory."""
-    print("===== Installing %s into %s" % (archive, directory))
     if not zipfile.is_zipfile(archive):
-        raise Exception("%s is not a valid .zip file" % archive)
+        raise Exception(
+            "Can not install %s: %s is not a valid .zip file" % (directory, archive)
+        )
     z = zipfile.ZipFile(archive, "r")
     for member in z.infolist():
         is_directory = member.filename.endswith("/")
@@ -582,11 +561,9 @@ def unzip(archive, directory, trim_directory=0):
             except Exception:
                 pass
             if not is_directory:
-                source = z.open(member)
-                target = open(filename, "wb")
-                shutil.copyfileobj(source, target)
-                target.close()
-                source.close()
+                with z.open(member) as source:
+                    with open(filename, "wb") as target:
+                        shutil.copyfileobj(source, target)
 
                 # Preserve executable permission, if set
                 unix_executable = member.external_attr >> 16 & 0o111
@@ -621,57 +598,86 @@ def set_git_repository_config_to_rebase(config):
     if branch and remote and not rebase:
         insertions.insert(0, (n + 1, branch))
     for n, branch in insertions:
-        print("  setting branch %s to rebase" % branch)
         cfg.insert(n, "\trebase = true\n")
     with open(config, "w") as fh:
         fh.write("".join(cfg))
 
 
-def git(module, parameters, destination=None, reference=None):
+def git(
+    module,
+    parameters,
+    git_available,
+    destination=None,
+    reference=None,
+    reference_base=None,
+):
     """Retrieve a git repository, either by running git directly
        or by downloading and unpacking an archive."""
-    git_available = True
-    try:
-        subprocess.call(["git", "--version"], stdout=devnull, stderr=devnull)
-    except OSError:
-        git_available = False
-
     if destination is None:
         destination = os.path.join("modules", module)
     destpath, destdir = os.path.split(destination)
 
+    if reference_base and not reference:
+        reference = os.path.join(reference_base, module)
+
     if os.path.exists(destination):
-        if git_available and os.path.exists(os.path.join(destination, ".git")):
-            if (
-                not open(os.path.join(destination, ".git", "HEAD"), "r")
-                .read()
-                .startswith("ref:")
-            ):
-                print(
-                    "WARNING: Can not update existing git repository! You are not on a branch."
-                )
-                print(
-                    "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes"
-                )
-                return
+        if not os.path.exists(os.path.join(destination, ".git")):
+            return module, "WARNING", "Existing non-git directory -- skipping"
+        if not git_available:
+            return module, "WARNING", "can not update module, git command not found"
 
-            else:
-                # This may fail for unclean trees and merge problems. In this case manual
-                # user intervention will be required.
-                # For the record, you can clean up the tree and *discard ALL changes* with
-                #   git reset --hard origin/master
-                #   git clean -dffx
-                return run_command(
-                    command=["git", "pull", "--rebase"], workdir=destination
+        with open(os.path.join(destination, ".git", "HEAD"), "r") as fh:
+            if fh.read(4) != "ref:":
+                return (
+                    module,
+                    "WARNING",
+                    "Can not update existing git repository! You are not on a branch.\n"
+                    "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
-        print(
-            "Existing non-git directory -- don't know what to do. skipping: %s" % module
+        with concurrent_git_connection_limit:
+            p = subprocess.Popen(
+                args=["git", "pull", "--rebase"],
+                cwd=destination,
+                env=clean_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            # This may fail for unclean trees and merge problems. In this case manual
+            # user intervention will be required.
+            # For the record, you can clean up the tree and *discard ALL changes* with
+            #   git reset --hard origin/master
+            #   git clean -dffx
+            try:
+                output, _ = p.communicate()
+            except KeyboardInterrupt:
+                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                p.terminate()
+                raise
+        if p.returncode:
+            return (
+                module,
+                "WARNING",
+                "Can not update existing git repository! Unclean tree or merge problems.\n"
+                + output,
+            )
+        # Show the hash for the checked out commit for debugging purposes
+        p = subprocess.Popen(
+            args=["git", "rev-parse", "HEAD"],
+            cwd=destination,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
-        return
-    if isinstance(parameters, str):
-        parameters = [parameters]
+        output, _ = p.communicate()
+        if p.returncode:
+            return module, "WARNING", "Can not get git repository revision\n" + output
+        return module, "OK", "Checked out revision " + output.strip()
+
     git_parameters = []
+    try:
+        os.makedirs(destpath)
+    except OSError:
+        pass
     for source_candidate in parameters:
         if source_candidate.startswith("-"):
             git_parameters = source_candidate.split(" ")
@@ -683,122 +689,98 @@ def git(module, parameters, destination=None, reference=None):
         if source_candidate.lower().endswith(".git"):
             if not git_available:
                 continue
-            reference_parameters = []
-            if reference is not None:
-                if os.path.exists(reference) and os.path.exists(
-                    os.path.join(reference, ".git")
-                ):
-                    reference_parameters = ["--reference", reference]
-            cmd = (
-                ["git", "clone", "--recursive"]
-                + git_parameters
-                + [source_candidate, destdir]
-                + reference_parameters
-                + ["--progress", "--verbose"]
-            )
-            run_command(command=cmd, workdir=destpath)
+            if (
+                reference
+                and os.path.exists(reference)
+                and os.path.exists(os.path.join(reference, ".git"))
+            ):
+                reference_parameters = ["--reference", reference]
+            else:
+                reference_parameters = []
+            with concurrent_git_connection_limit:
+                p = subprocess.Popen(
+                    args=["git", "clone", "--recursive"]
+                    + git_parameters
+                    + [source_candidate, destdir]
+                    + reference_parameters,
+                    cwd=destpath,
+                    env=clean_env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                )
+                try:
+                    output, _ = p.communicate()
+                except KeyboardInterrupt:
+                    print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                    p.terminate()
+                    raise
+            if p.returncode:
+                return (module, "ERROR", "Can not checkout git repository\n" + output)
             if reference_parameters:
                 # Sever the link between checked out and reference repository
-                cmd = ["git", "repack", "-a", "-d"]
-                run_command(command=cmd, workdir=destination)
-                try:
-                    os.remove(
-                        os.path.join(
-                            destination, ".git", "objects", "info", "alternates"
-                        )
+                returncode = subprocess.call(
+                    ["git", "repack", "-a", "-d"],
+                    cwd=destination,
+                    env=clean_env,
+                    stdout=devnull,
+                    stderr=devnull,
+                )
+                if returncode:
+                    return (
+                        module,
+                        "ERROR",
+                        "Could not detach git repository from reference. Repository may be in invalid state!\n"
+                        "Run 'git repack -a -d' in the repository, or delete and recreate it",
                     )
-                except OSError:
-                    set_git_repository_config_to_rebase(
-                        os.path.join(destination, ".git", "config")
-                    )
-                    return 1
+                alternates = os.path.join(
+                    destination, ".git", "objects", "info", "alternates"
+                )
+                if os.path.exists(alternates):
+                    os.remove(alternates)
             set_git_repository_config_to_rebase(
                 os.path.join(destination, ".git", "config")
             )
             # Show the hash for the checked out commit for debugging purposes
-            run_command(command=["git", "rev-parse", "HEAD"], workdir=destination)
-            return
+            p = subprocess.Popen(
+                args=["git", "rev-parse", "HEAD"],
+                cwd=destination,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            output, _ = p.communicate()
+            if p.returncode:
+                return (
+                    module,
+                    "WARNING",
+                    "Can not get git repository revision\n" + output,
+                )
+            return module, "OK", "Checked out revision " + output.strip()
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
-        print("===== Downloading %s: " % source_candidate, end=" ")
-        download_to_file(source_candidate, filename)
+        download_to_file(source_candidate, filename, log=devnull)
         unzip(filename, destination, trim_directory=1)
-        return
+        return module, "OK", "Downloaded from static archive"
 
-    error = (
-        "Cannot satisfy git dependency for module %s: None of the sources are available."
-        % module
-    )
-    if not git_available:
-        print(error)
-        error = "A git installation has not been found."
-    raise Exception(error)
-
-
-def install_conda():
-    conda_manager().create_environment()
-
-
-def remove_files_by_extension(extension, workdir):
-    cwd = os.getcwd()
-    if workdir is not None:
-        if os.path.exists(workdir):
-            os.chdir(workdir)
-        else:
-            return
-    print("\n  removing %s files in %s" % (extension, os.getcwd()))
-    i = 0
-    for root, dirs, files in os.walk(".", topdown=False):
-        for name in files:
-            if name.endswith(extension):
-                os.remove(os.path.join(root, name))
-                i += 1
-    os.chdir(cwd)
-    print("  removed %d files" % i)
+    if git_available:
+        return module, "ERROR", "Sources not available"
+    return module, "ERROR", "Sources not available. No git installation available"
 
 
 ##### Modules #####
-MODULES = {
-    "scons": ["git", "-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"],
-    "cctbx_project": [
-        "git",
-        "git@github.com:cctbx/cctbx_project.git",
-        "https://github.com/cctbx/cctbx_project.git",
-        "https://github.com/cctbx/cctbx_project/archive/master.zip",
-    ],
-    "boost": [
-        "git",
-        "git@github.com:cctbx/boost.git",
-        "https://github.com/cctbx/boost.git",
-        "https://github.com/cctbx/boost/archive/master.zip",
-    ],
-    "annlib_adaptbx": [
-        "git",
-        "git@github.com:cctbx/annlib_adaptbx.git",
-        "https://github.com/cctbx/annlib_adaptbx.git",
-        "https://github.com/cctbx/annlib_adaptbx/archive/master.zip",
-    ],
-    "dxtbx": [
-        "git",
-        "git@github.com:cctbx/dxtbx.git",
-        "https://github.com/cctbx/dxtbx.git",
-        "https://github.com/cctbx/dxtbx/archive/master.zip",
-    ],
-    "msgpack": [
-        "curl",
-        [
-            "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
-            "https://gitcdn.link/repo/dials/dependencies/dials-1.13/msgpack-3.1.1.tar.gz",
-            "https://github.com/dials/dependencies/raw/dials-1.13/msgpack-3.1.1.tar.gz",
-        ],
-    ],
-    "xia2": [
-        "git",
-        "git@github.com:xia2/xia2.git",
-        "https://github.com/xia2/xia2.git",
-        "https://github.com/xia2/xia2/archive/master.zip",
-    ],
-}
+MODULES = {"scons": ["-b 3.1.1", "https://github.com/SCons/scons/archive/3.1.1.zip"]}
+for module in (
+    "cctbx/annlib_adaptbx",
+    "cctbx/boost",
+    "cctbx/cctbx_project",
+    "cctbx/dxtbx",
+    "xia2/xia2",
+):
+    modulename = module.split("/")[1]
+    MODULES[modulename] = [
+        "git@github.com:%s.git" % module,
+        "https://github.com/%s.git" % module,
+        "https://github.com/%s/archive/master.zip" % module,
+    ]
 for module in (
     "annlib",
     "cbflib",
@@ -811,7 +793,6 @@ for module in (
     "tntbx",
 ):
     MODULES[module] = [
-        "git",
         "git@github.com:dials/%s.git" % module,
         "https://github.com/dials/%s.git" % module,
         "https://github.com/dials/%s/archive/master.zip" % module,
@@ -853,15 +834,14 @@ class DIALSBuilder(object):
 
         # Add sources
         if "update" in actions:
-            for m in sorted(MODULES):
-                self.add_module(m)
+            self.update_sources()
 
         # always remove .pyc files
-        self.remove_pyc()
+        self.remove_pycs()
 
         # Build base packages
         if "base" in actions:
-            self.add_base()
+            install_conda()
 
         # Configure, make, get revision numbers
         if "build" in actions:
@@ -876,29 +856,26 @@ class DIALSBuilder(object):
             self.add_refresh()
             self.add_precommit()
 
-    def isPlatformMacOSX(self):
-        return sys.platform.startswith("darwin")
-
-    def remove_pyc(self):
-        self.steps.append(
-            functools.partial(remove_files_by_extension, ".pyc", "modules")
-        )
+    @staticmethod
+    def remove_pycs():
+        if not os.path.exists("modules"):
+            return
+        print("\n  removing .pyc files in %s" % os.path.join(os.getcwd(), "modules"))
+        i = 0
+        for root, dirs, files in os.walk("modules"):
+            if ".git" in dirs:
+                del dirs[dirs.index(".git")]
+            for name in files:
+                if name.endswith(".pyc"):
+                    os.remove(os.path.join(root, name))
+                    i += 1
+        print("  removed %d files" % i)
 
     def run(self):
         for i in self.steps:
-            i()
-
-    def add_module(self, module):
-        action = MODULES[module]
-        method, parameters = action[0], action[1:]
-        if len(parameters) == 1:
-            parameters = parameters[0]
-        if method == "curl":
-            self._add_curl(module, parameters)
-        elif method == "git":
-            self._add_git(module, parameters)
-        else:
-            raise Exception("Unknown access method: %s %s" % (method, str(parameters)))
+            result = i()
+            if result:
+                print(result)
 
     def _add_download(self, url, to_file):
         if not isinstance(url, list):
@@ -920,58 +897,55 @@ class DIALSBuilder(object):
 
         self.steps.append(_download)
 
-    def _add_curl(self, module, url):
-        if isinstance(url, list):
-            filename = urlparse(url[0])[2].split("/")[-1]
+    def update_sources(self):
+        if self.git_reference:
+            reference_base = os.path.expanduser(self.git_reference)
         else:
-            filename = urlparse(url)[2].split("/")[-1]
-        # Google Drive URL does not contain the module name
-        if filename == "uc":
-            filename = module + ".gz"
-        self._add_download(url, os.path.join("modules", filename))
-
-        def _indirection():
-            description = "extracting files from %s" % filename
-            print("===== Running in modules:", description)
-            tar_extract("modules", filename)
-
-        self.steps.append(_indirection)
-
-    def _add_git(self, module, parameters, destination=None):
-        reference_repository_path = self.git_reference
-        if reference_repository_path is None:
             if os.name == "posix" and pysocket.gethostname().endswith(".diamond.ac.uk"):
-                reference_repository_path = (
+                reference_base = (
                     "/dls/science/groups/scisoft/DIALS/repositories/git-reference"
                 )
-        if reference_repository_path:
-            reference_repository_path = os.path.expanduser(
-                os.path.join(reference_repository_path, module)
+            else:
+                reference_base = None
+        try:
+            git_available = not subprocess.call(
+                ["git", "--version"], stdout=devnull, stderr=devnull
             )
+        except OSError:
+            git_available = False
 
-        self.steps.append(
-            functools.partial(
-                git,
+        def git_fn(module):
+            return git(
                 module,
-                parameters,
-                destination=destination,
-                reference=reference_repository_path,
+                MODULES[module],
+                git_available=git_available,
+                reference_base=reference_base,
             )
-        )
 
-    def _get_conda_python(self):
-        """
-    Helper function for determining the location of Python for the base
-    and build actions.
-    """
-        if os.name == "nt":
-            return os.path.join(os.getcwd(), "conda_base", "python.exe")
-        elif self.isPlatformMacOSX():
-            return os.path.join(
-                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
-            )
-        else:
-            return os.path.join("..", "conda_base", "bin", "python")
+        update_pool = multiprocessing.pool.ThreadPool(20)
+        try:
+            for result in update_pool.imap_unordered(git_fn, MODULES):
+                module, result, output = result
+                output = (result + " - " + output).replace(
+                    "\n", "\n" + " " * (len(module + result) + 5)
+                )
+                if os.name == "posix" and sys.stdout.isatty():
+                    if result == "OK":
+                        output = "\x1b[32m" + output + "\x1b[0m"
+                    elif result == "WARNING":
+                        output = "\x1b[33m" + output + "\x1b[0m"
+                    elif result == "ERROR":
+                        output = "\x1b[31m" + output + "\x1b[0m"
+                print(module + ": " + output)
+        # results = update_pool.map(git_fn, MODULES)
+        except KeyboardInterrupt:
+            update_pool.terminate()
+            sys.exit("\naborted with Ctrl+C")
+        except Exception:
+            update_pool.terminate()
+            raise
+        update_pool.close()
+        update_pool.join()
 
     def add_command(self, command, description=None, workdir=None, args=None):
         if os.name == "nt":
@@ -1005,16 +979,22 @@ class DIALSBuilder(object):
             args=["install"],
         )
 
-    def add_base(self):
-        self.steps.append(install_conda)
-
     def add_configure(self):
+        if os.name == "nt":
+            conda_python = os.path.join(os.getcwd(), "conda_base", "python.exe")
+        elif sys.platform.startswith("darwin"):
+            conda_python = os.path.join(
+                "..", "conda_base", "python.app", "Contents", "MacOS", "python"
+            )
+        else:
+            conda_python = os.path.join("..", "conda_base", "bin", "python")
+
         if "--use_conda" not in self.config_flags:
             self.config_flags.append("--use_conda")
 
         configcmd = (
             [
-                self._get_conda_python(),
+                conda_python,
                 os.path.join(
                     "..", "modules", "cctbx_project", "libtbx", "configure.py"
                 ),
