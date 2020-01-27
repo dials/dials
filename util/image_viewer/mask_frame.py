@@ -672,7 +672,7 @@ class MaskSettingsPanel(wx.Panel):
         from dials.util.masking import phil_scope
 
         file_name = self.params.output.mask_params
-        with open(file_name, "wb") as f:
+        with open(file_name, "w") as f:
             print("Saving parameters to %s" % file_name)
             phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
 
