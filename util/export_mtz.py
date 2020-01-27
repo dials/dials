@@ -3,6 +3,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+import sys
 import time
 from collections import OrderedDict, Counter
 
@@ -455,15 +456,18 @@ def export_mtz(integrated_data, experiment_list, params):
         logger.warning("Ignoring multiple panels in output MTZ")
 
     # Clean up the data with the passed in options
-    integrated_data = filter_reflection_table(
-        integrated_data,
-        intensity_choice=params.intensity,
-        partiality_threshold=params.mtz.partiality_threshold,
-        combine_partials=params.mtz.combine_partials,
-        min_isigi=params.mtz.min_isigi,
-        filter_ice_rings=params.mtz.filter_ice_rings,
-        d_min=params.mtz.d_min,
-    )
+    try:
+        integrated_data = filter_reflection_table(
+            integrated_data,
+            intensity_choice=params.intensity,
+            partiality_threshold=params.mtz.partiality_threshold,
+            combine_partials=params.mtz.combine_partials,
+            min_isigi=params.mtz.min_isigi,
+            filter_ice_rings=params.mtz.filter_ice_rings,
+            d_min=params.mtz.d_min,
+        )
+    except AssertionError:
+        sys.exit("Error with input: missing data for %s" % params.intensity)
 
     # get batch offsets and image ranges - even for scanless experiments
     batch_offsets = [

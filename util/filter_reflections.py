@@ -105,6 +105,7 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
                 "(if parsing from command line, multiple choices passed as e.g. profile+sum"
             ).format(intensity_choice)
         )
+
     # assert correct form of input data for choice.
     if "scale" in intensity_choice:
         assert "inverse_scale_factor" in reflection_table
