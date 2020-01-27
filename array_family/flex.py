@@ -224,7 +224,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
-            outfile.write(self.as_msgpack())
+            self.as_msgpack_to_file(boost.python.streambuf(python_file_obj=outfile))
 
     @staticmethod
     def from_msgpack_file(filename):
