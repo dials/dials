@@ -466,8 +466,11 @@ def export_mtz(integrated_data, experiment_list, params):
             filter_ice_rings=params.mtz.filter_ice_rings,
             d_min=params.mtz.d_min,
         )
-    except AssertionError:
-        sys.exit("Error with input: missing data for %s" % params.intensity)
+    except AssertionError as e:
+        if str(e):
+            sys.exit("Error with input: %s" % str(e))
+        else:
+            sys.exit("Error with input: missing data for %s" % params.intensity)
 
     # get batch offsets and image ranges - even for scanless experiments
     batch_offsets = [
