@@ -2,8 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import boost.python
 import pytest
-import StringIO
-import cStringIO
+import six
 from dials.util.ext import streambuf, ostream
 from libtbx.test_utils import Exception_expected
 import libtbx.object_oriented_patterns as oop
@@ -43,13 +42,13 @@ class io_test_case(object):
         streambuf.default_buffer_size = m
 
     def exercise_read(self):
-        self.create_file_object(mode="r")
+        self.create_file_object(mode="rb")
         words = ext.test_read(streambuf(self.file_object), "read")
         assert words == "Coding, should, be, fun, [ fail, eof ]"
         self.file_object.close()
 
     def exercise_partial_read(self):
-        self.create_file_object(mode="r")
+        self.create_file_object(mode="rb")
         words = ext.test_read(streambuf(self.file_object), "partial read")
         assert words == "Coding, should, "
         trailing = self.file_object.read()
@@ -57,7 +56,7 @@ class io_test_case(object):
         self.file_object.close()
 
     def exercise_read_failure(self):
-        self.create_file_object(mode="r")
+        self.create_file_object(mode="rb")
         self.file_object.close()
         try:
             ext.test_read(streambuf(self.file_object), "read")
@@ -68,14 +67,14 @@ class io_test_case(object):
         self.file_object.close()
 
     def exercise_write(self):
-        self.create_file_object(mode="w")
+        self.create_file_object(mode="wb")
         report = ext.test_write(ostream(self.file_object), "write")
         assert report == ""
         assert self.file_content() == "2 times 1.6 equals 3.2"
         self.file_object.close()
 
     def exercise_seek_and_read(self):
-        self.create_instrumented_file_object(mode="r")
+        self.create_instrumented_file_object(mode="rb")
         words = ext.test_read(streambuf(self.file_object), "read and seek")
         assert words == "should, should, uld, ding, fun, [ eof ]"
         n = streambuf.default_buffer_size
@@ -105,7 +104,7 @@ class io_test_case(object):
         self.file_object.close()
 
     def exercise_write_and_seek(self):
-        self.create_instrumented_file_object(mode="w")
+        self.create_instrumented_file_object(mode="wb")
         report = ext.test_write(ostream(self.file_object), "write and seek (cur)")
         assert report == ""
         expected = "1000 times 1000 equals 1000000"
@@ -123,17 +122,16 @@ class io_test_case(object):
         self.file_object = file_object_debug_proxy(self.file_object)
 
 
-class stringio_test_case(io_test_case):
-
-    stringio_type = StringIO.StringIO
+class bytesio_test_case(io_test_case):
+    stringio_type = six.BytesIO
 
     def exercise_write_failure(self):
         pass
 
     def create_file_object(self, mode):
-        if mode == "r":
+        if mode == "rb":
             self.file_object = self.stringio_type(self.phrase)
-        elif mode == "w":
+        elif mode == "wb":
             self.file_object = self.stringio_type()
         else:
             raise NotImplementedError("Internal error in the test code")
@@ -142,38 +140,16 @@ class stringio_test_case(io_test_case):
         return self.file_object.getvalue()
 
 
-class cstringio_test_case(stringio_test_case):
-
-    stringio_type = cStringIO.StringIO
-
-    def exercise_write_failure(self):
-        self.create_file_object(mode="r")
-        try:
-            ext.test_write(ostream(self.file_object), "write")
-        except ValueError as err:
-            # That Python file object has no 'write' attribute
-            assert str(err).find("write") > -1
-        except RuntimeError as err:
-            # Redhat 8.0: basic_ios::clear(iostate) caused exception
-            assert str(err).find("clear") > -1
-        else:
-            raise Exception_expected
-
-
 class mere_file_test_case(io_test_case):
     def exercise_write_failure(self):
-        import platform
-
-        if platform.platform().find("redhat-8.0") >= 0:
-            return  # avoid Abort
-        self.create_file_object(mode="r")
+        self.create_file_object(mode="rb")
         with pytest.raises(IOError):
             ext.test_write(streambuf(self.file_object), "write")
         self.file_object.close()
 
     def create_file_object(self, mode):
-        f = open("tmp_tst_python_streambuf", "w")
-        if mode.find("r") > -1:
+        f = open("tmp_tst_python_streambuf", "wb")
+        if mode.find("rb") > -1:
             f.write(self.phrase)
         f.close()
         self.file_object = open(f.name, mode)
@@ -186,12 +162,8 @@ class mere_file_test_case(io_test_case):
         return result
 
 
-def test_with_stringio():
-    stringio_test_case().run()
-
-
-def test_with_cstringio():
-    cstringio_test_case().run()
+def test_with_bytesio():
+    bytesio_test_case().run()
 
 
 def test_with_file(tmpdir):
