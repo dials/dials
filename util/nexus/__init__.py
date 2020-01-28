@@ -13,8 +13,8 @@ def get_entry(filename, mode="a"):
     else:
         entry = handle.create_group("entry")
         entry.attrs["NX_class"] = "NXentry"
-    handle.attrs["file_name"] = filename
-    handle.attrs["file_time"] = strftime("%Y-%m-%dT%H:%M:%S")
+        handle.attrs["file_name"] = filename
+        handle.attrs["file_time"] = strftime("%Y-%m-%dT%H:%M:%S")
     return entry
 
 
