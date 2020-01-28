@@ -4,7 +4,6 @@ import boost.python
 import pytest
 import six
 from dials.util.ext import streambuf, ostream
-from libtbx.test_utils import Exception_expected
 import libtbx.object_oriented_patterns as oop
 
 ext = boost.python.import_ext("dials_util_streambuf_test_ext")
@@ -43,13 +42,13 @@ class io_test_case(object):
 
     def exercise_read(self):
         self.create_file_object(mode="rb")
-        words = ext.test_read(streambuf(self.file_object), "read")
+        words = ext.read_word(streambuf(self.file_object))
         assert words == "Coding, should, be, fun, [ fail, eof ]"
         self.file_object.close()
 
     def exercise_partial_read(self):
         self.create_file_object(mode="rb")
-        words = ext.test_read(streambuf(self.file_object), "partial read")
+        words = ext.partial_read(streambuf(self.file_object))
         assert words == "Coding, should, "
         trailing = self.file_object.read()
         assert trailing == " be fun"
@@ -58,24 +57,20 @@ class io_test_case(object):
     def exercise_read_failure(self):
         self.create_file_object(mode="rb")
         self.file_object.close()
-        try:
-            ext.test_read(streambuf(self.file_object), "read")
-        except ValueError:
-            pass
-        else:
-            raise Exception_expected
+        with pytest.raises(ValueError):
+            ext.read_word(streambuf(self.file_object))
         self.file_object.close()
 
     def exercise_write(self):
         self.create_file_object(mode="wb")
-        report = ext.test_write(ostream(self.file_object), "write")
+        report = ext.write_word(ostream(self.file_object))
         assert report == ""
         assert self.file_content() == "2 times 1.6 equals 3.2"
         self.file_object.close()
 
     def exercise_seek_and_read(self):
         self.create_instrumented_file_object(mode="rb")
-        words = ext.test_read(streambuf(self.file_object), "read and seek")
+        words = ext.read_and_seek(streambuf(self.file_object))
         assert words == "should, should, uld, ding, fun, [ eof ]"
         n = streambuf.default_buffer_size
         soughts = self.file_object.seek_call_log
@@ -105,7 +100,7 @@ class io_test_case(object):
 
     def exercise_write_and_seek(self):
         self.create_instrumented_file_object(mode="wb")
-        report = ext.test_write(ostream(self.file_object), "write and seek (cur)")
+        report = ext.write_and_seek(ostream(self.file_object))
         assert report == ""
         expected = "1000 times 1000 equals 1000000"
         assert self.file_content() == expected
@@ -144,7 +139,7 @@ class mere_file_test_case(io_test_case):
     def exercise_write_failure(self):
         self.create_file_object(mode="rb")
         with pytest.raises(IOError):
-            ext.test_write(streambuf(self.file_object), "write")
+            ext.write_word(streambuf(self.file_object))
         self.file_object.close()
 
     def create_file_object(self, mode):
