@@ -131,10 +131,14 @@ class LaueGroupAnalysis(symmetry_base):
         max_n_group = int(min(n_pairs / min_num_groups, 200))  # maximum number in group
         min_n_group = int(min(5, max_n_group))  # minimum number in group
 
+        if (max_n_group - min_n_group) < 4:
+            self.cc_sig_fac = 0
+            return
+
         mean_ccs = flex.double()
         rms_ccs = flex.double()
         ns = flex.double()
-        for n in range(min_n_group, max_n_group):
+        for n in range(min_n_group, max_n_group + 1):
             ns.append(n)
             ccs = flex.double()
             for i in range(200):
@@ -149,8 +153,10 @@ class LaueGroupAnalysis(symmetry_base):
         y = rms_ccs
         fit = flex.linear_regression(x, y)
 
-        assert fit.is_well_defined()
-        self.cc_sig_fac = fit.slope()
+        if fit.is_well_defined():
+            self.cc_sig_fac = fit.slope()
+        else:
+            self.cc_sig_fac = 0
 
     def _estimate_cc_true(self):
 
