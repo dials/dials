@@ -1,11 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import boost.python
-from boost.python import streambuf, ostream
 from six.moves import range
-ext = boost.python.import_ext("boost_adaptbx_python_streambuf_test_ext")
+ext = boost.python.import_ext("dials_util_streambuf_test_ext")
 import StringIO
 import cStringIO
+from dials.util.ext import streambuf, ostream
 from libtbx.test_utils import Exception_expected
 from libtbx.option_parser import option_parser
 import libtbx.object_oriented_patterns as oop

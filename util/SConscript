@@ -9,3 +9,7 @@ if os.name == "nt":
     env.Prepend(LIBS=["Advapi32"])
 
 env.SharedLibrary(target="#/lib/dials_util_ext", source=sources, LIBS=env["LIBS"])
+env.SharedLibrary(
+    target="#/lib/dials_util_streambuf_test_ext",
+    source="boost_python/streambuf_test_ext.cpp",
+)

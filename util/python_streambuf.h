@@ -8,6 +8,8 @@
 #include <boost/optional.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
 
+#include <dials/error.h>
+
 #include <streambuf>
 #include <iostream>
 
