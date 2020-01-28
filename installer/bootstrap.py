@@ -15,6 +15,7 @@ import functools
 import json
 import multiprocessing.pool
 import os
+import random
 import re
 import shutil
 import socket as pysocket
@@ -946,6 +947,31 @@ class DIALSBuilder(object):
             raise
         update_pool.close()
         update_pool.join()
+
+        msgpack = "msgpack-3.1.1.tar.gz"
+        for retry in range(5):
+            try:
+                print("Downloading msgpack:", end=" ")
+                result = download_to_file(
+                    random.choice(
+                        [
+                            "https://gitcdn.xyz/repo/dials/dependencies/dials-1.13/",
+                            "https://gitcdn.link/repo/dials/dependencies/dials-1.13/",
+                            "https://github.com/dials/dependencies/raw/dials-1.13/",
+                        ]
+                    )
+                    + msgpack,
+                    os.path.join("modules", msgpack),
+                )
+                assert result > 0 or result == -2
+            except Exception as err:
+                print("Error downloading msgpack. (%s) Retrying..." % err)
+                time.sleep(3)
+            else:
+                break
+        else:
+            sys.exit("Could not download msgpack")
+        tar_extract("modules", msgpack)
 
     def add_command(self, command, description=None, workdir=None, args=None):
         if os.name == "nt":
