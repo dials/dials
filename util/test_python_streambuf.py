@@ -9,8 +9,8 @@ from dials.util.ext import streambuf, ostream
 ext = boost.python.import_ext("dials_util_streambuf_test_ext")
 
 class io_test_case(object):
-    phrase = "Coding should be fun"
-    #         01234567890123456789
+    phrase = b"Coding should be fun"
+    #          01234567890123456789
 
     def run(self):
         m = streambuf.default_buffer_size
@@ -28,15 +28,15 @@ class io_test_case(object):
     def exercise_read(self):
         self.create_file_object(mode="rb")
         words = ext.read_word(streambuf(self.file_object))
-        assert words == "Coding, should, be, fun, [ fail, eof ]"
+        assert words == b"Coding, should, be, fun, [ fail, eof ]"
         self.file_object.close()
 
     def exercise_partial_read(self):
         self.create_file_object(mode="rb")
         words = ext.partial_read(streambuf(self.file_object))
-        assert words == "Coding, should, "
+        assert words == b"Coding, should, "
         trailing = self.file_object.read()
-        assert trailing == " be fun"
+        assert trailing == b" be fun"
         self.file_object.close()
 
     def exercise_read_failure(self):
@@ -49,15 +49,15 @@ class io_test_case(object):
     def exercise_write(self):
         self.create_file_object(mode="wb")
         report = ext.write_word(ostream(self.file_object))
-        assert report == ""
-        assert self.file_content() == "2 times 1.6 equals 3.2"
+        assert report == b""
+        assert self.file_content() == b"2 times 1.6 equals 3.2"
         self.file_object.close()
 
     def exercise_seek_and_read(self):
         self.create_file_object(mode="rb")
         instrumented_file = mock.Mock(spec=self.file_object, wraps=self.file_object)
         words = ext.read_and_seek(streambuf(instrumented_file))
-        assert words == "should, should, uld, ding, fun, [ eof ]"
+        assert words == b"should, should, uld, ding, fun, [ eof ]"
         n = streambuf.default_buffer_size
         soughts = instrumented_file.seek.call_args_list
         # stringent tests carefully crafted to make sure the seek-in-buffer
@@ -88,8 +88,8 @@ class io_test_case(object):
         self.create_file_object(mode="wb")
         instrumented_file = mock.Mock(spec=self.file_object, wraps=self.file_object)
         report = ext.write_and_seek(ostream(instrumented_file))
-        assert report == ""
-        expected = "1000 times 1000 equals 1000000"
+        assert report == b""
+        expected = b"1000 times 1000 equals 1000000"
         assert self.file_content() == expected
         assert self.file_object.tell() == 9
         if streambuf.default_buffer_size >= 30:
@@ -135,7 +135,8 @@ class mere_file_test_case(io_test_case):
 
     def file_content(self):
         self.file_object.flush()
-        result = open(self.file_object.name).read()
+        with open(self.file_object.name, "rb") as fh:
+            result = fh.read()
         return result
 
 

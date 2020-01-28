@@ -13,10 +13,6 @@
 #include <streambuf>
 #include <iostream>
 
-#if PY_MAJOR_VERSION >= 3
-#define IS_PY3K
-#endif
-
 namespace dials { namespace util {
 
 namespace bp = boost::python;
@@ -201,13 +197,8 @@ class streambuf : public std::basic_streambuf<char>
       read_buffer = py_read(buffer_size);
       char *read_buffer_data;
       bp::ssize_t py_n_read;
-#ifdef IS_PY3K
       if (PyBytes_AsStringAndSize(read_buffer.ptr(),
                                    &read_buffer_data, &py_n_read) == -1) {
-#else
-      if (PyString_AsStringAndSize(read_buffer.ptr(),
-                                   &read_buffer_data, &py_n_read) == -1) {
-#endif
         setg(0, 0, 0);
         throw std::invalid_argument(
           "The method 'read' of the Python file object "
@@ -229,10 +220,14 @@ class streambuf : public std::basic_streambuf<char>
       }
       farthest_pptr = std::max(farthest_pptr, pptr());
       off_type n_written = (off_type)(farthest_pptr - pbase());
-      bp::str chunk(pbase(), farthest_pptr);
-      py_write(chunk);
+      boost::python::object data_bytes(
+         boost::python::handle<>(PyBytes_FromStringAndSize(pbase(), n_written)));
+      py_write(data_bytes);
       if (!traits_type::eq_int_type(c, traits_type::eof())) {
-        py_write(traits_type::to_char_type(c));
+        char trait_char = traits_type::to_char_type(c);
+        boost::python::object char_bytes(
+           boost::python::handle<>(PyBytes_FromStringAndSize(&trait_char, 1)));
+        py_write(char_bytes);
         n_written++;
       }
       if (n_written) {

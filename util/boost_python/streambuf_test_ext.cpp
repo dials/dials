@@ -7,19 +7,21 @@
 namespace dials { namespace util { namespace {
 
   template <class StreamType>
-  std::string append_status(StreamType const &s, std::string &result) {
+  boost::python::object append_status(StreamType const &s, std::string &result) {
     if (!s.good()) result += "[ ";
     if (s.bad()) result += "bad, ";
     if (s.fail()) result += "fail, ";
     if (s.eof()) result += "eof";
     if (!s.good()) result += " ]";
-    return result;
+    boost::python::object data_bytes(
+      boost::python::handle<>(PyBytes_FromStringAndSize(result.c_str(), result.size())));
+    return data_bytes;
   }
 
   // Coding should be fun
   // 012345678901234567890
 
-  std::string read_word(streambuf& input) {
+  boost::python::object read_word(streambuf& input) {
     streambuf::istream is(input);
     std::string word, result;
 
@@ -30,7 +32,7 @@ namespace dials { namespace util { namespace {
     return append_status(is, result);
   }
 
-  std::string read_and_seek(streambuf& input) {
+  boost::python::object read_and_seek(streambuf& input) {
     streambuf::istream is(input);
     std::string word, result;
 
@@ -48,7 +50,7 @@ namespace dials { namespace util { namespace {
     return append_status(is, result);
   }
 
-  std::string partial_read(streambuf& input) {
+  boost::python::object partial_read(streambuf& input) {
     streambuf::istream is(input);
     std::string word, result;
 
@@ -58,7 +60,7 @@ namespace dials { namespace util { namespace {
     return append_status(is, result);
   }
 
-  std::string write_word_ostream(std::ostream &os) {
+  boost::python::object write_word_ostream(std::ostream &os) {
     std::string result;
 
     os << 2 << " times " << 1.6 << " equals " << 3.2;
@@ -66,7 +68,7 @@ namespace dials { namespace util { namespace {
     return append_status(os, result);
   }
 
-  std::string write_and_seek_ostream(std::ostream &os) {
+  boost::python::object write_and_seek_ostream(std::ostream &os) {
     std::string result;
 
     os << 1000 << " timEs " << 5555 << " equalS " << 1000000;
@@ -82,12 +84,12 @@ namespace dials { namespace util { namespace {
     return append_status(os, result);
   }
 
-  std::string write_word(streambuf& output) {
+  boost::python::object write_word(streambuf& output) {
     streambuf::ostream os(output);
     return write_word_ostream(os);
   }
 
-  std::string write_and_seek(streambuf& output) {
+  boost::python::object write_and_seek(streambuf& output) {
     streambuf::ostream os(output);
     return write_and_seek_ostream(os);
   }
