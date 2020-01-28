@@ -10,6 +10,7 @@ from dials.util.nexus.nx_mx import polarization_normal_to_stokes
 from dials.util.nexus.nx_mx import polarization_stokes_to_normal
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx import matrix
+from dials.command_line.export import phil_scope
 
 
 def test_polarization_conversion():
@@ -32,7 +33,9 @@ def test_polarization_conversion():
 
 def run_single(experiments1, filename):
     # Dump the file
-    dials.util.nexus.dump(experiments1, None, filename)
+    params = phil_scope.extract().nxs
+    params.hklout = filename
+    dials.util.nexus.dump(experiments1, None, params)
 
     # Load the file
     experiments2, reflections = dials.util.nexus.load(filename)
