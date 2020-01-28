@@ -154,6 +154,22 @@ phil_scope = parse(
       .type = path
       .help = "The output Nexus file"
 
+    instrument_name = Unknown
+      .type = str
+      .help = "Name of the instrument/beamline"
+
+    instrument_short_name = Unknown
+      .type = str
+      .help = "Short name for instrument/beamline, perhaps the acronym"
+
+    source_name = Unknown
+      .type = str
+      .help = "Name of the source/facility"
+
+    source_short_name = Unknown
+      .type = str
+      .help = "Short name for source, perhaps the acronym"
+
   }
 
   mmcif {
@@ -298,7 +314,7 @@ def export_nexus(params, experiments, reflections):
 
     from dials.util.nexus import dump
 
-    dump(experiments, reflections[0], params.nxs.hklout)
+    dump(experiments, reflections[0], params.nxs)
 
 
 def export_mmcif(params, experiments, reflections):

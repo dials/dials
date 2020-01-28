@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import h5py
 from dials.util.nexus import nx_reflections, nx_mx
+from time import strftime
 
 
 def get_entry(filename, mode="a"):
@@ -12,6 +13,8 @@ def get_entry(filename, mode="a"):
     else:
         entry = handle.create_group("entry")
         entry.attrs["NX_class"] = "NXentry"
+    handle.attrs["file_name"] = filename
+    handle.attrs["file_time"] = strftime("%Y-%m-%dT%H:%M:%S")
     return entry
 
 
@@ -22,7 +25,8 @@ def load(filename):
     return exp, ref
 
 
-def dump(experiments, reflections, filename):
+def dump(experiments, reflections, params):
+    filename = params.hklout
     entry = get_entry(filename, "w")
-    experiments = nx_mx.dump(entry, experiments)
+    experiments = nx_mx.dump(entry, experiments, params)
     nx_reflections.dump(entry, reflections, experiments)
