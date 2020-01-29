@@ -65,9 +65,9 @@ def _average_bbox_size(reflections):
     sel = flex.random_selection(len(bbox), min(len(bbox), 1000))
     subset_bbox = bbox.select(sel)
     xmin, xmax, ymin, ymax, zmin, zmax = subset_bbox.parts()
-    xsize = flex.mean(flex.double(xmax - xmin))
-    ysize = flex.mean(flex.double(ymax - ymin))
-    zsize = flex.mean(flex.double(zmax - zmin))
+    xsize = flex.mean((xmax - xmin).as_double())
+    ysize = flex.mean((ymax - ymin).as_double())
+    zsize = flex.mean((zmax - zmin).as_double())
     return xsize, ysize, zsize
 
 
