@@ -11,7 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
-#include <boost_adaptbx/python_streambuf.h>
+#include <dials/util/python_streambuf.h>
 #include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
@@ -29,7 +29,7 @@
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
-  using boost_adaptbx::python::streambuf;
+  using dials::util::streambuf;
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::model::Observation;
   using dials::model::Shoebox;
