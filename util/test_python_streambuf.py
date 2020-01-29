@@ -1,27 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import boost.python
+import mock
 import pytest
 import six
 from dials.util.ext import streambuf, ostream
-import libtbx.object_oriented_patterns as oop
 
 ext = boost.python.import_ext("dials_util_streambuf_test_ext")
-
-class file_object_debug_proxy(oop.proxy):
-    def __init__(self, *args, **kwds):
-        super(file_object_debug_proxy, self).__init__(*args, **kwds)
-        self.seek_call_log = []
-        self.write_call_log = []
-
-    def seek(self, off, mode):
-        self.seek_call_log.append((off, mode))
-        self.subject.seek(off, mode)
-
-    def write(self, s):
-        self.write_call_log.append(s)
-        self.subject.write(s)
-
 
 class io_test_case(object):
     phrase = "Coding should be fun"
@@ -69,27 +54,28 @@ class io_test_case(object):
         self.file_object.close()
 
     def exercise_seek_and_read(self):
-        self.create_instrumented_file_object(mode="rb")
-        words = ext.read_and_seek(streambuf(self.file_object))
+        self.create_file_object(mode="rb")
+        instrumented_file = mock.Mock(spec=self.file_object, wraps=self.file_object)
+        words = ext.read_and_seek(streambuf(instrumented_file))
         assert words == "should, should, uld, ding, fun, [ eof ]"
         n = streambuf.default_buffer_size
-        soughts = self.file_object.seek_call_log
+        soughts = instrumented_file.seek.call_args_list
         # stringent tests carefully crafted to make sure the seek-in-buffer
         # optimisation works as expected
         # C.f. the comment in the C++ function actual_write_test
-        assert soughts[-1] == (-4, 2)
+        assert soughts[-1] == mock.call(-4, 2)
         soughts = soughts[:-1]
         if n >= 14:
             assert soughts == []
         else:
-            assert soughts[0] == (6, 0)
+            assert soughts[0] == mock.call(6, 0)
             soughts = soughts[1:]
             if 8 <= n <= 13:
                 assert len(soughts) == 1 and self.only_seek_cur(soughts)
             elif n == 7:
                 assert len(soughts) == 2 and self.only_seek_cur(soughts)
             else:
-                assert soughts[0] == (6, 0)
+                assert soughts[0] == mock.call(6, 0)
                 soughts = soughts[1:]
                 assert self.only_seek_cur(soughts)
                 if n == 4:
@@ -99,22 +85,20 @@ class io_test_case(object):
         self.file_object.close()
 
     def exercise_write_and_seek(self):
-        self.create_instrumented_file_object(mode="wb")
-        report = ext.write_and_seek(ostream(self.file_object))
+        self.create_file_object(mode="wb")
+        instrumented_file = mock.Mock(spec=self.file_object, wraps=self.file_object)
+        report = ext.write_and_seek(ostream(instrumented_file))
         assert report == ""
         expected = "1000 times 1000 equals 1000000"
         assert self.file_content() == expected
         assert self.file_object.tell() == 9
         if streambuf.default_buffer_size >= 30:
-            assert self.file_object.write_call_log == [expected]
+            assert instrumented_file.write.call_count == 1
         self.file_object.close()
 
-    def only_seek_cur(cls, seek_calls):
-        return [whence for off, whence in seek_calls if whence != 1] == []
-
-    def create_instrumented_file_object(self, mode):
-        self.create_file_object(mode)
-        self.file_object = file_object_debug_proxy(self.file_object)
+    @staticmethod
+    def only_seek_cur(seek_calls):
+        return all(call.args[1] == 1 for call in seek_calls)
 
 
 class bytesio_test_case(io_test_case):
@@ -150,10 +134,8 @@ class mere_file_test_case(io_test_case):
         self.file_object = open(f.name, mode)
 
     def file_content(self):
-        i = self.file_object.tell()
         self.file_object.flush()
         result = open(self.file_object.name).read()
-        self.file_object.seek(i, 0)
         return result
 
 
