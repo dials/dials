@@ -64,6 +64,7 @@ namespace dials { namespace util { namespace {
     std::string result;
 
     os << 2 << " times " << 1.6 << " equals " << 3.2;
+    os.flush();
 
     return append_status(os, result);
   }
@@ -80,6 +81,7 @@ namespace dials { namespace util { namespace {
     os << "s";
     os.seekp(-14, std::ios_base::cur);
     os << "e";
+    os.flush();
 
     return append_status(os, result);
   }
