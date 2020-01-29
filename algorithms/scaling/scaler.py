@@ -28,11 +28,8 @@ from dials.algorithms.scaling.basis_functions import RefinerCalculator
 from dials.algorithms.scaling.outlier_rejection import determine_outlier_index_arrays
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.target_function import ScalingTarget, ScalingTargetFixedIH
-from dials.algorithms.scaling.scaling_refiner import (
-    scaling_refinery,
-    error_model_refinery,
-)
-from dials.algorithms.scaling.error_model.error_model import get_error_model
+from dials.algorithms.scaling.scaling_refiner import scaling_refinery
+from dials.algorithms.scaling.error_model.engine import run_error_model_refinement
 from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 from dials.algorithms.scaling.scaling_utilities import (
     log_memory_usage,
@@ -196,7 +193,7 @@ class ScalerBase(Subject):
                 refinery.run()
             except RuntimeError as e:
                 logger.error(e, exc_info=True)
-            logger.info("Time taken for refinement %s", (time.time() - st))
+            logger.info("Time taken for refinement %.2f", (time.time() - st))
             refinery.print_step_table()
             self._update_after_minimisation(apm)
             logger.info("\n" + "=" * 80 + "\n")
@@ -207,21 +204,14 @@ class ScalerBase(Subject):
         Ih_table = self.global_Ih_table
         Ih_table.reset_error_model()
         Ih_table.calc_Ih()
-        error_model = get_error_model(self.params.weighting.error_model.error_model)
         try:
-            logger.info("Performing a round of error model refinement.")
-            refinery = error_model_refinery(
-                engine="SimpleLBFGS",
-                model=error_model(Ih_table.blocked_data_list[0], self.params),
-                max_iterations=100,
+            model = run_error_model_refinement(
+                self.params.weighting.error_model, Ih_table
             )
-            refinery.run()
-        except (RuntimeError, ValueError) as e:
-            logger.error(e, exc_info=True)
+        except (ValueError, RuntimeError) as e:
+            logger.info(e, exc_info=True)
         else:
-            logger.info(refinery.model)
-            logger.info(refinery.model.minimisation_summary())
-            self._update_error_model(refinery.model, update_Ih=update_Ih)
+            self._update_error_model(model, update_Ih=update_Ih)
 
     def clear_Ih_table(self):
         """Delete the data from the current Ih_table."""

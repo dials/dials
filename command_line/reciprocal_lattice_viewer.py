@@ -10,7 +10,7 @@ import wxtbx.app
 
 import dials.util.log
 from dials.util.reciprocal_lattice.viewer import ReciprocalLatticeViewer, phil_scope
-from dials.util.options import OptionParser, flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
 help_message = """
 Visualise the strong spots from spotfinding in reciprocal space.
@@ -36,8 +36,9 @@ def run(args):
     )
 
     params, options = parser.parse_args(show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 or len(reflections) == 0:
         parser.print_help()

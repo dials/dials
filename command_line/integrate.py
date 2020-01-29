@@ -138,14 +138,15 @@ class Script(object):
     def run(self, args=None):
         """Perform the integration."""
         from dials.util.command_line import heading
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
         from dials.util import log
         from dials.util import Sorry
 
         # Parse the command line
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
-        reference = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reference, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
         if len(reference) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
@@ -292,8 +293,14 @@ class Script(object):
                 good_expt_count = 0
 
                 def refl_extend(src, dest, eid):
-                    tmp = src.select(src["id"] == eid)
+                    old_id = eid
+                    new_id = good_expt_count
+                    tmp = src.select(src["id"] == old_id)
                     tmp["id"] = flex.int(len(tmp), good_expt_count)
+                    if old_id in tmp.experiment_identifiers():
+                        identifier = tmp.experiment_identifiers()[old_id]
+                        del tmp.experiment_identifiers()[old_id]
+                        tmp.experiment_identifiers()[new_id] = identifier
                     dest.extend(tmp)
 
                 for expt_id, experiment in enumerate(experiments):
@@ -382,7 +389,12 @@ class Script(object):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
                 if len(refls) > 0:
                     accepted_expts.append(expt)
-                    refls["id"] = flex.int(len(refls), len(accepted_expts) - 1)
+                    current_id = expt_id
+                    new_id = len(accepted_expts) - 1
+                    refls["id"] = flex.int(len(refls), new_id)
+                    if expt.identifier:
+                        del refls.experiment_identifiers()[current_id]
+                        refls.experiment_identifiers()[new_id] = expt.identifier
                     accepted_refls.extend(refls)
                 else:
                     logger.info(

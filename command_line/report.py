@@ -6,6 +6,7 @@ import copy
 import math
 from collections import OrderedDict
 
+import itertools
 import numpy as np
 import dials.util.log
 from cctbx import uctbx
@@ -144,6 +145,24 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
+def color_repeats(n=1):
+    """Set up a cycle through default Plotly colors, repeating each n times"""
+
+    color_list = (
+        ["#1f77b4"] * n  # muted blue
+        + ["#ff7f0e"] * n  # safety orange
+        + ["#2ca02c"] * n  # cooked asparagus green
+        + ["#d62728"] * n  # brick red
+        + ["#9467bd"] * n  # muted purple
+        + ["#8c564b"] * n  # chestnut brown
+        + ["#e377c2"] * n  # raspberry yogurt pink
+        + ["#7f7f7f"] * n  # middle gray
+        + ["#bcbd22"] * n  # curry yellow-green
+        + ["#17becf"] * n  # blue-teal
+    )
+    return itertools.cycle(color_list)
+
+
 class ScanVaryingCrystalAnalyser(object):
     """Analyse a scan-varying crystal."""
 
@@ -225,8 +244,8 @@ class ScanVaryingCrystalAnalyser(object):
                         "anchor": "y7",
                         "title": "rotation angle (°)",
                     },
-                    "xaxis2": {"domain": [0.55, 1], "anchor": "y6"},
-                    "xaxis": {"domain": [0, 0.45], "anchor": "y3"},
+                    "xaxis2": {"domain": [0.53, 1], "anchor": "y6"},
+                    "xaxis": {"domain": [0, 0.47], "anchor": "y3"},
                     "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 5},
                     "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 5},
                     "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 5},
@@ -246,6 +265,11 @@ the refinement algorithm accounting for unmodelled features in the data.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(7)
+
         for cell_dat in dat:
             d["scan_varying_cell"]["data"].extend(
                 [
@@ -254,6 +278,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "y": cell_dat["a"],
                         "type": "scatter",
                         "name": "a (Å)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -262,6 +287,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "b (Å)",
                         "xaxis": "x",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -270,6 +296,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "c (Å)",
                         "xaxis": "x",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -278,6 +305,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "α (°)",
                         "xaxis": "x2",
                         "yaxis": "y4",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -286,6 +314,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "β (°)",
                         "xaxis": "x2",
                         "yaxis": "y5",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -294,14 +323,16 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "γ (°)",
                         "xaxis": "x2",
                         "yaxis": "y6",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
                         "y": cell_dat["volume"],
                         "type": "scatter",
-                        "name": "volume (Å^3)",
+                        "name": "volume (Å³)",
                         "xaxis": "x3",
                         "yaxis": "y7",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
@@ -386,6 +417,10 @@ incorrectly.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(3)
         for ori in dat:
             d["scan_varying_orientation"]["data"].extend(
                 [
@@ -394,6 +429,7 @@ incorrectly.
                         "y": ori["phi1"],
                         "type": "scatter",
                         "name": "Φ1 (°)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -402,6 +438,7 @@ incorrectly.
                         "name": "Φ2 (°)",
                         "xaxis": "x2",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -410,6 +447,7 @@ incorrectly.
                         "name": "Φ3 (°)",
                         "xaxis": "x3",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
@@ -1282,7 +1320,6 @@ class IntensityAnalyser(object):
 
         d = OrderedDict()
 
-        # Look at distribution of I/Sigma
         print(" Analysing distribution of I/Sigma")
         d.update(self.i_over_s_hist(rlist))
         print(" Analysing distribution of I/Sigma vs xy")
@@ -1294,6 +1331,8 @@ class IntensityAnalyser(object):
         d.update(self.i_over_s_vs_z(rlist))
         print(" Analysing distribution of partialities")
         d.update(self.partiality_hist(rlist))
+        print(" Analysing QE map")
+        d.update(self.qe_xy(rlist))
         return {"intensity": d}
 
     def i_over_s_hist(self, rlist):
@@ -1435,6 +1474,62 @@ class IntensityAnalyser(object):
                 },
             }
         }
+
+    def qe_xy(self, rlist):
+        """Look at the QE map in x, y"""
+
+        if "qe" not in rlist:
+            return {}
+
+        assert len(rlist) > 0
+        qe = rlist["qe"]
+
+        xc, yc, zc = rlist["xyzcal.px"].parts()
+
+        d = OrderedDict()
+
+        nbinsx, nbinsy = tuple(
+            int(math.ceil(i))
+            for i in (
+                flex.max(xc) / self.pixels_per_bin,
+                flex.max(yc) / self.pixels_per_bin,
+            )
+        )
+
+        xc = xc.as_numpy_array()
+        yc = yc.as_numpy_array()
+        qe = qe.as_numpy_array()
+
+        H, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy))
+        H1, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=qe)
+
+        nonzeros = np.nonzero(H)
+        z1 = np.empty(H.shape)
+        z1[:] = np.NAN
+        z1[nonzeros] = H1[nonzeros] / H[nonzeros]
+
+        d["qe_map"] = {
+            "data": [
+                {
+                    "name": "qe_map",
+                    "x": xedges.tolist(),
+                    "y": yedges.tolist(),
+                    "z": z1.transpose().tolist(),
+                    "type": "heatmap",
+                    "colorbar": {"title": "QE", "titleside": "right"},
+                    "colorscale": "Jet",
+                }
+            ],
+            "layout": {
+                "title": "Calculated Quantum Efficiency",
+                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                "width": 500,
+                "height": 450,
+            },
+        }
+
+        return d
 
 
 class ZScoreAnalyser(object):
@@ -2438,7 +2533,7 @@ class Script(object):
 
     def run(self):
         """Run the script."""
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -2448,8 +2543,9 @@ class Script(object):
             self.parser.print_help()
             exit(0)
 
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         # Analyse the reflections
         analyse = Analyser(

@@ -40,6 +40,7 @@ from .viewer_tools import (
     ImageChooserControl,
     ImageCollectionWithSelection,
     LegacyChooserAdapter,
+    EVT_ZEROMQ_EVENT,
 )
 
 try:
@@ -160,6 +161,7 @@ class SpotFrame(XrayFrame):
         self.Bind(EVT_LOADIMG, self.load_file_event)
 
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIMask, id=self._id_mask)
+        self.Bind(EVT_ZEROMQ_EVENT, self.OnZeroMQEvent)
 
     def setup_toolbar(self):
         btn = self.toolbar.AddLabelTool(
@@ -1644,6 +1646,17 @@ class SpotFrame(XrayFrame):
 
         return predicted_all
 
+    def OnZeroMQEvent(self, event):
+        message = event.message
+        print("ZMQ Event recieved by gui:", message)
+        try:
+            if message["command"] == "load_image":
+                filename = message["image"]
+                self.load_image(filename)
+        except Exception:
+            print("Error parsing zeromq message")
+            raise
+
 
 class SpotSettingsFrame(SettingsFrame):
     def __init__(self, *args, **kwds):
@@ -2148,8 +2161,8 @@ class SpotSettingsPanel(wx.Panel):
         dispersion.min_local = self.settings.min_local
         dispersion.sigma_background = self.settings.nsigma_b
         dispersion.sigma_strong = self.settings.nsigma_s
-        with open(self.settings.find_spots_phil, "wb") as f:
-            print("Saving parameters to %s" % self.settings.find_spots_phil)
+        print("Saving parameters to %s" % self.settings.find_spots_phil)
+        with open(self.settings.find_spots_phil, "w") as f:
             find_spots_phil_scope.fetch_diff(find_spots_phil_scope.format(params)).show(
                 f
             )

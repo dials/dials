@@ -403,11 +403,7 @@ def export_json(params, experiments, reflections):
 
 
 if __name__ == "__main__":
-    from dials.util.options import (
-        OptionParser,
-        flatten_experiments,
-        flatten_reflections,
-    )
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
     from dials.util import log
 
@@ -443,8 +439,9 @@ if __name__ == "__main__":
         sys.exit()
 
     # Get the experiments and reflections
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # do auto intepreting of intensity choice:
     # note that this may still fail certain checks further down the processing,

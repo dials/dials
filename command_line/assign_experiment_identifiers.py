@@ -5,7 +5,7 @@ import sys
 
 from libtbx import phil
 from dials.util import show_mail_on_error, Sorry
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
@@ -51,8 +51,9 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):

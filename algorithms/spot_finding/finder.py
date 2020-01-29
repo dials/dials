@@ -766,12 +766,16 @@ class SpotFinder(object):
                     z0, z1 = experiment.scan.get_array_range()
                     z = table["xyzobs.px.value"].parts()[2]
                     table["id"].set_selected((z > z0) & (z < z1), i)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[i] = experiment.identifier
                 else:
                     table["id"] = flex.int(table.nrows(), j)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[j] = experiment.identifier
             missed = table["id"] == -1
             assert missed.count(True) == 0, missed.count(True)
-            reflections.extend(table)
 
+            reflections.extend(table)
             # Write a hot pixel mask
             if self.write_hot_mask:
                 if not imageset.external_lookup.mask.data.empty():

@@ -32,8 +32,7 @@ from dials.util import log
 from dials.util.version import dials_version
 from dials.util import show_mail_on_error
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import flatten_experiments, flatten_reflections
-from dials.util.options import OptionParser
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import parse_multiple_datasets
 from dials.util import tabulate
 
@@ -429,8 +428,9 @@ class Script(object):
         reflections = flex.reflection_table()
 
         # loop through the input, building up the global lists
-        reflections_list = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections_list, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         reflections_list = parse_multiple_datasets(reflections_list)
         for refs in reflections_list:

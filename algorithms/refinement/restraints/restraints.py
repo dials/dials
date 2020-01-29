@@ -304,9 +304,7 @@ class MeanUnitCellTie(object):
                     # this parameter is constrained, so remove any requested restraints
                     # at this position
                     if sigma[i] > 0.0:
-                        logger.debug(
-                            msg.format(xlucp.get_experiment_ids()[0], pname[i])
-                        )
+                        logger.debug(msg.format(pname, xlucp.get_experiment_ids()[0]))
                         sigma[i] = 0.0
 
         # set the selection for gradient calculations to the unconstrained parameters

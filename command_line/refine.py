@@ -28,8 +28,7 @@ from dials.algorithms.refinement.corrgram import create_correlation_plots
 import dials.util.log
 from dials.util.version import dials_version
 from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections
-from dials.util.options import flatten_experiments
+from dials.util.options import reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.refine")
 
@@ -334,8 +333,10 @@ def run(args=None, phil=working_phil):
 
     # Parse the command line
     params, options = parser.parse_args(args=args, show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # Configure the logging
     dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)

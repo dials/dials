@@ -14,6 +14,7 @@ from dxtbx.model.experiment_list import ExperimentListTemplateImporter
 from dxtbx.imageset import ImageGrid
 from dxtbx.imageset import ImageSequence
 from dials.util.options import flatten_experiments
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from libtbx.phil import parse
 
 logger = logging.getLogger("dials.command_line.import")
@@ -89,6 +90,10 @@ phil_scope = parse(
       .help = "For JSON output use compact representation"
 
   }
+
+  identifier_type = *uuid timestamp None
+    .type = choice
+    .help = "Type of unique identifier to generate."
 
   input {
 
@@ -220,6 +225,9 @@ class ImageSetImporter(object):
                     )
             else:
                 raise Sorry("No experimetns found")
+
+        if self.params.identifier_type:
+            generate_experiment_identifiers(experiments, self.params.identifier_type)
 
         # Get a list of all imagesets
         imageset_list = experiments.imagesets()
@@ -572,6 +580,8 @@ class MetaDataUpdater(object):
                         )
                     )
 
+        if self.params.identifier_type:
+            generate_experiment_identifiers(experiments, self.params.identifier_type)
         # Return the experiments
         return experiments
 

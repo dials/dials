@@ -434,6 +434,45 @@ best estimate, with a variance of one sigma.
     return d
 
 
+def error_regression_plot(data):
+    """Plot the data from the regression fit."""
+    x = data["regression_x"]
+    y = data["regression_y"]
+    fit = (x * (data["model_a"] ** 2)) + ((data["model_a"] * data["model_b"]) ** 2)
+    return {
+        "regression_fit": {
+            "data": [
+                {
+                    "x": list(x),
+                    "y": list(y),
+                    "type": "scatter",
+                    "mode": "markers",
+                    "name": "expected vs observed",
+                },
+                {
+                    "x": list(x),
+                    "y": list(fit),
+                    "type": "scatter",
+                    "name": "best least-squares fit",
+                },
+            ],
+            "layout": {
+                "title": "Error model regression plot",
+                "xaxis": {"anchor": "y", "title": "1/(I/sigma_obs) ^ 2"},
+                "yaxis": {"anchor": "x", "title": "1/(I/sigma) ^ 2 "},
+            },
+            "help": """\
+This plot shows the data used for the regression fit for error model refinement.
+The form derives from the equation sigma^2(obs) = a^2[sigma^2 + (bI)^2].
+Dividing by I^2 gives 1/(I/sigma_obs) ^ 2 = [a^2 * 1/(I/sigma) ^ 2] + [a^2 b^2]
+i.e. y = mx + c.
+Here, sigma_obs is the observed standard deviation of a group of symmetry
+equivalents i.e. sigma_obs^2 = (Sum (I - g<Ih>)^2) / N-1.
+""",
+        }
+    }
+
+
 def normal_probability_plot(data):
     """Plot the distribution of normal probabilities of errors."""
     norm = distributions.normal_distribution()
