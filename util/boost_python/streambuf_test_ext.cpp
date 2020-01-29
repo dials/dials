@@ -7,14 +7,14 @@
 namespace dials { namespace util { namespace {
 
   template <class StreamType>
-  boost::python::object append_status(StreamType const &s, std::string &result) {
+  boost::python::object append_status(StreamType const& s, std::string& result) {
     if (!s.good()) result += "[ ";
     if (s.bad()) result += "bad, ";
     if (s.fail()) result += "fail, ";
     if (s.eof()) result += "eof";
     if (!s.good()) result += " ]";
-    boost::python::object data_bytes(
-      boost::python::handle<>(PyBytes_FromStringAndSize(result.c_str(), result.size())));
+    boost::python::object data_bytes(boost::python::handle<>(
+      PyBytes_FromStringAndSize(result.c_str(), result.size())));
     return data_bytes;
   }
 
@@ -26,7 +26,7 @@ namespace dials { namespace util { namespace {
     std::string word, result;
 
     while (is >> word) {
-        result += word + ", ";
+      result += word + ", ";
     };
 
     return append_status(is, result);
@@ -37,15 +37,20 @@ namespace dials { namespace util { namespace {
     std::string word, result;
 
     is.seekg(6);
-    is >> word; result += word + ", "; // should
+    is >> word;
+    result += word + ", ";  // should
     is.seekg(6, std::ios_base::beg);
-    is >> word; result += word + ", "; // should
+    is >> word;
+    result += word + ", ";  // should
     is.seekg(-3, std::ios_base::cur);
-    is >> word; result += word + ", "; // uld
+    is >> word;
+    result += word + ", ";  // uld
     is.seekg(-11, std::ios_base::cur);
-    is >> word; result += word + ", "; // ding
+    is >> word;
+    result += word + ", ";  // ding
     is.seekg(-4, std::ios_base::end);
-    is >> word; result += word + ", "; // fun
+    is >> word;
+    result += word + ", ";  // fun
 
     return append_status(is, result);
   }
@@ -54,13 +59,15 @@ namespace dials { namespace util { namespace {
     streambuf::istream is(input);
     std::string word, result;
 
-    is >> word; result += word + ", ";
-    is >> word; result += word + ", ";
+    is >> word;
+    result += word + ", ";
+    is >> word;
+    result += word + ", ";
 
     return append_status(is, result);
   }
 
-  boost::python::object write_word_ostream(std::ostream &os) {
+  boost::python::object write_word_ostream(std::ostream& os) {
     std::string result;
 
     os << 2 << " times " << 1.6 << " equals " << 3.2;
@@ -69,7 +76,7 @@ namespace dials { namespace util { namespace {
     return append_status(os, result);
   }
 
-  boost::python::object write_and_seek_ostream(std::ostream &os) {
+  boost::python::object write_and_seek_ostream(std::ostream& os) {
     std::string result;
 
     os << 1000 << " timEs " << 5555 << " equalS " << 1000000;
@@ -96,9 +103,7 @@ namespace dials { namespace util { namespace {
     return write_and_seek_ostream(os);
   }
 
-  void
-  wrap_all()
-  {
+  void wrap_all() {
     using namespace boost::python;
     def("read_word", read_word);
     def("read_and_seek", read_and_seek);
@@ -109,9 +114,8 @@ namespace dials { namespace util { namespace {
     def("write_and_seek", write_and_seek_ostream);
   }
 
-}}} // namespace dials::util::<anonymous>
+}}}  // namespace dials::util::
 
-BOOST_PYTHON_MODULE(dials_util_streambuf_test_ext)
-{
+BOOST_PYTHON_MODULE(dials_util_streambuf_test_ext) {
   dials::util::wrap_all();
 }
