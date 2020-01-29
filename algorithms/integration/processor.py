@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from __future__ import absolute_import, division, print_function
 
 import itertools
@@ -470,12 +472,12 @@ class Task(object):
         if sbox_memory > limit_memory:
             xsize, ysize, zsize = _average_bbox_size(self.reflections)
             raise RuntimeError(
-                """
-    There was a problem allocating memory for shoeboxes. Possible solutions
-    include increasing the percentage of memory allowed for shoeboxes or
-    decreasing the block size. This could also be caused by a highly mosaic
-    crystal model. The average shoebox size is %d * %d * %d pixels - is your
-    crystal really this mosaic?
+                u"""
+        There was a problem allocating memory for shoeboxes.  This could be caused
+        by a highly mosaic crystal model.  Possible solutions include increasing the
+        percentage of memory allowed for shoeboxes or decreasing the block size.
+        The average shoebox size is %d × %d pixels × %d images - is your crystal
+        really this mosaic?
         Total system memory: %g GB
         Limit shoebox memory: %g GB
         Required shoebox memory: %g GB
@@ -805,15 +807,15 @@ class Manager(object):
 
                 xsize, ysize, zsize = _average_bbox_size(self.reflections)
                 raise RuntimeError(
-                    """
-        No enough memory to run integration jobs. Possible solutions
-        include increasing the percentage of memory allowed for shoeboxes or
-        decreasing the block size. This could be caused by a highly mosaic
-        crystal model.  The average shoebox size is %d * %d * %d pixels - is
-        your crystal really this mosaic?
+                    u"""
+        Not enough memory to run integration jobs.  This could be caused by a
+        highly mosaic crystal model.  Possible solutions include increasing the
+        percentage of memory allowed for shoeboxes or decreasing the block size.
+        The average shoebox size is %d × %d pixels × %d images - is your crystal
+        really this mosaic?
             Total system memory: %g GB
             Limit shoebox memory: %g GB
-            Max shoebox memory: %g GB
+            Maximum shoebox memory: %g GB
         """
                     % (
                         xsize,
