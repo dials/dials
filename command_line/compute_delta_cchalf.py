@@ -1,16 +1,19 @@
 from __future__ import absolute_import, division, print_function
-import collections
+
 import logging
+from collections import defaultdict
 from math import sqrt
 import matplotlib
-from iotbx.reflection_file_reader import any_reflection_file
+from iotbx import mtz
 from libtbx.phil import parse
 import dials.util
+from cctbx import uctbx
 from dials.algorithms.statistics.delta_cchalf import PerImageCChalfStatistics
 from dials.array_family import flex
 from dials.util import Sorry
 from dials.util.exclude_images import exclude_image_ranges_for_scaling
 from dials.util.multi_dataset_handling import select_datasets_on_identifiers
+from dials.util.filter_reflections import filter_reflection_table
 
 matplotlib.use("Agg")
 from matplotlib import pylab
@@ -42,6 +45,12 @@ phil_scope = parse(
     .type = int(value_min=1)
     .help = "The number of images to group together when calculating delta"
             "cchalf in image_group mode"
+
+  mtz {
+    batch_offset = None
+      .type = int
+      .help = "The batch offset between consecutive datasets in the mtz file."
+  }
 
   output {
 
@@ -98,20 +107,8 @@ class Script(object):
                 "stdcutoff": self.params.stdcutoff,
             }
         }
-        # Set up a named tuple
-        self.DataRecord = collections.namedtuple(
-            "DataRecord",
-            (
-                "unit_cell",
-                "space_group",
-                "miller_index",
-                "dataset",
-                "intensity",
-                "variance",
-                "identifiers",
-                "images",
-            ),
-        )
+        self.group_to_datasetid_and_range = {}
+        self.datasetid_to_groups = defaultdict(list)
 
     def prepare_data(self):
         """Prepare the data into a DataRecord."""
@@ -119,12 +116,10 @@ class Script(object):
             for exp in self.experiments:
                 if not exp.scan:
                     raise Sorry("Cannot use mode=image_group with scanless experiments")
-        if len(self.experiments) > 0:
-            if len(self.experiments) > 0 and len(self.reflections) == 1:
+        if self.experiments:
+            if self.experiments and len(self.reflections) == 1:
                 data = self.read_experiments(self.experiments, self.reflections[0])
-            elif len(self.experiments) > 0 and len(self.experiments) == len(
-                self.reflections
-            ):
+            elif self.experiments and len(self.experiments) == len(self.reflections):
                 # need to join together reflections
                 joint_table = flex.reflection_table()
                 for table in self.reflections:
@@ -142,24 +137,72 @@ class Script(object):
     def run(self):
         """Run the delta_cc_half algorithm."""
 
-        data = self.prepare_data()
+        table, unit_cell_list, space_group = self.prepare_data()
 
-        # Create the statistics object
+        if len(unit_cell_list) > 1:
+            # calc mean unit cell
+            mean_parameters = [0, 0, 0, 0, 0, 0]
+            for uc in unit_cell_list:
+                for i in range(6):
+                    mean_parameters[i] += uc.parameters()[i]
+            for i in range(6):
+                mean_parameters[i] /= len(unit_cell_list)
+            mean_unit_cell = uctbx.unit_cell(mean_parameters)
+        else:
+            mean_unit_cell = unit_cell_list[0]
+
+        if self.params.mode == "dataset":
+            table["group"] = table["dataset"]
+        elif self.params.mode == "image_group":
+            # set up tracking of groups to expts
+
+            image_groups = flex.int(table["dataset"].size(), 0)
+            counter = 0
+            for id_ in set(table["dataset"]):
+                sel = table["dataset"] == id_
+                images_in_dataset = table["image"].select(sel)
+                unique_images = set(images_in_dataset)
+                min_img, max_img = (min(unique_images), max(unique_images))
+                group_starts = list(range(min_img, max_img + 1, self.params.group_size))
+                if len(group_starts) > 1:
+                    if max_img - group_starts[-1] < (self.params.group_size - 1):
+                        del group_starts[-1]
+
+                for i, start in enumerate(group_starts[:-1]):
+                    group_sel = (images_in_dataset >= start) & (
+                        images_in_dataset < group_starts[i + 1]
+                    )
+                    image_groups.set_selected(
+                        (sel.iselection().select(group_sel)), counter
+                    )
+                    self.group_to_datasetid_and_range[counter] = (
+                        id_,
+                        (start, group_starts[i + 1] - 1),
+                    )
+                    self.datasetid_to_groups[id_].append(counter)
+                    counter += 1
+                # now do last group
+                group_sel = images_in_dataset >= group_starts[-1]
+                image_groups.set_selected((sel.iselection().select(group_sel)), counter)
+                self.group_to_datasetid_and_range[counter] = (
+                    id_,
+                    (group_starts[-1], max_img),
+                )
+                self.datasetid_to_groups[id_].append(counter)
+                counter += 1
+
+            table["group"] = image_groups
+
         statistics = PerImageCChalfStatistics(
-            data.miller_index,
-            data.identifiers,
-            data.dataset,
-            data.images,
-            data.intensity,
-            data.variance,
-            data.unit_cell,
-            data.space_group,
-            self.params.nbins,
+            table,
+            mean_unit_cell,
+            space_group,
             self.params.dmin,
             self.params.dmax,
-            self.params.mode,
-            self.params.group_size,
+            self.params.nbins,
         )
+
+        statistics.run()
 
         self.delta_cchalf_i = statistics.delta_cchalf_i()
         self.results_summary["mean_cc_half"] = statistics._cchalf_mean
@@ -174,7 +217,7 @@ class Script(object):
             for dataset, cchalf in zip(sorted_datasets, sorted_cc_half_values):
                 outfile.write("%d %f\n" % (dataset, cchalf))
 
-        # Remove datasets based on delta cc1/2
+        # Remove datasets based on delta cc1/2 - if using experiments & reflections
         if self.experiments and len(self.reflections) == 1:
             cutoff_value = self._calculate_cutoff_value(
                 self.delta_cchalf_i, self.params.stdcutoff
@@ -198,21 +241,20 @@ class Script(object):
                     self.experiments,
                     self.reflections[0],
                     ids_to_remove,
-                    statistics.image_group_to_expid_and_range,
-                    statistics.expid_to_image_groups,
+                    self.group_to_datasetid_and_range,
+                    self.datasetid_to_groups,
                     self.results_summary,
                 )
             self.reflections = [filtered_reflections]
 
-    def read_experiments(self, experiments, reflections):
+    def read_experiments(self, experiments, reflection_table):
         """
         Get information from experiments and reflections
         """
 
         # Get space group and unit cell
         space_group = None
-        unit_cell = []
-        exp_identifiers = []
+        unit_cell_list = []
         for e in experiments:
             if space_group is None:
                 space_group = e.crystal.get_space_group()
@@ -221,58 +263,26 @@ class Script(object):
                     space_group.type().number()
                     == e.crystal.get_space_group().type().number()
                 )
-            unit_cell.append(e.crystal.get_unit_cell())
-            exp_identifiers.append(e.identifier)
-        # get a list of the ids from the reflection table corresponding to exp_ids
-        identifiers = []
-        for expit in exp_identifiers:
-            for k in reflections.experiment_identifiers().keys():
-                if reflections.experiment_identifiers()[k] == expit:
-                    identifiers.append(k)
-                    break
+            unit_cell_list.append(e.crystal.get_unit_cell())
 
-        # Selection of reflections
-        selection = ~(
-            reflections.get_flags(reflections.flags.bad_for_scaling, all=False)
+        # Require a dials scaled experiments file.
+        filtered_table = filter_reflection_table(reflection_table, ["scale"])
+        filtered_table["intensity"] = filtered_table["intensity.scale.value"]
+        filtered_table["variance"] = filtered_table["intensity.scale.variance"]
+        filtered_table["dataset"] = filtered_table["id"]
+        filtered_table["image"] = (
+            flex.floor(filtered_table["xyzobs.px.value"].parts()[2]).iround() + 1
         )
-        outliers = reflections.get_flags(reflections.flags.outlier_in_scaling)
-        reflections = reflections.select(selection & ~outliers)
 
-        # Scale factor
-        inv_scale_factor = reflections["inverse_scale_factor"]
-        selection = inv_scale_factor > 0
-        reflections = reflections.select(selection)
-        inv_scale_factor = reflections["inverse_scale_factor"]
-
-        # Get the reflection data
-        index = reflections["id"]
-
-        miller_index = reflections["miller_index"]
-        intensity = reflections["intensity.scale.value"] / inv_scale_factor
-        variance = reflections["intensity.scale.variance"] / inv_scale_factor ** 2
-        # calculate image number of observation (e.g 0.0 <= z < 1.0), image = 1
-        images = flex.floor(reflections["xyzobs.px.value"].parts()[2]).iround() + 1
-        # Get the MTZ file
-        return self.DataRecord(
-            unit_cell=unit_cell,
-            space_group=space_group,
-            miller_index=miller_index,
-            dataset=index,
-            intensity=intensity,
-            variance=variance,
-            identifiers=identifiers,
-            images=images,
-        )
+        return filtered_table, unit_cell_list, space_group
 
     def read_mtzfile(self, filename):
         """
         Read the mtz file
         """
-        # Read the mtz file
-        reader = any_reflection_file(filename)
-
-        # Get the columns as miller arrays
-        miller_arrays = reader.as_miller_arrays(merge_equivalents=False)
+        miller_arrays = mtz.object(file_name=filename).as_miller_arrays(
+            merge_equivalents=False
+        )
 
         # Select the desired columns
         intensities = None
@@ -282,35 +292,75 @@ class Script(object):
                 intensities = array
             if array.info().labels == ["BATCH"]:
                 batches = array
-        assert intensities is not None
-        assert batches is not None
-        assert len(batches.data()) == len(intensities.data())
+        if not intensities:
+            raise KeyError("Intensities not found in mtz file, expected labels I, SIGI")
+        if not batches:
+            raise KeyError("Batch values not found")
+        if batches.data().size() != intensities.data().size():
+            raise ValueError("Batch and intensity array sizes do not match")
 
         # Get the unit cell and space group
         unit_cell = intensities.unit_cell()
         space_group = intensities.crystal_symmetry().space_group()
 
         # The reflection data
-        miller_index = intensities.indices()
-        batch = batches.data()
-        intensity = intensities.data()
-        variance = intensities.sigmas() ** 2
+        table = flex.reflection_table()
+        table["miller_index"] = intensities.indices()
+        table["intensity"] = intensities.data()
+        table["variance"] = intensities.sigmas() ** 2
 
         # Create unit cell list
-        min_batch = min(batch)
-        dataset = batch - min_batch
-        num_datasets = max(dataset) + 1
-        unit_cell_list = [unit_cell for _ in range(num_datasets)]
+        zeroed_batches = batches.data() - flex.min(batches.data())
+        dataset = flex.int(table.size(), 0)
+        sorted_batches = flex.sorted(zeroed_batches)
+        sel_perm = flex.sort_permutation(zeroed_batches)
 
-        # Get the MTZ file
-        return self.DataRecord(
-            unit_cell=unit_cell_list,
-            space_group=space_group,
-            miller_index=miller_index,
-            dataset=dataset,
-            intensity=intensity,
-            variance=variance,
-        )
+        batch_offset = self.params.mtz.batch_offset
+        if not batch_offset:
+            previous = 0
+            potential_batch_offsets = flex.double()
+            for i, b in enumerate(sorted_batches):
+                if b - previous > 1:
+                    potential_batch_offsets.append(b - previous)
+                previous = b
+            potential = flex.sorted(potential_batch_offsets)
+            # potential is a list of low numbers (where images may not have any spots)
+            # and larger numbers between batches.
+            if len(potential) == 1:
+                batch_offset = potential[0]
+                logger.info(
+                    """
+Using a batch offset of %s to split datasets.
+Batch offset can be specified with mtz.batch_offset=
+""",
+                    batch_offset,
+                )
+            else:
+                diffs = flex.double(
+                    [potential[i + 1] - p for i, p in enumerate(potential[:-1])]
+                )
+                i = flex.sort_permutation(diffs)[-1]
+                batch_offset = int(potential[i + 1] - (0.2 * diffs[i]))
+                logger.info(
+                    """
+Using an approximate batch offset of %s to split datasets.
+Batch offset can be specified with mtz.batch_offset=
+""",
+                    batch_offset,
+                )
+
+        previous = 0
+        dataset_no = 0
+        for i, b in enumerate(sorted_batches):
+            if b - previous > batch_offset - 1:
+                dataset_no += 1
+            dataset[i] = dataset_no
+            previous = b
+
+        table["dataset"] = flex.int(table.size(), 0)
+        table["dataset"].set_selected(sel_perm, dataset)
+
+        return table, [unit_cell], space_group
 
     @staticmethod
     def sort_deltacchalf_values(delta_cchalf_i, results_summary):
@@ -422,16 +472,28 @@ class Script(object):
         # This catches an edge case where there is an image group full of
         # outliers, which gets filtered out before the analysis but should
         # be set as not a valid image range.
-        for exp in experiments:
+        exclude_images = []
+        for i, exp in enumerate(experiments):
             if len(exp.scan.get_valid_image_ranges(exp.identifier)) > 1:
-                exp.scan.set_valid_image_ranges(
-                    exp.identifier, [exp.scan.get_valid_image_ranges(exp.identifier)[0]]
-                )
-                logger.info(
-                    "Limited image range for %s to %s due to scaling outlier group",
-                    exp.identifier,
-                    exp.scan.get_valid_image_ranges(exp.identifier),
-                )
+                # if any of the image ranges are not in the sets tested:
+                tested = []
+                for exp_id, imgrange in image_group_to_expid_and_range.values():
+                    if exp_id == i:
+                        tested.extend(list(range(imgrange[0], imgrange[1] + 1)))
+                for imgrange in exp.scan.get_valid_image_ranges(exp.identifier):
+                    if imgrange[0] not in tested:
+                        exclude_images.append(
+                            [str(i) + ":" + str(imgrange[0]) + ":" + str(imgrange[1])]
+                        )
+                        logger.info(
+                            "Removing %s due to scaling outlier group.",
+                            exclude_images[-1],
+                        )
+
+        if exclude_images:
+            reflection_list, experiments = exclude_image_ranges_for_scaling(
+                reflection_list, experiments, exclude_images
+            )
 
         # if a whole experiment has been excluded: need to remove it here
         ids_removed = []
