@@ -569,22 +569,21 @@ class Script(object):
             if params.output.n_subset_method == "random":
                 n_picked = 0
                 indices = list(range(len(experiments)))
-                while n_picked < params.output.n_subset:
-                    idx = indices.pop(random.randint(0, len(indices) - 1))
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select_on_id_values([idx])
-                    if refls.experiment_identifiers().keys():
-                        exp_id = refls.experiment_identifiers().values()[0]
-                        del refls.experiment_identifiers()[idx]
+                if reflections.experiment_identifiers().keys():
+                    while n_picked < params.output.n_subset:
+                        idx = indices.pop(random.randint(0, len(indices) - 1))
+                        subset_exp.append(experiments[idx])
+                        n_picked += 1
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    while n_picked < params.output.n_subset:
+                        idx = indices.pop(random.randint(0, len(indices) - 1))
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
                         refls["id"] = flex.int(len(refls), n_picked)
-                        refls.experiment_identifiers()[n_picked] = exp_id
-                        refls.assert_experiment_identifiers_are_consistent(
-                            experiments[idx : idx + 1]
-                        )
-                    else:
-                        refls["id"] = flex.int(len(refls), n_picked)
-                    subset_refls.extend(refls)
-                    n_picked += 1
+                        subset_refls.extend(refls)
+                        n_picked += 1
                 print(
                     "Selecting a random subset of {0} experiments out of {1} total.".format(
                         params.output.n_subset, len(experiments)
@@ -602,20 +601,17 @@ class Script(object):
                 for expt_id in range(len(experiments)):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select_on_id_values([idx])
-                    if refls.experiment_identifiers().keys():
-                        identifier = refls.experiment_identifiers().values()[0]
-                        del refls.experiment_identifiers()[idx]
+                if reflections.experiment_identifiers().keys():
+                    for idx in sort_order[: params.output.n_subset]:
+                        subset_exp.append(experiments[idx])
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
                         refls["id"] = flex.int(len(refls), expt_id)
-                        refls.experiment_identifiers()[expt_id] = identifier
-                        refls.assert_experiment_identifiers_are_consistent(
-                            experiments[idx : idx + 1]
-                        )
-                    else:
-                        refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
+                        subset_refls.extend(refls)
                 print(
                     "Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
                         params.output.n_subset, len(experiments)
@@ -630,20 +626,17 @@ class Script(object):
                 for expt_id in range(len(experiments)):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select_on_id_values([idx])
-                    if refls.experiment_identifiers().keys():
-                        identifier = refls.experiment_identifiers().values()[0]
-                        del refls.experiment_identifiers()[idx]
+                if reflections.experiment_identifiers().keys():
+                    for idx in sort_order[: params.output.n_subset]:
+                        subset_exp.append(experiments[idx])
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
                         refls["id"] = flex.int(len(refls), expt_id)
-                        refls.experiment_identifiers()[expt_id] = identifier
-                        refls.assert_experiment_identifiers_are_consistent(
-                            experiments[idx : idx + 1]
-                        )
-                    else:
-                        refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
+                        subset_refls.extend(refls)
 
             experiments = subset_exp
             reflections = subset_refls
@@ -658,21 +651,17 @@ class Script(object):
             ):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
-                for sub_id, sub_idx in enumerate(indices):
-                    batch_expts.append(experiments[sub_idx])
-
-                    sub_refls = reflections.select_on_id_values([sub_idx])
-                    if refls.experiment_identifiers().keys():
-                        identifier = refls.experiment_identifiers().values()[0]
-                        del refls.experiment_identifiers()[sub_idx]
-                        refls["id"] = flex.int(len(refls), sub_id)
-                        refls.experiment_identifiers()[sub_id] = identifier
-                        refls.assert_experiment_identifiers_are_consistent(
-                            experiments[idx : idx + 1]
-                        )
-                    else:
-                        refls["id"] = flex.int(len(refls), sub_id)
-                    batch_refls.extend(sub_refls)
+                if reflections.experiment_identifiers().keys():
+                    for sub_idx in indices:
+                        batch_expts.append(experiments[sub_idx])
+                    batch_refls = reflections.select(batch_expts)
+                    batch_refls.reset_ids()
+                else:
+                    for sub_id, sub_idx in enumerate(indices):
+                        batch_expts.append(experiments[sub_idx])
+                        sub_refls = reflections.select(reflections["id"] == sub_idx)
+                        sub_refls["id"] = flex.int(len(sub_refls), sub_id)
+                        batch_refls.extend(sub_refls)
                 exp_filename = os.path.splitext(exp_name)[0] + "_%03d.expt" % i
                 ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
