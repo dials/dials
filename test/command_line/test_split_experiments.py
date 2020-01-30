@@ -3,9 +3,10 @@ from __future__ import absolute_import, division, print_function
 """Tests for dials.split_experiments when experiment ids are set"""
 
 import procrunner
+import pytest
 from dials.array_family import flex
 from dxtbx.model import Beam, Experiment, ExperimentList
-from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.serialize import load
 
 
 def generate_exp(wavelength=1):
@@ -13,6 +14,52 @@ def generate_exp(wavelength=1):
     beam = Beam(direction=(0.0, 0.0, 1.0), wavelength=wavelength)
     exp = Experiment(beam=beam)
     return exp
+
+
+@pytest.mark.parametrize("with_identifiers", ["True", "False"])
+@pytest.mark.parametrize("option", ["chunk_size=2", 'chunk_sizes="2 2 1"'])
+def test_split_chunk_sizes(tmpdir, option, with_identifiers):
+
+    ids = list(range(0, 5))
+    experiments = ExperimentList()
+    reflections = flex.reflection_table()
+    reflections["id"] = flex.int(ids)
+    reflections["intensity"] = flex.double([(i + 1) * 100.0 for i in ids])
+
+    for i in ids:
+        exp = generate_exp()
+        if with_identifiers:
+            exp.identifier = str(i)
+            reflections.experiment_identifiers()[i] = str(i)
+        experiments.append(exp)
+
+    experiments.as_json(tmpdir.join("tmp.expt").strpath)
+    reflections.as_file(tmpdir.join("tmp.refl").strpath)
+
+    result = procrunner.run(
+        [
+            "dials.split_experiments",
+            tmpdir.join("tmp.expt").strpath,
+            tmpdir.join("tmp.refl").strpath,
+            option,
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+
+    for j, n, intensities in zip(
+        [0, 1, 2], [2, 2, 1], [[100.0, 200.0], [300.0, 400.0], [500.0]]
+    ):
+        assert tmpdir.join("split_%s.refl" % j).check()
+        assert tmpdir.join("split_%s.expt" % j).check()
+        expts = load.experiment_list(
+            tmpdir.join("split_%s.expt" % j), check_format=False
+        )
+        assert len(expts) == n
+        refls = flex.reflection_table.from_file(tmpdir.join("split_%s.refl" % j))
+        assert list(set(refls["id"])) == list(range(0, n))
+        assert list(refls["intensity"]) == intensities
+        refls.assert_experiment_identifiers_are_consistent(expts)
 
 
 def test_split_by_wavelength(tmpdir):
@@ -45,7 +92,7 @@ def test_split_by_wavelength(tmpdir):
     ):
         assert tmpdir.join("split_%d.expt" % i).check()
         assert tmpdir.join("split_%d.refl" % i).check()
-        exp_single = ExperimentListFactory.from_json_file(
+        exp_single = load.experiment_list(
             tmpdir.join("split_%d.expt" % i).strpath, check_format=False
         )
         ref_single = flex.reflection_table.from_file(
