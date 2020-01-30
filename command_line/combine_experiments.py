@@ -602,7 +602,7 @@ class Script(object):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
                 if reflections.experiment_identifiers().keys():
-                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                    for idx in sort_order[: params.output.n_subset]:
                         subset_exp.append(experiments[idx])
                     subset_refls = reflections.select(subset_exp)
                     subset_refls.reset_ids()
@@ -627,7 +627,7 @@ class Script(object):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
                 if reflections.experiment_identifiers().keys():
-                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                    for idx in sort_order[: params.output.n_subset]:
                         subset_exp.append(experiments[idx])
                     subset_refls = reflections.select(subset_exp)
                     subset_refls.reset_ids()
@@ -652,7 +652,7 @@ class Script(object):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
                 if reflections.experiment_identifiers().keys():
-                    for sub_id, sub_idx in enumerate(indices):
+                    for sub_idx in indices:
                         batch_expts.append(experiments[sub_idx])
                     batch_refls = reflections.select(batch_expts)
                     batch_refls.reset_ids()
