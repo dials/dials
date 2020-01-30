@@ -11,6 +11,7 @@ import boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import dials_array_family_flex_ext
+import dials.util.ext
 import libtbx.smart_open
 import six
 import six.moves.cPickle as pickle
@@ -222,7 +223,7 @@ class _(object):
         if filename and hasattr(filename, "__fspath__"):
             filename = filename.__fspath__()
         with libtbx.smart_open.for_writing(filename, "wb") as outfile:
-            outfile.write(self.as_msgpack())
+            self.as_msgpack_to_file(dials.util.ext.streambuf(python_file_obj=outfile))
 
     @staticmethod
     def from_msgpack_file(filename):
