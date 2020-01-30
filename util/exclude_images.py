@@ -143,8 +143,8 @@ def _remove_ranges_from_valid_image_ranges(experiments, ranges_to_remove):
                     new_valid_ranges.append(previous)
                     new_valid_ranges.append(i)
                 previous = i
-            if new_valid_ranges[-1] != new_valid_images[-1]:
-                new_valid_ranges.append(new_valid_images[-1])
+            # add end one
+            new_valid_ranges.append(new_valid_images[-1])
             assert len(new_valid_ranges) % 2 == 0
             # convert to list of tuples
             valid_ranges = [
