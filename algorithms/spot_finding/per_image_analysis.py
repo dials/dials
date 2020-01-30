@@ -231,7 +231,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
         # d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
 
         inside = points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper)
-        inside = inside & ~outliers_all
+        inside = inside & ~outliers_all & ~ice_sel
 
         if inside.count(True) > 0:
             d_star_sq_estimate = flex.max(d_star_sq.select(inside))
