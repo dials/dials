@@ -479,7 +479,7 @@ class Task(object):
         The average shoebox size is %d × %d pixels × %d images - is your crystal
         really this mosaic?
         Total system memory: %g GB
-        Limit shoebox memory: %g GB
+        Shoebox memory limit: %g GB
         Required shoebox memory: %g GB
     """
                 % (
@@ -814,8 +814,8 @@ class Manager(object):
         The average shoebox size is %d × %d pixels × %d images - is your crystal
         really this mosaic?
             Total system memory: %g GB
-            Limit shoebox memory: %g GB
-            Maximum shoebox memory: %g GB
+            Shoebox memory limit: %g GB
+            Required shoebox memory: %g GB
         """
                     % (
                         xsize,
