@@ -37,7 +37,9 @@ from dials.algorithms.scaling.observers import register_scaler_observers
 from dials.algorithms.scaling.scale_and_filter import AnalysisResults, log_cycle_results
 from dials.command_line.cosym import cosym
 from dials.command_line.cosym import phil_scope as cosym_phil_scope
-from dials.command_line.compute_delta_cchalf import Script as deltaccscript
+from dials.algorithms.statistics.cc_half_algorithm import (
+    CCHalfFromDials as deltaccscript,
+)
 from dials.command_line.compute_delta_cchalf import phil_scope as deltacc_phil_scope
 
 logger = logging.getLogger("dials")
@@ -366,7 +368,14 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
             delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
             logger.info("\nPerforming a round of filtering.\n")
 
-            script = deltaccscript(delta_cc_params, self.experiments, self.reflections)
+            # need to reduce to single table.
+            joined_reflections = flex.reflection_table()
+            for table in self.reflections:
+                joined_reflections.extend(table)
+
+            script = deltaccscript(
+                delta_cc_params, self.experiments, joined_reflections
+            )
             script.run()
 
             valid_image_ranges = get_valid_image_ranges(self.experiments)
@@ -393,15 +402,19 @@ Scaling and filtering can only be performed in multi-dataset scaling mode
                     "Finishing scaling and filtering as no data removed in this cycle."
                 )
                 if self.params.scaling_options.full_matrix:
-                    self.reflections = parse_multiple_datasets(script.reflections)
+                    self.reflections = parse_multiple_datasets(
+                        [script.filtered_reflection_table]
+                    )
                     results = self._run_final_scale_cycle(results)
                 else:
-                    self.reflections = script.reflections
+                    self.reflections = [script.filtered_reflection_table]
                 results.finish(termination_reason="no_more_removed")
                 break
 
             # Need to split reflections for further processing.
-            self.reflections = parse_multiple_datasets(script.reflections)
+            self.reflections = parse_multiple_datasets(
+                [script.filtered_reflection_table]
+            )
 
             if (
                 latest_results["cumul_percent_removed"]

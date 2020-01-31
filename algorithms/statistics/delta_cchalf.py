@@ -154,7 +154,7 @@ def compute_cchalf_from_reflection_sums(reflection_sums, binner):
     return compute_mean_cchalf_in_bins(bin_data)
 
 
-class PerImageCChalfStatistics(object):
+class PerGroupCChalfStatistics(object):
     def __init__(
         self,
         reflection_table,

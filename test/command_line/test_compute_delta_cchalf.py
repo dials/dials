@@ -31,6 +31,7 @@ def test_compute_delta_cchalf_scaled_data(dials_data, tmpdir):
     assert tmpdir.join("filtered.expt").check()
     assert tmpdir.join("filtered.refl").check()
     assert tmpdir.join("delta_cchalf.dat").check()
+    assert tmpdir.join("compute_delta_cchalf.html").check()
     with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
         check_cchalf_result(f)
 
@@ -56,5 +57,6 @@ def test_compute_delta_cchalf_scaled_data_mtz(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
     assert tmpdir.join("delta_cchalf.dat").check()
+    assert tmpdir.join("compute_delta_cchalf.html").check()
     with open(tmpdir.join("delta_cchalf.dat").strpath, "r") as f:
         check_cchalf_result(f)

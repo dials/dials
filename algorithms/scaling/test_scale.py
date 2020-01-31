@@ -474,18 +474,20 @@ def test_scale_and_filter_image_group_mode(dials_data, tmpdir):
     assert tmpdir.join("scaled.expt").check()
     assert tmpdir.join("analysis_results.json").check()
     result = get_merging_stats(tmpdir.join("unmerged.mtz").strpath)
-    assert result.overall.r_pim < 0.17  # 17/05/19 was 0.1525
-    assert result.overall.cc_one_half > 0.95  # 17/05/19 was 0.9722, 29/07/19 was 0.9557
-    assert result.overall.n_obs > 51400  # 17/05/19 was 51560, 29/07/19 was 51493
-    # for this dataset, expect to have two regions excluded - last 5 images of
-    # datasets _4 & _5
+    assert result.overall.r_pim < 0.17  # 03/02/20 was 0.160
+    assert result.overall.cc_one_half > 0.95  # 03/02/20 was 0.961
+    assert result.overall.n_obs > 50000  # 03/02/20 was 50213
+
     with open(tmpdir.join("analysis_results.json").strpath) as f:
         analysis_results = json.load(f)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
-        [[21, 25], 4]
+        [[16, 24], 4]
     ]
     assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == [
-        [[21, 25], 3]
+        [[17, 24], 3]
+    ]
+    assert analysis_results["cycle_results"]["3"]["image_ranges_removed"] == [
+        [[21, 25], 5]
     ]
     assert analysis_results["termination_reason"] == "max_percent_removed"
 
