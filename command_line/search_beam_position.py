@@ -409,10 +409,12 @@ def discover_better_experimental_model(
     beam = imagesets[0].get_beam()
     try:
         for imageset in imagesets[1:]:
-            assert imageset.get_detector() == detector
-            assert imageset.get_beam() == beam
+            assert detector.is_similar_to(imageset.get_detector())
+            assert beam.is_similar_to(imageset.get_beam())
     except AssertionError:
-        raise Sorry("Detectors and beams are not the same across all imagesets")
+        # https://github.com/dials/dials/issues/1126
+        pass
+        # raise Sorry("Detectors and beams are not the same across all imagesets")
 
     beam_panel = detector.get_panel_intersection(beam.get_s0())
 
