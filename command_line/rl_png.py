@@ -223,10 +223,11 @@ def run():
         result = run_dps(
             (experiments[0].imageset, reflections, max_cell, hardcoded_phil)
         )
-        solutions = [matrix.col(v) for v in result["solutions"]]
-        for i in range(min(n_solutions, len(solutions))):
-            v = solutions[i]
-            f.viewer.plot("rl_solution_%s.png" % (i + 1), n=v.elems)
+        if result:
+            solutions = [matrix.col(v) for v in result["solutions"]]
+            for i in range(min(n_solutions, len(solutions))):
+                v = solutions[i]
+                f.viewer.plot("rl_solution_%s.png" % (i + 1), n=v.elems)
 
 
 if __name__ == "__main__":
