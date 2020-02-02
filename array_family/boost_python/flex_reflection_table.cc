@@ -29,10 +29,10 @@
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
-  using dials::util::streambuf;
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::model::Observation;
   using dials::model::Shoebox;
+  using dials::util::streambuf;
   using flex_table_suite::column_to_object_visitor;
   using flex_table_suite::flex_table_wrapper;
   using scitbx::vec2;
@@ -832,7 +832,7 @@ namespace dials { namespace af { namespace boost_python {
    * @param self The reflection table
    * @param output A streambuf object encapsulating a Python file-like object
    */
-  void reflection_table_as_msgpack_to_file(reflection_table self, streambuf& output) {
+  void reflection_table_as_msgpack_to_file(reflection_table self, streambuf &output) {
     streambuf::ostream os(output);
     msgpack::pack(os, self);
   }

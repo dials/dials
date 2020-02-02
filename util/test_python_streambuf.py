@@ -8,6 +8,7 @@ from dials.util.ext import streambuf, ostream
 
 ext = boost.python.import_ext("dials_util_streambuf_test_ext")
 
+
 class io_test_case(object):
     phrase = b"Coding should be fun"
     #          01234567890123456789
