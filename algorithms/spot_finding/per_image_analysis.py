@@ -85,13 +85,6 @@ class binner_d_star_cubed(object):
             ds3_max = ds3_min
 
 
-def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
-    n_slots = len(d_star_sq) // target_n_per_bin
-    n_slots = min(n_slots, max_slots)
-    n_slots = max(n_slots, min_slots)
-    return flex.histogram(d_star_sq, n_slots=n_slots)
-
-
 def outlier_rejection(reflections):
     # http://scripts.iucr.org/cgi-bin/paper?ba0032
     if len(reflections) == 1:
@@ -525,94 +518,6 @@ def ice_rings_selection(reflections, width=0.004):
         return ice_sel
     else:
         return None
-
-
-def resolution_histogram(reflections, imageset, plot_filename=None):
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-    hist = get_histogram(d_star_sq)
-
-    if plot_filename is not None:
-        from matplotlib import pyplot
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.bar(
-            hist.slot_centers() - 0.5 * hist.slot_width(),
-            hist.slots(),
-            width=hist.slot_width(),
-        )
-        ax.set_xlabel("d_star_sq")
-        ax.set_ylabel("Frequency")
-
-        ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-        xticks = ax.get_xticks()
-        xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-        ax_.set_xticks(xticks)
-        ax_.set_xlim(ax.get_xlim())
-        ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
-
-
-def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-    hist = get_histogram(d_star_sq)
-
-    intensities = reflections["intensity.sum.value"]
-    variances = reflections["intensity.sum.variance"]
-
-    sel = variances > 0
-    intensities = intensities.select(sel)
-    variances = intensities.select(sel)
-
-    i_over_sigi = intensities / flex.sqrt(variances)
-    # log_i_over_sigi = flex.log(i_over_sigi)
-
-    slots = []
-    for slot in hist.slot_infos():
-        sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
-        if sel.count(True) > 0:
-            slots.append(math.log(flex.sum(i_over_sigi.select(sel))))
-        else:
-            slots.append(0)
-
-    if plot_filename is not None:
-        from matplotlib import pyplot
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        # ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
-        ax.scatter(
-            hist.slot_centers() - 0.5 * hist.slot_width(),
-            slots,
-            s=20,
-            color="blue",
-            marker="o",
-            alpha=0.5,
-        )
-        ax.set_xlabel("d_star_sq")
-        ax.set_ylabel("ln(sum(I/sigI))")
-
-        ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-        xticks = ax.get_xticks()
-        xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-        ax_.set_xticks(xticks)
-        ax_.set_xlim(ax.get_xlim())
-        ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
-
-
-def plot_ordered_d_star_sq(reflections, imageset):
-    from matplotlib import pyplot
-
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-
-    perm = flex.sort_permutation(d_star_sq)
-    pyplot.scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker="+")
-    pyplot.show()
 
 
 def stats_for_reflection_table(
