@@ -52,9 +52,15 @@ def test_estimate_resolution(dials_data, tmpdir):
     )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
+    ice_sel = per_image_analysis.ice_rings_selection(reflections, width=0.004)
+    assert ice_sel.count(True) == 76
     with tmpdir.as_cwd():
         d_min = per_image_analysis.estimate_resolution_limit(
             reflections=reflections, plot_filename="i_over_sigi_vs_resolution.png"
         )
         assert d_min == pytest.approx(1.446715534174674)
         assert tmpdir.join("i_over_sigi_vs_resolution.png").check()
+        d_min = per_image_analysis.estimate_resolution_limit(
+            reflections=reflections, ice_sel=ice_sel
+        )
+        assert d_min == pytest.approx(1.446715534174674)
