@@ -39,8 +39,6 @@ Hence each diffraction spot has intensity attenuated by a factor
 With knowledge of the density :math:`\rho` of the diamond anvils, :math:`\mu` can be calculated from tabulated values of the mass attenuation coefficient for carbon :math:`\left(\mu/\rho\right)_\text{C}`.
 The mass attenuation coefficient is taken from data collated by the US National Institute of Standards and Technology [NIST]_.
 
-.. [NIST] Hubbell, J.H. and Seltzer, S.M. (2004), *Tables of X-Ray Mass Attenuation Coefficients and Mass Energy-Absorption Coefficients* (version 1.4). [Online] Available: http://physics.nist.gov/xaamdi [2020-01-31]. National Institute of Standards and Technology, Gaithersburg, MD, USA.
-
 After integrating the observed diffraction spot intensities, we can recover an approximation of the intensity that might be expected in the absence of X-ray attenuation by the anvil material.
 This is simply achieved by multiplying each of the profile-fitted integrated intensities, the summation integrated intensities and their respective standard deviations by a factor
 
@@ -49,3 +47,5 @@ This is simply achieved by multiplying each of the profile-fitted integrated int
 
 Note that in the case of the standard deviations, this correction may subtly contradict certain assumptions in the error model of your chosen scaling utility.
 The effect is not anticipated to be very significant in most cases and no attempt is made to account for it at this stage.
+
+.. [NIST] Hubbell, J.H. and Seltzer, S.M. (2004), *Tables of X-Ray Mass Attenuation Coefficients and Mass Energy-Absorption Coefficients* (version 1.4). [Online] Available: http://physics.nist.gov/xaamdi [2020-01-31]. National Institute of Standards and Technology, Gaithersburg, MD, USA.

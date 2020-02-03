@@ -47,6 +47,7 @@ Utilities:
    dials_stereographic_projection
    dials_combine_experiments
    dials_align_crystal
+   dials_anvil_correction
 
 Printable command line reference:
 
