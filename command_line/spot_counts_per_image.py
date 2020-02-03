@@ -5,7 +5,6 @@ import sys
 
 import iotbx.phil
 from dials.util import tabulate
-from dials.array_family import flex
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.algorithms.spot_finding import per_image_analysis
 
@@ -68,39 +67,18 @@ def run(args):
     if len(reflections) != 1:
         sys.exit("Only one reflection list may be passed")
     reflections = reflections[0]
-    expts = set(reflections["id"])
-    if len(expts) and max(expts) >= len(experiments.imagesets()):
-        sys.exit("Unknown experiments in reflection list")
 
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
-    imageset_expts = {}
-    imageset_scans = {}
-    for j, experiment in enumerate(experiments):
-        imageset = experiment.imageset
-        if imageset in imageset_expts:
-            imageset_expts[imageset].append(j)
-            imageset_scans[imageset] += experiment.scan
-        else:
-            imageset_expts[imageset] = [j]
-            imageset_scans[imageset] = experiment.scan
 
     if params.id is not None:
         reflections = reflections.select(reflections["id"] == params.id)
 
     all_stats = []
-    for imageset in imageset_expts:
-        imageset.set_scan(imageset_scans[imageset])
-
-        selected = flex.bool(reflections.size(), False)
-        for j in imageset_expts[imageset]:
-            selected.set_selected(reflections["id"] == j, True)
-        refl = reflections.select(selected)
-        stats = per_image_analysis.stats_imageset(
-            imageset,
-            refl,
-            resolution_analysis=params.resolution_analysis,
-            plot=params.individual_plots,
+    for i, expt in enumerate(experiments):
+        refl = reflections.select(reflections["id"] == i)
+        stats = per_image_analysis.stats_per_image(
+            expt, refl, resolution_analysis=params.resolution_analysis
         )
         all_stats.append(stats)
 

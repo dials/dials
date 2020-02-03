@@ -666,7 +666,7 @@ def stats_for_reflection_table(
     )
 
 
-def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
+def stats_per_image(experiment, reflections, resolution_analysis=True):
     n_spots_total = []
     n_spots_no_ice = []
     n_spots_4A = []
@@ -681,12 +681,12 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
     image_number = flex.floor(image_number)
 
     try:
-        start, end = imageset.get_array_range()
+        start, end = experiment.scan.get_array_range()
     except AttributeError:
-        start = 0
-    for i in range(len(imageset)):
+        start, end = 0, 1
+    for i in range(start, end):
         stats = stats_for_reflection_table(
-            reflections.select(image_number == i + start),
+            reflections.select(image_number == i),
             resolution_analysis=resolution_analysis,
         )
         n_spots_total.append(stats.n_spots_total)
