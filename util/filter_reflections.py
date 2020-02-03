@@ -108,12 +108,17 @@ def filter_reflection_table(reflection_table, intensity_choice, *args, **kwargs)
 
     # assert correct form of input data for choice.
     if "scale" in intensity_choice:
-        assert "inverse_scale_factor" in reflection_table
-        assert "intensity.scale.value" in reflection_table
+        for k in ("inverse_scale_factor", "intensity.scale.value"):
+            if k not in reflection_table:
+                raise KeyError("%s missing from input" % k)
     if "profile" in intensity_choice:
-        assert "intensity.prf.value" in reflection_table
+        for k in ("intensity.prf.value",):
+            if k not in reflection_table:
+                raise KeyError("%s missing from input" % k)
     if "sum" in intensity_choice:
-        assert "intensity.sum.value" in reflection_table
+        for k in ("intensity.sum.value",):
+            if k not in reflection_table:
+                raise KeyError("%s missing from input" % k)
 
     # Do the filtering, but with an exception for the case of no profile fitted
     # reflections - in this case, try to reprocess without profile fitted.
