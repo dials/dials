@@ -1,7 +1,7 @@
 # coding: utf-8
 
 """
-Boost integrated intensities to account for attenuation by a diamond anvil cell.
+Correct integrated intensities to account for attenuation by a diamond anvil cell.
 
 High pressure X-ray diffraction experiments often involve a diamond anvil pressure
 cell, in which the sample is sandwiched between two anvils, effectively parallel flat
@@ -14,6 +14,12 @@ intensities to remove the calculated effect of the diamond attenuation.
 
 It is intended that this program be used to correct reflection intensities after
 integration but before scaling.  Call it on the output of dials.integrate.
+
+Examples::
+
+  dials.anvil_correction integrated.expt integrated.refl
+
+  dials.anvil_correction integrated.expt integrated.refl thickness=1.2 normal=1,0,0
 """
 
 from __future__ import absolute_import, division, print_function
@@ -51,7 +57,7 @@ phil_scope = libtbx.phil.parse(
         density = 3510
             .type = float
             .help = "The density of the anvil material in kg per cubic metre.  "
-                    "The default is the typical density of diamond."
+                    "The default is the typical density of synthetic diamond."
 
         thickness = 1.5925
             .type = float
@@ -114,7 +120,6 @@ def correct_intensities_for_dac_attenuation(
                   attenuation coefficients, https://dx.doi.org/10.18434/T4D01F).
                   Defaults to a typical value for synthetic diamond.
     """
-    # Iterate over all experiments in the experiment list.
     for i, expt in enumerate(elist):
         # Get the wavelength.
         wavelength = expt.beam.get_wavelength()
@@ -191,23 +196,23 @@ def correct_intensities_for_dac_attenuation(
 
         # Derive the factor by which we estimate the intensities to have been attenuated
         # by the anvils.  This is an array of shape (N).
-        transmission = np.exp(-linear_atten_coeff * l0)
-        transmission *= np.exp(-linear_atten_coeff * l1)
+        l_tot = l0 + l1
+        correction = flex.double(np.exp(linear_atten_coeff * l_tot))
         # Remove redundant things that scale with N.
         del l0, l1
 
         # Correct the measured intensities for this attenuation.
         for col in "intensity.prf.value", "intensity.sum.value":
             try:
-                rtable[col].set_selected(sel, refls[col] / flex.double(transmission))
+                rtable[col].set_selected(sel, refls[col] * correction)
             except KeyError:
                 pass
         # Correct the measured variances accordingly.
+        variance_correction = flex.pow2(correction)
+        del correction
         for col in "intensity.prf.variance", "intensity.sum.variance":
             try:
-                rtable[col].set_selected(
-                    sel, refls[col] / flex.double(np.square(transmission))
-                )
+                rtable[col].set_selected(sel, refls[col] * variance_correction)
             except KeyError:
                 pass
 
