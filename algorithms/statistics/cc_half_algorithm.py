@@ -119,7 +119,7 @@ Batch offset can be specified with mtz.batch_offset=
 """,
                     batch_offset,
                 )
-            else:
+            elif len(potential) > 1:
                 diffs = flex.double(
                     [potential[i + 1] - p for i, p in enumerate(potential[:-1])]
                 )
@@ -132,6 +132,8 @@ Batch offset can be specified with mtz.batch_offset=
 """,
                     batch_offset,
                 )
+            else:
+                batch_offset = 1
 
         previous = 0
         dataset_no = 0
