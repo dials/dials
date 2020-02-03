@@ -4,7 +4,7 @@ dials.anvil_correction
 Introduction
 ------------
 
-.. python_string:: dials.command_line.anvil_correction.help_message
+.. python_string:: dials.command_line.anvil_correction.__doc__
 
 Full parameter definitions
 --------------------------
