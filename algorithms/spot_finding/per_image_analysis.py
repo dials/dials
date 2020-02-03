@@ -10,7 +10,6 @@ from dials.algorithms.integration import filtering
 from dials.array_family import flex
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
-from dxtbx.model import Experiment, ExperimentList
 
 
 Slot = collections.namedtuple("Slot", "d_min d_max")
@@ -149,7 +148,7 @@ def wilson_outliers(reflections, ice_sel=None, p_cutoff=1e-2):
     return outliers
 
 
-def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename=None):
+def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
     if ice_sel is None:
         ice_sel = flex.bool(len(reflections), False)
 
@@ -324,7 +323,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     return resolution_estimate
 
 
-def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename=None):
+def estimate_resolution_limit_distl_method1(reflections, plot_filename=None):
     # Implementation of Method 1 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -418,7 +417,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     return d_g, noisiness
 
 
-def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename=None):
+def estimate_resolution_limit_distl_method2(reflections, plot_filename=None):
     # Implementation of Method 2 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -616,48 +615,15 @@ def plot_ordered_d_star_sq(reflections, imageset):
     pyplot.show()
 
 
-def stats_single_image(
-    imageset,
-    reflections,
-    i=None,
-    resolution_analysis=True,
-    plot=False,
-    filter_ice=True,
-    ice_rings_width=0.004,
+def stats_for_reflection_table(
+    reflections, resolution_analysis=True, filter_ice=True, ice_rings_width=0.004
 ):
-    if "rlp" not in reflections:
-        expts = ExperimentList(
-            [
-                Experiment(
-                    detector=imageset.get_detector(),
-                    beam=imageset.get_beam(),
-                    scan=imageset.get_scan(),
-                    goniometer=imageset.get_goniometer(),
-                )
-            ]
-        )
-        reflections.centroid_px_to_mm(expts)
-        reflections.map_centroids_to_reciprocal_space(expts)
-
+    assert "rlp" in reflections, "Reflections must have been mapped to reciprocal space"
     reflections = reflections.select(reflections["rlp"].norms() > 0)
-
-    if plot and i is not None:
-        filename = "i_over_sigi_vs_resolution_%d.png" % (i + 1)
-        hist_filename = "spot_count_vs_resolution_%d.png" % (i + 1)
-        extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" % (i + 1)
-        distl_method_1_filename = "distl_method_1_%d.png" % (i + 1)
-        distl_method_2_filename = "distl_method_2_%d.png" % (i + 1)
-    else:
-        filename = None
-        hist_filename = None
-        extra_filename = None
-        distl_method_1_filename = None
-        distl_method_2_filename = None
 
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
-    # plot_ordered_d_star_sq(reflections, imageset)
     reflections_all = reflections
     reflections_no_ice = reflections_all
     ice_sel = None
@@ -670,29 +636,16 @@ def stats_single_image(
     n_spot_4A = (d_spacings > 4).count(True)
     intensities = reflections_no_ice["intensity.sum.value"]
     total_intensity = flex.sum(intensities)
-    # print i
-    if hist_filename is not None:
-        resolution_histogram(reflections, imageset, plot_filename=hist_filename)
-    if extra_filename is not None:
-        log_sum_i_sigi_vs_resolution(
-            reflections, imageset, plot_filename=extra_filename
-        )
     if resolution_analysis and n_spots_no_ice > 10:
-        estimated_d_min = estimate_resolution_limit(
-            reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename
-        )
+        estimated_d_min = estimate_resolution_limit(reflections_all, ice_sel=ice_sel)
         (
             d_min_distl_method_1,
             noisiness_method_1,
-        ) = estimate_resolution_limit_distl_method1(
-            reflections_all, imageset, plot_filename=distl_method_1_filename
-        )
+        ) = estimate_resolution_limit_distl_method1(reflections_all)
         (
             d_min_distl_method_2,
             noisiness_method_2,
-        ) = estimate_resolution_limit_distl_method2(
-            reflections_all, imageset, plot_filename=distl_method_2_filename
-        )
+        ) = estimate_resolution_limit_distl_method2(reflections_all)
     else:
         estimated_d_min = -1.0
         d_min_distl_method_1 = -1.0
@@ -732,12 +685,9 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
     except AttributeError:
         start = 0
     for i in range(len(imageset)):
-        stats = stats_single_image(
-            imageset[i : i + 1],
+        stats = stats_for_reflection_table(
             reflections.select(image_number == i + start),
-            i=i + start,
             resolution_analysis=resolution_analysis,
-            plot=plot,
         )
         n_spots_total.append(stats.n_spots_total)
         n_spots_no_ice.append(stats.n_spots_no_ice)

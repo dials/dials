@@ -117,18 +117,10 @@ indexing_min_spots = 10
     from dials.algorithms.spot_finding import per_image_analysis
 
     imageset = experiments.imagesets()[0]
-    scan = imageset.get_scan()
-    if scan is not None:
-        i = scan.get_array_range()[0]
-    else:
-        i = 0
-    stats = per_image_analysis.stats_single_image(
-        imageset,
-        reflections,
-        i=i,
-        plot=False,
-        filter_ice=filter_ice,
-        ice_rings_width=ice_rings_width,
+    reflections.centroid_px_to_mm(experiments)
+    reflections.map_centroids_to_reciprocal_space(experiments)
+    stats = per_image_analysis.stats_for_reflection_table(
+        reflections, filter_ice=filter_ice, ice_rings_width=ice_rings_width
     )._asdict()
     t2 = time.time()
     logger.info("Resolution analysis took %.2f seconds" % (t2 - t1))

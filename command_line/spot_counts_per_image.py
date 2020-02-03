@@ -112,8 +112,8 @@ def run(args):
     per_image_analysis.print_table(per_image_analysis.Stats(**summary_table))
 
     # FIXME this is now probably nonsense...
-    overall_stats = per_image_analysis.stats_single_image(
-        imageset, reflections, resolution_analysis=params.resolution_analysis
+    overall_stats = per_image_analysis.stats_for_reflection_table(
+        reflections, resolution_analysis=params.resolution_analysis
     )
     rows = [
         ("Overall statistics", ""),
