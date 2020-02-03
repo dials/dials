@@ -1,15 +1,17 @@
 from __future__ import absolute_import, division, print_function
 
 import procrunner
+import pytest
 
 
-def test_spot_counts_per_image(dials_data, tmpdir):
-    path = dials_data("centroid_test_data")
+@pytest.mark.parametrize("dataset", ["centroid_test_data", "thaumatin_grid_scan"])
+def test_spot_counts_per_image(dataset, dials_data, tmpdir):
+    path = dials_data(dataset)
 
     # import the data
     result = procrunner.run(
         ["dials.import", "output.experiments=imported.expt"]
-        + [f for f in path.listdir("*.cbf")],
+        + [f for f in path.listdir("*.cbf*")],
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
