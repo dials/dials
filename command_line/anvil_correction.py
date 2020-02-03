@@ -219,7 +219,7 @@ def correct_intensities_for_dac_attenuation(
 
 def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> None
     """
-    Run dials.rescale_diamond_anvil_cell as from the command line.
+    Run dials.anvil_correction as from the command line.
 
     Take integrated experiment lists and reflection tables and correct the all the
     integrated intensities for the estimated attenuation by the diamond anvils.
