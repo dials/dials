@@ -480,15 +480,6 @@ def points_below_line(d_star_sq, log_i_over_sigi, m, c):
     return inside
 
 
-def points_inside_envelope(
-    d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower
-):
-
-    return points_below_line(
-        d_star_sq, log_i_over_sigi, m_upper, c_upper
-    ) & ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower)
-
-
 def ice_rings_selection(reflections, width=0.004):
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
