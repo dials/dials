@@ -1,10 +1,22 @@
 from __future__ import absolute_import, division, print_function
 
+import pkg_resources
+
 
 class _Extension(object):
     """A base class for extension groups.
     This contains a common lookup mechanism and phil scope generator.
     """
+
+    entry_point = None
+
+    @classmethod
+    def extensions(cls):
+        """Return a list of all registered extension classes."""
+        return [
+            entry_point.load()
+            for entry_point in pkg_resources.iter_entry_points(cls.entry_point)
+        ]
 
     @classmethod
     def load(cls, name):
@@ -13,9 +25,9 @@ class _Extension(object):
         :param name: The name of the extension
         :returns: The extension class
         """
-        for e in cls.extensions():
-            if e.name == name:
-                return e
+        for entry_point in pkg_resources.iter_entry_points(cls.entry_point, name):
+            # if there are multiple entry points with the same name then just return the first
+            return entry_point.load()
 
     @classmethod
     def phil_scope(cls):
@@ -78,22 +90,9 @@ class _Extension(object):
 class SpotFinderThreshold(_Extension):
     """Extensions for threshold algorithms to be used in spot finding."""
 
-    scope = "spotfinder"
+    entry_point = "dials.spotfinder.threshold"
     name = "threshold"
-
-    @classmethod
-    def extensions(cls):
-        from dials.extensions.dispersion_spotfinder_threshold_ext import (
-            DispersionSpotFinderThresholdExt,
-        )
-        from dials.extensions.dispersion_extended_spotfinder_threshold_ext import (
-            DispersionExtendedSpotFinderThresholdExt,
-        )
-
-        return [
-            DispersionSpotFinderThresholdExt,
-            DispersionExtendedSpotFinderThresholdExt,
-        ]
+    scope = "spotfinder"
 
 
 class ProfileModel(_Extension):
@@ -101,51 +100,22 @@ class ProfileModel(_Extension):
     The interface definition for a profile model.
     """
 
-    scope = "profile"
+    entry_point = "dxtbx.profile_model"
     name = "profile"
-
-    @classmethod
-    def extensions(cls):
-        from dials.extensions.gaussian_rs_profile_model_ext import (
-            GaussianRSProfileModelExt,
-        )
-
-        return [GaussianRSProfileModelExt]
+    scope = "profile"
 
 
 class Centroid(_Extension):
     """Extensions for centroid algorithms."""
 
-    scope = "integration"
+    entry_point = "dials.integration.centroid"
     name = "centroid"
-
-    @classmethod
-    def extensions(cls):
-        from dials.extensions.simple_centroid_ext import SimpleCentroidExt
-
-        return [SimpleCentroidExt]
+    scope = "integration"
 
 
 class Background(_Extension):
     """Extensions for background algorithms."""
 
-    scope = "integration"
+    entry_point = "dials.integration.background"
     name = "background"
-
-    @classmethod
-    def extensions(cls):
-        from dials.extensions.auto_background_ext import AutoBackgroundExt
-        from dials.extensions.glm_background_ext import GLMBackgroundExt
-        from dials.extensions.gmodel_background_ext import GModelBackgroundExt
-        from dials.extensions.simple_background_ext import SimpleBackgroundExt
-        from dials.extensions.null_background_ext import NullBackgroundExt
-        from dials.extensions.median_background_ext import MedianBackgroundExt
-
-        return [
-            AutoBackgroundExt,
-            GLMBackgroundExt,
-            GModelBackgroundExt,
-            SimpleBackgroundExt,
-            NullBackgroundExt,
-            MedianBackgroundExt,
-        ]
+    scope = "integration"

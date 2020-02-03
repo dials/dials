@@ -21,6 +21,21 @@ libtbx.pkg_utils.define_entry_points(
         "dials.index.lattice_search": [
             "low_res_spot_match = dials.algorithms.indexing.lattice_search:LowResSpotMatch"
         ],
+        "dials.integration.background": [
+            "Auto = dials.extensions.auto_background_ext:AutoBackgroundExt",
+            "glm = dials.extensions.glm_background_ext:GLMBackgroundExt",
+            "gmodel = dials.extensions.gmodel_background_ext:GModelBackgroundExt",
+            "simple = dials.extensions.simple_background_ext:SimpleBackgroundExt",
+            "null = dials.extensions.null_background_ext:NullBackgroundExt",
+            "median = dials.extensions.median_background_ext:MedianBackgroundExt",
+        ],
+        "dials.integration.centroid": [
+            "simple = dials.extensions.simple_centroid_ext:SimpleCentroidExt"
+        ],
+        "dials.spotfinder.threshold": [
+            "dispersion = dials.extensions.dispersion_spotfinder_threshold_ext:DispersionSpotFinderThresholdExt",
+            "dispersion_extended = dials.extensions.dispersion_extended_spotfinder_threshold_ext:DispersionExtendedSpotFinderThresholdExt",
+        ],
     }
 )
 
