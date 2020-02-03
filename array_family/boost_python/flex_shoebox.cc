@@ -458,9 +458,9 @@ namespace dials { namespace af { namespace boost_python {
       std::size_t index = af::max_index(a[i].data.const_ref());
       af::c_grid<3> accessor = a[i].data.accessor();
       tiny<std::size_t, 3> coord = accessor.index_nd(index);
-      result[i][0] = a[i].bbox[0] + coord[2] + 0.5;
-      result[i][1] = a[i].bbox[2] + coord[1] + 0.5;
-      result[i][2] = a[i].bbox[4] + coord[0] + 0.5;
+      result[i][0] = (FloatType) a[i].bbox[0] + (FloatType) coord[2] + 0.5;
+      result[i][1] = (FloatType) a[i].bbox[2] + (FloatType) coord[1] + 0.5;
+      result[i][2] = (FloatType) a[i].bbox[4] + (FloatType) coord[0] + 0.5;
     }
     return result;
   }
