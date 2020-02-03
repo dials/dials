@@ -209,9 +209,6 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
     m_lower = fit_lower.slope()
     c_lower = fit_lower.y_intercept()
 
-    # fit_upper.show_summary()
-    # fit_lower.show_summary()
-
     if m_upper == m_lower:
         intersection = (-1, -1)
         resolution_estimate = -1
@@ -230,20 +227,14 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
             (m_upper * c_lower - m_lower * c_upper) / (m_upper - m_lower),
         )
 
-        # inside = points_inside_envelope(
-        # d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
-
         inside = points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper)
         inside = inside & ~outliers_all & ~ice_sel
 
         if inside.count(True) > 0:
             d_star_sq_estimate = flex.max(d_star_sq.select(inside))
-            # d_star_sq_estimate = intersection[0]
             resolution_estimate = uctbx.d_star_sq_as_d(d_star_sq_estimate)
         else:
             resolution_estimate = -1
-
-    # resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
     if plot_filename is not None:
         from matplotlib import pyplot
@@ -276,7 +267,6 @@ def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
             ax.scatter(
                 [intersection[0]], [intersection[1]], marker="x", s=50, color="b"
             )
-        # ax.hexbin(d_star_sq, log_i_over_sigi, gridsize=30)
         xlim = pyplot.xlim()
         ax.plot(xlim, [(m * x + c) for x in xlim])
         ax.plot(xlim, [(m_upper * x + c_upper) for x in xlim], color="red")
@@ -478,9 +468,7 @@ def points_below_line(d_star_sq, log_i_over_sigi, m, c):
     def side(p1, p2, p):
         diff = p2 - p1
         perp = matrix.col((-diff[1], diff[0]))
-        # print p, p1, p2, perp
         d = (p - p1).dot(perp)
-        # print d
         return math.copysign(1, d)
 
     inside = flex.bool(len(d_star_sq), False)
