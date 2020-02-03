@@ -839,7 +839,7 @@ namespace dials { namespace af { namespace boost_python {
     std::size_t xsize = self.xsize();
     std::size_t ysize = self.ysize();
     std::size_t zsize = self.zsize();
-    for (std::size_t z = 0; z < zsize; ++z) {
+    for (int z = 0; z < zsize; ++z) {
       for (std::size_t y = 0; y < ysize; ++y) {
         for (std::size_t x = 0; x < xsize; ++x) {
           double z1 = z0 + z;
