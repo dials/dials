@@ -23,6 +23,7 @@ When the goniometer is at the zero datum, the anvils' normal is :math:`\mathbf{\
 
 .. image:: /figures/diamond_anvil_cell.svg
   :width: 600
+  :align: center
   :alt: Schematic of a diamond anvil cell diffraction measurement.
 
 Since the magnitude of the incident and diffracted beam vectors :math:`\mathbf{s}_0` and :math:`\mathbf{s}_1` is simply :math:`\left|\mathbf{s}_i\right| = 1/\lambda`, the path lengths :math:`l_0` and :math:`l_1` are
