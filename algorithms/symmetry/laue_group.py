@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """Algorithms for determination of Laue group symmetry."""
 from __future__ import absolute_import, division, print_function
 
@@ -268,7 +270,10 @@ class LaueGroupAnalysis(symmetry_base):
             "Estimated expectation value of true correlation coefficient E(CC) = %.3f"
             % self.E_cc_true
         )
-        output.append("Estimated sd(CC) = %.3f / sqrt(N)" % self.cc_sig_fac)
+        if self.cc_sig_fac:
+            output.append(u"Estimated σ(CC) = %.3f / √N" % self.cc_sig_fac)
+        else:
+            output.append(u"Too few reflections to estimate σ(CC).")
         output.append(
             "Estimated E(CC) of true correlation coefficient from identity = %.3f"
             % self.cc_true
