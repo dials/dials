@@ -10,8 +10,7 @@ def test_spot_counts_per_image(dataset, dials_data, tmpdir):
 
     # import the data
     result = procrunner.run(
-        ["dials.import", "output.experiments=imported.expt"]
-        + [f for f in path.listdir("*.cbf*")],
+        ["dials.import", "output.experiments=imported.expt"] + path.listdir("*.cbf*"),
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
