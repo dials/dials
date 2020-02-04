@@ -338,7 +338,12 @@ class Cluster(object):
     def __init__(
         self, experiments, reflections, dendrogram=False, threshold=1000, n_max=None
     ):
-        import matplotlib.pyplot as plt
+        if dendrogram:
+            import matplotlib.pyplot as plt
+
+            axes = plt.gca()
+        else:
+            axes = None
 
         ucs = xfel.clustering.cluster.Cluster.from_expts(
             refl_table=reflections, expts_list=experiments, n_images=n_max
@@ -346,7 +351,7 @@ class Cluster(object):
         self.clusters, _ = ucs.ab_cluster(
             threshold=threshold,
             log=True,  # log scale
-            ax=plt.gca() if dendrogram else None,
+            ax=axes,
             write_file_lists=False,
             schnell=False,
             doplot=dendrogram,
