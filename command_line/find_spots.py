@@ -3,7 +3,6 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from six.moves import cStringIO as StringIO
 
 from libtbx.phil import parse
 
@@ -183,17 +182,15 @@ class Script(object):
 
         # Print some per image statistics
         if params.per_image_statistics:
-            s = StringIO()
             for i, experiment in enumerate(experiments):
-                print("Number of centroids per image for imageset %i:" % i, file=s)
-                imageset = experiment.imageset
-                stats = per_image_analysis.stats_imageset(
-                    imageset,
-                    reflections.select(reflections["id"] == i),
-                    resolution_analysis=False,
+                logger.info("Number of centroids per image for imageset %i:", i)
+                refl = reflections.select(reflections["id"] == i)
+                refl.centroid_px_to_mm([experiment])
+                refl.map_centroids_to_reciprocal_space([experiment])
+                stats = per_image_analysis.stats_per_image(
+                    experiment, refl, resolution_analysis=False
                 )
-                per_image_analysis.print_table(stats, out=s)
-            logger.info(s.getvalue())
+                logger.info(str(stats))
 
         if params.output.experiments:
             return experiments, reflections
