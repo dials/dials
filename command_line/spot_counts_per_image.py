@@ -81,11 +81,12 @@ def run(args):
         all_stats.append(stats)
 
     # transpose stats
-    summary_table = {attrib: [] for attrib in per_image_analysis.Stats._fields}
+    summary_table = {}
     for s in all_stats:
-        for attrib, value in s._asdict().items():
-            summary_table[attrib].extend(value)
-    stats = per_image_analysis.Stats(**summary_table)
+        for k, value in s._asdict().items():
+            summary_table.setdefault(k, [])
+            summary_table[k].extend(value)
+    stats = per_image_analysis.StatsMultiImage(**summary_table)
     print(stats)
 
     overall_stats = per_image_analysis.stats_for_reflection_table(
