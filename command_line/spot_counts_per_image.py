@@ -86,7 +86,7 @@ def run(args):
         for attrib, value in s._asdict().items():
             summary_table[attrib].extend(value)
     stats = per_image_analysis.Stats(**summary_table)
-    per_image_analysis.print_table(stats)
+    print(stats)
 
     overall_stats = per_image_analysis.stats_for_reflection_table(
         reflections, resolution_analysis=params.resolution_analysis

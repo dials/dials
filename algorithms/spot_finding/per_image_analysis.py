@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import collections
 import math
-import sys
 from dials.util import tabulate
 
 from cctbx import sgtbx, uctbx
@@ -13,20 +12,97 @@ from scitbx import matrix
 
 
 Slot = collections.namedtuple("Slot", "d_min d_max")
-Stats = collections.namedtuple(
-    "Stats",
-    [
-        "d_min_distl_method_1",
-        "d_min_distl_method_2",
-        "estimated_d_min",
-        "n_spots_4A",
-        "n_spots_no_ice",
-        "n_spots_total",
-        "noisiness_method_1",
-        "noisiness_method_2",
-        "total_intensity",
-    ],
-)
+_stats_field_names = [
+    "d_min_distl_method_1",
+    "d_min_distl_method_2",
+    "estimated_d_min",
+    "n_spots_4A",
+    "n_spots_no_ice",
+    "n_spots_total",
+    "noisiness_method_1",
+    "noisiness_method_2",
+    "total_intensity",
+]
+StatsSingleImage = collections.namedtuple("StatsSingleImage", _stats_field_names)
+
+
+class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_names)):
+    __slots__ = ()
+
+    def as_table(self, perm=None, n_rows=None):
+        if hasattr(self, "image"):
+            image = self.image
+        else:
+            image = flex.int(range(1, len(self.n_spots_total) + 1)).as_string()
+
+        rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
+
+        estimated_d_min = None
+        d_min_distl_method_1 = None
+        d_min_distl_method_2 = None
+        n_indexed = getattr(self, "n_indexed", None)
+        fraction_indexed = getattr(self, "fraction_indexed", None)
+
+        if flex.double(self.estimated_d_min).all_gt(0):
+            estimated_d_min = self.estimated_d_min
+            rows[0].append("d_min")
+        if flex.double(self.d_min_distl_method_1).all_gt(0):
+            d_min_distl_method_1 = self.d_min_distl_method_1
+            rows[0].append("d_min (distl method 1)")
+        if flex.double(self.d_min_distl_method_2).all_gt(0):
+            d_min_distl_method_2 = self.d_min_distl_method_2
+            rows[0].append("d_min (distl method 2)")
+        if n_indexed is not None:
+            rows[0].append("#indexed")
+        if fraction_indexed is not None:
+            rows[0].append("fraction_indexed")
+
+        if perm is None:
+            perm = list(range(len(self.n_spots_total)))
+        if n_rows is not None:
+            n_rows = min(n_rows, len(perm))
+            perm = perm[:n_rows]
+        for i_image in perm:
+            d_min_str = ""
+            method1_str = ""
+            method2_str = ""
+            if self.estimated_d_min is not None and self.estimated_d_min[i_image] > 0:
+                d_min_str = "%.2f" % self.estimated_d_min[i_image]
+            if (
+                self.d_min_distl_method_1 is not None
+                and self.d_min_distl_method_1[i_image] > 0
+            ):
+                method1_str = "%.2f" % self.d_min_distl_method_1[i_image]
+                if self.noisiness_method_1 is not None:
+                    method1_str += " (%.2f)" % self.noisiness_method_1[i_image]
+            if (
+                self.d_min_distl_method_2 is not None
+                and self.d_min_distl_method_2[i_image] > 0
+            ):
+                method2_str = "%.2f" % self.d_min_distl_method_2[i_image]
+                if self.noisiness_method_2 is not None:
+                    method2_str += " (%.2f)" % self.noisiness_method_2[i_image]
+            row = [
+                image[i_image],
+                str(self.n_spots_total[i_image]),
+                str(self.n_spots_no_ice[i_image]),
+                "%.0f" % self.total_intensity[i_image],
+            ]
+            if estimated_d_min is not None:
+                row.append(d_min_str)
+            if d_min_distl_method_1 is not None:
+                row.append(method1_str)
+            if d_min_distl_method_2 is not None:
+                row.append(method2_str)
+            if n_indexed is not None:
+                row.append("%i" % self.n_indexed[i_image])
+            if fraction_indexed is not None:
+                row.append("%.2f" % self.fraction_indexed[i_image])
+            rows.append(row)
+        return rows
+
+    def __str__(self):
+        return tabulate(self.as_table(), headers="firstrow")
 
 
 class binner_equal_population(object):
@@ -537,7 +613,7 @@ def stats_for_reflection_table(
         d_min_distl_method_2 = -1.0
         noisiness_method_2 = -1.0
 
-    return Stats(
+    return StatsSingleImage(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spot_4A,
@@ -583,7 +659,7 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         d_min_distl_method_2.append(stats.d_min_distl_method_2)
         noisiness_method_2.append(stats.noisiness_method_2)
 
-    return Stats(
+    return StatsMultiImage(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spots_4A,
@@ -594,90 +670,6 @@ def stats_per_image(experiment, reflections, resolution_analysis=True):
         d_min_distl_method_2=d_min_distl_method_2,
         noisiness_method_2=noisiness_method_2,
     )
-
-
-def table(stats, perm=None, n_rows=None):
-    n_spots_total = stats.n_spots_total
-    n_spots_no_ice = stats.n_spots_no_ice
-    total_intensity = stats.total_intensity
-    estimated_d_min = stats.estimated_d_min
-    d_min_distl_method_1 = stats.d_min_distl_method_1
-    d_min_distl_method_2 = stats.d_min_distl_method_2
-    noisiness_method_1 = stats.noisiness_method_1
-    noisiness_method_2 = stats.noisiness_method_2
-    if hasattr(stats, "image"):
-        image = stats.image
-    else:
-        image = flex.int(range(1, len(n_spots_total) + 1)).as_string()
-    n_indexed = None
-    fraction_indexed = None
-    if hasattr(stats, "n_indexed"):
-        n_indexed = stats.n_indexed
-    if hasattr(stats, "fraction_indexed"):
-        fraction_indexed = stats.fraction_indexed
-    if flex.double(estimated_d_min).all_eq(-1):
-        estimated_d_min = None
-    if flex.double(d_min_distl_method_1).all_eq(-1):
-        d_min_distl_method_1 = None
-    if flex.double(d_min_distl_method_2).all_eq(-1):
-        d_min_distl_method_2 = None
-
-    rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
-    if estimated_d_min is not None:
-        rows[0].append("d_min")
-    if d_min_distl_method_1 is not None:
-        rows[0].append("d_min (distl method 1)")
-    if d_min_distl_method_2 is not None:
-        rows[0].append("d_min (distl method 2)")
-    if n_indexed is not None:
-        rows[0].append("#indexed")
-    if fraction_indexed is not None:
-        rows[0].append("fraction_indexed")
-    if perm is None:
-        perm = list(range(len(n_spots_total)))
-    if n_rows is not None:
-        n_rows = min(n_rows, len(perm))
-        perm = perm[:n_rows]
-    for i_image in perm:
-        d_min_str = ""
-        method1_str = ""
-        method2_str = ""
-        if estimated_d_min is not None and estimated_d_min[i_image] > 0:
-            d_min_str = "%.2f" % estimated_d_min[i_image]
-        if d_min_distl_method_1 is not None and d_min_distl_method_1[i_image] > 0:
-            method1_str = "%.2f" % d_min_distl_method_1[i_image]
-            if noisiness_method_1 is not None:
-                method1_str += " (%.2f)" % noisiness_method_1[i_image]
-        if d_min_distl_method_2 is not None and d_min_distl_method_2[i_image] > 0:
-            method2_str = "%.2f" % d_min_distl_method_2[i_image]
-            if noisiness_method_2 is not None:
-                method2_str += " (%.2f)" % noisiness_method_2[i_image]
-        row = [
-            image[i_image],
-            str(n_spots_total[i_image]),
-            str(n_spots_no_ice[i_image]),
-            "%.0f" % total_intensity[i_image],
-        ]
-        if estimated_d_min is not None:
-            row.append(d_min_str)
-        if d_min_distl_method_1 is not None:
-            row.append(method1_str)
-        if d_min_distl_method_2 is not None:
-            row.append(method2_str)
-        if n_indexed is not None:
-            row.append("%i" % n_indexed[i_image])
-        if fraction_indexed is not None:
-            row.append("%.2f" % fraction_indexed[i_image])
-        rows.append(row)
-    return rows
-
-
-def print_table(stats, perm=None, n_rows=None, out=None):
-    if out is None:
-        out = sys.stdout
-
-    rows = table(stats, perm=perm, n_rows=n_rows)
-    print(tabulate(rows, headers="firstrow"), file=out)
 
 
 def plot_stats(stats, filename="per_image_analysis.png"):

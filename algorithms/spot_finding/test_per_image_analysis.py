@@ -111,3 +111,31 @@ def test_stats_per_image(centroid_test_data):
     for v in result.values():
         assert len(v) == len(experiments[0].scan)
     assert stats.n_spots_total == [90, 100, 67, 49, 54, 62, 68, 83, 81]
+    t = stats.as_table()
+    assert len(t) == len(experiments[0].scan) + 1
+    assert t[0] == [
+        "image",
+        "#spots",
+        "#spots_no_ice",
+        "total_intensity",
+        "d_min",
+        "d_min (distl method 1)",
+        "d_min (distl method 2)",
+    ]
+    assert t[1] == ["1", "90", "77", "28214", "1.56", "2.08 (0.09)", "1.59 (0.27)"]
+    # Test n_rows option
+    t = stats.as_table(n_rows=3)
+    assert len(t) == 4
+    # Test perm option
+    perm = flex.random_permutation(len(experiments[0].scan))
+    t = stats.as_table(perm=perm)
+    assert [tt[0] for tt in t[1:]] == [str(i + 1) for i in perm]
+
+
+def test_stats_table_no_resolution_analysis(centroid_test_data):
+    experiments, reflections = centroid_test_data
+    stats = per_image_analysis.stats_per_image(
+        experiments[0], reflections, resolution_analysis=False
+    )
+    t = stats.as_table()
+    assert t[0] == ["image", "#spots", "#spots_no_ice", "total_intensity"]
