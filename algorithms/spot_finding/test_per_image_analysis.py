@@ -139,3 +139,13 @@ def test_stats_table_no_resolution_analysis(centroid_test_data):
     )
     t = stats.as_table()
     assert t[0] == ["image", "#spots", "#spots_no_ice", "total_intensity"]
+
+
+def test_plot_stats(centroid_test_data, tmpdir):
+    experiments, reflections = centroid_test_data
+    stats = per_image_analysis.stats_per_image(
+        experiments[0], reflections, resolution_analysis=False
+    )
+    image_file = tmpdir.join("pia.png")
+    per_image_analysis.plot_stats(stats, filename=image_file.strpath)
+    assert image_file.check()
