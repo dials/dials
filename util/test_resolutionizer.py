@@ -40,8 +40,8 @@ def test_resolutionizer(input_files, dials_data, tmpdir):
     expected_output = (
         b"Resolution rmerge:       1.34",
         b"Resolution completeness: 1.20",
-        b"Resolution cc_half:      1.62",
-        b"Resolution cc_ref:       1.31",
+        b"Resolution cc_half:      1.56",
+        b"Resolution cc_ref:       1.32",
         b"Resolution I/sig:        1.53",
         b"Resolution Mn(I/sig):    1.51",
         b"Resolution Mn(I)/Mn(sig):    1.50",
@@ -74,7 +74,7 @@ def test_resolutionizer_multi_sequence_with_batch_range(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
 
     expected_output = (
-        b"Resolution cc_half:      0.59",
+        b"Resolution cc_half:      0.61",
         b"Resolution I/sig:        0.59",
         b"Resolution Mn(I/sig):    0.59",
     )
