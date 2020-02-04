@@ -258,6 +258,9 @@ def show_experiments(experiments, show_scan_varying=False):
             text.append("Format class: %s" % format_class.__name__)
         if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
+        template = expt.imageset.get_template()
+        if template:
+            text.append("Image template: %s" % template)
         text.append(str(expt.detector))
         text.append(
             "Max resolution (at corners): %f"
