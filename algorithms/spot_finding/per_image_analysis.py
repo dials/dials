@@ -121,7 +121,6 @@ class binner_equal_population(object):
             d_min = d_sorted[nint((i + 1) * n_per_bin) - 1]
             self.bins.append(Slot(d_min, d_max))
             d_max = d_min
-            # print self.bins[-1].d_max, self.bins[-1].d_min
 
 
 class binner_d_star_cubed(object):
@@ -146,7 +145,6 @@ class binner_d_star_cubed(object):
             math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0]) / bin_step)
         )
 
-        # n_slots = len(d_spacings_sorted)//target_n_per_bin
         if max_slots is not None:
             n_slots = min(n_slots, max_slots)
         if min_slots is not None:
@@ -185,7 +183,6 @@ def outlier_rejection(reflections):
         / math.sqrt(2 * math.pi * var_prior)
         * math.exp(-((i_test - flex.mean(intensities_subset)) ** 2) / (2 * var_prior))
     )
-    # print p_prior
 
     if p_prior > 1e-10:
         return reflections
