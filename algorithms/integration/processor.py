@@ -478,9 +478,9 @@ class Task(object):
         percentage of memory allowed for shoeboxes or decreasing the block size.
         The average shoebox size is %d × %d pixels × %d images - is your crystal
         really this mosaic?
-        Total system memory: %g GB
-        Shoebox memory limit: %g GB
-        Required shoebox memory: %g GB
+        Total system memory: %.1f GB
+        Shoebox memory limit: %.1f GB
+        Required shoebox memory: %.1f GB
     """
                 % (
                     xsize,
@@ -813,9 +813,9 @@ class Manager(object):
         percentage of memory allowed for shoeboxes or decreasing the block size.
         The average shoebox size is %d × %d pixels × %d images - is your crystal
         really this mosaic?
-            Total system memory: %g GB
-            Shoebox memory limit: %g GB
-            Required shoebox memory: %g GB
+            Total system memory: %.1f GB
+            Shoebox memory limit: %.1f GB
+            Required shoebox memory: %.1f GB
         """
                     % (
                         xsize,
