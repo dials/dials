@@ -270,12 +270,13 @@ def run(args=None, phil=phil_scope):  # type: (List[str], libtbx.phil.scope) -> 
     # These functions are commonly used to collate the input.
     experiments = flatten_experiments(params.input.experiments)
     reflections_list = flatten_reflections(params.input.reflections)
-    reflections_list = parse_multiple_datasets(reflections_list)
-    reflections_list = sort_tables_to_experiments_order(reflections_list, experiments)
     # Work around parse_multiple_datasets dropping unindexed reflections.
     unindexed = flex.reflection_table()
     for r_table in reflections_list:
         unindexed.extend(r_table.select(r_table["id"] == -1))
+    # Get a single reflection table per experiment object.
+    reflections_list = parse_multiple_datasets(reflections_list)
+    reflections_list = sort_tables_to_experiments_order(reflections_list, experiments)
 
     # Check that the anvil surface normal really is normalised.
     try:
