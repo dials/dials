@@ -61,7 +61,7 @@
     {{ macros.panel('Scaling model plots',
         'scaling_model', scaling_model_graphs) }}
     {{ macros.panel('Analysis by resolution', 'cc_one_half', resolution_plots) }}
-    {{ macros.panel('Analysis by image number', 'batch', batch_graphs) }}
+    {{ macros.panel('Analysis by image number', 'batch', batch_graphs, tables=image_range_tables) }}
     {{ macros.panel('Miscellanous plots', 'misc_plots', misc_plots) }}
     {{ macros.panel('Scaled intensity plots', 'scaled_intensity_plots', scaled_intensity_plots) }}
     </div>
