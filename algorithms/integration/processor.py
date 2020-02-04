@@ -814,11 +814,18 @@ class Manager(object):
         decreasing the block size. This could be caused by a highly mosaic
         crystal model.  The average shoebox size is %d * %d * %d pixels - is
         your crystal really this mosaic?
-            Total system memory: %g GB
-            Limit shoebox memory: %g GB
-            Max shoebox memory: %g GB
+            Total system memory: %.1f GB
+            Limit shoebox memory: %.1f GB
+            Max shoebox memory: %.1f GB
         """
-                    % (total_memory / 1e9, limit_memory / 1e9, max_memory / 1e9)
+                    % (
+                        xsize,
+                        ysize,
+                        zsize,
+                        total_memory / 1e9,
+                        limit_memory / 1e9,
+                        max_memory / 1e9,
+                    )
                 )
             else:
                 self.params.mp.nproc = min(self.params.mp.nproc, njobs)
