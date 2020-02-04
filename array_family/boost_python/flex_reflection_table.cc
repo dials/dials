@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
+#include <dials/util/python_streambuf.h>
 #include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
@@ -31,6 +32,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::model::Observation;
   using dials::model::Shoebox;
+  using dials::util::streambuf;
   using flex_table_suite::column_to_object_visitor;
   using flex_table_suite::flex_table_wrapper;
   using scitbx::vec2;
@@ -826,6 +828,16 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Pack the reflection table in msgpack format into a streambuf object
+   * @param self The reflection table
+   * @param output A streambuf object encapsulating a Python file-like object
+   */
+  void reflection_table_as_msgpack_to_file(reflection_table self, streambuf &output) {
+    streambuf::ostream os(output);
+    msgpack::pack(os, self);
+  }
+
+  /**
    * Override default reference func to avoid copying
    */
   bool reflection_table_reference_func(msgpack::type::object_type type,
@@ -989,6 +1001,7 @@ namespace dials { namespace af { namespace boost_python {
              &split_indices_by_experiment_id<flex_table_type>)
         .def("compute_phi_range", &compute_phi_range<flex_table_type>)
         .def("as_msgpack", &reflection_table_as_msgpack)
+        .def("as_msgpack_to_file", &reflection_table_as_msgpack_to_file)
         .def("from_msgpack", &reflection_table_from_msgpack)
         .staticmethod("from_msgpack")
         .def("experiment_identifiers", &T::experiment_identifiers)

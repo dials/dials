@@ -5,7 +5,7 @@ from collections import defaultdict
 from math import sqrt, floor
 
 from cctbx import miller
-from cctbx import crystal, uctbx
+from cctbx import crystal
 from dials.array_family import flex
 import six
 
@@ -130,207 +130,139 @@ def compute_mean_cchalf_in_bins(bin_data):
     return mean_cchalf
 
 
-class PerImageCChalfStatistics(object):
+def compute_cchalf_from_reflection_sums(reflection_sums, binner):
     """
-    A class to compute per image CC 1/2 statistics
+    Compute the CC 1/2 by computing the CC 1/2 in resolution bins and then
+    computing the weighted mean of the binned CC 1/2 values
     """
+    # Compute Mean and variance of reflection intensities
+    bin_data = [BinData() for _ in range(binner.nbins())]
+    for h in reflection_sums:
+        sum_x = reflection_sums[h].sum_x
+        sum_x2 = reflection_sums[h].sum_x2
+        n = reflection_sums[h].n
 
+        if n > 1:
+            mean = sum_x / n
+            var = (sum_x2 - (sum_x) ** 2 / n) / (n - 1)
+            var = var / n
+            index = binner.index(h)
+            bin_data[index].mean.append(mean)
+            bin_data[index].var.append(var)
+
+    # Compute the mean cchalf in resolution bins
+    return compute_mean_cchalf_in_bins(bin_data)
+
+
+class PerGroupCChalfStatistics(object):
     def __init__(
         self,
-        miller_index,
-        identifiers,
-        dataset,
-        images,
-        intensity,
-        variance,
-        unit_cell,
+        reflection_table,
+        mean_unit_cell,
         space_group,
-        nbins=10,
-        dmin=None,
-        dmax=None,
-        mode="dataset",
-        image_group=10,
+        d_min=None,
+        d_max=None,
+        n_bins=10,
     ):
-        """
-        Initialise
+        # here dataset is the sweep number, group is the group number for doing
+        # the cc half analysis. May be the same as dataset if doing per dataset
+        # stats, but can also be different if doing image groups.
 
-        :param miller_index: The list of miller indices
-        :param dataset: The list of dataset numbers
-        :param intensity: The list of intensities
-        :param variance: The list of variances
-        :param unit_cell: The unit cell or list of unit cells
-        :param space_group: The space group
-        :param nbins: The number of bins
-        :param dmin: The maximum resolution
-        :param dmax: The minimum resolution
-        """
+        self.mean_unit_cell = mean_unit_cell
+        self.space_group = space_group
+        self.d_min = d_min
+        self.d_max = d_max
+        self._num_bins = n_bins
+        self.reflection_table = reflection_table
+        self._cchalf_mean = None
+        self._cchalf = None
 
-        assert len(set(dataset)) == len(unit_cell)
+        required = ["miller_index", "intensity", "variance", "dataset", "group"]
 
-        # Reject reflections with negative variance
-        selection = variance > 0
-        miller_index = miller_index.select(selection)
-        dataset = dataset.select(selection)
-        intensity = intensity.select(selection)
-        variance = variance.select(selection)
-        images = images.select(selection)
-
-        # Compute mean unit_cell
-        if len(unit_cell) == 1:
-            mean_unit_cell = unit_cell[0]
-        else:
-            mean_parameters = [0, 0, 0, 0, 0, 0]
-            for uc in unit_cell:
-                for i in range(6):
-                    mean_parameters[i] += uc.parameters()[i]
-            for i in range(6):
-                mean_parameters[i] /= len(unit_cell)
-            mean_unit_cell = uctbx.unit_cell(mean_parameters)
-
-        # Map the miller indices to the ASU
-        D = flex.double(len(dataset), 0)
-        for i, uc in zip(identifiers, unit_cell):
-
-            # Select reflections
-            selection = dataset == i
-            hkl = miller_index.select(selection)
-
-            # Compute resolution
-            d = flex.double([uc.d(h) for h in hkl])
-            D.set_selected(selection, d)
-
-            # Compute asu miller index
-            cs = crystal.symmetry(uc, space_group=space_group)
-            ms = miller.set(cs, hkl)
-            ms_asu = ms.map_to_asu()
-            miller_index.set_selected(selection, ms_asu.indices())
-
-        assert all(d > 0 for d in D)
-
-        # Filter by dmin and dmax
-        if dmin is not None:
-            selection = D > dmin
-            miller_index = miller_index.select(selection)
-            dataset = dataset.select(selection)
-            intensity = intensity.select(selection)
-            variance = variance.select(selection)
-            D = D.select(selection)
-            images = images.select(selection)
-
-        if dmax is not None:
-            selection = D < dmax
-            miller_index = miller_index.select(selection)
-            dataset = dataset.select(selection)
-            intensity = intensity.select(selection)
-            variance = variance.select(selection)
-            D = D.select(selection)
-            images = images.select(selection)
-
-        # Save the arrays
-        self._miller_index = miller_index
-        self._dataset = dataset
-        self._intensity = intensity
-        self._variance = variance
+        for r in required:
+            if r not in reflection_table:
+                raise KeyError("Column %s not present in reflection table" % r)
+        # now do a prefiltering
+        self.map_to_asu()
+        self.d_filter()
 
         # Create the resolution bins
-        self._num_bins = nbins
-        self._dmin = dmin
-        self._dmax = dmax
-        if dmin is None:
-            self._dmin = min(D)
-        if dmax is None:
-            self._dmax = max(D)
-        binner = ResolutionBinner(mean_unit_cell, self._dmin, self._dmax, nbins)
+        if self.d_min is None:
+            self.d_min = flex.min(self.reflection_table["d"])
+        if self.d_max is None:
+            self.d_max = flex.max(self.reflection_table["d"])
+        self.binner = ResolutionBinner(mean_unit_cell, self.d_min, self.d_max, n_bins)
 
+        self.reflection_sums = defaultdict(ReflectionSum)
+        self.compute_overall_stats()
+
+    def compute_overall_stats(self):
         # Create lookups for elements by miller index
         index_lookup = defaultdict(list)
-        for i, h in enumerate(miller_index):
+        for i, h in enumerate(self.reflection_table["miller_index"]):
             index_lookup[h].append(i)
 
         # Compute the Overall Sum(X) and Sum(X^2) for each unique reflection
-        reflection_sums = defaultdict(ReflectionSum)
+
         for h in index_lookup:
-            intensities = [intensity[i] for i in index_lookup[h]]
-            n = len(intensities)
-            sum_x = sum(intensities)
-            sum_x2 = sum(i ** 2 for i in intensities)
-            reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
+            sel = flex.size_t(index_lookup[h])
+            intensities = self.reflection_table["intensity"].select(sel)
+            n = intensities.size()
+            sum_x = flex.sum(intensities)
+            sum_x2 = flex.sum(intensities ** 2)
+            self.reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
 
         # Compute some numbers
-        self._num_datasets = len(set(dataset))
-        self._num_reflections = len(miller_index)
-        self._num_unique = len(reflection_sums)
+        self._num_datasets = len(set(self.reflection_table["dataset"]))
+        self._num_groups = len(set(self.reflection_table["group"]))
+        self._num_reflections = self.reflection_table.size()
+        self._num_unique = len(self.reflection_sums)
 
-        logger.info("")
-        logger.info("# Datasets: %s" % self._num_datasets)
-        logger.info("# Reflections: %s" % self._num_reflections)
-        logger.info("# Unique: %s" % self._num_unique)
+        logger.info(
+            """
+Summary of input data:
+# Datasets: %s
+# Groups: %s
+# Reflections: %s
+# Unique reflections: %s""",
+            self._num_datasets,
+            self._num_groups,
+            self._num_reflections,
+            self._num_unique,
+        )
 
-        # Compute the CC 1/2 for all the data
-        self._cchalf_mean = self._compute_cchalf(reflection_sums, binner)
-        logger.info("CC 1/2 mean: %.3f" % (100 * self._cchalf_mean))
+    def map_to_asu(self):
+        """Map the miller indices to the ASU"""
+        # d = flex.double([self.mean_unit_cell.d(h) for h in reflection_table["miller_index"]])
+        cs = crystal.symmetry(self.mean_unit_cell, space_group=self.space_group)
+        ms = miller.set(cs, self.reflection_table["miller_index"], anomalous_flag=False)
+        ms_asu = ms.map_to_asu()
+        self.reflection_table["miller_index"] = ms_asu.indices()
+        self.reflection_table["d"] = ms_asu.d_spacings().data()
 
-        # override dataset here with a batched-dependent
-        self.expid_to_image_groups = {id_: [] for id_ in set(dataset)}
-        if mode == "image_group":
-            image_groups = flex.int(dataset.size(), 0)
-            self.image_group_to_expid_and_range = {}
-
-            counter = 0
-            for id_ in set(dataset):
-                sel = dataset == id_
-                images_in_dataset = images.select(sel)
-                unique_images = set(images_in_dataset)
-                min_img, max_img = (min(unique_images), max(unique_images))
-                min_img = (int(floor(min_img / image_group)) * image_group) + 1
-                for i in range(min_img, max_img + 1, image_group):
-                    group_sel = (images_in_dataset >= i) & (
-                        images_in_dataset < i + image_group
-                    )
-                    image_groups.set_selected(
-                        (sel.iselection().select(group_sel)), counter
-                    )
-                    self.image_group_to_expid_and_range[counter] = (
-                        id_,
-                        (i, i + image_group - 1),
-                    )
-                    self.expid_to_image_groups[id_].append(counter)
-                    counter += 1
-            self._cchalf = self._compute_cchalf_excluding_each_dataset(
-                reflection_sums, binner, miller_index, image_groups, intensity
-            )
-
+    def d_filter(self):
+        """Filter on d_min, d_max"""
+        if (not self.d_min) and (not self.d_max):
+            return
+        if self.d_min is not None:
+            sel = self.reflection_table["d"] > self.d_min
+            if self.d_max is not None:
+                sel &= self.reflection_table["d"] < self.d_max
         else:
-            self._cchalf = self._compute_cchalf_excluding_each_dataset(
-                reflection_sums, binner, miller_index, dataset, intensity
-            )
+            sel = self.reflection_table["d"] < self.d_max
+        self.reflection_table.select(sel)
 
-    def _compute_cchalf(self, reflection_sums, binner):
-        """
-        Compute the CC 1/2 by computing the CC 1/2 in resolution bins and then
-        computing the weighted mean of the binned CC 1/2 values
-        """
-        # Compute Mean and variance of reflection intensities
-        bin_data = [BinData() for _ in range(binner.nbins())]
-        for h in reflection_sums:
-            sum_x = reflection_sums[h].sum_x
-            sum_x2 = reflection_sums[h].sum_x2
-            n = reflection_sums[h].n
+    def run(self):
+        """Compute the delta CC 1/2 for all the data"""
+        self._cchalf_mean = compute_cchalf_from_reflection_sums(
+            self.reflection_sums, self.binner
+        )
+        logger.info("CC 1/2 mean: %.3f", (100 * self._cchalf_mean))
+        self._cchalf = self._compute_cchalf_excluding_each_group()
 
-            if n > 1:
-                mean = sum_x / n
-                var = (sum_x2 - (sum_x) ** 2 / n) / (n - 1)
-                var = var / n
-                index = binner.index(h)
-                bin_data[index].mean.append(mean)
-                bin_data[index].var.append(var)
-
-        # Compute the mean cchalf in resolution bins
-        return compute_mean_cchalf_in_bins(bin_data)
-
-    def _compute_cchalf_excluding_each_dataset(
-        self, reflection_sums, binner, miller_index, dataset, intensity
-    ):
+    def _compute_cchalf_excluding_each_group(self):
+        #   self, reflection_sums, binner, miller_index, dataset, intensity
+        # ):
         """
         Compute the CC 1/2 with an image excluded.
 
@@ -338,9 +270,9 @@ class PerImageCChalfStatistics(object):
         and then compute the CC 1/2 of the remaining data
         """
 
-        # Create a lookup table for each reflection by dataset
+        # Create a lookup table for each reflection by dataset i.e. group of images
         dataset_lookup = defaultdict(list)
-        for i, b in enumerate(dataset):
+        for i, b in enumerate(self.reflection_table["group"]):
             dataset_lookup[b].append(i)
 
         # Compute CC1/2 minus each dataset
@@ -351,25 +283,27 @@ class PerImageCChalfStatistics(object):
             # miller index
             index_lookup = defaultdict(list)
             for i in dataset_lookup[dataset]:
-                index_lookup[miller_index[i]].append(i)
+                index_lookup[self.reflection_table["miller_index"][i]].append(i)
 
             # Loop through all the reflections and remove the contribution of
             # reflections from the current dataset
             dataset_reflection_sums = defaultdict(ReflectionSum)
-            for h in reflection_sums:
-                sum_x = reflection_sums[h].sum_x
-                sum_x2 = reflection_sums[h].sum_x2
-                n = reflection_sums[h].n
+            for h in self.reflection_sums:
+                sum_x = self.reflection_sums[h].sum_x
+                sum_x2 = self.reflection_sums[h].sum_x2
+                n = self.reflection_sums[h].n
                 for i in index_lookup[h]:
-                    sum_x -= self._intensity[i]
-                    sum_x2 -= self._intensity[i] ** 2
+                    sum_x -= self.reflection_table["intensity"][i]
+                    sum_x2 -= self.reflection_table["intensity"][i] ** 2
                     n -= 1
                 dataset_reflection_sums[h] = ReflectionSum(sum_x, sum_x2, n)
 
             # Compute the CC 1/2 without the reflections from the current dataset
-            cchalf = self._compute_cchalf(dataset_reflection_sums, binner)
+            cchalf = compute_cchalf_from_reflection_sums(
+                dataset_reflection_sums, self.binner
+            )
             cchalf_i[dataset] = cchalf
-            logger.info("CC 1/2 excluding dataset %d: %.3f" % (dataset, 100 * cchalf))
+            logger.info("CC 1/2 excluding group %d: %.3f", dataset, 100 * cchalf)
 
         return cchalf_i
 

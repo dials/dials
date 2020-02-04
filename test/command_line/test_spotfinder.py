@@ -45,6 +45,19 @@ def test_find_spots_from_images(dials_data, tmpdir):
     )
 
 
+def test_find_spots_from_zero_indexed_cbf(dials_data, tmpdir):
+    one_indexed_cbf = dials_data("centroid_test_data").join("centroid_0001.cbf")
+    zero_indexed_cbf = tmpdir.join("centroid_0000.cbf")
+    one_indexed_cbf.copy(zero_indexed_cbf)
+
+    result = procrunner.run(
+        ["dials.find_spots", zero_indexed_cbf], working_directory=tmpdir
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("strong.refl").check(file=1)
+    assert b"Saved 0 reflections to" not in result.stdout, "No spots found on 0000.cbf"
+
+
 def test_find_spots_from_images_output_experiments(dials_data, tmpdir):
     result = procrunner.run(
         [

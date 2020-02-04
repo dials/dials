@@ -642,7 +642,7 @@ class Indexer(object):
                         )
                     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
                         if len(experiments) == 1:
-                            raise DialsIndexRefineError(e.message)
+                            raise DialsIndexRefineError(str(e))
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)

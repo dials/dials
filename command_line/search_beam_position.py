@@ -365,9 +365,8 @@ def run_dps(args):
         DPS.axis = matrix.col(goniometer.get_rotation_axis())
     DPS.set_detector(detector)
 
-    # transform input into what Nick needs
+    # transform input into what DPS needs
     # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
-
     data = flex.vec3_double()
     for spot in spots_mm.rows():
         data.append(
@@ -390,11 +389,10 @@ def run_dps(args):
         "Found %i solution%s with max unit cell %.2f Angstroms."
         % (len(solutions), plural_s(len(solutions))[1], DPS.amax)
     )
-    if len(solutions) < 3:
 
-        raise Sorry(
-            "Not enough solutions: found %i, need at least 3" % (len(solutions))
-        )
+    # There must be at least 3 solutions to make a set, otherwise return empty result
+    if len(solutions) < 3:
+        return {}
     return dict(solutions=flex.vec3_double([s.dvec for s in solutions]), amax=DPS.amax)
 
 
@@ -403,13 +401,20 @@ def discover_better_experimental_model(
 ):
     assert len(imagesets) == len(spot_lists)
     assert len(imagesets) > 0
-    # XXX should check that all the detector and beam objects are the same
 
     spot_lists_mm = []
     max_cell_list = []
 
     detector = imagesets[0].get_detector()
     beam = imagesets[0].get_beam()
+    try:
+        for imageset in imagesets[1:]:
+            assert detector.is_similar_to(imageset.get_detector())
+            assert beam.is_similar_to(imageset.get_beam())
+    except AssertionError:
+        # https://github.com/dials/dials/issues/1126
+        pass
+        # raise Sorry("Detectors and beams are not the same across all imagesets")
 
     beam_panel = detector.get_panel_intersection(beam.get_s0())
 
@@ -439,7 +444,6 @@ def discover_better_experimental_model(
             spots_mm = spots_mm.select(sel)
 
         # derive a max_cell from mm spots
-
         if params.max_cell is None:
             max_cell = find_max_cell(
                 spots_mm, max_cell_multiplier=1.3, step_size=45
@@ -478,9 +482,10 @@ def discover_better_experimental_model(
         asynchronous=True,
         preserve_exception_message=True,
     )
-    solution_lists = [r["solutions"] for r in results]
-    amax_list = [r["amax"] for r in results]
-    assert len(solution_lists) > 0
+    solution_lists = [r["solutions"] for r in results if r]
+    amax_list = [r["amax"] for r in results if r]
+    if len(solution_lists) == 0:
+        raise Sorry("No solutions found")
 
     detector = imagesets[0].get_detector()
     beam = imagesets[0].get_beam()
@@ -594,7 +599,7 @@ def run(args):
             experiment.detector = new_detector
         logger.info("")
 
-    logger.info("Saving optimized experiments to %s" % params.output.experiments)
+    logger.info("Saving optimised experiments to %s" % params.output.experiments)
     experiments.as_file(params.output.experiments)
 
 

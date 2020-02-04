@@ -5,8 +5,6 @@ from __future__ import absolute_import, division, print_function
 import concurrent.futures
 import math
 import sys
-from PIL import Image
-import numpy
 
 import iotbx.phil
 from scitbx.array_family import flex
@@ -15,7 +13,6 @@ from dials.algorithms.spot_finding.factory import phil_scope as spot_phil
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments
 from dxtbx.model.experiment_list import ExperimentList, Experiment
-from libtbx import easy_pickle
 
 help_message = """
 
@@ -153,7 +150,6 @@ def run(args):
     panels = imageset.get_detector()
     detector = panels[0]
     nfast, nslow = detector.get_image_size()
-    trusted = detector.get_trusted_range()
 
     first, last = imageset.get_scan().get_image_range()
     images = range(first, last + 1)

@@ -163,6 +163,10 @@ def get_nx_note(handle, path):
     return get_nx_class(handle, "NXnote", path)
 
 
+def get_nx_source(handle, path):
+    return get_nx_class(handle, "NXsource", path)
+
+
 def get_nx_data(handle, path, data):
     handle[path] = data
     return handle[path]
@@ -192,6 +196,7 @@ def dump_beam(entry, beam):
 
     # Set the beam parameters
     nx_beam["incident_wavelength"] = beam.get_wavelength()
+    nx_beam["incident_wavelength"].attrs["units"] = "angstrom"
     nx_beam["incident_polarization_stokes"] = (S0, S1, S2, S3)
 
 
@@ -222,6 +227,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
     # Set the detector properties
     nx_detector["sensor_thickness"] = thickness
+    nx_detector["sensor_thickness"].attrs["units"] = "mm"
     nx_detector["sensor_material"] = material
     nx_detector["type"] = dtype
     # nx_detector['distance'] = distance
@@ -236,16 +242,20 @@ def dump_detector(entry, detector, beam, imageset, scan):
         nx_detector[
             "timestamp"
         ] = scan.get_epochs().as_numpy_array()  # FIXME non-standard
-        nx_detector["dead_time"] = [0.0] * len(scan)
-        nx_detector["count_time"] = [0.0] * len(scan)
         nx_detector["frame_time"] = scan.get_exposure_times().as_numpy_array()
-        nx_detector["detector_readout_time"] = [0.0] * len(scan)
+        nx_detector["frame_time"].attrs["units"] = "s"
+        # Optional so don't try
+        # nx_detector["dead_time"] = [0.0] * len(scan)
+        # nx_detector["count_time"] = [0.0] * len(scan)
+        # nx_detector["detector_readout_time"] = [0.0] * len(scan)
     else:
-        nx_detector["timestamp"] = 0.0
-        nx_detector["dead_time"] = 0.0
-        nx_detector["count_time"] = 0.0
-        nx_detector["frame_time"] = 0.0
-        nx_detector["detector_readout_time"] = 0.0
+        # Optional so don't try
+        pass
+        # nx_detector["timestamp"] = 0.0
+        # nx_detector["dead_time"] = 0.0
+        # nx_detector["count_time"] = 0.0
+        # nx_detector["frame_time"] = 0.0
+        # nx_detector["detector_readout_time"] = 0.0
     nx_detector["bit_depth_readout"] = 32
 
     # Create the detector depends on
@@ -278,6 +288,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
         nx_module["module_offset"].attrs["transformation_type"] = "translation"
         nx_module["module_offset"].attrs["offset"] = (0.0, 0.0, 0.0)
         nx_module["module_offset"].attrs["vector"] = origin.normalize()
+        nx_module["module_offset"].attrs["units"] = "mm"
 
         # The path for items below
         module_offset_path = str(nx_module["module_offset"].name)
@@ -288,6 +299,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
         nx_module["fast_pixel_direction"].attrs["transformation_type"] = "translation"
         nx_module["fast_pixel_direction"].attrs["offset"] = (0.0, 0.0, 0.0)
         nx_module["fast_pixel_direction"].attrs["vector"] = panel.get_fast_axis()
+        nx_module["fast_pixel_direction"].attrs["units"] = "mm"
 
         # Write the slow pixel direction
         nx_module["slow_pixel_direction"] = pixel_size[1]
@@ -295,6 +307,7 @@ def dump_detector(entry, detector, beam, imageset, scan):
         nx_module["slow_pixel_direction"].attrs["transformation_type"] = "translation"
         nx_module["slow_pixel_direction"].attrs["offset"] = (0.0, 0.0, 0.0)
         nx_module["slow_pixel_direction"].attrs["vector"] = panel.get_slow_axis()
+        nx_module["slow_pixel_direction"].attrs["units"] = "mm"
 
 
 def dump_goniometer(entry, goniometer, scan):
@@ -686,7 +699,7 @@ def load_crystal(entry):
     return crystal
 
 
-def dump(entry, experiments):
+def dump(entry, experiments, params):
     from dxtbx.imageset import ImageSequence
 
     print("Dumping NXmx")
@@ -776,6 +789,15 @@ def dump(entry, experiments):
         )
         dump_goniometer(nxmx, experiment.goniometer, experiment.scan)
         dump_crystal(nxmx, experiment.crystal, experiment.scan)
+
+        # Add instrument name and source
+        nx_instrument = get_nx_instrument(nxmx, "instrument")
+        nx_instrument["name"] = params.instrument_name
+        nx_instrument["name"].attrs["short_name"] = params.instrument_short_name
+
+        nx_source = get_nx_source(nxmx, "source")
+        nx_source["name"] = params.source_name
+        nx_source["name"].attrs["short_name"] = params.source_short_name
 
     # Dump some details
     dump_details(entry)
