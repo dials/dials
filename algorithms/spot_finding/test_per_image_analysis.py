@@ -16,13 +16,13 @@ def test_estimate_resolution_limit_distl_method1(dials_data, tmpdir):
     )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
-    with tmpdir.as_cwd():
-        d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method1(
-            reflections=reflections, plot_filename="distl1.png"
-        )
-        assert d_min == pytest.approx(1.8771983880778702)
-        assert noisiness == pytest.approx(0.021021021021021023)
-        assert tmpdir.join("distl1.png").check()
+    plot_file = tmpdir.join("distl1.png")
+    d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method1(
+        reflections=reflections, plot_filename=plot_file.strpath
+    )
+    assert d_min == pytest.approx(1.8771983880778702)
+    assert noisiness == pytest.approx(0.021021021021021023)
+    assert plot_file.check()
 
 
 def test_estimate_resolution_limit_distl_method2(dials_data, tmpdir):
@@ -34,13 +34,13 @@ def test_estimate_resolution_limit_distl_method2(dials_data, tmpdir):
     )
     reflections.centroid_px_to_mm(experiments)
     reflections.map_centroids_to_reciprocal_space(experiments)
-    with tmpdir.as_cwd():
-        d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method2(
-            reflections=reflections, plot_filename="distl2.png"
-        )
-        assert d_min == pytest.approx(1.6293601446185495)
-        assert noisiness == pytest.approx(0.0858974358974359)
-        assert tmpdir.join("distl2.png").check()
+    plot_file = tmpdir.join("distl2.png")
+    d_min, noisiness = per_image_analysis.estimate_resolution_limit_distl_method2(
+        reflections=reflections, plot_filename=plot_file.strpath
+    )
+    assert d_min == pytest.approx(1.6293601446185495)
+    assert noisiness == pytest.approx(0.0858974358974359)
+    assert plot_file.check()
 
 
 def test_estimate_resolution(dials_data, tmpdir):
@@ -54,13 +54,13 @@ def test_estimate_resolution(dials_data, tmpdir):
     reflections.map_centroids_to_reciprocal_space(experiments)
     ice_sel = per_image_analysis.ice_rings_selection(reflections, width=0.004)
     assert ice_sel.count(True) == 76
-    with tmpdir.as_cwd():
-        d_min = per_image_analysis.estimate_resolution_limit(
-            reflections=reflections, plot_filename="i_over_sigi_vs_resolution.png"
-        )
-        assert d_min == pytest.approx(1.446715534174674)
-        assert tmpdir.join("i_over_sigi_vs_resolution.png").check()
-        d_min = per_image_analysis.estimate_resolution_limit(
-            reflections=reflections, ice_sel=ice_sel
-        )
-        assert d_min == pytest.approx(1.446715534174674)
+    plot_file = tmpdir.join("i_over_sigi_vs_resolution.png")
+    d_min = per_image_analysis.estimate_resolution_limit(
+        reflections=reflections, plot_filename=plot_file.strpath
+    )
+    assert d_min == pytest.approx(1.446715534174674)
+    assert plot_file.check()
+    d_min = per_image_analysis.estimate_resolution_limit(
+        reflections=reflections, ice_sel=ice_sel
+    )
+    assert d_min == pytest.approx(1.446715534174674)
