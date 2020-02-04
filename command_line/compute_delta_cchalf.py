@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+
 from libtbx.phil import parse
 from dials.util import log, show_mail_on_error
 from dials.util.options import OptionParser, reflections_and_experiments_from_files
@@ -118,10 +119,10 @@ def run(args=None, phil=phil_scope):
             return
         else:
             if not len(reflections) == 1:
-                SystemExit("Only one reflection table can be provided")
+                exit("Only one reflection table can be provided")
             n_datasets = len(set(reflections[0]["id"]).difference(set([-1])))
             if n_datasets != len(experiments):
-                SystemExit(
+                exit(
                     """
 The number of experiments (%s) does not match the number
 of datasets in the reflection table (%s)
