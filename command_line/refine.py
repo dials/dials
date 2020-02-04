@@ -187,7 +187,7 @@ def run_macrocycle(params, reflections, experiments):
             params, reflections, experiments
         )
     except DialsRefineConfigError as e:
-        sys.exit(e.message)
+        sys.exit(str(e))
 
     # Refine the geometry
     nexp = len(experiments)
@@ -200,7 +200,7 @@ def run_macrocycle(params, reflections, experiments):
     try:
         history = refiner.run()
     except DialsRefineRuntimeError as e:
-        sys.exit(e.message)
+        sys.exit(str(e))
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
