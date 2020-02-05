@@ -448,10 +448,24 @@ class ScanVaryingPredictionParameterisation(XYPhiPredictionParameterisation):
         xl_op = self._get_xl_orientation_parameterisation(experiment_id)
         xl_ucp = self._get_xl_unit_cell_parameterisation(experiment_id)
 
+        # pre-calculated matrices for fixed parameterisations
+        fixed_B = None
+        fixed_U = None
+        if xl_op is None:
+            fixed_U = matrix.sqr(self._experiments[experiment_id].crystal.get_U())
+        if xl_ucp is None:
+            fixed_B = matrix.sqr(self._experiments[experiment_id].crystal.get_B())
+
         UB_list = []
         for i in obs_image_numbers:
-            U = self._get_state_from_parameterisation(xl_op, i)
-            B = self._get_state_from_parameterisation(xl_ucp, i)
+            if fixed_U:
+                U = fixed_U
+            else:
+                U = self._get_state_from_parameterisation(xl_op, i)
+            if fixed_B:
+                B = fixed_B
+            else:
+                B = self._get_state_from_parameterisation(xl_ucp, i)
             UB_list.append(U * B)
 
         return UB_list

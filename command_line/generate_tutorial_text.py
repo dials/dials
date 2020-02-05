@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 import functools
 import os
 import sys
+import tempfile
 from optparse import SUPPRESS_HELP, OptionParser
 
 import dials_data.download
@@ -122,9 +123,63 @@ def generate_processing_detail_text_betalactamase(options):
         store_output=outdir / "dials.sv_refine.log",
     )
     runcmd(["dials.integrate", "refined.expt", "refined.refl", "nproc=4"])
-    runcmd(["dials.report", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.symmetry", "integrated.expt", "integrated.refl"])
+    runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=1.4"],
+        store_command=outdir / "dials.scale_cut.cmd",
+        store_output=outdir / "dials.scale_cut.log",
+    )
+    runcmd(["dials.report", "scaled.expt", "scaled.refl"])
     tmpdir.join("dials-report.html").copy(outdir.join("dials-report.html"))
-    runcmd(["dials.export", "integrated.refl", "integrated.expt"])
+
+    print("Updated result files written to {}".format(outdir.strpath))
+    if not options.keep:
+        tmpdir.remove(rec=1)
+
+
+def generate_multi_crystal_symmetry_and_scaling(options):
+    print("Generating multi-crystal symmetry analysis and scaling output")
+
+    tmpdir = py.path.local(tempfile.mkdtemp("_multi_crystal", dir="."))
+    tmpdir.ensure(dir=1)
+    outdir = py.path.local(options.output).join("multi_crystal")
+    runcmd = functools.partial(run, output_directory=outdir, working_directory=tmpdir)
+
+    df = dials_data.download.DataFetcher()
+    experiment_files = sorted(
+        df("vmxi_proteinase_k_sweeps").visit("experiments_*.expt")
+    )
+    reflection_files = sorted(
+        df("vmxi_proteinase_k_sweeps").visit("reflections_*.refl")
+    )
+    input_files = []
+    for src in experiment_files + reflection_files:
+        dst = tmpdir.join(src.basename)
+        os.symlink(src.strpath, dst.strpath)
+        input_files.append(dst.basename)
+    runcmd(["xia2.multiplex"] + input_files)
+    tmpdir.join("xia2.multiplex.html").copy(outdir.join("xia2.multiplex.html"))
+    runcmd(["dials.cosym"] + input_files)
+    tmpdir.join("dials.cosym.html").copy(outdir.join("dials.cosym.html"))
+    runcmd(["dials.scale", "symmetrized.expt", "symmetrized.refl"])
+    runcmd(["dials.resolutionizer", "scaled.expt", "scaled.refl"])
+    d_min = extract_resolution(outdir / "dials.resolutionizer.log", "cc_half")
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        store_command=outdir / "dials.scale_cut.cmd",
+        store_output=outdir / "dials.scale_cut.log",
+    )
+    runcmd(["dials.compute_delta_cchalf", "scaled.refl", "scaled.expt"])
+    runcmd(
+        ["dials.scale", "scaled.expt", "scaled.refl", "d_min=%.2f" % d_min],
+        store_command=outdir / "dials.scale_exclude.cmd",
+        store_output=outdir / "dials.scale_exclude.log",
+    )
+    tmpdir.join("scaling.html").copy(outdir.join("scaling.html"))
+    runcmd(["dials.symmetry", "scaled.expt", "scaled.refl", "laue_group=None"])
+    tmpdir.join("dials-symmetry.html").copy(outdir.join("dials-symmetry.html"))
+    runcmd(["dials.merge", "symmetrized.expt", "symmetrized.refl"])
 
     print("Updated result files written to {}".format(outdir.strpath))
     if not options.keep:
@@ -174,6 +229,16 @@ def extract_last_indexed_spot_count(source, destination):
     write_extract(destination, next_ui - 1, end_ui, lines)
 
 
+def extract_resolution(source, method):
+    """Extract the resolution from a dials.resolutionizer log."""
+    lines = source.read_text("latin-1").split("\n")
+
+    # Find the Resolution line
+    resolution_line = lines[find_in_line("Resolution %s" % method, lines)]
+    # Parse and return the suggested resolution value
+    return float(resolution_line.split(":")[-1].strip())
+
+
 if __name__ == "__main__":
     parser = OptionParser(
         description="Generate tutorial logs for DIALS documentation website"
@@ -192,6 +257,13 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Generate thaumatin tutorial logs",
+    )
+    parser.add_option(
+        "--multi_crystal",
+        dest="multi_crystal",
+        action="store_true",
+        default=False,
+        help="Generate multi-crystal tutorial logs",
     )
     parser.add_option(
         "--keep",
@@ -215,6 +287,8 @@ if __name__ == "__main__":
         targets.append(generate_processing_detail_text_betalactamase)
     if options.thaum:
         targets.append(generate_processing_detail_text_thaumatin)
+    if options.multi_crystal:
+        targets.append(generate_multi_crystal_symmetry_and_scaling)
 
     if not targets:
         parser.error(

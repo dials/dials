@@ -17,8 +17,13 @@ from ..rstbx_frame import EVT_EXTERNAL_UPDATE
 from ..rstbx_frame import XrayFrame as XFBaseClass
 from rstbx.viewer import settings as rv_settings, image as rv_image
 from wxtbx import bitmaps
+from boost.python import c_sizeof
 
 pyslip._Tiles = tile_generation._Tiles
+
+# Use minimum value for an int to indicate a masked pixel
+int_bits = c_sizeof("int") * 8
+MASK_VAL = -(2 ** (int_bits - 1))
 
 
 class chooser_wrapper(object):
@@ -27,7 +32,7 @@ class chooser_wrapper(object):
         self.path = os.path.basename(image_set.get_path(index))
         self.full_path = image_set.get_path(index)
         self.index = index
-        self._raw_data = None
+        self._image_data = None
 
     def __str__(self):
         return "%s [%d]" % (self.path, self.index + 1)
@@ -44,13 +49,16 @@ class chooser_wrapper(object):
     def get_mask(self):
         return self.image_set.get_mask(self.index)
 
-    def get_raw_data(self):
-        if self._raw_data is None:
-            return self.image_set[self.index]
-        return self._raw_data
+    def get_image_data(self, corrected=True):
+        if self._image_data is None:
+            if corrected:
+                return self.image_set.get_corrected_data(self.index)
+            else:
+                return self.image_set.get_raw_data(self.index)
+        return self._image_data
 
-    def set_raw_data(self, raw_data):
-        self._raw_data = raw_data
+    def set_image_data(self, image_data):
+        self._image_data = image_data
 
     def get_detectorbase(self):
         return self.image_set.get_detectorbase(self.index)
@@ -214,24 +222,27 @@ class XrayFrame(XFBaseClass):
                 detector = fi.get_detector()
                 ifs = (int(coords[1]), int(coords[0]))  # int fast slow
                 isf = (int(coords[0]), int(coords[1]))  # int slow fast
-                raw_data = fi.get_raw_data()
-                if not isinstance(raw_data, tuple):
-                    raw_data = (raw_data,)
+                image_data = fi.get_image_data()
+                if not isinstance(image_data, tuple):
+                    image_data = (image_data,)
                 if len(detector) > 1:
                     if readout >= 0:
                         if detector[readout].is_coord_valid(ifs):
-                            possible_intensity = raw_data[readout][isf]
+                            possible_intensity = image_data[readout][isf]
                 else:
                     if detector[0].is_coord_valid(ifs):
-                        possible_intensity = raw_data[0][isf]
+                        possible_intensity = image_data[0][isf]
 
                 if possible_intensity is not None:
                     if possible_intensity == 0:
                         format_str = " I=%6.4f"
+                        posn_str += format_str % possible_intensity
+                    elif possible_intensity == MASK_VAL:
+                        posn_str += " I=mask"
                     else:
                         yaya = int(math.ceil(math.log10(abs(possible_intensity))))
                         format_str = " I=%%6.%df" % (max(0, 5 - yaya))
-                    posn_str += format_str % possible_intensity
+                        posn_str += format_str % possible_intensity
 
                 if (
                     len(coords) > 2 and readout >= 0
@@ -341,8 +352,11 @@ class XrayFrame(XFBaseClass):
         @return panel_id, beam_center_fast, beam_center_slow. panel_id is the panel the
         returned coordinates are relative to.
         """
-        detector = self.get_detector()
-        beam = self.get_beam()
+        image = self.image_chooser.GetClientData(
+            self.image_chooser.GetSelection()
+        ).image_set
+        detector = image.get_detector()
+        beam = image.get_beam()
         if abs(detector[0].get_distance()) == 0:
             return 0.0, 0.0
 
@@ -386,7 +400,7 @@ class XrayFrame(XFBaseClass):
 
         return panel_id, beam_pixel_fast, beam_pixel_slow
 
-    def load_image(self, file_name_or_data, get_raw_data=None, show_untrusted=False):
+    def load_image(self, file_name_or_data, get_image_data=None, show_untrusted=False):
         """The load_image() function displays the image from @p
         file_name_or_data.  The chooser is updated appropriately.
         """
@@ -428,7 +442,11 @@ class XrayFrame(XFBaseClass):
         self.pyslip.tiles.set_image(
             file_name_or_data=img,
             metrology_matrices=self.metrology_matrices,
-            get_raw_data=get_raw_data,
+            get_image_data=get_image_data,
+            show_saturated=(
+                self.settings.display == "image"
+                and self.settings.image_type == "corrected"
+            ),
         )
 
         # Initialise position zoom level for first image.  XXX Why do we
@@ -748,7 +766,7 @@ class XrayFrame(XFBaseClass):
             # apply.
             raw_img = self.pyslip.tiles.raw_image
             detector = raw_img.get_detector()
-            data = raw_img.get_raw_data()
+            data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if len(detector) > 1:
@@ -898,7 +916,7 @@ class XrayFrame(XFBaseClass):
             # apply.
             raw_img = self.pyslip.tiles.raw_image
             detector = raw_img.get_detector()
-            data = raw_img.get_raw_data()
+            data = raw_img.get_image_data()
             if not isinstance(data, tuple):  # XXX should not need this test
                 data = (data,)
             if len(detector) > 1:

@@ -46,25 +46,25 @@ def test_export_best(dials_data, tmpdir):
     with tmpdir.join("best.dat").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
-        lines
+        lines.replace("\r", "")
         == """\
-  181.8877       0.77       1.60
-   63.1895       1.59       1.81
-   38.2372       1.87       1.71
-   27.4131       1.84       1.55
-   21.3655       1.89       1.51
-   17.5043       1.88       1.49
-   14.8254       1.89       1.45
-   12.8580       1.91       1.45
-   11.3518       1.89       1.42
-   10.1617       1.87       1.41
+  181.8877       0.50       1.60
+   63.1895       0.63       1.90
+   38.2372       1.15       1.93
+   27.4131       1.41       1.75
+   21.3655       1.57       1.69
+   17.5043       1.62       1.65
+   14.8254       1.68       1.59
+   12.8580       1.72       1.57
+   11.3518       1.72       1.53
+   10.1617       1.72       1.51
 """
     )
 
     with tmpdir.join("best.hkl").open("r") as f:
         lines = "".join(f.readlines()[:10])
     assert (
-        lines
+        lines.replace("\r", "")
         == """\
  -20   27   -8      20.17      20.00
  -20   27   -7      74.13      21.59
@@ -81,7 +81,7 @@ def test_export_best(dials_data, tmpdir):
 
     lines = tmpdir.join("best.par").read()
     assert (
-        lines
+        lines.replace("\r", "")
         == """\
 # parameter file for BEST
 TITLE          From DIALS

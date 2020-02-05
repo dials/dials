@@ -113,10 +113,9 @@ def work_all(
 
     if plot or table:
         from scitbx.array_family import flex
-        from libtbx import group_args
         from dials.algorithms.spot_finding.per_image_analysis import (
             plot_stats,
-            print_table,
+            StatsMultiImage,
         )
 
         estimated_d_min = flex.double()
@@ -134,7 +133,7 @@ def work_all(
             n_spots_no_ice.append(d["n_spots_no_ice"])
             total_intensity.append(d["total_intensity"])
 
-        stats = group_args(
+        stats = StatsMultiImage(
             n_spots_total=n_spots_total,
             n_spots_no_ice=n_spots_no_ice,
             n_spots_4A=None,
@@ -149,7 +148,7 @@ def work_all(
         if plot:
             plot_stats(stats)
         if table:
-            print_table(stats)
+            print(stats)
 
         if grid is not None:
             from matplotlib import pyplot

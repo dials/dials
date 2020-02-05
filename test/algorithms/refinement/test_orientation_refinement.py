@@ -84,7 +84,7 @@ def test(args=[]):
     mycrystal = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 180 degree sweep
+    # Build a mock scan for a 180 degree sequence
     sf = ScanFactory()
     myscan = sf.make_scan(
         image_range=(1, 1800),
@@ -93,9 +93,9 @@ def test(args=[]):
         epochs=list(range(1800)),
         deg=True,
     )
-    sweep_range = myscan.get_oscillation_range(deg=False)
+    sequence_range = myscan.get_oscillation_range(deg=False)
     im_width = myscan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, pi)
+    assert sequence_range == (0.0, pi)
     assert approx_equal(im_width, 0.1 * pi / 180.0)
 
     # Build an experiment list
@@ -190,8 +190,8 @@ def test(args=[]):
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    # Predict rays within the sequence range
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     print("Total number of reflections excited", len(obs_refs))

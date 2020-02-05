@@ -10,8 +10,8 @@ import procrunner
 
 import pytest
 
+from dxtbx.serialize import load
 from dxtbx.model.experiment_list import ExperimentListFactory
-from dials.util import Sorry
 from dials.array_family import flex
 import dials.command_line.combine_experiments as combine_experiments
 
@@ -33,6 +33,7 @@ def test(dials_regression, run_in_tmpdir):
         % (i, i)
         for i in input_range
     )
+
     # assert phil_input == "\n" + phil_input2 + "\n "
 
     input_phil = (
@@ -197,6 +198,159 @@ def test(dials_regression, run_in_tmpdir):
     assert not os.path.exists("test_by_detector_%03d.refl" % 2)
 
 
+@pytest.mark.parametrize("with_identifiers", ["True", "False"])
+def test_combine_clustering(dials_data, tmpdir, with_identifiers):
+    """Test with the clustering.use=True option.
+
+    Need to use an integrated dataset for this option.
+    """
+    data_dir = dials_data("multi_crystal_proteinase_k")
+
+    input_range = [2, 3, 4, 5, 10]
+    if with_identifiers:
+        for n, i in enumerate(input_range):
+            command = [
+                "dials.assign_experiment_identifiers",
+                data_dir.strpath + "/experiments_%s.json" % i,
+                data_dir.strpath + "/reflections_%s.pickle" % i,
+                "output.experiments=%s.expt" % n,
+                "output.reflections=%s.refl" % n,
+            ]
+            procrunner.run(command, working_directory=tmpdir)
+
+        phil_input = "\n".join(
+            (
+                "  input.experiments=%s\n" % tmpdir.join("%s.expt" % i)
+                + "  input.reflections=%s" % tmpdir.join("%s.refl" % i)
+            )
+            for i in [0, 1, 2, 3, 4]
+        )
+    else:
+        phil_input = "\n".join(
+            (
+                "  input.experiments={0}/experiments_%s.json\n"
+                + "  input.reflections={0}/reflections_%s.pickle"
+            )
+            % (i, i)
+            for i in input_range
+        ).format(data_dir.strpath)
+
+    with open(tmpdir.join("input.phil").strpath, "w") as phil_file:
+        phil_file.writelines(phil_input)
+
+    result = procrunner.run(
+        [
+            "dials.combine_experiments",
+            tmpdir.join("input.phil").strpath,
+            "clustering.use=True",
+            "threshold=5",
+            "max_clusters=2",
+        ],
+        working_directory=tmpdir,
+    )
+    # this should create two clusters:
+    #   combined_cluster_1 (2 expts)
+    #   combined_cluster_2 (3 expts)
+
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("combined_cluster2.refl").check()
+    assert tmpdir.join("combined_cluster2.expt").check()
+    assert tmpdir.join("combined_cluster1.refl").check()
+    assert tmpdir.join("combined_cluster1.expt").check()
+
+    exps = load.experiment_list(
+        tmpdir.join("combined_cluster1.expt").strpath, check_format=False
+    )
+    assert len(exps) == 2
+    refls = flex.reflection_table.from_file(tmpdir.join("combined_cluster1.refl"))
+    assert list(set(refls["id"])) == [0, 1]
+    exps = load.experiment_list(
+        tmpdir.join("combined_cluster2.expt").strpath, check_format=False
+    )
+    assert len(exps) == 3
+    refls = flex.reflection_table.from_file(tmpdir.join("combined_cluster2.refl"))
+    assert list(set(refls["id"])) == [0, 1, 2]
+
+
+@pytest.fixture
+def narrow_wedge_input_with_identifiers(dials_regression, tmpdir):
+    """Make a fixture to avoid multiple runs of assign identifiers."""
+    data_dir = os.path.join(
+        dials_regression, "refinement_test_data", "multi_narrow_wedges"
+    )
+    input_range = [9, 11, 12, 31]
+    for n, i in enumerate(input_range):
+        command = [
+            "dials.assign_experiment_identifiers",
+            os.path.join(data_dir, "data/sweep_%03d/experiments.json" % i),
+            os.path.join(data_dir, "data/sweep_%03d/reflections.pickle" % i),
+            "output.experiments=%s.expt" % n,
+            "output.reflections=%s.refl" % n,
+        ]
+        procrunner.run(command, working_directory=tmpdir)
+
+    phil_input = "\n".join(
+        (
+            "  input.experiments=%s\n" % tmpdir.join("%s.expt" % i)
+            + "  input.reflections=%s" % tmpdir.join("%s.refl" % i)
+        )
+        for i, _ in enumerate(input_range)
+    )
+    return phil_input
+
+
+@pytest.mark.parametrize("with_identifiers", ["True", "False"])
+@pytest.mark.parametrize("method", ["random", "n_refl", "significance_filter"])
+def test_combine_nsubset(
+    dials_regression,
+    tmpdir,
+    with_identifiers,
+    method,
+    narrow_wedge_input_with_identifiers,
+):
+    """Test with the n_subset option."""
+
+    if with_identifiers:
+        phil_input = narrow_wedge_input_with_identifiers
+    else:
+        data_dir = os.path.join(
+            dials_regression, "refinement_test_data", "multi_narrow_wedges"
+        )
+        input_range = [9, 11, 12, 31]
+        phil_input = "\n".join(
+            (
+                "  input.experiments={0}/data/sweep_%03d/experiments.json\n"
+                + "  input.reflections={0}/data/sweep_%03d/reflections.pickle"
+            )
+            % (i, i)
+            for i in input_range
+        ).format(data_dir)
+
+    with open(tmpdir.join("input.phil").strpath, "w") as phil_file:
+        phil_file.writelines(phil_input)
+
+    result = procrunner.run(
+        [
+            "dials.combine_experiments",
+            tmpdir.join("input.phil").strpath,
+            "n_subset=3",
+            "n_subset_method=%s" % method,
+        ],
+        working_directory=tmpdir,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("combined.refl").check()
+    assert tmpdir.join("combined.expt").check()
+
+    exps = load.experiment_list(
+        tmpdir.join("combined.expt").strpath, check_format=False
+    )
+    assert len(exps) == 3
+    refls = flex.reflection_table.from_file(tmpdir.join("combined.refl"))
+    assert len(set(refls["id"])) == 3
+    assert list(set(refls["id"])) == [0, 1, 2]
+
+
 def test_failed_tolerance_error(dials_regression, monkeypatch):
     """Test that we get a sensible error message on tolerance failures"""
     # Select some experiments to use for combining
@@ -230,7 +384,7 @@ def test_failed_tolerance_error(dials_regression, monkeypatch):
     exp_2 = params.input.experiments[1].data[0]
     exp_2.beam.set_wavelength(exp_2.beam.get_wavelength() * 2)
 
-    with pytest.raises(Sorry) as exc:
+    with pytest.raises(SystemExit) as exc:
         script.run_with_preparsed(params, options)
     assert "Beam" in str(exc.value)
     print("Got (expected) error message:", exc.value)

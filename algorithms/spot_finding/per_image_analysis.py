@@ -1,21 +1,108 @@
 from __future__ import absolute_import, division, print_function
 
+import collections
 import math
-import sys
+from dials.util import tabulate
 
 from cctbx import sgtbx, uctbx
 from dials.algorithms.integration import filtering
 from dials.array_family import flex
-from libtbx import group_args, table_utils
 from libtbx.math_utils import nearest_integer as nint
 from scitbx import matrix
-from dxtbx.model import Experiment, ExperimentList
 
 
-class slot(object):
-    def __init__(self, d_min, d_max):
-        self.d_min = d_min
-        self.d_max = d_max
+Slot = collections.namedtuple("Slot", "d_min d_max")
+_stats_field_names = [
+    "d_min_distl_method_1",
+    "d_min_distl_method_2",
+    "estimated_d_min",
+    "n_spots_4A",
+    "n_spots_no_ice",
+    "n_spots_total",
+    "noisiness_method_1",
+    "noisiness_method_2",
+    "total_intensity",
+]
+StatsSingleImage = collections.namedtuple("StatsSingleImage", _stats_field_names)
+
+
+class StatsMultiImage(collections.namedtuple("StatsMultiImage", _stats_field_names)):
+    __slots__ = ()
+
+    def as_table(self, perm=None, n_rows=None):
+        if hasattr(self, "image"):
+            image = self.image
+        else:
+            image = flex.int(range(1, len(self.n_spots_total) + 1)).as_string()
+
+        rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
+
+        estimated_d_min = None
+        d_min_distl_method_1 = None
+        d_min_distl_method_2 = None
+        n_indexed = getattr(self, "n_indexed", None)
+        fraction_indexed = getattr(self, "fraction_indexed", None)
+
+        if flex.double(self.estimated_d_min).all_gt(0):
+            estimated_d_min = self.estimated_d_min
+            rows[0].append("d_min")
+        if flex.double(self.d_min_distl_method_1).all_gt(0):
+            d_min_distl_method_1 = self.d_min_distl_method_1
+            rows[0].append("d_min (distl method 1)")
+        if flex.double(self.d_min_distl_method_2).all_gt(0):
+            d_min_distl_method_2 = self.d_min_distl_method_2
+            rows[0].append("d_min (distl method 2)")
+        if n_indexed is not None:
+            rows[0].append("#indexed")
+        if fraction_indexed is not None:
+            rows[0].append("fraction_indexed")
+
+        if perm is None:
+            perm = list(range(len(self.n_spots_total)))
+        if n_rows is not None:
+            n_rows = min(n_rows, len(perm))
+            perm = perm[:n_rows]
+        for i_image in perm:
+            d_min_str = ""
+            method1_str = ""
+            method2_str = ""
+            if self.estimated_d_min is not None and self.estimated_d_min[i_image] > 0:
+                d_min_str = "%.2f" % self.estimated_d_min[i_image]
+            if (
+                self.d_min_distl_method_1 is not None
+                and self.d_min_distl_method_1[i_image] > 0
+            ):
+                method1_str = "%.2f" % self.d_min_distl_method_1[i_image]
+                if self.noisiness_method_1 is not None:
+                    method1_str += " (%.2f)" % self.noisiness_method_1[i_image]
+            if (
+                self.d_min_distl_method_2 is not None
+                and self.d_min_distl_method_2[i_image] > 0
+            ):
+                method2_str = "%.2f" % self.d_min_distl_method_2[i_image]
+                if self.noisiness_method_2 is not None:
+                    method2_str += " (%.2f)" % self.noisiness_method_2[i_image]
+            row = [
+                image[i_image],
+                str(self.n_spots_total[i_image]),
+                str(self.n_spots_no_ice[i_image]),
+                "%.0f" % self.total_intensity[i_image],
+            ]
+            if estimated_d_min is not None:
+                row.append(d_min_str)
+            if d_min_distl_method_1 is not None:
+                row.append(method1_str)
+            if d_min_distl_method_2 is not None:
+                row.append(method2_str)
+            if n_indexed is not None:
+                row.append("%i" % self.n_indexed[i_image])
+            if fraction_indexed is not None:
+                row.append("%.2f" % self.fraction_indexed[i_image])
+            rows.append(row)
+        return rows
+
+    def __str__(self):
+        return tabulate(self.as_table(), headers="firstrow")
 
 
 class binner_equal_population(object):
@@ -32,9 +119,8 @@ class binner_equal_population(object):
         d_max = d_sorted[0]
         for i in range(n_slots):
             d_min = d_sorted[nint((i + 1) * n_per_bin) - 1]
-            self.bins.append(slot(d_min, d_max))
+            self.bins.append(Slot(d_min, d_max))
             d_max = d_min
-            # print self.bins[-1].d_max, self.bins[-1].d_min
 
 
 class binner_d_star_cubed(object):
@@ -59,7 +145,6 @@ class binner_d_star_cubed(object):
             math.ceil((d_star_cubed_sorted[-1] - d_star_cubed_sorted[0]) / bin_step)
         )
 
-        # n_slots = len(d_spacings_sorted)//target_n_per_bin
         if max_slots is not None:
             n_slots = min(n_slots, max_slots)
         if min_slots is not None:
@@ -70,15 +155,8 @@ class binner_d_star_cubed(object):
         ds3_max = d_star_cubed_sorted[0]
         for i in range(n_slots):
             ds3_min = d_star_cubed_sorted[0] + (i + 1) * bin_step
-            self.bins.append(slot(1 / ds3_min ** (1 / 3), 1 / ds3_max ** (1 / 3)))
+            self.bins.append(Slot(1 / ds3_min ** (1 / 3), 1 / ds3_max ** (1 / 3)))
             ds3_max = ds3_min
-
-
-def get_histogram(d_star_sq, target_n_per_bin=20, max_slots=20, min_slots=5):
-    n_slots = len(d_star_sq) // target_n_per_bin
-    n_slots = min(n_slots, max_slots)
-    n_slots = max(n_slots, min_slots)
-    return flex.histogram(d_star_sq, n_slots=n_slots)
 
 
 def outlier_rejection(reflections):
@@ -103,9 +181,8 @@ def outlier_rejection(reflections):
     p_prior = (
         1
         / math.sqrt(2 * math.pi * var_prior)
-        * math.exp(-(i_test - flex.mean(intensities_subset)) ** 2 / (2 * var_prior))
+        * math.exp(-((i_test - flex.mean(intensities_subset)) ** 2) / (2 * var_prior))
     )
-    # print p_prior
 
     if p_prior > 1e-10:
         return reflections
@@ -137,7 +214,7 @@ def wilson_outliers(reflections, ice_sel=None, p_cutoff=1e-2):
     return outliers
 
 
-def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename=None):
+def estimate_resolution_limit(reflections, ice_sel=None, plot_filename=None):
     if ice_sel is None:
         ice_sel = flex.bool(len(reflections), False)
 
@@ -205,9 +282,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     m_lower = fit_lower.slope()
     c_lower = fit_lower.y_intercept()
 
-    # fit_upper.show_summary()
-    # fit_lower.show_summary()
-
     if m_upper == m_lower:
         intersection = (-1, -1)
         resolution_estimate = -1
@@ -226,20 +300,14 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
             (m_upper * c_lower - m_lower * c_upper) / (m_upper - m_lower),
         )
 
-        # inside = points_inside_envelope(
-        # d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower)
-
         inside = points_below_line(d_star_sq, log_i_over_sigi, m_upper, c_upper)
-        inside = inside & ~outliers_all
+        inside = inside & ~outliers_all & ~ice_sel
 
         if inside.count(True) > 0:
             d_star_sq_estimate = flex.max(d_star_sq.select(inside))
-            # d_star_sq_estimate = intersection[0]
             resolution_estimate = uctbx.d_star_sq_as_d(d_star_sq_estimate)
         else:
             resolution_estimate = -1
-
-    # resolution_estimate = max(resolution_estimate, flex.min(d_spacings))
 
     if plot_filename is not None:
         from matplotlib import pyplot
@@ -272,7 +340,6 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
             ax.scatter(
                 [intersection[0]], [intersection[1]], marker="x", s=50, color="b"
             )
-        # ax.hexbin(d_star_sq, log_i_over_sigi, gridsize=30)
         xlim = pyplot.xlim()
         ax.plot(xlim, [(m * x + c) for x in xlim])
         ax.plot(xlim, [(m_upper * x + c_upper) for x in xlim], color="red")
@@ -312,7 +379,7 @@ def estimate_resolution_limit(reflections, imageset, ice_sel=None, plot_filename
     return resolution_estimate
 
 
-def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename=None):
+def estimate_resolution_limit_distl_method1(reflections, plot_filename=None):
     # Implementation of Method 1 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -406,7 +473,7 @@ def estimate_resolution_limit_distl_method1(reflections, imageset, plot_filename
     return d_g, noisiness
 
 
-def estimate_resolution_limit_distl_method2(reflections, imageset, plot_filename=None):
+def estimate_resolution_limit_distl_method2(reflections, plot_filename=None):
     # Implementation of Method 2 (section 2.4.4) of:
     # Z. Zhang, N. K. Sauter, H. van den Bedem, G. Snell and A. M. Deacon
     # J. Appl. Cryst. (2006). 39, 112-119
@@ -474,9 +541,7 @@ def points_below_line(d_star_sq, log_i_over_sigi, m, c):
     def side(p1, p2, p):
         diff = p2 - p1
         perp = matrix.col((-diff[1], diff[0]))
-        # print p, p1, p2, perp
         d = (p - p1).dot(perp)
-        # print d
         return math.copysign(1, d)
 
     inside = flex.bool(len(d_star_sq), False)
@@ -486,15 +551,6 @@ def points_below_line(d_star_sq, log_i_over_sigi, m, c):
             inside[i] = True
 
     return inside
-
-
-def points_inside_envelope(
-    d_star_sq, log_i_over_sigi, m_upper, c_upper, m_lower, c_lower
-):
-
-    return points_below_line(
-        d_star_sq, log_i_over_sigi, m_upper, c_upper
-    ) & ~points_below_line(d_star_sq, log_i_over_sigi, m_lower, c_lower)
 
 
 def ice_rings_selection(reflections, width=0.004):
@@ -516,137 +572,19 @@ def ice_rings_selection(reflections, width=0.004):
         return None
 
 
-def resolution_histogram(reflections, imageset, plot_filename=None):
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-    hist = get_histogram(d_star_sq)
-
-    if plot_filename is not None:
-        from matplotlib import pyplot
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.bar(
-            hist.slot_centers() - 0.5 * hist.slot_width(),
-            hist.slots(),
-            width=hist.slot_width(),
-        )
-        ax.set_xlabel("d_star_sq")
-        ax.set_ylabel("Frequency")
-
-        ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-        xticks = ax.get_xticks()
-        xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-        ax_.set_xticks(xticks)
-        ax_.set_xlim(ax.get_xlim())
-        ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
-
-
-def log_sum_i_sigi_vs_resolution(reflections, imageset, plot_filename=None):
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-    hist = get_histogram(d_star_sq)
-
-    intensities = reflections["intensity.sum.value"]
-    variances = reflections["intensity.sum.variance"]
-
-    sel = variances > 0
-    intensities = intensities.select(sel)
-    variances = intensities.select(sel)
-
-    i_over_sigi = intensities / flex.sqrt(variances)
-    # log_i_over_sigi = flex.log(i_over_sigi)
-
-    slots = []
-    for slot in hist.slot_infos():
-        sel = (d_star_sq > slot.low_cutoff) & (d_star_sq < slot.high_cutoff)
-        if sel.count(True) > 0:
-            slots.append(math.log(flex.sum(i_over_sigi.select(sel))))
-        else:
-            slots.append(0)
-
-    if plot_filename is not None:
-        from matplotlib import pyplot
-
-        fig = pyplot.figure()
-        ax = fig.add_subplot(1, 1, 1)
-        # ax.bar(hist.slot_centers()-0.5*hist.slot_width(), hist.slots(),
-        ax.scatter(
-            hist.slot_centers() - 0.5 * hist.slot_width(),
-            slots,
-            s=20,
-            color="blue",
-            marker="o",
-            alpha=0.5,
-        )
-        ax.set_xlabel("d_star_sq")
-        ax.set_ylabel("ln(sum(I/sigI))")
-
-        ax_ = ax.twiny()  # ax2 is responsible for "top" axis and "right" axis
-        xticks = ax.get_xticks()
-        xticks_d = [uctbx.d_star_sq_as_d(ds2) if ds2 > 0 else 0 for ds2 in xticks]
-        ax_.set_xticks(xticks)
-        ax_.set_xlim(ax.get_xlim())
-        ax_.set_xlabel(r"Resolution ($\AA$)")
-        ax_.set_xticklabels(["%.1f" % d for d in xticks_d])
-        pyplot.savefig(plot_filename)
-        pyplot.close()
-
-
-def plot_ordered_d_star_sq(reflections, imageset):
-    from matplotlib import pyplot
-
-    d_star_sq = flex.pow2(reflections["rlp"].norms())
-
-    perm = flex.sort_permutation(d_star_sq)
-    pyplot.scatter(list(range(len(perm))), list(d_star_sq.select(perm)), marker="+")
-    pyplot.show()
-
-
-def stats_single_image(
-    imageset,
-    reflections,
-    i=None,
-    resolution_analysis=True,
-    plot=False,
-    filter_ice=True,
-    ice_rings_width=0.004,
+def stats_for_reflection_table(
+    reflections, resolution_analysis=True, filter_ice=True, ice_rings_width=0.004
 ):
-    expts = ExperimentList(
-        [
-            Experiment(
-                detector=imageset.get_detector(),
-                beam=imageset.get_beam(),
-                scan=imageset.get_scan(),
-                goniometer=imageset.get_goniometer(),
-            )
-        ]
-    )
-    reflections.centroid_px_to_mm(expts)
-    reflections.map_centroids_to_reciprocal_space(expts)
-
-    if plot and i is not None:
-        filename = "i_over_sigi_vs_resolution_%d.png" % (i + 1)
-        hist_filename = "spot_count_vs_resolution_%d.png" % (i + 1)
-        extra_filename = "log_sum_i_sigi_vs_resolution_%d.png" % (i + 1)
-        distl_method_1_filename = "distl_method_1_%d.png" % (i + 1)
-        distl_method_2_filename = "distl_method_2_%d.png" % (i + 1)
-    else:
-        filename = None
-        hist_filename = None
-        extra_filename = None
-        distl_method_1_filename = None
-        distl_method_2_filename = None
+    assert "rlp" in reflections, "Reflections must have been mapped to reciprocal space"
+    reflections = reflections.select(reflections["rlp"].norms() > 0)
 
     d_star_sq = flex.pow2(reflections["rlp"].norms())
     d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
 
-    # plot_ordered_d_star_sq(reflections, imageset)
     reflections_all = reflections
     reflections_no_ice = reflections_all
     ice_sel = None
-    if filter_ice:
+    if reflections.size() and filter_ice:
         ice_sel = ice_rings_selection(reflections_all, width=ice_rings_width)
         if ice_sel is not None:
             reflections_no_ice = reflections_all.select(~ice_sel)
@@ -655,23 +593,16 @@ def stats_single_image(
     n_spot_4A = (d_spacings > 4).count(True)
     intensities = reflections_no_ice["intensity.sum.value"]
     total_intensity = flex.sum(intensities)
-    # print i
-    if hist_filename is not None:
-        resolution_histogram(reflections, imageset, plot_filename=hist_filename)
-    if extra_filename is not None:
-        log_sum_i_sigi_vs_resolution(
-            reflections, imageset, plot_filename=extra_filename
-        )
     if resolution_analysis and n_spots_no_ice > 10:
-        estimated_d_min = estimate_resolution_limit(
-            reflections_all, imageset, ice_sel=ice_sel, plot_filename=filename
-        )
-        d_min_distl_method_1, noisiness_method_1 = estimate_resolution_limit_distl_method1(
-            reflections_all, imageset, plot_filename=distl_method_1_filename
-        )
-        d_min_distl_method_2, noisiness_method_2 = estimate_resolution_limit_distl_method2(
-            reflections_all, imageset, plot_filename=distl_method_2_filename
-        )
+        estimated_d_min = estimate_resolution_limit(reflections_all, ice_sel=ice_sel)
+        (
+            d_min_distl_method_1,
+            noisiness_method_1,
+        ) = estimate_resolution_limit_distl_method1(reflections_all)
+        (
+            d_min_distl_method_2,
+            noisiness_method_2,
+        ) = estimate_resolution_limit_distl_method2(reflections_all)
     else:
         estimated_d_min = -1.0
         d_min_distl_method_1 = -1.0
@@ -679,7 +610,7 @@ def stats_single_image(
         d_min_distl_method_2 = -1.0
         noisiness_method_2 = -1.0
 
-    return group_args(
+    return StatsSingleImage(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spot_4A,
@@ -692,7 +623,7 @@ def stats_single_image(
     )
 
 
-def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
+def stats_per_image(experiment, reflections, resolution_analysis=True):
     n_spots_total = []
     n_spots_no_ice = []
     n_spots_4A = []
@@ -707,16 +638,13 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
     image_number = flex.floor(image_number)
 
     try:
-        start, end = imageset.get_array_range()
+        start, end = experiment.scan.get_array_range()
     except AttributeError:
-        start = 0
-    for i in range(len(imageset)):
-        stats = stats_single_image(
-            imageset[i : i + 1],
-            reflections.select(image_number == i + start),
-            i=i + start,
+        start, end = 0, 1
+    for i in range(start, end):
+        stats = stats_for_reflection_table(
+            reflections.select(image_number == i),
             resolution_analysis=resolution_analysis,
-            plot=plot,
         )
         n_spots_total.append(stats.n_spots_total)
         n_spots_no_ice.append(stats.n_spots_no_ice)
@@ -728,7 +656,7 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
         d_min_distl_method_2.append(stats.d_min_distl_method_2)
         noisiness_method_2.append(stats.noisiness_method_2)
 
-    return group_args(
+    return StatsMultiImage(
         n_spots_total=n_spots_total,
         n_spots_no_ice=n_spots_no_ice,
         n_spots_4A=n_spots_4A,
@@ -738,92 +666,6 @@ def stats_imageset(imageset, reflections, resolution_analysis=True, plot=False):
         noisiness_method_1=noisiness_method_1,
         d_min_distl_method_2=d_min_distl_method_2,
         noisiness_method_2=noisiness_method_2,
-    )
-
-
-def table(stats, perm=None, n_rows=None):
-    n_spots_total = stats.n_spots_total
-    n_spots_no_ice = stats.n_spots_no_ice
-    total_intensity = stats.total_intensity
-    estimated_d_min = stats.estimated_d_min
-    d_min_distl_method_1 = stats.d_min_distl_method_1
-    d_min_distl_method_2 = stats.d_min_distl_method_2
-    noisiness_method_1 = stats.noisiness_method_1
-    noisiness_method_2 = stats.noisiness_method_2
-    if hasattr(stats, "image"):
-        image = stats.image
-    else:
-        image = flex.int(range(1, len(n_spots_total) + 1)).as_string()
-    n_indexed = None
-    fraction_indexed = None
-    if hasattr(stats, "n_indexed"):
-        n_indexed = stats.n_indexed
-    if hasattr(stats, "fraction_indexed"):
-        fraction_indexed = stats.fraction_indexed
-    if flex.double(estimated_d_min).all_eq(-1):
-        estimated_d_min = None
-    if flex.double(d_min_distl_method_1).all_eq(-1):
-        d_min_distl_method_1 = None
-    if flex.double(d_min_distl_method_2).all_eq(-1):
-        d_min_distl_method_2 = None
-
-    rows = [["image", "#spots", "#spots_no_ice", "total_intensity"]]
-    if estimated_d_min is not None:
-        rows[0].append("d_min")
-    if d_min_distl_method_1 is not None:
-        rows[0].append("d_min (distl method 1)")
-    if d_min_distl_method_2 is not None:
-        rows[0].append("d_min (distl method 2)")
-    if n_indexed is not None:
-        rows[0].append("#indexed")
-    if fraction_indexed is not None:
-        rows[0].append("fraction_indexed")
-    if perm is None:
-        perm = list(range(len(n_spots_total)))
-    if n_rows is not None:
-        n_rows = min(n_rows, len(perm))
-        perm = perm[:n_rows]
-    for i_image in perm:
-        d_min_str = ""
-        method1_str = ""
-        method2_str = ""
-        if estimated_d_min is not None and estimated_d_min[i_image] > 0:
-            d_min_str = "%.2f" % estimated_d_min[i_image]
-        if d_min_distl_method_1 is not None and d_min_distl_method_1[i_image] > 0:
-            method1_str = "%.2f" % d_min_distl_method_1[i_image]
-            if noisiness_method_1 is not None:
-                method1_str += " (%.2f)" % noisiness_method_1[i_image]
-        if d_min_distl_method_2 is not None and d_min_distl_method_2[i_image] > 0:
-            method2_str = "%.2f" % d_min_distl_method_2[i_image]
-            if noisiness_method_2 is not None:
-                method2_str += " (%.2f)" % noisiness_method_2[i_image]
-        row = [
-            image[i_image],
-            str(n_spots_total[i_image]),
-            str(n_spots_no_ice[i_image]),
-            "%.0f" % total_intensity[i_image],
-        ]
-        if estimated_d_min is not None:
-            row.append(d_min_str)
-        if d_min_distl_method_1 is not None:
-            row.append(method1_str)
-        if d_min_distl_method_2 is not None:
-            row.append(method2_str)
-        if n_indexed is not None:
-            row.append("%i" % n_indexed[i_image])
-        if fraction_indexed is not None:
-            row.append("%.2f" % fraction_indexed[i_image])
-        rows.append(row)
-    return rows
-
-
-def print_table(stats, perm=None, n_rows=None, out=None):
-    if out is None:
-        out = sys.stdout
-
-    rows = table(stats, perm=perm, n_rows=n_rows)
-    print(
-        table_utils.format(rows, has_header=True, prefix="| ", postfix=" |"), file=out
     )
 
 

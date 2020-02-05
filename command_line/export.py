@@ -100,10 +100,6 @@ phil_scope = parse(
         threshold will be retained. This is done after any combination of
         partials if applicable."
 
-    ignore_panels = False
-      .type = bool
-      .help = "Ignore multiple panels / detectors in output (deprecated)"
-
     min_isigi = -5
       .type = float
       .help = "Exclude reflections with unfeasible values of I/Sig(I)"
@@ -158,6 +154,22 @@ phil_scope = parse(
       .type = path
       .help = "The output Nexus file"
 
+    instrument_name = Unknown
+      .type = str
+      .help = "Name of the instrument/beamline"
+
+    instrument_short_name = Unknown
+      .type = str
+      .help = "Short name for instrument/beamline, perhaps the acronym"
+
+    source_name = Unknown
+      .type = str
+      .help = "Name of the source/facility"
+
+    source_short_name = Unknown
+      .type = str
+      .help = "Short name for source, perhaps the acronym"
+
   }
 
   mmcif {
@@ -205,347 +217,211 @@ phil_scope = parse(
 )
 
 
-class MTZExporter(object):
-    """
-    A class to export reflections in MTZ format
-    """
-
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
-
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
-
-        # Check the input
-        if not experiments:
-            raise Sorry("MTZ exporter requires an experiment list")
-        if len(reflections) != 1:
-            raise Sorry("MTZ exporter requires 1 reflection table")
-
-        # Save the input
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections[0]
-
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util.export_mtz import export_mtz
-
-        try:
-            m = export_mtz(self.reflections, self.experiments, self.params)
-        except ValueError as e:
-            raise Sorry(e)
-        from six.moves import cStringIO as StringIO
-
-        summary = StringIO()
-        m.show_summary(out=summary)
-        logger.info("")
-        logger.info(summary.getvalue())
-
-
-class SadabsExporter(object):
-    """
-    A class to export data in HKL format
-    """
-
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
-
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
-
-        # Check the input
-        if not experiments:
-            raise Sorry("SADABS exporter requires an experiment list")
-        if len(reflections) != 1:
-            raise Sorry("SADABS exporter requires 1 reflection table")
-
-        # Save the data
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections[0]
-
-    def export(self):
-        from dials.util.export_sadabs import export_sadabs
-
+def _check_input(experiments, reflections, params=None, check_intensities=False):
+    if not experiments:
+        sys.exit("export requires an experiment list")
+    if len(reflections) != 1:
+        sys.exit("export requires 1 reflection table")
+    if check_intensities:
+        if not params:
+            sys.exit("No parameters given")
         if "profile" not in params.intensity and "sum" not in params.intensity:
-            raise Sorry(
-                """Only intensity options containing sum or profile are compatible with
-export to sadabs format."""
+            sys.exit(
+                "Only intensity options containing sum or profile can be exported in this format"
             )
-        if not any(
-            i in self.reflections
-            for i in ["intensity.sum.value", "intensity.prf.value"]
+        if (
+            "intensity.sum.value" not in reflections[0]
+            and "intensity.prf.value" not in reflections[0]
         ):
-            raise Sorry(
-                """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
-columns in reflection table."""
+            sys.exit(
+                "Unable to find 'intensity.sum.value' or 'intensity.prf.value' columns in reflection table."
             )
-        try:
-            export_sadabs(self.reflections, self.experiments, self.params)
-        except ValueError as e:
-            raise Sorry(e)
 
 
-class XDSASCIIExporter(object):
+def export_mtz(params, experiments, reflections):
     """
-    A class to export data in XDS_ASCII format
-    """
+    Export reflections in MTZ format
 
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
-
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
-
-        # Check the input
-        if not experiments:
-            raise Sorry("XDS_ASCII exporter requires an experiment list")
-        if len(reflections) != 1:
-            raise Sorry("XDS_ASCII exporter requires 1 reflection table")
-
-        # Save the input
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections[0]
-
-    def export(self):
-        from dials.util.export_xds_ascii import export_xds_ascii
-
-        if "profile" not in params.intensity and "sum" not in params.intensity:
-            raise Sorry(
-                """Only intensity options containing sum or profile are compatible with
-export to xds_ascii format."""
-            )
-        if not any(
-            i in self.reflections
-            for i in ["intensity.sum.value", "intensity.prf.value"]
-        ):
-            raise Sorry(
-                """Unable to find 'intensity.sum.value' or 'intensity.prf.value'
-columns in reflection table."""
-            )
-        try:
-            export_xds_ascii(self.reflections, self.experiments, self.params)
-        except ValueError as e:
-            raise Sorry(e)
-
-
-class NexusExporter(object):
-    """
-    A class to export data in Nexus format
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
     """
 
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
+    _check_input(experiments, reflections)
 
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
+    from dials.util.export_mtz import export_mtz
 
-        # Check the input
-        if not experiments:
-            raise Sorry("Nexus exporter requires an experiment list")
-        if len(reflections) != 1:
-            raise Sorry("Nexus exporter requires 1 reflection table")
+    try:
+        m = export_mtz(reflections[0], experiments, params)
+    except ValueError as e:
+        sys.exit(e)
+    from six.moves import cStringIO as StringIO
 
-        # Save the input
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections[0]
-
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util.nexus import dump
-
-        dump(self.experiments, self.reflections, self.params.nxs.hklout)
+    summary = StringIO()
+    m.show_summary(out=summary)
+    logger.info("")
+    logger.info(summary.getvalue())
 
 
-class MMCIFExporter(object):
+def export_sadabs(params, experiments, reflections):
     """
-    A class to export data in CIF format
+    Export data in HKL format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
     """
 
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
+    _check_input(experiments, reflections, params=params, check_intensities=True)
 
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
+    from dials.util.export_sadabs import export_sadabs
 
-        # Check the input
-        if not experiments:
-            raise Sorry("CIF exporter requires an experiment list")
-        if len(reflections) != 1:
-            raise Sorry("CIF exporter requires 1 reflection table")
-
-        # Save the input
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections[0]
-
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util.export_mmcif import MMCIFOutputFile
-
-        outfile = MMCIFOutputFile(self.params)
-        try:
-            outfile.write(self.experiments, self.reflections)
-        except ValueError as e:
-            raise Sorry(e)
+    try:
+        export_sadabs(reflections[0], experiments, params)
+    except ValueError as e:
+        sys.exit(e)
 
 
-class MosflmExporter(object):
+def export_xdsascii(params, experiments, reflections):
     """
-    A class to export stuff in mosflm format
+    Export data in XDS_ASCII format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
     """
 
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
+    _check_input(experiments, reflections, params=params, check_intensities=True)
 
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
+    from dials.util.export_xds_ascii import export_xds_ascii
 
-        # Check the input
-        if not experiments:
-            raise Sorry("Mosflm exporter requires an experiment list")
-        if reflections:
-            raise Sorry("Mosflm exporter does not need a reflection table")
-
-        # Save the stuff
-        self.params = params
-        self.experiments = experiments
-
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util.mosflm import dump
-
-        dump(self.experiments, self.params.mosflm.directory)
+    try:
+        export_xds_ascii(reflections[0], experiments, params)
+    except ValueError as e:
+        sys.exit(e)
 
 
-class XDSExporter(object):
+def export_nexus(params, experiments, reflections):
     """
-    A class to export stuff in xds format
+    Export data in Nexus format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
     """
 
-    def __init__(self, params, experiments, reflections):
-        """
-        Initialise the exporter
+    _check_input(experiments, reflections)
 
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
-        self.reflections = None
+    from dials.util.nexus import dump
 
-        # Check the input
-        if len(reflections) > 1:
-            raise Sorry("XDS exporter requires 0 or 1 reflection table")
-
-        # Save the stuff
-        self.params = params
-        self.experiments = experiments
-
-        if reflections:
-            self.reflections = reflections[0]
-
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util.xds import dump
-
-        dump(self.experiments, self.reflections, self.params.xds.directory)
+    dump(experiments, reflections[0], params.nxs)
 
 
-class JsonExporter(object):
+def export_mmcif(params, experiments, reflections):
     """
-    A class to export reflections in json format
+    Export data in CIF format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
     """
 
-    def __init__(self, params, reflections, experiments=None):
-        """
-        Initialise the exporter
+    _check_input(experiments, reflections)
 
-        :param params: The phil parameters
-        :param experiments: The experiment list
-        :param reflections: The reflection tables
-        """
+    from dials.util.export_mmcif import MMCIFOutputFile
 
-        # Check the input
-        if experiments is None:
-            raise Sorry("json exporter requires an experiment list")
-        if not reflections:
-            raise Sorry("json exporter require a reflection table")
+    outfile = MMCIFOutputFile(params)
+    try:
+        outfile.write(experiments, reflections[0])
+    except ValueError as e:
+        sys.exit(e)
 
-        # Save the stuff
-        self.params = params
-        self.experiments = experiments
-        self.reflections = reflections
 
-    def export(self):
-        """
-        Export the files
-        """
-        from dials.util import export_json
-        from scitbx.array_family import flex
+def export_mosflm(params, experiments, reflections):
+    """
+    Export stuff in mosflm format
 
-        imagesets = [expt.imageset for expt in self.experiments]
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
 
-        reflections = None
-        assert len(self.reflections) == len(imagesets), (
-            len(self.reflections),
-            len(imagesets),
+    _check_input(experiments, [None])
+
+    if reflections:
+        sys.exit("Mosflm exporter does not need a reflection table")
+
+    from dials.util.mosflm import dump
+
+    dump(experiments, params.mosflm.directory)
+
+
+def export_xds(params, experiments, reflections):
+    """
+    Export stuff in xds format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    # Check the input
+    if len(reflections) > 1:
+        sys.exit("XDS exporter requires 0 or 1 reflection table")
+
+    if reflections:
+        reflections = reflections[0]
+
+    from dials.util.xds import dump
+
+    dump(experiments, reflections, params.xds.directory)
+
+
+def export_json(params, experiments, reflections):
+    """
+    Export reflections in json format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    # Check the input
+    _check_input(experiments, [None])
+    if not reflections:
+        sys.exit("json exporter requires a reflection table")
+
+    from dials.util import export_json
+    from scitbx.array_family import flex
+
+    imagesets = [expt.imageset for expt in experiments]
+
+    if len(reflections) != len(imagesets):
+        sys.exit(
+            "Mismatch between %d reflections lists and %d imagesets"
+            % (len(reflections), len(imagesets))
         )
-        for i, refl in enumerate(self.reflections):
-            refl["imageset_id"] = flex.size_t(refl.size(), i)
-            if reflections is None:
-                reflections = refl
-            else:
-                reflections.extend(refl)
+    selected_reflections = None
+    for i, refl in enumerate(reflections):
+        refl["imageset_id"] = flex.size_t(refl.size(), i)
+        if selected_reflections is None:
+            selected_reflections = refl
+        else:
+            selected_reflections.extend(refl)
 
-        exporter = export_json.ReciprocalLatticeJson(self.experiments, reflections)
-        exporter.as_json(
-            filename=params.json.filename,
-            compact=params.json.compact,
-            n_digits=params.json.n_digits,
-            experiments=self.experiments,
-        )
+    exporter = export_json.ReciprocalLatticeJson(experiments, selected_reflections)
+    exporter.as_json(
+        filename=params.json.filename,
+        compact=params.json.compact,
+        n_digits=params.json.n_digits,
+        experiments=experiments,
+    )
 
 
 if __name__ == "__main__":
-    from dials.util.options import (
-        OptionParser,
-        flatten_experiments,
-        flatten_reflections,
-    )
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util.version import dials_version
     from dials.util import log
-    from dials.util import Sorry
 
     usage = "dials.export models.expt reflections.pickle [options]"
 
@@ -579,8 +455,9 @@ if __name__ == "__main__":
         sys.exit()
 
     # Get the experiments and reflections
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # do auto intepreting of intensity choice:
     # note that this may still fail certain checks further down the processing,
@@ -596,24 +473,18 @@ if __name__ == "__main__":
             logger.info("Data appears to be unscaled, setting intensity = profile+sum")
 
     # Choose the exporter
-    if params.format == "mtz":
-        exporter = MTZExporter(params, experiments, reflections)
-    elif params.format == "sadabs":
-        exporter = SadabsExporter(params, experiments, reflections)
-    elif params.format == "xds_ascii":
-        exporter = XDSASCIIExporter(params, experiments, reflections)
-    elif params.format == "nxs":
-        exporter = NexusExporter(params, experiments, reflections)
-    elif params.format == "mmcif":
-        exporter = MMCIFExporter(params, experiments, reflections)
-    elif params.format == "mosflm":
-        exporter = MosflmExporter(params, experiments, reflections)
-    elif params.format == "xds":
-        exporter = XDSExporter(params, experiments, reflections)
-    elif params.format == "json":
-        exporter = JsonExporter(params, reflections, experiments=experiments)
-    else:
-        raise Sorry("Unknown format: %s" % params.format)
+    exporter = {
+        "mtz": export_mtz,
+        "sadabs": export_sadabs,
+        "xds_ascii": export_xdsascii,
+        "nxs": export_nexus,
+        "mmcif": export_mmcif,
+        "mosflm": export_mosflm,
+        "xds": export_xds,
+        "json": export_json,
+    }.get(params.format)
+    if not exporter:
+        sys.exit("Unknown format: %s" % params.format)
 
     # Export the data
-    exporter.export()
+    exporter(params, experiments, reflections)

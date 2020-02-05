@@ -6,6 +6,7 @@ import copy
 import math
 from collections import OrderedDict
 
+import itertools
 import numpy as np
 import dials.util.log
 from cctbx import uctbx
@@ -106,7 +107,7 @@ phil_scope = libtbx.phil.parse(
 
 
 def ensure_directory(path):
-    """ Make the directory if not already there. """
+    """Make the directory if not already there."""
     from os import makedirs
     import errno
 
@@ -118,7 +119,7 @@ def ensure_directory(path):
 
 
 def ensure_required(rlist, required):
-    """ Check which keys aren't present. """
+    """Check which keys aren't present."""
     not_present = []
     for k in required:
         if k not in rlist:
@@ -144,8 +145,26 @@ def determine_grid_size(rlist, grid_size=None):
     return n_cols, n_rows
 
 
+def color_repeats(n=1):
+    """Set up a cycle through default Plotly colors, repeating each n times"""
+
+    color_list = (
+        ["#1f77b4"] * n  # muted blue
+        + ["#ff7f0e"] * n  # safety orange
+        + ["#2ca02c"] * n  # cooked asparagus green
+        + ["#d62728"] * n  # brick red
+        + ["#9467bd"] * n  # muted purple
+        + ["#8c564b"] * n  # chestnut brown
+        + ["#e377c2"] * n  # raspberry yogurt pink
+        + ["#7f7f7f"] * n  # middle gray
+        + ["#bcbd22"] * n  # curry yellow-green
+        + ["#17becf"] * n  # blue-teal
+    )
+    return itertools.cycle(color_list)
+
+
 class ScanVaryingCrystalAnalyser(object):
-    """ Analyse a scan-varying crystal. """
+    """Analyse a scan-varying crystal."""
 
     def __init__(self, orientation_decomposition):
         # Decomposition axes
@@ -158,7 +177,7 @@ class ScanVaryingCrystalAnalyser(object):
         self._debug = False
 
     def __call__(self, experiments):
-        """ Analyse the strong spots. """
+        """Analyse the strong spots."""
         # Check we have the required fields
         print("Analysing scan-varying crystal model")
 
@@ -170,7 +189,7 @@ class ScanVaryingCrystalAnalyser(object):
         return {"scan_varying": d}
 
     def plot_cell(self, experiments):
-        """ Analyse the scan-varying cell parameters. """
+        """Analyse the scan-varying cell parameters."""
 
         # cell plot
         dat = []
@@ -225,15 +244,15 @@ class ScanVaryingCrystalAnalyser(object):
                         "anchor": "y7",
                         "title": "rotation angle (°)",
                     },
-                    "xaxis2": {"domain": [0.55, 1], "anchor": "y6"},
-                    "xaxis": {"domain": [0, 0.45], "anchor": "y3"},
-                    "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 3},
-                    "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 3},
-                    "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 3},
-                    "yaxis4": {"domain": [0.8, 1], "anchor": "x2", "nticks": 3},
-                    "yaxis3": {"domain": [0.3, 0.5], "anchor": "x", "nticks": 3},
-                    "yaxis2": {"domain": [0.55, 0.75], "anchor": "x", "nticks": 3},
-                    "yaxis": {"domain": [0.8, 1], "nticks": 3},
+                    "xaxis2": {"domain": [0.53, 1], "anchor": "y6"},
+                    "xaxis": {"domain": [0, 0.47], "anchor": "y3"},
+                    "yaxis7": {"domain": [0.0, 0.2], "anchor": "x3", "nticks": 5},
+                    "yaxis6": {"domain": [0.3, 0.5], "anchor": "x2", "nticks": 5},
+                    "yaxis5": {"domain": [0.55, 0.75], "anchor": "x2", "nticks": 5},
+                    "yaxis4": {"domain": [0.8, 1], "anchor": "x2", "nticks": 5},
+                    "yaxis3": {"domain": [0.3, 0.5], "anchor": "x", "nticks": 5},
+                    "yaxis2": {"domain": [0.55, 0.75], "anchor": "x", "nticks": 5},
+                    "yaxis": {"domain": [0.8, 1], "nticks": 5},
                 },
                 "help": """\
 A plot of the smoothly-varying unit cell parameters determined by scan-varying
@@ -246,6 +265,11 @@ the refinement algorithm accounting for unmodelled features in the data.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(7)
+
         for cell_dat in dat:
             d["scan_varying_cell"]["data"].extend(
                 [
@@ -254,6 +278,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "y": cell_dat["a"],
                         "type": "scatter",
                         "name": "a (Å)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -262,6 +287,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "b (Å)",
                         "xaxis": "x",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -270,6 +296,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "c (Å)",
                         "xaxis": "x",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -278,6 +305,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "α (°)",
                         "xaxis": "x2",
                         "yaxis": "y4",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -286,6 +314,7 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "β (°)",
                         "xaxis": "x2",
                         "yaxis": "y5",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
@@ -294,14 +323,16 @@ the refinement algorithm accounting for unmodelled features in the data.
                         "name": "γ (°)",
                         "xaxis": "x2",
                         "yaxis": "y6",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": cell_dat["phi"],
                         "y": cell_dat["volume"],
                         "type": "scatter",
-                        "name": "volume (Å^3)",
+                        "name": "volume (Å³)",
                         "xaxis": "x3",
                         "yaxis": "y7",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
@@ -369,9 +400,9 @@ the refinement algorithm accounting for unmodelled features in the data.
                     },
                     "xaxis2": {"domain": [0, 1], "anchor": "y3"},
                     "xaxis": {"domain": [0, 1], "anchor": "y3"},
-                    "yaxis3": {"domain": [0, 0.3], "anchor": "x3"},
-                    "yaxis2": {"domain": [0.35, 0.65], "anchor": "x2"},
-                    "yaxis": {"domain": [0.7, 1]},
+                    "yaxis3": {"domain": [0, 0.3], "anchor": "x3", "nticks": 5},
+                    "yaxis2": {"domain": [0.35, 0.65], "anchor": "x2", "nticks": 5},
+                    "yaxis": {"domain": [0.7, 1], "nticks": 5},
                 },
                 "help": """\
 A plot of the smoothly-varying crystal orientation parameters determined by
@@ -386,6 +417,10 @@ incorrectly.
             }
         }
 
+        if len(dat) == 1:
+            colors = color_repeats()
+        else:
+            colors = color_repeats(3)
         for ori in dat:
             d["scan_varying_orientation"]["data"].extend(
                 [
@@ -394,6 +429,7 @@ incorrectly.
                         "y": ori["phi1"],
                         "type": "scatter",
                         "name": "Φ1 (°)",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -402,6 +438,7 @@ incorrectly.
                         "name": "Φ2 (°)",
                         "xaxis": "x2",
                         "yaxis": "y2",
+                        "marker": {"color": next(colors)},
                     },
                     {
                         "x": ori["phi"],
@@ -410,6 +447,7 @@ incorrectly.
                         "name": "Φ3 (°)",
                         "xaxis": "x3",
                         "yaxis": "y3",
+                        "marker": {"color": next(colors)},
                     },
                 ]
             )
@@ -419,7 +457,7 @@ incorrectly.
 
 
 class StrongSpotsAnalyser(object):
-    """ Analyse a list of strong spots. """
+    """Analyse a list of strong spots."""
 
     def __init__(self, pixels_per_bin=10):
         self.pixels_per_bin = pixels_per_bin
@@ -428,7 +466,7 @@ class StrongSpotsAnalyser(object):
         self.required = ["xyzobs.px.value", "panel"]
 
     def __call__(self, rlist):
-        """ Analyse the strong spots. """
+        """Analyse the strong spots."""
         # Check we have the required fields
         print("Analysing strong spots")
         if not ensure_required(rlist, self.required):
@@ -471,7 +509,7 @@ class StrongSpotsAnalyser(object):
         return {"strong": d}
 
     def spot_count_per_image(self, rlist):
-        """ Analyse the spot count per image. """
+        """Analyse the spot count per image."""
         x, y, z = rlist["xyzobs.px.value"].parts()
         max_z = int(math.ceil(flex.max(z)))
 
@@ -575,7 +613,7 @@ ice rings, or poor spot-finding parameters.
         return d
 
     def unindexed_count_xy(self, rlist):
-        """ Analyse the spot count in x/y. """
+        """Analyse the spot count in x/y."""
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
@@ -614,7 +652,7 @@ ice rings, or poor spot-finding parameters.
         }
 
     def indexed_count_xy(self, rlist):
-        """Analyse the indexed spot count in x/y. """
+        """Analyse the indexed spot count in x/y."""
         x, y, z = rlist["xyzobs.px.value"].parts()
 
         indexed_sel = rlist.get_flags(rlist.flags.indexed)
@@ -654,7 +692,7 @@ ice rings, or poor spot-finding parameters.
 
 
 class CentroidAnalyser(object):
-    """ Analyse the reflection centroids. """
+    """Analyse the reflection centroids."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10, centroid_diff_max=1.5):
         self.grid_size = grid_size
@@ -672,7 +710,7 @@ class CentroidAnalyser(object):
         ]
 
     def __call__(self, rlist):
-        """ Analyse the reflection centroids. """
+        """Analyse the reflection centroids."""
         # Check we have the required fields
         print("Analysing reflection centroids")
         if not ensure_required(rlist, self.required):
@@ -720,7 +758,7 @@ class CentroidAnalyser(object):
         return {"centroid": d}
 
     def centroid_diff_hist(self, rlist, threshold):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -758,7 +796,7 @@ class CentroidAnalyser(object):
         return d
 
     def centroid_diff_xy(self, rlist, threshold):
-        """ Look at the centroid difference in x, y """
+        """Look at the centroid difference in x, y"""
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -850,7 +888,7 @@ class CentroidAnalyser(object):
         return d
 
     def centroid_diff_z(self, rlist, threshold):
-        """ Look at the centroid difference in z """
+        """Look at the centroid difference in z"""
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1231,7 +1269,7 @@ class CentroidAnalyser(object):
 
 
 class IntensityAnalyser(object):
-    """ Analyse the intensities. """
+    """Analyse the intensities."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
 
@@ -1242,7 +1280,7 @@ class IntensityAnalyser(object):
         self.required = ["intensity.sum.value", "intensity.sum.variance", "xyzcal.px"]
 
     def __call__(self, rlist):
-        """ Analyse the reflection centroids. """
+        """Analyse the reflection centroids."""
         # FIXME Do the same and a comparison for intensity.prf
 
         # Check we have the required fields
@@ -1282,7 +1320,6 @@ class IntensityAnalyser(object):
 
         d = OrderedDict()
 
-        # Look at distribution of I/Sigma
         print(" Analysing distribution of I/Sigma")
         d.update(self.i_over_s_hist(rlist))
         print(" Analysing distribution of I/Sigma vs xy")
@@ -1294,10 +1331,12 @@ class IntensityAnalyser(object):
         d.update(self.i_over_s_vs_z(rlist))
         print(" Analysing distribution of partialities")
         d.update(self.partiality_hist(rlist))
+        print(" Analysing QE map")
+        d.update(self.qe_xy(rlist))
         return {"intensity": d}
 
     def i_over_s_hist(self, rlist):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
         I_over_S = I / I_sig
@@ -1315,8 +1354,8 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "Log I/Sigma histogram",
-                    "xaxis": {"title": "Log I/Sigma"},
+                    "title": u"Log I/σ(I) histogram",
+                    "xaxis": {"title": u"Log I/σ(I)"},
                     "yaxis": {"title": "Number of reflections"},
                     "bargap": 0,
                 },
@@ -1324,7 +1363,7 @@ class IntensityAnalyser(object):
         }
 
     def i_over_s_vs_xy(self, rlist, intensity_type):
-        """ Plot I/Sigma vs X/Y """
+        """Plot I/Sigma vs X/Y"""
 
         I_sig = flex.sqrt(rlist["intensity.%s.variance" % intensity_type])
         I = rlist["intensity.%s.value" % intensity_type]
@@ -1362,12 +1401,12 @@ class IntensityAnalyser(object):
                         "zauto": False,
                         "type": "heatmap",
                         "name": "i_over_sigma_%s" % intensity_type,
-                        "colorbar": {"title": "Log I/Sigma", "titleside": "right"},
+                        "colorbar": {"title": u"Log I/σ(I)", "titleside": "right"},
                         "colorscale": "Jet",
                     }
                 ],
                 "layout": {
-                    "title": "Distribution of I(%s)/Sigma vs X/Y" % intensity_type,
+                    "title": u"Distribution of I(%s)/σ vs X/Y" % intensity_type,
                     "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
                     "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
                     "width": 500,
@@ -1377,7 +1416,7 @@ class IntensityAnalyser(object):
         }
 
     def i_over_s_vs_z(self, rlist):
-        """ Plot I/Sigma vs Z. """
+        """Plot I/Sigma vs Z."""
 
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
@@ -1405,15 +1444,15 @@ class IntensityAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "Distribution of I/Sigma vs Z",
+                    "title": u"Distribution of I/σ(I) vs Z",
                     "xaxis": {"title": "Z", "showgrid": False},
-                    "yaxis": {"title": "Log I/Sigma", "showgrid": False},
+                    "yaxis": {"title": u"Log I/σ(I)", "showgrid": False},
                 },
             }
         }
 
     def partiality_hist(self, rlist):
-        """ Analyse the partialities. """
+        """Analyse the partialities."""
         partiality = rlist["partiality"]
         hist = flex.histogram(partiality.select(partiality > 0), 0, 1, n_slots=20)
 
@@ -1436,9 +1475,65 @@ class IntensityAnalyser(object):
             }
         }
 
+    def qe_xy(self, rlist):
+        """Look at the QE map in x, y"""
+
+        if "qe" not in rlist:
+            return {}
+
+        assert len(rlist) > 0
+        qe = rlist["qe"]
+
+        xc, yc, zc = rlist["xyzcal.px"].parts()
+
+        d = OrderedDict()
+
+        nbinsx, nbinsy = tuple(
+            int(math.ceil(i))
+            for i in (
+                flex.max(xc) / self.pixels_per_bin,
+                flex.max(yc) / self.pixels_per_bin,
+            )
+        )
+
+        xc = xc.as_numpy_array()
+        yc = yc.as_numpy_array()
+        qe = qe.as_numpy_array()
+
+        H, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy))
+        H1, xedges, yedges = np.histogram2d(xc, yc, bins=(nbinsx, nbinsy), weights=qe)
+
+        nonzeros = np.nonzero(H)
+        z1 = np.empty(H.shape)
+        z1[:] = np.NAN
+        z1[nonzeros] = H1[nonzeros] / H[nonzeros]
+
+        d["qe_map"] = {
+            "data": [
+                {
+                    "name": "qe_map",
+                    "x": xedges.tolist(),
+                    "y": yedges.tolist(),
+                    "z": z1.transpose().tolist(),
+                    "type": "heatmap",
+                    "colorbar": {"title": "QE", "titleside": "right"},
+                    "colorscale": "Jet",
+                }
+            ],
+            "layout": {
+                "title": "Calculated Quantum Efficiency",
+                "xaxis": {"domain": [0, 0.85], "title": "X", "showgrid": False},
+                "yaxis": {"title": "Y", "autorange": "reversed", "showgrid": False},
+                "width": 500,
+                "height": 450,
+            },
+        }
+
+        return d
+
 
 class ZScoreAnalyser(object):
-    """
+    u"""
     Analyse the distribution of intensity z-scores.
 
     z-scores are calculated as z = (I - <I>) / σ, where I is intensity,
@@ -1703,7 +1798,7 @@ class ZScoreAnalyser(object):
 
 
 class ReferenceProfileAnalyser(object):
-    """ Analyse the reference profiles. """
+    """Analyse the reference profiles."""
 
     def __init__(self, grid_size=None, pixels_per_bin=10):
         self.grid_size = grid_size
@@ -1718,7 +1813,7 @@ class ReferenceProfileAnalyser(object):
         ]
 
     def __call__(self, rlist):
-        """ Analyse the reference profiles. """
+        """Analyse the reference profiles."""
         # Check we have the required fields
         print("Analysing reference profiles")
         if not ensure_required(rlist, self.required):
@@ -1752,7 +1847,7 @@ class ReferenceProfileAnalyser(object):
 
         # Look at correlations between profiles
         def correlations(filename, rlist):
-            """ Call for reference spots and all reflections. """
+            """Call for reference spots and all reflections."""
 
             d = OrderedDict()
             print(" Analysing reflection profile correlations")
@@ -1777,7 +1872,7 @@ class ReferenceProfileAnalyser(object):
         return {"reference": d}
 
     def reflection_correlations_vs_resolution(self, rlist):
-        """ Analyse the distribution of reference profiles. """
+        """Analyse the distribution of reference profiles."""
 
         print(" Analysing reflection correlations vs resolution")
         from dials.algorithms.spot_finding.per_image_analysis import binner_d_star_cubed
@@ -1837,7 +1932,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reference_xy(self, rlist):
-        """ Analyse the distribution of reference profiles. """
+        """Analyse the distribution of reference profiles."""
         mask = rlist.get_flags(rlist.flags.reference_spot)
         rlist = rlist.select(mask)
         x, y, z = rlist["xyzcal.px"].parts()
@@ -1873,7 +1968,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reference_z(self, rlist):
-        """ Analyse the distribution of reference profiles. """
+        """Analyse the distribution of reference profiles."""
         x, y, z = rlist["xyzcal.px"].parts()
         hist = flex.histogram(z, n_slots=20)
 
@@ -1897,7 +1992,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reflection_corr_hist(self, rlist, filename):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
         corr = rlist["profile.correlation"]
         hist = flex.histogram(corr, n_slots=20)
 
@@ -1922,7 +2017,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reflection_corr_vs_xy(self, rlist, filename):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
 
         corr = rlist["profile.correlation"]
         x, y, z = rlist["xyzcal.px"].parts()
@@ -1972,7 +2067,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reflection_corr_vs_z(self, rlist, filename):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
 
         corr = rlist["profile.correlation"]
         x, y, z = rlist["xyzcal.px"].parts()
@@ -2010,7 +2105,7 @@ class ReferenceProfileAnalyser(object):
         }
 
     def reflection_corr_vs_ios(self, rlist, filename):
-        """ Analyse the correlations. """
+        """Analyse the correlations."""
 
         corr = rlist["profile.correlation"]
         I = rlist["intensity.prf.value"]
@@ -2048,8 +2143,8 @@ class ReferenceProfileAnalyser(object):
                     }
                 ],
                 "layout": {
-                    "title": "%s correlations vs Log I/Sigma" % filename.capitalize(),
-                    "xaxis": {"title": "Log I/Sigma", "showgrid": False},
+                    "title": u"%s correlations vs Log I/σ(I)" % filename.capitalize(),
+                    "xaxis": {"title": u"Log I/σ(I)", "showgrid": False},
                     "yaxis": {
                         "title": "Correlation with reference profile",
                         "showgrid": False,
@@ -2063,7 +2158,7 @@ class ScalingModelAnalyser(object):
     """Analyse a scaling-model."""
 
     def __call__(self, experiments):
-        """ Analyse the strong spots. """
+        """Analyse the strong spots."""
 
         print("Analysing scaling model")
 
@@ -2100,9 +2195,13 @@ def merging_stats_results(reflections, experiments):
     resolution_plots.update(plotter.make_all_plots())
     summary_table, results_table = plotter.statistics_tables()
 
-    batches, rvb, isigivb, svb, batch_data = combined_table_to_batch_dependent_properties(
-        reflections, experiments
-    )
+    (
+        batches,
+        rvb,
+        isigivb,
+        svb,
+        batch_data,
+    ) = combined_table_to_batch_dependent_properties(reflections, experiments)
 
     bm = batch_manager(batches, batch_data)
 
@@ -2134,10 +2233,10 @@ def intensity_statistics(reflections, experiments):
 
 
 class Analyser(object):
-    """ Helper class to do all the analysis. """
+    """Helper class to do all the analysis."""
 
     def __init__(self, params, grid_size=None, centroid_diff_max=1.5):
-        """ Setup the analysers. """
+        """Setup the analysers."""
         self.params = params
         self.analysers = [
             StrongSpotsAnalyser(pixels_per_bin=self.params.pixels_per_bin),
@@ -2155,7 +2254,7 @@ class Analyser(object):
         ]
 
     def __call__(self, rlist=None, experiments=None):
-        """ Do all the analysis. """
+        """Do all the analysis."""
         json_data = OrderedDict()
 
         if rlist is not None:
@@ -2177,9 +2276,12 @@ class Analyser(object):
             analyse = ScalingModelAnalyser()
             json_data.update(analyse(experiments))
             print("Calculating and generating merging statistics plots")
-            summary, scaling_table_by_resolution, resolution_plots, batch_plots = merging_stats_results(
-                rlist, experiments
-            )
+            (
+                summary,
+                scaling_table_by_resolution,
+                resolution_plots,
+                batch_plots,
+            ) = merging_stats_results(rlist, experiments)
             rplots, misc_plots, scaled_intensity_plots = intensity_statistics(
                 rlist, experiments
             )
@@ -2229,7 +2331,7 @@ class Analyser(object):
 
             print("Writing html report to: %s" % self.params.output.html)
             with open(self.params.output.html, "wb") as f:
-                f.write(html.encode("ascii", "xmlcharrefreplace"))
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
         if self.params.output.json is not None:
             import json
@@ -2377,9 +2479,14 @@ class Analyser(object):
                     abc = flex.vec3_double()
                     angles = flex.vec3_double()
                     for n in range(expt.crystal.num_scan_points):
-                        a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(
-                            n
-                        ).parameters()
+                        (
+                            a,
+                            b,
+                            c,
+                            alpha,
+                            beta,
+                            gamma,
+                        ) = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
                         abc.append((a, b, c))
                         angles.append((alpha, beta, gamma))
                     a, b, c = abc.mean()
@@ -2406,10 +2513,10 @@ class Analyser(object):
 
 
 class Script(object):
-    """ A class to encapsulate the script. """
+    """A class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         from dials.util.options import OptionParser
 
         # Create the parser
@@ -2425,8 +2532,8 @@ class Script(object):
         dials.util.log.print_banner()
 
     def run(self):
-        """ Run the script. """
-        from dials.util.options import flatten_reflections, flatten_experiments
+        """Run the script."""
+        from dials.util.options import reflections_and_experiments_from_files
 
         # Parse the command line arguments
         params, options = self.parser.parse_args(show_diff_phil=True)
@@ -2436,8 +2543,9 @@ class Script(object):
             self.parser.print_help()
             exit(0)
 
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         # Analyse the reflections
         analyse = Analyser(

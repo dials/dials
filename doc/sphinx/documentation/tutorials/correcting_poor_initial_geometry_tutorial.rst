@@ -56,14 +56,14 @@ the compressed images directly, however we need to extract the archive first::
   tar xvf DPF3_247398.tar
 
 At this point we have no reason not to trust the image headers. We shall just
-go ahead and import the whole sweep as normal::
+go ahead and import the whole sequence as normal::
 
   dials.import x247398/t1.0*.img.bz2
 
-This produces the file :file:`datablock.expt`, containing an initial model for
+This produces the file :file:`imported.expt`, containing an initial model for
 the beamline geometry. You can inspect this model using :program:`dials.show`::
 
-  dials.show datablock.expt
+  dials.show imported.expt
 
 Note how the goniometer rotation axis is given by ``{-1,0,0}`` rather than
 ``{1,0,0}``. This is because DIALS recognises that these images as being
@@ -77,7 +77,7 @@ a case we could force the rotation axis to be whatever we want like this::
 
 Now that we have imported the data we should look at the images::
 
-  dials.image_viewer datablock.expt
+  dials.image_viewer imported.expt
 
 Keen-eyed observers may already suspect that the beam centre is not correct,
 however we shall continue through spot-finding as this is not affected by
@@ -94,31 +94,19 @@ detectors and this can be another source of problems with data processing.
 To see the positions of strong pixels identified by the spot finding
 algorithm, select the ``threshold`` button at the bottom of the image
 viewer's ``Settings`` window. In this case, the default settings are not too
-bad: the strong pixels clearly follow the diffraction pattern. However there
-is a little bit of noise between the diffraction spots and along some of the
-detector module edges. We can try altering the spot finding settings to
-improve the threshold map. In this case, setting the ``Gain`` to ``2.0``
-seems sufficient to clean up some of the spurious peak positions. The gain
-setting we select here will only affect spot finding and not other stages of
-processing. Our focus here is empirical. We want to produce a good spot list
-for indexing, we are not worried about setting the detector gain to its true
-value (for an ADSC Q315r detector this is reported to be about 2.4 ADU per
-12 keV X-ray).
+bad: the strong pixels clearly follow the diffraction pattern. So, we will
+run the :program:`dials.find_spots` program with default settings, apart from
+requesting more than one process to speed the job up (feel free to set this
+greater than 4, if appropriate)::
 
-Once we are satisfied with the spot-finding settings we can write them out
-to :file:`find_spots.phil` by clicking the ``Save`` button on the
-``Settings`` window. Then we can pass this directly to
-:program:`dials.find_spots`, where we also request more than one process
-to speed the job up (feel free to set this greater than 4, if appropriate)::
-
-  dials.find_spots datablock.expt find_spots.phil nproc=4
+  dials.find_spots imported.expt nproc=4
 
 After finding strong spots it is *always* worth viewing them using
 :program:`dials.reciprocal_lattice_viewer`::
 
-  dials.reciprocal_lattice_viewer datablock.expt strong.refl
+  dials.reciprocal_lattice_viewer imported.expt strong.refl
 
-.. image:: /figures/dpf3_bad_found_spot.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_found_spot.png
 
 Presented with this view, we might already start to worry that something is
 not quite right. Instead of neat columns of points corresponding to a
@@ -139,7 +127,7 @@ Indexing
 
 ::
 
-  dials.index datablock.expt strong.refl
+  dials.index imported.expt strong.refl
 
 It turns out that the reciprocal lattice positions were regular enough for
 indexing to complete ('succeed' is the wrong word, as will become clear).
@@ -151,21 +139,22 @@ distorted lattice from the centre outwards until a regular grid is formed.
 Here's some output from the end of the indexing log::
 
   RMSDs by experiment:
-  --------------------------------------------
-  | Exp | Nref  | RMSD_X | RMSD_Y | RMSD_Z   |
-  | id  |       | (px)   | (px)   | (images) |
-  --------------------------------------------
-  | 0   | 13301 | 0.7553 | 1.0663 | 0.50806  |
-  --------------------------------------------
+  ---------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y | RMSD_Z   |
+  | id  |       | (px)    | (px)   | (images) |
+  ---------------------------------------------
+  | 0   | 20000 | 0.98416 | 1.6552 | 0.4345   |
+  ---------------------------------------------
 
   Refined crystal models:
-  model 1 (16384 reflections):
+  model 1 (23317 reflections):
   Crystal:
-      Unit cell: (113.857, 115.036, 122.851, 89.645, 89.771, 60.615)
+      Unit cell: (118.74(3), 119.45(3), 126.41(3), 88.682(2), 89.257(3), 60.954(3))
       Space group: P 1
 
 This is another point at which the experienced user may pause for thought.
-Positional RMSDs of 0.76 and 1.1 pixels are rather bad. Good models
+Positional RMSDs of 0.98 and 1.66 pixels are rather bad. Good models for
+synchrotron X-ray data
 typically have values around 0.3 pixels or less. Split spots or other issues
 with spot profiles may result in higher RMSDs for a solution that is still
 correct, however we should always remain sceptical. Looking at the results
@@ -173,13 +162,13 @@ in :program:`dials.reciprocal_lattice_viewer` is instructive as ever::
 
   dials.reciprocal_lattice_viewer indexed.expt indexed.refl
 
-.. image:: /figures/dpf3_bad_indexed.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_indexed.png
 
 Refinement has done what it could to produce a regular lattice, but it is still
 messy. We also see that the majority of the centroids remain unindexed, and
 these are messier still.
 
-.. image:: /figures/dpf3_bad_unindexed.png
+.. image:: https://dials.github.io/images/correcting_poor_initial_geometry_tutorial/dpf3_bad_unindexed.png
 
 At this point we should definitely heed the warnings and try to figure out
 what happened and how to fix it. However, unfortunately a careless user could
@@ -193,19 +182,20 @@ to refine compatible Bravais lattices::
   -------------------------------------------------------------------------------------------------------------------
   Solution Metric fit  rmsd    min/max cc #spots lattice                                 unit_cell  volume      cb_op
   -------------------------------------------------------------------------------------------------------------------
-        12     1.0172 0.337   0.031/0.038  14877      hP 116.62 116.62 125.44  90.00  90.00 120.00 1477363    -a,b,-c
-        11     1.0172 0.336  -0.031/0.065  14887      oC 116.48 201.29 125.13  90.00  90.00  90.00 2933803 b,-2*a+b,c
-        10     1.0172 0.322   0.034/0.034  14679      mC 200.78 116.29 124.73  90.00  90.33  90.00 2912345  2*a-b,b,c
-         9     0.9551 0.309   0.065/0.065  14825      mC 115.76 200.29 124.16  90.00  89.53  90.00 2878506 b,-2*a+b,c
-  *      8     0.7564 0.271  -0.031/0.036  14684      oC 117.61 201.64 125.75  90.00  90.00  90.00 2982056  a-b,a+b,c
-  *      7     0.7564 0.265   0.030/0.030  14684      mC 117.37 201.62 125.40  90.00  90.31  90.00 2967360  a-b,a+b,c
-  *      6     0.6886 0.236   0.036/0.036  14241      mC 200.29 117.01 124.89  90.00  89.60  90.00 2926811 a+b,-a+b,c
-  *      5     0.3916 0.159  -0.034/0.081  13499      oC 113.77 200.60 122.99  90.00  90.00  90.00 2807091 a,-a+2*b,c
-  *      4     0.3916 0.157   0.081/0.081  13435      mC 113.59 200.37 122.80  90.00  89.89  90.00 2794850 a,-a+2*b,c
-  *      3     0.3591 0.161 -0.034/-0.034  13869      mC 200.23 113.73 122.70  90.00  90.26  90.00 2794208  a-2*b,a,c
-  *      2     0.3600 0.155 -0.031/-0.031  13903      mP 114.25 123.57 115.62  90.00 119.43  90.00 1421681     -a,c,b
-  *      1     0.0000 0.137           -/-  13723      aP 114.04 115.23 123.07  89.68  89.79  60.61 1409032      a,b,c
+        12     1.7490 0.607   0.021/0.028  20000      hP 123.10 123.10 129.77  90.00  90.00 120.00 1702991    -a,b,-c
+        11     1.7490 0.602  -0.043/0.057  20000      oC 123.82 215.23 130.75  90.00  90.00  90.00 3484342 b,-2*a+b,c
+        10     1.7490 0.601   0.027/0.027  20000      mC 214.82 123.62 130.53  90.00  90.16  90.00 3466356  2*a-b,b,c
+         9     1.3289 0.564  -0.043/0.091  20000      oC 120.83 212.43 128.48  90.00  90.00  90.00 3297608 a,-a+2*b,c
+         8     1.3233 0.522  -0.043/0.040  20000      oC 127.04 215.20 132.57  90.00  90.00  90.00 3624346  a-b,a+b,c
+         7     1.3289 0.485   0.091/0.091  20000      mC 119.74 210.39 127.26  90.00  89.00  90.00 3205385 a,-a+2*b,c
+         6     1.3233 0.519 -0.043/-0.043  20000      mP 123.42 131.38 124.09  90.00 118.93  90.00 1761030     -a,c,b
+         5     1.2564 0.437   0.033/0.033  20000      mC 123.60 210.10 129.34  90.00  90.97  90.00 3358310  a-b,a+b,c
+  *      4     1.1535 0.353   0.057/0.057  20000      mC 118.64 205.80 125.24  90.00  88.65  90.00 3057089 b,-2*a+b,c
+  *      3     1.0684 0.327 -0.031/-0.031  20000      mC 204.56 116.44 123.87  90.00  91.29  90.00 2949728  a-2*b,a,c
+  *      2     0.6885 0.268   0.040/0.040  20000      mC 208.52 122.85 128.42  90.00  88.65  90.00 3288791 a+b,-a+b,c
+  *      1     0.0000 0.195           -/-  19928      aP 118.97 119.67 126.65  88.68  89.25  60.96 1576060      a,b,c
   -------------------------------------------------------------------------------------------------------------------
+
 
 It turns out that quite a few lattices can be forced to fit the putative
 indexing solution, but again there are warnings everywhere that imply none
@@ -213,7 +203,7 @@ of these are right. First look at the ``Metric fit`` column. This value is
 the `Le Page <https://doi.org/10.1107/S0021889882011959>`_ :math:`\delta`
 value. For a correct indexing solution with a good dataset this should be a
 small number, less than 0.1 say, such as in the
-:doc:`processing_in_detail_tutorial` tutorial. The ``rmsd`` column reports an
+:doc:`processing_in_detail_betalactamase` tutorial. The ``rmsd`` column reports an
 overall positional RMSD. Again, small numbers are better. Typically we would
 look for a solution below a jump to higher values of RMSD. Here they are all
 pretty bad, at around an order of magnitude larger than what we'd expect
@@ -245,34 +235,35 @@ output::
   Checking HKL origin:
 
   dH dK dL   Nref    CC
-  -1 -1 -1   3834 0.255
-  -1 -1  0   3808 0.288
-  -1 -1  1   3624 0.306
-  -1  0 -1   3932 0.261
-  -1  0  0   3952 0.291
-  -1  0  1   3829 0.310
-  -1  1 -1   3800 0.171
-  -1  1  0   3925 0.230
-  -1  1  1   4011 0.316
-   0  0  0   1538 -0.127
-   1 -1 -1   4028 0.357
-   1 -1  0   3966 0.323
-   1 -1  1   3916 0.247
-   1  0 -1   4086 0.292
-   1  0  0   4246 0.387
-   1  0  1   4210 0.356
-   1  1 -1   4090 0.339
-   1  1  0   4474 0.389
-   1  1  1   5616 0.948
+  -1 -1 -1   2996 0.171
+  -1 -1  0   3151 0.241
+  -1 -1  1   3147 0.256
+  -1  0 -1   2924 0.159
+  -1  0  0   3097 0.261
+  -1  0  1   3232 0.266
+  -1  1 -1   2729 0.134
+  -1  1  0   2904 0.172
+  -1  1  1   3139 0.136
+   0  0  0   1573 -0.178
+   1 -1 -1   2876 0.272
+   1 -1  0   2992 0.331
+   1 -1  1   3135 0.257
+   1  0 -1   2851 0.254
+   1  0  0   3005 0.265
+   1  0  1   3156 0.339
+   1  1 -1   2792 0.244
+   1  1  0   3073 0.283
+   1  1  1   3718 0.886
 
-  Check symmetry operations on 16384 reflections:
+  Check symmetry operations on 23317 reflections:
 
                  Symop   Nref    CC
-                 x,y,z  16384 0.999
+                 x,y,z  23317 0.996
+
 
 In this case there is a much greater correlation coefficient for the shift
 :math:`\delta h=1`, :math:`\delta k=1` and :math:`\delta l=1` than for all
-others. In fact with 95% correlation even in the unscaled, rough intensities
+others. In fact with nearly 90% correlation even in the unscaled, rough intensities
 of the found spots, with no background subtraction, we can be very sure we
 have found the right solution.
 
@@ -284,42 +275,42 @@ like this::
 it will be very difficult to take the result and continue to process the data.
 There is a much better way to proceed.
 
-Discover better experimental model
-----------------------------------
+Discover a better experimental model
+------------------------------------
 
 We have determined that there is a problem with indexing, which gives us a
 mis-indexed solution. The typical culprit in such cases is a badly wrong
 beam centre. DIALS provides the
 :program:`dials.search_beam_position`, which can help out
-here. This performs a grid search to improve the direct beam position using
+here. This performs a search to improve the direct beam position using
 the `methods <https://doi.org/10.1107%2FS0021889804005874>`_ originally
 implemented in :program:`LABELIT`.
 
 This sits in between the spot finding and the indexing operations, so that
 we could have done::
 
-  dials.search_beam_position strong.refl datablock.expt n_macro_cycles=2
+  dials.search_beam_position strong.refl imported.expt n_macro_cycles=2
 
 In particularly bad cases it may useful to perform this search iteratively.
-Here we requested two macrocyles, though we see from the concise, yet
-informative output that most of the shift occurred in the the first of
-these (and in fact only the first was necessary)::
+Indeed that is what we have done here by requesting two macrocyles. The first
+macrocycle was not sufficient to find the real beam centre, but it improved
+the search enough that it could be found in the second round::
 
   Starting macro cycle 1
   Selecting subset of 10000 reflections for analysis
   Running DPS using 10000 reflections
-  Found 9 solutions with max unit cell 164.81 Angstroms.
+  Found 6 solutions with max unit cell 167.93 Angstroms.
   Old beam centre: 159.98, 154.50 mm (1562.3, 1508.8 px)
-  New beam centre: 162.31, 153.39 mm (1585.0, 1498.0 px)
-  Shift: -2.33, 1.11 mm (-22.7, 10.8 px)
+  New beam centre: 159.76, 152.65 mm (1560.2, 1490.7 px)
+  Shift: 0.22, 1.85 mm (2.1, 18.1 px)
 
   Starting macro cycle 2
   Selecting subset of 10000 reflections for analysis
   Running DPS using 10000 reflections
-  Found 5 solutions with max unit cell 104.76 Angstroms.
-  Old beam centre: 162.31, 153.39 mm (1585.0, 1498.0 px)
-  New beam centre: 162.31, 153.32 mm (1585.0, 1497.3 px)
-  Shift: 0.00, 0.07 mm (0.0, 0.7 px)
+  Found 9 solutions with max unit cell 167.93 Angstroms.
+  Old beam centre: 159.98, 154.50 mm (1562.3, 1508.8 px)
+  New beam centre: 162.26, 153.39 mm (1584.6, 1498.0 px)
+  Shift: -2.28, 1.11 mm (-22.3, 10.8 px)
 
 Indexing with the corrected beam centre
 ---------------------------------------
@@ -332,18 +323,19 @@ We now have a more convincing solution, which also indexes many more
 reflections::
 
   RMSDs by experiment:
-  ---------------------------------------------
-  | Exp | Nref  | RMSD_X | RMSD_Y  | RMSD_Z   |
-  | id  |       | (px)   | (px)    | (images) |
-  ---------------------------------------------
-  | 0   | 20000 | 0.6645 | 0.68846 | 0.21845  |
-  ---------------------------------------------
+  ----------------------------------------------
+  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  | id  |       | (px)    | (px)    | (images) |
+  ----------------------------------------------
+  | 0   | 20000 | 0.50948 | 0.56722 | 0.20791  |
+  ----------------------------------------------
 
   Refined crystal models:
-  model 1 (59317 reflections):
+  model 1 (62669 reflections):
   Crystal:
-      Unit cell: (56.245, 99.563, 121.221, 89.968, 89.987, 90.013)
+      Unit cell: (56.259(2), 99.521(4), 121.212(5), 89.9765(8), 89.9914(11), 90.0028(11))
       Space group: P 1
+
 
 The lattice looks orthorhombic, and indeed the top solution in the table
 from :program:`dials.refine_bravais_settings` looks reasonable::
@@ -355,17 +347,16 @@ from :program:`dials.refine_bravais_settings` looks reasonable::
   --------------------------------------------------------------------------------------------------------------
   Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume    cb_op
   --------------------------------------------------------------------------------------------------------------
-  *      5     0.0346 0.097 0.765/0.861  20000      oP  56.31  99.66 121.36  90.00  90.00  90.00 681094    a,b,c
-  *      4     0.0344 0.097 0.765/0.765  20000      mP  56.32  99.67 121.38  90.00  90.00  90.00 681353    a,b,c
-  *      3     0.0346 0.096 0.773/0.773  20000      mP  56.29 121.32  99.63  90.00  90.01  90.00 680434 -a,-c,-b
-  *      2     0.0184 0.097 0.861/0.861  20000      mP  99.60  56.27 121.28  90.00  89.97  90.00 679739 -b,-a,-c
-  *      1     0.0000 0.098         -/-  20000      aP  56.28  99.60 121.29  89.97  89.99  90.01 679943    a,b,c
+  *      5     0.0250 0.078 0.746/0.842  20000      oP  56.28  99.55 121.25  90.00  90.00  90.00 679306    a,b,c
+  *      4     0.0237 0.078 0.746/0.746  20000      mP  56.29  99.57 121.27  90.00  90.00  90.00 679612    a,b,c
+  *      3     0.0250 0.078 0.746/0.746  20000      mP  56.28 121.26  99.56  90.00  90.00  90.00 679516 -a,-c,-b
+  *      2     0.0091 0.078 0.842/0.842  20000      mP  99.51  56.26 121.20  90.00  89.98  90.00 678570 -b,-a,-c
+  *      1     0.0000 0.078         -/-  20000      aP  56.26  99.52 121.21  89.98  89.99  90.00 678646    a,b,c
   --------------------------------------------------------------------------------------------------------------
 
 We may now go on to refine the solution and integrate, following the steps
-outlined in the :doc:`processing_in_detail_tutorial` tutorial. This is left
-as an exercise for the reader. If you do so, you will notice warnings from
-both :program:`Pointless` and :program:`cTruncate`. You can continue to solve
+outlined in the :doc:`processing_in_detail_betalactamase` tutorial. This is left
+as an exercise for the reader. You can continue to solve
 the structure in the primitive orthorhombic lattice, however model refinement
 will present difficulties.
 

@@ -7,9 +7,9 @@ from dials.array_family import flex
 from dials.util.reciprocal_lattice import Render3d
 
 
-def test_Render3d(mocker, multi_sweep_data):
-    experiments = multi_sweep_data["experiments"]
-    reflections = multi_sweep_data["reflections"]
+def test_Render3d(mocker, multi_sequence_data):
+    experiments = multi_sequence_data["experiments"]
+    reflections = multi_sequence_data["reflections"]
     render = Render3d()
     render.viewer = mocker.Mock()
     mocker.spy(render, "set_beam_centre")

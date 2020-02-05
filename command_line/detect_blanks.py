@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 import math
+import sys
 
 import libtbx.phil
 from libtbx.math_utils import iceil
@@ -195,9 +197,7 @@ def blank_regions_from_sel(d):
 
 
 def run(args):
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
     from dials.util import log
 
     usage = "dials.detect_blanks [options] models.expt observations.refl"
@@ -212,8 +212,9 @@ def run(args):
     )
 
     params, options = parser.parse_args()
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 or len(reflections) == 0:
         parser.print_help()
@@ -289,10 +290,8 @@ def run(args):
     }
 
     if params.output.json is not None:
-        import json
-
-        with open(params.output.json, "wb") as f:
-            json.dump(d, f)
+        with open(params.output.json, "w") as fh:
+            json.dump(d, fh)
 
     if params.output.plot:
         from matplotlib import pyplot
@@ -323,6 +322,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    import sys
-
     run(sys.argv[1:])

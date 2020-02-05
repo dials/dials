@@ -4,17 +4,13 @@ import os
 
 import procrunner
 import pytest
-import six
+import scitbx.matrix
 from cctbx import sgtbx
+from cctbx.sgtbx.lattice_symmetry import metric_subgroups
 from dxtbx.serialize import load
-from six.moves import cPickle as pickle
-
-
-def pickle_loads(data):
-    if six.PY3:
-        return pickle.loads(data, encoding="bytes")
-    else:
-        return pickle.loads(data)
+from dxtbx.model import Crystal, Experiment, ExperimentList
+from dials.command_line.reindex import reindex_experiments
+from dials.array_family import flex
 
 
 def test_reindex(dials_regression, tmpdir):
@@ -31,9 +27,11 @@ def test_reindex(dials_regression, tmpdir):
     result = procrunner.run(commands, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
-    old_reflections = pickle_loads(open(pickle_path, "rb").read())
+    old_reflections = flex.reflection_table.from_file(pickle_path)
     assert tmpdir.join("reindexed.refl").check()
-    new_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
+    new_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
     old_experiments = load.experiment_list(experiments_path, check_format=False)
     assert tmpdir.join("reindexed.expt").check()
     new_experiments = load.experiment_list(
@@ -80,7 +78,7 @@ def test_reindex(dials_regression, tmpdir):
         tmpdir.join("P4_reindexed.expt").strpath, check_format=False
     )
     assert new_experiments1[0].crystal.get_A() == pytest.approx(
-        old_experiments[0].crystal.change_basis(cb_op).get_A()
+        old_experiments[0].crystal.change_basis(cb_op).get_A(), abs=1e-5
     )
 
     cb_op = sgtbx.change_of_basis_op("-x,-y,z")
@@ -101,7 +99,7 @@ def test_reindex(dials_regression, tmpdir):
     )
 
 
-def test_reindex_multi_sweep(dials_regression, tmpdir):
+def test_reindex_multi_sequence(dials_regression, tmpdir):
     data_dir = os.path.join(dials_regression, "indexing_test_data", "multi_sweep")
     pickle_path = os.path.join(data_dir, "indexed.pickle")
     experiments_path = os.path.join(data_dir, "experiments.json")
@@ -117,8 +115,10 @@ def test_reindex_multi_sweep(dials_regression, tmpdir):
     assert tmpdir.join("reindexed.refl").check()
     assert tmpdir.join("reindexed.expt").check()
 
-    old_reflections = pickle_loads(open(pickle_path, "rb").read())
-    new_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
+    old_reflections = flex.reflection_table.from_file(pickle_path)
+    new_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
     assert len(old_reflections) == len(new_reflections)
     new_experiments = load.experiment_list(
         tmpdir.join("reindexed.expt").strpath, check_format=False
@@ -191,9 +191,13 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     assert not result.returncode and not result.stderr
 
     # expect reindexed_reflections to be same as P4_reindexed, not P4_reflections
-    reindexed_reflections = pickle_loads(tmpdir.join("reindexed.refl").read("rb"))
-    P4_reindexed = pickle_loads(tmpdir.join("P4_reindexed.refl").read("rb"))
-    P4_reflections = pickle_loads(tmpdir.join("P4.refl").read("rb"))
+    reindexed_reflections = flex.reflection_table.from_file(
+        tmpdir.join("reindexed.refl").strpath
+    )
+    P4_reindexed = flex.reflection_table.from_file(
+        tmpdir.join("P4_reindexed.refl").strpath
+    )
+    P4_reflections = flex.reflection_table.from_file(tmpdir.join("P4.refl").strpath)
 
     h1, k1, l1 = reindexed_reflections["miller_index"].as_vec3_double().parts()
     h2, k2, l2 = P4_reindexed["miller_index"].as_vec3_double().parts()
@@ -209,3 +213,28 @@ def test_reindex_against_reference(dials_regression, tmpdir):
     assert list(h1) == pytest.approx(list(h3))
     assert list(l1) != pytest.approx(list(l3))
     assert list(k1) != pytest.approx(list(k3))
+
+
+def test_reindex_experiments():
+    # See also https://github.com/cctbx/cctbx_project/issues/424
+    cs = sgtbx.space_group_info("I23").any_compatible_crystal_symmetry(volume=100000)
+    B = scitbx.matrix.sqr(cs.unit_cell().fractionalization_matrix()).transpose()
+    cryst = Crystal(B, cs.space_group())
+    n_scan_points = 10
+    A_at_scan_points = [(1, 0, 0, 0, 1, 0, 0, 0, 1)] * n_scan_points
+    cryst.set_A_at_scan_points(A_at_scan_points)
+    groups = metric_subgroups(cs, max_delta=5)
+    for group in groups.result_groups:
+        best_subsym = group["best_subsym"]
+        cb_op = group["cb_op_inp_best"]
+        expts = ExperimentList([Experiment(crystal=cryst)])
+        reindexed_expts = reindex_experiments(
+            experiments=expts, cb_op=cb_op, space_group=best_subsym.space_group()
+        )
+        assert (
+            reindexed_expts[0]
+            .crystal.get_crystal_symmetry()
+            .is_similar_symmetry(best_subsym)
+        )
+        # Check that the scan-varying A matrices have been copied as well
+        assert cryst.num_scan_points == n_scan_points

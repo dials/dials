@@ -10,6 +10,9 @@ from dials.algorithms.refinement import DialsRefineConfigError, RefinerFactory
 from dials.array_family import flex
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import phil
+from dials.util.slice import slice_reflections
+from dials.algorithms.refinement.refiner import _trim_scans_to_observations
+from copy import deepcopy
 
 
 @pytest.mark.parametrize(
@@ -48,3 +51,71 @@ def test_multi_panel_parameterisations(
             params, reflections, experiments
         )
         assert refiner.experiment_type == "stills"
+
+
+def test_trim_scans_to_observations(dials_data):
+
+    # Use 4 scan data for this test
+    data_dir = dials_data("l_cysteine_dials_output")
+    experiments = ExperimentListFactory.from_json_file(
+        (data_dir / "indexed.expt").strpath, check_format=False
+    )
+    reflections = flex.reflection_table.from_file((data_dir / "indexed.refl").strpath)
+
+    # Check the image and oscillation range are what we expect
+    image_ranges = [e.scan.get_image_range() for e in experiments]
+    osc_ranges = [e.scan.get_oscillation_range() for e in experiments]
+    for a, b in zip(image_ranges, [(1, 1700), (1, 1700), (1, 1700), (1, 1800)]):
+        assert a == b
+    for a, b in zip(
+        osc_ranges, [(-145.0, 25.0), (-145.0, 25.0), (-145.0, 25.0), (0.0, 180.0)]
+    ):
+        assert a == pytest.approx(b)
+
+    # If image range unchanged, nothing should happen
+    trim_expt = _trim_scans_to_observations(deepcopy(experiments), reflections)
+    new_im_ranges = [e.scan.get_image_range() for e in trim_expt]
+    for a, b in zip(image_ranges, new_im_ranges):
+        assert a == b
+
+    # Slice 20 images off head and tail
+    sliced_ranges = [(r[0] + 20, r[1] - 20) for r in image_ranges]
+    sliced = slice_reflections(reflections, sliced_ranges)
+
+    # Now trimmed scans should have array ranges equal to their min, max
+    # shoebox z coords
+    trim_expt = _trim_scans_to_observations(deepcopy(experiments), sliced)
+    new_array_ranges = [e.scan.get_array_range() for e in trim_expt]
+
+    for i, e in enumerate(trim_expt):
+        refs = sliced.select(sliced["id"] == i)
+        bb = refs["shoebox"].bounding_boxes()
+        z_min, z_max = bb.parts()[4:]
+        assert new_array_ranges[i] == (min(z_min), max(z_max))
+
+    # Oscillation ranges should be trimmed so that the associated angle is the
+    # same in the original and trimmed scans
+    new_osc_ranges = [e.scan.get_oscillation_range() for e in trim_expt]
+    for exp, r1, r2 in zip(experiments, new_array_ranges, new_osc_ranges):
+        assert exp.scan.get_angle_from_array_index(r1[0]) == pytest.approx(r2[0])
+        assert exp.scan.get_angle_from_array_index(r1[1]) == pytest.approx(r2[1])
+
+    # Now delete shoebox data. Trimmed scans will be wider than the observed
+    # range by >0.5 deg at each end
+    del sliced["shoebox"]
+    trim_expt = _trim_scans_to_observations(deepcopy(experiments), sliced)
+    new_array_ranges = [e.scan.get_array_range() for e in trim_expt]
+
+    for i, e in enumerate(trim_expt):
+        refs = sliced.select(sliced["id"] == i)
+        z = refs["xyzobs.px.value"].parts()[2]
+        im_width = e.scan.get_oscillation()[1]
+        assert ((min(z) - new_array_ranges[i][0]) / im_width) > 0.5
+        assert ((new_array_ranges[i][1] - max(z)) / im_width) > 0.5
+
+    # Oscillation ranges should be trimmed so that the associated angle is the
+    # same in the original and trimmed scans
+    new_osc_ranges = [e.scan.get_oscillation_range() for e in trim_expt]
+    for exp, r1, r2 in zip(experiments, new_array_ranges, new_osc_ranges):
+        assert exp.scan.get_angle_from_array_index(r1[0]) == pytest.approx(r2[0])
+        assert exp.scan.get_angle_from_array_index(r1[1]) == pytest.approx(r2[1])

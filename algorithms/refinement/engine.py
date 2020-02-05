@@ -683,9 +683,11 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
 
                 # processing functions
                 def task_wrapper(block):
-                    residuals, jacobian, weights = self._target.compute_residuals_and_gradients(
-                        block
-                    )
+                    (
+                        residuals,
+                        jacobian,
+                        weights,
+                    ) = self._target.compute_residuals_and_gradients(block)
                     return dict(residuals=residuals, jacobian=jacobian, weights=weights)
 
                 def callback_wrapper(result):
@@ -710,9 +712,11 @@ class AdaptLstbx(Refinery, normal_eqns.non_linear_ls, normal_eqns.non_linear_ls_
 
             else:
                 for block in blocks:
-                    residuals, self._jacobian, weights = self._target.compute_residuals_and_gradients(
-                        block
-                    )
+                    (
+                        residuals,
+                        self._jacobian,
+                        weights,
+                    ) = self._target.compute_residuals_and_gradients(block)
                     j = self._jacobian
                     if self._constr_manager is not None:
                         j = self._constr_manager.constrain_jacobian(j)

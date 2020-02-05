@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
+#include <dials/util/python_streambuf.h>
 #include <numeric>
 #include <dials/array_family/boost_python/flex_table_suite.h>
 #include <dials/array_family/reflection_table.h>
@@ -31,6 +32,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
   using dials::model::Observation;
   using dials::model::Shoebox;
+  using dials::util::streambuf;
   using flex_table_suite::column_to_object_visitor;
   using flex_table_suite::flex_table_wrapper;
   using scitbx::vec2;
@@ -581,25 +583,6 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Extend the identifiers
-   */
-  void reflection_table_extend_identifiers(reflection_table &self,
-                                           const reflection_table &other) {
-    typedef reflection_table::experiment_map_type::const_iterator const_iterator;
-    typedef reflection_table::experiment_map_type::iterator iterator;
-    for (const_iterator it = other.experiment_identifiers()->begin();
-         it != other.experiment_identifiers()->end();
-         ++it) {
-      iterator found = self.experiment_identifiers()->find(it->first);
-      if (found == self.experiment_identifiers()->end()) {
-        (*self.experiment_identifiers())[it->first] = it->second;
-      } else if (it->second != found->second) {
-        throw DIALS_ERROR("Experiment identifiers do not match");
-      }
-    }
-  }
-
-  /**
    * Select a number of rows from the table via an index array
    * @param self The current table
    * @param index The index array
@@ -609,7 +592,6 @@ namespace dials { namespace af { namespace boost_python {
   T reflection_table_select_rows_index(const T &self,
                                        const af::const_ref<std::size_t> &index) {
     T result = flex_table_suite::select_rows_index<T>(self, index);
-    reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -623,7 +605,6 @@ namespace dials { namespace af { namespace boost_python {
   T reflection_table_select_rows_flags(const T &self,
                                        const af::const_ref<bool> &flags) {
     T result = flex_table_suite::select_rows_flags<T>(self, flags);
-    reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -637,7 +618,7 @@ namespace dials { namespace af { namespace boost_python {
   T reflection_table_select_cols_keys(const T &self,
                                       const af::const_ref<std::string> &keys) {
     T result = flex_table_suite::select_cols_keys<T>(self, keys);
-    reflection_table_extend_identifiers(result, self);
+    flex_table_suite::reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -650,7 +631,7 @@ namespace dials { namespace af { namespace boost_python {
   template <typename T>
   T reflection_table_select_cols_tuple(const T &self, boost::python::tuple keys) {
     T result = flex_table_suite::select_cols_tuple<T>(self, keys);
-    reflection_table_extend_identifiers(result, self);
+    flex_table_suite::reflection_table_extend_identifiers(result, self);
     return result;
   }
 
@@ -658,7 +639,7 @@ namespace dials { namespace af { namespace boost_python {
    * Extend the reflection table
    */
   void reflection_table_extend(reflection_table &self, const reflection_table &other) {
-    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::reflection_table_extend_identifiers(self, other);
     flex_table_suite::extend(self, other);
   }
 
@@ -666,7 +647,7 @@ namespace dials { namespace af { namespace boost_python {
    * Update the reflection table
    */
   void reflection_table_update(reflection_table &self, const reflection_table &other) {
-    reflection_table_extend_identifiers(self, other);
+    flex_table_suite::reflection_table_extend_identifiers(self, other);
     flex_table_suite::update(self, other);
   }
 
@@ -847,6 +828,16 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Pack the reflection table in msgpack format into a streambuf object
+   * @param self The reflection table
+   * @param output A streambuf object encapsulating a Python file-like object
+   */
+  void reflection_table_as_msgpack_to_file(reflection_table self, streambuf &output) {
+    streambuf::ostream os(output);
+    msgpack::pack(os, self);
+  }
+
+  /**
    * Override default reference func to avoid copying
    */
   bool reflection_table_reference_func(msgpack::type::object_type type,
@@ -1010,6 +1001,7 @@ namespace dials { namespace af { namespace boost_python {
              &split_indices_by_experiment_id<flex_table_type>)
         .def("compute_phi_range", &compute_phi_range<flex_table_type>)
         .def("as_msgpack", &reflection_table_as_msgpack)
+        .def("as_msgpack_to_file", &reflection_table_as_msgpack_to_file)
         .def("from_msgpack", &reflection_table_from_msgpack)
         .staticmethod("from_msgpack")
         .def("experiment_identifiers", &T::experiment_identifiers)

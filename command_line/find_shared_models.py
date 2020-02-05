@@ -1,8 +1,18 @@
 from __future__ import absolute_import, division, print_function
 
+import datetime
 import logging
+from collections import Counter
 
+from libtbx.phil import parse
+
+from dxtbx.imageset import ImageSequence
+from dials.util import log
+from dials.util import tabulate
 from dials.util import show_mail_on_error
+from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_shared_models")
 
@@ -18,8 +28,6 @@ Examples::
 """
 
 # Set the phil scope
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
   output {
@@ -37,38 +45,26 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
-        usage = (
-            "usage: %s [options] [param.phil] "
-            "models.expt " % libtbx.env.dispatcher_name
-        )
+        usage = "dials.find_shared_models [options] [param.phil] models.expt"
 
         # Initialise the base class
         self.parser = OptionParser(
-            usage=usage, phil=phil_scope, epilog=help_message, read_experiments=True
+            usage=usage,
+            phil=phil_scope,
+            epilog=help_message,
+            read_experiments=True,
+            check_format=False,
         )
 
     def run(self):
         """Execute the script."""
-        from dials.util.options import flatten_experiments
-        from dxtbx.imageset import ImageSweep
-        from time import time
-        from dials.util import log
-        import datetime
-
-        start_time = time()
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=False)
 
         # Configure the logging
         log.config(verbosity=options.verbose, logfile=params.output.log)
-
-        from dials.util.version import dials_version
-
         logger.info(dials_version())
 
         # Log the diff phil
@@ -83,22 +79,20 @@ class Script(object):
             self.parser.print_help()
             return
 
-        # Get the list of sweeps
-        sweeps = []
+        # Get the list of sequences
+        sequences = []
         for experiment in experiments:
-            if isinstance(experiment.imageset, ImageSweep):
-                sweeps.append(experiment.imageset)
-        logger.info("Number of sweeps = %d" % len(sweeps))
+            if isinstance(experiment.imageset, ImageSequence):
+                sequences.append(experiment.imageset)
+        logger.info("Number of sequences = %d" % len(sequences))
 
-        # Sort the sweeps by timestamps
-        logger.info("Sorting sweeps based on timestamp")
-        sweeps = sorted(sweeps, key=lambda x: x.get_scan().get_epochs()[0])
+        # Sort the sequences by timestamps
+        logger.info("Sorting sequences based on timestamp")
+        sequences = sorted(sequences, key=lambda x: x.get_scan().get_epochs()[0])
 
         # Count the number of datasets from each day
-        from collections import Counter
-
         counter = Counter()
-        for s in sweeps:
+        for s in sequences:
             timestamp = s.get_scan().get_epochs()[0]
             timestamp = datetime.datetime.fromtimestamp(timestamp)
             timestamp = timestamp.strftime("%Y-%m-%d")
@@ -109,13 +103,13 @@ class Script(object):
             logger.info("%d datasets collected on %s" % (counter[timestamp], timestamp))
 
         # Loop though and see if any models might be shared
-        b_list = [s.get_beam() for s in sweeps]
-        d_list = [s.get_detector() for s in sweeps]
-        g_list = [s.get_goniometer() for s in sweeps]
+        b_list = [s.get_beam() for s in sequences]
+        d_list = [s.get_detector() for s in sequences]
+        g_list = [s.get_goniometer() for s in sequences]
         b_index = []
         d_index = []
         g_index = []
-        for i in range(len(sweeps)):
+        for i in range(len(sequences)):
             b = b_list[i]
             d = d_list[i]
             g = g_list[i]
@@ -137,16 +131,14 @@ class Script(object):
             g_index.append(gn)
 
         # Print a table of possibly shared models
-        from libtbx.table_utils import format as table
-
-        rows = [["Sweep", "ID", "Beam", "Detector", "Goniometer", "Date", "Time"]]
-        for i in range(len(sweeps)):
-            timestamp = sweeps[i].get_scan().get_epochs()[0]
+        rows = [["Sequence", "ID", "Beam", "Detector", "Goniometer", "Date", "Time"]]
+        for i in range(len(sequences)):
+            timestamp = sequences[i].get_scan().get_epochs()[0]
             timestamp = datetime.datetime.fromtimestamp(timestamp)
             date_str = timestamp.strftime("%Y-%m-%d")
             time_str = timestamp.strftime("%H:%M:%S")
             row = [
-                "%s" % sweeps[i].get_template(),
+                "%s" % sequences[i].get_template(),
                 "%s" % i,
                 "%s" % b_index[i],
                 "%s" % d_index[i],
@@ -155,10 +147,7 @@ class Script(object):
                 "%s" % time_str,
             ]
             rows.append(row)
-        logger.info(table(rows, has_header=True, justify="left", prefix=" "))
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
+        logger.info(tabulate(rows, headers="firstrow"))
 
 
 if __name__ == "__main__":

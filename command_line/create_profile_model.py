@@ -37,10 +37,10 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ Encapsulate the script in a class. """
+    """Encapsulate the script in a class."""
 
     def __init__(self):
-        """ Initialise the script. """
+        """Initialise the script."""
         from dials.util.options import OptionParser
 
         usage = "usage: dials.create_profile_model [options] models.expt spots.refl"
@@ -54,11 +54,11 @@ class Script(object):
         )
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
         from dials.algorithms.profile_model.factory import ProfileModelFactory
         from dials.util.command_line import Command
         from dials.array_family import flex
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
         from dials.util import Sorry
         from dials.util import log
 
@@ -66,8 +66,9 @@ class Script(object):
 
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
-        reflections = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
         if len(reflections) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
@@ -139,13 +140,11 @@ class Script(object):
         Command.end("Wrote experiments to %s" % params.output)
 
     def process_reference(self, reference, params):
-        """ Load the reference spots. """
-        from time import time
+        """Load the reference spots."""
         from dials.util import Sorry
 
         if reference is None:
             return None, None
-        st = time()
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
@@ -194,7 +193,6 @@ class Script(object):
             )
             for spot in reference:
                 spot["shoebox"].data -= spot["background.mean"]
-        logger.info(" time taken: %g" % (time() - st))
         return reference, rubbish
 
     def filter_reference_pixels(self, reference, experiments):

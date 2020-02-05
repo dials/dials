@@ -70,6 +70,7 @@ def test_cosym(
     if use_known_lattice_group:
         params.lattice_group = expected_space_group.info()
 
+    params.normalisation = None
     cosym = CosymAnalysis(datasets, params)
     cosym.run()
     d = cosym.as_dict()

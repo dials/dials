@@ -5,12 +5,8 @@ import sys
 
 from libtbx import phil
 from dials.util import show_mail_on_error, Sorry
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
-from dials.algorithms.scaling.scaling_utilities import (
-    save_experiments,
-    save_reflections,
-)
 from dials.util.multi_dataset_handling import (
     assign_unique_identifiers,
     parse_multiple_datasets,
@@ -55,8 +51,9 @@ def run(args=None):
         parser.print_help()
         sys.exit()
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     reflections = parse_multiple_datasets(reflections)
     if len(experiments) != len(reflections):
@@ -72,11 +69,11 @@ def run(args=None):
         raise Sorry(e)
     print("assigned identifiers: %s" % list(experiments.identifiers()))
 
-    save_experiments(experiments, params.output.experiments)
+    experiments.as_file(params.output.experiments)
     joint_table = flex.reflection_table()
     for reflection_table in reflections:
         joint_table.extend(reflection_table)
-    save_reflections(joint_table, params.output.reflections)
+    joint_table.as_file(params.output.reflections)
 
 
 if __name__ == "__main__":

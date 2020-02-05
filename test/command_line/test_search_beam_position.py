@@ -210,7 +210,7 @@ def test_search_single(run_in_tmpdir, dials_regression):
 
 
 def test_search_small_molecule(dials_data, run_in_tmpdir):
-    """Perform a beam-centre search on a multi-sweep data set..
+    """Perform a beam-centre search on a multi-sequence data set..
 
     Do the following:
     1. Run dials.search_beam_centre on a single datablock and pickled

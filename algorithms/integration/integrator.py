@@ -4,6 +4,7 @@ import collections
 import logging
 import math
 import random
+from dials.util import tabulate
 
 import six
 import six.moves.cPickle as pickle
@@ -19,7 +20,6 @@ from dials.algorithms.integration.processor import ProcessorSingle2D
 from dials.algorithms.integration.processor import ProcessorStills
 from dials.algorithms.integration.processor import ProcessorBuilder
 from dials.algorithms.integration.processor import job
-from dials.algorithms.integration.image_integrator import ImageIntegrator
 from dials.array_family import flex
 from dials.util import phil
 from dials.util import Sorry
@@ -31,7 +31,6 @@ __all__ = [
     "FinalizerBase",
     "FinalizerRot",
     "FinalizerStills",
-    "ImageIntegrator",
     "InitializerRot",
     "InitializerStills",
     "Integrator",
@@ -43,7 +42,6 @@ __all__ = [
     "IntegratorFlat3D",
     "IntegratorSingle2D",
     "IntegratorStills",
-    "IntegratorVolume",
     "JobList",
     "Parameters",
     "Processor2D",
@@ -167,7 +165,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills volume 3d_threaded
+      integrator = *auto 3d flat3d 2d single2d stills 3d_threaded
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -304,7 +302,7 @@ def frame_hist(bbox, width=80, symbol="#", prefix=""):
     :return: The histogram string
     """
     return hist(
-        [z for b in bbox for z in range(b[4], b[5])],
+        [(z + 1) for b in bbox for z in range(b[4], b[5])],
         width=width,
         symbol=symbol,
         prefix=prefix,
@@ -1272,9 +1270,7 @@ class Integrator(object):
         return result
 
     def summary(self, block_size, block_size_units):
-        """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
+        """Print a summary of the integration stuff."""
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1283,7 +1279,7 @@ class Integrator(object):
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sweeps():
+        elif self._experiments.all_sequences():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
@@ -1295,8 +1291,8 @@ class Integrator(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+            raise RuntimeError("Experiments must be all sequences or all stills")
+        return tabulate(rows, headers="firstrow")
 
 
 class Integrator3D(Integrator):
@@ -1347,14 +1343,6 @@ class IntegratorStills(Integrator):
     InitializerClass = InitializerStills
     ProcessorClass = ProcessorStills
     FinalizerClass = FinalizerStills
-
-
-class IntegratorVolume(ImageIntegrator):
-    """
-    Volume integrator
-    """
-
-    pass
 
 
 class Integrator3DThreaded(object):
@@ -1521,9 +1509,7 @@ class Integrator3DThreaded(object):
         return result
 
     def summary(self, block_size, block_size_units):
-        """ Print a summary of the integration stuff. """
-        from libtbx.table_utils import format as table
-
+        """Print a summary of the integration stuff."""
         # Compute the task table
         if self._experiments.all_stills():
             rows = [["#", "Group", "Frame From", "Frame To"]]
@@ -1532,7 +1518,7 @@ class Integrator3DThreaded(object):
                 group = job.index()
                 f0, f1 = job.frames()
                 rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sweeps():
+        elif self._experiments.all_sequences():
             rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
             for i in range(len(self)):
                 job = self._manager.job(i)
@@ -1544,8 +1530,8 @@ class Integrator3DThreaded(object):
                 p1 = scan.get_angle_from_array_index(f1)
                 rows.append([str(i), str(group), str(f0), str(f1), str(p0), str(p1)])
         else:
-            raise RuntimeError("Experiments must be all sweeps or all stills")
-        return table(rows, has_header=True, justify="right", prefix=" ")
+            raise RuntimeError("Experiments must be all sequences or all stills")
+        return tabulate(rows, headers="firstrow")
 
 
 class IntegratorFactory(object):
@@ -1620,8 +1606,6 @@ class IntegratorFactory(object):
             IntegratorClass = IntegratorSingle2D
         elif params.integration.integrator == "stills":
             IntegratorClass = IntegratorStills
-        elif params.integration.integrator == "volume":
-            IntegratorClass = IntegratorVolume
         elif params.integration.integrator == "3d_threaded":
             IntegratorClass = Integrator3DThreaded
         else:

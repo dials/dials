@@ -60,7 +60,7 @@ class CosymHTMLGenerator(Observer):
             symmetry_analysis=self.data["symmetry_analysis"],
         )
         with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+            f.write(html.encode("utf-8", "xmlcharrefreplace"))
 
 
 @singleton

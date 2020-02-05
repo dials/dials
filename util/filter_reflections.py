@@ -44,11 +44,12 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from collections import defaultdict
+from dials.util import tabulate
 
 from cctbx import crystal, miller
 from dials.array_family import flex
 from dials.algorithms.scaling.outlier_rejection import reject_outliers
-from libtbx.table_utils import simple_table
+from dials.util.batch_handling import assign_batches_to_reflections
 
 logger = logging.getLogger("dials")
 
@@ -140,6 +141,7 @@ def filtered_arrays_from_experiments_reflections(
     reflections,
     outlier_rejection_after_filter=False,
     partiality_threshold=0.99,
+    return_batches=False,
 ):
     """Create a list of filtered arrays from experiments and reflections.
 
@@ -152,6 +154,12 @@ def filtered_arrays_from_experiments_reflections(
     """
     miller_arrays = []
     ids_to_del = []
+
+    if return_batches:
+        assert all(expt.scan is not None for expt in experiments)
+        batch_offsets = [expt.scan.get_batch_offset() for expt in experiments]
+        reflections = assign_batches_to_reflections(reflections, batch_offsets)
+        batch_arrays = []
 
     for idx, (expt, refl) in enumerate(zip(experiments, reflections)):
         crystal_symmetry = crystal.symmetry(
@@ -172,10 +180,7 @@ def filtered_arrays_from_experiments_reflections(
                 intensity_to_use = "intensity.prf"
 
         try:
-            logger.info(
-                "Filtering reflections for dataset %s"
-                % (expt.identifier if expt.identifier else idx)
-            )
+            logger.info("Filtering reflections for dataset %s" % idx)
             refl = filter_reflection_table(
                 refl,
                 intensity_choice,
@@ -205,14 +210,18 @@ def filtered_arrays_from_experiments_reflections(
             miller_set = miller.set(
                 crystal_symmetry, refl["miller_index"], anomalous_flag=False
             )
-            intensities = miller.array(
-                miller_set, data=refl["intensity"], sigmas=flex.sqrt(refl["variance"])
+            intensities = miller_set.array(
+                data=refl["intensity"], sigmas=flex.sqrt(refl["variance"])
             )
             intensities.set_observation_type_xray_intensity()
             intensities.set_info(
                 miller.array_info(source="DIALS", source_type="pickle")
             )
             miller_arrays.append(intensities)
+            if return_batches:
+                batch_arrays.append(
+                    miller_set.array(data=refl["batch"]).set_info(intensities.info())
+                )
 
     if not miller_arrays:
         raise ValueError(
@@ -225,6 +234,8 @@ option partiality_threshold can be lowered to include partials."""
         del experiments[id_]
         del reflections[id_]
 
+    if return_batches:
+        return miller_arrays, batch_arrays
     return miller_arrays
 
 
@@ -326,8 +337,7 @@ class FilteringReductionMethods(object):
         """Filter reflections below a d-value."""
         selection = reflection_table["d"] < d_min
         logger.info(
-            "Removed %d reflections with a d-value below %s"
-            % (selection.count(True), d_min)
+            "Removed %d reflections with d < %.2f" % (selection.count(True), d_min)
         )
         reflection_table.del_selected(selection)
         return reflection_table
@@ -761,9 +771,12 @@ def sum_partial_reflections(reflection_table):
             "Combined %s partial reflections with other partial reflections"
             % (nrefl - reflection_table.size())
         )
-    logger.debug("\nSummary of combination of partial reflections")
-    st = simple_table(rows, header)
-    logger.debug(st.format())
+
+    # Formatting this table can be sloooow for large numbers of reflections, so skip
+    # this unless debug output has been requested
+    if logger.getEffectiveLevel() <= logging.DEBUG:
+        logger.debug("\nSummary of combination of partial reflections")
+        logger.debug(tabulate(rows, header))
     return reflection_table
 
 

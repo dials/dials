@@ -2,7 +2,7 @@
 
 for repository in cctbx_project dxtbx; do
   if [ -e $HOME/build_dials/modules/${repository} ] && [ ! -e $HOME/build_dials/modules/${repository}/.git ]; then
-    echo Cleaning existing cctbx_project directory
+    echo Cleaning existing ${repository} directory
     rm -rf $HOME/build_dials/modules/${repository}
   fi
   if [ ! -e $HOME/build_dials/modules/${repository} ]; then

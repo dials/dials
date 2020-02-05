@@ -53,17 +53,16 @@ def export_sadabs(integrated_data, experiment_list, params):
 
     assert experiment.goniometer is not None
 
-    # Warn of unhelpful SADABS behaviour for certain multi-sweep data sets
+    # Warn of unhelpful SADABS behaviour for certain multi-sequence data sets
     hkl_file_root, _ = os.path.splitext(params.sadabs.hklout)
     if not params.sadabs.run or re.search("_0+$", hkl_file_root):
         logger.warning(
-            "\nWarning:\n"
-            "It seems SADABS rejects multi-sweep data when the first "
+            "It seems SADABS rejects multi-sequence data when the first "
             "filename ends "
             "'_0', '_00', etc., with a cryptic error message:\n"
             "\t'Inconsistent 2theta values in same scan'.\n"
             "You may need to begin the numbering of your SADABS HKL files from 1, "
-            "rather than 0, and ensure the SADABS run/batch number is greater than 0.\n"
+            "rather than 0, and ensure the SADABS run/batch number is greater than 0."
         )
 
     axis = matrix.col(experiment.goniometer.get_rotation_axis_datum())

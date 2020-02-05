@@ -6,11 +6,19 @@ from __future__ import absolute_import, division, print_function
 import math
 
 import pytest
-from dials.algorithms.scaling.error_model.error_model import get_error_model
-from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTarget
+from dials.algorithms.scaling.error_model.error_model import (
+    calc_sigmaprime,
+    calc_deltahl,
+    BasicErrorModel,
+    ErrorModelB_APM,
+)
+from dials.algorithms.scaling.error_model.error_model_target import ErrorModelTargetB
 from dials.algorithms.scaling.Ih_table import IhTable
-from dials.algorithms.scaling.scaling_refiner import error_model_refinery
+from dials.algorithms.scaling.error_model.engine import ErrorModelRefinery
+
 from dials.array_family import flex
+from dials.util.options import OptionParser
+from libtbx import phil
 from cctbx.sgtbx import space_group
 
 
@@ -24,6 +32,21 @@ def large_reflection_table():
 def test_sg():
     """Create a space group object."""
     return space_group("P 1")
+
+
+def generated_param():
+    """Generate a param phil scope."""
+    phil_scope = phil.parse(
+        """
+      include scope dials.command_line.scale.phil_scope
+  """,
+        process_includes=True,
+    )
+    optionparser = OptionParser(phil=phil_scope, check_format=False)
+    parameters, _ = optionparser.parse_args(
+        args=[], quick_parse=True, show_diff_phil=False
+    )
+    return parameters
 
 
 def generate_refl_1():
@@ -46,7 +69,7 @@ def generate_refl_1():
     return reflections
 
 
-def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
+def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05, a=1.0):
     """Model a set of poisson-distributed observations on a constant-variance
     background."""
 
@@ -70,21 +93,27 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
     # give the same distribution as sigma' = alpha sigma,
     # where alpha = (1 + (b^2 I)) ^ 0.5. i.e. this is the way to increase the
     # deviations of I-Imean and keep the same 'poisson' sigmas, such that the
-    # sigmas need to be inflated by the error model with the given b.
+    # sigmas need to be inflated by the error model with the given a, b.
     import scitbx
     from scitbx.random import variate, poisson_distribution
 
+    # Note, if a and b both set, probably not quite right, but okay for small
+    # a and b for the purpose of a test
+
     scitbx.random.set_random_seed(0)
     intensities = flex.int()
-    variances = flex.int()
+    variances = flex.double()
     miller_index = flex.miller_index()
     for i, idx in zip(mean_intensities, ms.indices()):
         g = variate(poisson_distribution(mean=i))
         for _ in range(multiplicity):
             intensity = next(g)
-            alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
-            intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
-            variances.append(intensity + background_variance)
+            if b > 0.0:
+                alpha = (1.0 + (b ** 2 * intensity)) ** 0.5
+                intensities.append(int((alpha * intensity) + ((1.0 - alpha) * i)))
+            else:
+                intensities.append(intensity)
+            variances.append((intensity + background_variance) / (a ** 2))
             miller_index.append(idx)
 
     reflections = flex.reflection_table()
@@ -97,28 +126,21 @@ def data_for_error_model_test(background_variance=1, multiplicity=100, b=0.05):
     return reflections
 
 
-test_input = [
-    [1, 100, [0.01, 2e-4], 0.0],  # no background var, no systematic error
-    [5, 100, [0.01, 2e-4], 0.0],  # low background var
-    [50, 100, [0.01, 2e-4], 0.0],  # high background var
-    [1, 100, [0.01, 0.005], 0.05],  # no background var, signficant systematic error
-    [5, 100, [0.01, 0.005], 0.05],  # low background var
-    [50, 100, [0.01, 0.005], 0.05],  # high background var
-    [1, 100, [0.01, 0.0025], 0.025],  # no background var, lower systematic error
-    [5, 100, [0.01, 0.0025], 0.025],  # low background var
-    [50, 100, [0.01, 0.0025], 0.025],  # high background var
-    [50, 20, [0.02, 0.01], 0.05],  # low mult, high background, high system. error
-    [50, 20, [0.02, 0.005], 0.025],  # low mult, high background, low systematic error
+no_bg_test_input = [
+    # now background variance, high multiplicity
+    [1, 100, [0.05, 5e-3], 1.0, 0.00],  # no background var, no systematic error
+    [1, 100, [0.05, 5e-3], 1.0, 0.02],  # no background var, some systematic error
+    [1, 100, [0.05, 5e-3], 1.0, 0.04],  # no background var, signficant systematic error
+    [1, 100, [0.05, 5e-3], 1.4, 0.00],
 ]
-# Note, it appears that the b-parameter is usually slightly underestimated
-# compared to the simulated data.
 
 
 @pytest.mark.parametrize(
-    "background_variance, multiplicity, abs_tolerances, model_b", test_input
+    "background_variance, multiplicity, abs_tolerances, model_a, model_b",
+    no_bg_test_input,
 )
 def test_error_model_on_simulated_data(
-    background_variance, multiplicity, abs_tolerances, model_b
+    background_variance, multiplicity, abs_tolerances, model_a, model_b
 ):
     """Test the refinement of the error model using simulated data.
 
@@ -133,38 +155,24 @@ def test_error_model_on_simulated_data(
     (1=None, 5=low, 50=high), which is added to the variance from poisson
     counting statistics. A tolerance of 10 % is used for the model b parameter
     for good cases, which is increased to 20 % for tough cases.
-
-    The purpose of the test is to show that the error model is finding the
-    correct solution for a variety of background levels, with varying levels of
-    systematic error (model b parameter, which is the one that has the highest
-    effect on the errors output by scaling). Included are some more realistic
-    cases, with lower multiplicity of measurement and high background variances.
-
-    These tests are also designed to help validate the cutoff choices in the
-    error model code:
-    - the need for a min_Ih to ensure that poisson approx normal distribution
-    - the need for an avg_I_over_var cutoff to remove background effects
-    - cutting off extreme 'outlier' deviations as not to mislead the model."""
+    """
 
     data = data_for_error_model_test(
-        int(background_variance), int(multiplicity), b=model_b
+        int(background_variance), int(multiplicity), b=model_b, a=model_a
     )
 
     Ih_table = IhTable([data], space_group("P 2ac 2ab"))
-    em = get_error_model("basic")
+
     block = Ih_table.blocked_data_list[0]
-    em.min_reflections_required = 250
-    error_model = em(block, n_bins=10)
-    assert error_model.summation_matrix.n_rows > 400
-    refinery = error_model_refinery(
-        engine="SimpleLBFGS", target=ErrorModelTarget(error_model), max_iterations=100
-    )
+    BasicErrorModel.min_reflections_required = 250
+    params = generated_param()
+
+    error_model = BasicErrorModel(block, params.weighting.error_model.basic)
+    assert error_model.binner.summation_matrix.n_rows > 400
+    refinery = ErrorModelRefinery(error_model, parameters_to_refine=["a", "b"])
     refinery.run()
-    error_model = refinery.return_error_model()
-    assert error_model.refined_parameters[0] == pytest.approx(
-        1.00, abs=abs_tolerances[0]
-    )
-    assert abs(error_model.refined_parameters[1]) == pytest.approx(
+    assert refinery.model.parameters[0] == pytest.approx(model_a, abs=abs_tolerances[0])
+    assert abs(refinery.model.parameters[1]) == pytest.approx(
         model_b, abs=abs_tolerances[1]
     )
 
@@ -172,41 +180,43 @@ def test_error_model_on_simulated_data(
 def test_errormodel(large_reflection_table, test_sg):
     """Test the initialisation and methods of the error model."""
 
-    # first test get_error_model helper function.
-    with pytest.raises(ValueError):
-        em = get_error_model("bad")
-    em = get_error_model("basic")
+    em = BasicErrorModel
     em.min_reflections_required = 1
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
-    error_model = em(block, n_bins=2, min_Ih=1.0)
-    assert error_model.summation_matrix[0, 1] == 1
-    assert error_model.summation_matrix[1, 1] == 1
-    assert error_model.summation_matrix[2, 0] == 1
-    assert error_model.summation_matrix[3, 0] == 1
-    assert error_model.summation_matrix[4, 0] == 1
-    assert error_model.summation_matrix.non_zeroes == 5
-    assert list(error_model.bin_counts) == [3, 2]
+    params = generated_param()
+    params.weighting.error_model.basic.n_bins = 2
+    params.weighting.error_model.basic.min_Ih = 1.0
+    error_model = em(block, params.weighting.error_model.basic)
+    assert error_model.binner.summation_matrix[0, 1] == 1
+    assert error_model.binner.summation_matrix[1, 1] == 1
+    assert error_model.binner.summation_matrix[2, 0] == 1
+    assert error_model.binner.summation_matrix[3, 0] == 1
+    assert error_model.binner.summation_matrix[4, 0] == 1
+    assert error_model.binner.summation_matrix.non_zeroes == 5
+    assert list(error_model.binner.binning_info["refl_per_bin"]) == [3, 2]
 
     # Test calc sigmaprime
     x0 = 1.0
     x1 = 0.1
-    error_model.sigmaprime = error_model.calc_sigmaprime([x0, x1])
+    sigmaprime = calc_sigmaprime([x0, x1], error_model.filtered_Ih_table)
     cal_sigpr = list(
         x0
         * ((block.variances + ((x1 * block.intensities) ** 2)) ** 0.5)
         / block.inverse_scale_factors
     )
-    assert list(error_model.sigmaprime) == pytest.approx(
-        cal_sigpr[4:7] + cal_sigpr[-2:]
-    )
+    assert list(sigmaprime) == pytest.approx(cal_sigpr[4:7] + cal_sigpr[-2:])
 
     # Test calc delta_hl
-    error_model.sigmaprime = error_model.calc_sigmaprime([1.0, 0.0])  # Reset
+    sigmaprime = calc_sigmaprime([1.0, 0.0], error_model.filtered_Ih_table)  # Reset
     # Calculate example for three elements, with intensities 1, 5 and 10 and
     # variances 1, 5 and 10 using he formula
     # delta_hl = math.sqrt(n_h - 1 / n_h) * (Ihl/ghl - Ih) / sigmaprime
-    error_model.delta_hl = error_model.calc_deltahl()
+    delta_hl = calc_deltahl(
+        error_model.filtered_Ih_table,
+        error_model.filtered_Ih_table.calc_nh(),
+        sigmaprime,
+    )
     expected_deltas = [
         (-3.0 / 2.0) * math.sqrt(2.0 / 3.0),
         (5.0 / 2.0) * math.sqrt(2.0 / 15.0),
@@ -214,49 +224,54 @@ def test_errormodel(large_reflection_table, test_sg):
         -0.117647058824,
         0.124783549621,
     ]
-    assert list(error_model.delta_hl) == pytest.approx(expected_deltas)
+    assert list(delta_hl) == pytest.approx(expected_deltas)
 
 
 def test_error_model_target(large_reflection_table, test_sg):
     """Test the error model target."""
     Ih_table = IhTable([large_reflection_table], test_sg, nblocks=1)
     block = Ih_table.blocked_data_list[0]
-    em = get_error_model("basic")
+    em = BasicErrorModel
     em.min_reflections_required = 1
-    error_model = em(block, n_bins=2, min_Ih=2.0)
-    error_model.update_for_minimisation([1.0, 0.05])
-    target = ErrorModelTarget(error_model, starting_values=[1.0, 0.05])
+    params = generated_param()
+    params.weighting.error_model.basic.n_bins = 2
+    params.weighting.error_model.basic.min_Ih = 1.0
+    error_model = em(block, params.weighting.error_model.basic)
+    error_model.parameters = [1.0, 0.05]
+    parameterisation = ErrorModelB_APM(error_model)
+    target = ErrorModelTargetB(error_model)
+    target.predict(parameterisation)
     # Test residual calculation
-    residuals = target.calculate_residuals()
-    assert residuals == (flex.double(2, 1.0) - error_model.bin_variances) ** 2
+    residuals = target.calculate_residuals(parameterisation)
+    assert (
+        residuals
+        == (flex.double(2, 1.0) - error_model.binner.binning_info["bin_variances"]) ** 2
+    )
 
     # Test gradient calculation against finite differences.
-    gradients = target.calculate_gradients()
-    gradient_fd = calculate_gradient_fd(target)
+    gradients = target.calculate_gradients(parameterisation)
+    gradient_fd = calculate_gradient_fd(target, parameterisation)
     assert list(gradients) == pytest.approx(list(gradient_fd))
 
     # Test the method calls
-    r, g = target.compute_functional_gradients()
+    r, g = target.compute_functional_gradients(parameterisation)
     assert r == residuals
     assert list(gradients) == pytest.approx(list(g))
-    r, g = target.compute_functional_gradients()
+    r, g = target.compute_functional_gradients(parameterisation)
     assert r == residuals
     assert list(gradients) == pytest.approx(list(g))
 
 
-def calculate_gradient_fd(target):
+def calculate_gradient_fd(target, parameterisation):
     """Calculate gradient array with finite difference approach."""
     delta = 1.0e-6
-    gradients = flex.double([0.0] * len(target.x))
-    # iterate over parameters, varying one at a time and calculating the gradient
-    for i in range(len(target.x)):
-        target.x[i] -= 0.5 * delta
-        target.predict()
-        R_low = target.calculate_residuals()
-        target.x[i] += delta
-        target.predict()
-        R_upper = target.calculate_residuals()
-        target.x[i] -= 0.5 * delta
-        target.predict()
-        gradients[i] = (flex.sum(R_upper) - flex.sum(R_low)) / delta
+    parameterisation.set_param_vals([parameterisation.x[0] - (0.5 * delta)])
+    target.predict(parameterisation)
+    R_low = target.calculate_residuals(parameterisation)
+    parameterisation.set_param_vals([parameterisation.x[0] + delta])
+    target.predict(parameterisation)
+    R_upper = target.calculate_residuals(parameterisation)
+    parameterisation.set_param_vals([parameterisation.x[0] - (0.5 * delta)])
+    target.predict(parameterisation)
+    gradients = [(flex.sum(R_upper) - flex.sum(R_low)) / delta]
     return gradients

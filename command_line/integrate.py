@@ -4,6 +4,7 @@ import logging
 
 from dials.array_family import flex
 from dials.util import show_mail_on_error, Sorry
+from dials.util.slice import slice_crystal
 
 logger = logging.getLogger("dials.command_line.integrate")
 # DIALS_ENABLE_COMMAND_LINE_COMPLETION
@@ -79,7 +80,7 @@ phil_scope = parse(
   {
 
     reflections_per_degree = 50
-      .help = "The number of predicted reflections per degree of the sweep "
+      .help = "The number of predicted reflections per degree of the sequence "
               "to integrate."
       .type = float(value_min=0.)
 
@@ -116,7 +117,7 @@ phil_scope = parse(
 
 
 class Script(object):
-    """ The integration program. """
+    """The integration program."""
 
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
@@ -135,20 +136,17 @@ class Script(object):
         )
 
     def run(self, args=None):
-        """ Perform the integration. """
+        """Perform the integration."""
         from dials.util.command_line import heading
-        from dials.util.options import flatten_reflections, flatten_experiments
+        from dials.util.options import reflections_and_experiments_from_files
         from dials.util import log
-        from time import time
         from dials.util import Sorry
-
-        # Check the number of arguments is correct
-        start_time = time()
 
         # Parse the command line
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
-        reference = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reference, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
         if len(reference) == 0 and len(experiments) == 0:
             self.parser.print_help()
             return
@@ -295,8 +293,14 @@ class Script(object):
                 good_expt_count = 0
 
                 def refl_extend(src, dest, eid):
-                    tmp = src.select(src["id"] == eid)
+                    old_id = eid
+                    new_id = good_expt_count
+                    tmp = src.select(src["id"] == old_id)
                     tmp["id"] = flex.int(len(tmp), good_expt_count)
+                    if old_id in tmp.experiment_identifiers():
+                        identifier = tmp.experiment_identifiers()[old_id]
+                        del tmp.experiment_identifiers()[old_id]
+                        tmp.experiment_identifiers()[new_id] = identifier
                     dest.extend(tmp)
 
                 for expt_id, experiment in enumerate(experiments):
@@ -329,7 +333,10 @@ class Script(object):
         ):
             experiments = ProfileModelFactory.create(params, experiments, reference)
         else:
-            experiments = ProfileModelFactory.create(params, experiments)
+            try:
+                experiments = ProfileModelFactory.create(params, experiments)
+            except RuntimeError as e:
+                raise Sorry(e)
             for expr in experiments:
                 if expr.profile is None:
                     raise Sorry("No profile information in experiment list")
@@ -382,7 +389,12 @@ class Script(object):
                 refls = filtered_refls.select(filtered_refls["id"] == expt_id)
                 if len(refls) > 0:
                     accepted_expts.append(expt)
-                    refls["id"] = flex.int(len(refls), len(accepted_expts) - 1)
+                    current_id = expt_id
+                    new_id = len(accepted_expts) - 1
+                    refls["id"] = flex.int(len(refls), new_id)
+                    if expt.identifier:
+                        del refls.experiment_identifiers()[current_id]
+                        refls.experiment_identifiers()[new_id] = expt.identifier
                     accepted_refls.extend(refls)
                 else:
                     logger.info(
@@ -407,19 +419,14 @@ class Script(object):
         if params.output.report is not None:
             integrator.report().as_file(params.output.report)
 
-        # Print the total time taken
-        logger.info("\nTotal time taken: %f" % (time() - start_time))
-
         return experiments, reflections
 
     def process_reference(self, reference):
-        """ Load the reference spots. """
-        from time import time
+        """Load the reference spots."""
         from dials.util import Sorry
 
         if reference is None:
             return None, None
-        st = time()
         assert "miller_index" in reference
         assert "id" in reference
         logger.info("Processing reference reflections")
@@ -465,7 +472,6 @@ class Script(object):
             )
         logger.info(" using %d indexed reflections" % len(reference))
         logger.info(" found %d junk reflections" % len(rubbish))
-        logger.info(" time taken: %g" % (time() - st))
         return reference, rubbish
 
     def filter_reference_pixels(self, reference, experiments):
@@ -491,25 +497,19 @@ class Script(object):
         return reference
 
     def save_reflections(self, reflections, filename):
-        """ Save the reflections to file. """
-        from time import time
+        """Save the reflections to file."""
 
-        st = time()
         logger.info("Saving %d reflections to %s" % (len(reflections), filename))
         reflections.as_file(filename)
-        logger.info(" time taken: %g" % (time() - st))
 
     def save_experiments(self, experiments, filename):
-        """ Save the profile model parameters. """
-        from time import time
+        """Save the profile model parameters."""
 
-        st = time()
         logger.info("Saving the experiments to %s" % filename)
         experiments.as_file(filename)
-        logger.info(" time taken: %g" % (time() - st))
 
     def sample_predictions(self, experiments, predicted, params):
-        """ Select a random sample of the predicted reflections to integrate. """
+        """Select a random sample of the predicted reflections to integrate."""
 
         nref_per_degree = params.sampling.reflections_per_degree
         min_sample_size = params.sampling.minimum_sample_size
@@ -532,11 +532,11 @@ class Script(object):
 
             # set sample size according to nref_per_degree (per experiment)
             if exp.scan and nref_per_degree:
-                sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-                width = abs(sweep_range_rad[1] - sweep_range_rad[0]) * RAD2DEG
+                sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
+                width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
                 sample_size = int(nref_per_degree * width)
             else:
-                sweep_range_rad = None
+                sequence_range_rad = None
 
             # adjust sample size if below the chosen limit
             sample_size = max(sample_size, min_sample_size)
@@ -564,7 +564,7 @@ class Script(object):
         return experiments
 
     def split_for_scan_range(self, experiments, reference, scan_range):
-        """ Update experiments when scan range is set. """
+        """Update experiments when scan range is set."""
         from dxtbx.model.experiment_list import ExperimentList
         from dxtbx.model.experiment_list import Experiment
 
@@ -629,12 +629,13 @@ class Script(object):
                     new_scan = None
                 else:
                     new_scan = scan[index_start:index_end]
+
                 for i, e1 in enumerate(experiments):
                     e2 = Experiment()
                     e2.beam = e1.beam
                     e2.detector = e1.detector
                     e2.goniometer = e1.goniometer
-                    e2.crystal = e1.crystal
+                    e2.crystal = slice_crystal(e1.crystal, (index_start, index_end))
                     e2.profile = e1.profile
                     e2.imageset = new_iset
                     e2.scan = new_scan

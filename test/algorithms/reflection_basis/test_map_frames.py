@@ -11,13 +11,15 @@ def test_map_frames_forward(dials_data):
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
 
     # Set the delta_divergence/mosaicity
     n_sigma = 3
@@ -106,13 +108,15 @@ def test_map_frames_reverse(dials_data):
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesReverse
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
 
     # Set the delta_divergence/mosaicity
     n_sigma = 3
@@ -208,13 +212,15 @@ def test_map_forward_reverse(dials_data):
     from dials.algorithms.profile_model.gaussian_rs.transform import MapFramesForward
     from dials.algorithms.profile_model.gaussian_rs import BBoxCalculator3D
 
-    sweep = load.sweep(dials_data("centroid_test_data").join("sweep.json").strpath)
+    sequence = load.sequence(
+        dials_data("centroid_test_data").join("sweep.json").strpath
+    )
 
     # Get the models
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    beam = sequence.get_beam()
+    detector = sequence.get_detector()
+    gonio = sequence.get_goniometer()
+    scan = sequence.get_scan()
 
     # Set the delta_divergence/mosaicity
     n_sigma = 3

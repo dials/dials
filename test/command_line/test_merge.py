@@ -116,7 +116,7 @@ def test_merge_multi_wavelength(dials_data, tmpdir):
     reflections1.extend(reflections2)
 
     tmp_refl = tmpdir.join("tmp.refl").strpath
-    reflections1.as_pickle(tmp_refl)
+    reflections1.as_file(tmp_refl)
 
     # Can now run after creating our 'fake' multiwavelength dataset
     command = ["dials.merge", tmp_refl, tmp_expt, "truncate=True", "anomalous=True"]
@@ -150,7 +150,7 @@ def test_suitable_exit_for_bad_input_from_single_dataset(dials_data, tmpdir):
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
     assert (
-        result.stderr
+        result.stderr.replace(b"\r", b"")
         == b"""Sorry: intensity.scale.value not found in the reflection table.
 Only scaled data can be processed with dials.merge
 """
@@ -174,7 +174,7 @@ def test_suitable_exit_for_bad_input_with_more_than_one_reflection_table(
     result = procrunner.run(command, working_directory=tmpdir)
     assert result.returncode
     assert (
-        result.stderr
+        result.stderr.replace(b"\r", b"")
         == b"""Sorry: Only data scaled together as a single reflection dataset
 can be processed with dials.merge
 """

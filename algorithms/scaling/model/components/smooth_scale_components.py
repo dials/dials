@@ -234,7 +234,11 @@ class SmoothScaleComponent1D(ScaleComponentBase, SmoothMixin):
     def calculate_scales_and_derivatives(self, block_id=0):
         if self._n_refl[block_id] > 1:
             if self._fixed_initial:
-                value, weight, sumweight = self._smoother.multi_value_weight_first_fixed(
+                (
+                    value,
+                    weight,
+                    sumweight,
+                ) = self._smoother.multi_value_weight_first_fixed(
                     self._normalised_values[block_id], self.value
                 )
             else:

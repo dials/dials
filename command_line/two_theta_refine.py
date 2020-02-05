@@ -3,19 +3,38 @@ from __future__ import absolute_import, division, print_function
 import datetime
 import logging
 import math
-from time import time
+import sys
 
+from cctbx import miller, sgtbx
+from libtbx.phil import parse
+from libtbx.utils import format_float_with_standard_uncertainty
+import iotbx.cif.model
+
+from dxtbx.model.experiment_list import Experiment, ExperimentList
+from dials.algorithms.refinement.corrgram import create_correlation_plots
+from dials.algorithms.refinement.engine import refinery_phil_scope
+from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery
+from dials.algorithms.refinement.refiner import Refiner
+from dials.algorithms.refinement.parameterisation.crystal_parameters import (
+    CrystalUnitCellParameterisation,
+)
+from dials.algorithms.refinement.parameterisation.parameter_report import (
+    ParameterReporter,
+)
+from dials.algorithms.refinement.two_theta_refiner import (
+    TwoThetaReflectionManager,
+    TwoThetaTarget,
+    TwoThetaExperimentsPredictor,
+    TwoThetaPredictionParameterisation,
+)
 from dials.array_family import flex
 from dials.util import log
 from dials.util.version import dials_version
-from dials.util import show_mail_on_error, Sorry
+from dials.util import show_mail_on_error
 from dials.util.filter_reflections import filter_reflection_table
-from dials.util.options import flatten_experiments, flatten_reflections
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util.multi_dataset_handling import parse_multiple_datasets
-from dials.algorithms.refinement.corrgram import create_correlation_plots
-from dxtbx.model.experiment_list import Experiment, ExperimentList
-from libtbx.utils import format_float_with_standard_uncertainty
-from libtbx.phil import parse
+from dials.util import tabulate
 
 logger = logging.getLogger("dials.command_line.two_theta_refine")
 
@@ -97,13 +116,10 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "models.expt observations.refl" % libtbx.env.dispatcher_name
+            "usage: dials.two_theta_refine [options] [param.phil] "
+            "models.expt observations.refl"
         )
 
         # Create the parser
@@ -129,7 +145,7 @@ class Script(object):
         for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
             if key not in reflections:
                 msg = msg.format(key)
-                raise Sorry(msg)
+                sys.exit(msg)
 
         # FIXME add other things to be checked here
         return
@@ -177,35 +193,19 @@ class Script(object):
     @staticmethod
     def convert_to_P1(reflections, experiments):
         """Convert the input crystals to P 1 and reindex the reflections"""
-        from cctbx.sgtbx import space_group
-
         for iexp, exp in enumerate(experiments):
             sel = reflections["id"] == iexp
             xl = exp.crystal
             sg = xl.get_space_group()
             op = sg.info().change_of_basis_op_to_primitive_setting()
             exp.crystal = xl.change_basis(op)
-            exp.crystal.set_space_group(space_group("P 1"))
+            exp.crystal.set_space_group(sgtbx.space_group("P 1"))
             hkl_reindexed = op.apply(reflections["miller_index"].select(sel))
             reflections["miller_index"].set_selected(sel, hkl_reindexed)
         return reflections, experiments
 
     @staticmethod
     def create_refiner(params, reflections, experiments):
-
-        from dials.algorithms.refinement.parameterisation.crystal_parameters import (
-            CrystalUnitCellParameterisation,
-        )
-        from dials.algorithms.refinement.parameterisation.parameter_report import (
-            ParameterReporter,
-        )
-        from dials.algorithms.refinement.two_theta_refiner import (
-            TwoThetaReflectionManager,
-            TwoThetaTarget,
-            TwoThetaExperimentsPredictor,
-            TwoThetaPredictionParameterisation,
-        )
-
         # Only parameterise the crystal unit cell
         det_params = None
         beam_params = None
@@ -241,16 +241,10 @@ class Script(object):
         # Switch on correlation matrix tracking if a correlation plot is requested
         journal = None
         if params.output.correlation_plot.filename is not None:
-            from dials.algorithms.refinement.engine import refinery_phil_scope
-
             journal = refinery_phil_scope.extract().refinery.journal
             journal.track_parameter_correlation = True
 
         # Minimisation engine - hardcoded to LevMar for now.
-        from dials.algorithms.refinement.engine import (
-            LevenbergMarquardtIterations as Refinery,
-        )
-
         refinery = Refinery(
             target=target,
             prediction_parameterisation=pred_param,
@@ -260,8 +254,6 @@ class Script(object):
         )
 
         # Refiner
-        from dials.algorithms.refinement.refiner import Refiner
-
         refiner = Refiner(
             experiments=experiments,
             pred_param=pred_param,
@@ -277,8 +269,6 @@ class Script(object):
     def cell_param_table(crystal):
         """Construct a table of cell parameters and their ESDs"""
 
-        from libtbx.table_utils import simple_table
-
         cell = crystal.get_unit_cell().parameters()
         esd = crystal.get_cell_parameter_sd()
         vol = crystal.get_unit_cell().volume()
@@ -289,8 +279,7 @@ class Script(object):
         for n, p, e in zip(names, cell, esd):
             rows.append([n, "%9.5f" % p, "%9.5f" % e])
         rows.append(["\nvolume", "\n%9.5f" % vol, "\n%9.5f" % vol_esd])
-        st = simple_table(rows, header)
-        return st.format()
+        return tabulate(rows, header)
 
     @staticmethod
     def generate_p4p(crystal, beam, filename):
@@ -318,8 +307,6 @@ class Script(object):
     @staticmethod
     def generate_cif(crystal, refiner, filename):
         logger.info("Saving CIF information to %s", filename)
-        from cctbx import miller
-        import iotbx.cif.model
 
         block = iotbx.cif.model.block()
         block["_audit_creation_method"] = dials_version()
@@ -378,8 +365,6 @@ class Script(object):
     @staticmethod
     def generate_mmcif(crystal, refiner, filename):
         logger.info("Saving mmCIF information to %s", filename)
-        from cctbx import miller
-        import iotbx.cif.model
 
         block = iotbx.cif.model.block()
         block["_audit.creation_method"] = dials_version()
@@ -435,7 +420,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        start_time = time()
 
         # Parse the command line
         params, _ = self.parser.parse_args(show_diff_phil=False)
@@ -444,8 +428,9 @@ class Script(object):
         reflections = flex.reflection_table()
 
         # loop through the input, building up the global lists
-        reflections_list = flatten_reflections(params.input.reflections)
-        experiments = flatten_experiments(params.input.experiments)
+        reflections_list, experiments = reflections_and_experiments_from_files(
+            params.input.reflections, params.input.experiments
+        )
 
         reflections_list = parse_multiple_datasets(reflections_list)
         for refs in reflections_list:
@@ -540,9 +525,6 @@ class Script(object):
 
         if params.output.mmcif is not None:
             self.generate_mmcif(crystals[0], refiner, filename=params.output.mmcif)
-
-        # Log the total time taken
-        logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

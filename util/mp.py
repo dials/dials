@@ -2,7 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import future.moves.itertools as itertools
 import libtbx.easy_mp
-import warnings
 
 
 def parallel_map(
@@ -157,29 +156,6 @@ def multi_node_parallel_map(
 
     # return result
     return [item for rlist in result for item in rlist]
-
-
-def batch_parallel_map(
-    func=None, iterable=None, processes=None, callback=None, method=None, chunksize=1
-):
-    warnings.warn(
-        "This function is deprecated and will be removed in the future",
-        UserWarning,
-        stacklevel=2,
-    )
-    """
-    A function to run jobs in batches in each process
-    """
-    # Call the batches in parallel
-    return libtbx.easy_mp.parallel_map(
-        func=_create_iterable_wrapper(func),
-        iterable=_iterable_grouper(iterable, chunksize),
-        processes=processes,
-        callback=_create_iterable_wrapper(callback),
-        method=method,
-        preserve_order=True,
-        preserve_exception_message=True,
-    )
 
 
 def batch_multi_node_parallel_map(

@@ -9,16 +9,19 @@ help_message = """
 dials.goniometer_calibration is a tool to aid calibration of multi-axis
 goniometers.
 
-The tool takes as input exeriments.expt files for datasets recorded at the
+The tool takes as input experiments.expt files for datasets recorded at the
 goniometer datum setting and for each goniometer axis incremented in turn. It
 outputs the axes and angles relating each consecutive pair of crystal setting
 matrices in imgCIF and MOSFLM coordinate systems, and the CIF loop describing
 the goniometer axes. Optionally it can also output an XOalign configuration file.
 
+Either space_group must be specified or the parameter
+use_space_group_from_experiments=True must be set
+
 Examples::
 
-dials.goniometer_calibration space_group=P422 \
-  experiments_o0_k0_p0.expt experiments_o0_k0_p48.expt \
+dials.goniometer_calibration space_group=P422 \\
+  experiments_o0_k0_p0.expt experiments_o0_k0_p48.expt \\
   experiments_o0_k48_p48.expt experiments_o48_k48_p48.expt
 """
 
@@ -53,9 +56,9 @@ def run(args):
 
     params, options = parser.parse_args(show_diff_phil=True)
     if not params.use_space_group_from_experiments and params.space_group is None:
-        sys.exit(
-            "Either space_group must be specified or set the parameter use_space_group_from_experiments=True"
-        )
+        parser.print_help()
+        return
+
     experiments = flatten_experiments(params.input.experiments)
     if len(experiments) <= 1:
         parser.print_help()

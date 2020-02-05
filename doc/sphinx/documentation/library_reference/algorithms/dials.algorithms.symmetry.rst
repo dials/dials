@@ -7,7 +7,7 @@ dials.algorithms.symmetry
     :undoc-members:
     :show-inheritance:
 
-.. automodule:: dials.algorithms.symmetry.determine_space_group
+.. automodule:: dials.algorithms.symmetry.laue_group
     :members:
     :undoc-members:
     :show-inheritance:

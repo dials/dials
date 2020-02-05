@@ -2,21 +2,30 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
+from cctbx import sgtbx
+from libtbx.phil import parse
+from iotbx.xds import integrate_hkl
+from iotbx.xds import spot_xds
+from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+from scitbx import matrix
+
+from dxtbx.model import Crystal
+from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.array_family import flex
 from dials.util import show_mail_on_error
+from dials.util.command_line import Command
+from dials.util.options import OptionParser
 
 
 class SpotXDSImporter(object):
-    """ Class to import a spot.xds file to a reflection table. """
+    """Class to import a spot.xds file to a reflection table."""
 
     def __init__(self, spot_xds):
         self._spot_xds = spot_xds
 
     def __call__(self, params, options):
-        """ Import the spot.xds file. """
-        from iotbx.xds import spot_xds
-        from dials.util.command_line import Command
-
+        """Import the spot.xds file."""
         # Read the SPOT.XDS file
         Command.start("Reading SPOT.XDS")
         handle = spot_xds.reader()
@@ -67,19 +76,14 @@ class SpotXDSImporter(object):
 
 
 class IntegrateHKLImporter(object):
-    """ Class to import an integrate.hkl file to a reflection table. """
+    """Class to import an integrate.hkl file to a reflection table."""
 
     def __init__(self, integrate_hkl, experiment):
         self._integrate_hkl = integrate_hkl
         self._experiment = experiment
 
     def __call__(self, params, options):
-        """ Import the integrate.hkl file. """
-
-        from iotbx.xds import integrate_hkl
-        from dials.util.command_line import Command
-        from cctbx import sgtbx
-
+        """Import the integrate.hkl file."""
         # Get the unit cell to calculate the resolution
         uc = self._experiment.crystal.get_unit_cell()
 
@@ -143,8 +147,6 @@ class IntegrateHKLImporter(object):
     def derive_reindex_matrix(self, handle):
         """Derive a reindexing matrix to go from the orientation matrix used
         for XDS integration to the one used for DIALS integration."""
-        from scitbx import matrix
-
         dA = matrix.sqr(self._experiment.crystal.get_A())
         dbeam = matrix.col(self._experiment.beam.get_sample_to_source_direction())
         daxis = matrix.col(self._experiment.goniometer.get_rotation_axis())
@@ -153,8 +155,6 @@ class IntegrateHKLImporter(object):
         xaxis = matrix.col(handle.rotation_axis).normalize()
 
         # want to align XDS -s0 vector...
-        from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-
         R = align_reference_frame(-xbeam, dbeam, xaxis, n.cross(dbeam))
         xA = matrix.sqr(
             handle.unit_cell_a_axis + handle.unit_cell_b_axis + handle.unit_cell_c_axis
@@ -168,15 +168,13 @@ class IntegrateHKLImporter(object):
 
 
 class XDSFileImporter(object):
-    """ Import a data block from xds. """
+    """Import a data block from xds."""
 
     def __init__(self, args):
-        """ Initialise with the options"""
+        """Initialise with the options"""
         self.args = args
 
     def __call__(self, params, options):
-        from dxtbx.model.experiment_list import ExperimentListFactory
-
         # Get the XDS.INP file
         xds_inp = os.path.join(self.args[0], "XDS.INP")
         if params.input.xds_file is None:
@@ -260,7 +258,7 @@ class XDSFileImporter(object):
 
     @staticmethod
     def find_best_xds_file(xds_dir):
-        """ Find the best available file."""
+        """Find the best available file."""
 
         # The possible files to check
         paths = [
@@ -344,21 +342,15 @@ class XDSFileImporter(object):
             return
 
         # coordinate frame conversions
-        from scitbx import matrix
-
         dbeam = matrix.col(experiment.beam.get_sample_to_source_direction())
         daxis = matrix.col(experiment.goniometer.get_rotation_axis())
         xbeam = matrix.col(xds_beam).normalize()
         xaxis = matrix.col(xds_axis).normalize()
 
         # want to align XDS -s0 vector...
-        from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
-
         R = align_reference_frame(-xbeam, dbeam, xaxis, daxis)
 
         # Make a static crystal for each block
-        from dxtbx.model import Crystal
-
         crystals = []
         sg = experiment.crystal.get_space_group()
         for a, b, c in zip(a_axis, b_axis, c_axis):
@@ -381,14 +373,10 @@ class XDSFileImporter(object):
 
 
 class Script(object):
-    """ A class to encapsulate the script. """
+    """A class to encapsulate the script."""
 
     def __init__(self):
-        """ Initialise the script. """
-        from dials.util.options import OptionParser
-        from libtbx.phil import parse
-        import libtbx.load_env
-
+        """Initialise the script."""
         # Create the phil parameters
         phil_scope = parse(
             """
@@ -429,13 +417,11 @@ class Script(object):
         )
 
         # The option parser
-        usage = (
-            "usage: %s [options] (SPOT.XDS|INTEGRATE.HKL)" % libtbx.env.dispatcher_name
-        )
+        usage = "usage: dials.import_xds [options] (SPOT.XDS|INTEGRATE.HKL)"
         self.parser = OptionParser(usage=usage, phil=phil_scope)
 
     def run(self):
-        """ Run the script. """
+        """Run the script."""
 
         # Parse the command line arguments
         params, options, args = self.parser.parse_args(
@@ -457,8 +443,6 @@ class Script(object):
         importer(params, options)
 
     def select_importer(self, args):
-        from dxtbx.model.experiment_list import ExperimentListFactory
-
         path, filename = os.path.split(args[0])
         if filename == "SPOT.XDS":
             return SpotXDSImporter(args[0])

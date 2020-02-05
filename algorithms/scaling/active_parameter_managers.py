@@ -172,18 +172,20 @@ class multi_active_parameter_manager(object):
 
 class ParameterManagerGenerator(object):
     """
-    Factory to correctly set up a single/multi active parameter manager for
-    concurrent scaling of all model components of a general data_manager
-    (or multiple data managers). This extracts the name of the components from
-    each data_manager and creates a list to pass on to the apm_type specified
-    (e.g a subclass of active_parameter_manager). mode=single/multi returns a
-    single/multi active parameter manager.
+    Class to generate multi-dataset parameter managers for minimisation.
 
-    Data managers is a list of objects which have a components attribute.
+    Handles the case of concurrent parameter minimisation (one parameter
+    manager generated) and the case of consecutive parameter minimisation
+    (several parameter managers generated, one for each minimisation, depending
+    on the data_manager.consecutive_refinement_order property).
     """
 
     def __init__(self, data_managers, apm_type, mode="concurrent"):
-        assert mode in ["concurrent", "consecutive"], mode
+        if mode not in ["concurrent", "consecutive"]:
+            raise ValueError(
+                "Bad value for refinement order mode: %s, expected %s"
+                % (mode, " or ".join(["concurrent", "consecutive"]))
+            )
         self.data_managers = data_managers
         self.apm_type = apm_type
         self.mode = mode
@@ -223,8 +225,8 @@ class ParameterManagerGenerator(object):
         while any(self.param_lists[i] for i, _ in enumerate(self.data_managers)):
             params = []
             for param_list in self.param_lists:
-                try:
+                if param_list:
                     params.append(param_list.pop(0))
-                except IndexError:
+                else:
                     params.append([])
             yield multi_active_parameter_manager(components, params, self.apm_type)

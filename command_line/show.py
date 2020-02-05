@@ -1,14 +1,15 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.show
-
 from __future__ import absolute_import, division, print_function
 
+import collections
 import os
+
 import iotbx.phil
 import numpy
-from libtbx import table_utils
+from cctbx import uctbx
+from dials.array_family import flex
+from dials.util import Sorry, tabulate
 from dxtbx.model.experiment_list import ExperimentListFactory
 from scitbx.math import five_number_summary
-from dials.util import Sorry
 
 help_message = """
 
@@ -26,6 +27,9 @@ phil_scope = iotbx.phil.parse(
 show_scan_varying = False
   .type = bool
   .help = "Whether or not to show the crystal at each scan point."
+show_shared_models = False
+  .type = bool
+  .help = "Show which models are linked to which experiments"
 show_all_reflection_data = False
   .type = bool
   .help = "Whether or not to print individual reflections"
@@ -43,7 +47,15 @@ show_identifiers = False
   .help = "Show experiment identifiers map if set"
 show_image_statistics = False
   .type = bool
-  .help = "Show statistics on the distribution of values in each image"
+  .help = "Deprecated option, please use image_statistics instead"
+image_statistics{
+  show_corrected = False
+    .type = bool
+    .help = "Show statistics on the distribution of values in each corrected image"
+  show_raw = False
+    .type = bool
+    .help = "Show statistics on the distribution of values in each raw image"
+}
 max_reflections = None
   .type = int
   .help = "Limit the number of reflections in the output."
@@ -171,10 +183,11 @@ def show_goniometer(goniometer):
 
 
 def run(args):
-    import dials.util.banner  # noqa: F401 - Importing means that it prints
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-    from dials.util.options import flatten_reflections
+    import dials.util.log
+
+    dials.util.log.print_banner()
+
+    from dials.util.options import OptionParser, reflections_and_experiments_from_files
 
     usage = "dials.show [options] models.expt | image_*.cbf"
 
@@ -188,9 +201,10 @@ def run(args):
         epilog=help_message,
     )
 
-    params, options = parser.parse_args(show_diff_phil=True)
-    experiments = flatten_experiments(params.input.experiments)
-    reflections = flatten_reflections(params.input.reflections)
+    params, options = parser.parse_args(args=args, show_diff_phil=True)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     if len(experiments) == 0 and len(reflections) == 0:
         parser.print_help()
@@ -201,13 +215,23 @@ def run(args):
             sys.exit("Error: experiment has no detector")
         if not all(e.beam for e in experiments):
             sys.exit("Error: experiment has no beam")
-        print(
-            show_experiments(
-                experiments,
-                show_scan_varying=params.show_scan_varying,
-                show_image_statistics=params.show_image_statistics,
+        print(show_experiments(experiments, show_scan_varying=params.show_scan_varying))
+
+        if params.show_image_statistics:
+            print(
+                "WARNING: show_image_statistics is deprecated. Please use image_statistics.show_raw or image_statistics.show_corrected instead"
             )
-        )
+            params.image_statistics.show_raw = True
+
+        if params.image_statistics.show_raw:
+            show_image_statistics(experiments, "raw")
+
+        if params.image_statistics.show_corrected:
+            show_image_statistics(experiments, "corrected")
+
+        if params.show_shared_models:
+            print()
+            print(model_connectivity(experiments))
 
     if len(reflections):
         print(
@@ -224,12 +248,14 @@ def run(args):
         )
 
 
-def show_experiments(experiments, show_scan_varying=False, show_image_statistics=False):
+def show_experiments(experiments, show_scan_varying=False):
 
     text = []
-
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
+        format_class = expt.imageset.get_format_class()
+        if format_class.__name__ != "Format":
+            text.append("Format class: %s" % format_class.__name__)
         if expt.identifier != "":
             text.append("Experiment identifier: %s" % expt.identifier)
         text.append(str(expt.detector))
@@ -251,15 +277,17 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.crystal is not None:
             text.append(expt.crystal.as_str(show_scan_varying=show_scan_varying))
             if expt.crystal.num_scan_points:
-                from scitbx.array_family import flex
-                from cctbx import uctbx
-
                 abc = flex.vec3_double()
                 angles = flex.vec3_double()
                 for n in range(expt.crystal.num_scan_points):
-                    a, b, c, alpha, beta, gamma = expt.crystal.get_unit_cell_at_scan_point(
-                        n
-                    ).parameters()
+                    (
+                        a,
+                        b,
+                        c,
+                        alpha,
+                        beta,
+                        gamma,
+                    ) = expt.crystal.get_unit_cell_at_scan_point(n).parameters()
                     abc.append((a, b, c))
                     angles.append((alpha, beta, gamma))
                 a, b, c = abc.mean()
@@ -271,26 +299,78 @@ def show_experiments(experiments, show_scan_varying=False, show_image_statistics
         if expt.scaling_model is not None:
             text.append(str(expt.scaling_model))
 
-        if expt.imageset is not None and show_image_statistics:
-            # XXX This is gross, gross gross!
-            # check_format=False, so we can't get the image data from the imageset
-            for i in range(len(expt.imageset)):
-                filename = expt.imageset.get_path(i)
-                el = ExperimentListFactory.from_filenames((filename,))
-                if len(el) == 0:
-                    raise Sorry("Cannot find image {0}".format(filename))
-                pnl_data = el.imagesets()[0].get_raw_data(0)
-                if not isinstance(pnl_data, tuple):
-                    pnl_data = (pnl_data,)
-                flat_data = pnl_data[0].as_1d()
-                for p in pnl_data[1:]:
-                    flat_data.extend(p.as_1d())
-                fns = five_number_summary(flat_data)
-                text.append(
-                    "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
-                        os.path.basename(filename), *fns
-                    )
+    return "\n".join(text)
+
+
+def show_image_statistics(experiments, im_type):
+
+    if im_type == "raw":
+        raw = True
+    elif im_type == "corrected":
+        raw = False
+    else:
+        raise ValueError("Unknown im_type: {0}".format(im_type))
+
+    # To show image statistics, check_format has to be true. So we have to reinstatiate
+    # the experiment list here
+    try:
+        experiments = ExperimentListFactory.from_json(
+            experiments.as_json(), check_format=True
+        )
+    except IOError as e:
+        raise Sorry(
+            "Unable to read image data. Please check {0} is accessible".format(
+                e.filename
+            )
+        )
+
+    print("Five number summary of the {0} images".format(im_type))
+    for i_expt, expt in enumerate(experiments):
+        for i in range(len(expt.imageset)):
+            identifier = os.path.basename(expt.imageset.get_image_identifier(i))
+            if raw:
+                pnl_data = expt.imageset.get_raw_data(i)
+            else:
+                pnl_data = expt.imageset.get_corrected_data(i)
+            if not isinstance(pnl_data, tuple):
+                pnl_data = (pnl_data,)
+            flat_data = pnl_data[0].as_1d()
+            for p in pnl_data[1:]:
+                flat_data.extend(p.as_1d())
+            fns = five_number_summary(flat_data)
+            print(
+                "{0}: Min: {1:.1f} Q1: {2:.1f} Med: {3:.1f} Q3: {4:.1f} Max: {5:.1f}".format(
+                    identifier, *fns
                 )
+            )
+
+
+def model_connectivity(experiments):
+    def model_connectivity_impl(experiments, model):
+        text = [""]
+        text.append("%s:" % model.capitalize())
+        models = getattr(experiments, "%ss" % model)()
+        rows = [[""] + [str(j) for j in range(len(models))]]
+        for j, e in enumerate(experiments):
+            row = ["Experiment %d" % j]
+            for m in models:
+                if getattr(e, model) is m:
+                    row.append("x")
+                else:
+                    row.append(".")
+            rows.append(row)
+        text.append(tabulate(rows, tablefmt="plain"))
+        return text
+
+    if len(experiments) == 1:
+        return ""
+
+    text = []
+    text.append("Experiment / Models")
+    text.extend(model_connectivity_impl(experiments, "detector"))
+    text.extend(model_connectivity_impl(experiments, "crystal"))
+    text.extend(model_connectivity_impl(experiments, "beam"))
+
     return "\n".join(text)
 
 
@@ -334,9 +414,7 @@ def _create_flag_count_table(table):
     # Build the array of output strings
     text = []
     text.append("Reflection flags:")
-    text.append(
-        table_utils.format(flag_rows, has_header=True, prefix="| ", postfix=" |")
-    )
+    text.append(tabulate(flag_rows, headers="firstrow"))
     return "\n".join(text)
 
 
@@ -353,7 +431,6 @@ def show_reflections(
 
     text = []
 
-    import collections
     from orderedset import OrderedSet
 
     formats = collections.OrderedDict(
@@ -415,7 +492,6 @@ def show_reflections(
     )
 
     for rlist in reflections:
-        from dials.array_family import flex
         from dials.algorithms.shoebox import MaskCode
 
         foreground_valid = MaskCode.Valid | MaskCode.Foreground
@@ -490,9 +566,7 @@ def show_reflections(
                     ]
                 )
 
-        text.append(
-            table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-        )
+        text.append(tabulate(rows, headers="firstrow"))
 
         if show_flags:
             text.append(_create_flag_count_table(rlist))
@@ -611,9 +685,7 @@ def show_reflections(
             line.append("%%%is" % width % key)
         text.append(" ".join(line))
         for i in range(max_reflections):
-            line = []
-            for j in range(len(columns)):
-                line.append(columns[j][i])
+            line = (c[i] for c in columns)
             text.append(" ".join(line))
 
     return "\n".join(text)

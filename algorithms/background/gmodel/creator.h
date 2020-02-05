@@ -34,22 +34,12 @@ namespace dials { namespace algorithms {
   public:
     /**
      * Initialise the creator
-     * @param tuning_constant The robust tuning constant
-     * @param max_iter The maximum number of iterations
      * @param min_pixels The minimum number of pixels needed
      */
     GModelBackgroundCreator(boost::shared_ptr<BackgroundModel> model,
                             bool robust,
-                            double tuning_constant,
-                            std::size_t max_iter,
                             std::size_t min_pixels)
-        : model_(model),
-          robust_(robust),
-          tuning_constant_(tuning_constant),
-          max_iter_(max_iter),
-          min_pixels_(min_pixels) {
-      DIALS_ASSERT(tuning_constant > 0);
-      DIALS_ASSERT(max_iter > 0);
+        : model_(model), robust_(robust), min_pixels_(min_pixels) {
       DIALS_ASSERT(min_pixels > 0);
     }
 
@@ -293,8 +283,6 @@ namespace dials { namespace algorithms {
 
     boost::shared_ptr<BackgroundModel> model_;
     bool robust_;
-    double tuning_constant_;
-    std::size_t max_iter_;
     std::size_t min_pixels_;
   };
 

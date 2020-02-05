@@ -3,8 +3,10 @@ Observers for the scaling algorithm.
 """
 from __future__ import absolute_import, division, print_function
 
+import json
 import logging
 from collections import OrderedDict
+from dials.util import tabulate
 
 import six
 from cctbx import uctbx
@@ -13,11 +15,19 @@ from dials.algorithms.scaling.plots import (
     plot_outliers,
     normal_probability_plot,
     error_model_variance_plot,
+    error_regression_plot,
 )
 from dials.algorithms.scaling.model.model import plot_scaling_models
 from dials.report.analysis import (
     reflection_tables_to_batch_dependent_properties,
     make_merging_statistics_summary,
+)
+from dials.algorithms.scaling.error_model.error_model import (
+    calc_sigmaprime,
+    calc_deltahl,
+)
+from dials.algorithms.scaling.error_model.error_model_target import (
+    calculate_regression_x_y,
 )
 from dials.report.plots import (
     scale_rmerge_vs_batch_plot,
@@ -31,7 +41,6 @@ from dials.algorithms.scaling.scale_and_filter import make_scaling_filtering_plo
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
 from jinja2 import Environment, ChoiceLoader, PackageLoader
-from libtbx.table_utils import simple_table
 from scitbx.array_family import flex
 
 logger = logging.getLogger("dials")
@@ -105,14 +114,18 @@ class ScalingSummaryGenerator(Observer):
         valid_ranges = get_valid_image_ranges(scaling_script.experiments)
         image_ranges = get_image_ranges(scaling_script.experiments)
         msg = []
-        for (img, valid, exp) in zip(
-            image_ranges, valid_ranges, scaling_script.experiments
+        for (img, valid, refl) in zip(
+            image_ranges, valid_ranges, scaling_script.reflections
         ):
             if valid:
                 if len(valid) > 1 or valid[0][0] != img[0] or valid[-1][1] != img[1]:
                     msg.append(
-                        "Excluded images for experiment identifier: %s, image range: %s, limited range: %s"
-                        % (exp.identifier, list(img), list(valid))
+                        "Excluded images for experiment id: %s, image range: %s, limited range: %s"
+                        % (
+                            refl.experiment_identifiers().keys()[0],
+                            list(img),
+                            list(valid),
+                        )
                     )
         if msg:
             msg = ["Summary of image ranges removed:"] + msg
@@ -138,8 +151,7 @@ class ScalingSummaryGenerator(Observer):
             ["0.01 < p < 0.5", str(partial_lt_half_sel.count(True))],
             ["p < 0.01", str(not_zero_sel.count(False))],
         ]
-        st = simple_table(rows, header)
-        logger.info(st.format())
+        logger.info(tabulate(rows, header))
         logger.info(
             """
 Reflections below a partiality_cutoff of %s are not considered for any
@@ -166,37 +178,44 @@ class ScalingHTMLGenerator(Observer):
 
     def make_scaling_html(self, scaling_script):
         """Collect data from the individual observers and write the html."""
-        if not scaling_script.params.output.html:
+        html_file = scaling_script.params.output.html
+        json_file = scaling_script.params.output.json
+        if not (html_file or json_file):
             return
         self.data.update(ScalingModelObserver().make_plots())
         self.data.update(ScalingOutlierObserver().make_plots())
         self.data.update(ErrorModelObserver().make_plots())
         self.data.update(MergingStatisticsObserver().make_plots())
         self.data.update(FilteringObserver().make_plots())
-        filename = scaling_script.params.output.html
-        logger.info("Writing html report to: %s", filename)
-        loader = ChoiceLoader(
-            [
-                PackageLoader("dials", "templates"),
-                PackageLoader("dials", "static", encoding="utf-8"),
-            ]
-        )
-        env = Environment(loader=loader)
-        template = env.get_template("scaling_report.html")
-        html = template.render(
-            page_title="DIALS scaling report",
-            scaling_model_graphs=self.data["scaling_model"],
-            scaling_tables=self.data["scaling_tables"],
-            resolution_plots=self.data["resolution_plots"],
-            scaling_outlier_graphs=self.data["outlier_plots"],
-            error_model_plots=self.data["error_model_plots"],
-            anom_plots=self.data["anom_plots"],
-            batch_plots=self.data["batch_plots"],
-            misc_plots=self.data["misc_plots"],
-            filter_plots=self.data["filter_plots"],
-        )
-        with open(filename, "wb") as f:
-            f.write(html.encode("ascii", "xmlcharrefreplace"))
+        if html_file:
+            logger.info("Writing html report to: %s", html_file)
+            loader = ChoiceLoader(
+                [
+                    PackageLoader("dials", "templates"),
+                    PackageLoader("dials", "static", encoding="utf-8"),
+                ]
+            )
+            env = Environment(loader=loader)
+            template = env.get_template("scaling_report.html")
+            html = template.render(
+                page_title="DIALS scaling report",
+                scaling_model_graphs=self.data["scaling_model"],
+                scaling_tables=self.data["scaling_tables"],
+                error_model_summary=self.data["error_model_summary"],
+                resolution_plots=self.data["resolution_plots"],
+                scaling_outlier_graphs=self.data["outlier_plots"],
+                error_model_plots=self.data["error_model_plots"],
+                anom_plots=self.data["anom_plots"],
+                batch_plots=self.data["batch_plots"],
+                misc_plots=self.data["misc_plots"],
+                filter_plots=self.data["filter_plots"],
+            )
+            with open(html_file, "wb") as f:
+                f.write(html.encode("utf-8", "xmlcharrefreplace"))
+        if json_file:
+            logger.info("Writing html report data to: %s", json_file)
+            with open(json_file, "w") as outfile:
+                json.dump(self.data, outfile)
 
 
 @singleton
@@ -210,9 +229,8 @@ class ScalingModelObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers", False)
         if not active_scalers:
             active_scalers = [scaler]
-        for s in active_scalers:
-            id_ = s.experiment.identifier
-            self.data[id_] = s.experiment.scaling_model.to_dict()
+        for i, s in enumerate(active_scalers):
+            self.data[i] = s.experiment.scaling_model.to_dict()
 
     def make_plots(self):
         """Generate scaling model component plot data."""
@@ -270,23 +288,26 @@ class ScalingOutlierObserver(Observer):
         active_scalers = getattr(scaler, "active_scalers")
         if not active_scalers:
             active_scalers = [scaler]
-        for scaler in active_scalers:
-            id_ = scaler.experiment.identifier
+        for j, scaler in enumerate(active_scalers):
             outlier_isel = scaler.suitable_refl_for_scaling_sel.iselection().select(
                 scaler.outliers
             )
             x, y, z = (
                 scaler.reflection_table["xyzobs.px.value"].select(outlier_isel).parts()
             )
-            self.data[id_] = {
+            if scaler.experiment.scan:
+                zrange = [
+                    i / scaler.experiment.scan.get_oscillation()[1]
+                    for i in scaler.experiment.scan.get_oscillation_range()
+                ]
+            else:
+                zrange = [0, 0]
+            self.data[j] = {
                 "x": list(x),
                 "y": list(y),
                 "z": list(z),
                 "image_size": scaler.experiment.detector[0].get_image_size(),
-                "z_range": [
-                    i / scaler.experiment.scan.get_oscillation()[1]
-                    for i in scaler.experiment.scan.get_oscillation_range()
-                ],
+                "z_range": zrange,
             }
 
     def make_plots(self):
@@ -310,33 +331,37 @@ class ErrorModelObserver(Observer):
     """
 
     def update(self, scaler):
-        if scaler.experiment.scaling_model.error_model:
-            self.data["delta_hl"] = list(
-                scaler.experiment.scaling_model.error_model.delta_hl
-            )
-            self.data[
-                "intensity"
-            ] = scaler.experiment.scaling_model.error_model.intensities
-            self.data[
-                "inv_scale"
-            ] = scaler.experiment.scaling_model.error_model.inverse_scale_factors
-            self.data["sigma"] = (
-                scaler.experiment.scaling_model.error_model.sigmaprime
-                * self.data["inv_scale"]
-            )
-            self.data[
-                "binning_info"
-            ] = scaler.experiment.scaling_model.error_model.binning_info
+        if scaler.error_model:
+            if scaler.error_model.filtered_Ih_table:
+                table = scaler.error_model.filtered_Ih_table
+                self.data["intensity"] = table.intensities
+                sigmaprime = calc_sigmaprime(scaler.error_model.parameters, table)
+                self.data["delta_hl"] = calc_deltahl(table, table.calc_nh(), sigmaprime)
+                self.data["inv_scale"] = table.inverse_scale_factors
+                self.data["sigma"] = sigmaprime * self.data["inv_scale"]
+                self.data["binning_info"] = scaler.error_model.binner.binning_info
+                scaler.error_model.clear_Ih_table()
+            if scaler.params.weighting.error_model.basic.minimisation == "regression":
+                x, y = calculate_regression_x_y(scaler.error_model.filtered_Ih_table)
+                self.data["regression_x"] = x
+                self.data["regression_y"] = y
+                self.data["model_a"] = scaler.error_model.parameters[0]
+                self.data["model_b"] = scaler.error_model.parameters[1]
+            self.data["summary"] = str(scaler.error_model)
 
     def make_plots(self):
         """Generate normal probability plot data."""
-        d = {"error_model_plots": {}}
+        d = {"error_model_plots": {}, "error_model_summary": "No error model applied"}
         if "delta_hl" in self.data:
             d["error_model_plots"].update(normal_probability_plot(self.data))
             d["error_model_plots"].update(
                 i_over_sig_i_vs_i_plot(self.data["intensity"], self.data["sigma"])
             )
             d["error_model_plots"].update(error_model_variance_plot(self.data))
+            if "regression_x" in self.data:
+                d["error_model_plots"].update(error_regression_plot(self.data))
+        if "summary" in self.data:
+            d["error_model_summary"] = self.data["summary"]
         return d
 
 
@@ -379,7 +404,13 @@ class MergingStatisticsObserver(Observer):
                 "is_centric": scaling_script.scaled_miller_array.space_group().is_centric(),
             }
             # Now calculate batch data
-            batches, rvb, isigivb, svb, batch_data = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
+            (
+                batches,
+                rvb,
+                isigivb,
+                svb,
+                batch_data,
+            ) = reflection_tables_to_batch_dependent_properties(  # pylint: disable=unbalanced-tuple-unpacking
                 scaling_script.reflections,
                 scaling_script.experiments,
                 scaling_script.scaled_miller_array,

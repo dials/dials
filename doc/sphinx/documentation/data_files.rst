@@ -3,15 +3,14 @@ Data files
 
 The DIALS programs read and write three main types of data file for storing the
 experimental geometry, image data and processed reflection data. These are
-summarized in the following table and described in more detail in the sections
+summarised in the following table and described in more detail in the sections
 below.
 
 +------------------+-----------------------------------------------------+
 | File type        | Contains                                            |
 +==================+=====================================================+
-| Datablock        | Experimental geometry and image data                |
-+------------------+-----------------------------------------------------+
-| Experiment list  | Experimental geometry (plus crystal) and image data |
+| Experiment list  | Experimental geometry (plus optional crystal)       |
+|                  | and image data                                      |
 +------------------+-----------------------------------------------------+
 | Reflection table | Processed reflection data                           |
 +------------------+-----------------------------------------------------+
@@ -22,11 +21,11 @@ below.
 +------------------+-------------------------------+-------------------------------+
 | Program          | Reads                         | Writes                        |
 +==================+===============================+===============================+
-| dials.import     | N/A                           | datablock.expt                |
+| dials.import     | N/A                           | imported.expt                 |
 +------------------+-------------------------------+-------------------------------+
-| dials.find_spots | datablock.expt                | strong.refl                   |
+| dials.find_spots | imported.expt                 | strong.refl                   |
 +------------------+-------------------------------+-------------------------------+
-| dials.index      | | datablock.expt              | | indexed.expt                |
+| dials.index      | | imported.expt               | | indexed.expt                |
 |                  | | strong.refl                 | | indexed.refl                |
 +------------------+-------------------------------+-------------------------------+
 | dials.refine     | | indexed.expt                | | refined.expt                |
@@ -40,149 +39,6 @@ below.
 |                  | | integrated.refl             | | scaled.refl                 |
 +------------------+-------------------------------+-------------------------------+
 
-.. _datablock-json:
-
-Datablock files
----------------
-
-The datablock file is stored as a JSON file in ascii format. Whilst being human
-readable (and editable), it is generally recommended to let dials.import
-generate the datablock file. The file contains the location of any imported
-imagesets and the initial experimental models (i.e. beam, detector, goniometer
-and scan) for the sets of sweeps or still images. It also encodes the
-relationship between models if multiple sweeps or sets of stills are imported.
-An example of a short file is shown below.
-
-.. code-block:: js
-
-  [
-    {
-      "__id__": "DataBlock",
-      "imageset": [
-        {
-          "__id__": "ImageSweep",
-          "template": "image_####.cbf",
-          "beam": 0,
-          "detector": 0,
-          "goniometer": 0,
-          "scan": 0
-        }
-      ],
-      "beam": [
-        {
-          "direction": [
-            0.0,
-            0.0,
-            1.0
-          ],
-          "polarization_normal": [
-            0.0,
-            1.0,
-            0.0
-          ],
-          "divergence": 0.0,
-          "polarization_fraction": 0.999,
-          "sigma_divergence": 0.0,
-          "wavelength": 0.9795
-        }
-      ],
-      "detector": [
-        {
-          "panels": [
-            {
-              "origin": [
-                -212.47848,
-                220.00176,
-                -190.17999999999998
-              ],
-              "fast_axis": [
-                1.0,
-                0.0,
-                0.0
-              ],
-              "name": "Panel",
-              "slow_axis": [
-                0.0,
-                -1.0,
-                0.0
-              ],
-              "trusted_range": [
-                -1.0,
-                495976.0
-              ],
-              "image_size": [
-                2463,
-                2527
-              ],
-              "px_mm_strategy": {
-                "type": "ParallaxCorrectedPxMmStrategy"
-              },
-              "type": "SENSOR_PAD",
-              "pixel_size": [
-                0.17200000000000001,
-                0.17200000000000001
-              ]
-            }
-          ]
-        }
-      ],
-      "goniometer": [
-        {
-          "fixed_rotation": [
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0
-          ],
-          "rotation_axis": [
-            1.0,
-            0.0,
-            0.0
-          ]
-        }
-      ],
-      "scan": [
-        {
-          "exposure_time": [
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2,
-            0.2
-          ],
-          "epochs": [
-            1360324992.0,
-            1360324992.0,
-            1360324993.0,
-            1360324993.0,
-            1360324993.0,
-            1360324993.0,
-            1360324993.0,
-            1360324994.0,
-            1360324994.0
-          ],
-          "image_range": [
-            1,
-            9
-          ],
-          "oscillation": [
-            0.0,
-            0.2
-          ]
-        }
-      ]
-    }
-  ]
-
 .. _experiments_json:
 
 Experiment list files
@@ -190,11 +46,10 @@ Experiment list files
 
 The experiment list file is stored as a JSON file in ascii format. Whilst being human
 readable (and editable), editing the file directly is generally not recommended.
-The file contains the location of any imported imagesets and the same
-experimental models contained in the datablock file (i.e. beam, detector,
-goniometer and scan). It also contains the crystal models found during indexing.
-The data is modelled by a set of experiments which each contain a single set of
-models. Experiments can share models. For example two experiments may share
+The file contains the location of any imported imagesets and experimental models (i.e.
+beam and detector, plus optional goniometer, scan and crystal models). It also encodes
+the relationship between models if multiple sequences or sets of stills are imported.
+Experiments can share models, e.g. two experiments may share
 detector models. This allows, for example, joint refinement of experiments.
 
 An example of a short file is shown below.
@@ -216,7 +71,7 @@ An example of a short file is shown below.
     ],
     "imageset": [
       {
-        "__id__": "ImageSweep",
+        "__id__": "ImageSequence",
         "template": "centroid_####.cbf"
       }
     ],

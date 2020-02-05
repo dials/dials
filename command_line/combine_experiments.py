@@ -2,10 +2,29 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import random
+import sys
+
+from libtbx.phil import parse
+from scitbx import matrix
+import xfel.clustering.cluster
+from xfel.clustering.cluster_groups import unit_cell_info
+
+from dxtbx.command_line.image_average import splitit
+from dxtbx.datablock import BeamDiff
+from dxtbx.datablock import DetectorDiff
+from dxtbx.datablock import GoniometerDiff
+from dxtbx.model.experiment_list import Experiment
+from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.model.experiment_list import BeamComparison
+from dxtbx.model.experiment_list import DetectorComparison
+from dxtbx.model.experiment_list import GoniometerComparison
 
 import dials.util
-from dials.util import Sorry
-from libtbx.phil import parse
+from dials.algorithms.integration.stills_significance_filter import SignificanceFilter
+from dials.array_family import flex
+from dials.util.options import OptionParser, flatten_experiments
+from dials.util import tabulate
+
 
 help_message = """
 
@@ -217,13 +236,6 @@ class CombineWithReference(object):
             self.average_detector = False
 
     def __call__(self, experiment):
-        from dxtbx.model.experiment_list import BeamComparison
-        from dxtbx.model.experiment_list import DetectorComparison
-        from dxtbx.model.experiment_list import GoniometerComparison
-        from dxtbx.datablock import BeamDiff
-        from dxtbx.datablock import DetectorDiff
-        from dxtbx.datablock import GoniometerDiff
-
         if self.tolerance:
             compare_beam = BeamComparison(
                 wavelength_tolerance=self.tolerance.beam.wavelength,
@@ -311,9 +323,8 @@ class CombineWithReference(object):
             imageset = experiment.imageset
             self._last_imageset = imageset
 
-        from dxtbx.model.experiment_list import Experiment
-
         return Experiment(
+            identifier=experiment.identifier,
             beam=beam,
             detector=detector,
             scan=scan,
@@ -327,20 +338,20 @@ class Cluster(object):
     def __init__(
         self, experiments, reflections, dendrogram=False, threshold=1000, n_max=None
     ):
-        try:
-            from xfel.clustering.cluster import Cluster
-            from xfel.clustering.cluster_groups import unit_cell_info
-        except ImportError:
-            raise Sorry("clustering is not configured")
-        import matplotlib.pyplot as plt
+        if dendrogram:
+            import matplotlib.pyplot as plt
 
-        ucs = Cluster.from_expts(
+            axes = plt.gca()
+        else:
+            axes = None
+
+        ucs = xfel.clustering.cluster.Cluster.from_expts(
             refl_table=reflections, expts_list=experiments, n_images=n_max
         )
         self.clusters, _ = ucs.ab_cluster(
             threshold=threshold,
             log=True,  # log scale
-            ax=plt.gca() if dendrogram else None,
+            ax=axes,
             write_file_lists=False,
             schnell=False,
             doplot=dendrogram,
@@ -357,14 +368,11 @@ class Cluster(object):
 class Script(object):
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
+            "usage: dials.combine_experiments [options] [param.phil] "
             "experiments1.expt experiments2.expt reflections1.refl "
-            "reflections2.refl..." % libtbx.env.dispatcher_name
+            "reflections2.refl..."
         )
 
         # Create the parser
@@ -384,21 +392,17 @@ class Script(object):
 
     def run_with_preparsed(self, params, options):
         """Run combine_experiments, but allow passing in of parameters"""
-        from dials.util.options import flatten_experiments
-
         # Try to load the models and data
-        if len(params.input.experiments) == 0:
+        if not params.input.experiments:
             print("No Experiments found in the input")
             self.parser.print_help()
             return
-        if len(params.input.reflections) == 0:
+        if not params.input.reflections:
             print("No reflection data found in the input")
             self.parser.print_help()
             return
-        try:
-            assert len(params.input.reflections) == len(params.input.experiments)
-        except AssertionError:
-            raise Sorry(
+        if len(params.input.reflections) != len(params.input.experiments):
+            sys.exit(
                 "The number of input reflections files does not match the "
                 "number of input experiments"
             )
@@ -415,35 +419,34 @@ class Script(object):
             try:
                 ref_beam = flat_exps[ref_beam].beam
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_beam))
+                sys.exit("{} is not a valid experiment ID".format(ref_beam))
 
         if ref_goniometer is not None:
             try:
                 ref_goniometer = flat_exps[ref_goniometer].goniometer
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_goniometer))
+                sys.exit("{} is not a valid experiment ID".format(ref_goniometer))
 
         if ref_scan is not None:
             try:
                 ref_scan = flat_exps[ref_scan].scan
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_scan))
+                sys.exit("{} is not a valid experiment ID".format(ref_scan))
 
         if ref_crystal is not None:
             try:
                 ref_crystal = flat_exps[ref_crystal].crystal
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_crystal))
+                sys.exit("{} is not a valid experiment ID".format(ref_crystal))
 
         if ref_detector is not None:
             assert not params.reference_from_experiment.average_detector
             try:
                 ref_detector = flat_exps[ref_detector].detector
             except IndexError:
-                raise Sorry("{} is not a valid experiment ID".format(ref_detector))
+                sys.exit("{} is not a valid experiment ID".format(ref_detector))
         elif params.reference_from_experiment.average_detector:
             # Average all of the detectors together
-            from scitbx.matrix import col
 
             def average_detectors(target, panelgroups, depth):
                 # Recursive function to do the averaging
@@ -453,15 +456,15 @@ class Script(object):
                     or depth == params.reference_from_experiment.average_hierarchy_level
                 ):
                     n = len(panelgroups)
-                    sum_fast = col((0.0, 0.0, 0.0))
-                    sum_slow = col((0.0, 0.0, 0.0))
-                    sum_ori = col((0.0, 0.0, 0.0))
+                    sum_fast = matrix.col((0.0, 0.0, 0.0))
+                    sum_slow = matrix.col((0.0, 0.0, 0.0))
+                    sum_ori = matrix.col((0.0, 0.0, 0.0))
 
                     # Average the d matrix vectors
                     for pg in panelgroups:
-                        sum_fast += col(pg.get_local_fast_axis())
-                        sum_slow += col(pg.get_local_slow_axis())
-                        sum_ori += col(pg.get_local_origin())
+                        sum_fast += matrix.col(pg.get_local_fast_axis())
+                        sum_slow += matrix.col(pg.get_local_slow_axis())
+                        sum_ori += matrix.col(pg.get_local_origin())
                     sum_fast /= n
                     sum_slow /= n
                     sum_ori /= n
@@ -496,13 +499,9 @@ class Script(object):
         )
 
         # set up global experiments and reflections lists
-        from dials.array_family import flex
-
         reflections = flex.reflection_table()
         global_id = 0
         skipped_expts = 0
-        from dxtbx.model.experiment_list import ExperimentList
-
         experiments = ExperimentList()
 
         # loop through the input, building up the global lists
@@ -512,6 +511,10 @@ class Script(object):
         ):
             refs = ref_wrapper.data
             exps = exp_wrapper.data
+            # Record initial mapping of ids for updating later.
+            ids_map = dict(refs.experiment_identifiers())
+            for k in refs.experiment_identifiers().keys():
+                del refs.experiment_identifiers()[k]
             for i, exp in enumerate(exps):
                 sel = refs["id"] == i
                 sub_ref = refs.select(sel)
@@ -525,6 +528,9 @@ class Script(object):
 
                 nrefs_per_exp.append(n_sub_ref)
                 sub_ref["id"] = flex.int(len(sub_ref), global_id)
+                # now update identifiers if set.
+                if i in ids_map:
+                    sub_ref.experiment_identifiers()[global_id] = ids_map[i]
                 if params.output.delete_shoeboxes and "shoebox" in sub_ref:
                     del sub_ref["shoebox"]
                 reflections.extend(sub_ref)
@@ -533,7 +539,7 @@ class Script(object):
                 except ComparisonError as e:
                     # When we failed tolerance checks, give a useful error message
                     (path, index) = find_experiment_in(exp, params.input.experiments)
-                    raise Sorry(
+                    sys.exit(
                         "Model didn't match reference within required tolerance for experiment {} in {}:"
                         "\n{}\nAdjust tolerances or set compare_models=False to ignore differences.".format(
                             index, path, str(e)
@@ -553,12 +559,10 @@ class Script(object):
             )
 
         # print number of reflections per experiment
-        from libtbx.table_utils import simple_table
 
         header = ["Experiment", "Number of reflections"]
         rows = [(str(i), str(n)) for (i, n) in enumerate(nrefs_per_exp)]
-        st = simple_table(rows, header)
-        print(st.format())
+        print(tabulate(rows, header))
 
         # save a random subset if requested
         if (
@@ -570,13 +574,21 @@ class Script(object):
             if params.output.n_subset_method == "random":
                 n_picked = 0
                 indices = list(range(len(experiments)))
-                while n_picked < params.output.n_subset:
-                    idx = indices.pop(random.randint(0, len(indices) - 1))
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), n_picked)
-                    subset_refls.extend(refls)
-                    n_picked += 1
+                if reflections.experiment_identifiers().keys():
+                    while n_picked < params.output.n_subset:
+                        idx = indices.pop(random.randint(0, len(indices) - 1))
+                        subset_exp.append(experiments[idx])
+                        n_picked += 1
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    while n_picked < params.output.n_subset:
+                        idx = indices.pop(random.randint(0, len(indices) - 1))
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
+                        refls["id"] = flex.int(len(refls), n_picked)
+                        subset_refls.extend(refls)
+                        n_picked += 1
                 print(
                     "Selecting a random subset of {0} experiments out of {1} total.".format(
                         params.output.n_subset, len(experiments)
@@ -592,15 +604,19 @@ class Script(object):
                     refls_subset = reflections.select(sel)
                 refl_counts = flex.int()
                 for expt_id in range(len(experiments)):
-                    refl_counts.append(
-                        len(refls_subset.select(refls_subset["id"] == expt_id))
-                    )
+                    refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
+                if reflections.experiment_identifiers().keys():
+                    for idx in sort_order[: params.output.n_subset]:
+                        subset_exp.append(experiments[idx])
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
+                        refls["id"] = flex.int(len(refls), expt_id)
+                        subset_refls.extend(refls)
                 print(
                     "Selecting a subset of {0} experiments with highest number of reflections out of {1} total.".format(
                         params.output.n_subset, len(experiments)
@@ -608,24 +624,24 @@ class Script(object):
                 )
 
             elif params.output.n_subset_method == "significance_filter":
-                from dials.algorithms.integration.stills_significance_filter import (
-                    SignificanceFilter,
-                )
-
                 params.output.significance_filter.enable = True
                 sig_filter = SignificanceFilter(params.output)
                 refls_subset = sig_filter(experiments, reflections)
                 refl_counts = flex.int()
                 for expt_id in range(len(experiments)):
-                    refl_counts.append(
-                        len(refls_subset.select(refls_subset["id"] == expt_id))
-                    )
+                    refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
-                for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
-                    subset_exp.append(experiments[idx])
-                    refls = reflections.select(reflections["id"] == idx)
-                    refls["id"] = flex.int(len(refls), expt_id)
-                    subset_refls.extend(refls)
+                if reflections.experiment_identifiers().keys():
+                    for idx in sort_order[: params.output.n_subset]:
+                        subset_exp.append(experiments[idx])
+                    subset_refls = reflections.select(subset_exp)
+                    subset_refls.reset_ids()
+                else:
+                    for expt_id, idx in enumerate(sort_order[: params.output.n_subset]):
+                        subset_exp.append(experiments[idx])
+                        refls = reflections.select(reflections["id"] == idx)
+                        refls["id"] = flex.int(len(refls), expt_id)
+                        subset_refls.extend(refls)
 
             experiments = subset_exp
             reflections = subset_refls
@@ -633,8 +649,6 @@ class Script(object):
         def save_in_batches(
             experiments, reflections, exp_name, refl_name, batch_size=1000
         ):
-            from dxtbx.command_line.image_average import splitit
-
             for i, indices in enumerate(
                 splitit(
                     list(range(len(experiments))), (len(experiments) // batch_size) + 1
@@ -642,11 +656,17 @@ class Script(object):
             ):
                 batch_expts = ExperimentList()
                 batch_refls = flex.reflection_table()
-                for sub_id, sub_idx in enumerate(indices):
-                    batch_expts.append(experiments[sub_idx])
-                    sub_refls = reflections.select(reflections["id"] == sub_idx)
-                    sub_refls["id"] = flex.int(len(sub_refls), sub_id)
-                    batch_refls.extend(sub_refls)
+                if reflections.experiment_identifiers().keys():
+                    for sub_idx in indices:
+                        batch_expts.append(experiments[sub_idx])
+                    batch_refls = reflections.select(batch_expts)
+                    batch_refls.reset_ids()
+                else:
+                    for sub_id, sub_idx in enumerate(indices):
+                        batch_expts.append(experiments[sub_idx])
+                        sub_refls = reflections.select(reflections["id"] == sub_idx)
+                        sub_refls["id"] = flex.int(len(sub_refls), sub_id)
+                        batch_refls.extend(sub_refls)
                 exp_filename = os.path.splitext(exp_name)[0] + "_%03d.expt" % i
                 ref_filename = os.path.splitext(refl_name)[0] + "_%03d.refl" % i
                 self._save_output(batch_expts, batch_refls, exp_filename, ref_filename)
@@ -660,7 +680,17 @@ class Script(object):
                 cluster_refls = flex.reflection_table()
                 for i, expts in enumerate(experiment):
                     refls = reflections_l[cluster][i]
-                    refls["id"] = flex.int(len(refls), i)
+                    if refls.experiment_identifiers().keys():
+                        identifier = refls.experiment_identifiers().values()[0]
+                        id_val = refls.experiment_identifiers().keys()[0]
+                        del refls.experiment_identifiers()[id_val]
+                        refls["id"] = flex.int(len(refls), i)
+                        refls.experiment_identifiers()[i] = identifier
+                        refls.assert_experiment_identifiers_are_consistent(
+                            experiment[i : i + 1]
+                        )
+                    else:
+                        refls["id"] = flex.int(len(refls), i)
                     cluster_expts.append(expts)
                     cluster_refls.extend(refls)
                 exp_filename = os.path.splitext(exp_name)[0] + (
@@ -697,7 +727,8 @@ class Script(object):
             if params.clustering.exclude_single_crystal_clusters:
                 keep_frames = [k for k in keep_frames if len(k) > 1]
             clustered_experiments = [
-                [f.experiment for f in frame_cluster] for frame_cluster in keep_frames
+                ExperimentList([f.experiment for f in frame_cluster])
+                for frame_cluster in keep_frames
             ]
             clustered_reflections = [
                 [f.reflections for f in frame_cluster] for frame_cluster in keep_frames

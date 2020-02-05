@@ -23,167 +23,130 @@ datasets which are contained in the file `semisynthetic_multilattice_data_2.tar.
 .. |semisynthetic| image:: https://zenodo.org/badge/doi/10.5281/zenodo.10820.svg
                :target: https://doi.org/10.5281/zenodo.10820
 
-Import
-^^^^^^
+In this tutorial we shall focus on the processing steps that diverge from the
+regular single-lattice processing discussed in :doc:`processing_in_detail_betalactamase`.
 
-The first stage of step-by-step DIALS processing is to import the data - all
-that happens here is that the image headers are read, and a file describing
-their contents (:samp:`datablock.expt`) is written. It's worth noting that if
-this file is changed subsequent processing can use this.
+Import and Spotfinding
+^^^^^^^^^^^^^^^^^^^^^^
 
-::
+As for single-lattice processing, the first steps are to import the data and
+find spots using the following commands::
 
   dials.import semisynthetic_multilattice_data/2/ag/trp_ag_*.cbf
 
-The output just describes what the software understands of the images it was
-passed, in this case one sweep of data containing 100 images.
+  dials.find_spots imported.expt min_spot_size=3 nproc=4
 
-::
+During import, all that happens here is that the image headers are read, and a
+file describing their contents (:samp:`imported.expt`) is written. The output
+just describes what the software understands of the images it was
+passed, in this case one sequence of data containing 100 images::
 
   The following parameters have been modified:
 
   input {
-    datablock = <image files>
+    experiments = <image files>
   }
 
   --------------------------------------------------------------------------------
-  DataBlock 0
     format: <class 'dxtbx.format.FormatCBFMiniPilatusDLS6MSN100.FormatCBFMiniPilatusDLS6MSN100'>
     num images: 100
-    num sweeps: 1
+    sequences:
+      still:    0
+      sweep:    1
     num stills: 0
   --------------------------------------------------------------------------------
-  Writing datablocks to datablock.expt
+  Writing experiments to imported.expt
 
-Find Spots
-^^^^^^^^^^
+For the spot finding, we tweak the minimum spot size (min_spot_size=3) to improve
+the results for this dataset and use multiple processors to speed up the
+spot-finding (nproc=4)::
 
-The first "real" task in any DIALS processing will be the spot finding.
-Here we tweak the minimum spot size (min_spot_size=3) and use multiple
-processors to speed up the spot-finding (nproc=4).
+  Extracted 46332 spots
+  Removed 8863 spots with size < 3 pixels
+  Removed 3 spots with size > 1000 pixels
+  Calculated 37466 spot centroids
+  Calculated 37466 spot intensities
+  Filtered 35422 of 37466 spots by peak-centroid distance
 
-::
-
-  dials.find_spots datablock.expt min_spot_size=3 nproc=4
-
-This will just report the number of spots found.
-
-::
-
-  Writing datablocks to datablock.expt
-
-  The following parameters have been modified:
-
-  spotfinder {
-    mp {
-      nproc = 4
-    }
-    filter {
-      min_spot_size = 3
-    }
-  }
-  input {
-    datablock = datablock.expt
-  }
-
-  Configuring spot finder from input parameters
-  --------------------------------------------------------------------------------
-  Finding strong spots in imageset 0
-  --------------------------------------------------------------------------------
-
-  Finding spots in image 0 to 100...
-  Extracting strong pixels from images (may take a while)
-  Extracted strong pixels from images
-  Merging 4 pixel lists
-  Merged 4 pixel lists with 763338 pixels
-  Extracting spots
-  Extracted 68439 spots
-  Calculating 68439 spot centroids
-  Calculated 68439 spot centroids
-  Calculating 68439 spot intensities
-  Calculated 68439 spot intensities
-  Filtering 68439 spots by number of pixels
-  Filtered 40212 spots by number of pixels
-  Filtering 40212 spots by peak-centroid distance
-  Filtered 38341 spots by peak-centroid distance
+  Histogram of per-image spot count for imageset 0:
+  35422 spots found on 100 images (max 1190 / bin)
+                                                             *
+  *                                                          *
+  *                                                          *
+  *                                                          *
+  **                                                         *
+  **** ******************* * ************* ******** ** *******
+  ************************************************************
+  ************************************************************
+  ************************************************************
+  ************************************************************
+  1                         image                          100
 
   --------------------------------------------------------------------------------
-  Saving 38341 reflections to strong.refl
-  Saved 38341 reflections to strong.refl
+  Saved 35422 reflections to strong.refl
+
 
 Indexing
 ^^^^^^^^
-
-The next step will be indexing of the strong spots. By default only one
+The next step is the indexing of the strong spots. By default only one
 lattice is searched for, but if there are sufficient unindexed reflections
 remaining after indexing the first lattice, we can switch on indexing of
 multiple lattices using the parameter max_lattices=2 (e.g.)::
 
-  dials.index datablock.expt strong.refl \
-    max_lattices=2
+  dials.index imported.expt strong.refl max_lattices=2
 
 ::
 
-  The following parameters have been modified:
+  RMSDs by experiment:
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  | id  |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 1000 | 0.41832 | 0.25232 | 0.15582  |
+  | 1   | 1000 | 0.33596 | 0.24331 | 0.17531  |
+  ---------------------------------------------
 
-  indexing {
-    multiple_lattice_search {
-      max_lattices = 2
-    }
-  }
-  input {
-    datablock = datablock.expt
-    reflections = strong.refl
-  }
-
-  ...
-
-  RMSDs by experiment
-  -------------------
-  ----------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |       | (px)    | (px)    | (images) |
-  ----------------------------------------------
-  | 0   | 16344 | 0.51285 | 0.41374 | 0.79065  |
-  | 1   | 16594 | 0.37963 | 0.3806  | 0.78624  |
-  ----------------------------------------------
-  Finish searching for more lattices: 3834 unindexed reflections remaining.
-  Rotation matrix to transform crystal 1 to crystal 2
-  {{0.973, -0.159, -0.170},
-   {-0.069, -0.895, 0.441},
-   {-0.222, -0.417, -0.881}}
-  Euler angles (xyz): -153.44, -9.77, 9.28
-
-  Final refined crystal models:
-  model 1 (17355 reflections):
+  Refined crystal models:
+  model 1 (16636 reflections):
   Crystal:
-      Unit cell: (54.116, 58.294, 66.530, 90.010, 90.036, 90.023)
+      Unit cell: (54.063(4), 58.2475(18), 66.494(2), 89.9778(13), 90.013(3), 90.012(3))
       Space group: P 1
-      U matrix:  {{-0.1871,  0.7625,  0.6194},
-                  {-0.0431,  0.6235, -0.7806},
-                  {-0.9814, -0.1727, -0.0838}}
+      U matrix:  {{ 0.1870,  0.7632, -0.6185},
+                  { 0.0427,  0.6227,  0.7813},
+                  { 0.9814, -0.1725,  0.0838}}
+      B matrix:  {{ 0.0185,  0.0000,  0.0000},
+                  { 0.0000,  0.0172,  0.0000},
+                  { 0.0000, -0.0000,  0.0150}}
+      A = UB:    {{ 0.0035,  0.0131, -0.0093},
+                  { 0.0008,  0.0107,  0.0117},
+                  { 0.0182, -0.0030,  0.0013}}
+  model 2 (17247 reflections):
+  Crystal:
+      Unit cell: (54.080(3), 58.263(2), 66.498(3), 90.0060(18), 90.021(3), 90.045(3))
+      Space group: P 1
+      U matrix:  {{ 0.0094,  0.6714, -0.7410},
+                  { 0.3813, -0.6875, -0.6180},
+                  {-0.9244, -0.2768, -0.2625}}
       B matrix:  {{ 0.0185,  0.0000,  0.0000},
                   { 0.0000,  0.0172,  0.0000},
                   { 0.0000,  0.0000,  0.0150}}
-      A = UB:    {{-0.0034,  0.0131,  0.0093},
-                  {-0.0008,  0.0107, -0.0117},
-                  {-0.0181, -0.0030, -0.0013}}
+      A = UB:    {{ 0.0002,  0.0115, -0.0111},
+                  { 0.0070, -0.0118, -0.0093},
+                  {-0.0171, -0.0048, -0.0039}}
+  --------------------------------------------------
+  | Imageset | # indexed | # unindexed | % indexed |
+  --------------------------------------------------
+  | 0        | 33883     | 1539        | 95.7%     |
+  --------------------------------------------------
+  Change of basis op: a,b,c
+  Rotation matrix to transform crystal 1 to crystal 2:
+  {{0.973, -0.160, -0.169},
+  {-0.071, -0.895, 0.441},
+  {-0.222, -0.417, -0.881}}
+  Rotation of -154.399 degrees about axis (0.993, -0.061, -0.103)
 
-  model 2 (17758 reflections):
-  Crystal:
-      Unit cell: (54.134, 58.298, 66.538, 89.995, 89.992, 89.969)
-      Space group: P 1
-      U matrix:  {{-0.0085,  0.6719,  0.7406},
-                  {-0.3810, -0.6870,  0.6188},
-                  { 0.9245, -0.2769,  0.2618}}
-      B matrix:  {{ 0.0185,  0.0000,  0.0000},
-                  {-0.0000,  0.0172,  0.0000},
-                  {-0.0000, -0.0000,  0.0150}}
-      A = UB:    {{-0.0002,  0.0115,  0.0111},
-                  {-0.0070, -0.0118,  0.0093},
-                  { 0.0171, -0.0048,  0.0039}}
-
-
+  Saving refined experiments to indexed.expt
+  Saving refined reflections to indexed.refl
 
 Next we run
 :doc:`dials.refine_bravais_settings </documentation/programs/dials_refine_bravais_settings>`
@@ -202,33 +165,32 @@ each Bravais setting...
 
 ::
 
-  ------------------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell volume      cb_op
-  ------------------------------------------------------------------------------------------------------------
-         9  4.2577 dg 1.988   1000   tetragonal tP  60.17  60.17  69.10  90.00  90.00  90.00 250161      a,b,c
-         8  4.2577 dg 1.982   1000 orthorhombic oC  84.45  85.33  69.01  90.00  90.00  90.00 497254 a+b,-a+b,c
-         7  4.2577 dg 1.950   1000   monoclinic mC  85.47  84.17  68.98  90.00  89.85  90.00 496214  a-b,a+b,c
-         6  4.2576 dg 1.948   1000   monoclinic mC  84.43  85.30  68.99  90.00  89.97  90.00 496845 a+b,-a+b,c
-         5  0.0432 dg 0.135   1000 orthorhombic oP  54.16  58.30  66.54  90.00  90.00  90.00 210119      a,b,c
-         4  0.0432 dg 0.135   1000   monoclinic mP  58.31  54.16  66.54  90.00  90.01  90.00 210136   -b,-a,-c
-         3  0.0376 dg 0.135   1000   monoclinic mP  54.16  66.54  58.30  90.00  90.03  90.00 210093   -a,-c,-b
-         2  0.0255 dg 0.136   1000   monoclinic mP  54.15  58.30  66.52  90.00  90.06  90.00 209989      a,b,c
-         1  0.0000 dg 0.134   1000    triclinic aP  54.15  58.29  66.52  90.02  90.07  90.04 209985      a,b,c
-  ------------------------------------------------------------------------------------------------------------
-
-  ------------------------------------------------------------------------------------------------------------
-  Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell volume      cb_op
-  ------------------------------------------------------------------------------------------------------------
-         9  4.2423 dg 2.228   1000   tetragonal tP  59.39  59.39  68.39  90.00  90.00  90.00 241196      a,b,c
-         8  4.2423 dg 2.208   1000 orthorhombic oC  84.64  83.94  68.47  90.00  90.00  90.00 486463  a-b,a+b,c
-         7  4.2423 dg 1.930   1000   monoclinic mC  82.03  83.17  67.01  90.00  91.78  90.00 456951  a-b,a+b,c
-         6  4.2423 dg 1.797   1000   monoclinic mC  83.47  82.31  67.96  90.00  88.86  90.00 466784 a+b,-a+b,c
-         5  0.0317 dg 0.133   1000 orthorhombic oP  54.09  58.32  66.53  90.00  90.00  90.00 209871      a,b,c
-         4  0.0317 dg 0.133   1000   monoclinic mP  58.32  54.09  66.53  90.00  90.00  90.00 209868   -b,-a,-c
-         3  0.0311 dg 0.133   1000   monoclinic mP  54.07  58.31  66.50  90.00  90.06  90.00 209664      a,b,c
-         2  0.0093 dg 0.136   1000   monoclinic mP  54.11  66.54  58.33  90.00  90.04  90.00 210020   -a,-c,-b
-         1  0.0000 dg 0.138   1000    triclinic aP  54.09  58.33  66.50  89.99  90.07  90.05 209814      a,b,c
-  ------------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------------
+  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
+  ----------------------------------------------------------------------------------------------------------------
+        9     4.2490 1.579 0.384/0.763   1000      tP  60.31  60.31  69.15  90.00  90.00  90.00 251517      a,b,c
+        8     4.2490 1.508 0.372/0.529   1000      oC  85.65  84.55  69.06  90.00  90.00  90.00 500054 a+b,-a+b,c
+        7     4.2490 1.487 0.372/0.372   1000      mC  84.57  85.57  69.01  90.00  89.92  90.00 499425  a-b,a+b,c
+        6     4.2490 1.560 0.529/0.529   1000      mC  85.71  84.31  69.03  90.00  89.87  90.00 498876 a+b,-a+b,c
+  *     5     0.0000 0.095 0.245/0.904   1000      oP  54.10  58.27  66.51  90.00  90.00  90.00 209657      a,b,c
+  *     4     0.0000 0.088 0.904/0.904   1000      mP  58.27  54.11  66.52  90.00  89.98  90.00 209735   -b,-a,-c
+  *     3     0.0000 0.095 0.245/0.245   1000      mP  54.11  58.27  66.51  90.00  90.02  90.00 209715      a,b,c
+  *     2     0.0000 0.093 0.384/0.384   1000      mP  54.11  66.52  58.28  90.00  90.02  90.00 209787   -a,-c,-b
+  *     1     0.0000 0.090         -/-   1000      aP  54.11  58.27  66.51  89.98  90.02  90.00 209725      a,b,c
+  ----------------------------------------------------------------------------------------------------------------
+  ----------------------------------------------------------------------------------------------------------------
+  Solution Metric fit  rmsd  min/max cc #spots lattice                                 unit_cell volume      cb_op
+  ----------------------------------------------------------------------------------------------------------------
+        9     4.2639 1.740 0.227/0.833   1000      tP  59.33  59.33  68.32  90.00  90.00  90.00 240463      a,b,c
+        8     4.2639 1.709 0.242/0.833   1000      oC  84.84  83.85  68.54  90.00  90.00  90.00 487536 a+b,-a+b,c
+        7     4.2639 1.343 0.631/0.631   1000      mC  83.78  82.53  68.28  90.00  88.90  90.00 472000  a-b,a+b,c
+        6     4.2639 1.569 0.242/0.242   1000      mC  82.84  83.47  67.49  90.00  91.40  90.00 466492 a+b,-a+b,c
+  *     5     0.0497 0.076 0.658/0.833   1000      oP  54.10  58.29  66.52  90.00  90.00  90.00 209775      a,b,c
+  *     4     0.0497 0.078 0.658/0.658   1000      mP  58.29  54.10  66.52  90.00  89.99  90.00 209773   -b,-a,-c
+  *     3     0.0453 0.075 0.811/0.811   1000      mP  54.09  58.29  66.51  90.00  90.02  90.00 209673      a,b,c
+  *     2     0.0221 0.075 0.833/0.833   1000      mP  54.09  66.51  58.27  90.00  90.03  90.00 209642   -a,-c,-b
+  *     1     0.0000 0.075         -/-   1000      aP  54.08  58.27  66.50  90.01  90.02  90.03 209577      a,b,c
+  ----------------------------------------------------------------------------------------------------------------
 
 Now we re-run the indexing, this time imposing the lattice constraints for
 the chosen Bravais setting, in this case number 5, i.e. oP, or point group
@@ -236,682 +198,331 @@ P222.
 
 ::
 
-  dials.index datablock.expt strong.refl \
-    max_lattices=2 \
-    space_group=P222
+  dials.index imported.expt strong.refl max_lattices=2 space_group=P222
 
 ::
 
-  The following parameters have been modified:
+  RMSDs by experiment:
+  ---------------------------------------------
+  | Exp | Nref | RMSD_X  | RMSD_Y  | RMSD_Z   |
+  | id  |      | (px)    | (px)    | (images) |
+  ---------------------------------------------
+  | 0   | 1000 | 0.45694 | 0.26413 | 0.16573  |
+  | 1   | 1000 | 0.35593 | 0.27804 | 0.20011  |
+  ---------------------------------------------
 
-  indexing {
-    known_symmetry {
-      space_group = P222
-    }
-    multiple_lattice_search {
-      max_lattices = 2
-    }
-  }
-  input {
-    datablock = datablock.expt
-    reflections = strong.refl
-  }
-
-  ...
-
-  RMSDs by experiment
-  -------------------
-  ----------------------------------------------
-  | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |       | (px)    | (px)    | (images) |
-  ----------------------------------------------
-  | 0   | 17030 | 0.52795 | 0.42652 | 0.78267  |
-  | 1   | 17351 | 0.41002 | 0.39527 | 0.79255  |
-  ----------------------------------------------
-  Finish searching for more lattices: 3834 unindexed reflections remaining.
-  Rotation matrix to transform crystal 1 to crystal 2
-  {{0.052, 0.997, -0.063},
-   {-0.978, 0.038, -0.204},
-   {-0.201, 0.072, 0.977}}
-  Euler angles (xyz): 11.79, -3.60, -87.01
-
-  Final refined crystal models:
-  model 1 (17356 reflections):
+  Refined crystal models:
+  model 1 (16635 reflections):
   Crystal:
-      Unit cell: (54.115, 58.298, 66.535, 90.000, 90.000, 90.000)
+      Unit cell: (54.100(4), 58.2684(17), 66.517(2), 90.0, 90.0, 90.0)
       Space group: P 2 2 2
-      U matrix:  {{-0.1865,  0.7626,  0.6193},
-                  {-0.0431,  0.6234, -0.7807},
-                  {-0.9815, -0.1723, -0.0834}}
+      U matrix:  {{ 0.1873,  0.7630, -0.6186},
+                  { 0.0429,  0.6228,  0.7812},
+                  { 0.9814, -0.1728,  0.0839}}
       B matrix:  {{ 0.0185,  0.0000,  0.0000},
                   {-0.0000,  0.0172,  0.0000},
                   {-0.0000,  0.0000,  0.0150}}
-      A = UB:    {{-0.0034,  0.0131,  0.0093},
-                  {-0.0008,  0.0107, -0.0117},
-                  {-0.0181, -0.0030, -0.0013}}
-
-  model 2 (17757 reflections):
+      A = UB:    {{ 0.0035,  0.0131, -0.0093},
+                  { 0.0008,  0.0107,  0.0117},
+                  { 0.0181, -0.0030,  0.0013}}
+  model 2 (17249 reflections):
   Crystal:
-      Unit cell: (54.133, 58.311, 66.533, 90.000, 90.000, 90.000)
+      Unit cell: (54.117(3), 58.2882(15), 66.526(2), 90.0, 90.0, 90.0)
       Space group: P 2 2 2
-      U matrix:  {{-0.0090,  0.6719,  0.7406},
-                  {-0.3809, -0.6871,  0.6187},
-                  { 0.9246, -0.2766,  0.2621}}
+      U matrix:  {{ 0.0091,  0.6714, -0.7410},
+                  { 0.3810, -0.6874, -0.6182},
+                  {-0.9245, -0.2768, -0.2621}}
       B matrix:  {{ 0.0185,  0.0000,  0.0000},
-                  {-0.0000,  0.0171,  0.0000},
-                  {-0.0000,  0.0000,  0.0150}}
-      A = UB:    {{-0.0002,  0.0115,  0.0111},
-                  {-0.0070, -0.0118,  0.0093},
-                  { 0.0171, -0.0047,  0.0039}}
+                  {-0.0000,  0.0172,  0.0000},
+                  { 0.0000,  0.0000,  0.0150}}
+      A = UB:    {{ 0.0002,  0.0115, -0.0111},
+                  { 0.0070, -0.0118, -0.0093},
+                  {-0.0171, -0.0047, -0.0039}}
+  --------------------------------------------------
+  | Imageset | # indexed | # unindexed | % indexed |
+  --------------------------------------------------
+  | 0        | 33884     | 1538        | 95.7%     |
+  --------------------------------------------------
+  Change of basis op: -a,b,-c
+  Rotation matrix to transform crystal 1 to crystal 2:
+  {{0.052, 0.997, -0.063},
+  {-0.978, 0.038, -0.203},
+  {-0.200, 0.072, 0.977}}
+  Rotation of -88.056 degrees about axis (-0.138, -0.069, 0.988)
+
+  Saving refined experiments to indexed.expt
+  Saving refined reflections to indexed.refl
 
 
-Refinement
-^^^^^^^^^^
+Refinement and Integration
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Although the models are already refined in indexing we can also add a
-refinement step in here to allow e.g. scan varying refinement.
+After indexing, processing proceeds similarly to the single-lattice case.
+First, the crystal models can be further refined with a scan varying model,
+in this example also using the tukey outlier rejection algorithm::
+
+  dials.refine indexed.expt indexed.refl outlier.algorithm=tukey
 
 ::
 
-  dials.refine indexed.expt indexed.refl \
-    scan_varying=True \
-    outlier.algorithm=tukey
-
-::
-
-  The following parameters have been modified:
-
-  refinement {
-    parameterisation {
-      crystal {
-        scan_varying = True
-      }
-    }
-    reflections {
-      outlier {
-        algorithm = null *tukey
-      }
-    }
-  }
-  input {
-    experiments = indexed.expt
-    reflections = indexed.refl
-  }
-
-  Configuring refiner
-
-  Summary statistics for observations matched to predictions:
-  -------------------------------------------------------------------------
-  |                   | Min     | Q1       | Med       | Q3      | Max    |
-  -------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.9823 | -0.0517  | 0.002165  | 0.04972 | 0.6267 |
-  | Yc - Yo (mm)      | -2.051  | -0.03828 | 0.0007268 | 0.03696 | 2.383  |
-  | Phic - Phio (deg) | -4.79   | -0.01656 | 0.002315  | 0.0159  | 4.187  |
-  | X weights         | 126.2   | 134.4    | 134.9     | 135.1   | 135.2  |
-  | Y weights         | 125.4   | 134.5    | 135       | 135.2   | 135.2  |
-  | Phi weights       | 379.4   | 398.9    | 399.6     | 399.9   | 400    |
-  -------------------------------------------------------------------------
-
-
-  Summary statistics for observations matched to predictions:
-  --------------------------------------------------------------------------
-  |                   | Min      | Q1       | Med      | Q3      | Max     |
-  --------------------------------------------------------------------------
-  | Xc - Xo (mm)      | -0.2037  | -0.04754 | 0.003321 | 0.04794 | 0.2018  |
-  | Yc - Yo (mm)      | -0.1511  | -0.03304 | 0.002045 | 0.03517 | 0.1497  |
-  | Phic - Phio (deg) | -0.06525 | -0.01247 | 0.002878 | 0.01467 | 0.06455 |
-  | X weights         | 126.5    | 134.5    | 134.9    | 135.1   | 135.2   |
-  | Y weights         | 125.4    | 134.6    | 135      | 135.2   | 135.2   |
-  | Phi weights       | 381.1    | 399      | 399.6    | 399.9   | 400     |
-  --------------------------------------------------------------------------
-
-  Performing refinement
-
-  Running refinement
-  ------------------
-  0 1 2 3 4 5 6
-
-  Refinement steps
-  ----------------
-  -------------------------------------------------
-  | Step | Nref  | RMSD_X   | RMSD_Y   | RMSD_Phi |
-  |      |       | (mm)     | (mm)     | (deg)    |
-  -------------------------------------------------
-  | 0    | 30214 | 0.07155  | 0.051119 | 0.022657 |
-  | 1    | 30214 | 0.07135  | 0.050939 | 0.022084 |
-  | 2    | 30214 | 0.071261 | 0.050932 | 0.021906 |
-  | 3    | 30214 | 0.071173 | 0.050916 | 0.021827 |
-  | 4    | 30214 | 0.071139 | 0.05092  | 0.02178  |
-  | 5    | 30214 | 0.071134 | 0.050924 | 0.02177  |
-  | 6    | 30214 | 0.071133 | 0.050925 | 0.021769 |
-  -------------------------------------------------
+  Refinement steps:
+  ------------------------------------------------
+  | Step | Nref | RMSD_X   | RMSD_Y   | RMSD_Phi |
+  |      |      | (mm)     | (mm)     | (deg)    |
+  ------------------------------------------------
+  | 0    | 2000 | 0.079758 | 0.046104 | 0.018187 |
+  | 1    | 2000 | 0.066176 | 0.042452 | 0.017411 |
+  | 2    | 2000 | 0.065727 | 0.042236 | 0.016897 |
+  | 3    | 2000 | 0.065412 | 0.042413 | 0.016653 |
+  | 4    | 2000 | 0.065282 | 0.042591 | 0.016592 |
+  | 5    | 2000 | 0.065257 | 0.042631 | 0.016585 |
+  | 6    | 2000 | 0.065253 | 0.042632 | 0.016585 |
+  ------------------------------------------------
   RMSD no longer decreasing
 
-  RMSDs by experiment
-  -------------------
+  RMSDs by experiment:
   ----------------------------------------------
   | Exp | Nref  | RMSD_X  | RMSD_Y  | RMSD_Z   |
-  |     |       | (px)    | (px)    | (images) |
+  | id  |       | (px)    | (px)    | (images) |
   ----------------------------------------------
-  | 0   | 14739 | 0.46827 | 0.28366 | 0.22357  |
-  | 1   | 15475 | 0.35367 | 0.30743 | 0.21195  |
+  | 0   | 13833 | 0.48806 | 0.27504 | 0.1626   |
+  | 1   | 14752 | 0.35492 | 0.2951  | 0.20587  |
   ----------------------------------------------
+  Updating predictions for indexed reflections
   Saving refined experiments to refined.expt
+  Saving reflections with updated predictions to refined.refl
 
-
-Integration
-^^^^^^^^^^^
-
-After the refinement is done the next step is integration, which is performed
-by the program :doc:`dials.integrate </documentation/programs/dials_integrate>`.
-
-::
+Next, we integrate the data::
 
   dials.integrate refined.expt refined.refl
 
 This program outputs a lot of information as integration progresses,
-concluding with a summary of the integration results.
+concluding with a summary of the integration results for each lattice::
+
+  Summary for experiment 0
+  ---------------------------------------------------------------
+  Item                                  | Overall | Low    | High
+  ---------------------------------------------------------------
+  dmin                                  | 1.06    | 2.87   | 1.06
+  dmax                                  | 43.87   | 43.87  | 1.08
+  number fully recorded                 | 25027   | 1859   | 29
+  number partially recorded             | 9850    | 760    | 6
+  number with invalid background pixels | 10448   | 623    | 29
+  number with invalid foreground pixels | 5595    | 394    | 17
+  number with overloaded pixels         | 4       | 4      | 0
+  number in powder rings                | 0       | 0      | 0
+  number processed with summation       | 29114   | 2208   | 18
+  number processed with profile fitting | 23507   | 1796   | 6
+  number failed in background modelling | 20      | 5      | 0
+  number failed in summation            | 5595    | 394    | 17
+  number failed in profile fitting      | 11202   | 806    | 29
+  ibg                                   | 17.81   | 49.24  | 4.31
+  i/sigi (summation)                    | 26.91   | 151.98 | 1.32
+  i/sigi (profile fitting)              | 35.42   | 199.63 | 1.28
+  cc prf                                | 0.94    | 0.85   | 0.98
+  cc_pearson sum/prf                    | 0.89    | 0.86   | 0.93
+  cc_spearman sum/prf                   | 0.97    | 0.98   | 0.37
+  ---------------------------------------------------------------
+
+  Summary for experiment 1
+  ---------------------------------------------------------------
+  Item                                  | Overall | Low    | High
+  ---------------------------------------------------------------
+  dmin                                  | 1.06    | 2.87   | 1.06
+  dmax                                  | 25.49   | 25.49  | 1.08
+  number fully recorded                 | 24816   | 1800   | 38
+  number partially recorded             | 10172   | 818    | 9
+  number with invalid background pixels | 9013    | 539    | 34
+  number with invalid foreground pixels | 5147    | 369    | 23
+  number with overloaded pixels         | 3       | 3      | 0
+  number in powder rings                | 0       | 0      | 0
+  number processed with summation       | 29676   | 2237   | 24
+  number processed with profile fitting | 24069   | 1812   | 11
+  number failed in background modelling | 85      | 29     | 0
+  number failed in summation            | 5147    | 369    | 23
+  number failed in profile fitting      | 10754   | 794    | 36
+  ibg                                   | 17.79   | 49.75  | 4.36
+  i/sigi (summation)                    | 24.71   | 139.98 | 1.44
+  i/sigi (profile fitting)              | 32.19   | 182.76 | 1.77
+  cc prf                                | 0.94    | 0.84   | 0.96
+  cc_pearson sum/prf                    | 0.67    | 0.60   | 0.95
+  cc_spearman sum/prf                   | 0.97    | 0.97   | 0.70
+  ---------------------------------------------------------------
+
+Symmetry, Scaling and Merging
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Again, we can proceed as standard, with the programs handling the multiple
+lattices found in the datafiles::
+
+  dials.symmetry integrated.expt integrated.refl
 
 ::
 
-  ================================================================================
+  Scoring all possible sub-groups
 
-  Summary of integration results for experiment 0
+  ---------------------------------------------------------------------------------------------
+  Patterson group       Likelihood  NetZcc  Zcc+   Zcc-   CC     CC-    delta  Reindex operator
+  ---------------------------------------------------------------------------------------------
+  P m m m          ***  0.988        9.87    9.87   0.00   0.99   0.00  0.0    a,b,c
+  P 1 2/m 1             0.004        0.13    9.93   9.80   1.00   0.98  0.0    -b,-a,-c
+  P 1 2/m 1             0.004        0.10    9.92   9.81   1.00   0.98  0.0    -a,-c,-b
+  P 1 2/m 1             0.004        0.03    9.88   9.85   1.00   0.99  0.0    a,b,c
+  P -1                  0.000        0.17    9.99   9.82   1.00   0.98  0.0    a,b,c
+  ---------------------------------------------------------------------------------------------
 
-   Summary of integration results as a function of image number
-   --------------------------------------------------------------------------------
-   Image | # full | # part | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-         |        |        |       |       |       |    (sum) |    (prf) |
-   --------------------------------------------------------------------------------
-       0 |    315 |   1202 |  1517 |  1047 | 18.20 |    35.81 |    53.38 |     0.64
-       1 |    563 |   1204 |  1767 |  1282 | 18.18 |    35.19 |    51.10 |     0.65
-       2 |    791 |   1204 |  1995 |  1496 | 18.22 |    34.96 |    49.89 |     0.65
-       3 |   1010 |   1205 |  2215 |  1696 | 18.16 |    34.05 |    48.05 |     0.65
-       4 |   1245 |   1182 |  2427 |  1898 | 18.12 |    33.80 |    47.20 |     0.66
-       5 |   1464 |   1042 |  2506 |  2037 | 18.11 |    33.91 |    46.42 |     0.66
-       6 |   1691 |    887 |  2578 |  2164 | 18.01 |    33.83 |    45.41 |     0.66
-       7 |   1975 |    689 |  2664 |  2288 | 18.02 |    34.25 |    45.32 |     0.66
-       8 |   2105 |    560 |  2665 |  2325 | 17.99 |    34.15 |    44.75 |     0.66
-       9 |   2193 |    456 |  2649 |  2323 | 17.88 |    34.12 |    44.60 |     0.66
-      10 |   2250 |    396 |  2646 |  2332 | 17.69 |    33.83 |    44.03 |     0.65
-      11 |   2306 |    350 |  2656 |  2357 | 17.68 |    33.45 |    43.46 |     0.65
-      12 |   2379 |    306 |  2685 |  2394 | 17.77 |    33.58 |    43.53 |     0.65
-      13 |   2381 |    283 |  2664 |  2385 | 17.83 |    34.23 |    44.21 |     0.65
-      14 |   2425 |    263 |  2688 |  2424 | 17.98 |    35.23 |    45.06 |     0.65
-      15 |   2415 |    244 |  2659 |  2400 | 17.91 |    34.84 |    44.68 |     0.65
-      16 |   2422 |    231 |  2653 |  2390 | 17.83 |    34.75 |    44.49 |     0.65
-      17 |   2436 |    217 |  2653 |  2401 | 17.77 |    33.49 |    42.78 |     0.64
-      18 |   2471 |    199 |  2670 |  2425 | 17.74 |    33.79 |    42.96 |     0.64
-      19 |   2492 |    195 |  2687 |  2452 | 17.79 |    34.27 |    43.41 |     0.64
-      20 |   2495 |    182 |  2677 |  2444 | 17.91 |    34.67 |    43.83 |     0.65
-      21 |   2533 |    171 |  2704 |  2478 | 17.98 |    34.48 |    43.66 |     0.64
-      22 |   2553 |    162 |  2715 |  2483 | 17.97 |    34.32 |    43.48 |     0.64
-      23 |   2614 |    151 |  2765 |  2537 | 17.90 |    33.70 |    42.91 |     0.65
-      24 |   2608 |    144 |  2752 |  2528 | 17.84 |    33.06 |    42.21 |     0.65
-      25 |   2620 |    140 |  2760 |  2535 | 17.83 |    33.67 |    42.84 |     0.65
-      26 |   2605 |    143 |  2748 |  2525 | 17.68 |    33.45 |    42.54 |     0.64
-      27 |   2624 |    145 |  2769 |  2552 | 17.79 |    34.59 |    43.82 |     0.65
-      28 |   2594 |    140 |  2734 |  2521 | 17.81 |    34.78 |    44.06 |     0.65
-      29 |   2585 |    142 |  2727 |  2511 | 17.75 |    34.76 |    44.08 |     0.65
-      30 |   2560 |    134 |  2694 |  2483 | 17.86 |    35.42 |    44.76 |     0.64
-      31 |   2557 |    140 |  2697 |  2487 | 17.88 |    35.90 |    45.39 |     0.64
-      32 |   2589 |    142 |  2731 |  2516 | 17.79 |    35.91 |    45.40 |     0.64
-      33 |   2590 |    147 |  2737 |  2522 | 17.76 |    35.86 |    45.29 |     0.64
-      34 |   2627 |    145 |  2772 |  2553 | 17.94 |    36.56 |    46.03 |     0.64
-      35 |   2605 |    143 |  2748 |  2534 | 17.96 |    36.88 |    46.36 |     0.64
-      36 |   2618 |    140 |  2758 |  2541 | 17.98 |    37.18 |    46.66 |     0.64
-      37 |   2648 |    136 |  2784 |  2570 | 17.80 |    36.17 |    45.55 |     0.63
-      38 |   2649 |    133 |  2782 |  2561 | 17.84 |    36.68 |    46.28 |     0.63
-      39 |   2637 |    131 |  2768 |  2546 | 17.69 |    35.89 |    45.31 |     0.63
-      40 |   2624 |    129 |  2753 |  2537 | 17.75 |    36.46 |    45.98 |     0.63
-      41 |   2647 |    128 |  2775 |  2562 | 17.75 |    36.41 |    45.89 |     0.64
-      42 |   2616 |    126 |  2742 |  2535 | 17.68 |    36.67 |    46.19 |     0.63
-      43 |   2622 |    126 |  2748 |  2542 | 17.75 |    37.47 |    47.11 |     0.63
-      44 |   2619 |    123 |  2742 |  2532 | 17.86 |    37.15 |    46.89 |     0.64
-      45 |   2637 |    120 |  2757 |  2549 | 17.95 |    37.63 |    47.43 |     0.64
-      46 |   2632 |    121 |  2753 |  2548 | 17.96 |    37.85 |    47.64 |     0.64
-      47 |   2603 |    121 |  2724 |  2517 | 18.15 |    38.82 |    48.72 |     0.64
-      48 |   2623 |    122 |  2745 |  2538 | 18.14 |    38.62 |    48.28 |     0.64
-      49 |   2644 |    121 |  2765 |  2556 | 18.10 |    38.03 |    47.79 |     0.64
-      50 |   2653 |    121 |  2774 |  2567 | 18.04 |    37.25 |    46.84 |     0.64
-      51 |   2657 |    121 |  2778 |  2574 | 18.04 |    37.28 |    46.82 |     0.64
-      52 |   2664 |    121 |  2785 |  2578 | 17.91 |    37.54 |    47.13 |     0.64
-      53 |   2643 |    121 |  2764 |  2553 | 17.85 |    37.33 |    46.84 |     0.64
-      54 |   2631 |    122 |  2753 |  2546 | 17.88 |    37.62 |    47.16 |     0.64
-      55 |   2642 |    122 |  2764 |  2556 | 17.87 |    38.09 |    47.70 |     0.64
-      56 |   2651 |    122 |  2773 |  2557 | 17.95 |    37.98 |    47.73 |     0.64
-      57 |   2667 |    125 |  2792 |  2576 | 18.07 |    38.70 |    48.56 |     0.64
-      58 |   2665 |    128 |  2793 |  2572 | 18.05 |    39.47 |    49.44 |     0.64
-      59 |   2655 |    128 |  2783 |  2558 | 18.07 |    39.60 |    49.76 |     0.64
-      60 |   2628 |    129 |  2757 |  2539 | 18.23 |    40.19 |    50.45 |     0.64
-      61 |   2608 |    131 |  2739 |  2514 | 18.23 |    40.10 |    50.45 |     0.64
-      62 |   2630 |    133 |  2763 |  2541 | 18.11 |    39.59 |    49.74 |     0.64
-      63 |   2604 |    134 |  2738 |  2519 | 18.03 |    39.25 |    49.43 |     0.64
-      64 |   2594 |    134 |  2728 |  2512 | 18.11 |    39.51 |    49.80 |     0.64
-      65 |   2596 |    140 |  2736 |  2518 | 17.95 |    39.14 |    49.46 |     0.65
-      66 |   2559 |    138 |  2697 |  2480 | 17.85 |    38.71 |    49.00 |     0.64
-      67 |   2583 |    140 |  2723 |  2501 | 17.73 |    37.24 |    47.33 |     0.64
-      68 |   2604 |    146 |  2750 |  2552 | 17.72 |    35.66 |    44.99 |     0.63
-      69 |   2662 |    144 |  2806 |  2609 | 17.81 |    35.98 |    45.27 |     0.63
-      70 |   2616 |    149 |  2765 |  2567 | 17.78 |    36.38 |    45.66 |     0.63
-      71 |   2587 |    152 |  2739 |  2546 | 17.85 |    36.08 |    45.27 |     0.63
-      72 |   2588 |    155 |  2743 |  2547 | 17.93 |    36.68 |    45.91 |     0.63
-      73 |   2579 |    156 |  2735 |  2532 | 17.98 |    36.85 |    46.11 |     0.63
-      74 |   2583 |    158 |  2741 |  2540 | 17.95 |    37.26 |    46.51 |     0.63
-      75 |   2560 |    165 |  2725 |  2521 | 17.99 |    37.35 |    46.76 |     0.63
-      76 |   2571 |    167 |  2738 |  2535 | 18.05 |    37.62 |    47.15 |     0.64
-      77 |   2531 |    171 |  2702 |  2492 | 17.88 |    37.57 |    47.15 |     0.63
-      78 |   2530 |    175 |  2705 |  2479 | 17.77 |    37.02 |    46.63 |     0.63
-      79 |   2548 |    180 |  2728 |  2491 | 17.69 |    37.21 |    46.94 |     0.64
-      80 |   2572 |    182 |  2754 |  2513 | 17.71 |    36.75 |    46.50 |     0.64
-      81 |   2547 |    183 |  2730 |  2485 | 17.70 |    36.76 |    46.64 |     0.64
-      82 |   2521 |    188 |  2709 |  2460 | 17.66 |    36.00 |    45.75 |     0.64
-      83 |   2533 |    192 |  2725 |  2475 | 17.65 |    35.69 |    45.47 |     0.64
-      84 |   2517 |    200 |  2717 |  2460 | 17.70 |    35.44 |    45.42 |     0.64
-      85 |   2502 |    217 |  2719 |  2455 | 17.64 |    34.51 |    44.46 |     0.64
-      86 |   2483 |    233 |  2716 |  2449 | 17.54 |    34.35 |    44.41 |     0.65
-      87 |   2419 |    255 |  2674 |  2415 | 17.59 |    33.79 |    43.82 |     0.65
-      88 |   2361 |    300 |  2661 |  2389 | 17.45 |    33.56 |    43.64 |     0.65
-      89 |   2305 |    345 |  2650 |  2375 | 17.37 |    32.41 |    42.39 |     0.65
-      90 |   2259 |    405 |  2664 |  2371 | 17.36 |    32.19 |    42.34 |     0.65
-      91 |   2147 |    489 |  2636 |  2322 | 17.30 |    32.86 |    43.43 |     0.65
-      92 |   1984 |    598 |  2582 |  2243 | 17.24 |    33.04 |    44.01 |     0.66
-      93 |   1752 |    823 |  2575 |  2166 | 17.16 |    32.66 |    44.45 |     0.65
-      94 |   1506 |    997 |  2503 |  2037 | 17.13 |    32.52 |    44.95 |     0.65
-      95 |   1253 |   1139 |  2392 |  1879 | 17.11 |    31.90 |    44.96 |     0.65
-      96 |   1045 |   1178 |  2223 |  1700 | 17.14 |    31.51 |    45.01 |     0.65
-      97 |    805 |   1177 |  1982 |  1477 | 17.11 |    32.27 |    46.79 |     0.65
-      98 |    526 |   1176 |  1702 |  1212 | 16.92 |    31.56 |    46.93 |     0.64
-      99 |    300 |   1172 |  1472 |   997 | 16.90 |    31.33 |    48.07 |     0.64
-   --------------------------------------------------------------------------------
+  Best solution: P m m m
+  Unit cell: (54.1104, 58.2822, 66.5198, 90, 90, 90)
+  Reindex operator: a,b,c
+  Laue group probability: 0.988
+  Laue group confidence: 0.986
 
-   Summary of integration results binned by resolution
-   ---------------------------------------------------------------------------------------------------------
-   d min | d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-         |       |        |        |        |       |       |       |       |    (sum) |    (prf) |
-   ---------------------------------------------------------------------------------------------------------
-    1.06 |  1.08 |     31 |      3 |      0 |     0 |    34 |    18 |  4.43 |     2.05 |     3.65 |     0.34
-    1.08 |  1.10 |    124 |     18 |      0 |     0 |   142 |   110 |  4.81 |     2.18 |     3.55 |     0.35
-    1.10 |  1.12 |    204 |     18 |      0 |     0 |   222 |   180 |  5.32 |     2.27 |     3.66 |     0.34
-    1.12 |  1.14 |    326 |     30 |      0 |     0 |   356 |   295 |  5.84 |     2.79 |     4.69 |     0.41
-    1.14 |  1.17 |    433 |     39 |      0 |     0 |   472 |   396 |  6.37 |     3.18 |     5.66 |     0.45
-    1.17 |  1.20 |    578 |     65 |      0 |     0 |   643 |   548 |  7.00 |     3.48 |     5.70 |     0.45
-    1.20 |  1.23 |    779 |     82 |      0 |     0 |   861 |   732 |  7.70 |     3.89 |     6.33 |     0.48
-    1.23 |  1.26 |   1071 |    105 |      0 |     0 |  1176 |  1026 |  8.52 |     4.31 |     7.20 |     0.51
-    1.26 |  1.30 |   1334 |    148 |      0 |     0 |  1482 |  1311 |  9.21 |     4.75 |     7.60 |     0.52
-    1.30 |  1.34 |   1496 |    166 |      0 |     0 |  1662 |  1470 | 10.02 |     5.06 |     8.22 |     0.54
-    1.34 |  1.39 |   1411 |    177 |      0 |     0 |  1588 |  1450 | 10.76 |     5.98 |     9.40 |     0.57
-    1.39 |  1.44 |   1475 |    189 |      0 |     0 |  1664 |  1499 | 11.72 |     7.15 |    11.24 |     0.61
-    1.44 |  1.51 |   1478 |    188 |      0 |     0 |  1666 |  1507 | 12.84 |     9.47 |    14.62 |     0.66
-    1.51 |  1.59 |   1484 |    181 |      0 |     0 |  1665 |  1508 | 14.05 |    12.22 |    18.01 |     0.70
-    1.59 |  1.69 |   1495 |    182 |      0 |     0 |  1677 |  1558 | 15.63 |    17.15 |    24.11 |     0.73
-    1.69 |  1.82 |   1495 |    173 |      0 |     0 |  1668 |  1539 | 17.86 |    22.56 |    31.01 |     0.76
-    1.82 |  2.00 |   1503 |    203 |      0 |     0 |  1706 |  1549 | 22.59 |    33.97 |    45.28 |     0.79
-    2.00 |  2.29 |   1539 |    197 |      0 |     0 |  1736 |  1589 | 29.55 |    52.79 |    67.63 |     0.80
-    2.29 |  2.88 |   1554 |    181 |      0 |     0 |  1735 |  1630 | 32.68 |    80.83 |    98.92 |     0.80
-    2.88 | 28.90 |   1572 |    179 |      1 |     0 |  1751 |  1693 | 52.36 |   186.21 |   210.33 |     0.79
-   ---------------------------------------------------------------------------------------------------------
+  ...
 
-   Summary of integration results for the whole dataset
-   ---------------------------------------------
-   Number fully recorded                 | 24911
-   Number partially recorded             | 3031
-   Number with overloaded pixels         | 5
-   Number in powder rings                | 0
-   Number processed with summation       | 23906
-   Number processed with profile fitting | 21608
-   <Ibg>                                 | 18.16
-   <I/sigI> (summation)                  | 32.18
-   <I/sigI> (profile fitting)            | 41.74
-   <CC prf>                              | 0.51
-   ---------------------------------------------
+  Laue group: P m m m
+  ---------------------------------------------------------------------------------------------------------------
+  | Screw axis | Score | No. present | No. absent | <I> present | <I> absent | <I/sig> present | <I/sig> absent |
+  ---------------------------------------------------------------------------------------------------------------
+  | 21a        | 0.000 | 0           | 0          | 0.000       | 0.000      | 0.000           | 0.000          |
+  | 21b        | 1.000 | 9           | 10         | 16592.455   | 13.316     | 141.588         | 0.412          |
+  | 21c        | 1.000 | 12          | 13         | 28257.845   | 2.137      | 150.792         | 0.055          |
+  ---------------------------------------------------------------------------------------------------------------
+  ------------------------
+  | Space group | score  |
+  ------------------------
+  | P 2 2 2     | 0.0000 |
+  | P 2 2 21    | 0.0000 |
+  | P 2 21 2    | 0.0000 |
+  | P 21 2 2    | 0.0000 |
+  | P 21 21 2   | 0.0000 |
+  | P 21 2 21   | 0.0000 |
+  | P 2 21 21   | 1.0000 |
+  | P 21 21 21  | 0.0000 |
+  ------------------------
+  Recommended space group: P 2 21 21
 
-  ================================================================================
+The symmetry analysis suggested space group P 2 21 21, however it is worth
+noting that no reflections were available to test the 21a screw axis, so this
+possibility should also be tested during structure solution.
 
-  Summary of integration results for experiment 1
+Next we scale the data and inspect the results from the log output or the
+:samp:`scaling.html` generated html report::
 
-   Summary of integration results as a function of image number
-   --------------------------------------------------------------------------------
-   Image | # full | # part | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-         |        |        |       |       |       |    (sum) |    (prf) |
-   --------------------------------------------------------------------------------
-       0 |    287 |   1329 |  1616 |  1100 | 18.51 |    32.45 |    50.08 |     0.67
-       1 |    532 |   1331 |  1863 |  1330 | 18.52 |    32.34 |    48.37 |     0.67
-       2 |    767 |   1333 |  2100 |  1549 | 18.60 |    32.59 |    47.70 |     0.67
-       3 |   1003 |   1335 |  2338 |  1760 | 18.81 |    32.58 |    46.99 |     0.67
-       4 |   1233 |   1331 |  2564 |  1964 | 18.59 |    32.06 |    45.79 |     0.67
-       5 |   1481 |   1216 |  2697 |  2117 | 18.42 |    31.95 |    45.18 |     0.67
-       6 |   1742 |   1056 |  2798 |  2261 | 18.27 |    31.91 |    44.27 |     0.67
-       7 |   1971 |    850 |  2821 |  2351 | 18.28 |    31.78 |    43.24 |     0.67
-       8 |   2187 |    655 |  2842 |  2411 | 18.11 |    31.31 |    42.14 |     0.67
-       9 |   2348 |    528 |  2876 |  2482 | 18.15 |    31.04 |    41.42 |     0.67
-      10 |   2445 |    447 |  2892 |  2513 | 18.19 |    30.91 |    41.13 |     0.67
-      11 |   2495 |    390 |  2885 |  2515 | 18.04 |    30.85 |    40.91 |     0.67
-      12 |   2561 |    350 |  2911 |  2553 | 17.89 |    30.35 |    40.22 |     0.67
-      13 |   2590 |    317 |  2907 |  2552 | 17.94 |    30.76 |    40.68 |     0.67
-      14 |   2625 |    289 |  2914 |  2565 | 18.04 |    31.46 |    41.44 |     0.67
-      15 |   2609 |    274 |  2883 |  2540 | 17.97 |    31.71 |    41.71 |     0.66
-      16 |   2621 |    262 |  2883 |  2542 | 17.85 |    31.82 |    41.80 |     0.66
-      17 |   2640 |    250 |  2890 |  2547 | 17.84 |    31.83 |    41.92 |     0.66
-      18 |   2657 |    237 |  2894 |  2550 | 17.71 |    31.52 |    41.38 |     0.66
-      19 |   2697 |    219 |  2916 |  2575 | 17.69 |    31.17 |    41.02 |     0.67
-      20 |   2701 |    208 |  2909 |  2572 | 17.71 |    31.41 |    41.26 |     0.67
-      21 |   2752 |    196 |  2948 |  2612 | 17.79 |    32.25 |    42.26 |     0.67
-      22 |   2761 |    186 |  2947 |  2607 | 17.85 |    32.39 |    42.50 |     0.66
-      23 |   2819 |    182 |  3001 |  2662 | 17.91 |    32.49 |    42.64 |     0.67
-      24 |   2837 |    182 |  3019 |  2682 | 17.97 |    33.04 |    43.22 |     0.67
-      25 |   2810 |    176 |  2986 |  2660 | 18.14 |    33.63 |    43.94 |     0.67
-      26 |   2834 |    169 |  3003 |  2666 | 18.26 |    33.99 |    44.39 |     0.67
-      27 |   2833 |    165 |  2998 |  2662 | 18.28 |    34.47 |    45.00 |     0.67
-      28 |   2856 |    162 |  3018 |  2680 | 18.20 |    34.88 |    45.31 |     0.67
-      29 |   2869 |    160 |  3029 |  2699 | 18.20 |    34.98 |    45.30 |     0.67
-      30 |   2849 |    161 |  3010 |  2680 | 18.12 |    34.48 |    44.70 |     0.67
-      31 |   2844 |    160 |  3004 |  2673 | 18.06 |    34.60 |    44.86 |     0.66
-      32 |   2818 |    162 |  2980 |  2652 | 17.94 |    34.45 |    44.57 |     0.66
-      33 |   2831 |    163 |  2994 |  2662 | 17.92 |    34.48 |    44.54 |     0.66
-      34 |   2846 |    159 |  3005 |  2686 | 18.02 |    34.94 |    44.97 |     0.66
-      35 |   2839 |    159 |  2998 |  2667 | 17.86 |    34.12 |    44.11 |     0.66
-      36 |   2835 |    158 |  2993 |  2660 | 17.81 |    34.17 |    44.06 |     0.66
-      37 |   2822 |    156 |  2978 |  2642 | 17.67 |    33.51 |    43.30 |     0.66
-      38 |   2800 |    155 |  2955 |  2629 | 17.76 |    33.32 |    43.04 |     0.66
-      39 |   2836 |    154 |  2990 |  2669 | 17.74 |    33.38 |    42.99 |     0.66
-      40 |   2832 |    152 |  2984 |  2666 | 17.65 |    33.54 |    43.03 |     0.66
-      41 |   2866 |    154 |  3020 |  2692 | 17.57 |    33.17 |    42.77 |     0.66
-      42 |   2872 |    155 |  3027 |  2704 | 17.58 |    33.38 |    42.99 |     0.66
-      43 |   2853 |    154 |  3007 |  2684 | 17.58 |    33.92 |    43.53 |     0.66
-      44 |   2870 |    155 |  3025 |  2704 | 17.70 |    34.33 |    43.98 |     0.65
-      45 |   2891 |    155 |  3046 |  2730 | 17.71 |    33.87 |    43.35 |     0.65
-      46 |   2915 |    147 |  3062 |  2743 | 17.83 |    34.23 |    43.83 |     0.66
-      47 |   2913 |    148 |  3061 |  2745 | 17.74 |    33.24 |    42.59 |     0.65
-      48 |   2899 |    146 |  3045 |  2735 | 17.83 |    33.87 |    43.29 |     0.65
-      49 |   2915 |    145 |  3060 |  2743 | 18.09 |    34.86 |    44.50 |     0.66
-      50 |   2919 |    145 |  3064 |  2750 | 18.14 |    34.72 |    44.22 |     0.66
-      51 |   2874 |    144 |  3018 |  2711 | 18.08 |    34.65 |    44.14 |     0.66
-      52 |   2894 |    146 |  3040 |  2734 | 18.07 |    34.25 |    43.63 |     0.65
-      53 |   2896 |    147 |  3043 |  2737 | 18.04 |    34.02 |    43.32 |     0.66
-      54 |   2900 |    145 |  3045 |  2731 | 17.87 |    33.77 |    43.05 |     0.65
-      55 |   2896 |    146 |  3042 |  2726 | 17.97 |    33.94 |    43.33 |     0.66
-      56 |   2855 |    147 |  3002 |  2684 | 17.89 |    33.85 |    43.26 |     0.66
-      57 |   2831 |    146 |  2977 |  2669 | 17.78 |    33.78 |    43.04 |     0.65
-      58 |   2818 |    144 |  2962 |  2649 | 17.73 |    33.27 |    42.35 |     0.65
-      59 |   2813 |    146 |  2959 |  2638 | 17.72 |    32.37 |    41.42 |     0.65
-      60 |   2796 |    150 |  2946 |  2618 | 17.75 |    32.36 |    41.51 |     0.66
-      61 |   2792 |    155 |  2947 |  2610 | 17.79 |    33.39 |    42.80 |     0.65
-      62 |   2760 |    155 |  2915 |  2578 | 17.73 |    33.19 |    42.66 |     0.66
-      63 |   2735 |    156 |  2891 |  2548 | 17.67 |    33.34 |    42.94 |     0.66
-      64 |   2740 |    158 |  2898 |  2556 | 17.63 |    33.08 |    42.63 |     0.66
-      65 |   2754 |    160 |  2914 |  2563 | 17.64 |    32.25 |    41.85 |     0.66
-      66 |   2747 |    162 |  2909 |  2545 | 17.62 |    31.48 |    41.14 |     0.65
-      67 |   2762 |    166 |  2928 |  2563 | 17.73 |    31.86 |    41.58 |     0.65
-      68 |   2772 |    168 |  2940 |  2603 | 17.72 |    30.59 |    39.60 |     0.64
-      69 |   2783 |    165 |  2948 |  2615 | 17.87 |    31.21 |    40.38 |     0.64
-      70 |   2784 |    161 |  2945 |  2626 | 18.05 |    31.93 |    41.01 |     0.64
-      71 |   2792 |    163 |  2955 |  2632 | 18.03 |    31.86 |    40.98 |     0.64
-      72 |   2807 |    169 |  2976 |  2653 | 18.06 |    31.86 |    41.00 |     0.65
-      73 |   2801 |    172 |  2973 |  2671 | 17.74 |    31.13 |    40.02 |     0.65
-      74 |   2772 |    180 |  2952 |  2640 | 17.68 |    30.81 |    39.75 |     0.65
-      75 |   2767 |    185 |  2952 |  2643 | 17.51 |    30.38 |    39.15 |     0.65
-      76 |   2794 |    194 |  2988 |  2654 | 17.42 |    30.69 |    39.75 |     0.65
-      77 |   2777 |    199 |  2976 |  2639 | 17.42 |    31.01 |    40.14 |     0.65
-      78 |   2753 |    209 |  2962 |  2620 | 17.24 |    30.84 |    39.98 |     0.65
-      79 |   2733 |    226 |  2959 |  2607 | 17.18 |    30.81 |    40.04 |     0.65
-      80 |   2699 |    235 |  2934 |  2567 | 17.10 |    30.15 |    39.50 |     0.65
-      81 |   2620 |    244 |  2864 |  2489 | 17.08 |    30.48 |    40.12 |     0.66
-      82 |   2629 |    253 |  2882 |  2504 | 17.25 |    31.24 |    41.06 |     0.66
-      83 |   2606 |    269 |  2875 |  2500 | 17.18 |    31.45 |    41.35 |     0.66
-      84 |   2629 |    282 |  2911 |  2532 | 17.26 |    31.75 |    41.72 |     0.66
-      85 |   2601 |    302 |  2903 |  2512 | 17.22 |    31.80 |    41.92 |     0.66
-      86 |   2562 |    332 |  2894 |  2493 | 17.19 |    31.71 |    41.99 |     0.66
-      87 |   2550 |    365 |  2915 |  2512 | 17.15 |    31.02 |    41.15 |     0.66
-      88 |   2489 |    413 |  2902 |  2488 | 17.25 |    31.07 |    41.40 |     0.66
-      89 |   2437 |    467 |  2904 |  2486 | 17.25 |    30.44 |    40.61 |     0.66
-      90 |   2358 |    548 |  2906 |  2477 | 17.23 |    30.44 |    40.72 |     0.66
-      91 |   2234 |    668 |  2902 |  2457 | 17.25 |    30.41 |    40.81 |     0.66
-      92 |   2017 |    837 |  2854 |  2378 | 17.25 |    30.28 |    41.14 |     0.67
-      93 |   1744 |   1022 |  2766 |  2249 | 17.15 |    29.87 |    41.14 |     0.67
-      94 |   1510 |   1180 |  2690 |  2124 | 17.23 |    29.72 |    41.72 |     0.67
-      95 |   1253 |   1295 |  2548 |  1956 | 17.31 |    29.49 |    41.98 |     0.66
-      96 |   1018 |   1299 |  2317 |  1744 | 17.18 |    29.22 |    41.95 |     0.66
-      97 |    804 |   1298 |  2102 |  1550 | 17.10 |    29.30 |    42.50 |     0.65
-      98 |    577 |   1298 |  1875 |  1349 | 16.95 |    28.98 |    42.41 |     0.65
-      99 |    315 |   1297 |  1612 |  1108 | 17.00 |    30.02 |    45.06 |     0.65
-   --------------------------------------------------------------------------------
-
-   Summary of integration results binned by resolution
-   ---------------------------------------------------------------------------------------------------------
-   d min | d max | # full | # part | # over | # ice | # sum | # prf | <Ibg> | <I/sigI> | <I/sigI> | <CC prf>
-         |       |        |        |        |       |       |       |       |    (sum) |    (prf) |
-   ---------------------------------------------------------------------------------------------------------
-    1.06 |  1.08 |     32 |      1 |      0 |     0 |    33 |    19 |  4.41 |     1.89 |     3.56 |     0.29
-    1.08 |  1.10 |    122 |     13 |      0 |     0 |   135 |    91 |  4.79 |     2.21 |     3.75 |     0.36
-    1.10 |  1.12 |    201 |     17 |      0 |     0 |   218 |   163 |  5.29 |     2.17 |     3.79 |     0.35
-    1.12 |  1.14 |    326 |     45 |      0 |     0 |   371 |   279 |  5.79 |     2.63 |     4.59 |     0.41
-    1.14 |  1.17 |    410 |     51 |      0 |     0 |   461 |   387 |  6.35 |     2.91 |     4.86 |     0.42
-    1.17 |  1.19 |    561 |     59 |      0 |     0 |   620 |   515 |  6.96 |     3.40 |     5.69 |     0.46
-    1.19 |  1.22 |    797 |     80 |      0 |     0 |   877 |   722 |  7.66 |     3.62 |     6.21 |     0.49
-    1.22 |  1.26 |   1047 |    108 |      0 |     0 |  1155 |   970 |  8.46 |     4.20 |     7.17 |     0.54
-    1.26 |  1.29 |   1327 |    173 |      0 |     0 |  1500 |  1251 |  9.18 |     4.41 |     7.49 |     0.54
-    1.29 |  1.34 |   1441 |    197 |      0 |     0 |  1638 |  1410 |  9.95 |     5.06 |     8.35 |     0.57
-    1.34 |  1.38 |   1456 |    189 |      0 |     0 |  1645 |  1443 | 10.75 |     5.55 |     9.08 |     0.59
-    1.38 |  1.44 |   1449 |    192 |      0 |     0 |  1641 |  1432 | 11.71 |     6.97 |    11.29 |     0.65
-    1.44 |  1.50 |   1475 |    220 |      0 |     0 |  1695 |  1512 | 12.84 |     8.67 |    13.80 |     0.68
-    1.50 |  1.58 |   1486 |    194 |      0 |     0 |  1680 |  1509 | 13.99 |    11.69 |    17.56 |     0.72
-    1.58 |  1.68 |   1491 |    200 |      0 |     0 |  1691 |  1517 | 15.61 |    15.12 |    21.66 |     0.73
-    1.68 |  1.81 |   1490 |    196 |      0 |     0 |  1686 |  1480 | 17.79 |    20.17 |    27.99 |     0.76
-    1.81 |  2.00 |   1514 |    183 |      0 |     0 |  1697 |  1487 | 22.54 |    30.80 |    40.80 |     0.79
-    2.00 |  2.28 |   1501 |    235 |      0 |     0 |  1736 |  1495 | 29.61 |    47.66 |    61.68 |     0.80
-    2.28 |  2.88 |   1537 |    202 |      0 |     0 |  1739 |  1586 | 32.65 |    70.58 |    88.11 |     0.80
-    2.88 | 25.50 |   1513 |    211 |      0 |     0 |  1724 |  1676 | 52.68 |   171.78 |   193.58 |     0.80
-   ---------------------------------------------------------------------------------------------------------
-
-   Summary of integration results for the whole dataset
-   ---------------------------------------------
-   Number fully recorded                 | 24420
-   Number partially recorded             | 3307
-   Number with overloaded pixels         | 3
-   Number in powder rings                | 0
-   Number processed with summation       | 23942
-   Number processed with profile fitting | 20944
-   <Ibg>                                 | 18.11
-   <I/sigI> (summation)                  | 29.09
-   <I/sigI> (profile fitting)            | 38.57
-   <CC prf>                              | 0.51
-   ---------------------------------------------
-
-
-Exporting as MTZ
-^^^^^^^^^^^^^^^^
-
-The final step of dials processing is to export the integrated results to mtz
-format, suitable for input to downstream processing programs such as pointless_
-and aimless_. Currently :doc:`dials.export </documentation/programs/dials_export>`
-only supports one experiment at a time, therefore it is necessary to first
-split the :samp:`integrated.expt` and :samp:`integrated.refl` into
-separate files
+  dials.scale symmetrized.expt symmetrized.refl
 
 ::
 
-  dials.split_experiments integrated.expt integrated.refl \
-    experiments_prefix=integrated reflections_prefix=integrated
+                       ----------Merging statistics----------
+
+  Resolution: 28.89 - 1.06
+  Observations: 46152
+  Unique reflections: 34551
+  Redundancy: 1.3
+  Completeness: 36.52%
+  Mean intensity: 2288.5
+  Mean I/sigma(I): 15.4
+  R-merge: 0.037
+  R-meas:  0.051
+  R-pim:   0.035
+
+
+  Statistics by resolution bin:
+  d_max  d_min   #obs  #uniq   mult.  %comp       <I>  <I/sI>    r_mrg   r_meas    r_pim   cc1/2   cc_ano
+  28.90   2.89   3375   2366    1.43  46.98   15165.9    43.1    0.030    0.042    0.028   0.993*   0.725
+   2.89   2.29   3400   2285    1.49  47.13    5801.2    36.6    0.031    0.042    0.028   0.992*  -0.239
+   2.29   2.00   3369   2270    1.48  47.57    4059.8    31.6    0.035    0.046    0.030   0.993*  -0.235
+   2.00   1.82   3297   2143    1.54  44.86    2512.9    26.2    0.039    0.053    0.036   0.986*  -0.064
+   1.82   1.69   3226   2255    1.43  47.61    1506.1    19.6    0.049    0.066    0.045   0.983*   1.000
+   1.69   1.59   3246   2372    1.37  50.22    1133.3    15.7    0.059    0.081    0.055   0.978*   0.000
+   1.59   1.51   3229   2387    1.35  50.31     840.0    12.4    0.072    0.100    0.068   0.969*  -0.345
+   1.51   1.45   3289   2481    1.33  52.63     659.5    10.0    0.081    0.112    0.077   0.962*  -0.561
+   1.45   1.39   3177   2494    1.27  53.10     499.8     7.7    0.082    0.114    0.079   0.959*  -1.000
+   1.39   1.34   3082   2480    1.24  52.71     409.9     6.3    0.095    0.132    0.091   0.937*   0.000
+   1.34   1.30   3207   2540    1.26  54.03     371.5     5.6    0.089    0.124    0.085   0.973*   0.000
+   1.30   1.26   2878   2306    1.25  49.25     331.8     4.9    0.097    0.136    0.095   0.956*   0.000
+   1.26   1.23   2272   1845    1.23  39.23     313.8     4.6    0.077    0.108    0.076   0.977*   0.000
+   1.23   1.20   1632   1293    1.26  27.46     286.4     4.1    0.075    0.105    0.074   0.979*   0.000
+   1.20   1.17   1217    997    1.22  21.36     267.1     3.8    0.072    0.102    0.072   0.982*   0.000
+   1.17   1.15    893    775    1.15  16.66     235.7     3.3    0.069    0.097    0.069   0.981*   0.000
+   1.15   1.12    651    589    1.11  12.60     211.3     2.8    0.074    0.104    0.074   0.981*   0.000
+   1.12   1.10    425    400    1.06   8.55     166.5     2.2    0.134    0.189    0.134   0.943*   0.000
+   1.10   1.08    237    225    1.05   4.83     171.0     2.2    0.125    0.176    0.125   0.912*   0.000
+   1.08   1.06     50     48    1.04   1.02     151.9     1.9    0.197    0.278    0.197   1.000   0.000
+  28.89   1.06  46152  34551    1.34  36.52    2288.5    15.4    0.037    0.051    0.035   0.995*   0.445*
+
+
+If required, we can rerun scaling with a resolution limit using the option
+:samp:`d_min=`, however in this case the CC1/2 and <I/sI> are reasonable
+to the highest resolution measured. The "Analysis by image number" plots
+in the :samp:`scaling.html` report also indicate that both datasets are of similar
+quality.
+
+Once we are happy with the scaled dataset, a merged MTZ file can be generated::
+
+  dials.merge scaled.expt scaled.refl
 
 ::
 
-  Saving experiment 0 to integrated_0.expt
-  Saving reflections for experiment 0 to integrated_0.refl
-  Saving experiment 1 to integrated_1.expt
-  Saving reflections for experiment 1 to integrated_1.refl
-
-Now we are ready to run dials.export on the individual .refl and .expt
-files output for each experiment.
-
-::
-
-  dials.export integrated_0.refl integrated_0.expt mtz.hklout=integrated_0.mtz
-  dials.export integrated_1.refl integrated_1.expt mtz.hklout=integrated_1.mtz
-
-And this is the output, showing the reflection file statistics.
-
-::
-
-  Removing 1277 reflections with negative variance
-  Removing 5057 profile reflections with negative variance
-  Removing 1153 incomplete reflections
-  Title: from dials.export
-  Space group symbol from file: P222
-  Space group number from file: 16
-  Space group from matrices: P 2 2 2 (No. 16)
+  Writing reflections to merged.mtz
+  Title: From dials.merge
+  Space group symbol from file: P22121
+  Space group number from file: 18
+  Space group from matrices: P 2 21 21 (No. 18)
   Point group symbol from file: 222
-  Number of batches: 100
   Number of crystals: 1
-  Number of Miller indices: 20455
-  Resolution range: 28.8939 1.06627
+  Number of Miller indices: 32658
+  Resolution range: 28.8871 1.06499
   History:
+    From DIALS 2.dev.1041-gf88516da7, run on 2019-10-28 at 15:40:44 GMT
   Crystal 1:
     Name: XTAL
-    Project: DIALS
+    Project: AUTOMATIC
     Id: 1
-    Unit cell: (54.1146, 58.298, 66.5347, 90, 90, 90)
+    Unit cell: (54.1104, 58.2822, 66.5198, 90, 90, 90)
     Number of datasets: 1
     Dataset 1:
-      Name: FROMDIALS
+      Name: NATIVE
       Id: 1
       Wavelength: 0.97949
-      Number of columns: 14
-      label        #valid  %valid       min       max type
-      H             20455 100.00%      0.00     32.00 H: index h,k,l
-      K             20455 100.00%      0.00     51.00 H: index h,k,l
-      L             20455 100.00%      0.00     59.00 H: index h,k,l
-      M_ISYM        20455 100.00%      2.00      8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH         20455 100.00%      3.00     98.00 B: BATCH number
-      IPR           20455 100.00%  -9311.98 174317.56 J: intensity
-      SIGIPR        20455 100.00%     24.17    421.85 Q: standard deviation
-      I             20455 100.00% -11542.51 174304.84 J: intensity
-      SIGI          20455 100.00%     29.08    424.15 Q: standard deviation
-      FRACTIONCALC  20455 100.00%      1.00      1.00 R: real
-      XDET          20455 100.00%     11.79   2450.61 R: real
-      YDET          20455 100.00%      9.78   2515.63 R: real
-      ROT           20455 100.00%      0.18      9.62 R: real
-      LP            20455 100.00%      0.01      0.86 R: real
+      Number of columns: 17
+      label    #valid  %valid     min       max type
+      H         32658 100.00%    0.00     37.00 H: index h,k,l
+      K         32658 100.00%    0.00     53.00 H: index h,k,l
+      L         32658 100.00%    0.00     60.00 H: index h,k,l
+      IMEAN     32658 100.00% -109.31 213880.50 J: intensity
+      SIGIMEAN  32658 100.00%    5.93   5046.71 Q: standard deviation
+      I(+)      24848  76.09% -109.31 213880.50 K: I(+) or I(-)
+      SIGI(+)   24848  76.09%    5.93   5046.71 M: standard deviation
+      I(-)      12695  38.87%  -93.28 180658.78 K: I(+) or I(-)
+      SIGI(-)   12695  38.87%   11.23   4263.08 M: standard deviation
+      N(+)      24848  76.09%    2.00      4.00 I: integer
+      N(-)      12695  38.87%    4.00      4.00 I: integer
+      F         32658 100.00%    2.08    460.34 F: amplitude
+      SIGF      32658 100.00%    0.25     27.28 Q: standard deviation
+      F(+)      24848  76.09%    2.08    460.34 G: F(+) or F(-)
+      SIGF(+)   24848  76.09%    0.25      5.48 L: standard deviation
+      F(-)      12695  38.87%    2.51    421.81 G: F(+) or F(-)
+      SIGF(-)   12695  38.87%    0.26      5.05 L: standard deviation
 
+This program also performs a truncation, giving a set of merged intensities and
+strictly-positive structure factors (Fs) suitable for downstream structure solution.
+In the mtz file, both lattices are combined to give a single dataset. To generate
+individual mtz files, one could first use :samp:`dials.split_experiments` before
+merging with :samp:`dials.merge`::
 
-  Removing 1465 reflections with negative variance
-  Removing 5318 profile reflections with negative variance
-  Removing 1317 incomplete reflections
-  Title: from dials.export
-  Space group symbol from file: P222
-  Space group number from file: 16
-  Space group from matrices: P 2 2 2 (No. 16)
-  Point group symbol from file: 222
-  Number of batches: 100
-  Number of crystals: 1
-  Number of Miller indices: 19627
-  Resolution range: 25.491 1.06429
-  History:
-  Crystal 1:
-    Name: XTAL
-    Project: DIALS
-    Id: 1
-    Unit cell: (54.133, 58.3114, 66.5333, 90, 90, 90)
-    Number of datasets: 1
-    Dataset 1:
-      Name: FROMDIALS
-      Id: 1
-      Wavelength: 0.97949
-      Number of columns: 14
-      label        #valid  %valid       min       max type
-      H             19627 100.00%      0.00     37.00 H: index h,k,l
-      K             19627 100.00%      0.00     53.00 H: index h,k,l
-      L             19627 100.00%      0.00     60.00 H: index h,k,l
-      M_ISYM        19627 100.00%      1.00      8.00 Y: M/ISYM, packed partial/reject flag and symmetry number
-      BATCH         19627 100.00%      4.00     97.00 B: BATCH number
-      IPR           19627 100.00% -11344.32 118159.02 J: intensity
-      SIGIPR        19627 100.00%     18.96    348.01 Q: standard deviation
-      I             19627 100.00% -14248.27 116392.28 J: intensity
-      SIGI          19627 100.00%     23.14    347.57 Q: standard deviation
-      FRACTIONCALC  19627 100.00%      1.00      1.00 R: real
-      XDET          19627 100.00%     10.39   2451.64 R: real
-      YDET          19627 100.00%      8.78   2517.64 R: real
-      ROT           19627 100.00%      0.21      9.59 R: real
-      LP            19627 100.00%      0.02      0.87 R: real
+  dials.split_experiments scaled.expt scaled.refl
 
+::
 
-What to do Next
----------------
+  input {
+    experiments = scaled.expt
+    reflections = scaled.refl
+  }
 
-The following demonstrates how to take the output of dials processing and
-continue with downstream analysis, first using rebatch_ to ensure that the
-reflections for each lattice have different batch numbers, and then using
-pointless_ to sort the data and assign the correct symmetry, followed by
-scaling with aimless_ and intensity analysis using ctruncate_::
+  Saving experiment 0 to split_0.expt
+  Saving reflections for experiment 0 to split_0.refl
+  Saving experiment 1 to split_1.expt
+  Saving reflections for experiment 1 to split_1.refl
 
-  rebatch hklin integrated_0.mtz hklout rebatch_0.mtz > rebatch_0.log << EOF
-  batch add 0
-  EOF
-
-  rebatch hklin integrated_1.mtz hklout rebatch_1.mtz > rebatch_1.log << EOF
-  batch add 200
-  EOF
-
-  pointless hklin rebatch_0.mtz rebatch_1.mtz hklout sorted.mtz > pointless.log
-
-  aimless hklin sorted.mtz hklout scaled.mtz > aimless.log << EOF
-  anomalous off
-  EOF
-
-  ctruncate -hklin scaled.mtz -hklout truncated.mtz \
-  -colin '/*/*/[IMEAN,SIGIMEAN]' > ctruncate.log
-
-
-to get merged data for downstream analysis. The output from this will include
-the merging statistics which will give some idea of the data quality. Often
-passing in a sensible resolution limit to aimless is also helpful... this should
-give you something like::
-
-  Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
-
-                                             Overall  InnerShell  OuterShell
-  Low resolution limit                       28.89     28.89      1.08
-  High resolution limit                       1.06      5.83      1.06
-
-  Rmerge  (within I+/I-)                     0.034     0.017     0.000
-  Rmerge  (all I+ and I-)                    0.037     0.018     0.000
-  Rmeas (within I+/I-)                       0.047     0.024     0.000
-  Rmeas (all I+ & I-)                        0.051     0.024     0.000
-  Rpim (within I+/I-)                        0.033     0.017     0.000
-  Rpim (all I+ & I-)                         0.035     0.016     0.000
-  Rmerge in top intensity bin                0.022        -         -
-  Total number of observations               40064       390        51
-  Total number unique                        31116       285        50
-  Mean((I)/sd(I))                              7.1      15.8       2.1
-  Mn(I) half-set correlation CC(1/2)         0.994     0.999     0.000
-  Completeness                                33.1      42.8       1.1
-  Multiplicity                                 1.3       1.4       1.0
-
-  Anomalous completeness                       5.1       9.5       0.0
-  Anomalous multiplicity                       0.2       1.2       1.0
-  DelAnom correlation between half-sets     -0.001     0.000     0.000
-  Mid-Slope of Anom Normal Probability       0.582       -         -
-
-  Estimates of resolution limits: overall
-     from half-dataset correlation CC(1/2) >  0.50: limit =  1.08A
-     from Mn(I/sd) >  2.00:                         limit =  1.06A  == maximum resolution
-
-  Estimates of resolution limits in reciprocal lattice directions:
-    Along k axis
-     from half-dataset correlation CC(1/2) >  0.50: limit =  1.12A
-     from Mn(I/sd) >  2.00:                         limit =  1.06A  == maximum resolution
-    Along l axis
-     from half-dataset correlation CC(1/2) >  0.50: limit =  1.14A
-     from Mn(I/sd) >  2.00:                         limit =  1.12A
-
-  Anisotropic deltaB (i.e. range of principal components), A^2:  2.00
-
-  Average unit cell:   54.12   58.30   66.53   90.00   90.00   90.00
-  Space group: P 2 2 2
-  Average mosaicity:   0.00
-
-
-.. _pointless: http://www.ccp4.ac.uk/html/pointless.html
-.. _aimless: http://www.ccp4.ac.uk/html/aimless.html
-.. _ctruncate: http://www.ccp4.ac.uk/html/ctruncate.html
-.. _rebatch: http://www.ccp4.ac.uk/html/rebatch.html
+It is worth noting that the splitting of experiments can be performed on the
+multi-lattice datafiles at any point during the processing if desired.

@@ -10,7 +10,7 @@ from rstbx.array_family import (
 )
 from rstbx.dps_core import SimpleSamplerTool
 
-
+from dials.algorithms.indexing import DialsIndexError
 from . import Strategy
 from .utils import group_vectors
 
@@ -47,6 +47,10 @@ class RealSpaceGridSearch(Strategy):
         super(RealSpaceGridSearch, self).__init__(
             max_cell, params=params, *args, **kwargs
         )
+        if target_unit_cell is None:
+            raise DialsIndexError(
+                "Target unit cell must be provided for real_space_grid_search"
+            )
         self._target_unit_cell = target_unit_cell
 
     @property

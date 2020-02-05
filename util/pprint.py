@@ -34,7 +34,7 @@ def profile2d(p, vmin=None, vmax=None):
 
 
 def profile3d(p, vmin=None, vmax=None):
-    """ Print a 3D profile. """
+    """Print a 3D profile."""
     from dials.array_family import flex
 
     if vmin is None:

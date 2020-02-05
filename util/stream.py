@@ -134,13 +134,13 @@ class Header(Result):
         Return as an imageset
         """
         from dxtbx.format.FormatEigerStream import FormatEigerStream
-        from dxtbx.imageset import MultiFileReader, ImageSweep
+        from dxtbx.imageset import MultiFileReader, ImageSequence
 
         # Create the reader
         reader = MultiFileReader(FormatEigerStream, [filename])
 
-        # Create the sweep
-        return ImageSweep(reader)
+        # Create the sequence
+        return ImageSequence(reader)
 
 
 class Image(Result):

@@ -1,7 +1,13 @@
 from __future__ import absolute_import, division, print_function
 
-from dials.util import show_mail_on_error
 from libtbx.phil import parse
+
+from dials.algorithms.shadowing.filter import filter_shadowed_reflections
+from dials.array_family import flex
+from dials.util import show_mail_on_error
+from dials.util.command_line import Command
+from dials.util.options import flatten_experiments
+from dials.util.options import OptionParser
 
 help_message = """
 
@@ -51,13 +57,10 @@ class Script(object):
 
     def __init__(self):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "{sweep.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "usage: dials.predict [options] [param.phil] "
+            "{sequence.expt | image1.file [image2.file ...]}"
         )
 
         # Create the parser
@@ -71,10 +74,6 @@ class Script(object):
 
     def run(self):
         """Execute the script."""
-        from dials.util.command_line import Command
-        from dials.array_family import flex
-        from dials.util.options import flatten_experiments
-
         # Parse the command line
         params, options = self.parser.parse_args(show_diff_phil=True)
 
@@ -117,8 +116,6 @@ class Script(object):
         # region, see https://github.com/dials/dials/issues/349
 
         if not params.ignore_shadows:
-            from dials.algorithms.shadowing.filter import filter_shadowed_reflections
-
             shadowed = filter_shadowed_reflections(
                 experiments, predicted_all, experiment_goniometer=True
             )

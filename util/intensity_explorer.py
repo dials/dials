@@ -14,16 +14,14 @@ resulting IntensityDist instance contains the pertinent columns of data, along
 with normal order statistic medians of the z-scores of the intensities, for
 constructing a normal probability plot (See
 https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm).
-
-If called as a script, read data from an unmerged MTZ file; generate a
-histogram and a normal probability plot of the z-scores of the intensity data,
-along with plots of z as a function of batch number, of multiplicity, of
-detector position, of measured multiplicity, of absolute intensity and of
-I/sigma.
 """
 
 import logging
+
+import scipy.stats
+from cctbx import miller
 from dials.array_family import flex
+from dxtbx.model import ExperimentList
 
 
 log = logging.getLogger("dials.util.intensity_explorer")
@@ -72,9 +70,6 @@ class IntensityDist(object):
         Defaults to None.
         :type: outfile: str
         """
-
-        from dxtbx.model import ExperimentList
-        from cctbx import miller
 
         if not isinstance(rtable, flex.reflection_table) or not isinstance(
             elist, ExperimentList
@@ -170,6 +165,8 @@ class IntensityDist(object):
             # Initial values:
             prev_index = None
             count = 1
+            # The following will be set during loop iteration
+            i_sum, sum_weight, sum_square_weight = None, None, None
             # One big loop through the entire reflection table:
             for j in range(rtable.size()):
                 index = rtable["miller_index.asu"][j]
@@ -235,6 +232,7 @@ class IntensityDist(object):
             if calculate_variances:
                 # Initialise values:
                 prev_index = None
+                weighted_sum_square_residual = None
                 for j in range(rtable.size()):
                     index = rtable["miller_index.asu"][j]
                     weight = weights[j]
@@ -325,8 +323,6 @@ class IntensityDist(object):
     def _probplot_data(self):
         """Generate the data for a normal probability plot of z-scores."""
 
-        import scipy.stats
-
         for key, rtable in self.rtables.items():
             order = flex.sort_permutation(rtable["intensity.z_score"])
             osm = flex.double(rtable.size(), 0)
@@ -335,118 +331,3 @@ class IntensityDist(object):
             rtable["intensity.order_statistic_medians"] = osm
 
             self.rtables[key] = rtable
-
-
-def data_from_unmerged_mtz(filename):
-    """
-    Produce a minimal reflection table from an MTZ file.
-
-    The returned reflection table will not contain all the standard
-    columns, only those that are necessary for the IntensityDist class.
-
-    :param filename: Name of an unmerged MTZ input file.
-    :type filename: str
-    :return: A reflection table object, containing only the columns
-      * ``miller_index``
-      * ``intensity.sum.value``
-      * ``intensity.sum.variance``
-      * ``xyzobs.px.value``
-      * ``id``
-    :rtype: dials.array_family_flex_ext.reflection_table
-    """
-
-    from iotbx import mtz
-    from dxtbx.model import Crystal, Experiment, ExperimentList
-
-    m = mtz.object(filename).crystals()  # Parse MTZ, with lots of useful methods.
-    # Get some data and turn it into a reflection table and experiment list.
-    # First, the reflection table
-    col_dict = {}
-    for crystal in m:
-        for dataset in crystal.datasets():
-            cols = dataset.columns()  # Gets column objects.
-            col_dict = {c.label(): c for c in cols}  # A dict of all the columns.
-            if col_dict:
-                break
-        if col_dict:
-            break
-    if not col_dict:
-        raise RuntimeError("Unable to read data from mtz file %s" % filename)
-    h, k, l = (
-        col_dict[label].extract_values().as_double().iround()
-        for label in ("H", "K", "L")
-    )
-    intensity, sigI, x, y = (
-        col_dict[label].extract_values().as_double()
-        for label in ("I", "SIGI", "XDET", "YDET")
-    )
-    # Honestly flex?!  Oh well, for now, we have to go round the houses:
-    frame = col_dict["BATCH"].extract_values().as_double().iround().as_double()
-
-    rtable = flex.reflection_table()
-    rtable["miller_index"] = flex.miller_index(h, k, l)
-    rtable["intensity.sum.value"] = intensity
-    rtable["intensity.sum.variance"] = flex.pow2(sigI)
-    rtable["xyzobs.px.value"] = flex.vec3_double(x, y, frame)
-    rtable["id"] = flex.int(rtable.size(), 0)
-
-    # Now generate a corresponding experiment list.
-    indices = flex.vec3_double([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
-    # Each Crystal object needs to be constructed from xyz unit cell
-    # parameters and a space group.
-    abc = [m[0].unit_cell().orthogonalize(vec) for vec in indices]
-    space_group = m[0].crystal_symmetry().space_group()
-    crystal_params = abc + [space_group]
-
-    elist = ExperimentList([Experiment(crystal=Crystal(*crystal_params))])
-
-    return rtable, elist
-
-
-def data_from_pickle_and_json():
-    from dials.util.options import (
-        OptionParser,
-        flatten_reflections,
-        flatten_experiments,
-    )
-
-    help_message = """
-
-  Generates a dials.array_family.flex.reflection_table and a
-  dxtbx.model.experiment_list.ExperimentList from a observations.refl and a
-  models.expt.
-
-  Examples:
-
-    dials.util.intensity_explorer indexed.refl indexed.expt
-
-    dials.util.intensity_explorer integrated.refl integrated.expt
-    """
-
-    # Create the parser
-    usage = (
-        "usage: dials.util.intensity_explorer [options] "
-        "observations.refl models.expt"
-    )
-    parser = OptionParser(
-        usage=usage,
-        read_reflections=True,
-        read_experiments=True,
-        check_format=True,
-        epilog=help_message,
-    )
-
-    # Parse the command line arguments
-    params, options = parser.parse_args(show_diff_phil=True)
-
-    # Show the help
-    if len(params.input.reflections) != 1 or len(params.input.experiments) != 1:
-        parser.print_help()
-        exit(0)
-
-    rtable = flatten_reflections(params.input.reflections)
-    elist = flatten_experiments(params.input.experiments)
-
-    rtable.del_selected(rtable["intensity.sum.variance"] <= 0)
-
-    return rtable, elist

@@ -191,9 +191,9 @@ class RingSettingsPanel(wx.Panel):
         bestc = [self._center[0], self._center[1]]
         bestr = self._radius
 
-        raw_data = self._pyslip.tiles.raw_image.get_raw_data()
-        if not isinstance(raw_data, tuple):
-            raw_data = (raw_data,)
+        image_data = self._pyslip.tiles.raw_image.get_image_data()
+        if not isinstance(image_data, tuple):
+            image_data = (image_data,)
 
         for j in range(-jitter, jitter, 1):
             j /= 2
@@ -213,7 +213,7 @@ class RingSettingsPanel(wx.Panel):
                         if pid >= 0:
                             px = detector[pid].get_ray_intersection_px(mm)
                             px = [int(round(px[0])), int(round(px[1]))]
-                            data = raw_data[pid]
+                            data = image_data[pid]
                             if (
                                 px[0] >= 0
                                 and px[0] < data.focus()[1]
@@ -290,7 +290,10 @@ class RingSettingsPanel(wx.Panel):
         panel_id, beam_pixel_fast, beam_pixel_slow = xrayframe.get_beam_center_px()
 
         if len(detector) > 1:
-            beam_pixel_slow, beam_pixel_fast = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
+            (
+                beam_pixel_slow,
+                beam_pixel_fast,
+            ) = xrayframe.pyslip.tiles.flex_image.tile_readout_to_picture(
                 panel_id, beam_pixel_slow - 0.5, beam_pixel_fast - 0.5
             )
 

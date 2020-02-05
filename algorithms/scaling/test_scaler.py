@@ -10,9 +10,6 @@ from dials.util.options import OptionParser
 from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaler_factory import create_scaler
 from dials.algorithms.scaling.basis_functions import RefinerCalculator
-from dials.algorithms.scaling.parameter_handler import (
-    create_parameter_manager_generator,
-)
 from dials.algorithms.scaling.scaling_utilities import calculate_prescaling_correction
 from dials.algorithms.scaling.scaler import (
     SingleScaler,
@@ -21,6 +18,7 @@ from dials.algorithms.scaling.scaler import (
     TargetScaler,
     NullScaler,
 )
+from dials.algorithms.scaling.parameter_handler import ScalingParameterManagerGenerator
 
 
 def side_effect_update_var(variances, intensities):
@@ -326,7 +324,7 @@ def test_SingleScaler_initialisation():
 
     # test set outliers
     assert list(r.get_flags(r.flags.outlier_in_scaling)) == [False] * 8
-    scaler.set_outliers()
+    scaler._set_outliers()
     assert list(r.get_flags(r.flags.outlier_in_scaling)) == outlier_list + [False]
 
 
@@ -343,7 +341,7 @@ def test_multiscaler_initialisation():
     singlescaler1 = create_scaler(p, [exp[0]], [r1])
     singlescaler2 = create_scaler(p, [exp[1]], [r2])
 
-    multiscaler = MultiScaler(p, exp, [singlescaler1, singlescaler2])
+    multiscaler = MultiScaler([singlescaler1, singlescaler2])
 
     # check initialisation
     assert len(multiscaler.active_scalers) == 2
@@ -400,7 +398,7 @@ def test_targetscaler_initialisation():
     # singlescaler2.experiments.scaling_model.set_scaling_model_as_scaled()
 
     targetscaler = TargetScaler(
-        p, exp, scaled_scalers=[singlescaler1], unscaled_scalers=[singlescaler2]
+        scaled_scalers=[singlescaler1], unscaled_scalers=[singlescaler2]
     )
 
     # check initialisation
@@ -577,9 +575,12 @@ def test_SingleScaler_update_for_minimisation():
     exp = create_scaling_model(p, e, r)
     p.reflection_selection.method = "use_all"
     single_scaler = SingleScaler(p, exp[0], r)
-    apm_fac = create_parameter_manager_generator(single_scaler)
+    pmg = ScalingParameterManagerGenerator(
+        single_scaler.active_scalers,
+        single_scaler.params.scaling_refinery.refinement_order,
+    )
     single_scaler.components["scale"].parameters /= 2.0
-    apm = apm_fac.parameter_managers()[0]
+    apm = pmg.parameter_managers()[0]
 
     Ih_table = single_scaler.Ih_table.blocked_data_list[0]
     Ih_table.calc_Ih()
@@ -610,7 +611,7 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     # test update error model - should update weights in global Ih
     # as will be setting different things in Ih_table and reflection table, split
     # up the test to use two different error models.
-    scaler.update_error_model(mock_errormodel)
+    scaler._update_error_model(mock_errormodel)
     assert list(block.variances) == list(original_vars)
     newvars = flex.double(range(1, 8))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
@@ -620,7 +621,7 @@ def test_update_error_model(mock_errormodel, mock_errormodel2):
     # now test for updating of reflection table
     # do again with second errormodel
     scaler.global_Ih_table.reset_error_model()
-    scaler.update_error_model(mock_errormodel2)
+    scaler._update_error_model(mock_errormodel2)
     assert list(block.variances) == list(original_vars)
     newvars = flex.double(range(1, 9))
     assert list(block.block_selections[0]) == [2, 0, 4, 5, 6, 1, 3]
@@ -722,12 +723,13 @@ def test_multiscaler_update_for_minimisation():
     singlescaler1 = create_scaler(p, [exp[0]], [r1])
     singlescaler2 = create_scaler(p, [exp[1]], [r2])
 
-    multiscaler = MultiScaler(p, exp, [singlescaler1, singlescaler2])
-
-    apm_fac = create_parameter_manager_generator(multiscaler)
+    multiscaler = MultiScaler([singlescaler1, singlescaler2])
+    pmg = ScalingParameterManagerGenerator(
+        multiscaler.active_scalers, multiscaler.params.scaling_refinery.refinement_order
+    )
     multiscaler.single_scalers[0].components["scale"].parameters /= 2.0
     multiscaler.single_scalers[1].components["scale"].parameters *= 1.5
-    apm = apm_fac.parameter_managers()[0]
+    apm = pmg.parameter_managers()[0]
     multiscaler.update_for_minimisation(apm, 0)
     multiscaler.update_for_minimisation(apm, 1)
     # bf[0], bf[1] should be list of scales and derivatives

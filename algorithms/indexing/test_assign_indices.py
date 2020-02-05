@@ -8,14 +8,13 @@ import pytest
 
 from cctbx import crystal, sgtbx
 from cctbx.sgtbx import bravais_types
-from dials.algorithms.indexing import index_reflections
 from dials.algorithms.indexing.assign_indices import (
     AssignIndicesGlobal,
     AssignIndicesLocal,
 )
 from dials.array_family import flex
 from dxtbx.format import Format
-from dxtbx.imageset import ImageSetData, ImageSweep
+from dxtbx.imageset import ImageSetData, ImageSequence
 from dxtbx.model import (
     BeamFactory,
     Crystal,
@@ -94,8 +93,10 @@ def experiment():
         epochs=[0] * 20,
     )
 
-    isetdata = ImageSetData(reader=Format.Reader(["path"] * len(scan)), masker=None)
-    iset = ImageSweep(
+    isetdata = ImageSetData(
+        reader=Format.Reader(None, ["path"] * len(scan)), masker=None
+    )
+    iset = ImageSequence(
         isetdata, beam=beam, detector=detector, goniometer=goniometer, scan=scan
     )
 
@@ -238,8 +239,7 @@ def test_index_reflections(dials_regression):
     reflections.map_centroids_to_reciprocal_space(experiments)
     reflections["imageset_id"] = flex.int(len(reflections), 0)
     reflections["id"] = flex.int(len(reflections), -1)
-    with pytest.deprecated_call():
-        index_reflections(reflections, experiments)
+    AssignIndicesGlobal(tolerance=0.3)(reflections, experiments)
     assert "miller_index" in reflections
     counts = reflections["id"].counts()
     assert dict(counts) == {-1: 1390, 0: 114692}

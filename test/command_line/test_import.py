@@ -7,43 +7,45 @@ import pytest
 from dxtbx.serialize import load
 
 
-def test_multiple_sweep_import_fails_without_allow_parameter(dials_data, tmpdir):
+def test_multiple_sequence_import_fails_when_not_allowed(dials_data, tmpdir):
     # Find the image files
     image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
-    del image_files[4]  # Delete filename to force two sweeps
+    del image_files[4]  # Delete filename to force two sequences
 
-    # run without allowing multiple sweeps
-    result = procrunner.run(
-        ["dials.import", "output.experiments=experiments_multiple_sweeps.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
-    )
-    assert result.returncode == 1
-    assert b"ore than 1 sweep" in result.stderr
-    assert not tmpdir.join("experiments_multiple_sweeps.expt").check()
-
-
-def test_multiple_sweep_import_suceeds_with_allow_parameter(dials_data, tmpdir):
-    # Find the image files
-    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
-    del image_files[4]  # Delete filename to force two sweeps
-
+    # run without allowing multiple sequences
     result = procrunner.run(
         [
             "dials.import",
-            "output.experiments=experiments_multiple_sweeps.expt",
-            "allow_multiple_sweeps=True",
+            "output.experiments=experiments_multiple_sequences.expt",
+            "allow_multiple_sequence=False",
         ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
+    )
+    assert result.returncode == 1
+    assert b"ore than 1 sequence" in result.stderr
+    assert not tmpdir.join("experiments_multiple_sequences.expt").check()
+
+
+def test_can_import_multiple_sequences(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    del image_files[4]  # Delete filename to force two sequences
+
+    result = procrunner.run(
+        ["dials.import", "output.experiments=experiments_multiple_sequences.expt"]
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert tmpdir.join("experiments_multiple_sweeps.expt").check(file=1)
+    assert tmpdir.join("experiments_multiple_sequences.expt").check(file=1)
 
     experiments = load.experiment_list(
-        tmpdir.join("experiments_multiple_sweeps.expt").strpath
+        tmpdir.join("experiments_multiple_sequences.expt").strpath
     )
     assert len(experiments) == 2
+    for experiment in experiments:
+        assert experiment.identifier != ""
 
 
 def test_with_mask(dials_data, tmpdir):
@@ -57,8 +59,8 @@ def test_with_mask(dials_data, tmpdir):
             "mask=" + mask_filename.strpath,
             "output.experiments=experiments_with_mask.expt",
         ]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("experiments_with_mask.expt").check(file=1)
@@ -66,6 +68,7 @@ def test_with_mask(dials_data, tmpdir):
     experiments = load.experiment_list(
         tmpdir.join("experiments_with_mask.expt").strpath
     )
+    assert experiments[0].identifier != ""
     assert (
         experiments[0].imageset.external_lookup.mask.filename == mask_filename.strpath
     )
@@ -112,13 +115,14 @@ def test_override_geometry(dials_data, tmpdir):
 
     result = procrunner.run(
         ["dials.import", "geometry.phil", "output.experiments=override_geometry.expt"]
-        + [f.strpath for f in image_files],
-        working_directory=tmpdir.strpath,
+        + image_files,
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("override_geometry.expt").check(file=1)
 
     experiments = load.experiment_list(tmpdir.join("override_geometry.expt").strpath)
+    assert experiments[0].identifier != ""
     imgset = experiments[0].imageset
 
     beam = imgset.get_beam()
@@ -164,6 +168,7 @@ def test_import_beam_centre(dials_data, tmpdir):
 
     experiments = load.experiment_list(tmpdir.join("mosflm_beam_centre.expt").strpath)
     imgset = experiments[0].imageset
+    assert experiments[0].identifier != ""
     beam_centre = imgset.get_detector()[0].get_beam_centre(imgset.get_beam().get_s0())
     assert beam_centre == pytest.approx((200, 100))
 
@@ -206,6 +211,7 @@ def test_slow_fast_beam_centre(dials_regression, run_in_tmpdir):
 
     experiments = load.experiment_list("slow_fast_beam_centre.expt")
     imgset = experiments[0].imageset
+    assert experiments[0].identifier != ""
     # beam centre on 18th panel
     s0 = imgset.get_beam().get_s0()
     beam_centre = imgset.get_detector()[18].get_beam_centre_px(s0)
@@ -248,6 +254,9 @@ def test_from_image_files(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_from_template(dials_data, tmpdir):
@@ -265,6 +274,9 @@ def test_from_template(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("imported.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("imported.expt").strpath)
+    assert exp[0].identifier != ""
 
 
 def test_extrapolate_scan(dials_data, tmpdir):
@@ -283,3 +295,109 @@ def test_extrapolate_scan(dials_data, tmpdir):
     )
     assert not result.returncode
     assert tmpdir.join("import_extrapolate.expt").check(file=1)
+    # check that an experiment identifier is assigned
+    exp = load.experiment_list(tmpdir.join("import_extrapolate.expt").strpath)
+    assert exp[0].identifier != ""
+
+
+def test_import_still_sequence_as_experiments(dials_data, tmpdir):
+    # Find the image files
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+
+    out = "experiments_as_still.expt"
+
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=0,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (0.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_import_still_sequence_as_experiments_subset(dials_data, tmpdir):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)[
+        3:6
+    ]
+
+    out = "experiments_as_still.expt"
+
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 1
+
+    # verify scans, goniometers kept too
+    assert all(exp.scan.get_oscillation() == (10.0, 0.0) for exp in imported_exp)
+    assert all(exp.goniometer is not None for exp in imported_exp)
+
+
+def test_import_still_sequence_as_experiments_split_subset(dials_data, tmpdir):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    image_files = image_files[:3] + image_files[6:]
+
+    out = "experiments_as_still.expt"
+
+    _ = procrunner.run(
+        ["dials.import", "scan.oscillation=10,0", "output.experiments=%s" % out]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+
+    imported_exp = load.experiment_list(tmpdir.join(out).strpath)
+    assert len(imported_exp) == len(image_files)
+    for exp in imported_exp:
+        assert exp.identifier != ""
+
+    iset = set(exp.imageset for exp in imported_exp)
+    assert len(iset) == 2
+
+
+def test_with_convert_sequences_to_stills(dials_data, tmpdir):
+    image_files = dials_data("centroid_test_data").listdir("centroid*.cbf", sort=True)
+    result = procrunner.run(
+        [
+            "dials.import",
+            "convert_sequences_to_stills=True",
+            "output.experiments=experiments_as_stills.expt",
+        ]
+        + [f.strpath for f in image_files],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("experiments_as_stills.expt").check(file=1)
+
+    experiments = load.experiment_list(
+        tmpdir.join("experiments_as_stills.expt").strpath
+    )
+    for exp in experiments:
+        assert exp.identifier != ""
+
+    # should be no goniometers
+    assert experiments.scans() == [None]
+    assert experiments.goniometers() == [None]
+
+    # should be same number of imagesets as images
+    assert len(experiments.imagesets()) == len(image_files)
+
+    # all should call out as still too
+    assert experiments.all_stills()

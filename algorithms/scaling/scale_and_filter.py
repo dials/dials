@@ -63,6 +63,7 @@ def log_cycle_results(results, scaling_script, filter_script):
     if removal_summary["mode"] == "image_group":
         cycle_results["image_ranges_removed"] = removal_summary["image_ranges_removed"]
     cycle_results["removed_datasets"] = removal_summary["experiments_fully_removed"]
+    cycle_results["removed_ids"] = removal_summary["experiment_ids_fully_removed"]
 
     cycle_results["n_removed"] = filter_script.results_summary["dataset_removal"][
         "n_reflections_removed"
@@ -166,8 +167,8 @@ class AnalysisResults(object):
             "initial_expids_and_image_ranges"
         ]
         results.cycle_results = [
-            dictionary["cycle_results"][key]
-            for key in sorted(dictionary["cycle_results"].iterkeys())
+            dictionary["cycle_results"][str(key)]
+            for key in sorted(int(k) for k in dictionary["cycle_results"].keys())
         ]
         results.initial_n_reflections = dictionary["initial_n_reflections"]
         results.final_stats = dictionary["final_stats"]
@@ -186,8 +187,8 @@ class AnalysisResults(object):
                     )
                     msg += "  Removed image ranges: \n    %s" % removed
             else:
-                if res["removed_datasets"]:
-                    msg += "  Removed datasets: %s\n" % res["removed_datasets"]
+                if res["removed_ids"]:
+                    msg += "  Removed datasets: %s\n" % res["removed_ids"]
             msg += (
                 "  cumulative %% of reflections removed: %.3f\n"
                 % res["cumul_percent_removed"]
@@ -254,9 +255,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "CC-half vs cycle",
+                    "title": u"CC<sub>½</sub> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "CC-half"},
+                    "yaxis": {"title": u"CC<sub>½</sub>"},
                 },
             }
         }
@@ -292,9 +293,9 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "<I/sigma> vs cycle",
+                    "title": u"<I/σ(I)> vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "<I/sigma>"},
+                    "yaxis": {"title": u"<I/σ(I)>"},
                 },
             }
         }
@@ -337,13 +338,13 @@ def make_filtering_merging_stats_plots(merging_stats):
                     }
                 ],
                 "layout": {
-                    "title": "CC-half vs resolution",
+                    "title": u"CC<sub>½</sub> vs resolution",
                     "xaxis": {
                         "title": u"Resolution (Å)",
                         "tickvals": vals,
                         "ticktext": txt,
                     },
-                    "yaxis": {"title": "CC-half", "range": [0, 1]},
+                    "yaxis": {"title": u"CC<sub>½</sub>", "range": [0, 1]},
                 },
             }
         }
@@ -461,15 +462,18 @@ def make_histogram_plots(cycle_results):
                     }
                 ],
                 "layout": {
-                    "title": "Resolution-averaged CC-half (sigma-tau) vs cycle",
+                    "title": u"Resolution-averaged CC<sub>½</sub> (σ-τ) vs cycle",
                     "xaxis": {"title": "Cycle number"},
-                    "yaxis": {"title": "Resolution-averaged CC-half (sigma-tau)"},
+                    "yaxis": {"title": u"Resolution-averaged CC<sub>½</sub> (σ-τ)"},
                 },
             }
         }
     )
     colors = [(color_list * int(math.ceil(n / len(color_list))))[i] for i in range(n)]
-    legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
+    if n == 1:
+        legends = ["Delta CC-half analysis"]
+    else:
+        legends = [ordinal(i) + " Delta CC-half analysis" for i in range(1, n + 1)]
     if "image_ranges_removed" in cycle_results[0]:
         n_rej = [len(res["image_ranges_removed"]) for res in cycle_results]
     else:
@@ -503,7 +507,7 @@ def make_histogram_plots(cycle_results):
                     ],
                     "layout": {
                         "title": "%s" % legends[index],
-                        "xaxis": {"title": "Delta CC-half"},
+                        "xaxis": {"title": u"Delta CC<sub>½</sub>"},
                         "yaxis": {
                             "title": "Number of datasets/groups",
                             "range": [0, min(max(hist.slots()), 50)],
@@ -519,6 +523,33 @@ def make_histogram_plots(cycle_results):
             flex.double(deltas) * 100, min(deltas) * 100, max(deltas) * 100, n_slots=40
         )
         _add_new_histogram(d, hist, c)
+    return d
+
+
+def make_per_dataset_plot(delta_cchalf_i):
+    """Make a line plot of delta cc half per group."""
+
+    d = OrderedDict()
+    d.update(
+        {
+            "per_dataset_plot": {
+                "data": [
+                    {
+                        "y": [i * 100 for i in list(delta_cchalf_i.values())],
+                        "x": list(delta_cchalf_i.keys()),
+                        "type": "scatter",
+                        "mode": "lines",
+                    }
+                ],
+                "layout": {
+                    "title": "Delta CC-Half vs group",
+                    "xaxis": {"title": "Group number"},
+                    "yaxis": {"title": "Delta CC-Half"},
+                },
+            }
+        }
+    )
+
     return d
 
 

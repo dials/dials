@@ -14,7 +14,7 @@ logger = logging.getLogger(
 
 
 class DispersionExtendedSpotFinderThresholdExt(object):
-    """ Extensions to do dispersion threshold. """
+    """Extensions to do dispersion threshold."""
 
     name = "dispersion_extended"
 

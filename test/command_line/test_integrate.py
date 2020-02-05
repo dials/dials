@@ -3,19 +3,26 @@ from __future__ import absolute_import, division, print_function
 import json
 import math
 import os
-import pickle
 import shutil
 
+from dxtbx.serialize import load
 from dials.array_family import flex
 import procrunner
 
 
 def test2(dials_data, tmpdir):
     # Call dials.integrate
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data").join("experiments.json").strpath
+    )
+    exp[0].identifier = "foo"
+    exp.as_json(tmpdir.join("modified_input.json").strpath)
+
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json"),
+            "modified_input.json",
             "profile.fitting=False",
             "integration.integrator=3d",
             "prediction.padding=0",
@@ -24,14 +31,18 @@ def test2(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    assert experiments[0].identifier == "foo"
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     mask = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask.count(True) == 1666
     assert "id" in table
     for row in table.rows():
         assert row["id"] == 0
+
+    assert dict(table.experiment_identifiers()) == {0: "foo"}
 
     originaltable = table
 
@@ -50,6 +61,7 @@ def test2(dials_data, tmpdir):
     j["scan"][0]["image_range"] = [11, 19]
     assert j["scan"][0]["oscillation"] == [0.0, 0.2]
     j["scan"][0]["oscillation"] = [360.0, 0.2]
+    j["experiment"][0]["identifier"] = "bar"
     with tmpdir.join("models.expt").open("w") as fh:
         json.dump(j, fh)
 
@@ -66,8 +78,11 @@ def test2(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    assert experiments[0].identifier == "bar"
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
+    assert dict(table.experiment_identifiers()) == {0: "bar"}
     mask1 = table.get_flags(table.flags.integrated, all=False)
     assert len(table) == 1996
     assert mask1.count(True) == 1666
@@ -96,10 +111,17 @@ def test2(dials_data, tmpdir):
 
 
 def test_integration_with_sampling(dials_data, tmpdir):
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data").join("experiments.json").strpath
+    )
+    exp[0].identifier = "foo"
+    exp.as_json(tmpdir.join("modified_input.json").strpath)
+
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json"),
+            "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "prediction.padding=0",
@@ -107,17 +129,26 @@ def test_integration_with_sampling(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    assert experiments[0].identifier == "foo"
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 1000
+    assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
 def test_integration_with_sample_size(dials_data, tmpdir):
+
+    exp = load.experiment_list(
+        dials_data("centroid_test_data").join("experiments.json").strpath
+    )
+    exp[0].identifier = "foo"
+    exp.as_json(tmpdir.join("modified_input.json").strpath)
+
     result = procrunner.run(
         [
             "dials.integrate",
-            dials_data("centroid_test_data").join("experiments.json"),
+            "modified_input.json",
             "profile.fitting=False",
             "sampling.integrate_all_reflections=False",
             "sampling.minimum_sample_size=500",
@@ -126,37 +157,43 @@ def test_integration_with_sample_size(dials_data, tmpdir):
         working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    assert experiments[0].identifier == "foo"
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 500
+    assert dict(table.experiment_identifiers()) == {0: "foo"}
 
 
-def test_multi_sweep(dials_regression, run_in_tmpdir):
+def test_multi_sweep(dials_regression, tmpdir):
+
+    expts = os.path.join(
+        dials_regression, "integration_test_data", "multi_sweep", "experiments.json"
+    )
+
+    experiments = load.experiment_list(expts)
+    for i, expt in enumerate(experiments):
+        expt.identifier = str(100 + i)
+    experiments.as_json(tmpdir.join("modified_input.json").strpath)
+
+    refls = os.path.join(
+        dials_regression, "integration_test_data", "multi_sweep", "indexed.pickle"
+    )
+
     result = procrunner.run(
-        [
-            "dials.integrate",
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "multi_sweep",
-                "experiments.json",
-            ),
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "multi_sweep",
-                "indexed.pickle",
-            ),
-            "prediction.padding=0",
-        ]
+        ["dials.integrate", "modified_input.json", refls, "prediction.padding=0"],
+        working_directory=tmpdir,
     )
     assert not result.returncode and not result.stderr
-    assert os.path.exists("integrated.refl")
+    assert (tmpdir / "integrated.refl").check()
+    assert (tmpdir / "integrated.expt").check()
 
-    with open("integrated.refl", "rb") as fh:
-        table = pickle.load(fh)
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    for i, expt in enumerate(experiments):
+        assert expt.identifier == str(100 + i)
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 4020
+    assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
 
     # Check the results
     T1 = table[:2010]
@@ -178,15 +215,20 @@ def test_multi_sweep(dials_regression, run_in_tmpdir):
 
 
 def test_multi_lattice(dials_regression, tmpdir):
+
+    expts = os.path.join(
+        dials_regression, "integration_test_data", "multi_lattice", "experiments.json"
+    )
+
+    experiments = load.experiment_list(expts)
+    for i, expt in enumerate(experiments):
+        expt.identifier = str(100 + i)
+    experiments.as_json(tmpdir.join("modified_input.json").strpath)
+
     result = procrunner.run(
         [
             "dials.integrate",
-            os.path.join(
-                dials_regression,
-                "integration_test_data",
-                "multi_lattice",
-                "experiments.json",
-            ),
+            "modified_input.json",
             os.path.join(
                 dials_regression,
                 "integration_test_data",
@@ -199,9 +241,15 @@ def test_multi_lattice(dials_regression, tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check()
+    assert tmpdir.join("integrated.expt").check()
 
-    table = flex.reflection_table.from_file(tmpdir.join("integrated.refl"))
+    experiments = load.experiment_list(tmpdir.join("integrated.expt").strpath)
+    for i, expt in enumerate(experiments):
+        assert expt.identifier == str(100 + i)
+
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert len(table) == 5605
+    assert dict(table.experiment_identifiers()) == {0: "100", 1: "101"}
 
     # Check output contains from two lattices
     exp_id = list(set(table["id"]))
@@ -241,12 +289,13 @@ def test_output_rubbish(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("integrated.refl").check(file=1)
 
-    with tmpdir.join("integrated.refl").open("rb") as fh:
-        table = pickle.load(fh)
-
+    table = flex.reflection_table.from_file(tmpdir / "integrated.refl")
     assert "id" in table
     for row in table.rows():
         assert row["id"] == 0
+
+    assert list(table.experiment_identifiers().keys()) == [0]
+    assert list(table.experiment_identifiers().values())  # not empty
 
 
 def test_integrate_with_kapton(dials_regression, tmpdir):
@@ -331,9 +380,9 @@ def test_integrate_with_kapton(dials_regression, tmpdir):
 
     results = []
     for mode in "kapton", "nokapton":
-        result = os.path.join(loc, "idx-20161021225550223_integrated_%s.refl" % mode)
-        with open(result, "rb") as f:
-            table = pickle.load(f)
+        table = flex.reflection_table.from_file(
+            tmpdir / ("idx-20161021225550223_integrated_%s.refl" % mode)
+        )
         millers = table["miller_index"]
         test_indices = {"zero": (-5, 2, -6), "low": (-2, -20, 7), "high": (-1, -10, 4)}
         test_rows = {k: millers.first_index(v) for k, v in test_indices.items()}

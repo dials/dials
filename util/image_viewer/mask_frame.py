@@ -654,6 +654,7 @@ class MaskSettingsPanel(wx.Panel):
             mask = []
             for p1, p2 in zip(m1, m2):
                 mask.append(p2 & p1)
+            mask = tuple(mask)
         elif m1 is not None:
             mask = m1
         elif m2 is not None:
@@ -671,7 +672,7 @@ class MaskSettingsPanel(wx.Panel):
         from dials.util.masking import phil_scope
 
         file_name = self.params.output.mask_params
-        with open(file_name, "wb") as f:
+        with open(file_name, "w") as f:
             print("Saving parameters to %s" % file_name)
             phil_scope.fetch_diff(phil_scope.format(self.params.masking)).show(f)
 

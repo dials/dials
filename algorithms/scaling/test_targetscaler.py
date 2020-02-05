@@ -93,6 +93,7 @@ def KB_test_param():
         args=[], quick_parse=True, show_diff_phil=False
     )
     parameters.model = "KB"
+    parameters.reflection_selection.method = "use_all"
     return parameters
 
 
@@ -110,7 +111,7 @@ def test_scale_against_target(KB_test_param):
     target_experiments = test_exp()
     experiments = test_exp(idval=1)
     scaled_reflections = scale_against_target(
-        reflections, experiments, target_reflections, target_experiments
+        reflections, experiments, target_reflections, target_experiments, KB_test_param
     )
     assert list(scaled_reflections["inverse_scale_factor"]) == pytest.approx(
         [2.0, 0.5, 2.0, 2.0 * (4.0 ** (-1.0 / 3.0))]

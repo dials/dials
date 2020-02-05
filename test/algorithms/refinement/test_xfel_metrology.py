@@ -2,6 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 from dials.algorithms.refinement.engine import Journal
 import os
+from dxtbx.model.experiment_list import ExperimentListFactory
+from dials.array_family import flex
+from dials.algorithms.refinement import RefinerFactory
+from dials.algorithms.refinement.refiner import phil_scope as refiner_phil_scope
+from libtbx import phil
 
 import procrunner
 import pytest
@@ -10,7 +15,6 @@ import pytest
 def test_joint_refinement(dials_regression, run_in_tmpdir):
     """A basic test of joint refinement of the CS-PAD detector at hierarchy level 2
     with 300 crystals."""
-    from dials.array_family import flex
 
     bevington = pytest.importorskip("scitbx.examples.bevington")
     if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
@@ -42,3 +46,62 @@ def test_joint_refinement(dials_regression, run_in_tmpdir):
     rt = flex.reflection_table.from_file("refined.refl")
     uir = rt.get_flags(rt.flags.used_in_refinement)
     assert uir.count(True) == history["num_reflections"][-1]
+
+
+def test_constrained_refinement(dials_regression, run_in_tmpdir):
+    """Do constrained refinement, checking that a panel group with no data
+    on it still moves with its partners in the constraint.
+    See https://github.com/dials/dials/issues/990"""
+
+    bevington = pytest.importorskip("scitbx.examples.bevington")
+    if not hasattr(bevington, "non_linear_ls_eigen_wrapper"):
+        pytest.skip("Skipping test as SparseLevMar engine not available")
+
+    data_dir = os.path.join(dials_regression, "refinement_test_data", "xfel_metrology")
+
+    # Load experiments and reflections
+    refl = flex.reflection_table.from_file(
+        os.path.join(data_dir, "benchmark_level2d.pickle")
+    )
+    expt = ExperimentListFactory.from_json_file(
+        os.path.join(data_dir, "benchmark_level2d.json")
+    )
+
+    # There are zero reflections on some panels, so these will only move via constraints
+    for i in [8, 10, 11, 26, 27, 40, 42, 43, 56, 58, 59]:
+        assert (refl["panel"] == i).count(True) == 0
+
+    # Get parameters, combining refine.phil with constraints that enforce distances to move in lockstep
+    with open(os.path.join(data_dir, "refine.phil")) as f:
+        refine_phil = phil.parse(f.read())
+    constraint_phil = phil.parse(
+        """
+refinement {
+  parameterisation {
+    detector {
+      fix_list=Tau2,Tau3
+      constraints {
+        parameter=Dist
+      }
+    }
+  }
+}
+"""
+    )
+    params = refiner_phil_scope.fetch(sources=[refine_phil, constraint_phil]).extract()
+
+    detector = expt.detectors()[0]
+    initial_distances = [p.get_distance() for p in detector]
+
+    # Set up a refiner
+    refiner = RefinerFactory.from_parameters_data_experiments(params, refl, expt)
+
+    refiner.run()
+    detector = refiner.get_experiments().detectors()[0]
+
+    final_distances = [p.get_distance() for p in detector]
+
+    # The shifts between initial and final distances should all be equal
+    dist_diff = [a - b for a, b in zip(final_distances, initial_distances)]
+    for d in dist_diff[1:]:
+        assert d == pytest.approx(dist_diff[0])

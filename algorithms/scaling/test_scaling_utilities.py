@@ -4,27 +4,31 @@ Tests for scaling utilities module.
 from __future__ import absolute_import, division, print_function
 
 from math import sqrt, pi
-import os
+
 from scitbx.sparse import matrix  # noqa: F401 - Needed to call calc_theta_phi
 import numpy as np
 import pytest
 from dxtbx.model import Experiment, Crystal
+from dxtbx.serialize import load
 from dials.array_family import flex
+from dials.algorithms.scaling.scaling_library import create_scaling_model
 from dials.algorithms.scaling.scaling_utilities import (
-    calc_crystal_frame_vectors,
-    calc_theta_phi,
     align_rotation_axis_along_z,
-    set_wilson_outliers,
-    quasi_normalisation,
+    calc_crystal_frame_vectors,
     calculate_prescaling_correction,
+    quasi_normalisation,
+    set_wilson_outliers,
     Reasons,
 )
+from dials.util.options import OptionParser
 from dials_scaling_ext import (
     calculate_harmonic_tables_from_selections,
     create_sph_harm_lookup_table,
     create_sph_harm_table,
     calc_lookup_index,
+    calc_theta_phi,
 )
+from libtbx import phil
 from mock import Mock
 
 
@@ -32,7 +36,7 @@ from mock import Mock
 def mock_exp():
     """Create a mock experiments object."""
     exp = Mock()
-    exp.beam.get_s0.return_value = (1.0, 0.0, 0.0)
+    exp.beam.get_sample_to_source_direction.return_value = (1.0, 0.0, 0.0)
     exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
     return exp
 
@@ -293,16 +297,10 @@ def test_calculate_harmonic_tables_from_selections():
     assert mat[4, 1] == arrays[1][4]
 
 
-def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir):
-    from dials_scaling_ext import calc_theta_phi, calc_lookup_index
-    from dxtbx.serialize import load
-    from dials.util.options import OptionParser
-    from libtbx import phil
-    from dials.algorithms.scaling.scaling_library import create_scaling_model
-
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    pickle_path = os.path.join(data_dir, "20_integrated.pickle")
-    sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
+def test_equality_of_two_harmonic_table_methods(dials_data):
+    data_dir = dials_data("l_cysteine_dials_output")
+    pickle_path = data_dir / "20_integrated.pickle"
+    sequence_path = data_dir / "20_integrated_experiments.json"
 
     phil_scope = phil.parse(
         """
@@ -317,7 +315,7 @@ def test_equality_of_two_harmonic_table_methods(dials_regression, run_in_tmpdir)
     params.physical.lmax = lmax
 
     reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiments = load.experiment_list(sweep_path, check_format=False)
+    experiments = load.experiment_list(sequence_path, check_format=False)
     experiments = create_scaling_model(params, experiments, [reflection_table])
 
     experiment = experiments[0]

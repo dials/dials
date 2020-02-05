@@ -2,32 +2,25 @@
 About
 +++++
 
-The DIALS framework is being developed in a fully open-source, collaborative
-environment. In the spirit of the open source movement, we welcome
-collaboration from anyone who wishes to contribute to the project. The
-framework development is currently a joint effort between developers from
-`Diamond Light Source`_ and `CCP4`_, based in the UK, and developers at
-`Lawrence Berkeley National Laboratory`_, USA. Our common interests
-allow us to distribute effort and combine expertise effectively, greatly
-enhancing our joint productivity and allowing us to tackle the sizeable task of
-writing a new data processing package within a reasonable time frame.
+The DIALS software is developed in a fully open-source, collaborative
+environment. The main development teams are based at `Diamond Light Source`_
+and `CCP4`_, in the UK, and at `Lawrence Berkeley National Laboratory`_, USA.
+However, in the spirit of the open source movement, we welcome
+collaboration from anyone who wishes to contribute to the project.
 
 To avoid "reinventing the wheel" as much as possible, the DIALS project builds
-on knowledge accumulated over many decades in the field of data processing for
-MX. We benefit greatly from the altruism of experts who contribute their ideas
-and advice either directly or via their detailed publications on existing
-algorithms and packages. At the heart of the DIALS framework lies a design
-philosophy of hardware abstraction and a generalised model of the experiment
+on knowledge accumulated over many decades in the field of crystallographic
+data processing. We benefit greatly from the altruism of experts who contribute their ideas
+and advice, either directly or via their detailed publications on existing
+algorithms and packages such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. At the heart
+of the DIALS framework lies a design philosophy of hardware abstraction and a
+generalised model of the experiment
 that is inspired directly by material published on the seminal workshops on
 position sensitive detector software [#Lure]_. Continuing in the spirit of these
-workshops we hold regular meetings, with talks from invited speakers, and code
+workshops we held our own series of meetings, with talks from invited speakers, and code
 camps in which specific problems are addressed by intensive effort across the
 collaboration. Summaries of these meetings and copies of slides given as
-presentations are available :doc:`here </links>`. We have begun by reproducing
-published spot finding and integration algorithms used by integration packages
-such as XDS [#XDS]_ and MOSFLM [#MOSFLM]_. We expect new research to lead to more
-advanced or case-specific algorithms in future, which may either be implemented
-by us or by other groups who choose to work with the toolkit.
+presentations are available :doc:`here </workshops/index>`.
 
 DIALS is written using Python and C++, making heavy use of the `cctbx`_ [#RWGK]_
 for core crystallographic calculations and much infrastructure including a
@@ -45,16 +38,8 @@ Development Teams
 DIALS East
 ----------
 
-Development of DIALS in the UK is funded by the `BioStruct-X`_ EU grant,
+Development of DIALS in the UK is funded by the `Wellcome Trust`_,
 `Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
-Developers include
-James Beilsten-Edmands,
-Nick Devenish,
-Luis Fuentes-Montero,
-Markus Gerstel,
-Richard Gildea,
-James Parkhurst and Graeme Winter at `Diamond Light Source`_, and David Waterman
-at `CCP4`_.
 
 DIALS West
 ----------
@@ -64,29 +49,29 @@ Development of DIALS at `Lawrence Berkeley National Laboratory`_, USA is led by
 `National Institute of General Medical Sciences`_ grant R01-GM117126: *DIALS:
 New Computational Methods to Enable Challenging Crystallographic Experiments*.
 Work at LBNL is performed under `Department of Energy`_ contract
-DE-AC02-05CH11231. Developers include Aaron Brewster and Iris Young.
+DE-AC02-05CH11231.
 
 Acknowledgements
 ================
 
-We are grateful to the following people who have contributed to the development
-of DIALS either in the form of code, or through numerous intellectual discussions:
+We are grateful to all those who have contributed to the development
+of DIALS.
 
-Muhamed Amin,
+.. literalinclude:: ../../AUTHORS
+    :language: rst
+
+In addition, we acknowledge guidance and ideas gained through numerous
+intellectual discussions with the following:
+
 Alun Ashton,
 Gleb Bourenkov,
 Gerard Bricogne,
 Phil Evans,
-Nat Echols,
-Johan Hattne,
 Andrew Leslie,
-Tara Michels-Clark,
 Nigel Moriarty,
-Garib Murshadov,
-Takanori Nakane,
+Garib Murshudov,
 Jim Pflugrath,
 Harry Powell,
-Ian Rees,
 Jon Schuermann
 and
 Matthew Webber.
@@ -96,13 +81,13 @@ Matthew Webber.
 .. [#MOSFLM] `Leslie, A. G. W. and Powell H. R. (2007), Evolving Methods for Macromolecular Crystallography, 245, 41-51. ISBN 978-1-4020-6314-5.`
 .. [#RWGK] `Grosse-Kunstleve, R. W., Sauter, N. K., Moriarty, N. W., & Adams, P. D. (2002). Journal of Applied Crystallography. 35, 126–136.`
 
-.. _`BioStruct-X`: http://www.biostruct-x.org/
+.. _`Wellcome Trust`: https://wellcome.ac.uk/
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
 .. _`cctbx`: http://cctbx.sourceforge.net/
 .. _`CCP4`: http://www.ccp4.ac.uk/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/Home.html
 .. _`Dr Gwyndaf Evans`: http://www.diamond.ac.uk/Beamlines/Mx/VMXm/Staff/Evans.html
-.. _`Dr Nicholas Sauter`: http://pbd.lbl.gov/scientists/nicholas-sauter/
+.. _`Dr Nicholas Sauter`: https://biosciences.lbl.gov/profiles/nicholas-sauter/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
 .. _`National Institutes of Health`: http://www.nih.gov/
 .. _`National Institute of General Medical Sciences`: http://www.nigms.nih.gov/

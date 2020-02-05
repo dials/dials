@@ -40,10 +40,10 @@ def generate_reflections(experiments):
     )
     indices = index_generator.to_array()
 
-    # Predict rays within the sweep range
+    # Predict rays within the sequence range
     scan = experiments[0].scan
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ray_predictor = ScansRayPredictor(experiments, sweep_range)
+    sequence_range = scan.get_oscillation_range(deg=False)
+    ray_predictor = ScansRayPredictor(experiments, sequence_range)
     obs_refs = ray_predictor(indices)
 
     # Take only those rays that intersect the detector
@@ -95,7 +95,7 @@ def test_fd_derivatives():
     mycrystal = models.crystal
     mybeam = models.beam
 
-    # Build a mock scan for a 72 degree sweep
+    # Build a mock scan for a 72 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -220,7 +220,7 @@ def test_refinement(dials_regression):
 
     goniometer = GoniometerFactory.known_axis((1.0, 0.0, 0.0))
 
-    # Build a mock scan for a 180 degree sweep
+    # Build a mock scan for a 180 degree sequence
     from dxtbx.model import ScanFactory
 
     sf = ScanFactory()
@@ -231,9 +231,9 @@ def test_refinement(dials_regression):
         epochs=list(range(1800)),
         deg=True,
     )
-    sweep_range = scan.get_oscillation_range(deg=False)
+    sequence_range = scan.get_oscillation_range(deg=False)
     im_width = scan.get_oscillation(deg=False)[1]
-    assert sweep_range == (0.0, pi)
+    assert sequence_range == (0.0, pi)
     assert approx_equal(im_width, 0.1 * pi / 180.0)
 
     # Build an experiment list

@@ -1,5 +1,3 @@
-# LIBTBX_SET_DISPATCHER_NAME dials.stills_process_mpi
-
 from __future__ import absolute_import, division, print_function
 
 import copy
@@ -8,7 +6,6 @@ import logging
 import os
 from time import time
 
-import libtbx.load_env
 from libtbx.utils import Abort, Sorry
 from dxtbx.model import Detector
 from dials.util import log
@@ -35,10 +32,7 @@ class Script(base_script):
         self.size = comm.Get_size()  # size: number of processes running in this job
 
         # The script usage
-        usage = (
-            "usage: %s [options] [param.phil] mp.blob=<filepattern>"
-            % libtbx.env.dispatcher_name
-        )
+        usage = "usage: dials.stills_process_mpi [options] [param.phil] mp.blob=<filepattern>"
 
         self.tag = None
         self.reference_detector = None
@@ -160,7 +154,10 @@ class Script(base_script):
 
 
 if __name__ == "__main__":
-    from mpi4py import MPI
+    try:
+        from mpi4py import MPI
+    except ImportError:
+        raise Sorry("MPI not available")
 
     comm = MPI.COMM_WORLD
     script = Script(comm)

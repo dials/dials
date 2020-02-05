@@ -434,7 +434,7 @@ def export_mtz(integrated_data, experiment_list, params):
             x.crystal == experiment_list[0].crystal for x in experiment_list[1:]
         ):
             logger.warning(
-                "Warning: Experiment crystals differ. Using first experiment crystal for file-level data."
+                "Experiment crystals differ. Using first experiment crystal for file-level data."
             )
 
         wavelengths = match_wavelengths(experiment_list)
@@ -452,7 +452,7 @@ def export_mtz(integrated_data, experiment_list, params):
 
     # also only work correctly with one panel (for the moment)
     if any(len(experiment.detector) != 1 for experiment in experiment_list):
-        logger.warning("Warning: Ignoring multiple panels in output MTZ")
+        logger.warning("Ignoring multiple panels in output MTZ")
 
     # Clean up the data with the passed in options
     integrated_data = filter_reflection_table(

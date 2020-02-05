@@ -3,10 +3,17 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from dials.array_family import flex
-from dials.command_line.space_group import run_sys_abs_checks
 from dials.algorithms.scaling.scaling_library import (
     scaled_data_as_miller_array,
     merging_stats_from_scaled_array,
+)
+from dials.algorithms.scaling.scaling_utilities import DialsMergingStatisticsError
+from dials.algorithms.scaling.Ih_table import (
+    _reflection_table_to_iobs,
+    map_indices_to_asu,
+)
+from dials.algorithms.symmetry.absences.run_absences_checks import (
+    run_systematic_absences_checks,
 )
 from dials.util.filter_reflections import filter_reflection_table
 from dials.util.export_mtz import MADMergedMTZWriter, MergedMTZWriter
@@ -16,6 +23,57 @@ from mmtbx.scaling import data_statistics
 from six.moves import cStringIO as StringIO
 
 logger = logging.getLogger("dials")
+
+
+def prepare_merged_reflection_table(experiments, reflection_table, d_min=None):
+    """Filter the data and prepare a reflection table with merged data."""
+    if (
+        "inverse_scale_factor" in reflection_table
+        and "intensity.scale.value" in reflection_table
+    ):
+        logger.info("Performing systematic absence checks on scaled data")
+        reflections = filter_reflection_table(
+            reflection_table, intensity_choice=["scale"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.scale.value"]
+        reflections["variance"] = reflections["intensity.scale.variance"]
+    elif "intensity.prf.value" in reflection_table:
+        logger.info(
+            "Performing systematic absence checks on unscaled profile-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflection_table, intensity_choice=["profile"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.prf.value"]
+        reflections["variance"] = reflections["intensity.prf.variance"]
+    else:
+        logger.info(
+            "Performing systematic absence checks on unscaled summation-integrated data"
+        )
+        reflections = filter_reflection_table(
+            reflection_table, intensity_choice=["sum"], d_min=d_min
+        )
+        reflections["intensity"] = reflections["intensity.sum.value"]
+        reflections["variance"] = reflections["intensity.sum.variance"]
+
+    # now merge
+    space_group = experiments[0].crystal.get_space_group()
+    reflections["asu_miller_index"] = map_indices_to_asu(
+        reflections["miller_index"], space_group
+    )
+    reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
+    merged = (
+        _reflection_table_to_iobs(
+            reflections, experiments[0].crystal.get_unit_cell(), space_group
+        )
+        .merge_equivalents(use_internal_variance=False)
+        .array()
+    )
+    merged_reflections = flex.reflection_table()
+    merged_reflections["intensity"] = merged.data()
+    merged_reflections["variance"] = merged.sigmas() ** 2
+    merged_reflections["miller_index"] = merged.indices()
+    return merged_reflections
 
 
 def make_MAD_merged_mtz_file(params, experiments, reflections, wavelengths):
@@ -108,6 +166,7 @@ def merge_and_truncate(params, experiments, reflections):
     reflections["inverse_scale_factor"] = flex.double(reflections.size(), 1.0)
 
     scaled_array = scaled_data_as_miller_array([reflections], experiments)
+    # Note, merge_equivalents does not raise an error if data is unique.
     if params.anomalous:
         anomalous_scaled = scaled_array.as_anomalous_array()
 
@@ -127,7 +186,7 @@ def merge_and_truncate(params, experiments, reflections):
         merged_reflections["variance"] = merged.sigmas() ** 2
         merged_reflections["miller_index"] = merged.indices()
         logger.info("Running systematic absences check")
-        run_sys_abs_checks(experiments, merged_reflections)
+        run_systematic_absences_checks(experiments, merged_reflections)
 
     # Run the stats on truncating on anomalous or non anomalous?
     if params.anomalous:
@@ -168,12 +227,18 @@ def merge_and_truncate(params, experiments, reflections):
 
     # Show merging stats again.
     if params.reporting.merging_stats:
-        stats, anom_stats = merging_stats_from_scaled_array(
-            scaled_array, params.merging.n_bins, params.merging.use_internal_variance
-        )
-        if params.merging.anomalous:
-            logger.info(make_merging_statistics_summary(anom_stats))
+        try:
+            stats, anom_stats = merging_stats_from_scaled_array(
+                scaled_array,
+                params.merging.n_bins,
+                params.merging.use_internal_variance,
+            )
+        except DialsMergingStatisticsError as e:
+            logger.info(e)
         else:
-            logger.info(make_merging_statistics_summary(stats))
+            if params.merging.anomalous:
+                logger.info(make_merging_statistics_summary(anom_stats))
+            else:
+                logger.info(make_merging_statistics_summary(stats))
 
     return merged, merged_anom, amplitudes, anom_amplitudes

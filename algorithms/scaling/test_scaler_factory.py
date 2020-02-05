@@ -12,7 +12,6 @@ from dials.algorithms.scaling.scaler_factory import (
     SingleScalerFactory,
     TargetScalerFactory,
     MultiScalerFactory,
-    is_scaled,
     create_scaler,
 )
 from dials.algorithms.scaling.scaler import (
@@ -114,6 +113,7 @@ def generated_param():
     )
     parameters.__inject__("model", "KB")
     parameters.scaling_options.free_set_percentage = 50.0
+    parameters.reflection_selection.method = "use_all"
     return parameters
 
 
@@ -150,7 +150,7 @@ def mock_exp(mock_scaling_component, idval=0):
     }
     exp.crystal = Crystal.from_dict(exp_dict)
     exp.scan.get_oscillation.return_value = (0, 1.0)
-    exp.beam.get_s0.return_value = (0.0, 0.0, 1.0)
+    exp.beam.get_sample_to_source_direction.return_value = (0.0, 0.0, -1.0)
     exp.goniometer.get_rotation_axis.return_value = (0.0, 0.0, 1.0)
     return exp
 
@@ -236,17 +236,17 @@ def test_TargetScalerFactory(generated_param, mock_scaling_component):
     assert set(target.single_scalers[1].reflection_table["id"]) == {1}
     assert set(target.unscaled_scalers[0].reflection_table["id"]) == {2}
 
+    # Now test converting targetscaler to multiscaler
+    multiscaler = MultiScalerFactory.create_from_targetscaler(target)
+    assert isinstance(multiscaler, MultiScaler)
+    assert len(multiscaler.single_scalers) == 3
+
     # Test for correct initialisation when scaling against a target model.
     generated_param.scaling_options.target_model = True
     target = TargetScalerFactory.create_for_target_against_reference(
         generated_param, explist, refl_list
     )
     assert isinstance(target.single_scalers[0], NullScaler)
-
-    # Now test converting targetscaler to multiscaler
-    multiscaler = MultiScalerFactory.create_from_targetscaler(target)
-    assert isinstance(multiscaler, MultiScaler)
-    assert len(multiscaler.single_scalers) == 3
 
     # This time make one dataset bad, and check it gets removed
     refl_list, explist = test_refl_and_exp_list(mock_scaling_component, 3)
@@ -305,10 +305,6 @@ def test_scaler_factory_helper_functions(
     """Test the helper functions."""
 
     test_refl, exp = test_refl_and_exp(mock_scaling_component)
-
-    # Test is_scaled function
-    scaled_list = is_scaled(mock_experimentlist)
-    assert scaled_list == [True, True, False, True, False]
 
     # Test create_scaler
     # Test case for single refl and exp

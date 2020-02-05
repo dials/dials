@@ -34,7 +34,7 @@ basis_vector_combinations
     max_refine = Auto
         .type = int(value_min=1)
         .help = "Maximum number of putative crystal models to test. Default"
-                "for rotation sweeps: 50, for still images: 5"
+                "for rotation sequences: 50, for still images: 5"
         .expert_level = 1
     sys_absent_threshold = 0.9
         .type = float(value_min=0.0, value_max=1.0)
@@ -333,9 +333,10 @@ class BasisVectorSearch(LatticeSearch):
         if self.d_min is not None:
             sel &= 1 / self.reflections["rlp"].norms() > self.d_min
         reflections = self.reflections.select(sel)
-        self.candidate_basis_vectors, used_in_indexing = self._basis_vector_search_strategy.find_basis_vectors(
-            reflections["rlp"]
-        )
+        (
+            self.candidate_basis_vectors,
+            used_in_indexing,
+        ) = self._basis_vector_search_strategy.find_basis_vectors(reflections["rlp"])
         self._used_in_indexing = sel.iselection().select(used_in_indexing)
         if self.d_min is None:
             self.d_min = flex.min(

@@ -22,7 +22,7 @@ phil_scope = parse(
     .type = int
     .help = "The border around the edge of the image."
 
-  use_trusted_range = True
+  use_trusted_range = False
     .type = bool
     .help = "Use the trusted range to mask bad pixels."
 
@@ -123,20 +123,20 @@ def generate_ice_ring_resolution_ranges(beam, panel, params):
             d_sq_inv = 1.0 / (d ** 2)
             d_sq_inv_min = d_sq_inv - half_width
             d_sq_inv_max = d_sq_inv + half_width
-            d_min = math.sqrt(1.0 / d_sq_inv_min)
-            d_max = math.sqrt(1.0 / d_sq_inv_max)
+            d_max = math.sqrt(1.0 / d_sq_inv_min)
+            d_min = math.sqrt(1.0 / d_sq_inv_max)
             yield (d_min, d_max)
 
 
 class MaskGenerator(object):
-    """ Generate a mask. """
+    """Generate a mask."""
 
     def __init__(self, params):
-        """ Set the parameters. """
+        """Set the parameters."""
         self.params = params
 
     def generate(self, imageset):
-        """ Generate the mask. """
+        """Generate the mask."""
         # Get the detector and beam
         detector = imageset.get_detector()
         beam = imageset.get_beam()
@@ -149,11 +149,24 @@ class MaskGenerator(object):
         masks = []
         for index, (im, panel) in enumerate(zip(image, detector)):
 
-            # Create the basic mask from the trusted range
+            # Build a trusted mask by looking for pixels that are always outside
+            # the trusted range. This identifies bad pixels, but does not include
+            # pixels that are overloaded on some images.
             if self.params.use_trusted_range:
+                trusted_mask = None
                 low, high = panel.get_trusted_range()
-                imd = im.as_double()
-                mask = (imd > low) & (imd < high)
+                for image_index, _ in enumerate(imageset.indices()):
+                    image_data = imageset.get_raw_data(image_index)[index].as_double()
+                    frame_mask = (image_data > low) & (image_data < high)
+                    if trusted_mask is None:
+                        trusted_mask = frame_mask
+                    else:
+                        trusted_mask = trusted_mask | frame_mask
+
+                    if trusted_mask.count(False) == 0:
+                        break
+
+                mask = trusted_mask
             else:
                 mask = flex.bool(flex.grid(im.all()), True)
 

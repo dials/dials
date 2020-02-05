@@ -15,9 +15,9 @@ Examples::
 """
 
 from __future__ import absolute_import, division, print_function
+import copy
 import sys
 import logging
-from time import time
 import dials.util
 import libtbx.phil
 from libtbx import Auto
@@ -25,7 +25,10 @@ from dials.array_family import flex
 from dials.algorithms.refinement import RefinerFactory
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
 from dials.algorithms.refinement.corrgram import create_correlation_plots
-from dials.util import Sorry
+import dials.util.log
+from dials.util.version import dials_version
+from dials.util.options import OptionParser
+from dials.util.options import reflections_and_experiments_from_files
 
 logger = logging.getLogger("dials.command_line.refine")
 
@@ -184,7 +187,7 @@ def run_macrocycle(params, reflections, experiments):
             params, reflections, experiments
         )
     except DialsRefineConfigError as e:
-        raise Sorry(e.message)
+        sys.exit(str(e))
 
     # Refine the geometry
     nexp = len(experiments)
@@ -197,7 +200,7 @@ def run_macrocycle(params, reflections, experiments):
     try:
         history = refiner.run()
     except DialsRefineRuntimeError as e:
-        raise Sorry(e.message)
+        sys.exit(str(e))
 
     # Update predictions for all indexed reflections
     logger.info("Updating predictions for indexed reflections")
@@ -206,7 +209,7 @@ def run_macrocycle(params, reflections, experiments):
     # just copy over the columns of interest or columns that may have been
     # updated, leaving behind things added by e.g. scan-varying refinement
     # such as 'block', the U, B and UB matrices and gradients.
-    for key in preds.rows():
+    for key in preds:
         if key in reflections.keys() or key in [
             "s1",
             "xyzcal.mm",
@@ -264,6 +267,7 @@ def run_dials_refine(experiments, reflections, params):
     Returns:
         tuple: The refined experiments, the updated reflection table, the
             Refiner object and the refinement history object.
+
     """
 
     # Modify options if necessary
@@ -312,18 +316,9 @@ def run(args=None, phil=working_phil):
         None
     """
 
-    import dials.util.log
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_reflections
-    from dials.util.options import flatten_experiments
-    import libtbx.load_env
-
-    start_time = time()
-
     # The script usage
     usage = (
-        "usage: %s [options] [param.phil] "
-        "models.expt observations.refl" % libtbx.env.dispatcher_name
+        "usage: dials.refine [options] [param.phil] " "models.expt observations.refl"
     )
 
     # Create the parser
@@ -338,8 +333,10 @@ def run(args=None, phil=working_phil):
 
     # Parse the command line
     params, options = parser.parse_args(args=args, show_diff_phil=False)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     # Configure the logging
     dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
@@ -359,10 +356,7 @@ def run(args=None, phil=working_phil):
     )
     for key in ["xyzobs.mm.value", "xyzobs.mm.variance"]:
         if key not in reflections:
-            msg = msg.format(key)
-            raise dials.util.Sorry(msg)
-
-    from dials.util.version import dials_version
+            sys.exit(msg.format(key))
 
     logger.info(dials_version())
 
@@ -375,10 +369,27 @@ def run(args=None, phil=working_phil):
     # Warn about potentially unhelpful options
     if params.refinement.mp.nproc > 1:
         logger.warning(
-            "WARNING: setting nproc > 1 is only helpful in rare "
+            "Setting nproc > 1 is only helpful in rare "
             "circumstances. It is not recommended for typical data processing "
-            "tasks.\n"
+            "tasks."
         )
+
+    if params.refinement.parameterisation.scan_varying is not False:
+        # duplicate crystal if necessary for scan varying - will need
+        # to compare the scans with crystals - if not 1:1 will need to
+        # split the crystals
+
+        crystal_has_scan = {}
+        for j, e in enumerate(experiments):
+            if e.crystal in crystal_has_scan:
+                if e.scan is not crystal_has_scan[e.crystal]:
+                    logger.info(
+                        "Duplicating crystal model for scan-varying refinement of experiment %d"
+                        % j
+                    )
+                    e.crystal = copy.deepcopy(e.crystal)
+            else:
+                crystal_has_scan[e.crystal] = e.scan
 
     # Run refinement
     experiments, reflections, refiner, history = run_dials_refine(
@@ -463,9 +474,6 @@ def run(args=None, phil=working_phil):
             "Saving refinement step history to {}".format(params.output.history)
         )
         history.to_json_file(params.output.history)
-
-    # Log the total time taken
-    logger.info("\nTotal time taken: {:.2f}s".format(time() - start_time))
 
 
 if __name__ == "__main__":

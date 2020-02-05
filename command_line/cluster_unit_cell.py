@@ -2,11 +2,15 @@
 
 from __future__ import absolute_import, division, print_function
 
+import os
 import sys
 
-import libtbx.load_env
+from cctbx import crystal
 import iotbx.phil
-from dials.util import Sorry
+from iotbx.reflection_file_reader import any_reflection_file
+from xfel.clustering.cluster import Cluster
+from xfel.clustering.cluster_groups import unit_cell_info
+
 from dials.util.options import OptionParser
 from dials.util.options import flatten_experiments
 
@@ -32,7 +36,7 @@ plot {
 
 
 def run(args):
-    usage = "%s [options] models.expt" % (libtbx.env.dispatcher_name)
+    usage = "dials.cluster_unit_cell [options] models.expt"
 
     parser = OptionParser(
         usage=usage,
@@ -50,9 +54,6 @@ def run(args):
 
     if len(experiments) == 0:
         if len(args):
-            import os
-            from iotbx.reflection_file_reader import any_reflection_file
-
             for arg in args:
                 assert os.path.isfile(arg), arg
                 reader = any_reflection_file(arg)
@@ -65,8 +66,6 @@ def run(args):
             parser.print_help()
             exit(0)
     else:
-        from cctbx import crystal
-
         crystal_symmetries = [
             crystal.symmetry(
                 unit_cell=expt.crystal.get_unit_cell(),
@@ -79,13 +78,6 @@ def run(args):
 
 
 def do_cluster_analysis(crystal_symmetries, params):
-
-    try:
-        from xfel.clustering.cluster import Cluster
-        from xfel.clustering.cluster_groups import unit_cell_info
-    except ImportError:
-        raise Sorry("cluster_unit_cell requires xfel module but is not available")
-
     ucs = Cluster.from_crystal_symmetries(crystal_symmetries)
 
     if params.plot.show or params.plot.name is not None:
@@ -103,7 +95,6 @@ def do_cluster_analysis(crystal_symmetries, params):
             log=params.plot.log,
             ax=ax,
             write_file_lists=False,
-            # schnell=_args.schnell,
             doplot=True,
         )
         print(unit_cell_info(clusters))
@@ -115,11 +106,7 @@ def do_cluster_analysis(crystal_symmetries, params):
 
     else:
         clusters, cluster_axes = ucs.ab_cluster(
-            params.threshold,
-            log=params.plot.log,
-            write_file_lists=False,
-            # schnell=_args.schnell,
-            doplot=False,
+            params.threshold, log=params.plot.log, write_file_lists=False, doplot=False
         )
         print(unit_cell_info(clusters))
 

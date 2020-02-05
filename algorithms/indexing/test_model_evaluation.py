@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import copy
+import functools
 import os
 import pytest
 
@@ -13,50 +14,7 @@ from dials.algorithms.indexing.assign_indices import AssignIndicesGlobal
 from dials.algorithms.refinement.refiner import phil_scope as refine_phil
 
 
-def test_Result():
-
-    rmsds = (0.0269546226916153, 0.03159452239902618, 0.004208711548775884)
-    fraction_indexed = 0.9683976336148051
-    model_likelihood = 0.95846970346759
-    n_indexed = 19152
-    crystal = Crystal.from_dict(
-        dict(
-            [
-                ("__id__", "crystal"),
-                (
-                    "real_space_a",
-                    (-45.031874961773504, -14.833784919966813, -48.766092343826806),
-                ),
-                (
-                    "real_space_b",
-                    (-32.15263553253188, 3.8725711269478085, 59.82290857456796),
-                ),
-                (
-                    "real_space_c",
-                    (29.6683003477066, 59.732569113301565, -13.880892871529552),
-                ),
-                ("space_group_hall_symbol", " P 1"),
-            ]
-        )
-    )
-
-    result = model_evaluation.Result(
-        rmsds=rmsds,
-        fraction_indexed=fraction_indexed,
-        model_likelihood=model_likelihood,
-        n_indexed=n_indexed,
-        crystal=crystal,
-    )
-
-    assert result.rmsds == rmsds
-    assert result.fraction_indexed == fraction_indexed
-    assert result.model_likelihood == model_likelihood
-    assert result.n_indexed == n_indexed
-    assert result.crystal == crystal
-
-
 def test_ModelRank():
-
     results = [
         model_evaluation.Result(
             rmsds=(0.0269546226916153, 0.03159452239902618, 0.004208711548775884),
@@ -87,6 +45,7 @@ def test_ModelRank():
                     ]
                 )
             ),
+            hkl_offset=None,
         ),
         model_evaluation.Result(
             rmsds=(0.0341397658828684, 0.027401396596305812, 0.00427723439147068),
@@ -117,6 +76,7 @@ def test_ModelRank():
                     ]
                 )
             ),
+            hkl_offset=None,
         ),
         model_evaluation.Result(
             rmsds=(0.30456791867888355, 0.15679214175133024, 0.009635577811258947),
@@ -147,6 +107,7 @@ def test_ModelRank():
                     ]
                 )
             ),
+            hkl_offset=None,
         ),
     ]
 
@@ -167,13 +128,13 @@ def test_ModelRank():
     assert (
         str(ranker)
         == """\
-----------------------------------------------------------------------------------------------------------------------------------------------
-unit_cell                           | volume | volume score | #indexed | % indexed | % indexed score | rmsd_xy | rmsd_xy score | overall score
-----------------------------------------------------------------------------------------------------------------------------------------------
-68.02 68.03 68.12 109.6 109.5 109.3 | 242890 | 0.44         | 19152    | 97        | 0.02            | 0.04    | 0.00          | 0.20
-68.12 68.15 68.26 109.5 109.4 109.4 | 244274 | 0.45         | 19480    | 98        | 0.00            | 0.04    | 0.08          | 0.21
-47.94 63.06 65.84 75.2 71.6 74.5    | 178786 | 0.00         | 6651     | 34        | 1.55            | 0.34    | 3.04          | 11.67
-----------------------------------------------------------------------------------------------------------------------------------------------"""
++-------------------------------------+----------+----------------+------------+-------------+-------------------+-----------+-----------------+-----------------+
+| unit_cell                           |   volume |   volume score |   #indexed |   % indexed |   % indexed score |   rmsd_xy |   rmsd_xy score |   overall score |
+|-------------------------------------+----------+----------------+------------+-------------+-------------------+-----------+-----------------+-----------------|
+| 68.02 68.03 68.12 109.6 109.5 109.3 |   242890 |           0.44 |      19152 |          97 |              0.02 |      0.04 |            0    |            0.2  |
+| 68.12 68.15 68.26 109.5 109.4 109.4 |   244274 |           0.45 |      19480 |          98 |              0    |      0.04 |            0.08 |            0.21 |
+| 47.94 63.06 65.84 75.2 71.6 74.5    |   178786 |           0    |       6651 |          34 |              1.55 |      0.34 |            3.04 |           11.67 |
++-------------------------------------+----------+----------------+------------+-------------+-------------------+-----------+-----------------+-----------------+"""
     )
     best = ranker.best_model()
     assert best.n_indexed == 19152
@@ -185,13 +146,13 @@ unit_cell                           | volume | volume score | #indexed | % index
     assert (
         str(ranker)
         == """\
-----------------------------------------------------------------------------------------
-unit_cell                           | volume | n_indexed | fraction_indexed | likelihood
-----------------------------------------------------------------------------------------
-68.02 68.03 68.12 109.6 109.5 109.3 | 242890 | 19152     | 97               | 0.96
-68.12 68.15 68.26 109.5 109.4 109.4 | 244274 | 19480     | 98               | 0.96
-47.94 63.06 65.84 75.2 71.6 74.5    | 178786 | 6651      | 34               | 0.66
-----------------------------------------------------------------------------------------"""
++-------------------------------------+----------+-------------+--------------------+--------------+
+| unit_cell                           |   volume |   n_indexed |   fraction_indexed |   likelihood |
+|-------------------------------------+----------+-------------+--------------------+--------------|
+| 68.02 68.03 68.12 109.6 109.5 109.3 |   242890 |       19152 |                 97 |         0.96 |
+| 68.12 68.15 68.26 109.5 109.4 109.4 |   244274 |       19480 |                 98 |         0.96 |
+| 47.94 63.06 65.84 75.2 71.6 74.5    |   178786 |        6651 |                 34 |         0.66 |
++-------------------------------------+----------+-------------+--------------------+--------------+"""
     )
 
 
@@ -199,10 +160,10 @@ def test_ModelEvaluation(dials_regression, tmpdir):
     # thaumatin
     data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
     pickle_path = os.path.join(data_dir, "full.pickle")
-    sweep_path = os.path.join(data_dir, "experiments_import.json")
+    sequence_path = os.path.join(data_dir, "experiments_import.json")
 
     input_reflections = flex.reflection_table.from_file(pickle_path)
-    input_experiments = load.experiment_list(sweep_path, check_format=False)
+    input_experiments = load.experiment_list(sequence_path, check_format=False)
 
     input_reflections = input_reflections.select(
         input_reflections["xyzobs.px.value"].parts()[2] < 100
@@ -255,6 +216,13 @@ def test_filter_doubled_cell():
     sgi = sgtbx.space_group_info("P1")
     uc1 = sgi.any_compatible_unit_cell(volume=1000)
     params = uc1.parameters()
+    MiniResult = functools.partial(
+        model_evaluation.Result,
+        model_likelihood=None,
+        rmsds=None,
+        fraction_indexed=None,
+        hkl_offset=None,
+    )
     for (m1, m2, m3) in (
         (2, 1, 1),
         (1, 2, 1),
@@ -277,8 +245,8 @@ def test_filter_doubled_cell():
         B1 = scitbx.matrix.sqr(uc1.fractionalization_matrix()).transpose()
         B2 = scitbx.matrix.sqr(uc2.fractionalization_matrix()).transpose()
         solutions = [
-            model_evaluation.Result(crystal=Crystal(B1, sgi.group()), n_indexed=100),
-            model_evaluation.Result(crystal=Crystal(B2, sgi.group()), n_indexed=100),
+            MiniResult(crystal=Crystal(B1, sgi.group()), n_indexed=100),
+            MiniResult(crystal=Crystal(B2, sgi.group()), n_indexed=100),
         ]
         filtered = model_evaluation.filter_doubled_cell(solutions)
         assert len(filtered) == 1

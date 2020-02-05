@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import errno
 import os
 import matplotlib
 
@@ -10,7 +11,6 @@ import matplotlib.gridspec as gridspec
 from dials.algorithms.refinement.rotation_decomposition import (
     solve_r3_rotation_for_angles_given_axes,
 )
-from dials.command_line.analyse_output import ensure_directory
 
 import dials.util
 from libtbx.phil import parse
@@ -62,6 +62,15 @@ Examples::
 
   dials.plot_scan_varying_model refined.expt
 """
+
+
+def ensure_directory(path):
+    """Make the directory if not already there."""
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 
 class Script(object):
@@ -242,7 +251,7 @@ class Script(object):
 
         ax = plt.subplot(gs[0, 1])
         ax.ticklabel_format(useOffset=False)
-        ymin, ymax = 0.0, 0.0
+        ymin, ymax = 180.0, 0.0
         for cell in dat:
             if "sig_aa" in cell:
                 ax.errorbar(
@@ -250,8 +259,8 @@ class Script(object):
                 )
             plt.plot(cell["phi"], cell["alpha"])
             # choose the widest y range
-            ymin = max(ymin, min(cell["alpha"]) - 0.05)
-            ymax = max(ymax, max(cell["alpha"]) + 0.05)
+            ymin = min(ymin, min(cell["alpha"]) - 0.1)
+            ymax = max(ymax, max(cell["alpha"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
         plt.ylabel(r"angle $\left(^\circ\right)$")
@@ -271,7 +280,7 @@ class Script(object):
 
         ax = plt.subplot(gs[1, 1])
         ax.ticklabel_format(useOffset=False)
-        ymin, ymax = 0.0, 0.0
+        ymin, ymax = 180.0, 0.0
         for cell in dat:
             if "sig_bb" in cell:
                 ax.errorbar(
@@ -279,8 +288,8 @@ class Script(object):
                 )
             plt.plot(cell["phi"], cell["beta"])
             # choose the widest y range
-            ymin = max(ymin, min(cell["beta"]) - 0.05)
-            ymax = max(ymax, max(cell["beta"]) + 0.05)
+            ymin = min(ymin, min(cell["beta"]) - 0.1)
+            ymax = max(ymax, max(cell["beta"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
         plt.ylabel(r"angle $\left(^\circ\right)$")
@@ -300,7 +309,7 @@ class Script(object):
 
         ax = plt.subplot(gs[2, 1])
         ax.ticklabel_format(useOffset=False)
-        ymin, ymax = 0.0, 0.0
+        ymin, ymax = 180.0, 0.0
         for cell in dat:
             if "sig_cc" in cell:
                 ax.errorbar(
@@ -308,8 +317,8 @@ class Script(object):
                 )
             plt.plot(cell["phi"], cell["gamma"])
             # choose the widest y range
-            ymin = max(ymin, min(cell["gamma"]) - 0.05)
-            ymax = max(ymax, max(cell["gamma"]) + 0.05)
+            ymin = min(ymin, min(cell["gamma"]) - 0.1)
+            ymax = max(ymax, max(cell["gamma"]) + 0.1)
             plt.axis(ymin=ymin, ymax=ymax)
         plt.xlabel(r"rotation angle $\left(^\circ\right)$")
         plt.ylabel(r"angle $\left(^\circ\right)$")

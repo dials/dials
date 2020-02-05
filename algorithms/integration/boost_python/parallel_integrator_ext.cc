@@ -300,15 +300,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export GModel background calculator
     class_<GModelBackgroundCalculator, bases<BackgroundCalculatorIface> >(
       "GModelBackgroundCalculator", no_init)
-      .def(init<boost::shared_ptr<BackgroundModel>,
-                bool,
-                double,
-                std::size_t,
-                std::size_t>((arg("model"),
-                              arg("robust"),
-                              arg("tuning_constant"),
-                              arg("max_iter"),
-                              arg("min_pixels"))));
+      .def(init<boost::shared_ptr<BackgroundModel>, bool, std::size_t>(
+        (arg("model"), arg("robust"), arg("min_pixels"))));
 
     // Export the reference data structure
     class_<ReferenceProfileData>("ReferenceProfileData")
@@ -377,7 +370,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_integrator() {
     class_<ParallelIntegrator>("MultiThreadedIntegrator", no_init)
       .def(init<const af::reflection_table &,
-                ImageSweep,
+                ImageSequence,
                 const MaskCalculatorIface &,
                 const BackgroundCalculatorIface &,
                 const IntensityCalculatorIface &,
@@ -407,7 +400,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<ParallelReferenceProfiler>("MultiThreadedReferenceProfiler", no_init)
       .def(init<const af::reflection_table &,
-                ImageSweep,
+                ImageSequence,
                 const MaskCalculatorIface &,
                 const BackgroundCalculatorIface &,
                 ReferenceCalculatorIface &,

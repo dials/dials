@@ -4,7 +4,18 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
+from libtbx.phil import parse
+
+from dials.array_family import flex
+from dials.algorithms.shoebox import MaskCode
+from dials.algorithms.spot_finding import per_image_analysis
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
+from dials.util import log
 from dials.util import show_mail_on_error
+from dials.util.ascii_art import spot_counts_per_image_plot
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.find_spots")
 
@@ -36,8 +47,6 @@ Examples::
 """
 
 # Set the phil scope
-from libtbx.phil import parse
-
 phil_scope = parse(
     """
 
@@ -75,13 +84,10 @@ class Script(object):
 
     def __init__(self, phil=phil_scope):
         """Initialise the script."""
-        from dials.util.options import OptionParser
-        import libtbx.load_env
-
         # The script usage
         usage = (
-            "usage: %s [options] [param.phil] "
-            "{models.expt | image1.file [image2.file ...]}" % libtbx.env.dispatcher_name
+            "usage: dials.find_spots [options] [param.phil] "
+            "{models.expt | image1.file [image2.file ...]}"
         )
 
         # Initialise the base class
@@ -95,12 +101,6 @@ class Script(object):
 
     def run(self, args=None):
         """Execute the script."""
-        from dials.array_family import flex
-        from dials.util.options import flatten_experiments
-        from time import time
-        from dials.util import log
-
-        start_time = time()
 
         # Parse the command line
         params, options = self.parser.parse_args(args=args, show_diff_phil=False)
@@ -108,9 +108,6 @@ class Script(object):
         if __name__ == "__main__":
             # Configure the logging
             log.config(verbosity=options.verbose, logfile=params.output.log)
-
-        from dials.util.version import dials_version
-
         logger.info(dials_version())
 
         # Log the diff phil
@@ -121,6 +118,14 @@ class Script(object):
 
         # Ensure we have a data block
         experiments = flatten_experiments(params.input.experiments)
+        # did input have identifier?
+        had_identifiers = False
+        if all(i != "" for i in experiments.identifiers()):
+            had_identifiers = True
+        else:
+            generate_experiment_identifiers(
+                experiments
+            )  # add identifier e.g. if coming straight from images
         if len(experiments) == 0:
             self.parser.print_help()
             return
@@ -129,8 +134,6 @@ class Script(object):
         reflections = flex.reflection_table.from_observations(experiments, params)
 
         # Add n_signal column - before deleting shoeboxes
-        from dials.algorithms.shoebox import MaskCode
-
         good = MaskCode.Foreground | MaskCode.Valid
         reflections["n_signal"] = reflections["shoebox"].count_mask_values(good)
 
@@ -138,19 +141,33 @@ class Script(object):
         if not params.output.shoeboxes:
             del reflections["shoebox"]
 
-        # ascii spot count per image plot
-        from dials.util.ascii_art import spot_counts_per_image_plot
+        # ascii spot count per image plot - per imageset
 
+        imagesets = []
         for i, experiment in enumerate(experiments):
-            ascii_plot = spot_counts_per_image_plot(
-                reflections.select(reflections["id"] == i)
-            )
+            if experiment.imageset not in imagesets:
+                imagesets.append(experiment.imageset)
+
+        for imageset in imagesets:
+            selected = flex.bool(reflections.nrows(), False)
+            for i, experiment in enumerate(experiments):
+                if experiment.imageset is not imageset:
+                    continue
+                selected.set_selected(reflections["id"] == i, True)
+            ascii_plot = spot_counts_per_image_plot(reflections.select(selected))
             if len(ascii_plot):
                 logger.info("\nHistogram of per-image spot count for imageset %i:" % i)
                 logger.info(ascii_plot)
 
         # Save the reflections to file
         logger.info("\n" + "-" * 80)
+        # If started with images and not saving experiments, then remove id mapping
+        # as the experiment linked to will no longer exists after exit.
+        if not had_identifiers:
+            if not params.output.experiments:
+                for k in reflections.experiment_identifiers().keys():
+                    del reflections.experiment_identifiers()[k]
+
         reflections.as_file(params.output.reflections)
         logger.info(
             "Saved {} reflections to {}".format(
@@ -165,23 +182,15 @@ class Script(object):
 
         # Print some per image statistics
         if params.per_image_statistics:
-            from dials.algorithms.spot_finding import per_image_analysis
-            from six.moves import cStringIO as StringIO
-
-            s = StringIO()
             for i, experiment in enumerate(experiments):
-                print("Number of centroids per image for imageset %i:" % i, file=s)
-                imageset = experiment.imageset
-                stats = per_image_analysis.stats_imageset(
-                    imageset,
-                    reflections.select(reflections["id"] == i),
-                    resolution_analysis=False,
+                logger.info("Number of centroids per image for imageset %i:", i)
+                refl = reflections.select(reflections["id"] == i)
+                refl.centroid_px_to_mm([experiment])
+                refl.map_centroids_to_reciprocal_space([experiment])
+                stats = per_image_analysis.stats_per_image(
+                    experiment, refl, resolution_analysis=False
                 )
-                per_image_analysis.print_table(stats, out=s)
-            logger.info(s.getvalue())
-
-        # Print the time
-        logger.info("Time Taken: %f" % (time() - start_time))
+                logger.info(str(stats))
 
         if params.output.experiments:
             return experiments, reflections

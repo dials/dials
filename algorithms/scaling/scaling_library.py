@@ -11,6 +11,7 @@ ExperimentLists.
 from __future__ import absolute_import, division, print_function
 
 import logging
+import uuid
 import pkg_resources
 from copy import deepcopy
 
@@ -19,13 +20,13 @@ from cctbx import miller, crystal, uctbx
 from dxtbx.model import Experiment
 from dials.array_family import flex
 from dials.util.options import OptionParser
+from dials.util import Sorry
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.model.model import KBScalingModel
 from dials.algorithms.scaling.scaling_utilities import (
     calculate_prescaling_correction,
     DialsMergingStatisticsError,
 )
-from dials.util.multi_dataset_handling import get_next_unique_id
 from iotbx import cif, mtz
 from libtbx import phil
 from mock import Mock
@@ -389,7 +390,7 @@ def determine_best_unit_cell(experiments):
 
 
 def merging_stats_from_scaled_array(
-    scaled_miller_array, n_bins=20, use_internal_variance=False
+    scaled_miller_array, n_bins=20, use_internal_variance=False, anomalous=True
 ):
     """Calculate the normal and anomalous merging statistics."""
 
@@ -407,23 +408,25 @@ def merging_stats_from_scaled_array(
             use_internal_variance=use_internal_variance,
             cc_one_half_significance_level=0.01,
         )
-
-        intensities_anom = scaled_miller_array.as_anomalous_array()
-        intensities_anom = intensities_anom.map_to_asu().customized_copy(
-            info=scaled_miller_array.info()
-        )
-        anom_result = iotbx.merging_statistics.dataset_statistics(
-            i_obs=intensities_anom,
-            n_bins=n_bins,
-            anomalous=True,
-            sigma_filtering=None,
-            cc_one_half_significance_level=0.01,
-            eliminate_sys_absent=False,
-            use_internal_variance=use_internal_variance,
-        )
-    except RuntimeError:
+        if anomalous:
+            intensities_anom = scaled_miller_array.as_anomalous_array()
+            intensities_anom = intensities_anom.map_to_asu().customized_copy(
+                info=scaled_miller_array.info()
+            )
+            anom_result = iotbx.merging_statistics.dataset_statistics(
+                i_obs=intensities_anom,
+                n_bins=n_bins,
+                anomalous=True,
+                sigma_filtering=None,
+                cc_one_half_significance_level=0.01,
+                eliminate_sys_absent=False,
+                use_internal_variance=use_internal_variance,
+            )
+        else:
+            anom_result = False
+    except (RuntimeError, Sorry) as e:
         raise DialsMergingStatisticsError(
-            "Failure during merging statistics calculation"
+            "Error encountered during merging statistics calculation:\n%s" % e
         )
     else:
         return result, anom_result
@@ -515,11 +518,9 @@ def create_datastructures_for_target_mtz(experiments, mtz_file):
 
     exp = Experiment()
     exp.crystal = deepcopy(experiments[0].crystal)
-    used_ids = experiments.identifiers()
-    unique_id = get_next_unique_id(len(used_ids), used_ids)
-    exp.identifier = str(unique_id)
-    r_t.experiment_identifiers()[unique_id] = str(unique_id)
-    r_t["id"] = flex.int(r_t.size(), unique_id)
+    exp.identifier = str(uuid.uuid4())
+    r_t.experiment_identifiers()[len(experiments)] = exp.identifier
+    r_t["id"] = flex.int(r_t.size(), len(experiments))
 
     # create a new KB scaling model for the target and set as scaled to fix scale
     # for targeted scaling.
@@ -578,10 +579,8 @@ def create_datastructures_for_structural_model(reflections, experiments, cif_fil
     rt["intensity"] = icalc
     rt["miller_index"] = miller_idx
 
-    used_ids = experiments.identifiers()
-    unique_id = get_next_unique_id(len(used_ids), used_ids)
-    exp.identifier = str(unique_id)
-    rt.experiment_identifiers()[unique_id] = str(unique_id)
-    rt["id"] = flex.int(rt.size(), unique_id)
+    exp.identifier = str(uuid.uuid4())
+    rt.experiment_identifiers()[len(experiments)] = exp.identifier
+    rt["id"] = flex.int(rt.size(), len(experiments))
 
     return exp, rt

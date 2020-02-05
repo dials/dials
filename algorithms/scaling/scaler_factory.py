@@ -18,9 +18,6 @@ from dials.algorithms.scaling.scaling_utilities import (
     calc_crystal_frame_vectors,
 )
 from dials.algorithms.scaling.scaling_library import choose_scaling_intensities
-from dials.algorithms.scaling.reflection_selection import (
-    determine_reflection_selection_parameters,
-)
 
 logger = logging.getLogger("dials")
 
@@ -74,7 +71,8 @@ class ScalerFactory(object):
         assert experiment.identifier in id_vals, (experiment.identifier, list(id_vals))
         assert len(id_vals) == 1, list(id_vals)
         logger.info(
-            "The experiment identifier for this dataset is %s", experiment.identifier
+            "The experiment id for this dataset is %s.",
+            reflection_table.experiment_identifiers().keys()[0],
         )
 
 
@@ -88,9 +86,7 @@ class SingleScalerFactory(ScalerFactory):
         cls.ensure_experiment_identifier(experiment, reflection_table)
 
         logger.info(
-            "Preprocessing data for scaling. The id assigned to this \n"
-            "dataset is %s, and the scaling model type being applied is %s. \n",
-            list(reflection_table.experiment_identifiers().values())[0],
+            "The scaling model type being applied is %s. \n",
             experiment.scaling_model.id_,
         )
 
@@ -134,10 +130,6 @@ class SingleScalerFactory(ScalerFactory):
                 reasons,
             )
 
-        if not for_multi:
-            determine_reflection_selection_parameters(
-                params, [experiment], [reflection_table]
-            )
         if params.reflection_selection.method == "intensity_ranges":
             reflection_table = quasi_normalisation(reflection_table, experiment)
         if (
@@ -210,8 +202,7 @@ class MultiScalerFactory(object):
         n_exp, n_refl, n_ss = (len(experiments), len(reflections), len(single_scalers))
         assert n_exp == n_ss, (n_exp, n_ss)
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
-        return MultiScaler(params, experiments, single_scalers)
+        return MultiScaler(single_scalers)
 
     @classmethod
     def create_from_targetscaler(cls, targetscaler):
@@ -220,9 +211,7 @@ class MultiScalerFactory(object):
         for scaler in targetscaler.unscaled_scalers:
             single_scalers.append(scaler)
         single_scalers.extend(targetscaler.single_scalers)
-        multiscaler = MultiScaler(
-            targetscaler.params, [targetscaler.experiment], single_scalers
-        )
+        multiscaler = MultiScaler(single_scalers)
         multiscaler.observers = targetscaler.observers
         return multiscaler
 
@@ -233,7 +222,6 @@ class TargetScalerFactory(object):
     @classmethod
     def create_for_target_against_reference(cls, params, experiments, reflections):
         """Create TargetScaler for case where have a target_mtz or target_model."""
-        scaled_experiments = []
         scaled_scalers = []
         unscaled_scalers = []
         idx_to_remove = []
@@ -257,16 +245,12 @@ class TargetScalerFactory(object):
         scaled_scalers = [
             NullScalerFactory.create(params, experiments[-1], reflections[-1])
         ]
-        scaled_experiments = [experiments[-1]]
 
         n_exp, n_refl = (len(experiments), len(reflections))
         n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
-        return TargetScaler(
-            params, scaled_experiments, scaled_scalers, unscaled_scalers
-        )
+        return TargetScaler(scaled_scalers, unscaled_scalers)
 
     @classmethod
     def create(cls, params, experiments, reflections):
@@ -301,7 +285,4 @@ class TargetScalerFactory(object):
         n_ss, n_us = (len(scaled_scalers), len(unscaled_scalers))
         assert n_exp == n_ss + n_us, (n_exp, str(n_ss) + " + " + str(n_us))
         assert n_exp == n_refl, (n_exp, n_refl)
-        determine_reflection_selection_parameters(params, experiments, reflections)
-        return TargetScaler(
-            params, scaled_experiments, scaled_scalers, unscaled_scalers
-        )
+        return TargetScaler(scaled_scalers, unscaled_scalers)

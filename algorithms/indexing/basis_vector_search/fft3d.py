@@ -186,7 +186,10 @@ class FFT3D(Strategy):
 
     def _fft(self, reciprocal_lattice_vectors, d_min):
 
-        reciprocal_space_grid, used_in_indexing = self._map_centroids_to_reciprocal_space_grid(
+        (
+            reciprocal_space_grid,
+            used_in_indexing,
+        ) = self._map_centroids_to_reciprocal_space_grid(
             reciprocal_lattice_vectors, d_min
         )
 

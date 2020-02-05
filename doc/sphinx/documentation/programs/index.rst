@@ -41,7 +41,7 @@ Utilities:
    dials_predict
    dials_merge_cbf
    dials_export_bitmaps
-   dials_slice_sweep
+   dials_slice_sequence
    dials_compare_orientation_matrices
    dials_spot_counts_per_image
    dials_stereographic_projection

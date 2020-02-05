@@ -4,9 +4,6 @@ import math
 import logging
 import sys
 
-import libtbx.load_env
-from libtbx.utils import show_times_at_exit
-
 import iotbx.phil
 from cctbx import sgtbx
 from cctbx.crystal import symmetry as crystal_symmetry
@@ -14,8 +11,7 @@ from cctbx.miller import set as miller_set
 from cctbx.sgtbx import space_group as sgtbx_space_group
 from dials.algorithms.symmetry import origin
 from dials.array_family import flex
-from dials.util.options import OptionParser
-from dials.util.options import flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.util import log
 from dials.util.version import dials_version
 from libtbx.utils import format_float_with_standard_uncertainty
@@ -307,7 +303,7 @@ def test_P1_crystal_indexing(reflections, experiment, params):
 
 
 def run(args):
-    usage = "%s [options] indexed.expt indexed.refl" % libtbx.env.dispatcher_name
+    usage = "dials.check_indexing_symmetry [options] indexed.expt indexed.refl"
 
     parser = OptionParser(
         usage=usage,
@@ -324,8 +320,9 @@ def run(args):
     log.config(logfile=params.output.log)
     logger.info(dials_version())
 
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
     if len(reflections) == 0 or len(experiments) == 0:
         parser.print_help()
         return
@@ -354,5 +351,4 @@ def run(args):
 
 
 if __name__ == "__main__":
-    show_times_at_exit()
     run(sys.argv[1:])

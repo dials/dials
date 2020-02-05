@@ -1,0 +1,2 @@
+Consistent timing information by writing time since program start at the
+beginning of each message written to the log file.

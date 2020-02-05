@@ -15,7 +15,7 @@ dials.reflection_viewer observations.refl
 
 
 class Script(object):
-    """ The debugging visualization program. """
+    """The debugging visualization program."""
 
     def __init__(self):
         """Initialise the script."""

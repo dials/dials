@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
+from collections import namedtuple
 from dials.array_family import flex
 from scitbx import matrix
+from scitbx import sparse
 from dials.algorithms.refinement import DialsRefineConfigError
 
 """The PredictionParameterisation class ties together parameterisations for
@@ -78,6 +80,11 @@ class PredictionParameterisation(object):
         self._xl_unit_cell_parameterisations = xl_unit_cell_parameterisations
         self._goniometer_parameterisations = goniometer_parameterisations
 
+        self._update()
+
+    def _update(self):
+        """Update information derived from the parameterisations"""
+
         # Check there are free parameters to refine
         self._length = self._len()
         if self._length == 0:
@@ -86,30 +93,29 @@ class PredictionParameterisation(object):
         # Calculate Experiment to parameterisation mapping
         e2bp = {
             ids: i
-            for i, p in enumerate(beam_parameterisations)
+            for i, p in enumerate(self._beam_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2xop = {
             ids: i
-            for i, p in enumerate(xl_orientation_parameterisations)
+            for i, p in enumerate(self._xl_orientation_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2xucp = {
             ids: i
-            for i, p in enumerate(xl_unit_cell_parameterisations)
+            for i, p in enumerate(self._xl_unit_cell_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2dp = {
             ids: i
-            for i, p in enumerate(detector_parameterisations)
+            for i, p in enumerate(self._detector_parameterisations)
             for ids in p.get_experiment_ids()
         }
         e2gp = {
             ids: i
-            for i, p in enumerate(goniometer_parameterisations)
+            for i, p in enumerate(self._goniometer_parameterisations)
             for ids in p.get_experiment_ids()
         }
-        from collections import namedtuple
 
         ParamSet = namedtuple(
             "ParamSet",
@@ -119,7 +125,7 @@ class PredictionParameterisation(object):
             i: ParamSet(
                 e2bp.get(i), e2xop.get(i), e2xucp.get(i), e2dp.get(i), e2gp.get(i)
             )
-            for i, _ in enumerate(experiments)
+            for i, _ in enumerate(self._experiments)
         }
 
     # accessors for the lists of parameterisations of different types
@@ -222,7 +228,8 @@ class PredictionParameterisation(object):
 
         return param_names
 
-    def _set_param_vals_or_esds(self, vals, is_esds=False):
+    def _modify_parameters(self, vals, set_vals=False, set_esds=False, set_fix=False):
+        assert [set_vals, set_esds, set_fix].count(True) == 1
         assert len(vals) == len(self)
         it = iter(vals)
 
@@ -234,17 +241,25 @@ class PredictionParameterisation(object):
             + self._goniometer_parameterisations
         ):
             tmp = [next(it) for i in range(model.num_free())]
-            if is_esds:
+            if set_esds:
                 model.set_param_esds(tmp)
-            else:
+            elif set_vals:
                 model.set_param_vals(tmp)
+            elif set_fix:
+                current_fixes = model.get_fixed()
+                free_indices = [i for i, e in enumerate(current_fixes) if not e]
+                assert len(free_indices) == model.num_free()
+                for i, fix in zip(free_indices, tmp):
+                    if fix:
+                        current_fixes[i] = True
+                model.set_fixed(current_fixes)
 
     def set_param_vals(self, vals):
         """Set the parameter values of the contained models to the values in
         vals. This list must be of the same length as the result of get_param_vals
         and must contain the parameter values in the same order."""
 
-        return self._set_param_vals_or_esds(vals, is_esds=False)
+        self._modify_parameters(vals, set_vals=True)
 
     def set_param_esds(self, esds):
         """Set the estimated standard deviations of parameter values of the
@@ -252,7 +267,15 @@ class PredictionParameterisation(object):
         as the result of get_param_vals and must contain the parameter values in the
         same order."""
 
-        return self._set_param_vals_or_esds(esds, is_esds=True)
+        self._modify_parameters(esds, set_esds=True)
+
+    def fix_params(self, fix):
+        """Fix the parameters according to the boolean values in fix. This list
+        must be of the same length as the result of get_param_vals and will
+        fix parameters at the positions that are True within the list"""
+
+        self._modify_parameters(fix, set_fix=True)
+        self._update()
 
     def calculate_model_state_uncertainties(self, var_cov):
         """Take a variance-covariance matrix of all free parameters (probably
@@ -649,8 +672,6 @@ class SparseGradientVectorMixin(object):
         size m, to store the derivatives of n parameters, for m reflections.
         This is the sparse vector version."""
 
-        from scitbx import sparse
-
         new_results = [{key: sparse.matrix_column(m) for key in keys} for _ in range(n)]
         results.extend(new_results)
 
@@ -763,11 +784,9 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
         return dpv_dp, dphi_dp
 
-    def _xl_orientation_derivatives(
-        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
-    ):
-        """helper function to extend the derivatives lists by derivatives of the
-        crystal orientation parameterisations"""
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        """helper function to extend the derivatives lists by derivatives of
+        generic parameterisations."""
 
         # Get required data
         axis = self._axis.select(isel)
@@ -778,13 +797,15 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         s1 = self._s1.select(isel)
         e_X_r = self._e_X_r.select(isel)
         e_r_s0 = self._e_r_s0.select(isel)
-        B = self._B.select(isel)
+        if b_matrix:
+            B = self._B.select(isel)
+        else:
+            U = self._U.select(isel)
         D = self._D.select(isel)
 
-        if dU_dxlo_p is None:
-
-            # get derivatives of the U matrix wrt the parameters
-            dU_dxlo_p = [
+        if derivatives is None:
+            # get derivatives of the B/U matrix wrt the parameters
+            derivatives = [
                 None if der is None else flex.mat3_double(len(isel), der.elems)
                 for der in parameterisation.get_ds_dp(use_none_as_null=True)
             ]
@@ -793,16 +814,17 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         dpv_dp = []
 
         # loop through the parameters
-        for der in dU_dxlo_p:
-
+        for der in derivatives:
             if der is None:
                 dphi_dp.append(None)
                 dpv_dp.append(None)
                 continue
 
             # calculate the derivative of r for this parameter
-            # FIXME COULD DO THIS BETTER WITH __rmul__?!
-            tmp = fixed_rotation * (der * B * h)
+            if b_matrix:
+                tmp = fixed_rotation * (der * B * h)
+            else:
+                tmp = fixed_rotation * (U * der * h)
             dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
 
             # calculate the derivative of phi for this parameter
@@ -813,56 +835,24 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
             dpv_dp.append(D * (dr + e_X_r * dphi))
 
         return dpv_dp, dphi_dp
+
+    def _xl_orientation_derivatives(
+        self, isel, parameterisation=None, dU_dxlo_p=None, reflections=None
+    ):
+        """helper function to extend the derivatives lists by derivatives of the
+        crystal orientation parameterisations"""
+        return self._xl_derivatives(
+            isel, dU_dxlo_p, b_matrix=True, parameterisation=parameterisation
+        )
 
     def _xl_unit_cell_derivatives(
         self, isel, parameterisation=None, dB_dxluc_p=None, reflections=None
     ):
         """helper function to extend the derivatives lists by
         derivatives of the crystal unit cell parameterisations"""
-
-        # Get required data
-        axis = self._axis.select(isel)
-        fixed_rotation = self._fixed_rotation.select(isel)
-        setting_rotation = self._setting_rotation.select(isel)
-        phi_calc = self._phi_calc.select(isel)
-        h = self._h.select(isel)
-        s1 = self._s1.select(isel)
-        e_X_r = self._e_X_r.select(isel)
-        e_r_s0 = self._e_r_s0.select(isel)
-        U = self._U.select(isel)
-        D = self._D.select(isel)
-
-        if dB_dxluc_p is None:
-
-            # get derivatives of the B matrix wrt the parameters
-            dB_dxluc_p = [
-                None if der is None else flex.mat3_double(len(isel), der.elems)
-                for der in parameterisation.get_ds_dp(use_none_as_null=True)
-            ]
-
-        dphi_dp = []
-        dpv_dp = []
-
-        # loop through the parameters
-        for der in dB_dxluc_p:
-
-            if der is None:
-                dphi_dp.append(None)
-                dpv_dp.append(None)
-                continue
-
-            # calculate the derivative of r for this parameter
-            tmp = fixed_rotation * (U * der * h)
-            dr = setting_rotation * tmp.rotate_around_origin(axis, phi_calc)
-
-            # calculate the derivative of phi for this parameter
-            dphi = -1.0 * dr.dot(s1) / e_r_s0
-            dphi_dp.append(dphi)
-
-            # calculate the derivative of pv for this parameter
-            dpv_dp.append(D * (dr + e_X_r * dphi))
-
-        return dpv_dp, dphi_dp
+        return self._xl_derivatives(
+            isel, dB_dxluc_p, b_matrix=False, parameterisation=parameterisation
+        )
 
     def _goniometer_derivatives(
         self, isel, parameterisation=None, dS_dgon_p=None, reflections=None

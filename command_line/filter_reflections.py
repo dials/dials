@@ -5,16 +5,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 import token
 from operator import itemgetter
+from dials.util import tabulate
 from tokenize import generate_tokens, TokenError, untokenize
 
 from cctbx import uctbx
 from dials.util import Sorry, log, show_mail_on_error
 from dials.util.filter_reflections import SumAndPrfIntensityReducer, SumIntensityReducer
-from dials.util.options import OptionParser, flatten_reflections, flatten_experiments
+from dials.util.options import OptionParser, reflections_and_experiments_from_files
 from dials.array_family import flex
 from dials.algorithms.integration import filtering
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 
 
 logger = logging.getLogger("dials")
@@ -186,8 +186,7 @@ def run_analysis(flags, reflections):
         if n > 0:
             rows.append([name, "%d" % n])
     if rows:
-        st = simple_table(rows, header)
-        print(st.format())
+        print(tabulate(rows, header))
     else:
         print("No flags set")
 
@@ -199,9 +198,10 @@ def run_filtering(params, experiments, reflections):
     if params.d_min is not None and params.d_max is not None:
         if params.d_min > params.d_max:
             raise Sorry("d_min must be less than d_max")
-    if params.d_min is not None or params.d_max is not None:
+    if params.d_min is not None or params.d_max is not None or params.ice_rings.filter:
         if "d" not in reflections:
-            if experiments:
+            if experiments and any(experiments.crystals()):
+                # Calculate d-spacings from the miller indices
                 print(
                     "Reflection table does not have resolution information. "
                     "Attempting to calculate this from the experiment list"
@@ -215,6 +215,14 @@ def run_filtering(params, experiments, reflections):
                     )
                 reflections = reflections.select(sel)
                 reflections.compute_d(experiments)
+            elif experiments:
+                # Calculate d-spacings from the observed reflection centroids
+                if "rlp" not in reflections:
+                    if "xyzobs.mm.value" not in reflections:
+                        reflections.centroid_px_to_mm(experiments)
+                    reflections.map_centroids_to_reciprocal_space(experiments)
+                d_star_sq = flex.pow2(reflections["rlp"].norms())
+                reflections["d"] = uctbx.d_star_sq_as_d(d_star_sq)
             else:
                 raise Sorry(
                     "reflection table has no resolution information "
@@ -311,19 +319,11 @@ def run_filtering(params, experiments, reflections):
 
     # Filter powder rings
     if params.ice_rings.filter:
-        if "d" in reflections:
-            d_spacings = reflections["d"]
-        else:
-            if "rlp" not in reflections:
-                reflections.map_centroids_to_reciprocal_space(experiments)
-            d_star_sq = flex.pow2(reflections["rlp"].norms())
-            d_spacings = uctbx.d_star_sq_as_d(d_star_sq)
-
         d_min = params.ice_rings.d_min
         width = params.ice_rings.width
 
         if d_min is None:
-            d_min = flex.min(d_spacings)
+            d_min = flex.min(reflections["d"])
 
         ice_filter = filtering.PowderRingFilter(
             params.ice_rings.unit_cell,
@@ -332,7 +332,7 @@ def run_filtering(params, experiments, reflections):
             width,
         )
 
-        ice_sel = ice_filter(d_spacings)
+        ice_sel = ice_filter(reflections["d"])
 
         print("Rejecting %i reflections at ice ring resolution" % ice_sel.count(True))
         reflections = reflections.select(~ice_sel)
@@ -428,8 +428,9 @@ def run():
     )
 
     params, options = parser.parse_args(show_diff_phil=True)
-    reflections = flatten_reflections(params.input.reflections)
-    experiments = flatten_experiments(params.input.experiments)
+    reflections, experiments = reflections_and_experiments_from_files(
+        params.input.reflections, params.input.experiments
+    )
 
     log.config(verbosity=options.verbose)
 

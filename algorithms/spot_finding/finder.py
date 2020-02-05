@@ -11,13 +11,7 @@ import libtbx
 logger = logging.getLogger(__name__)
 
 _no_multiprocessing_on_windows = (
-    "\n"
-    + "*" * 80
-    + "\n"
-    + "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
-    + "\n"
-    + "*" * 80
-    + "\n"
+    "Multiprocessing is not available on windows. Setting nproc = 1, njobs = 1"
 )
 
 
@@ -79,7 +73,7 @@ class ExtractPixelsFromImage(object):
         :param index: The index of the image
         """
         from dials.model.data import PixelList
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # Parallel reading of HDF5 from the same handle is not allowed. Python
         # multiprocessing is a bit messed up and used fork on linux so need to
@@ -90,7 +84,7 @@ class ExtractPixelsFromImage(object):
             self.first = False
 
         # Get the frame number
-        if isinstance(self.imageset, ImageSweep):
+        if isinstance(self.imageset, ImageSequence):
             frame = self.imageset.get_array_range()[0] + index
         else:
             ind = self.imageset.indices()
@@ -295,14 +289,18 @@ class PixelListToShoeboxes(object):
         """
         Convert the pixel list to shoeboxes
         """
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # Extract the pixel lists into a list of reflections
         shoeboxes = flex.shoebox()
         spotsizes = flex.size_t()
         hotpixels = tuple(flex.size_t() for i in range(len(imageset.get_detector())))
-        if isinstance(imageset, ImageSweep):
-            twod = False
+        if isinstance(imageset, ImageSequence):
+            scan = imageset.get_scan()
+            if scan.is_still():
+                twod = True
+            else:
+                twod = False
         else:
             twod = True
         for i, (p, hp) in enumerate(zip(pixel_labeller, hotpixels)):
@@ -367,7 +365,7 @@ class ShoeboxesToReflectionTable(object):
 
         # Filter the reflections and select only the desired spots
         flags = self.filter_spots(
-            None, sweep=imageset, observations=observed, shoeboxes=shoeboxes
+            None, sequence=imageset, observations=observed, shoeboxes=shoeboxes
         )
         observed = observed.select(flags)
         shoeboxes = shoeboxes.select(flags)
@@ -741,21 +739,43 @@ class SpotFinder(object):
         import six.moves.cPickle as pickle
         from dxtbx.format.image import ImageBool
 
+        # Loop through all the experiments and get the unique imagesets
+        imagesets = []
+        for experiment in experiments:
+            if experiment.imageset not in imagesets:
+                imagesets.append(experiment.imageset)
+
         # Loop through all the imagesets and find the strong spots
         reflections = flex.reflection_table()
-        for i, experiment in enumerate(experiments):
 
-            imageset = experiment.imageset
+        for j, imageset in enumerate(imagesets):
 
-            # Find the strong spots in the sweep
+            # Find the strong spots in the sequence
             logger.info("-" * 80)
-            logger.info("Finding strong spots in imageset %d" % i)
+            logger.info("Finding strong spots in imageset %d" % j)
             logger.info("-" * 80)
             logger.info("")
             table, hot_mask = self._find_spots_in_imageset(imageset)
-            table["id"] = flex.int(table.nrows(), i)
-            reflections.extend(table)
 
+            # Fix up the experiment ID's now
+            table["id"] = flex.int(table.nrows(), -1)
+            for i, experiment in enumerate(experiments):
+                if experiment.imageset is not imageset:
+                    continue
+                if experiment.scan:
+                    z0, z1 = experiment.scan.get_array_range()
+                    z = table["xyzobs.px.value"].parts()[2]
+                    table["id"].set_selected((z > z0) & (z < z1), i)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[i] = experiment.identifier
+                else:
+                    table["id"] = flex.int(table.nrows(), j)
+                    if experiment.identifier:
+                        table.experiment_identifiers()[j] = experiment.identifier
+            missed = table["id"] == -1
+            assert missed.count(True) == 0, missed.count(True)
+
+            reflections.extend(table)
             # Write a hot pixel mask
             if self.write_hot_mask:
                 if not imageset.external_lookup.mask.data.empty():
@@ -791,7 +811,7 @@ class SpotFinder(object):
         :param imageset: The imageset to process
         :return: The observed spots
         """
-        from dxtbx.imageset import ImageSweep
+        from dxtbx.imageset import ImageSequence
 
         # The input mask
         mask = self.mask_generator.generate(imageset)
@@ -818,7 +838,7 @@ class SpotFinder(object):
         )
 
         # Get the max scan range
-        if isinstance(imageset, ImageSweep):
+        if isinstance(imageset, ImageSequence):
             max_scan_range = imageset.get_array_range()
         else:
             max_scan_range = (0, len(imageset))
@@ -845,9 +865,6 @@ class SpotFinder(object):
 
             logger.info("\nFinding spots in image {0} to {1}...".format(j0, j1))
             j0 -= 1
-            if isinstance(imageset, ImageSweep):
-                j0 -= imageset.get_array_range()[0]
-                j1 -= imageset.get_array_range()[0]
             r, h = extract_spots(imageset[j0:j1])
             reflections.extend(r)
             if h is not None:

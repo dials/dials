@@ -1,3 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
-from dials_algorithms_image_threshold_ext import *
+from dials_algorithms_image_threshold_ext import *  # noqa: F403
+
+__all__ = (  # noqa: F405
+    "DispersionExtendedThreshold",
+    "DispersionExtendedThresholdDebug",
+    "DispersionThreshold",
+    "DispersionThresholdDebug",
+    "dispersion",
+    "dispersion_w_gain",
+    "gain",
+    "index_of_dispersion",
+    "index_of_dispersion_masked",
+    "maximum_deviation",
+    "niblack",
+    "probability_distribution",
+    "sauvola",
+)

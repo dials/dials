@@ -6,7 +6,7 @@ logger = logging.getLogger("dials.extensions.dispersion_spotfinder_threshold_ext
 
 
 class DispersionSpotFinderThresholdExt(object):
-    """ Extensions to do dispersion threshold. """
+    """Extensions to do dispersion threshold."""
 
     name = "dispersion"
 

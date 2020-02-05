@@ -62,11 +62,13 @@ def test_ScalingHTMLGenerator(run_in_tmpdir):
     """Test the scaling html generator."""
     script = mock.Mock()
     script.params.output.html = "test.html"
+    script.params.output.json = "test.json"
 
     # Test that ScalingHTMLGenerator works if all data is empty.
     observer = ScalingHTMLGenerator()
     observer.make_scaling_html(script)
     assert os.path.exists("test.html")
+    assert os.path.exists("test.json")
 
 
 def test_ScalingModelObserver():
@@ -95,7 +97,7 @@ def test_ScalingModelObserver():
 
     observer = ScalingModelObserver()
     observer.update(scaler1)
-    assert observer.data["0"] == KB_dict
+    assert observer.data[0] == KB_dict
 
     msg = observer.return_model_error_summary()
     assert msg != ""
@@ -121,8 +123,8 @@ def test_ScalingModelObserver():
     multiscaler.active_scalers = [scaler1, scaler2]
     observer.data = {}
     observer.update(multiscaler)
-    assert observer.data["0"] == KB_dict
-    assert observer.data["1"] == KB_dict
+    assert observer.data[0] == KB_dict
+    assert observer.data[1] == KB_dict
 
     mock_func = mock.Mock()
     mock_func.return_value = {"plot": {"layout": {"title": ""}}}
@@ -161,7 +163,7 @@ def test_ScalingOutlierObserver():
     observer = ScalingOutlierObserver()
     observer.update(scaler)
     assert observer.data == {
-        "0": {
+        0: {
             "x": [10],
             "y": [11],
             "z": [12],
@@ -179,7 +181,7 @@ def test_ScalingOutlierObserver():
     with mock.patch("dials.algorithms.scaling.observers.plot_outliers", new=mock_func):
         r = observer.make_plots()
         assert mock_func.call_count == 1
-        assert mock_func.call_args_list == [mock.call(observer.data["0"])]
+        assert mock_func.call_args_list == [mock.call(observer.data[0])]
         assert all(
             i in r["outlier_plots"] for i in ["outlier_plot_0", "outlier_plot_z0"]
         )
@@ -187,19 +189,25 @@ def test_ScalingOutlierObserver():
 
 def test_ErrorModelObserver():
     """Test that the observer correctly logs data when passed a scaler."""
-    delta_hl = flex.double(range(10))
+
+    # Set some arbitrary data
+    vals = flex.double(range(1, 11))
 
     scaler = mock.Mock()
-    scaler.experiment.scaling_model.error_model.delta_hl = delta_hl
-    scaler.experiment.scaling_model.error_model.intensities = delta_hl
-    scaler.experiment.scaling_model.error_model.inverse_scale_factors = delta_hl
-    scaler.experiment.scaling_model.error_model.sigmaprime = delta_hl
-    scaler.experiment.scaling_model.error_model.binning_info = {}
+    scaler.error_model.filtered_Ih_table.intensities = vals
+    scaler.error_model.filtered_Ih_table.Ih_values = 2.0 * vals
+    scaler.error_model.filtered_Ih_table.variances = 3.0 * vals
+    scaler.error_model.filtered_Ih_table.calc_nh.return_value = flex.double(10, 1.0)
+    scaler.error_model.filtered_Ih_table.inverse_scale_factors = 2.0 * vals
+    scaler.error_model.parameters = [1.0, 0.02]
+    m = mock.Mock()
+    m.binning_info = {}
+    scaler.error_model.components = {"b": m}
     scaler.active_scalers = None
 
     observer = ErrorModelObserver()
     observer.update(scaler)
-    assert observer.data["delta_hl"] == list(delta_hl)
+    assert observer.data["delta_hl"]
     mock_func = mock.Mock()
     mock_func.return_value = {"norm_plot": {}}
     mock_func2 = mock.Mock()

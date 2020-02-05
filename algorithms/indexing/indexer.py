@@ -6,9 +6,11 @@ import logging
 import math
 import pkg_resources
 
+import dials.util
 import iotbx.phil
 import libtbx
 from dials.array_family import flex
+from dials.util.multi_dataset_handling import generate_experiment_identifiers
 from dials.algorithms.indexing import assign_indices
 from dials.algorithms.indexing import DialsIndexError, DialsIndexRefineError
 from dials.algorithms.indexing.compare_orientation_matrices import (
@@ -17,7 +19,6 @@ from dials.algorithms.indexing.compare_orientation_matrices import (
 from dials.algorithms.indexing.symmetry import SymmetryHandler
 from dials.algorithms.indexing.max_cell import find_max_cell
 from dials.algorithms.refinement import DialsRefineConfigError, DialsRefineRuntimeError
-from dials.util import Sorry
 from dxtbx.model import ExperimentList
 
 logger = logging.getLogger(__name__)
@@ -229,10 +230,10 @@ indexing {
     }
   }
   stills {
-    indexer = *Auto stills sweeps
+    indexer = *Auto stills sequences
       .type = choice
-      .help = Use the stills or sweeps indexer.  Auto: choose based on the input \
-              imagesets (stills or sweeps).
+      .help = Use the stills or sequences indexer.  Auto: choose based on the input \
+              imagesets (stills or sequences).
       .expert_level = 1
     ewald_proximity_resolution_cutoff = 2.0
       .type = float
@@ -376,25 +377,21 @@ class Indexer(object):
             )
         else:
             has_stills = False
-            has_sweeps = False
+            has_sequences = False
             for expt in experiments:
-                if (
-                    expt.goniometer is None
-                    or expt.scan is None
-                    or expt.scan.get_oscillation()[1] == 0
-                ):
-                    if has_sweeps:
-                        raise Sorry(
-                            "Please provide only stills or only sweeps, not both"
+                if expt.goniometer is None or expt.scan is None or expt.scan.is_still():
+                    if has_sequences:
+                        raise ValueError(
+                            "Please provide only stills or only sequences, not both"
                         )
                     has_stills = True
                 else:
                     if has_stills:
-                        raise Sorry(
-                            "Please provide only stills or only sweeps, not both"
+                        raise ValueError(
+                            "Please provide only stills or only sequences, not both"
                         )
-                    has_sweeps = True
-            assert not (has_stills and has_sweeps)
+                    has_sequences = True
+            assert not (has_stills and has_sequences)
             use_stills_indexer = has_stills
 
             if not (
@@ -403,7 +400,7 @@ class Indexer(object):
             ):
                 if params.indexing.stills.indexer == "stills":
                     use_stills_indexer = True
-                elif params.indexing.stills.indexer == "sweeps":
+                elif params.indexing.stills.indexer == "sequences":
                     use_stills_indexer = False
                 else:
                     assert False
@@ -423,10 +420,10 @@ class Indexer(object):
                         experiment.imageset.data(), experiment.imageset.indices()
                     )
                     # if isinstance(imageset, MemImageSet):
-                    #   imageset = MemImageSet(imagesweep._images, imagesweep.indices())
+                    #   imageset = MemImageSet(imagesequence._images, imagesequence.indices())
                     # else:
-                    #   imageset = ImageSet(imagesweep.reader(), imagesweep.indices())
-                    #   imageset._models = imagesweep._models
+                    #   imageset = ImageSet(imagesequence.reader(), imagesequence.indices())
+                    #   imageset._models = imagesequence._models
                     experiment.imageset.set_scan(None)
                     experiment.imageset.set_goniometer(None)
                     experiment.scan = None
@@ -540,12 +537,15 @@ class Indexer(object):
                 self.d_min = self.params.refinement_protocol.d_min_start
 
             if len(experiments) == 0:
-                experiments.extend(self.find_lattices())
+                new_expts = self.find_lattices()
+                generate_experiment_identifiers(new_expts)
+                experiments.extend(new_expts)
             else:
                 try:
                     new = self.find_lattices()
+                    generate_experiment_identifiers(new)
                     experiments.extend(new)
-                except Sorry:
+                except DialsIndexError:
                     logger.info("Indexing remaining reflections failed")
 
             if self.params.refinement_protocol.d_min_step is libtbx.Auto:
@@ -642,7 +642,7 @@ class Indexer(object):
                         )
                     except (DialsRefineConfigError, DialsRefineRuntimeError) as e:
                         if len(experiments) == 1:
-                            raise DialsIndexRefineError(e.message)
+                            raise DialsIndexRefineError(str(e))
                         had_refinement_error = True
                         logger.info("Refinement failed:")
                         logger.info(e)
@@ -855,11 +855,7 @@ class Indexer(object):
                     "{:.1%}".format(indexed_count / (indexed_count + unindexed_count)),
                 ]
             )
-        from libtbx import table_utils
-
-        logger.info(
-            table_utils.format(rows, has_header=True, prefix="| ", postfix=" |")
-        )
+        logger.info(dials.util.tabulate(rows, headers="firstrow"))
 
     def find_max_cell(self):
         params = self.params.max_cell_estimation

@@ -28,7 +28,7 @@ def xdscoordinates():
 
 
 def test_coordinate_system_data(xdscoordinates):
-    """ Test all the input data """
+    """Test all the input data"""
     eps = 1e-7
     s0 = matrix.col(xdscoordinates["s0"])
     s1 = matrix.col(xdscoordinates["s1"])

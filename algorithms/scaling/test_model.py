@@ -57,7 +57,7 @@ def generated_refl():
 def mock_errormodel():
     """Mock error model."""
     em = MagicMock()
-    em.refined_parameters = [1.0, 0.1]
+    em.parameters = [1.0, 0.1]
     em.update_variances.return_value = flex.double([1.0, 1.1, 1.0, 1.0])
     return em
 
@@ -107,12 +107,9 @@ def test_ScalingModelBase(mock_errormodel):
     assert not SM_base.components
     _ = SM_base.to_dict()
     SM_base.set_error_model(mock_errormodel)
-    assert (
-        SM_base.configdict["error_model_parameters"]
-        == mock_errormodel.refined_parameters
-    )
+    assert SM_base.configdict["error_model_parameters"] == mock_errormodel.parameters
     assert SM_base.error_model is mock_errormodel
-    SM_base.show()
+    assert "Scaling model" in str(SM_base)
 
 
 def test_model_creation_from_data(default_params, mock_exp, test_reflections):
@@ -207,7 +204,7 @@ def test_KBScalingModel():
         KBmodel = KBScalingModel.from_dict(KB_dict)
 
     assert KBmodel.consecutive_refinement_order == [["scale", "decay"]]
-    KBmodel.show()
+    assert "Decay component" in str(KBmodel)
 
 
 def test_physical_model_from_data(mock_physical_params, mock_exp, test_reflections):
@@ -244,7 +241,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
     # Test standard factory initialisation
     physicalmodel = PhysicalScalingModel(parameters_dict, configdict)
     assert physicalmodel.id_ == "physical"
-    physicalmodel.show()  # test show works with no parameter esds.
+    assert "Absorption component" in str(physicalmodel)
     comps = physicalmodel.components
     assert "scale" in comps
     assert "absorption" in comps
@@ -342,7 +339,7 @@ def test_PhysicalScalingModel(test_reflections, mock_exp):
         physicalmodel = PhysicalScalingModel.from_dict(physical_dict)
 
     assert len(physicalmodel.consecutive_refinement_order) == 2
-    physicalmodel.show()
+    assert "Absorption component:" in str(physicalmodel)
 
     # test limit batch range
     parameters_dict = {
@@ -559,7 +556,7 @@ def test_ArrayScalingModel(test_reflections, mock_exp):
         arraymodel = ArrayScalingModel.from_dict(array_dict)
 
     assert len(arraymodel.consecutive_refinement_order) == 3
-    arraymodel.show()
+    assert "Decay component" in str(arraymodel)
 
     # test limit batch range
     configdict = {

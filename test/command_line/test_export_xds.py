@@ -105,3 +105,18 @@ def test_export_xds(dials_data, tmpdir):
     assert not result.returncode and not result.stderr
     assert tmpdir.join("xds", "XDS.INP").check(file=1)
     assert tmpdir.join("xds", "XPARM.XDS").check(file=1)
+
+
+def test_export_imported_experiments(dials_data, tmpdir):
+    result = procrunner.run(
+        [
+            "dials.export",
+            "format=xds",
+            dials_data("centroid_test_data").join("imported_experiments.json").strpath,
+        ],
+        working_directory=tmpdir.strpath,
+    )
+    assert not result.returncode and not result.stderr
+    assert tmpdir.join("xds", "XDS.INP").check(file=1)
+    assert not tmpdir.join("xds", "XPARM.XDS").check(file=1)
+    assert not tmpdir.join("xds", "SPOT.XDS").check(file=1)

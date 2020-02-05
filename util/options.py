@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import sys
 import os
 import itertools
@@ -19,6 +20,11 @@ except ImportError:
 
 import libtbx.phil
 from dials.util import Sorry
+from dials.util.multi_dataset_handling import (
+    sort_tables_to_experiments_order,
+    renumber_table_id_columns,
+)
+from dxtbx.model import ExperimentList
 
 tolerance_phil_scope = libtbx.phil.parse(
     """
@@ -101,15 +107,15 @@ geometry
   include scope dxtbx.model.goniometer.goniometer_phil_scope
   include scope dxtbx.model.scan.scan_phil_scope
 
-  convert_stills_to_sweeps = False
+  convert_stills_to_sequences = False
     .type = bool
-    .help = "When overriding the scan, convert stills into sweeps"
-    .short_caption = "Convert stills into sweeps"
+    .help = "When overriding the scan, convert stills into sequences"
+    .short_caption = "Convert stills into sequences"
 
-  convert_sweeps_to_stills = False
+  convert_sequences_to_stills = False
     .type = bool
-    .help = "When overriding the scan, convert sweeps into stills"
-    .short_caption = "Convert sweeps into stills"
+    .help = "When overriding the scan, convert sequences into stills"
+    .short_caption = "Convert sequences into stills"
 }
 """,
     process_includes=True,
@@ -171,7 +177,7 @@ ArgumentHandlingErrorInfo = namedtuple(
 
 
 class Importer(object):
-    """ A class to import the command line arguments. """
+    """A class to import the command line arguments."""
 
     def __init__(
         self,
@@ -365,7 +371,7 @@ class Importer(object):
 
 
 class PhilCommandParser(object):
-    """ A class to parse phil parameters from positional arguments """
+    """A class to parse phil parameters from positional arguments"""
 
     def __init__(
         self,
@@ -390,7 +396,7 @@ class PhilCommandParser(object):
         if phil is None:
             self._system_phil = parse("")
         else:
-            self._system_phil = phil
+            self._system_phil = copy.deepcopy(phil)
 
         # Set the flags
         self._read_experiments = read_experiments
@@ -533,7 +539,7 @@ class PhilCommandParser(object):
                     "dynamic_shadowing": params.format.dynamic_shadowing,
                     "multi_panel": params.format.multi_panel,
                 }
-            except Exception:
+            except AttributeError:
                 format_kwargs = None
         else:
             compare_beam = None
@@ -632,7 +638,7 @@ class PhilCommandParser(object):
 
 
 class OptionParserBase(optparse.OptionParser, object):
-    """ The base class for the option parser. """
+    """The base class for the option parser."""
 
     def __init__(self, config_options=False, sort_options=False, **kwargs):
         """
@@ -739,7 +745,7 @@ class OptionParserBase(optparse.OptionParser, object):
         return options, args
 
     def format_epilog(self, formatter):
-        """ Don't do formatting on epilog. """
+        """Don't do formatting on epilog."""
         if self.epilog is None:
             return ""
         return self.epilog
@@ -1012,7 +1018,7 @@ class OptionParser(OptionParserBase):
                 parameter_choice_list[d.path] = ["true", "false"]
 
         def construct_completion_tree(paths):
-            """ Construct a tree of parameters, grouped by common prefixes """
+            """Construct a tree of parameters, grouped by common prefixes"""
 
             # Split parameter paths at '.' character
             paths = [p.split(".", 1) for p in paths]
@@ -1113,26 +1119,7 @@ def flatten_reflections(filename_object_list):
     """
     tables = [o.data for o in filename_object_list]
     if len(tables) > 1:
-        new_id_ = 0
-        for table in tables:
-            table_id_values = sorted(list(set(table["id"]).difference({-1})))
-            highest_new_id = new_id_ + len(table_id_values) - 1
-            expt_ids_dict = table.experiment_identifiers()
-            new_ids_dict = {}
-            new_id_ = highest_new_id
-            while table_id_values:
-                val = table_id_values.pop()
-                sel = table["id"] == val
-                if val in expt_ids_dict:
-                    # only delete here, add new at end to avoid clashes of new/old ids
-                    new_ids_dict[new_id_] = expt_ids_dict[val]
-                    del expt_ids_dict[val]
-                table["id"].set_selected(sel.iselection(), new_id_)
-                new_id_ -= 1
-            new_id_ = highest_new_id + 1
-            if new_ids_dict:
-                for i, v in new_ids_dict.items():
-                    expt_ids_dict[i] = v
+        tables = renumber_table_id_columns(tables)
     return tables
 
 
@@ -1143,9 +1130,25 @@ def flatten_experiments(filename_object_list):
     :param filename_object_list: The parameter item
     :return: The flattened experiment lists
     """
-    from dxtbx.model.experiment_list import ExperimentList
 
     result = ExperimentList()
     for o in filename_object_list:
         result.extend(o.data)
     return result
+
+
+def reflections_and_experiments_from_files(
+    reflection_file_object_list, experiment_file_object_list
+):
+    """Extract reflection tables and an experiment list from the files.
+    If experiment identifiers are set, the order of the reflection tables is
+    changed to match the order of experiments.
+    """
+    tables = flatten_reflections(reflection_file_object_list)
+
+    experiments = flatten_experiments(experiment_file_object_list)
+
+    if tables and experiments:
+        tables = sort_tables_to_experiments_order(tables, experiments)
+
+    return tables, experiments

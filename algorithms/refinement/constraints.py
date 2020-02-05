@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from functools import reduce
+import re
 
 from libtbx.phil import parse
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -74,6 +75,9 @@ class ConstraintManager(object):
         keep.set_selected(self._constrained_idx, False)
         self._unconstrained_idx = full_idx.select(keep)
         self._n_unconstrained_params = len(self._unconstrained_idx)
+
+    def get_constrained_parameter_indices(self):
+        return [c.indices for c in self._constraints]
 
     def constrain_parameters(self, x):
 
@@ -183,10 +187,6 @@ class ConstraintManagerFactory(object):
         self._params = refinement_phil
         self._pred_param = pred_param
 
-        # full parameter names and values
-        self._all_names = self._pred_param.get_param_names()
-        self._all_vals = self._pred_param.get_param_vals()
-
         return
 
     def build_constraint(self, constraint_scope, parameterisation, model_type):
@@ -218,8 +218,6 @@ class ConstraintManagerFactory(object):
                     break
 
         # ignore model name prefixes
-        import re
-
         patt1 = re.compile("^" + model_type + "[0-9]+")
         pname = patt1.sub("", constraint_scope.parameter)
 
@@ -261,6 +259,10 @@ class ConstraintManagerFactory(object):
         beam_c = options.beam.constraints
         orientation_c = options.crystal.orientation.constraints
         cell_c = options.crystal.unit_cell.constraints
+
+        # full parameter names and values
+        self._all_names = self._pred_param.get_param_names()
+        self._all_vals = self._pred_param.get_param_vals()
 
         # quit early if there are no constraints to apply
         n_constraints = sum(len(e) for e in [detector_c, beam_c, orientation_c, cell_c])

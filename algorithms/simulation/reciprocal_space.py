@@ -6,17 +6,17 @@ from dials.array_family import flex
 
 
 class Simulator(object):
-    """ Class to help with simulation from reciprocal space. """
+    """Class to help with simulation from reciprocal space."""
 
     def __init__(self, experiment, sigma_b, sigma_m, n_sigma):
-        """ Initialise with models and parameters. """
+        """Initialise with models and parameters."""
         self.experiment = experiment
         self.sigma_b = sigma_b
         self.sigma_m = sigma_m
         self.n_sigma = n_sigma
 
     def with_given_intensity(self, N, In, Ba, Bb, Bc, Bd):
-        """ Generate reflections with a given intensity and background. """
+        """Generate reflections with a given intensity and background."""
         return self.with_individual_given_intensity(
             N,
             flex.int(N, In),
@@ -27,7 +27,7 @@ class Simulator(object):
         )
 
     def with_random_intensity(self, N, Imax, Bamax, Bbmax, Bcmax, Bdmax):
-        """ Generate reflections with a random intensity and background. """
+        """Generate reflections with a random intensity and background."""
         if Imax == 0:
             In = flex.size_t(N).as_int()
         else:
@@ -51,7 +51,7 @@ class Simulator(object):
         return self.with_individual_given_intensity(N, In, Ba, Bb, Bc, Bd)
 
     def with_individual_given_intensity(self, N, In, Ba, Bb, Bc, Bd):
-        """ Generate reflections with given intensity and background. """
+        """Generate reflections with given intensity and background."""
         from dials.util.command_line import ProgressBar
         from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
         from dials.algorithms.simulation.generate_test_reflections import (
@@ -152,7 +152,7 @@ class Simulator(object):
         return refl
 
     def generate_predictions(self, N):
-        """ Generate some reflections. """
+        """Generate some reflections."""
         from dials.algorithms.profile_model.gaussian_rs import MaskCalculator3D
         from dials.util.command_line import Command
         from dials.algorithms import filtering

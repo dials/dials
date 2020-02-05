@@ -1,4 +1,4 @@
-cctbx::hdf5_plugins
+conda-forge::hdf5-external-filter-plugins
 cctbx::wxpython<4
 
 conda-forge::dials-data
@@ -11,6 +11,7 @@ conda-forge::pyrtf
 alabaster
 biopython=1.73
 bzip2
+colorlog
 cython>=0.29,<0.30
 docutils
 future
@@ -27,7 +28,7 @@ pip
 psutil
 pytest>=4.5,<5.0
 pytest-forked
-pytest-mock
+pytest-mock<2.0
 pytest-xdist
 python>=2.7,<2.8
 requests

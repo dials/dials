@@ -8,6 +8,7 @@ import logging
 import math
 import random
 
+import dials.util
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.algorithms.refinement import weighting_strategies
 from dials.algorithms.refinement.analysis.centroid_analysis import CentroidAnalyser
@@ -21,7 +22,6 @@ from dials.algorithms.refinement.refinement_helpers import (
 from dials.array_family import flex
 import libtbx
 from libtbx.phil import parse
-from libtbx.table_utils import simple_table
 from scitbx import matrix
 from scitbx.math import five_number_summary
 
@@ -36,11 +36,11 @@ format_data = {"outlier_phil": outlier_phil_str}
 phil_str = (
     """
     reflections_per_degree = Auto
-      .help = "The number of centroids per degree of the sweep to use in"
+      .help = "The number of centroids per degree of the sequence to use in"
               "refinement. The default (Auto) uses all reflections unless"
               "the dataset is wider than a single turn. Then the number of"
               "reflections may be reduced until a minimum of 100 per degree of"
-              "the sweep is reached to speed up calculations. Set this to None"
+              "the sequence is reached to speed up calculations. Set this to None"
               "to force use all of suitable reflections."
       .type = float(value_min=0.)
       .expert_level = 1
@@ -134,16 +134,6 @@ class BlockCalculator(object):
         self._reflections["block"] = flex.size_t(len(self._reflections))
         self._reflections["block_centre"] = flex.double(len(self._reflections))
 
-    @staticmethod
-    def _check_scan_range(exp_phi, scan):
-        """Check that the observed reflections fill the scan-range"""
-
-        # Allow up to 5 degrees between the observed phi extrema and the
-        # scan edges
-        start, stop = scan.get_oscillation_range(deg=False)
-        if min(exp_phi) - start > 0.087266 or stop - max(exp_phi) > 0.087266:
-            raise DialsRefineConfigError("The reflections do not fill the scan range.")
-
     def per_width(self, width, deg=True):
         """Set blocks for all experiments according to a constant width"""
 
@@ -159,7 +149,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             start, stop = exp.scan.get_oscillation_range(deg=False)
             nblocks = int(abs(stop - start) / width) + 1
@@ -196,7 +185,6 @@ class BlockCalculator(object):
             sel = self._reflections["id"] == iexp
             isel = sel.iselection()
             exp_phi = phi_obs.select(isel)
-            self._check_scan_range(exp_phi, exp.scan)
 
             # convert phi to integer frames
             frames = exp.scan.get_array_index_from_angle(exp_phi, deg=False)
@@ -507,7 +495,9 @@ class ReflectionManager(object):
             self._reflections.flags.used_in_refinement,
         )
 
-        logger.debug("%d reflections remain in the manager", len(self._reflections))
+        logger.info("%d reflections remain in the manager", len(self._reflections))
+        if len(self._reflections) == 0:
+            raise DialsRefineConfigError("No reflections available for refinement")
 
         # print summary after outlier rejection
         if rejection_occurred:
@@ -545,7 +535,7 @@ class ReflectionManager(object):
             axis = self._axes[iexp]
             if not axis or exp.scan is None:
                 continue
-            if exp.scan.get_oscillation()[1] == 0.0:
+            if exp.scan.is_still():
                 continue
             sel = obs_data["id"] == iexp
             s0 = self._s0vecs[iexp]
@@ -614,8 +604,8 @@ class ReflectionManager(object):
 
             # set sample size according to nref_per_degree (per experiment)
             if exp.scan and self._nref_per_degree:
-                sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-                width = abs(sweep_range_rad[1] - sweep_range_rad[0]) * RAD2DEG
+                sequence_range_rad = exp.scan.get_oscillation_range(deg=False)
+                width = abs(sequence_range_rad[1] - sequence_range_rad[0]) * RAD2DEG
                 if self._nref_per_degree is libtbx.Auto:
                     # For multi-turn, set sample size to the greater of the approx nref
                     # in a single turn and 100 reflections per degree
@@ -728,11 +718,9 @@ class ReflectionManager(object):
         rows.append(["Y weights"] + ["%.4g" % e for e in row_data])
         row_data = five_number_summary(w_phi)
         rows.append(["Phi weights"] + ["%.4g" % (e * DEG2RAD ** 2) for e in row_data])
-        st = simple_table(rows, header)
 
         logger.info(msg)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(dials.util.tabulate(rows, header, numalign="right") + "\n")
 
     def reset_accepted_reflections(self, reflections=None):
         """Reset use flags for all observations in preparation for a new set of
@@ -795,7 +783,6 @@ class StillsReflectionManager(ReflectionManager):
             )
             return
 
-        from libtbx.table_utils import simple_table
         from scitbx.math import five_number_summary
 
         try:
@@ -829,6 +816,4 @@ class StillsReflectionManager(ReflectionManager):
             + " matched to predictions:"
         )
         logger.info(msg)
-        st = simple_table(rows, header)
-        logger.info(st.format())
-        logger.info("")
+        logger.info(dials.util.tabulate(rows, header) + "\n")

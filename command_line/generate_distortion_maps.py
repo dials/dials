@@ -1,12 +1,19 @@
 from __future__ import absolute_import, division, print_function
 
+import logging
 import math
 
 import six.moves.cPickle as pickle
 from dials.array_family import flex
 from dials.util import Sorry
+from dials.util import log
+from dials.util.options import OptionParser
+from dials.util.options import flatten_experiments
+from dials.util.version import dials_version
 from iotbx import phil
 from scitbx import matrix
+
+logger = logging.getLogger("dials.command_line.generate_distortion_maps")
 
 help_message = """
 
@@ -59,6 +66,15 @@ scope = phil.parse(
       .type = floats(size=2)
       .help = "Centre of the ellipse in millimetres along fast, slow of the"
               "first panel"
+  }
+
+  output {
+    x_map = dx.pickle
+      .type = str
+    y_map = dy.pickle
+      .type = str
+    log = dials.generate_distortion_maps.log
+      .type = str
   }
 """
 )
@@ -153,9 +169,6 @@ def make_dx_dy_ellipse(imageset, phi, l1, l2, centre_xy):
 
 
 def main():
-    from dials.util.options import OptionParser
-    from dials.util.options import flatten_experiments
-
     usage = "dials.generate_distortion_maps [options] image_*.cbf"
 
     parser = OptionParser(
@@ -168,6 +181,18 @@ def main():
     )
 
     params, options = parser.parse_args()
+
+    # Configure the logging
+    log.config(verbosity=options.verbose, logfile=params.output.log)
+
+    logger.info(dials_version())
+
+    # Log the diff phil
+    diff_phil = parser.diff_phil.as_str()
+    if diff_phil != "":
+        logger.info("The following parameters have been modified:\n")
+        logger.info(diff_phil)
+
     experiments = flatten_experiments(params.input.experiments)
 
     if len(experiments) == 0:
@@ -184,17 +209,26 @@ def main():
 
     if params.mode == "translate":
         op = params.translate
+        logger.info(
+            "Generating translation map with dx={0}, dy={1}".format(op.dx, op.dy)
+        )
         dx, dy = make_dx_dy_translate(imageset, op.dx, op.dy)
     elif params.mode == "ellipse":
         op = params.ellipse
+        logger.info(
+            "Generating elliptical map with phi={0}, l1={1}, "
+            "l2={2}, centre_xy={3},{4}".format(op.phi, op.l1, op.l2, *op.centre_xy)
+        )
         dx, dy = make_dx_dy_ellipse(imageset, op.phi, op.l1, op.l2, op.centre_xy)
     else:
         raise Sorry("Unrecognised mode")
 
-    with open("dx.pickle", "wb") as f:
+    logger.info("Saving X distortion map to {0}".format(params.output.x_map))
+    with open(params.output.x_map, "wb") as f:
         pickle.dump(dx, f, pickle.HIGHEST_PROTOCOL)
 
-    with open("dy.pickle", "wb") as f:
+    logger.info("Saving Y distortion map to {0}".format(params.output.y_map))
+    with open(params.output.y_map, "wb") as f:
         pickle.dump(dy, f, pickle.HIGHEST_PROTOCOL)
 
 

@@ -152,7 +152,13 @@ def run(phil=phil_scope, args=None):
     """
     # Create the parser
     usage = "usage: dials.generate_mask [options] models.expt"
-    parser = OptionParser(usage=usage, phil=phil, epilog=__doc__, read_experiments=True)
+    parser = OptionParser(
+        usage=usage,
+        phil=phil,
+        epilog=__doc__,
+        read_experiments=True,
+        read_experiments_from_images=True,
+    )
 
     # Parse the command line arguments
     params, options = parser.parse_args(args=args, show_diff_phil=True)

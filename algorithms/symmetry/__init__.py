@@ -1,3 +1,4 @@
+# coding: utf-8
 """Methods for symmetry determination.
 
 This module provides a base class for symmetry determination algorithms.
@@ -20,6 +21,8 @@ from mmtbx import scaling
 from mmtbx.scaling import absolute_scaling
 from mmtbx.scaling import matthews
 
+from dials.util.resolutionizer import Resolutionizer, phil_defaults
+
 
 class symmetry_base(object):
     """Base class for symmetry analysis."""
@@ -35,7 +38,7 @@ class symmetry_base(object):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
     ):
-        """Initialise a symmetry_base object.
+        u"""Initialise a symmetry_base object.
 
         Args:
           intensities (cctbx.miller.array): The intensities on which to perform
@@ -51,7 +54,7 @@ class symmetry_base(object):
             ``min_i_mean_over_sigma_mean`` and ``min_cc_half``.
           min_i_mean_over_sigma_mean (float): minimum value of |I|/|sigma(I)| for
             automatic determination of resolution cutoff.
-          min_cc_half (float): minimum value of CC1/2 for automatic determination of
+          min_cc_half (float): minimum value of CC½ for automatic determination of
             resolution cutoff.
           relative_length_tolerance (float): Relative length tolerance in checking
             consistency of input unit cells against the median unit cell.
@@ -115,7 +118,7 @@ class symmetry_base(object):
 
         # Correct SDs by "typical" SD factors
         self._correct_sigmas(sd_fac=2.0, sd_b=0.0, sd_add=0.03)
-
+        self._normalise(normalisation)
         self._resolution_filter(d_min, min_i_mean_over_sigma_mean, min_cc_half)
 
     def _check_unit_cell_consistency(
@@ -126,26 +129,31 @@ class symmetry_base(object):
                 relative_length_tolerance is not None
                 and absolute_angle_tolerance is not None
             ):
-                assert d.unit_cell().is_similar_to(
+                if not d.unit_cell().is_similar_to(
                     self.median_unit_cell,
                     relative_length_tolerance,
                     absolute_angle_tolerance,
-                ), (str(d.unit_cell()), str(self.median_unit_cell))
+                ):
+                    raise ValueError(
+                        "Incompatible unit cell: %s\n" % d.unit_cell()
+                        + "      median unit cell: %s" % self.median_unit_cell
+                    )
 
-    def _normalise(self):
-        if normalisation is None:
+    def _normalise(self, method):
+        if method is None:
             return
-        elif normalisation == "kernel":
+        elif method == "kernel":
             normalise = self.kernel_normalisation
-        elif normalisation == "quasi":
+        elif method == "quasi":
             normalise = self.quasi_normalisation
-        elif normalisation == "ml_iso":
+        elif method == "ml_iso":
             normalise = self.ml_iso_normalisation
-        elif normalisation == "ml_aniso":
+        elif method == "ml_aniso":
             normalise = self.ml_aniso_normalisation
 
         for i in range(int(flex.max(self.dataset_ids) + 1)):
-            logger.info("Normalising intensities for dataset %i" % (i + 1))
+            logger.info("\n" + "-" * 80 + "\n")
+            logger.info("Normalising intensities for dataset %i\n" % (i + 1))
             intensities = self.intensities.select(self.dataset_ids == i)
             if i == 0:
                 normalised_intensities = normalise(intensities)
@@ -299,49 +307,15 @@ class symmetry_base(object):
         )
 
     def _resolution_filter(self, d_min, min_i_mean_over_sigma_mean, min_cc_half):
+        logger.info("\n" + "-" * 80 + "\n")
+        logger.info("Estimation of resolution for Laue group analysis\n")
         if d_min is libtbx.Auto and (
             min_i_mean_over_sigma_mean is not None or min_cc_half is not None
         ):
-            from dials.util.resolutionizer import Resolutionizer, phil_defaults
-
-            rparams = phil_defaults.extract().resolutionizer
-            rparams.nbins = 20
-            rparams.plot = False
-            resolutionizer = Resolutionizer(self.intensities, rparams)
-            d_min_isigi = 0
-            d_min_cc_half = 0
-            if min_i_mean_over_sigma_mean is not None:
-                try:
-                    d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(
-                        min_i_mean_over_sigma_mean
-                    )
-                except RuntimeError as e:
-                    logger.info(
-                        "I/sigI resolution filter failed with the following error:"
-                    )
-                    logger.error(e)
-                else:
-                    logger.info(
-                        "Resolution estimate from <I>/<sigI> > %.1f : %.2f"
-                        % (min_i_mean_over_sigma_mean, d_min_isigi)
-                    )
-            if min_cc_half is not None:
-                try:
-                    d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
-                except RuntimeError as e:
-                    logger.info(
-                        "CChalf resolution filter failed with the following error:"
-                    )
-                    logger.error(e)
-                else:
-                    logger.info(
-                        "Resolution estimate from CC1/2 > %.2f: %.2f"
-                        % (min_cc_half, d_min_cc_half)
-                    )
-            valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
-            if valid_d_mins:
-                d_min = min(valid_d_mins)
-                logger.info("High resolution limit set to: %.2f" % d_min)
+            d_min = resolution_filter_from_array(
+                self.intensities, min_i_mean_over_sigma_mean, min_cc_half
+            )
+            logger.info("High resolution limit set to: %.2f", d_min)
         if d_min is not None:
             sel = self.intensities.resolution_filter_selection(d_min=d_min)
             self.intensities = self.intensities.select(sel).set_info(
@@ -349,6 +323,61 @@ class symmetry_base(object):
             )
             self.dataset_ids = self.dataset_ids.select(sel)
             logger.info(
-                "Selecting %i reflections with d > %.2f"
-                % (self.intensities.size(), d_min)
+                "Selecting %i reflections with d > %.2f", self.intensities.size(), d_min
             )
+
+
+def resolution_filter_from_array(intensities, min_i_mean_over_sigma_mean, min_cc_half):
+    """Run the resolution filter using miller array data format."""
+    rparams = phil_defaults.extract().resolutionizer
+    rparams.nbins = 20
+    rparams.plot = False
+    resolutionizer = Resolutionizer(intensities, rparams)
+    return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
+
+
+def resolution_filter_from_reflections_experiments(
+    reflections, experiments, min_i_mean_over_sigma_mean, min_cc_half
+):
+    """Run the resolution filter using native dials data formats."""
+    rparams = phil_defaults.extract().resolutionizer
+    rparams.nbins = 20
+    rparams.plot = False
+    resolutionizer = Resolutionizer.from_reflections_and_experiments(
+        reflections, experiments, rparams
+    )
+    return _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half)
+
+
+def _resolution_filter(resolutionizer, min_i_mean_over_sigma_mean, min_cc_half):
+    """Use a resolutionizer to perform filtering for symmetry analysis."""
+    d_min_isigi = 0
+    d_min_cc_half = 0
+    if min_i_mean_over_sigma_mean is not None:
+        try:
+            d_min_isigi = resolutionizer.resolution_i_mean_over_sigma_mean(
+                min_i_mean_over_sigma_mean
+            )
+        except RuntimeError as e:
+            logger.info(u"I/σ(I) resolution filter failed with the following error:")
+            logger.error(e)
+        else:
+            logger.info(
+                u"Resolution estimate from <I>/<σ(I)> > %.1f : %.2f",
+                min_i_mean_over_sigma_mean,
+                d_min_isigi,
+            )
+    if min_cc_half is not None:
+        try:
+            d_min_cc_half = resolutionizer.resolution_cc_half(min_cc_half)
+        except RuntimeError as e:
+            logger.info(u"CC½ resolution filter failed with the following error:")
+            logger.error(e)
+        else:
+            logger.info(
+                u"Resolution estimate from CC½ > %.2f: %.2f", min_cc_half, d_min_cc_half
+            )
+    valid_d_mins = list({d_min_cc_half, d_min_isigi}.difference({0}))
+    if valid_d_mins:
+        d_min = min(valid_d_mins)
+    return d_min

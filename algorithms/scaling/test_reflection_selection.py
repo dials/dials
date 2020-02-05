@@ -2,47 +2,19 @@
 Tests for the reflection selection algorithm.
 """
 from __future__ import absolute_import, division, print_function
-import os
 import itertools
 from libtbx import phil
-from cctbx import sgtbx
-from dxtbx.serialize import load
+from scitbx import sparse
+from cctbx import sgtbx, uctbx
+from mock import Mock
 from dials.array_family import flex
 from dials.algorithms.scaling.Ih_table import IhTable
 from dials.algorithms.scaling.reflection_selection import (
-    select_highly_connected_reflections,
     select_connected_reflections_across_datasets,
-    select_highly_connected_reflections_in_bin,
     calculate_scaling_subset_ranges_with_E2,
     calculate_scaling_subset_ranges,
+    _loop_over_class_matrix,
 )
-from dials.algorithms.scaling.scaling_utilities import calc_crystal_frame_vectors
-
-
-def test_select_highly_connected_reflections_in_bin():
-    """Test the single-bin selection algorithm."""
-    r1 = flex.reflection_table()
-    n_list = [3, 3, 2, 1, 1, 2, 2]
-    miller_indices = [[(0, 0, i + 1)] * n for i, n in enumerate(n_list)]
-    r1["miller_index"] = flex.miller_index(
-        list(itertools.chain.from_iterable(miller_indices))
-    )
-    r1["class_index"] = flex.int([0, 1, 1, 0, 1, 2, 0, 0, 2, 1, 1, 2, 0, 1])
-    r1["intensity"] = flex.double(sum(n_list), 1)
-    r1["variance"] = flex.double(sum(n_list), 1)
-    r1["inverse_scale_factor"] = flex.double(sum(n_list), 1)
-
-    sg = sgtbx.space_group("P1")
-    Ih_table_block = IhTable([r1], sg).Ih_table_blocks[0]
-    Ih_table_block.Ih_table["class_index"] = r1["class_index"].select(
-        Ih_table_block.Ih_table["loc_indices"]
-    )
-
-    indices, total_in_classes = select_highly_connected_reflections_in_bin(
-        Ih_table_block, min_per_class=2, min_total=6, max_total=100
-    )
-    assert list(total_in_classes) == [2, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    assert list(indices) == [0, 1, 2, 3, 4, 5, 10, 11]
 
 
 def test_select_connected_reflections_across_datasets():
@@ -85,10 +57,14 @@ def test_select_connected_reflections_across_datasets():
 
     space_group = sgtbx.space_group("P1")
     table = IhTable(reflections, space_group)
-    indices, datset_ids, total_in_classes = select_connected_reflections_across_datasets(
-        table, min_per_class=5, Isigma_cutoff=0.0
+    experiment = Mock()
+    experiment.crystal.get_space_group.return_value = space_group
+    experiment.crystal.get_unit_cell.return_value = uctbx.unit_cell(
+        (10, 10, 10, 90, 90, 90)
     )
-    assert list(total_in_classes) == [8, 7, 7]
+    indices, datset_ids = select_connected_reflections_across_datasets(
+        table, experiment, Isigma_cutoff=0.0, min_total=30, n_resolution_bins=1
+    )
     assert list(indices) == [0, 1, 2, 3, 4, 5, 8, 9] + [0, 1, 2, 3, 4, 5, 6] + [
         0,
         1,
@@ -100,6 +76,54 @@ def test_select_connected_reflections_across_datasets():
     ]
     assert list(datset_ids) == [0] * 8 + [1] * 7 + [2] * 7
 
+    # now test again with a higher min_total
+    indices, datset_ids = select_connected_reflections_across_datasets(
+        table, experiment, Isigma_cutoff=0.0, min_total=10 * 3 * 4, n_resolution_bins=1
+    )
+    assert list(datset_ids) == [0] * 11 + [1] * 8 + [2] * 13
+
+
+def test_loop_over_class_matrix():
+    """Test a few different limits of the method.
+
+    { 3, 1, 3, 2, 1, 1, 0 },
+    { 2, 2, 0, 0, 3, 1, 0 },
+    { 1, 4, 2, 1, 0, 0, 5 },
+    """
+    sorted_class_matrix = sparse.matrix(
+        3,
+        7,
+        elements_by_columns=[
+            {0: 3, 1: 2, 2: 1},
+            {0: 1, 1: 2, 2: 4},
+            {0: 3, 2: 2},
+            {0: 2, 2: 1},
+            {0: 1, 1: 3},
+            {0: 1},
+            {2: 5},
+        ],
+    )
+
+    # first test if don't meet the minimum number
+    total_in_classes, cols_not_used = _loop_over_class_matrix(
+        sorted_class_matrix, 1, 8, 20
+    )
+    assert list(cols_not_used) == [2, 3, 4, 5, 6]
+    assert list(total_in_classes) == [4.0, 4.0, 5.0]
+    # now test if max per bin reached
+    total_in_classes, cols_not_used = _loop_over_class_matrix(
+        sorted_class_matrix, 2, 3, 8
+    )
+    assert list(cols_not_used) == [2, 3, 4, 5, 6]
+    assert list(total_in_classes) == [4.0, 4.0, 5.0]
+
+    # now test if request more than available - should find all
+    total_in_classes, cols_not_used = _loop_over_class_matrix(
+        sorted_class_matrix, 9, 50, 100
+    )
+    assert not cols_not_used
+    assert list(total_in_classes) == [11.0, 7.0, 13.0]
+
 
 def generated_param():
     """Generate a param phil scope."""
@@ -109,8 +133,7 @@ def generated_param():
   """,
         process_includes=True,
     )
-    param = phil_scope.extract()
-    return param
+    return phil_scope.extract()
 
 
 def generated_refl_for_subset_calculation():
@@ -149,46 +172,3 @@ def test_selection_scaling_subset_ranges():
     test_params.reflection_selection.Isigma_range = 0.9, 5.5  # all but last
     sel = calculate_scaling_subset_ranges(rt, test_params)
     assert list(sel) == [False, True, True, True, True, False]
-
-
-def test_reflection_selection(dials_regression):
-    """Use a real dataset to test the selection algorithm."""
-    data_dir = os.path.join(dials_regression, "xia2-28")
-    pickle_path = os.path.join(data_dir, "20_integrated.pickle")
-    sweep_path = os.path.join(data_dir, "20_integrated_experiments.json")
-    reflection_table = flex.reflection_table.from_file(pickle_path)
-    experiment = load.experiment_list(sweep_path, check_format=False)[0]
-
-    reflection_table["intensity"] = reflection_table["intensity.sum.value"]
-    reflection_table["variance"] = reflection_table["intensity.sum.variance"]
-    reflection_table["inverse_scale_factor"] = flex.double(reflection_table.size(), 1.0)
-    reflection_table = reflection_table.select(reflection_table["variance"] > 0)
-    reflection_table = reflection_table.select(
-        reflection_table.get_flags(reflection_table.flags.integrated, all=True)
-    )
-
-    Ih_table_block = IhTable(
-        [reflection_table], experiment.crystal.get_space_group()
-    ).Ih_table_blocks[0]
-
-    reflection_table["phi"] = (
-        reflection_table["xyzobs.px.value"].parts()[2]
-        * experiment.scan.get_oscillation()[1]
-    )
-    reflection_table = calc_crystal_frame_vectors(reflection_table, experiment)
-    Ih_table_block.Ih_table["s1c"] = reflection_table["s1c"].select(
-        Ih_table_block.Ih_table["loc_indices"]
-    )
-
-    indices = select_highly_connected_reflections(
-        Ih_table_block, experiment, min_per_area=10, n_resolution_bins=10
-    )
-    assert len(indices) > 1710 and len(indices) < 1800
-
-    # Give a high min_per_area to check that all reflections with multiplciity > 1
-    # are selected.
-    indices = select_highly_connected_reflections(
-        Ih_table_block, experiment, min_per_area=50, n_resolution_bins=10
-    )
-    # this dataset has 48 reflections with multiplicity = 1
-    assert len(indices) == reflection_table.size() - 48
