@@ -2178,7 +2178,7 @@ class ScalingModelAnalyser(object):
 
 def merging_stats_results(reflections, experiments):
     if "inverse_scale_factor" not in reflections:
-        return [], [], {}, {}
+        return [], [], {}, {}, []
 
     reflections["intensity"] = reflections["intensity.scale.value"]
     reflections["variance"] = reflections["intensity.scale.variance"]
@@ -2187,7 +2187,7 @@ def merging_stats_results(reflections, experiments):
         result, anom_result = merging_stats_from_scaled_array(scaled_array)
     except DialsMergingStatisticsError as e:
         print(e)
-        return [], [], {}, {}
+        return [], [], {}, {}, []
 
     is_centric = experiments[0].crystal.get_space_group().is_centric()
 
