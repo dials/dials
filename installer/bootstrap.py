@@ -659,7 +659,6 @@ def git(
                 p.terminate()
                 raise
         if p.returncode:
-            print(output)
             return (
                 module,
                 "WARNING",
