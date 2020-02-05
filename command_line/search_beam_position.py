@@ -3,14 +3,15 @@ from __future__ import absolute_import, division, print_function
 # LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
 
 import cmath
+import concurrent.futures
 import copy
 import logging
 import math
 import random
 import sys
 
+import libtbx.introspection
 from libtbx import adopt_init_args
-from libtbx import easy_mp
 from libtbx.test_utils import approx_equal
 from libtbx.utils import plural_s
 from scitbx import matrix
@@ -334,13 +335,7 @@ class better_experimental_model_discovery(object):
         return sum_score
 
 
-def run_dps(args):
-    experiment, spots_mm, max_cell, params = args
-
-    detector = experiment.detector
-    beam = experiment.beam
-    goniometer = experiment.goniometer
-
+def run_dps(experiment, spots_mm, max_cell, params):
     # max_cell: max possible cell in Angstroms; set to None, determine from data
     # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
@@ -348,13 +343,13 @@ def run_dps(args):
         max_cell=max_cell, recommended_grid_sampling_rad=None, horizon_phil=params
     )
 
-    DPS.S0_vector = matrix.col(beam.get_s0())
-    DPS.inv_wave = 1.0 / beam.get_wavelength()
-    if goniometer is None:
+    DPS.S0_vector = matrix.col(experiment.beam.get_s0())
+    DPS.inv_wave = 1.0 / experiment.beam.get_wavelength()
+    if experiment.goniometer is None:
         DPS.axis = matrix.col((1, 0, 0))
     else:
-        DPS.axis = matrix.col(goniometer.get_rotation_axis())
-    DPS.set_detector(detector)
+        DPS.axis = matrix.col(experiment.goniometer.get_rotation_axis())
+    DPS.set_detector(experiment.detector)
 
     # transform input into what DPS needs
     # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
@@ -437,22 +432,19 @@ def discover_better_experimental_model(
         max_cell = flex.median(flex.double(max_cell_list))
     else:
         max_cell = params.max_cell
-    args = [
-        (expt, refl, max_cell, dps_params)
-        for expt, refl in zip(experiments, refl_lists)
-    ]
 
-    results = easy_mp.parallel_map(
-        func=run_dps,
-        iterable=args,
-        processes=nproc,
-        method="multiprocessing",
-        preserve_order=True,
-        asynchronous=True,
-        preserve_exception_message=True,
-    )
-    solution_lists = [r["solutions"] for r in results if r]
-    amax_list = [r["amax"] for r in results if r]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=nproc) as pool:
+        futures = []
+        for expt, refl in zip(experiments, refl_lists):
+            futures.append(pool.submit(run_dps, expt, refl, max_cell, dps_params))
+        solution_lists = []
+        amax_list = []
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            if result["solutions"]:
+                solution_lists.append(result["solutions"])
+                amax_list.append(result["amax"])
+
     if len(solution_lists) == 0:
         raise Sorry("No solutions found")
 
@@ -529,6 +521,9 @@ def run(args):
     if params.seed is not None:
         flex.set_random_seed(params.seed)
         random.seed(params.seed)
+
+    if params.nproc is libtbx.Auto:
+        params.nproc = libtbx.introspection.number_of_processors()
 
     imagesets = experiments.imagesets()
     # Split all the refln tables by ID, corresponding to the respective imagesets
