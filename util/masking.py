@@ -145,7 +145,7 @@ class MaskGenerator(object):
         image = imageset.get_raw_data(0)
         assert len(detector) == len(image)
 
-        # Create the mask for each image
+        # Create the mask for each panel
         masks = []
         for index, (im, panel) in enumerate(zip(image, detector)):
 
@@ -155,7 +155,14 @@ class MaskGenerator(object):
             if self.params.use_trusted_range:
                 trusted_mask = None
                 low, high = panel.get_trusted_range()
-                for image_index, _ in enumerate(imageset.indices()):
+
+                # Take 10 evenly-spaced images from the imageset. Pixels outside
+                # the trusted mask on all of these images are considered bad and
+                # masked. https://github.com/dials/dials/issues/1061
+                stride = max(int(len(imageset) / 10), 1)
+                image_indices = range(0, len(imageset), stride)
+
+                for image_index in image_indices:
                     image_data = imageset.get_raw_data(image_index)[index].as_double()
                     frame_mask = (image_data > low) & (image_data < high)
                     if trusted_mask is None:
@@ -165,7 +172,6 @@ class MaskGenerator(object):
 
                     if trusted_mask.count(False) == 0:
                         break
-
                 mask = trusted_mask
             else:
                 mask = flex.bool(flex.grid(im.all()), True)
