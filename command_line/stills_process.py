@@ -6,8 +6,9 @@ import os
 import sys
 import tarfile
 import time
+import six
 import six.moves.cPickle as pickle
-from six.moves import StringIO
+from six import BytesIO
 
 import dials.util
 from dials.util import log
@@ -977,6 +978,8 @@ class Processor(object):
                 for i, experiment in enumerate(experiments):
                     refls = centroids.select(centroids["id"] == i)
                     refls["id"] = flex.int(len(refls), n)
+                    del refls.experiment_identifiers()[i]
+                    refls.experiment_identifiers()[n]=experiment.identifier
                     self.all_indexed_reflections.extend(refls)
                     n += 1
         else:
@@ -1098,6 +1101,8 @@ class Processor(object):
                 for i, experiment in enumerate(experiments):
                     refls = integrated.select(integrated["id"] == i)
                     refls["id"] = flex.int(len(refls), n)
+                    del refls.experiment_identifiers()[i]
+                    refls.experiment_identifiers()[n]=experiment.identifier
                     self.all_integrated_reflections.extend(refls)
                     n += 1
         else:
@@ -1396,9 +1401,12 @@ class Processor(object):
                 for i, (fname, d) in enumerate(
                     zip(self.all_int_pickle_filenames, self.all_int_pickles)
                 ):
-                    string = StringIO(pickle.dumps(d, protocol=2))
+                    string = BytesIO(pickle.dumps(d, protocol=2))
                     info = tarfile.TarInfo(name=fname)
-                    info.size = len(string.buf)
+                    if six.PY3:
+                        info.size = string.getbuffer().nbytes
+                    else:
+                        info.size = len(string.buf)
                     info.mtime = time.time()
                     tar.addfile(tarinfo=info, fileobj=string)
                 tar.close()
