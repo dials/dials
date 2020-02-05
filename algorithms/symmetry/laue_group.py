@@ -131,10 +131,14 @@ class LaueGroupAnalysis(symmetry_base):
         max_n_group = int(min(n_pairs / min_num_groups, 200))  # maximum number in group
         min_n_group = int(min(5, max_n_group))  # minimum number in group
 
+        if (max_n_group - min_n_group) < 4:
+            self.cc_sig_fac = 0
+            return
+
         mean_ccs = flex.double()
         rms_ccs = flex.double()
         ns = flex.double()
-        for n in range(min_n_group, max_n_group):
+        for n in range(min_n_group, max_n_group + 1):
             ns.append(n)
             ccs = flex.double()
             for i in range(200):
@@ -149,8 +153,10 @@ class LaueGroupAnalysis(symmetry_base):
         y = rms_ccs
         fit = flex.linear_regression(x, y)
 
-        assert fit.is_well_defined()
-        self.cc_sig_fac = fit.slope()
+        if fit.is_well_defined():
+            self.cc_sig_fac = fit.slope()
+        else:
+            self.cc_sig_fac = 0
 
     def _estimate_cc_true(self):
 
@@ -262,7 +268,10 @@ class LaueGroupAnalysis(symmetry_base):
             "Estimated expectation value of true correlation coefficient E(CC) = %.3f"
             % self.E_cc_true
         )
-        output.append("Estimated sd(CC) = %.3f / sqrt(N)" % self.cc_sig_fac)
+        if self.cc_sig_fac:
+            output.append("Estimated sd(CC) = %.3f / sqrt(N)" % self.cc_sig_fac)
+        else:
+            output.append("Too few reflections to estimate sd(CC).")
         output.append(
             "Estimated E(CC) of true correlation coefficient from identity = %.3f"
             % self.cc_true
