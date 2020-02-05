@@ -3,8 +3,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from dials.array_family import flex
 
-schema_url = "https://github.com/nexusformat/definitions/blob/master/contributed_definitions/NXreflections.nxdl.xml"
-
 
 def make_dataset(handle, name, dtype, data, description, units=None):
     dset = handle.create_dataset(
@@ -334,16 +332,11 @@ def dump(entry, reflections, experiments):
         )
         features[0] = 7
 
-    # Create the entry
+    # Create the base class
     assert "reflections" not in entry
     refls = entry.create_group("reflections")
-    refls.attrs["NX_class"] = "NXsubentry"
+    refls.attrs["NX_class"] = "NXreflections"
     refls.attrs["description"] = ""
-
-    # Create the definition
-    definition = refls.create_dataset("definition", data="NXreflections")
-    definition.attrs["version"] = 1
-    definition.attrs["URL"] = schema_url
 
     refls["experiments"] = [np.string_(e) for e in experiments]
 
@@ -377,12 +370,14 @@ def load(entry):
 
     # Get the entry
     refls = entry["reflections"]
-    assert refls.attrs["NX_class"] == "NXsubentry"
-
-    # Get the definition
-    definition = refls["definition"]
-    assert definition[()] == "NXreflections"
-    assert definition.attrs["version"] == 1
+    if refls.attrs["NX_class"] == "NXsubentry":
+        # Backward compatibility. See https://github.com/nexusformat/definitions/pull/752
+        # Get the definition
+        definition = refls["definition"]
+        assert definition[()] == "NXreflections"
+        assert definition.attrs["version"] == 1
+    else:
+        assert refls.attrs["NX_class"] == "NXreflections"
 
     # The paths to the experiments
     experiments = list(refls["experiments"])
