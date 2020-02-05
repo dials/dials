@@ -352,7 +352,7 @@ def run_command(command, workdir=_BUILD_DIR, description=None):
         sys.exit("Process failed with return code %s" % p.returncode)
 
 
-def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
+def download_to_file(url, file, quiet=False, cache=True):
     """Downloads a URL to file. Returns the file size.
        Returns -1 if the downloaded file size does not match the expected file
        size
@@ -402,19 +402,22 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # otherwise pass on the error message
         raise
     except (pysocket.timeout, HTTPError) as e:
         if isinstance(e, HTTPError) and etag and e.code == 304:
             # When using ETag. a 304 error means everything is fine
-            log.write("local copy is current (etag)\n")
+            if not quiet:
+                print("local copy is current (etag)")
             return -2
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # otherwise pass on the error message
         raise
@@ -422,7 +425,8 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
         if localcopy:
             # Download failed for some reason, but a valid local copy of
             # the file exists, so use that one instead.
-            log.write("%s\n" % str(e))
+            if not quiet:
+                print(str(e))
             return -2
         # if url fails to open, try using curl
         # temporary fix for old OpenSSL in system Python on macOS
@@ -468,7 +472,8 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
                         ctime,
                     ) = os.stat(file)
                     if (size == file_size) and (remote_mtime == mtime):
-                        log.write("local copy is current\n")
+                        if not quiet:
+                            print("local copy is current")
                         socket.close()
                         return -2
                 except Exception:
@@ -480,10 +485,9 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
                 hr_size = (hr_size[0] / 1024, "kB")
             if hr_size[0] > 500:
                 hr_size = (hr_size[0] / 1024, "MB")
-            log.write("%.1f %s\n" % hr_size)
-            if status:
-                log.write("    [0%")
-                log.flush()
+            if not quiet:
+                print("%.1f %s" % hr_size)
+                print("    [0%", end="", flush=True)
 
         received = 0
         block_size = 8192
@@ -496,25 +500,23 @@ def download_to_file(url, file, log=sys.stdout, status=True, cache=True):
             block = socket.read(block_size)
             received += len(block)
             f.write(block)
-            if status and (file_size > 0):
+            if file_size > 0 and not quiet:
                 while (100 * received / file_size) > progress:
                     progress += 1
                     if (progress % 20) == 0:
-                        log.write("%d%%" % progress)
+                        print(progress, end="%", flush=True)
                     elif (progress % 2) == 0:
-                        log.write(".")
-                    log.flush()
-
+                        print(".", end="", flush=True)
             if not block:
                 break
         f.close()
         socket.close()
 
-        if status and (file_size > 0):
-            log.write("]\n")
-        else:
-            log.write("%d kB\n" % (received / 1024))
-        log.flush()
+        if not quiet:
+            if file_size > 0:
+                print("]", flush=True)
+            else:
+                print("%d kB" % (received / 1024), flush=True)
 
         # Do not overwrite file during the download. If a download temporarily fails we
         # may still have a clean, working (yet older) copy of the file.
@@ -651,11 +653,13 @@ def git(
             #   git clean -dffx
             try:
                 output, _ = p.communicate()
+                output = output.decode("latin-1")
             except KeyboardInterrupt:
                 print("\nReceived CTRL+C, trying to terminate subprocess...\n")
                 p.terminate()
                 raise
         if p.returncode:
+            print(output)
             return (
                 module,
                 "WARNING",
@@ -670,6 +674,7 @@ def git(
             stderr=subprocess.STDOUT,
         )
         output, _ = p.communicate()
+        output = output.decode("latin-1")
         if p.returncode:
             return module, "WARNING", "Can not get git repository revision\n" + output
         return module, "OK", "Checked out revision " + output.strip()
@@ -711,6 +716,7 @@ def git(
                 )
                 try:
                     output, _ = p.communicate()
+                    output = output.decode("latin-1")
                 except KeyboardInterrupt:
                     print("\nReceived CTRL+C, trying to terminate subprocess...\n")
                     p.terminate()
@@ -749,6 +755,7 @@ def git(
                 stderr=subprocess.STDOUT,
             )
             output, _ = p.communicate()
+            output = output.decode("latin-1")
             if p.returncode:
                 return (
                     module,
@@ -758,7 +765,7 @@ def git(
             return module, "OK", "Checked out revision " + output.strip()
         filename = "%s-%s" % (module, urlparse(source_candidate)[2].split("/")[-1])
         filename = os.path.join(destpath, filename)
-        download_to_file(source_candidate, filename, log=devnull)
+        download_to_file(source_candidate, filename, quiet=True)
         unzip(filename, destination, trim_directory=1)
         return module, "OK", "Downloaded from static archive"
 
