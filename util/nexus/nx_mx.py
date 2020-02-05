@@ -173,7 +173,14 @@ def get_nx_data(handle, path, data):
 
 
 def get_nx_dials(handle, path):
-    return get_nx_class(handle, "NXdials", path)
+    if path in handle:
+        group = handle[path]
+        if "NX_class" in group.attrs:
+            # Backwards compatibility. See https://github.com/dials/dials/issues/1124
+            assert group.attrs["NX_class"] == "NXdials"
+    else:
+        group = handle.create_group(path)
+    return group
 
 
 def dump_beam(entry, beam):
