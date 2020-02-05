@@ -321,38 +321,31 @@ def test_trim_start(dials_data, tmpdir):
     assert scan.get_image_range()[1] == scan_in.get_image_range()[1]
 
 
-def test_trim_end(dials_regression, tmpdir):
-    """Trim the end of i04 bag training data"""
-    data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-    experiments_path = os.path.join(data_dir, "experiments.json")
-    pickle_path = os.path.join(data_dir, "indexed_strong.pickle")
+def test_trim_end(dials_data, tmpdir):
+    """Trim the end of an indexed data set"""
+    experiments_file = dials_data("l_cysteine_dials_output").join("indexed.expt")
+    reflections_file = dials_data("l_cysteine_dials_output").join("indexed.refl")
 
     expt_in = ExperimentListFactory.from_json_file(
-        experiments_path, check_format=False
+        experiments_file.strpath, check_format=False
     )[0]
-
     scan_in = expt_in.scan
 
-    data = flex.reflection_table.from_file(pickle_path)
+    data = flex.reflection_table.from_file(reflections_file)
     keep = data["xyzcal.px"].parts()[2] < 440
     data = data.select(keep)
 
-    refl_out = tmpdir.join("trimmed.refl").strpath
+    refl_out = tmpdir.join("trimmed.refl")
     data.as_file(refl_out)
 
-    for pth in (experiments_path, pickle_path):
-        assert os.path.exists(pth)
-
-    cmd = ("dials.refine", experiments_path, refl_out)
+    cmd = ("dials.refine", experiments_file, refl_out)
     result = procrunner.run(cmd, working_directory=tmpdir)
     assert not result.returncode and not result.stderr
 
     # verify scan
-
     ref_exp = ExperimentListFactory.from_json_file(
         tmpdir.join("refined.expt").strpath, check_format=False
     )[0]
-
     scan = ref_exp.scan
 
     assert scan.get_image_range()[0] == scan_in.get_image_range()[0]
