@@ -575,10 +575,14 @@ class Script(object):
                 n_picked = 0
                 indices = list(range(len(experiments)))
                 if reflections.experiment_identifiers().keys():
+                    indices_to_sel = []
                     while n_picked < params.output.n_subset:
                         idx = indices.pop(random.randint(0, len(indices) - 1))
-                        subset_exp.append(experiments[idx])
+                        indices_to_sel.append(idx)
                         n_picked += 1
+                    # make sure select in order.
+                    for idx in sorted(indices_to_sel):
+                        subset_exp.append(experiments[idx])
                     subset_refls = reflections.select(subset_exp)
                     subset_refls.reset_ids()
                 else:
@@ -607,7 +611,7 @@ class Script(object):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
                 if reflections.experiment_identifiers().keys():
-                    for idx in sort_order[: params.output.n_subset]:
+                    for idx in sorted(sort_order[: params.output.n_subset]):
                         subset_exp.append(experiments[idx])
                     subset_refls = reflections.select(subset_exp)
                     subset_refls.reset_ids()
@@ -632,7 +636,7 @@ class Script(object):
                     refl_counts.append((refls_subset["id"] == expt_id).count(True))
                 sort_order = flex.sort_permutation(refl_counts, reverse=True)
                 if reflections.experiment_identifiers().keys():
-                    for idx in sort_order[: params.output.n_subset]:
+                    for idx in sorted(sort_order[: params.output.n_subset]):
                         subset_exp.append(experiments[idx])
                     subset_refls = reflections.select(subset_exp)
                     subset_refls.reset_ids()

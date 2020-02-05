@@ -347,6 +347,9 @@ def test_combine_nsubset(
     )
     assert len(exps) == 3
     refls = flex.reflection_table.from_file(tmpdir.join("combined.refl"))
+    # Check that order are the same to ensure consistent for historical
+    # use of ordered ids to match across datastructures
+    assert list(exps.identifiers()) == list(refls.experiment_identifiers().values())
     assert len(set(refls["id"])) == 3
     assert list(set(refls["id"])) == [0, 1, 2]
 
