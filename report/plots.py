@@ -13,6 +13,31 @@ from scitbx.array_family import flex
 from scitbx.math import distributions
 
 
+def make_image_range_table(experiments, batch_manager):
+    """Make a summary table of image ranges."""
+    table = [
+        [
+            "Experiment number",
+            "scan image range",
+            "image range in use",
+            "associated batch range",
+            "Image template",
+        ]
+    ]
+    for i, exp in enumerate(experiments):
+        if exp.scan:
+            valid_image_ranges = ",".join(
+                str(i) for i in exp.scan.get_valid_image_ranges(exp.identifier)
+            )
+            image_range = exp.scan.get_image_range()
+            template = exp.imageset.get_template()
+            b_0 = batch_manager._batch_increments[i]
+            batch_range = batch_manager.batch_params[i]["range"]
+            batches = (b_0, b_0 + (batch_range[1] - batch_range[0]))
+            table.append([str(i), image_range, valid_image_ranges, batches, template])
+    return table
+
+
 def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()

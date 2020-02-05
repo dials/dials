@@ -15,7 +15,7 @@
           {{ macros.table(scaling_tables[1]) }}
       </div>
       {{ macros.panel('Analysis by resolution', 'resolution_plots', resolution_plots) }}
-      {{ macros.panel('Analysis by image number', 'batch_plots', batch_plots) }}
+      {{ macros.panel('Analysis by image number', 'batch_plots', batch_plots, tables=image_range_tables)}}
       {{ macros.panel('Scaling model plots', 'scaling_model', scaling_model_graphs) }}
       {{ macros.panel('Scaling outlier plots', 'outlier_plots', scaling_outlier_graphs) }}
       {{ macros.panel('Error distribution plots', 'error_model_plots', error_model_plots) }}

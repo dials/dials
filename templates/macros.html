@@ -85,7 +85,7 @@
 {% endfor %}
 {%- endmacro %}
 
-{% macro panel(panel_title, panel_id, graphs, styles=None) -%}
+{% macro panel(panel_title, panel_id, graphs, styles=None, tables=None) -%}
 <div class="panel panel-default">
     <div class="panel-heading" data-toggle="collapse" data-target="#collapse_{{ panel_id }}">
         <h4 class="panel-title">
@@ -98,6 +98,15 @@
                 {{ plotly_graphs(graphs, styles=styles) }}
             </div>
         </div>
+        {% if tables %}
+            <div class="panel-body">
+                <div class="container-fluid">
+                    {% for item in tables %}
+                        {{ table(item) }}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
     </div>
 </div>
 {%- endmacro %}
