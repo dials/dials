@@ -308,8 +308,8 @@ def test_find_spots_with_per_image_statistics(dials_data, tmpdir):
     )
     assert not result.returncode and not result.stderr
     assert tmpdir.join("strong.refl").check(file=1)
-    assert "Number of centroids per image for imageset 0:\n" in result.stdout
+    assert b"Number of centroids per image for imageset 0:\n" in result.stdout
     assert (
-        "|   image |   #spots |   #spots_no_ice |   total_intensity |\n"
+        b"|   image |   #spots |   #spots_no_ice |   total_intensity |\n"
         in result.stdout
     )
